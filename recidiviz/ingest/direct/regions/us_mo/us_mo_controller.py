@@ -117,7 +117,7 @@ from recidiviz.ingest.direct.regions.us_mo.us_mo_constants import (
     VIOLATION_KEY_SEQ,
     VIOLATION_REPORT_ID_PREFIX,
 )
-from recidiviz.ingest.direct.regions.us_mo.us_mo_enum_helpers import (
+from recidiviz.ingest.direct.regions.us_mo.us_mo_legacy_enum_helpers import (
     MID_INCARCERATION_TREATMENT_COMMITMENT_STATUSES,
     MID_INCARCERATION_TREATMENT_FAILURE_STATUSES,
     PAROLE_REVOKED_WHILE_INCARCERATED_STATUS_CODES,

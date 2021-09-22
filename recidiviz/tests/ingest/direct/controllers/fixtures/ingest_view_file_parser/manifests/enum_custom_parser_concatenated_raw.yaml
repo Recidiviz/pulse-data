@@ -1,0 +1,22 @@
+manifest_language: 1.0.0
+input_columns:
+  - PERSONID
+  - RACE
+  - RACE_SUFFIX
+unused_columns: []
+output:
+  FakePerson:
+    external_ids:
+      - FakePersonExternalId:
+          external_id: PERSONID
+          id_type: $literal("ID_TYPE")
+    races:
+      - FakePersonRace:
+          race:
+            $raw_text:
+              $concat:
+                $separator: "$$"
+                $values:
+                  - RACE
+                  - RACE_SUFFIX
+            $custom_parser: fake_custom_enum_parsers.race_two_parts

@@ -1,0 +1,11 @@
+manifest_language: 1.0.0
+input_columns:
+  - RACE
+unused_columns: []
+output:
+  FakePerson:
+    races:
+      - FakePersonRace:
+          race:
+            $raw_text: RACE
+            $custom_parser: fake_custom_enum_parsers.enum_parser_bad_arg_type

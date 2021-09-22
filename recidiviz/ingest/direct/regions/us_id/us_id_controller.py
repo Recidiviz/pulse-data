@@ -131,7 +131,7 @@ from recidiviz.ingest.direct.regions.us_id.us_id_constants import (
     VIOLATION_REPORT_NO_RECOMMENDATION_VALUES,
     VIOLENT_CRIME_TYPES,
 )
-from recidiviz.ingest.direct.regions.us_id.us_id_enum_helpers import (
+from recidiviz.ingest.direct.regions.us_id.us_id_legacy_enum_helpers import (
     custodial_authority_mapper,
     incarceration_admission_reason_mapper,
     incarceration_release_reason_mapper,

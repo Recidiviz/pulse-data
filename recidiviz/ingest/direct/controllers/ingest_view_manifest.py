@@ -20,19 +20,24 @@ tree.
 """
 
 import abc
+import inspect
 import json
 import re
 from enum import Enum
-from typing import Callable, Dict, Generic, List, Optional, Type, TypeVar, Union
+from types import ModuleType
+from typing import Any, Callable, Dict, Generic, List, Optional, Type, TypeVar, Union
 
 import attr
 from more_itertools import one
 
+from recidiviz.common.common_utils import bidirectional_set_difference
 from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.constants.enum_parser import EnumParser
 from recidiviz.common.constants.strict_enum_parser import StrictEnumParser
+from recidiviz.common.module_collector_mixin import ModuleCollectorMixin
 from recidiviz.persistence.entity.base_entity import Entity, EnumEntity
 from recidiviz.persistence.entity.entity_deserialize import EntityFactory, EntityT
+from recidiviz.utils.types import T
 from recidiviz.utils.yaml_dict import YAMLDict
 
 ManifestNodeT = TypeVar("ManifestNodeT")
@@ -50,6 +55,81 @@ class ManifestNode(Generic[ManifestNodeT]):
         """Should be implemented by subclasses to return a recursively hydrated node
         in the entity tree, parsed out of the input row.
         """
+
+
+@attr.s(kw_only=True)
+class CustomFunctionRegistry(ModuleCollectorMixin):
+    """Object that can be used to retrieve custom python functions from raw manifest
+    descriptors.
+    """
+
+    # Module containing files (or packages) with custom python functions.
+    custom_functions_root_module: ModuleType = attr.ib()
+
+    def get_custom_python_function(
+        self,
+        function_reference: str,
+        expected_kwarg_types: Dict[str, Type[Any]],
+        expected_return_type: Type[T],
+    ) -> Callable[..., T]:
+        """Returns a reference to the python function specified by |function_reference|.
+
+        Args:
+            function_reference: Reference to the function, relative to the
+                |custom_functions_root_module|. Example: "us_xx_custom_parsers.my_fn"
+            expected_kwarg_types: Map of argument names to expected types. If the
+                function specified by |function_reference| does not have arguments with
+                 matching names / types, this will throw.
+            expected_return_type: Expected return type for the specified function. If
+                the function return type does not match, this will throw.
+        """
+        relative_path_parts = function_reference.split(".")
+        function_name = relative_path_parts[-1]
+
+        function_module = self.get_relative_module(
+            self.custom_functions_root_module, relative_path_parts[:-1]
+        )
+
+        function = getattr(function_module, function_name)
+        function_signature = inspect.signature(function)
+
+        function_argument_names = set(function_signature.parameters.keys())
+        expected_argument_names = set(expected_kwarg_types.keys())
+
+        module_name = self.custom_functions_root_module.__name__
+        extra_function_args, missing_function_args = bidirectional_set_difference(
+            function_argument_names, expected_argument_names
+        )
+
+        if extra_function_args:
+            raise ValueError(
+                f"Found extra, unexpected arguments for function [{function_name}] in "
+                f"module [{module_name}]: {extra_function_args}"
+            )
+
+        if missing_function_args:
+            raise ValueError(
+                f"Missing expected arguments for function [{function_name}] in module "
+                f"[{module_name}]: {missing_function_args}"
+            )
+
+        for arg_name in function_argument_names:
+            expected_type = expected_kwarg_types[arg_name]
+            actual_type = function_signature.parameters[arg_name].annotation
+            if actual_type != expected_type:
+                raise ValueError(
+                    f"Unexpected type for argument [{arg_name}] in function "
+                    f"[{function_name}] in module [{module_name}]. Expected "
+                    f"[{expected_type}], found [{actual_type}]."
+                )
+
+        if function_signature.return_annotation != expected_return_type:
+            raise ValueError(
+                f"Unexpected return type for function [{function_name}] in module "
+                f"[{module_name}]. Expected [{expected_return_type}], found "
+                f"[{function_signature.return_annotation}]."
+            )
+        return function
 
 
 @attr.s(kw_only=True)
@@ -209,11 +289,18 @@ class EnumFieldManifest(ManifestNode[StrictEnumParser]):
     RAW_TEXT_KEY = "$raw_text"
 
     # Raw manifest key whose value describes the direct string mappings for this enum
-    # field.
+    # field. May only be present if the $custom_parser key is not present.
     MAPPINGS_KEY = "$mappings"
 
+    # Raw manifest key whose value describes the custom parser function for this enum
+    # field. May only be present if the $mappings key is not present.
+    CUSTOM_PARSER_FUNCTION_KEY = "$custom_parser"
+
+    CUSTOM_PARSER_RAW_TEXT_ARG_NAME = "raw_text"
+
     # Raw manifest key whose value describes the string raw text values that should
-    # be ignored when parsing this enum field.
+    # be ignored when parsing this enum field. If this is used with $custom_parser,
+    # these values will never be passed to the custom parser function.
     IGNORES_KEY = "$ignore"
 
     enum_cls: Type[Enum] = attr.ib()
@@ -233,7 +320,11 @@ class EnumFieldManifest(ManifestNode[StrictEnumParser]):
 
     @classmethod
     def from_raw_manifest(
-        cls, *, enum_cls: Type[Enum], field_enum_mappings_manifest: YAMLDict
+        cls,
+        *,
+        enum_cls: Type[Enum],
+        field_enum_mappings_manifest: YAMLDict,
+        fn_registry: CustomFunctionRegistry,
     ) -> "EnumFieldManifest":
         """Factory method for building an enum field manifest."""
 
@@ -245,11 +336,15 @@ class EnumFieldManifest(ManifestNode[StrictEnumParser]):
 
         enum_overrides = cls._build_field_enum_overrides(
             enum_cls,
+            fn_registry,
             ignores_list=field_enum_mappings_manifest.pop_list_optional(
                 EnumFieldManifest.IGNORES_KEY, str
             ),
-            raw_mappings_manifest=field_enum_mappings_manifest.pop_dict(
+            direct_mappings_manifest=field_enum_mappings_manifest.pop_dict_optional(
                 EnumFieldManifest.MAPPINGS_KEY
+            ),
+            custom_parser_function_reference=field_enum_mappings_manifest.pop_optional(
+                EnumFieldManifest.CUSTOM_PARSER_FUNCTION_KEY, str
             ),
         )
 
@@ -268,39 +363,82 @@ class EnumFieldManifest(ManifestNode[StrictEnumParser]):
     def _build_field_enum_overrides(
         cls,
         enum_cls: Type[Enum],
+        fn_registry: CustomFunctionRegistry,
         ignores_list: Optional[List[str]],
-        raw_mappings_manifest: YAMLDict,
+        direct_mappings_manifest: Optional[YAMLDict],
+        custom_parser_function_reference: Optional[str],
     ) -> EnumOverrides:
         """Builds the enum mappings object that should be used to parse the enum value."""
 
         enum_overrides_builder = EnumOverrides.Builder()
 
-        for enum_value_str in raw_mappings_manifest.keys():
-            enum_cls_name, enum_name = enum_value_str.split(".")
-            if enum_cls_name != enum_cls.__name__:
+        if (
+            direct_mappings_manifest is None
+            and custom_parser_function_reference is None
+        ):
+            raise ValueError(
+                f"Must define either [{cls.MAPPINGS_KEY}] or [{cls.CUSTOM_PARSER_FUNCTION_KEY}]."
+            )
+
+        if (
+            direct_mappings_manifest is not None
+            and custom_parser_function_reference is not None
+        ):
+            raise ValueError(
+                f"Can only define either [{cls.MAPPINGS_KEY}] or "
+                f"[{cls.CUSTOM_PARSER_FUNCTION_KEY}], but not both."
+            )
+
+        if direct_mappings_manifest is not None:
+            if not direct_mappings_manifest:
                 raise ValueError(
-                    f"Declared enum class in manifest [{enum_cls_name}] does "
-                    f"not match expected enum class type [{enum_cls.__name__}]."
+                    f"Found empty {cls.MAPPINGS_KEY}. If there are no direct string "
+                    f"mappings, the key should be omitted entirely."
                 )
-            value_manifest_type = raw_mappings_manifest.peek_type(enum_value_str)
-            if value_manifest_type is str:
-                mappings_raw_text_list: List[str] = [
-                    raw_mappings_manifest.pop(enum_value_str, str)
-                ]
-            elif value_manifest_type is list:
-                mappings_raw_text_list = []
-                for raw_text in raw_mappings_manifest.pop(enum_value_str, list):
-                    if not isinstance(raw_text, str) or not raw_text:
-                        raise ValueError(f"Unexpected value for raw_text: {raw_text}")
-                    mappings_raw_text_list.append(raw_text)
-            else:
-                raise ValueError(
-                    f"Unexpected mapping values manifest type: {value_manifest_type}"
-                )
-            for raw_text in mappings_raw_text_list:
-                enum_overrides_builder.add(
-                    raw_text, enum_cls[enum_name], normalize_label=False
-                )
+            for enum_value_str in direct_mappings_manifest.keys():
+                enum_cls_name, enum_name = enum_value_str.split(".")
+                if enum_cls_name != enum_cls.__name__:
+                    raise ValueError(
+                        f"Declared enum class in manifest [{enum_cls_name}] does "
+                        f"not match expected enum class type [{enum_cls.__name__}]."
+                    )
+                value_manifest_type = direct_mappings_manifest.peek_type(enum_value_str)
+                mappings_raw_text_list: List[str]
+                if value_manifest_type is str:
+                    mappings_raw_text_list = [
+                        direct_mappings_manifest.pop(enum_value_str, str)
+                    ]
+                elif value_manifest_type is list:
+                    mappings_raw_text_list = []
+                    for raw_text in direct_mappings_manifest.pop(enum_value_str, list):
+                        if not isinstance(raw_text, str) or not raw_text:
+                            raise ValueError(
+                                f"Unexpected value for raw_text: {raw_text}"
+                            )
+                        mappings_raw_text_list.append(raw_text)
+                else:
+                    raise ValueError(
+                        f"Unexpected mapping values manifest type: {value_manifest_type}"
+                    )
+                if not mappings_raw_text_list:
+                    raise ValueError(
+                        f"Mappings for value [{enum_value_str}] are empty. Either add "
+                        f"mappings or remove this item."
+                    )
+                for raw_text in mappings_raw_text_list:
+                    enum_overrides_builder.add(
+                        raw_text, enum_cls[enum_name], normalize_label=False
+                    )
+
+        if custom_parser_function_reference:
+            enum_overrides_builder.add_mapper_fn(
+                fn_registry.get_custom_python_function(
+                    custom_parser_function_reference,
+                    {cls.CUSTOM_PARSER_RAW_TEXT_ARG_NAME: str},
+                    enum_cls,
+                ),
+                enum_cls,
+            )
 
         if ignores_list is not None:
             if not ignores_list:

@@ -19,13 +19,9 @@
 import datetime
 import os
 import unittest
-from enum import Enum
 from typing import Dict, List, Optional, Type, Union
 
-import attr
-
 from recidiviz.cloud_storage.gcs_file_system import GcsfsFileContentsHandle
-from recidiviz.common import attr_validators
 from recidiviz.common.constants.enum_parser import EnumParser, EnumParsingError
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.controllers.ingest_view_file_parser import (
@@ -33,135 +29,29 @@ from recidiviz.ingest.direct.controllers.ingest_view_file_parser import (
     IngestViewFileParser,
     IngestViewFileParserDelegate,
 )
-from recidiviz.ingest.direct.controllers.ingest_view_manifest import EntityTreeManifest
-from recidiviz.persistence.entity.base_entity import (
-    Entity,
-    EnumEntity,
-    ExternalIdEntity,
+from recidiviz.ingest.direct.controllers.ingest_view_manifest import (
+    CustomFunctionRegistry,
+    EntityTreeManifest,
 )
+from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_deserialize import (
     EntityFactory,
     entity_deserialize,
 )
 from recidiviz.tests.ingest.direct.controllers.fixtures.ingest_view_file_parser import (
+    custom_python,
     ingest_view_files,
     manifests,
 )
-
-#### Start Fake Schema ####
-
-
-class FakeGender(Enum):
-    FEMALE = "FEMALE_ENUM_VALUE"
-    MALE = "MALE_ENUM_VALUE"
-    TRANS_FEMALE = "TRANS_FEMALE_ENUM_VALUE"
-    TRANS_MALE = "TRANS_MALE_ENUM_VALUE"
-
-
-class FakeRace(Enum):
-    ASIAN = "ASIAN_VALUE"
-    BLACK = "BLACK_VALUE"
-    WHITE = "WHITE_VALUE"
-
-
-@attr.s(eq=False)
-class FakePerson(Entity):
-    fake_state_code: str = attr.ib(validator=attr_validators.is_str)
-
-    name: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
-    birthdate: Optional[datetime.date] = attr.ib(
-        default=None, validator=attr_validators.is_opt_date
-    )
-    gender: Optional[FakeGender] = attr.ib(
-        default=None, validator=attr_validators.is_opt(FakeGender)
-    )
-    gender_raw_text: Optional[str] = attr.ib(
-        default=None, validator=attr_validators.is_opt_str
-    )
-
-    # Fake primary key field
-    fake_person_id: Optional[int] = attr.ib(
-        default=None, validator=attr_validators.is_opt_int
-    )
-    external_ids: List["FakePersonExternalId"] = attr.ib(
-        factory=list, validator=attr_validators.is_list
-    )
-    aliases: List["FakePersonAlias"] = attr.ib(
-        factory=list, validator=attr_validators.is_list
-    )
-    races: List["FakePersonRace"] = attr.ib(
-        factory=list, validator=attr_validators.is_list
-    )
-    current_officer: Optional["FakeAgent"] = attr.ib(default=None)
-
-
-@attr.s(eq=False)
-class FakePersonAlias(Entity):
-    fake_state_code: str = attr.ib(validator=attr_validators.is_str)
-
-    full_name: Optional[str] = attr.ib(
-        default=None, validator=attr_validators.is_opt_str
-    )
-
-    # Fake primary key field
-    fake_person_alias_id: Optional[int] = attr.ib(
-        default=None, validator=attr_validators.is_opt_int
-    )
-
-    # Back edge relationship
-    person: Optional["FakePerson"] = attr.ib(default=None)
-
-
-@attr.s(eq=False)
-class FakePersonExternalId(Entity):
-    fake_state_code: str = attr.ib(validator=attr_validators.is_str)
-
-    external_id: str = attr.ib(validator=attr_validators.is_str)
-    id_type: str = attr.ib(validator=attr_validators.is_str)
-
-    # Fake primary key field
-    fake_person_external_id_id: Optional[int] = attr.ib(
-        default=None, validator=attr_validators.is_opt_int
-    )
-
-    # Back edge relationship
-    person: Optional["FakePerson"] = attr.ib(default=None)
-
-
-@attr.s(eq=False)
-class FakePersonRace(EnumEntity):
-    fake_state_code: str = attr.ib(validator=attr_validators.is_str)
-
-    # Attributes
-    race: Optional[FakeRace] = attr.ib(
-        default=None, validator=attr_validators.is_opt(FakeRace)
-    )
-    race_raw_text: Optional[str] = attr.ib(
-        default=None, validator=attr_validators.is_opt_str
-    )
-
-    # Fake primary key field
-    fake_person_race_id: Optional[int] = attr.ib(
-        default=None, validator=attr_validators.is_opt_int
-    )
-
-    # Back edge relationship
-    person: Optional["FakePerson"] = attr.ib(default=None)
-
-
-@attr.s(eq=False)
-class FakeAgent(ExternalIdEntity):
-    fake_state_code: str = attr.ib(validator=attr_validators.is_str)
-
-    name: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
-
-    # Fake primary key field
-    fake_agent_id: Optional[int] = attr.ib(
-        default=None, validator=attr_validators.is_opt_int
-    )
-
-
-#### End Fake Schema ####
+from recidiviz.tests.ingest.direct.controllers.fixtures.ingest_view_file_parser.fake_schema.entities import (
+    FakeAgent,
+    FakeGender,
+    FakePerson,
+    FakePersonAlias,
+    FakePersonExternalId,
+    FakePersonRace,
+    FakeRace,
+)
 
 #### Start Fake Schema Factories ####
 
@@ -243,6 +133,9 @@ class FakeSchemaIngestViewFileParserDelegate(IngestViewFileParserDelegate):
         if entity_cls_name == FakeAgent.__name__:
             return FakeAgent
         raise ValueError(f"Unexpected class name [{entity_cls_name}]")
+
+    def get_custom_function_registry(self) -> CustomFunctionRegistry:
+        return CustomFunctionRegistry(custom_functions_root_module=custom_python)
 
 
 class IngestViewFileParserTest(unittest.TestCase):
@@ -850,6 +743,149 @@ class IngestViewFileParserTest(unittest.TestCase):
 
         # Assert
         self.assertEqual(expected_output, parsed_output)
+
+    def test_enum_custom_parser_parsing(self) -> None:
+        expected_output = [
+            FakePerson(
+                fake_state_code="US_XX",
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX", external_id="1", id_type="ID_TYPE"
+                    )
+                ],
+                races=[
+                    FakePersonRace(
+                        fake_state_code="US_XX", race=FakeRace.WHITE, race_raw_text="B"
+                    )
+                ],
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX", external_id="2", id_type="ID_TYPE"
+                    )
+                ],
+                races=[
+                    FakePersonRace(
+                        fake_state_code="US_XX", race=FakeRace.BLACK, race_raw_text="W"
+                    )
+                ],
+            ),
+            # This person had a race value in the ignores list so no FakePersonRace
+            # object is hydrated.
+            FakePerson(
+                fake_state_code="US_XX",
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX", external_id="3", id_type="ID_TYPE"
+                    )
+                ],
+            ),
+            # This person had a null race value so no FakePersonRace object is hydrated.
+            FakePerson(
+                fake_state_code="US_XX",
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX", external_id="4", id_type="ID_TYPE"
+                    )
+                ],
+            ),
+        ]
+
+        # Act
+        parsed_output = self._run_parse_for_tag("enum_custom_parser")
+
+        # Assert
+        self.assertEqual(expected_output, parsed_output)
+
+    def test_enum_custom_parser_concatenated_values_parsing(self) -> None:
+        expected_output = [
+            FakePerson(
+                fake_state_code="US_XX",
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX", external_id="1", id_type="ID_TYPE"
+                    )
+                ],
+                races=[
+                    FakePersonRace(
+                        fake_state_code="US_XX",
+                        race=FakeRace.BLACK,
+                        # Value is sent to uppercase before it is stored in raw text.
+                        race_raw_text="B$$X",
+                    )
+                ],
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX", external_id="2", id_type="ID_TYPE"
+                    )
+                ],
+                races=[
+                    FakePersonRace(
+                        fake_state_code="US_XX",
+                        race=FakeRace.WHITE,
+                        race_raw_text="W$$Y",
+                    )
+                ],
+            ),
+        ]
+
+        # Act
+        parsed_output = self._run_parse_for_tag("enum_custom_parser_concatenated_raw")
+
+        # Assert
+        self.assertEqual(expected_output, parsed_output)
+
+    def test_enum_custom_parser_bad_return_type(self) -> None:
+        # Act
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Unexpected return type for function \[flip_black_and_white\] in module "
+            r"\[[a-z_\.]+\]. Expected \[<enum 'FakeGender'>\], found "
+            r"\[<enum 'FakeRace'>\]",
+        ):
+            _ = self._run_parse_manifest_for_tag("enum_custom_parser_bad_return_type")
+
+    def test_enum_custom_parser_bad_arg_name(self) -> None:
+        # Act
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found extra, unexpected arguments for function "
+            r"\[enum_parser_bad_arg_name\] in module \[[a-z_\.]+\]: {'bad_arg'}",
+        ):
+            _ = self._run_parse_manifest_for_tag("enum_custom_parser_bad_arg_name")
+
+    def test_enum_custom_parser_extra_arg(self) -> None:
+        # Act
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found extra, unexpected arguments for function "
+            r"\[enum_parser_extra_arg\] in module \[[a-z_\.]+\]: {'another_arg'}",
+        ):
+            _ = self._run_parse_manifest_for_tag("enum_custom_parser_extra_arg")
+
+    def test_enum_custom_parser_missing_arg(self) -> None:
+        # Act
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Missing expected arguments for function \[enum_parser_missing_arg\] "
+            r"in module \[[a-z_\.]+\]: {'raw_text'}",
+        ):
+            _ = self._run_parse_manifest_for_tag("enum_custom_parser_missing_arg")
+
+    def test_enum_custom_parser_bad_arg_type(self) -> None:
+        # Act
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Unexpected type for argument \[raw_text\] in function "
+            r"\[enum_parser_bad_arg_type\] in module \[[a-z_\.]+\]. Expected "
+            r"\[<class 'str'>], found \[<class 'bool'>\].",
+        ):
+            _ = self._run_parse_manifest_for_tag("enum_custom_parser_bad_arg_type")
 
     def test_serialize_json(self) -> None:
         # Arrange
