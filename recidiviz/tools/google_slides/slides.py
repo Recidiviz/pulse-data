@@ -126,34 +126,43 @@ https://drive.google.com/drive/folders/{self._directory_id}
     def copy_slides(
         self,
         new_slides_name: str,
-        parent_directory_id: str,
+        parent_directory_id: Optional[str] = None,
         new_directory_name: Optional[str] = None,
         keep_managing_template: bool = False,
     ) -> None:
         """
-        Copies the template slides to `parent_directory_id/new_directory_name`, if
-        `new_directory_name`, otherwise copies to `parent_directory_id`.
+        Copies the template deck to `parent_directory_id/new_directory_name`, if
+        provided, otherwise copies to `manager._directory_id`.
 
-        After calling this method, the initialized GoogleSlidesManager will replace the
-        template with the newly created copy as the managed file (self._slides_id) unless
-        `keep_managing_template` is True.
+        After calling this method, the manager will replace the template deck and parent
+        directory with those of the newly created copy unless `keep_managing_template`
+        is True.
 
         Params
         ------
         new_slides_name : str
             Name of the new Slides deck copied from template
 
-        parent_directory_id : str
-            Google Drive ID of the parent directory, found in the folder's URL
+        parent_directory_id : Optional[str]
+            Google Drive ID of the parent directory to place the copied Slides deck,
+            found in the folder's URL. If None, defaults to the parent directory of
+            the source deck.
 
         new_directory_name : Optional[str]
             Name of the new directory to place the copied template. If not specified,
-            the template will be placed inside the parent directory.
+            the template will be placed inside the existing parent directory
+            (self._directory_id).
 
         keep_managing_template : bool
-            If True, does not replace self._slides_id with the newly copied Slides deck
+            If True, does not replace self._slides_id or self._directory_id with the
+            newly copied Slides deck and new parent directory.
 
         """
+        # update parent directory if necessary
+        parent_directory_id = (
+            parent_directory_id if parent_directory_id else self._directory_id
+        )
+
         # Create new directory, if necessary
         if new_directory_name:
 
@@ -176,6 +185,8 @@ https://drive.google.com/drive/folders/{self._directory_id}
 
             # update parent_directory_id with newly created folder
             parent_directory_id = drive_folder["id"]
+            if parent_directory_id is None:  # mypy
+                raise ValueError("parent_directory_id cannot be None")
 
         # set metadata for creating copy of original Slides deck
         new_slides_metadata = {
@@ -206,7 +217,8 @@ https://drive.google.com/drive/folders/{parent_directory_id}
         # replace self._slides_id and self._directory_id unless `keep_managing_template`
         if not keep_managing_template:
             self._slides_id = new_slides_id
-            self._directory_id = parent_directory_id
+            if parent_directory_id != self._directory_id:
+                self._directory_id = parent_directory_id
         else:
             print("Caution, still managing template Slides deck.")
 
