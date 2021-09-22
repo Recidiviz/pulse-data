@@ -15,7 +15,7 @@ exclusions:
     
 max_allowed_error_overrides:
   - validation_name: supervision_population_person_level_external_comparison
-    hard_max_allowed_error_override: 0.0341
+    hard_max_allowed_error_override: 0.0344
     override_reason: PA external validation data was generated from snapshots at the time the population for a given
       month was measured. Over time, data gets backfilled as new info about what happened that month comes in, so our
       numbers will get "worse" as time goes on and we get more accurate data about movements.
@@ -48,6 +48,21 @@ max_allowed_error_overrides:
   - validation_name: most_recent_face_to_face_contact_date_by_person_by_state_comparison
     hard_max_allowed_error_override: 0.6581
     override_reason: Needs investigation.
+  - validation_name: most_recent_assessment_score_by_person_by_state_comparison
+    hard_max_allowed_error_override: 1.0
+    override_reason: Needs investigation.
+  - validation_name: revocations_by_period_dashboard_comparison
+    hard_max_allowed_error_override: 1.0
+    override_reason: Needs investigation.
+  - validation_name: supervision_success_by_month_dashboard_comparison_completion
+    hard_max_allowed_error_override: 1.0
+    override_reason: Needs investigation.
+  - validation_name: supervision_success_by_period_dashboard_comparison_completion
+    hard_max_allowed_error_override: 1.0
+    override_reason: Needs investigation.
+  - validation_name: supervision_success_by_period_dashboard_comparison_termination
+    hard_max_allowed_error_override: 1.0
+    override_reason: Needs investigation.
 num_allowed_rows_overrides:
   - validation_name: incarceration_admission_after_open_period
     hard_num_allowed_rows_override: 50
@@ -70,18 +85,3 @@ num_allowed_rows_overrides:
     override_reason: TODO(#6254) - Likely a rare edge case related to how the ingest
       view and entity matching handles cases where a supervision period is deleted.
       There are 12 of these as of 3/5/2021.
-  - validation_name: most_recent_assessment_score_by_person_by_state_comparison
-    hard_num_allowed_rows_override: 803
-    override_reason: Needs investigation.
-  - validation_name: revocations_by_period_dashboard_comparison
-    hard_num_allowed_rows_override: 1
-    override_reason: Needs investigation.
-  - validation_name: supervision_success_by_month_dashboard_comparison_completion
-    hard_num_allowed_rows_override: 23
-    override_reason: Needs investigation.
-  - validation_name: supervision_success_by_period_dashboard_comparison_completion
-    hard_num_allowed_rows_override: 1
-    override_reason: Needs investigation.
-  - validation_name: supervision_success_by_period_dashboard_comparison_termination
-    hard_num_allowed_rows_override: 1
-    override_reason: Needs investigation.

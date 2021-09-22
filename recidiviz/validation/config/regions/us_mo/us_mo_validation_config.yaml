@@ -30,6 +30,4 @@ num_allowed_rows_overrides:
     hard_num_allowed_rows_override: 200
     override_reason: TODO(#5075) - We are generating a stable SQN number in the incarceration periods queries but not
       actually using it. Doing so will likely make these edge case periods go away.
-  - validation_name: most_recent_assessment_score_by_person_by_state_comparison
-    hard_num_allowed_rows_override: 1
-    override_reason: Needs investigation.
+
