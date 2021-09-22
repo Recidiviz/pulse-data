@@ -63,6 +63,12 @@ class ExistenceDataValidationCheck(DataValidationCheck):
             self.validation_name, None
         )
 
+        if region_config.max_allowed_error_overrides.get(self.validation_name, None):
+            raise ValueError(
+                f"{self.validation_name} region config incorrectly set "
+                f"max_allowed_error_overrides for region {region_config.region_code}"
+            )
+
         hard_num_allowed_rows = self.hard_num_allowed_rows
         soft_num_allowed_rows = self.soft_num_allowed_rows
         if num_allowed_rows_config:
