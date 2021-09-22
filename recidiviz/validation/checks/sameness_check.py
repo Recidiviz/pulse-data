@@ -138,6 +138,12 @@ class SamenessDataValidationCheck(DataValidationCheck):
             self.validation_name, None
         )
 
+        if region_config.num_allowed_rows_overrides.get(self.validation_name, None):
+            raise ValueError(
+                f"{self.validation_name} region config incorrectly set "
+                f"num_allowed_rows_overrides for region {region_config.region_code}"
+            )
+
         hard_max_allowed_error = self.hard_max_allowed_error
         soft_max_allowed_error = self.soft_max_allowed_error
         if max_allowed_error_config:

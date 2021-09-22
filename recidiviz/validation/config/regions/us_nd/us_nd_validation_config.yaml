@@ -20,6 +20,15 @@ max_allowed_error_overrides:
     override_reason: Given the very small size of some facilities in ND, this is actually a very strict threshold and we
       likely will not be able to do better. We're also already checking facility accuracy over the whole population with
       incarceration_population_person_level_external_comparison_matching_people validation.
+  - validation_name: supervision_success_by_month_dashboard_comparison_completion
+    hard_max_allowed_error_override: 1.0
+    override_reason: Needs investigation.
+  - validation_name: supervision_success_by_period_dashboard_comparison_completion
+    hard_max_allowed_error_override: 1.0
+    override_reason: Needs investigation.
+  - validation_name: supervision_success_by_period_dashboard_comparison_termination
+    hard_max_allowed_error_override: 1.0
+    override_reason: Needs investigation.
 num_allowed_rows_overrides:
   - validation_name: overlapping_incarceration_periods
     hard_num_allowed_rows_override: 550
@@ -42,13 +51,4 @@ num_allowed_rows_overrides:
     override_reason: TODO(#5803) - Needs investigation.
   - validation_name: invalid_admission_reasons_for_temporary_custody
     hard_num_allowed_rows_override: 75
-    override_reason: Needs investigation.
-  - validation_name: supervision_success_by_month_dashboard_comparison_completion
-    hard_num_allowed_rows_override: 36
-    override_reason: Needs investigation.
-  - validation_name: supervision_success_by_period_dashboard_comparison_completion
-    hard_num_allowed_rows_override: 1
-    override_reason: Needs investigation.
-  - validation_name: supervision_success_by_period_dashboard_comparison_termination
-    hard_num_allowed_rows_override: 1
     override_reason: Needs investigation.
