@@ -14,7 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests the functions in the us_id_enum_helpers file."""
+"""Tests the functions in the us_id_enum_helpers file.
+
+TODO(#8900): This file should become empty and be deleted when we have fully migrated
+ this state to new ingest mappings version.
+"""
 import unittest
 
 from recidiviz.common.constants.state.state_supervision_period import (

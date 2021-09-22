@@ -34,7 +34,9 @@ from recidiviz.common.attr_mixins import (
     attr_field_type_for_field_name,
 )
 from recidiviz.common.constants.enum_parser import EnumParser
+from recidiviz.common.module_collector_mixin import ModuleCollectorMixin
 from recidiviz.ingest.direct.controllers.ingest_view_manifest import (
+    CustomFunctionRegistry,
     EntityTreeManifest,
     EnumFieldManifest,
     ExpandableListItemManifest,
@@ -109,8 +111,16 @@ class IngestViewFileParserDelegate:
     def get_entity_cls(self, entity_cls_name: str) -> Type[Entity]:
         """Returns the class for a given entity name"""
 
+    @abc.abstractmethod
+    def get_custom_function_registry(self) -> CustomFunctionRegistry:
+        """Returns an object that gives the parser access to custom python functions
+        that can be used for parsing.
+        """
 
-class IngestViewFileParserDelegateImpl(IngestViewFileParserDelegate):
+
+class IngestViewFileParserDelegateImpl(
+    IngestViewFileParserDelegate, ModuleCollectorMixin
+):
     """Standard implementation of the IngestViewFileParserDelegate, for use in
     production code.
     """
@@ -158,6 +168,14 @@ class IngestViewFileParserDelegateImpl(IngestViewFileParserDelegate):
         )
         self.entity_cls_cache[entity_cls_name] = entity_cls
         return entity_cls
+
+    def get_custom_function_registry(self) -> CustomFunctionRegistry:
+        region_code = self.region.region_code.lower()
+        return CustomFunctionRegistry(
+            custom_functions_root_module=self.get_relative_module(
+                self.region.region_module, [region_code]
+            )
+        )
 
 
 # TODO(#8980): Add support for (limited) custom python.
@@ -343,8 +361,8 @@ class IngestViewFileParser:
             return enum_entity_filter_predicate
         return None
 
-    @staticmethod
     def _build_enum_field_manifests_dict(
+        self,
         entity_cls: Type[Entity],
         field_name: str,
         field_enum_mappings_manifest: YAMLDict,
@@ -361,6 +379,7 @@ class IngestViewFileParser:
         enum_field_manifest = EnumFieldManifest.from_raw_manifest(
             enum_cls=enum_cls,
             field_enum_mappings_manifest=field_enum_mappings_manifest,
+            fn_registry=self.delegate.get_custom_function_registry(),
         )
         field_manifests[field_name] = enum_field_manifest
         field_manifests[

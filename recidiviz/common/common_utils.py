@@ -21,12 +21,13 @@ import logging
 import random
 import time
 import uuid
-from typing import Optional, Iterable, Any, Type, Callable, TypeVar
+from typing import Any, Callable, Iterable, Optional, Set, Tuple, Type, TypeVar
 
 import flask
 from google.api_core import exceptions  # pylint: disable=no-name-in-module
 
 from recidiviz.utils import environment
+from recidiviz.utils.types import T
 
 GENERATED_ID_SUFFIX = "_GENERATE"
 RETRY_SLEEP = 30
@@ -142,3 +143,8 @@ def date_spans_overlap_inclusive(
 ) -> bool:
     """Returns true if the provided spans overlap. Spans which share a single date are considered overlapping."""
     return start_1 <= end_2 and end_1 >= start_2
+
+
+def bidirectional_set_difference(set1: Set[T], set2: Set[T]) -> Tuple[Set[T], Set[T]]:
+    """Returns a tuple containing (set1 - set2, set2 - set1)."""
+    return set1.difference(set2), set2.difference(set1)

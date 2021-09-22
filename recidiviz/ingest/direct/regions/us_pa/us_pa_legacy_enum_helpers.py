@@ -15,7 +15,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""US_PA specific enum helper methods."""
+"""US_PA specific enum helper methods.
+
+TODO(#8902): This file should become empty and be deleted when we have fully migrated
+ this state to new ingest mappings version.
+"""
 from typing import Dict, List, Optional
 
 from recidiviz.common.constants.state.state_assessment import StateAssessmentLevel

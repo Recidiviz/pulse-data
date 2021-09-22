@@ -14,7 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for the us_mo_enum_helpers.py."""
+"""Tests for the us_mo_legacy_enum_helpers.py.
+
+TODO(#8899): This file should become empty and be deleted when we have fully migrated
+ this state to new ingest mappings version.
+"""
 
 import unittest
 
@@ -30,7 +34,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.str_field_utils import normalize
 from recidiviz.ingest.direct.regions.us_mo.us_mo_controller import UsMoController
-from recidiviz.ingest.direct.regions.us_mo.us_mo_enum_helpers import (
+from recidiviz.ingest.direct.regions.us_mo.us_mo_legacy_enum_helpers import (
     STR_TO_INCARCERATION_PERIOD_ADMISSION_REASON_MAPPINGS,
     incarceration_period_admission_reason_mapper,
     rank_incarceration_period_admission_reason_status_str,

@@ -14,7 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests the functions in the us_nd_enum_helpers file."""
+"""Tests the functions in the us_nd_enum_helpers file.
+
+TODO(#8901): This file should become empty and be deleted when we have fully migrated
+ this state to new ingest mappings version.
+"""
 import unittest
 
 from recidiviz.common.constants.state.state_supervision_contact import (
@@ -23,7 +27,7 @@ from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactType,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.regions.us_nd.us_nd_enum_helpers import (
+from recidiviz.ingest.direct.regions.us_nd.us_nd_legacy_enum_helpers import (
     supervision_contact_location_mapper,
     supervision_contact_status_mapper,
     supervision_contact_type_mapper,

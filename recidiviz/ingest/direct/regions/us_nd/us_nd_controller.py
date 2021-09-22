@@ -70,12 +70,12 @@ from recidiviz.ingest.direct.direct_ingest_controller_utils import create_if_not
 from recidiviz.ingest.direct.regions.us_nd.us_nd_county_code_reference import (
     normalized_county_code,
 )
-from recidiviz.ingest.direct.regions.us_nd.us_nd_enum_helpers import (
-    generate_enum_overrides,
-    generate_enum_overrides_v2,
-)
 from recidiviz.ingest.direct.regions.us_nd.us_nd_judicial_district_code_reference import (
     normalized_judicial_district_code,
+)
+from recidiviz.ingest.direct.regions.us_nd.us_nd_legacy_enum_helpers import (
+    generate_enum_overrides,
+    generate_enum_overrides_v2,
 )
 from recidiviz.ingest.direct.state_shared_row_posthooks import (
     IngestGatingContext,
