@@ -43,12 +43,17 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
+from recidiviz.common.constants.state.state_supervision_violation_response import (
+    StateSupervisionViolationResponseDecision,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.state.entities import (
     StateAssessment,
     StatePerson,
     StateSupervisionContact,
     StateSupervisionPeriod,
+    StateSupervisionViolationResponse,
+    StateSupervisionViolationResponseDecisionEntry,
 )
 
 
@@ -113,6 +118,7 @@ class TestAssessmentsInComplianceMonth(unittest.TestCase):
             case_type=StateSupervisionCaseType.GENERAL,
             assessments=assessments,
             supervision_contacts=[],
+            violation_responses=[],
         )
 
         self.assertEqual(
@@ -196,6 +202,7 @@ class TestFaceToFaceContactsInComplianceMonth(unittest.TestCase):
             start_of_supervision=evaluation_date,
             assessments=[],
             supervision_contacts=contacts,
+            violation_responses=[],
         )
         self.assertEqual(
             len(expected_contacts),
@@ -246,6 +253,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=supervision_contacts,
+            violation_responses=[],
         )
 
         next_face_to_face_date = (
@@ -295,6 +303,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=supervision_contacts,
+            violation_responses=[],
         )
 
         next_face_to_face = (
@@ -341,6 +350,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=supervision_contacts,
+            violation_responses=[],
         )
 
         next_face_to_face = (
@@ -389,6 +399,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=supervision_contacts,
+            violation_responses=[],
         )
 
         next_face_to_face = (
@@ -434,6 +445,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=supervision_contacts,
+            violation_responses=[],
         )
 
         next_face_to_face = (
@@ -472,6 +484,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=[],
+            violation_responses=[],
         )
 
         next_face_to_face = (
@@ -517,6 +530,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=supervision_contacts,
+            violation_responses=[],
         )
 
         face_to_face_frequency_sufficient = (
@@ -562,6 +576,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=supervision_contacts,
+            violation_responses=[],
         )
 
         face_to_face_frequency_sufficient = (
@@ -600,6 +615,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=[],
+            violation_responses=[],
         )
 
         next_face_to_face = (
@@ -645,6 +661,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=supervision_contacts,
+            violation_responses=[],
         )
 
         next_face_to_face = (
@@ -690,6 +707,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=supervision_contacts,
+            violation_responses=[],
         )
 
         face_to_face_frequency_sufficient = (
@@ -728,6 +746,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=[],
+            violation_responses=[],
         )
 
         next_face_to_face = (
@@ -773,6 +792,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=supervision_contacts,
+            violation_responses=[],
         )
 
         next_face_to_face = (
@@ -824,6 +844,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=supervision_contacts,
+            violation_responses=[],
         )
 
         face_to_face_frequency_sufficient = (
@@ -862,6 +883,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=[],
+            violation_responses=[],
         )
 
         next_face_to_face = (
@@ -915,6 +937,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=supervision_contacts,
+            violation_responses=[],
         )
 
         next_face_to_face = (
@@ -978,6 +1001,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=supervision_contacts,
+            violation_responses=[],
         )
 
         face_to_face_frequency_sufficient = (
@@ -1016,6 +1040,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=[],
+            violation_responses=[],
         )
 
         next_face_to_face = (
@@ -1069,6 +1094,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=supervision_contacts,
+            violation_responses=[],
         )
 
         next_face_to_face = (
@@ -1107,6 +1133,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=supervision_contacts,
+            violation_responses=[],
         )
 
         face_to_face_frequency_sufficient = (
@@ -1157,6 +1184,7 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=supervision_contacts,
+            violation_responses=[],
         )
 
         next_recommended_home_visit_date = (
@@ -1202,6 +1230,7 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=supervision_contacts,
+            violation_responses=[],
         )
 
         next_recommended_home_visit_date = (
@@ -1244,6 +1273,7 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=supervision_contacts,
+            violation_responses=[],
         )
 
         next_recommended_home_visit_date = (
@@ -1289,6 +1319,7 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=supervision_contacts,
+            violation_responses=[],
         )
 
         next_recommended_home_visit_date = (
@@ -1331,6 +1362,7 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=supervision_contacts,
+            violation_responses=[],
         )
 
         next_recommended_home_visit_date = (
@@ -1375,6 +1407,7 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=supervision_contacts,
+            violation_responses=[],
         )
 
         next_recommended_home_visit_date = (
@@ -1417,6 +1450,7 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=supervision_contacts,
+            violation_responses=[],
         )
 
         next_recommended_home_visit_date = (
@@ -1461,6 +1495,7 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=supervision_contacts,
+            violation_responses=[],
         )
 
         next_recommended_home_visit_date = (
@@ -1500,6 +1535,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             start_of_supervision=start_date,
             assessments=[],
             supervision_contacts=[],
+            violation_responses=[],
         )
 
         applicable = us_pa_supervision_compliance._guidelines_applicable_for_case(
@@ -1530,6 +1566,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             start_of_supervision=start_date,
             assessments=[],
             supervision_contacts=[],
+            violation_responses=[],
         )
 
         applicable = us_pa_supervision_compliance._guidelines_applicable_for_case(
@@ -1560,6 +1597,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             start_of_supervision=start_date,
             assessments=[],
             supervision_contacts=[],
+            violation_responses=[],
         )
 
         applicable = us_pa_supervision_compliance._guidelines_applicable_for_case(
@@ -1569,8 +1607,8 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
         self.assertFalse(applicable)
 
 
-class TestReassessmentRequirementAreMet(unittest.TestCase):
-    """Tests the reassessment_requirements_are_met function."""
+class TestNextRecommendedReassessment(unittest.TestCase):
+    """Tests the _next_recommended_reassessment function."""
 
     def setUp(self) -> None:
         self.person = StatePerson.new_with_defaults(state_code="US_XX")
@@ -1605,6 +1643,7 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[assessment],
             supervision_contacts=[],
+            violation_responses=[],
         )
 
         reassessment_date = us_pa_supervision_compliance._next_recommended_reassessment(
@@ -1613,7 +1652,7 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
 
         self.assertEqual(reassessment_date, date(2019, 4, 2))
 
-    def test_reassessment_requirements_are_not_met(self) -> None:
+    def test_next_recommended_reassessment_overdue(self) -> None:
         start_of_supervision = date(2018, 3, 5)  # This was a Monday
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
@@ -1642,6 +1681,7 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[assessment],
             supervision_contacts=[],
+            violation_responses=[],
         )
 
         reassessment_date = us_pa_supervision_compliance._next_recommended_reassessment(
@@ -1650,9 +1690,261 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
 
         self.assertEqual(reassessment_date, date(2011, 4, 2))
 
+    def test_next_recommended_reassessment_can_skip_reassessment(self) -> None:
+        start_of_supervision = date(2017, 3, 5)
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            state_code=StateCode.US_PA.value,
+            start_date=start_of_supervision,
+            termination_date=date(2018, 5, 19),
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_period_supervision_type=None,
+            supervision_level=StateSupervisionLevel.MINIMUM,
+        )
+
+        assessment_date = date(2018, 4, 2)
+        assessment_score = 18
+        assessment = StateAssessment.new_with_defaults(
+            state_code=StateCode.US_PA.value,
+            assessment_type=StateAssessmentType.LSIR,
+            assessment_date=assessment_date,
+            assessment_score=assessment_score,
+        )
+
+        us_pa_supervision_compliance = UsPaSupervisionCaseCompliance(
+            self.person,
+            supervision_period=supervision_period,
+            case_type=StateSupervisionCaseType.GENERAL,
+            start_of_supervision=start_of_supervision,
+            assessments=[assessment],
+            supervision_contacts=[],
+            violation_responses=[],
+        )
+
+        reassessment_date = us_pa_supervision_compliance._next_recommended_reassessment(
+            assessment_date, assessment_score, date(2018, 4, 2)
+        )
+
+        self.assertEqual(reassessment_date, None)
+
+    def test_next_recommended_reassessment_cannot_skip_reassessment_due_to_violations(
+        self,
+    ) -> None:
+        start_of_supervision = date(2017, 3, 5)
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            state_code=StateCode.US_PA.value,
+            start_date=start_of_supervision,
+            termination_date=date(2020, 5, 19),
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_period_supervision_type=None,
+            supervision_level=StateSupervisionLevel.MINIMUM,
+        )
+
+        assessment_date = date(2018, 4, 2)
+        assessment_score = 18
+        assessment = StateAssessment.new_with_defaults(
+            state_code=StateCode.US_PA.value,
+            assessment_type=StateAssessmentType.LSIR,
+            assessment_date=assessment_date,
+            assessment_score=assessment_score,
+        )
+
+        us_pa_supervision_compliance = UsPaSupervisionCaseCompliance(
+            self.person,
+            supervision_period=supervision_period,
+            case_type=StateSupervisionCaseType.GENERAL,
+            start_of_supervision=start_of_supervision,
+            assessments=[assessment],
+            supervision_contacts=[],
+            violation_responses=[
+                StateSupervisionViolationResponse.new_with_defaults(
+                    supervision_violation_response_id=123,
+                    external_id="svr1",
+                    state_code=StateCode.US_PA.value,
+                    response_date=date(2018, 5, 20),
+                    supervision_violation_response_decisions=[
+                        StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                            supervision_violation_response_decision_entry_id=13,
+                            state_code=StateCode.US_PA.value,
+                            decision=StateSupervisionViolationResponseDecision.NEW_CONDITIONS,
+                            decision_raw_text="URIN",
+                        )
+                    ],
+                )
+            ],
+        )
+
+        reassessment_date = us_pa_supervision_compliance._next_recommended_reassessment(
+            assessment_date, assessment_score, date(2018, 4, 2)
+        )
+
+        self.assertEqual(reassessment_date, date(2019, 4, 2))
+
+    def test_next_recommended_reassessment_cannot_skip_reassessment_due_to_not_enough_time_on_min_supervision(
+        self,
+    ) -> None:
+        start_of_supervision = date(2018, 3, 5)
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            state_code=StateCode.US_PA.value,
+            start_date=start_of_supervision,
+            termination_date=date(2020, 5, 19),
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_period_supervision_type=None,
+            supervision_level=StateSupervisionLevel.MINIMUM,
+        )
+
+        assessment_date = date(2018, 4, 2)
+        assessment_score = 18
+        assessment = StateAssessment.new_with_defaults(
+            state_code=StateCode.US_PA.value,
+            assessment_type=StateAssessmentType.LSIR,
+            assessment_date=assessment_date,
+            assessment_score=assessment_score,
+        )
+
+        us_pa_supervision_compliance = UsPaSupervisionCaseCompliance(
+            self.person,
+            supervision_period=supervision_period,
+            case_type=StateSupervisionCaseType.GENERAL,
+            start_of_supervision=start_of_supervision,
+            assessments=[assessment],
+            supervision_contacts=[],
+            violation_responses=[],
+        )
+
+        reassessment_date = us_pa_supervision_compliance._next_recommended_reassessment(
+            assessment_date, assessment_score, date(2018, 4, 2)
+        )
+
+        self.assertEqual(reassessment_date, date(2019, 4, 2))
+
+    def test_next_recommended_reassessment_can_skip_reassessment_due_to_violations_before_most_recent_assessment(
+        self,
+    ) -> None:
+        start_of_supervision = date(2017, 3, 5)
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            state_code=StateCode.US_PA.value,
+            start_date=start_of_supervision,
+            termination_date=date(2020, 5, 19),
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_period_supervision_type=None,
+            supervision_level=StateSupervisionLevel.MINIMUM,
+        )
+
+        assessment_date = date(2018, 4, 2)
+        assessment_score = 18
+        assessment = StateAssessment.new_with_defaults(
+            state_code=StateCode.US_PA.value,
+            assessment_type=StateAssessmentType.LSIR,
+            assessment_date=assessment_date,
+            assessment_score=assessment_score,
+        )
+
+        us_pa_supervision_compliance = UsPaSupervisionCaseCompliance(
+            self.person,
+            supervision_period=supervision_period,
+            case_type=StateSupervisionCaseType.GENERAL,
+            start_of_supervision=start_of_supervision,
+            assessments=[assessment],
+            supervision_contacts=[],
+            violation_responses=[
+                StateSupervisionViolationResponse.new_with_defaults(
+                    supervision_violation_response_id=123,
+                    external_id="svr1",
+                    state_code=StateCode.US_PA.value,
+                    response_date=date(
+                        2017, 5, 20
+                    ),  # Happened before most recent assessment
+                    supervision_violation_response_decisions=[
+                        StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                            supervision_violation_response_decision_entry_id=13,
+                            state_code=StateCode.US_PA.value,
+                            decision=StateSupervisionViolationResponseDecision.NEW_CONDITIONS,
+                            decision_raw_text="URIN",
+                        )
+                    ],
+                )
+            ],
+        )
+
+        reassessment_date = us_pa_supervision_compliance._next_recommended_reassessment(
+            assessment_date, assessment_score, date(2018, 4, 2)
+        )
+
+        self.assertEqual(reassessment_date, None)
+
+    def test_next_recommended_reassessment_can_skip_reassessment_due_to_non_med_high_violations(
+        self,
+    ) -> None:
+        start_of_supervision = date(2017, 3, 5)
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            state_code=StateCode.US_PA.value,
+            start_date=start_of_supervision,
+            termination_date=date(2020, 5, 19),
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_period_supervision_type=None,
+            supervision_level=StateSupervisionLevel.MINIMUM,
+        )
+
+        assessment_date = date(2018, 4, 2)
+        assessment_score = 18
+        assessment = StateAssessment.new_with_defaults(
+            state_code=StateCode.US_PA.value,
+            assessment_type=StateAssessmentType.LSIR,
+            assessment_date=assessment_date,
+            assessment_score=assessment_score,
+        )
+
+        us_pa_supervision_compliance = UsPaSupervisionCaseCompliance(
+            self.person,
+            supervision_period=supervision_period,
+            case_type=StateSupervisionCaseType.GENERAL,
+            start_of_supervision=start_of_supervision,
+            assessments=[assessment],
+            supervision_contacts=[],
+            violation_responses=[
+                StateSupervisionViolationResponse.new_with_defaults(
+                    supervision_violation_response_id=123,
+                    external_id="svr1",
+                    state_code=StateCode.US_PA.value,
+                    response_date=date(
+                        2018, 5, 20
+                    ),  # Happened after most recent assessment
+                    supervision_violation_response_decisions=[
+                        StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                            supervision_violation_response_decision_entry_id=13,
+                            state_code=StateCode.US_PA.value,
+                            decision=StateSupervisionViolationResponseDecision.NEW_CONDITIONS,
+                            decision_raw_text="WTWR",  # Low Sanction
+                        )
+                    ],
+                )
+            ],
+        )
+
+        reassessment_date = us_pa_supervision_compliance._next_recommended_reassessment(
+            assessment_date, assessment_score, date(2018, 4, 2)
+        )
+
+        self.assertEqual(reassessment_date, None)
+
 
 class TestSupervisionDowngrades(unittest.TestCase):
-    """Tests the reassessment_requirements_are_met function."""
+    """Tests the _get_recommended_supervision_downgrade_level function."""
 
     def setUp(self) -> None:
         self.start_of_supervision = date(2018, 3, 5)
@@ -1708,6 +2000,7 @@ class TestSupervisionDowngrades(unittest.TestCase):
                 self._assessment_with_score(100)
             ],  # No downgrade regardless of score
             supervision_contacts=[],
+            violation_responses=[],
         )
         self.assertIsNone(
             us_id_supervision_compliance._get_recommended_supervision_downgrade_level(
@@ -1731,6 +2024,7 @@ class TestSupervisionDowngrades(unittest.TestCase):
             start_of_supervision=self.start_of_supervision,
             assessments=[self._assessment_with_score(score)],
             supervision_contacts=[],
+            violation_responses=[],
         )
         self.assertIsNone(
             compliance_no_downgrade._get_recommended_supervision_downgrade_level(
@@ -1745,6 +2039,7 @@ class TestSupervisionDowngrades(unittest.TestCase):
             start_of_supervision=self.start_of_supervision,
             assessments=[self._assessment_with_score(score - 1)],
             supervision_contacts=[],
+            violation_responses=[],
         )
         recommended_level = (
             compliance_downgrade._get_recommended_supervision_downgrade_level(

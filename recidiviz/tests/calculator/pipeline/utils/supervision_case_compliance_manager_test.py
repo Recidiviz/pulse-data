@@ -97,6 +97,7 @@ class TestCaseCompliance(unittest.TestCase):
             start_of_supervision=date(2018, 3, 5),
             assessments=[],
             supervision_contacts=[],
+            violation_responses=[],
         )
         compliance = us_nd_supervision_compliance.get_case_compliance_on_date(
             compliance_evaluation_date
@@ -135,6 +136,7 @@ class TestCaseCompliance(unittest.TestCase):
             start_of_supervision=date(2018, 3, 5),
             assessments=[],
             supervision_contacts=[],
+            violation_responses=[],
         )
         compliance = us_id_supervision_compliance.get_case_compliance_on_date(
             compliance_evaluation_date
@@ -170,6 +172,7 @@ class TestCaseCompliance(unittest.TestCase):
             start_of_supervision=date(2018, 3, 5),
             assessments=[],
             supervision_contacts=[],
+            violation_responses=[],
         )
         compliance = us_nd_supervision_compliance.get_case_compliance_on_date(
             compliance_evaluation_date
@@ -224,6 +227,7 @@ class TestCaseCompliance(unittest.TestCase):
             start_of_supervision=date(2018, 3, 5),
             assessments=assessments,
             supervision_contacts=[],
+            violation_responses=[],
         )
         compliance = us_nd_supervision_compliance.get_case_compliance_on_date(
             compliance_evaluation_date
@@ -280,6 +284,7 @@ class TestCaseCompliance(unittest.TestCase):
             start_of_supervision=date(2018, 2, 5),
             assessments=assessments,
             supervision_contacts=[],
+            violation_responses=[],
         )
         compliance = us_nd_supervision_compliance.get_case_compliance_on_date(
             compliance_evaluation_date
@@ -334,6 +339,7 @@ class TestCaseCompliance(unittest.TestCase):
             start_of_supervision=date(2018, 2, 5),
             assessments=assessments,
             supervision_contacts=[],
+            violation_responses=[],
         )
         compliance = us_nd_supervision_compliance.get_case_compliance_on_date(
             compliance_evaluation_date
@@ -403,6 +409,7 @@ class TestCaseCompliance(unittest.TestCase):
             start_of_supervision=date(2018, 3, 5),
             assessments=assessments,
             supervision_contacts=supervision_contacts,
+            violation_responses=[],
         )
         compliance = us_id_supervision_compliance.get_case_compliance_on_date(
             compliance_evaluation_date
@@ -475,6 +482,7 @@ class TestCaseCompliance(unittest.TestCase):
             start_of_supervision=date(2018, 3, 5),
             assessments=assessments,
             supervision_contacts=supervision_contacts,
+            violation_responses=[],
         )
         compliance = us_id_supervision_compliance.get_case_compliance_on_date(
             compliance_evaluation_date
@@ -521,6 +529,7 @@ class TestCaseCompliance(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=[],
+            violation_responses=[],
         )
         compliance = us_id_supervision_compliance.get_case_compliance_on_date(
             compliance_evaluation_date
@@ -582,6 +591,7 @@ class TestCaseCompliance(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=assessments,
             supervision_contacts=supervision_contacts,
+            violation_responses=[],
         )
         compliance = us_id_supervision_compliance.get_case_compliance_on_date(
             compliance_evaluation_date
@@ -626,6 +636,7 @@ class TestCaseCompliance(unittest.TestCase):
             start_of_supervision=date(2018, 3, 5),
             assessments=[],
             supervision_contacts=[],
+            violation_responses=[],
         )
         compliance = us_id_supervision_compliance.get_case_compliance_on_date(
             compliance_evaluation_date
@@ -690,6 +701,7 @@ class TestCaseCompliance(unittest.TestCase):
             start_of_supervision=date(2018, 3, 5),
             assessments=[],
             supervision_contacts=supervision_contacts,
+            violation_responses=[],
         )
         compliance = us_id_supervision_compliance.get_case_compliance_on_date(
             compliance_evaluation_date
@@ -752,6 +764,7 @@ class TestCaseCompliance(unittest.TestCase):
             start_of_supervision=date(2018, 3, 5),
             assessments=[],
             supervision_contacts=supervision_contacts,
+            violation_responses=[],
         )
         compliance = us_id_supervision_compliance.get_case_compliance_on_date(
             compliance_evaluation_date
@@ -814,6 +827,7 @@ class TestCaseCompliance(unittest.TestCase):
             start_of_supervision=date(2018, 3, 5),
             assessments=[],
             supervision_contacts=supervision_contacts,
+            violation_responses=[],
         )
         compliance = us_id_supervision_compliance.get_case_compliance_on_date(
             compliance_evaluation_date
@@ -911,6 +925,7 @@ class TestCaseCompliance(unittest.TestCase):
             start_of_supervision=date(2018, 3, 5),
             assessments=[],
             supervision_contacts=supervision_contacts_1,
+            violation_responses=[],
         )
         compliance_1 = us_id_supervision_compliance_1.get_case_compliance_on_date(
             compliance_evaluation_date_1
@@ -923,6 +938,7 @@ class TestCaseCompliance(unittest.TestCase):
             start_of_supervision=date(2019, 3, 5),
             assessments=[],
             supervision_contacts=supervision_contacts_2,
+            violation_responses=[],
         )
         compliance_2 = us_id_supervision_compliance_2.get_case_compliance_on_date(
             compliance_evaluation_date_2
@@ -1036,6 +1052,7 @@ class TestCaseCompliance(unittest.TestCase):
             start_of_supervision=date(2018, 3, 5),
             assessments=[],
             supervision_contacts=supervision_contacts_1,
+            violation_responses=[],
         )
         compliance_1 = us_id_supervision_compliance_1.get_case_compliance_on_date(
             compliance_evaluation_date_1
@@ -1048,6 +1065,7 @@ class TestCaseCompliance(unittest.TestCase):
             start_of_supervision=date(2019, 3, 5),
             assessments=[],
             supervision_contacts=supervision_contacts_2,
+            violation_responses=[],
         )
         compliance_2 = us_id_supervision_compliance_2.get_case_compliance_on_date(
             compliance_evaluation_date_2
@@ -1118,6 +1136,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             start_of_supervision=date(2018, 3, 5),
             assessments=[assessment],
             supervision_contacts=[],
+            violation_responses=[],
         )
 
         assessment_date = (
@@ -1148,6 +1167,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=[],
+            violation_responses=[],
         )
 
         assessment_date = (
@@ -1182,6 +1202,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=[],
+            violation_responses=[],
         )
 
         assessment_date = (
@@ -1224,6 +1245,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[assessment],
             supervision_contacts=[],
+            violation_responses=[],
         )
 
         assessment_date = (
@@ -1266,6 +1288,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[assessment],
             supervision_contacts=[],
+            violation_responses=[],
         )
 
         assessment_date = (
@@ -1307,6 +1330,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[assessment],
             supervision_contacts=[],
+            violation_responses=[],
         )
 
         assessment_date = (
@@ -1351,6 +1375,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[assessment],
             supervision_contacts=[],
+            violation_responses=[],
         )
 
         assessment_date = (
@@ -1395,6 +1420,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[assessment],
             supervision_contacts=[],
+            violation_responses=[],
         )
 
         assessment_date = (
@@ -1438,6 +1464,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[assessment],
             supervision_contacts=[],
+            violation_responses=[],
         )
 
         assessment_date = (
@@ -1476,6 +1503,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[assessment],
             supervision_contacts=[],
+            violation_responses=[],
         )
 
         assessment_date = (
@@ -1506,6 +1534,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=[],
+            violation_responses=[],
         )
 
         assessment_date = (
@@ -1540,6 +1569,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=[],
+            violation_responses=[],
         )
 
         assessment_date = (
@@ -1574,6 +1604,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=[],
+            violation_responses=[],
         )
 
         assessment_date = (
@@ -1616,6 +1647,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[assessment],
             supervision_contacts=[],
+            violation_responses=[],
         )
 
         assessment_date = (
@@ -1658,6 +1690,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[assessment],
             supervision_contacts=[],
+            violation_responses=[],
         )
 
         assessment_date = (
@@ -1700,6 +1733,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[assessment],
             supervision_contacts=[],
+            violation_responses=[],
         )
 
         assessment_date = (
@@ -1743,6 +1777,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[assessment],
             supervision_contacts=[],
+            violation_responses=[],
         )
 
         assessment_date = (
@@ -1786,6 +1821,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[assessment],
             supervision_contacts=[],
+            violation_responses=[],
         )
 
         assessment_date = (
@@ -1821,6 +1857,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=[],
+            violation_responses=[],
         )
 
         assessment_date = (
@@ -1856,6 +1893,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=[],
+            violation_responses=[],
         )
 
         assessment_date = (
@@ -1895,6 +1933,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[assessment],
             supervision_contacts=[],
+            violation_responses=[],
         )
 
         assessment_date = (
@@ -1934,6 +1973,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[assessment],
             supervision_contacts=[],
+            violation_responses=[],
         )
 
         assessment_date = (
@@ -1975,6 +2015,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[assessment],
             supervision_contacts=[],
+            violation_responses=[],
         )
 
         assessment_date = (
