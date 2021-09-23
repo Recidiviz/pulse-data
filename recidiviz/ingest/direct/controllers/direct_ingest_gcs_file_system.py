@@ -211,15 +211,6 @@ def to_normalized_unprocessed_file_path_from_normalized_path(
     )
 
 
-def to_normalized_processed_file_path_from_normalized_path(
-    original_normalized_file_path: str,
-) -> str:
-    return _to_normalized_file_path_from_normalized_path(
-        original_normalized_file_path=original_normalized_file_path,
-        build_function=_build_processed_file_name,
-    )
-
-
 GCSFileSystemType = TypeVar("GCSFileSystemType", bound=GCSFileSystem)
 
 

@@ -46,17 +46,35 @@ from recidiviz.ingest.direct.controllers.direct_ingest_types import CloudTaskArg
 from recidiviz.ingest.direct.errors import DirectIngestError, DirectIngestErrorType
 from recidiviz.utils import metadata
 
-INGEST_FILEPATH_REGEX = re.compile(
-    r"(unprocessed|processed)_"  # processed_state
-    r"(\d{4}-\d{2}-\d{2}T\d{2}[:_]\d{2}[:_]\d{2}[:_]\d{6})_"  # timestamp
-    r"((raw|ingest_view)_)"  # file_type
-    r"([A-Za-z][A-Za-z\d]*(_[A-Za-z][A-Za-z\d]*)*)"  # file_tag
-    r"(_(\d+([^-]*)))?"  # Optional filename_suffix
-    r"(-\(\d+\))?"  # Optional file conflict suffix (e.g. '-(1)')
-    r"\.([A-Za-z]+)"
-)  # Extension
+INGEST_FILE_PREFIX_REGEX_PATTERN = (
+    r"(?P<processed_state>unprocessed|processed)_"  # processed_state
+    r"(?P<timestamp>\d{4}-\d{2}-\d{2}T\d{2}[:_]\d{2}[:_]\d{2}[:_]\d{6})_"  # timestamp
+    r"((?P<file_type>raw|ingest_view)_)"  # file_type
+)
 
-_FILENAME_SUFFIX_REGEX = re.compile(r".*(_file_split(_size(\d+))?)")
+INGEST_FILE_SUFFIX_REGEX_PATTERN = (
+    r"(?P<filename_suffix_conflict>-\(\d+\))?"  # Optional file conflict suffix (e.g. '-(1)')
+    r"\.(?P<extension>[A-Za-z]+)$"  # Extension
+)
+
+INGEST_FILE_TYPE_REGEX = re.compile(INGEST_FILE_PREFIX_REGEX_PATTERN)
+
+RAW_DATA_FILE_NAME_REGEX = re.compile(
+    INGEST_FILE_PREFIX_REGEX_PATTERN
+    + r"(?P<file_tag>[A-Za-z][A-Za-z\d]*(_[A-Za-z\d]*)*)"  # file_tag
+    + INGEST_FILE_SUFFIX_REGEX_PATTERN
+)
+
+INGEST_VIEW_FILE_NAME_REGEX = re.compile(
+    INGEST_FILE_PREFIX_REGEX_PATTERN
+    + r"(?P<file_tag>[A-Za-z][A-Za-z\d]*(_[A-Za-z][A-Za-z\d]*)*)"  # file_tag
+    r"(_(?P<filename_suffix>\d+([^-]*)))?"  # Optional filename_suffix
+    + INGEST_FILE_SUFFIX_REGEX_PATTERN
+)
+
+_FILENAME_SUFFIX_REGEX = re.compile(
+    r".*(_file_split(_size(?P<file_split_size_str>\d+))?)$"
+)
 
 
 class GcsfsDirectIngestFileType(Enum):
@@ -102,7 +120,7 @@ class GcsfsFilenameParts:
     utc_upload_datetime: datetime.datetime = attr.ib()
     date_str: str = attr.ib()
     file_type: GcsfsDirectIngestFileType = attr.ib()
-    # Must only contain letters or the '_' char
+    # May contain letters, numbers, and the '_' char. If it contains numbers trailing an _, it must be a RAW_DATA file type.
     file_tag: str = attr.ib()
     # Must start a number and be separated from the file_tag by a '_' char.
     filename_suffix: Optional[str] = attr.ib()
@@ -283,8 +301,10 @@ def gcsfs_sftp_download_bucket_path_for_region(
     return GcsfsBucketPath(bucket_name)
 
 
-def filename_parts_from_path(file_path: GcsfsFilePath) -> GcsfsFilenameParts:
-    match = re.match(INGEST_FILEPATH_REGEX, file_path.file_name)
+def filename_parts_from_raw_data_path(file_path: GcsfsFilePath) -> GcsfsFilenameParts:
+    """Parses filename for RAW_DATA file types"""
+    match = re.match(RAW_DATA_FILE_NAME_REGEX, file_path.file_name)
+
     if not match:
         raise DirectIngestError(
             msg=f"Could not parse upload_ts, file_tag, extension "
@@ -292,31 +312,88 @@ def filename_parts_from_path(file_path: GcsfsFilePath) -> GcsfsFilenameParts:
             error_type=DirectIngestErrorType.INPUT_ERROR,
         )
 
-    full_upload_timestamp_str = match.group(2)
+    full_upload_timestamp_str = match.group("timestamp")
     utc_upload_datetime = datetime.datetime.fromisoformat(full_upload_timestamp_str)
+    file_type = GcsfsDirectIngestFileType.from_string(match.group("file_type"))
 
-    file_type = GcsfsDirectIngestFileType.from_string(match.group(4))
+    return GcsfsFilenameParts(
+        processed_state=match.group("processed_state"),
+        utc_upload_datetime=utc_upload_datetime,
+        date_str=utc_upload_datetime.date().isoformat(),
+        file_type=file_type,
+        file_tag=match.group("file_tag"),
+        extension=match.group("extension"),
+        is_file_split=False,
+        file_split_size=None,
+        filename_suffix=None,
+    )
 
-    filename_suffix = match.group(8)
+
+def filename_parts_from_ingest_view_path(
+    file_path: GcsfsFilePath,
+) -> GcsfsFilenameParts:
+    """Parses filename for INGEST_VIEW file types"""
+    match = re.match(INGEST_VIEW_FILE_NAME_REGEX, file_path.file_name)
+
+    if not match:
+        raise DirectIngestError(
+            msg=f"Could not parse upload_ts, file_tag, extension "
+            f"from path [{file_path.abs_path()}]",
+            error_type=DirectIngestErrorType.INPUT_ERROR,
+        )
+
+    full_upload_timestamp_str = match.group("timestamp")
+    utc_upload_datetime = datetime.datetime.fromisoformat(full_upload_timestamp_str)
+    file_type = GcsfsDirectIngestFileType.from_string(match.group("file_type"))
+
+    filename_suffix = match.group("filename_suffix")
     is_file_split = False
     file_split_size = None
+
     if filename_suffix:
         filename_suffix_file_split_match = re.match(
             _FILENAME_SUFFIX_REGEX, filename_suffix
         )
         if filename_suffix_file_split_match is not None:
             is_file_split = True
-            file_split_size_str = filename_suffix_file_split_match.group(3)
+            file_split_size_str = filename_suffix_file_split_match.group(
+                "file_split_size_str"
+            )
             file_split_size = int(file_split_size_str) if file_split_size_str else None
 
     return GcsfsFilenameParts(
-        processed_state=match.group(1),
+        processed_state=match.group("processed_state"),
         utc_upload_datetime=utc_upload_datetime,
         date_str=utc_upload_datetime.date().isoformat(),
         file_type=file_type,
-        file_tag=match.group(5),
-        filename_suffix=filename_suffix,
-        extension=match.group(11),
+        file_tag=match.group("file_tag"),
+        extension=match.group("extension"),
         is_file_split=is_file_split,
         file_split_size=file_split_size,
+        filename_suffix=filename_suffix,
+    )
+
+
+def filename_parts_from_path(file_path: GcsfsFilePath) -> GcsfsFilenameParts:
+    match = re.match(INGEST_FILE_TYPE_REGEX, file_path.file_name)
+
+    if not match:
+        raise DirectIngestError(
+            msg=f"Could not parse upload_ts, file_tag, extension "
+            f"from path [{file_path.abs_path()}]",
+            error_type=DirectIngestErrorType.INPUT_ERROR,
+        )
+
+    file_type = GcsfsDirectIngestFileType.from_string(match.group("file_type"))
+
+    if file_type is GcsfsDirectIngestFileType.RAW_DATA:
+        return filename_parts_from_raw_data_path(file_path)
+
+    if file_type is GcsfsDirectIngestFileType.INGEST_VIEW:
+        return filename_parts_from_ingest_view_path(file_path)
+
+    raise DirectIngestError(
+        msg=f"Unknown file_type {file_type}, must be one of: {GcsfsDirectIngestFileType.RAW_DATA} "
+        f"or {GcsfsDirectIngestFileType.INGEST_VIEW}",
+        error_type=DirectIngestErrorType.INPUT_ERROR,
     )
