@@ -24,6 +24,25 @@
       </td>
     </tr>
     {{ components.y_padding(54) }}
+    {% if headline %}
+    <tr>
+      <td class="em_dm_txt_white" valign="top" align="left" 
+        style="
+          font-family: 'Libre Baskerville', serif;
+          font-size: 32px;
+          line-height: 1.3;
+          font-weight: 400;
+          letter-spacing: -0.03em;
+          color: #003331;
+          padding-bottom: 16px;
+          border-bottom: 1px solid rgba(53, 83, 98, 0.3);
+        "
+      >
+        {{headline}}
+      </td>
+    </tr>
+    {{components.y_padding(40)}}
+    {% endif %}
     <tr>
       <td class="em_headertext em_dm_txt_white" valign="top" align="left"
         style="font-family: 'Libre Franklin', Arial, sans-serif; font-size: 20px; line-height: 28px; font-weight: 400; color: #00413E;">

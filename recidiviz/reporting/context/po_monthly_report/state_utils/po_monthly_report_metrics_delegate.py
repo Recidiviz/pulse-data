@@ -101,14 +101,36 @@ class PoMonthlyReportMetricsDelegate(abc.ABC):
         )
 
     @property
+    def zero_streak_metrics(self) -> List[str]:
+        return [
+            f"{base_metric}_zero_streak" for base_metric in self.client_outcome_metrics
+        ]
+
+    @property
     def average_metrics_for_display(self) -> List[str]:
         """Denotes both state and district averages metrics to display."""
         return list(
             itertools.chain(
                 *[
                     [f"{base_metric}_district_average", f"{base_metric}_state_average"]
-                    for base_metric in self.client_outcome_metrics
+                    for base_metric in self.base_metrics_for_display
                 ]
+            )
+        )
+
+    @property
+    def max_metrics_for_display(self) -> List[str]:
+        """Denotes both state and district maxima to display."""
+        return list(
+            itertools.chain(
+                *[
+                    [f"{base_metric}_district_max", f"{base_metric}_state_max"]
+                    for base_metric in self.decarceral_actions_metrics
+                ],
+                *[
+                    [f"{base_metric}_district_max", f"{base_metric}_state_max"]
+                    for base_metric in self.zero_streak_metrics
+                ],
             )
         )
 
