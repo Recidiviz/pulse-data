@@ -32,6 +32,11 @@ resource "google_composer_environment" "default" {
     node_config {
       zone         = var.zone
       machine_type = "n1-standard-4"
+
+      ip_allocation_policy {
+        # Ensure that we use a VPC-native cluster
+        use_ip_aliases = true
+      }
     }
 
     software_config {
@@ -54,7 +59,6 @@ resource "google_composer_environment" "default" {
       # Ensure that access to the public endpoint of the GKE cluster is denied
       enable_private_endpoint = true
     }
-
   }
 
 }
