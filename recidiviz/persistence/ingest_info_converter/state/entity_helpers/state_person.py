@@ -19,10 +19,15 @@
 from recidiviz.common.constants.defaulting_and_normalizing_enum_parser import (
     DefaultingAndNormalizingEnumParser,
 )
-from recidiviz.common.constants.person_characteristics import Gender
+from recidiviz.common.constants.enum_overrides import EnumOverrides
+from recidiviz.common.constants.person_characteristics import Gender, ResidencyStatus
+from recidiviz.common.constants.strict_enum_parser import StrictEnumParser
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import StatePerson
 from recidiviz.persistence.entity.state import entities
+from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
+    parse_residency_status,
+)
 from recidiviz.persistence.ingest_info_converter.utils.names import parse_name
 
 
@@ -51,5 +56,11 @@ def copy_fields_to_builder(
     new.birthdate = getattr(proto, "birthdate")
     new.birthdate_inferred_from_age = "False" if new.birthdate else None
     new.current_address = getattr(proto, "current_address")
-    new.residency_status = getattr(proto, "current_address")
+    new.residency_status = StrictEnumParser(
+        raw_text=getattr(proto, "current_address"),
+        enum_cls=ResidencyStatus,
+        enum_overrides=EnumOverrides.Builder()
+        .add_mapper_fn(parse_residency_status, ResidencyStatus)
+        .build(),
+    )
     new.state_code = metadata.region

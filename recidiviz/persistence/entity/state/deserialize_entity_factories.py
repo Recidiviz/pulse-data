@@ -40,9 +40,6 @@ from recidiviz.persistence.entity.entity_deserialize import (
     entity_deserialize,
 )
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
-    parse_residency_status,
-)
 
 
 class StatePersonExternalIdFactory(EntityFactory):
@@ -64,7 +61,6 @@ class StatePersonFactory(EntityFactory):
         return entity_deserialize(
             cls=entities.StatePerson,
             converter_overrides={
-                "residency_status": EntityFieldConverter(str, parse_residency_status),
                 "full_name": EntityFieldConverter(str, normalize_flat_json),
             },
             defaults={},
