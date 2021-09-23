@@ -39,6 +39,18 @@ ASSESSMENTS = "assessments"
 FACE_TO_FACE = "facetoface"
 
 
+class OfficerHighlightType(Enum):
+    MOST_DECARCERAL = "MOST_DECARCERAL"
+    LONGEST_ADVERSE_ZERO_STREAK = "LONGEST_ADVERSE_ZERO_STREAK"
+    ABOVE_AVERAGE_DECARCERAL = "ABOVE_AVERAGE_DECARCERAL"
+
+
+class OfficerHighlightComparison(Enum):
+    STATE = "STATE"
+    DISTRICT = "DISTRICT"
+    SELF = "SELF"
+
+
 class ReportType(Enum):
     POMonthlyReport = "po_monthly_report"
     TopOpportunities = "top_opportunities"

@@ -17,7 +17,12 @@
 """Types for PO Monthly Report context."""
 
 
-from typing import List, Optional, Tuple, TypedDict
+from typing import List, Literal, Optional, Tuple, TypedDict, Union
+
+from recidiviz.reporting.context.po_monthly_report.constants import (
+    OfficerHighlightComparison,
+    OfficerHighlightType,
+)
 
 DecarceralMetricContext = TypedDict(
     "DecarceralMetricContext",
@@ -42,3 +47,25 @@ class _AdverseOutcomeRequired(TypedDict):
 class AdverseOutcomeContext(_AdverseOutcomeRequired, total=False):
     zero_streak: int
     amount_above_average: float
+
+
+class OfficerHighlightMetricsComparison(TypedDict):
+    """A highlight that is explicitly compared to a specific benchmark."""
+
+    type: Literal[
+        OfficerHighlightType.MOST_DECARCERAL,
+        OfficerHighlightType.LONGEST_ADVERSE_ZERO_STREAK,
+    ]
+    metrics: List[str]
+    compared_to: OfficerHighlightComparison
+
+
+class OfficerHighlightMetrics(TypedDict):
+    """A highlight involving one or more metrics. May be a comparison,
+    but not one that needs to be specified (i.e. it's implied by the type)."""
+
+    type: Literal[OfficerHighlightType.ABOVE_AVERAGE_DECARCERAL]
+    metrics: List[str]
+
+
+OfficerHighlight = Union[OfficerHighlightMetrics, OfficerHighlightMetricsComparison]
