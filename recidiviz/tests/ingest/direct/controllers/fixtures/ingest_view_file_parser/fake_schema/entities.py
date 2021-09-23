@@ -44,6 +44,8 @@ class FakeRace(Enum):
 
 @attr.s(eq=False)
 class FakePerson(Entity):
+    """Fake person entity for ingest parser tests."""
+
     fake_state_code: str = attr.ib(validator=attr_validators.is_str)
 
     name: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
@@ -54,6 +56,9 @@ class FakePerson(Entity):
         default=None, validator=attr_validators.is_opt(FakeGender)
     )
     gender_raw_text: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+    current_address: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_str
     )
 
