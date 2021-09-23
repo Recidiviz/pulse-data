@@ -415,6 +415,6 @@ def normalize_flat_json(json_str: str) -> str:
                     f"Unexpected value type [{type(v)}] for field [{k}]. Expected value type str."
                 )
             normalized_value = normalize(v)
-        normalized_values_dict[k] = normalized_value
+        normalized_values_dict[k] = normalized_value or ""
 
     return json.dumps(normalized_values_dict, sort_keys=True)

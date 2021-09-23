@@ -1180,6 +1180,52 @@ class IngestViewFileParserTest(unittest.TestCase):
         # Assert
         self.assertEqual(expected_output, parsed_output)
 
+    def test_person_name_simple(self) -> None:
+        # Arrange
+        expected_output = [
+            FakePerson(
+                fake_state_code="US_XX",
+                name='{"GIVEN_NAMES": "ELAINE", "MIDDLE_NAMES": "", "NAME_SUFFIX": "", "SURNAME": "BENES"}',
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                name='{"GIVEN_NAMES": "JERRY", "MIDDLE_NAMES": "", "NAME_SUFFIX": "", "SURNAME": "SEINFELD"}',
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                name='{"GIVEN_NAMES": "", "MIDDLE_NAMES": "", "NAME_SUFFIX": "", "SURNAME": "KRAMER"}',
+            ),
+        ]
+
+        # Act
+        parsed_output = self._run_parse_for_tag("person_name_simple")
+
+        # Assert
+        self.assertEqual(expected_output, parsed_output)
+
+    def test_person_name_complex(self) -> None:
+        # Arrange
+        expected_output = [
+            FakePerson(
+                fake_state_code="US_XX",
+                name='{"GIVEN_NAMES": "ELAINE SALLY", "MIDDLE_NAMES": "SUE", "NAME_SUFFIX": "SR", "SURNAME": "BENES"}',
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                name='{"GIVEN_NAMES": "JERRY JIMMY", "MIDDLE_NAMES": "JOHN", "NAME_SUFFIX": "JR", "SURNAME": "SEINFELD"}',
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                name='{"GIVEN_NAMES": "NONE NONE", "MIDDLE_NAMES": "", "NAME_SUFFIX": "", "SURNAME": "KRAMER"}',
+            ),
+        ]
+
+        # Act
+        parsed_output = self._run_parse_for_tag("person_name_complex")
+
+        # Assert
+        self.assertEqual(expected_output, parsed_output)
+
     def test_nested_foreach(self) -> None:
         # TODO(#8958): Fill this out - should fail
         pass

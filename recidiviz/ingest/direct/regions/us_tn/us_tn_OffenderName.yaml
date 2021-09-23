@@ -21,10 +21,10 @@ output:
           id_type: $literal("US_TN_DOC")
     birthdate: BirthDate
     full_name:
-      $json_dict:
-        given_names: FirstName
-        middle_names: MiddleName
-        surname: LastName
+      $person_name:
+        $given_names: FirstName
+        $middle_names: MiddleName
+        $surname: LastName
     gender:
       $raw_text: Sex
       $mappings:
