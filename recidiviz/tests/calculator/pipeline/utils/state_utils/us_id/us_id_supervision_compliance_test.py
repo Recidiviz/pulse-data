@@ -145,6 +145,7 @@ class TestAssessmentsInComplianceMonth(unittest.TestCase):
             start_of_supervision=evaluation_date,
             assessments=assessments,
             supervision_contacts=[],
+            violation_responses=[],
         )
 
         self.assertEqual(
@@ -229,6 +230,7 @@ class TestFaceToFaceContactsInComplianceMonth(unittest.TestCase):
             start_of_supervision=evaluation_date,
             assessments=[],
             supervision_contacts=contacts,
+            violation_responses=[],
         )
         self.assertEqual(
             len(expected_contacts),
@@ -282,6 +284,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=supervision_contacts,
+            violation_responses=[],
         )
 
         face_to_face_frequency_sufficient = (
@@ -331,6 +334,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=supervision_contacts,
+            violation_responses=[],
         )
 
         next_face_to_face = (
@@ -380,6 +384,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=supervision_contacts,
+            violation_responses=[],
         )
 
         next_face_to_face = (
@@ -429,6 +434,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=supervision_contacts,
+            violation_responses=[],
         )
 
         next_face_to_face = (
@@ -477,6 +483,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=supervision_contacts,
+            violation_responses=[],
         )
 
         face_to_face_frequency_sufficient = (
@@ -525,6 +532,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=supervision_contacts,
+            violation_responses=[],
         )
 
         next_face_to_face = (
@@ -575,6 +583,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=supervision_contacts,
+            violation_responses=[],
         )
 
         face_to_face_frequency_sufficient = (
@@ -627,6 +636,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=supervision_contacts,
+            violation_responses=[],
         )
 
         face_to_face_frequency_sufficient = (
@@ -687,6 +697,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=supervision_contacts,
+            violation_responses=[],
         )
 
         face_to_face_frequency_sufficient = (
@@ -749,6 +760,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=supervision_contacts,
+            violation_responses=[],
         )
 
         face_to_face_frequency_sufficient = (
@@ -801,6 +813,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=supervision_contacts,
+            violation_responses=[],
         )
 
         next_face_to_face = (
@@ -849,6 +862,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=supervision_contacts,
+            violation_responses=[],
         )
 
         face_to_face_frequency_sufficient = (
@@ -897,6 +911,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=supervision_contacts,
+            violation_responses=[],
         )
 
         face_to_face_frequency_sufficient = (
@@ -955,6 +970,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=supervision_contacts,
+            violation_responses=[],
         )
 
         next_face_to_face = (
@@ -1003,6 +1019,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=supervision_contacts,
+            violation_responses=[],
         )
 
         next_face_to_face = (
@@ -1051,6 +1068,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=supervision_contacts,
+            violation_responses=[],
         )
 
         face_to_face_frequency_sufficient = (
@@ -1101,6 +1119,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=supervision_contacts,
+            violation_responses=[],
         )
 
         face_to_face_frequency_sufficient = (
@@ -1159,6 +1178,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=supervision_contacts,
+            violation_responses=[],
         )
 
         next_face_to_face = (
@@ -1209,6 +1229,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=supervision_contacts,
+            violation_responses=[],
         )
 
         next_face_to_face = (
@@ -1248,6 +1269,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=supervision_contacts,
+            violation_responses=[],
         )
 
         face_to_face_frequency_sufficient = (
@@ -1287,6 +1309,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=supervision_contacts,
+            violation_responses=[],
         )
 
         face_to_face_frequency_sufficient = (
@@ -1335,6 +1358,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=supervision_contacts,
+            violation_responses=[],
         )
 
         next_face_to_face = (
@@ -1383,6 +1407,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=supervision_contacts,
+            violation_responses=[],
         )
 
         next_face_to_face_date = (
@@ -1431,6 +1456,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=supervision_contacts,
+            violation_responses=[],
         )
 
         face_to_face_frequency_sufficient = (
@@ -1479,6 +1505,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=supervision_contacts,
+            violation_responses=[],
         )
 
         next_face_to_face = (
@@ -1539,6 +1566,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=supervision_contacts,
+            violation_responses=[],
         )
 
         face_to_face_frequency_sufficient = (
@@ -1600,6 +1628,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=supervision_contacts,
+            violation_responses=[],
         )
 
         next_face_to_face = (
@@ -1632,6 +1661,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             start_of_supervision=start_date,
             assessments=[],
             supervision_contacts=[],
+            violation_responses=[],
         )
         self.assertTrue(us_id_supervision_compliance._is_new_level_system("LOW"))
         self.assertFalse(us_id_supervision_compliance._is_new_level_system("Low"))
@@ -1666,6 +1696,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             start_of_supervision=start_date,
             assessments=[],
             supervision_contacts=[],
+            violation_responses=[],
         )
 
         applicable = us_id_supervision_compliance._guidelines_applicable_for_case(
@@ -1696,6 +1727,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             start_of_supervision=start_date,
             assessments=[],
             supervision_contacts=[],
+            violation_responses=[],
         )
 
         applicable = us_id_supervision_compliance._guidelines_applicable_for_case(
@@ -1729,6 +1761,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             start_of_supervision=start_date,
             assessments=[],
             supervision_contacts=[],
+            violation_responses=[],
         )
 
         applicable = us_id_supervision_compliance._guidelines_applicable_for_case(
@@ -1762,6 +1795,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             start_of_supervision=start_date,
             assessments=[],
             supervision_contacts=[],
+            violation_responses=[],
         )
 
         self.assertFalse(
@@ -1793,6 +1827,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             start_of_supervision=start_date,
             assessments=[],
             supervision_contacts=[],
+            violation_responses=[],
         )
 
         applicable = us_id_supervision_compliance._guidelines_applicable_for_case(
@@ -1826,6 +1861,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             start_of_supervision=start_date,
             assessments=[],
             supervision_contacts=[],
+            violation_responses=[],
         )
 
         applicable = us_id_supervision_compliance._guidelines_applicable_for_case(
@@ -1861,6 +1897,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             start_of_supervision=start_date,
             assessments=[],
             supervision_contacts=[],
+            violation_responses=[],
         )
 
         self.assertFalse(
@@ -1890,6 +1927,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=[],
+            violation_responses=[],
         )
 
         # Before the change guidelines should apply to someone with MAXIMUM supervision level
@@ -1942,6 +1980,7 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[assessment],
             supervision_contacts=[],
+            violation_responses=[],
         )
 
         reassessment_date = us_id_supervision_compliance._next_recommended_reassessment(
@@ -1980,6 +2019,7 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[assessment],
             supervision_contacts=[],
+            violation_responses=[],
         )
 
         reassessment_date = us_id_supervision_compliance._next_recommended_reassessment(
@@ -2017,6 +2057,7 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[assessment],
             supervision_contacts=[],
+            violation_responses=[],
         )
 
         reassessment_date = us_id_supervision_compliance._next_recommended_reassessment(
@@ -2066,6 +2107,7 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[assessment_boundary],
             supervision_contacts=[],
+            violation_responses=[],
         )
 
         boundary_deadline = (
@@ -2091,6 +2133,7 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
             start_of_supervision=start_of_supervision,
             assessments=[assessment_under_boundary],
             supervision_contacts=[],
+            violation_responses=[],
         )
 
         reassessment_deadline = (
@@ -2164,6 +2207,7 @@ class TestSupervisionDowngrades(unittest.TestCase):
                 self._assessment_with_score(100)
             ],  # No downgrade regardless of score
             supervision_contacts=[],
+            violation_responses=[],
         )
         self.assertIsNone(
             us_id_supervision_compliance._get_recommended_supervision_downgrade_level(
@@ -2188,6 +2232,7 @@ class TestSupervisionDowngrades(unittest.TestCase):
             start_of_supervision=self.start_of_supervision,
             assessments=[self._assessment_with_score(score)],
             supervision_contacts=[],
+            violation_responses=[],
         )
         self.assertIsNone(
             compliance_no_downgrade._get_recommended_supervision_downgrade_level(
@@ -2202,6 +2247,7 @@ class TestSupervisionDowngrades(unittest.TestCase):
             start_of_supervision=self.start_of_supervision,
             assessments=[self._assessment_with_score(score - 1)],
             supervision_contacts=[],
+            violation_responses=[],
         )
         recommended_level = (
             compliance_downgrade._get_recommended_supervision_downgrade_level(
@@ -2238,6 +2284,7 @@ class TestSupervisionDowngrades(unittest.TestCase):
             start_of_supervision=self.start_of_supervision,
             assessments=[self._assessment_with_score(score)],
             supervision_contacts=[],
+            violation_responses=[],
         )
         self.assertIsNone(
             compliance_no_downgrade._get_recommended_supervision_downgrade_level(
@@ -2252,6 +2299,7 @@ class TestSupervisionDowngrades(unittest.TestCase):
             start_of_supervision=self.start_of_supervision,
             assessments=[self._assessment_with_score(score - 1)],
             supervision_contacts=[],
+            violation_responses=[],
         )
         recommended_level = (
             compliance_downgrade._get_recommended_supervision_downgrade_level(

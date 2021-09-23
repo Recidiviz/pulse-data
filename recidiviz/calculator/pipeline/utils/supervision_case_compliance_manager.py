@@ -49,6 +49,7 @@ from recidiviz.persistence.entity.state.entities import (
     StatePerson,
     StateSupervisionContact,
     StateSupervisionPeriod,
+    StateSupervisionViolationResponse,
 )
 
 
@@ -63,6 +64,7 @@ class StateSupervisionCaseComplianceManager:
         start_of_supervision: date,
         assessments: List[StateAssessment],
         supervision_contacts: List[StateSupervisionContact],
+        violation_responses: List[StateSupervisionViolationResponse],
     ):
         self.person = person
         self.supervision_period = supervision_period
@@ -70,6 +72,7 @@ class StateSupervisionCaseComplianceManager:
         self.start_of_supervision = start_of_supervision
         self.assessments = assessments
         self.supervision_contacts = supervision_contacts
+        self.violation_responses = violation_responses
 
     def get_case_compliance_on_date(
         self, compliance_evaluation_date: date

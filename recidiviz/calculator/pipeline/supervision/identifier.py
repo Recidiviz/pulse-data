@@ -368,6 +368,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                 start_of_supervision,
                 assessments,
                 supervision_contacts,
+                violation_responses_for_history,
             )
         )
 
