@@ -532,6 +532,77 @@ class ConcatenatedStringsManifest(ManifestNode[str]):
 
 
 @attr.s(kw_only=True)
+class PhysicalAddressManifest(ManifestNode[str]):
+    """Manifest for building a physical address string from parts.
+    Example result: "123 Main St, Apt 100, Everytown, CA 12345"
+    """
+
+    PHYSICAL_ADDRESS_KEY = "$physical_address"
+
+    # Function argument key for the first line of the address. Required.
+    ADDRESS_1_KEY = "$address_1"
+
+    # Function argument key for the second line of the address. Optional.
+    ADDRESS_2_KEY = "$address_2"
+
+    # Function argument key for the city name. Required.
+    CITY_KEY = "$city"
+
+    # Function argument key for the US state code. Required.
+    STATE_KEY = "$state"
+
+    # Function argument key for the zip code. Required.
+    ZIP_KEY = "$zip"
+
+    address_1_manifest: ManifestNode[str] = attr.ib()
+    address_2_manifest: ManifestNode[str] = attr.ib()
+    city_manifest: ManifestNode[str] = attr.ib()
+    state_manifest: ManifestNode[str] = attr.ib()
+    zip_manifest: ManifestNode[str] = attr.ib()
+
+    def build_from_row(self, row: Dict[str, str]) -> Optional[str]:
+        state_and_zip_parts = [
+            self.state_manifest.build_from_row(row),
+            self.zip_manifest.build_from_row(row),
+        ]
+        address_parts: List[Optional[str]] = [
+            self.address_1_manifest.build_from_row(row),
+            self.address_2_manifest.build_from_row(row),
+            self.city_manifest.build_from_row(row),
+            " ".join([s for s in state_and_zip_parts if s]),
+        ]
+
+        return ", ".join([s for s in address_parts if s])
+
+    @classmethod
+    def from_raw_manifest(
+        cls, *, raw_function_manifest: YAMLDict
+    ) -> "PhysicalAddressManifest":
+        raw_address_2_manifest = pop_raw_flat_field_manifest_optional(
+            cls.ADDRESS_2_KEY, raw_function_manifest
+        )
+        return PhysicalAddressManifest(
+            address_1_manifest=build_manifest_from_raw(
+                pop_raw_flat_field_manifest(cls.ADDRESS_1_KEY, raw_function_manifest)
+            ),
+            address_2_manifest=build_manifest_from_raw(
+                raw_address_2_manifest,
+            )
+            if raw_address_2_manifest
+            else StringLiteralFieldManifest(literal_value=""),
+            city_manifest=build_manifest_from_raw(
+                pop_raw_flat_field_manifest(cls.CITY_KEY, raw_function_manifest)
+            ),
+            state_manifest=build_manifest_from_raw(
+                pop_raw_flat_field_manifest(cls.STATE_KEY, raw_function_manifest)
+            ),
+            zip_manifest=build_manifest_from_raw(
+                pop_raw_flat_field_manifest(cls.ZIP_KEY, raw_function_manifest)
+            ),
+        )
+
+
+@attr.s(kw_only=True)
 class PersonNameManifest(ManifestNode[str]):
     """Manifest node for building a JSON-serialized person name."""
 
@@ -622,6 +693,10 @@ def _get_complex_flat_field_manifest(
         )
     elif function_name == PersonNameManifest.PERSON_NAME_KEY:
         manifest = PersonNameManifest.from_raw_manifest(
+            raw_function_manifest=function_arguments
+        )
+    elif function_name == PhysicalAddressManifest.PHYSICAL_ADDRESS_KEY:
+        manifest = PhysicalAddressManifest.from_raw_manifest(
             raw_function_manifest=function_arguments
         )
     else:

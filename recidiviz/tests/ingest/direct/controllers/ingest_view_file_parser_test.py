@@ -1226,6 +1226,42 @@ class IngestViewFileParserTest(unittest.TestCase):
         # Assert
         self.assertEqual(expected_output, parsed_output)
 
+    def test_physical_address(self) -> None:
+        # Arrange
+        expected_output = [
+            FakePerson(
+                fake_state_code="US_XX",
+                name="ANNA",
+                current_address="123 FOURTH ST, APT 100, SAN FRANCISCO, CA 10000",
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                name="BOB",
+                current_address="234 FIFTH AVE, NEW YORK, NY 20000",
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                name="CLARA",
+                current_address="SEATTLE, WA 30000",
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                name="DEV",
+                current_address="345 SIXTH WAY, PORTLAND",
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                name="ESTHER",
+                current_address="99999",
+            ),
+        ]
+
+        # Act
+        parsed_output = self._run_parse_for_tag("physical_address")
+
+        # Assert
+        self.assertEqual(expected_output, parsed_output)
+
     def test_nested_foreach(self) -> None:
         # TODO(#8958): Fill this out - should fail
         pass
