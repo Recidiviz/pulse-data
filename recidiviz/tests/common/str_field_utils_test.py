@@ -237,6 +237,7 @@ class TestStrFieldUtils(TestCase):
         self.assertEqual(
             '{"foo": "A &&&"}', normalize_flat_json('{"foo": "a    &&& "}')
         )
+        self.assertEqual('{"foo": ""}', normalize_flat_json('{"foo": null}'))
 
     def test_parseJSON_NotFlatStringJSON(self) -> None:
         with self.assertRaises(ValueError):
