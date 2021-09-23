@@ -96,7 +96,7 @@ class TestDataDiscoveryRoutes(TestCase):
     def test_cache_ingest_file_as_parquet(self) -> None:
         path = GcsfsFilePath(
             bucket_name="test-bucket",
-            blob_name="storage_bucket/raw/2021/04/20/processed_2021-05-03T00:00:00:000000_raw_test_file-(1).csv",
+            blob_name="storage_bucket/raw/2021/04/20/processed_2021-05-03T00:00:00:000000_raw_test_file.csv",
         )
         input_df = pandas.DataFrame(data=[[1, 2], [2, 3]], columns=["x", "y"])
 
@@ -122,10 +122,10 @@ class TestDataDiscoveryRoutes(TestCase):
     def test_cache_ingest_file_as_parquet_malformed(self) -> None:
         path = GcsfsFilePath(
             bucket_name="test-bucket",
-            blob_name="storage_bucket/raw/2021/04/20/processed_2021-05-03T00:00:00:000000_raw_test_file-(1).csv",
+            blob_name="storage_bucket/raw/2021/04/20/processed_2021-05-03T00:00:00:000000_raw_test_file.csv",
         )
 
-        with open(fixture_path, "r") as f:
+        with open(fixture_path, "r", encoding="UTF-8") as f:
             self.cache_ingest_file(path, f.read(), separator="|")
 
         cache = SingleIngestFileParquetCache(self.fakeredis, path)

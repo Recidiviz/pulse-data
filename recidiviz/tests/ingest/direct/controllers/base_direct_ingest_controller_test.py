@@ -1731,7 +1731,7 @@ class TestDirectIngestController(unittest.TestCase):
             ("tagA.csv", True),
             ("tagB.csv", True),
             ("tagC.csv", True),
-            ("subdir/tagC_2.csv", False),
+            ("subdir/tagC2.csv", False),
         ]
 
         for path_name, has_fixture in path_names:
@@ -1784,7 +1784,7 @@ class TestDirectIngestController(unittest.TestCase):
         ingest_tags = {
             filename_parts_from_path(path).file_tag for path in ingest_file_paths
         }
-        self.assertEqual({"tagC", "Unexpected_Tag"}, ingest_tags)
+        self.assertEqual({"tagC2", "Unexpected_Tag"}, ingest_tags)
 
         for path in ingest_file_paths:
             self.assertTrue(controller.fs.is_normalized_file_path(path))
