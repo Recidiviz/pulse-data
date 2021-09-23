@@ -56,7 +56,7 @@ class TestUsTnController(BaseDirectIngestControllerTests):
         # Arrange
         person_1 = entities.StatePerson.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
-            full_name='{"given_names": "FIRST1", "middle_names": "MIDDLE1", "surname": "LAST1"}',
+            full_name='{"given_names": "FIRST1", "middle_names": "MIDDLE1", "name_suffix": "", "surname": "LAST1"}',
             gender=Gender.FEMALE,
             gender_raw_text="F",
             birthdate=datetime.date(year=1985, month=3, day=7),
@@ -71,7 +71,7 @@ class TestUsTnController(BaseDirectIngestControllerTests):
 
         person_2 = entities.StatePerson.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
-            full_name='{"given_names": "FIRST2", "middle_names": "MIDDLE2", "surname": "LAST2"}',
+            full_name='{"given_names": "FIRST2", "middle_names": "MIDDLE2", "name_suffix": "", "surname": "LAST2"}',
             gender=Gender.MALE,
             gender_raw_text="M",
             birthdate=datetime.date(year=1969, month=2, day=1),
@@ -86,7 +86,7 @@ class TestUsTnController(BaseDirectIngestControllerTests):
 
         person_3 = entities.StatePerson.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
-            full_name='{"given_names": "FIRST3", "middle_names": "MIDDLE3", "surname": "LAST3"}',
+            full_name='{"given_names": "FIRST3", "middle_names": "MIDDLE3", "name_suffix": "", "surname": "LAST3"}',
             gender=Gender.FEMALE,
             gender_raw_text="F",
             birthdate=datetime.date(year=1947, month=1, day=11),
@@ -101,7 +101,7 @@ class TestUsTnController(BaseDirectIngestControllerTests):
 
         person_4 = entities.StatePerson.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
-            full_name='{"given_names": "FIRST4", "middle_names": "MIDDLE4", "surname": "LAST4"}',
+            full_name='{"given_names": "FIRST4", "middle_names": "MIDDLE4", "name_suffix": "", "surname": "LAST4"}',
             gender=Gender.MALE,
             gender_raw_text="M",
             birthdate=datetime.date(year=1994, month=3, day=12),

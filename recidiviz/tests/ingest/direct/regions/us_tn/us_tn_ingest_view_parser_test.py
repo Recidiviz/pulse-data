@@ -50,7 +50,7 @@ class UsTnIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
         expected_output = [
             StatePerson(
                 state_code="US_TN",
-                full_name='{"given_names": "FIRST1", "middle_names": "MIDDLE1", "surname": "LAST1"}',
+                full_name='{"given_names": "FIRST1", "middle_names": "MIDDLE1", "name_suffix": "", "surname": "LAST1"}',
                 birthdate=datetime.date(1985, 3, 7),
                 gender=Gender.FEMALE,
                 gender_raw_text="F",
@@ -74,7 +74,7 @@ class UsTnIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
             ),
             StatePerson(
                 state_code="US_TN",
-                full_name='{"given_names": "FIRST2", "middle_names": "MIDDLE2", "surname": "LAST2"}',
+                full_name='{"given_names": "FIRST2", "middle_names": "MIDDLE2", "name_suffix": "", "surname": "LAST2"}',
                 birthdate=datetime.date(1969, 2, 1),
                 gender=Gender.MALE,
                 gender_raw_text="M",
@@ -99,7 +99,7 @@ class UsTnIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
             ),
             StatePerson(
                 state_code="US_TN",
-                full_name='{"given_names": "FIRST3", "middle_names": "MIDDLE3", "surname": "LAST3"}',
+                full_name='{"given_names": "FIRST3", "middle_names": "MIDDLE3", "name_suffix": "", "surname": "LAST3"}',
                 birthdate=datetime.date(1947, 1, 11),
                 gender=Gender.FEMALE,
                 gender_raw_text="F",
@@ -124,7 +124,7 @@ class UsTnIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
             ),
             StatePerson(
                 state_code="US_TN",
-                full_name='{"given_names": "FIRST4", "middle_names": "MIDDLE4", "surname": "LAST4"}',
+                full_name='{"given_names": "FIRST4", "middle_names": "MIDDLE4", "name_suffix": "", "surname": "LAST4"}',
                 birthdate=datetime.date(1994, 3, 12),
                 gender=Gender.MALE,
                 gender_raw_text="M",

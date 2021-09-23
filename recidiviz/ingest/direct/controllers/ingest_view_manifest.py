@@ -531,6 +531,69 @@ class ConcatenatedStringsManifest(ManifestNode[str]):
         )
 
 
+@attr.s(kw_only=True)
+class PersonNameManifest(ManifestNode[str]):
+    """Manifest node for building a JSON-serialized person name."""
+
+    PERSON_NAME_KEY = "$person_name"
+
+    name_json_manifest: SerializedJSONDictFieldManifest = attr.ib()
+
+    # Function argument key for the person's given names. Required. Will populate the
+    # 'given_names' JSON key.
+    GIVEN_NAMES_MANIFEST_KEY = "$given_names"
+
+    # Function argument key for the person's middle names. Optional. Will populate the
+    # 'middle_names' JSON key.
+    MIDDLE_NAMES_MANIFEST_KEY = "$middle_names"
+
+    # Function argument key for the person's last name. Required. Will populate the
+    # 'surname' JSON key.
+    SURNAME_MANIFEST_KEY = "$surname"
+
+    # Function argument key for the person's name suffix (e.g. Jr, III, etc). Optional.
+    # Will populate the 'name_suffix' JSON key.
+    NAME_SUFFIX_MANIFEST_KEY = "$name_suffix"
+
+    # Map of manifest keys to whether they are required arguments
+    NAME_MANIFEST_KEYS = {
+        GIVEN_NAMES_MANIFEST_KEY: True,
+        MIDDLE_NAMES_MANIFEST_KEY: False,
+        SURNAME_MANIFEST_KEY: True,
+        NAME_SUFFIX_MANIFEST_KEY: False,
+    }
+
+    def build_from_row(self, row: Dict[str, str]) -> Optional[str]:
+        return self.name_json_manifest.build_from_row(row)
+
+    @classmethod
+    def from_raw_manifest(
+        cls, *, raw_function_manifest: YAMLDict
+    ) -> "PersonNameManifest":
+        name_parts_to_manifest: Dict[str, ManifestNode[str]] = {}
+        for manifest_key, is_required in cls.NAME_MANIFEST_KEYS.items():
+            json_key = manifest_key.lstrip("$")
+
+            raw_manifest = pop_raw_flat_field_manifest_optional(
+                manifest_key, raw_function_manifest
+            )
+
+            if not raw_manifest and is_required:
+                raise ValueError(f"Missing manifest for required key: {manifest_key}.")
+
+            name_parts_to_manifest[json_key] = (
+                build_manifest_from_raw(raw_manifest)
+                if raw_manifest
+                else StringLiteralFieldManifest(literal_value="")
+            )
+
+        return PersonNameManifest(
+            name_json_manifest=SerializedJSONDictFieldManifest(
+                key_to_manifest_map=name_parts_to_manifest
+            )
+        )
+
+
 def _get_complex_flat_field_manifest(
     raw_field_manifest: YAMLDict,
 ) -> ManifestNode[str]:
@@ -556,6 +619,10 @@ def _get_complex_flat_field_manifest(
     elif function_name == ConcatenatedStringsManifest.CONCATENATE_KEY:
         manifest = ConcatenatedStringsManifest.from_raw_manifest(
             raw_function_manifest=function_arguments,
+        )
+    elif function_name == PersonNameManifest.PERSON_NAME_KEY:
+        manifest = PersonNameManifest.from_raw_manifest(
+            raw_function_manifest=function_arguments
         )
     else:
         # TODO(#9086): Add support for building a string physical address from parts
@@ -583,6 +650,15 @@ def _get_simple_flat_field_manifest(raw_field_manifest: str) -> ManifestNode[str
     return DirectMappingFieldManifest(mapped_column=raw_field_manifest)
 
 
+def pop_raw_flat_field_manifest_optional(
+    field_name: str, raw_parent_manifest: YAMLDict
+) -> Optional[Union[str, YAMLDict]]:
+    if raw_parent_manifest.peek_optional(field_name, object) is None:
+        return None
+
+    return pop_raw_flat_field_manifest(field_name, raw_parent_manifest)
+
+
 def pop_raw_flat_field_manifest(
     field_name: str, raw_parent_manifest: YAMLDict
 ) -> Union[str, YAMLDict]:
@@ -598,8 +674,9 @@ def pop_raw_flat_field_manifest(
 
 
 def build_manifest_from_raw(
-    raw_field_manifest: Union[str, YAMLDict]
+    raw_field_manifest: Union[str, YAMLDict],
 ) -> ManifestNode[str]:
+    """Builds a ManifestNode from the provided raw manifest """
     if isinstance(raw_field_manifest, str):
         return _get_simple_flat_field_manifest(raw_field_manifest)
     if isinstance(raw_field_manifest, YAMLDict):
