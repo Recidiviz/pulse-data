@@ -28,7 +28,7 @@ python -m recidiviz.reporting.context.po_monthly_report.context
 import copy
 import os
 from datetime import date
-from typing import Dict, List, Optional
+from typing import Dict, List, Literal, Optional
 
 from jinja2 import Environment, FileSystemLoader, Template
 
@@ -45,10 +45,15 @@ from recidiviz.reporting.context.context_utils import (
     round_float_value_to_number_of_digits,
 )
 from recidiviz.reporting.context.po_monthly_report.constants import (
+    ABSCONSIONS,
+    CRIME_REVOCATIONS,
     DEFAULT_MESSAGE_BODY_KEY,
     EARNED_DISCHARGES,
     POS_DISCHARGES,
     SUPERVISION_DOWNGRADES,
+    TECHNICAL_REVOCATIONS,
+    OfficerHighlightComparison,
+    OfficerHighlightType,
     ReportType,
 )
 from recidiviz.reporting.context.po_monthly_report.state_utils.po_monthly_report_metrics_delegate_factory import (
@@ -57,6 +62,9 @@ from recidiviz.reporting.context.po_monthly_report.state_utils.po_monthly_report
 from recidiviz.reporting.context.po_monthly_report.types import (
     AdverseOutcomeContext,
     DecarceralMetricContext,
+    OfficerHighlight,
+    OfficerHighlightMetrics,
+    OfficerHighlightMetricsComparison,
 )
 from recidiviz.reporting.context.report_context import ReportContext
 from recidiviz.reporting.recipient import Recipient
@@ -64,6 +72,18 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 _AVERAGE_VALUES_SIGNIFICANT_DIGITS = 3
+
+_METRIC_DISPLAY_TEXT = {
+    POS_DISCHARGES: "successful completions",
+    EARNED_DISCHARGES: "early discharges",
+    SUPERVISION_DOWNGRADES: "supervision downgrades",
+    TECHNICAL_REVOCATIONS: "technical revocations",
+    CRIME_REVOCATIONS: "new crime revocations",
+    ABSCONSIONS: "absconsions",
+    f"{TECHNICAL_REVOCATIONS}_zero_streak": "technical revocations",
+    f"{CRIME_REVOCATIONS}_zero_streak": "new crime revocations",
+    f"{ABSCONSIONS}_zero_streak": "absconsions",
+}
 
 
 class PoMonthlyReportContext(ReportContext):
@@ -74,7 +94,7 @@ class PoMonthlyReportContext(ReportContext):
             state_code=state_code
         )
         super().__init__(state_code, recipient)
-        self.recipient_data = recipient.data
+        self.recipient_data = self._prepare_recipient_data(recipient.data)
 
         self.jinja_env = Environment(
             loader=FileSystemLoader(self._get_context_templates_folder())
@@ -100,6 +120,24 @@ class PoMonthlyReportContext(ReportContext):
     def html_template(self) -> Template:
         return self.jinja_env.get_template("po_monthly_report/email.html.jinja2")
 
+    def _prepare_recipient_data(self, data: dict) -> dict:
+        recipient_data = copy.deepcopy(data)
+        for int_key in [
+            *self.metrics_delegate.decarceral_actions_metrics,
+            *self.metrics_delegate.client_outcome_metrics,
+            *self.metrics_delegate.total_metrics_for_display,
+            *self.metrics_delegate.max_metrics_for_display,
+            *self.metrics_delegate.zero_streak_metrics,
+        ]:
+            recipient_data[int_key] = int(recipient_data[int_key])
+
+        for float_key in [
+            *self.metrics_delegate.average_metrics_for_display,
+        ]:
+            recipient_data[float_key] = float(recipient_data[float_key])
+
+        return recipient_data
+
     def prepare_for_generation(self) -> dict:
         """Executes PO Monthly Report data preparation."""
         self.prepared_data = copy.deepcopy(self.recipient_data)
@@ -112,16 +150,14 @@ class PoMonthlyReportContext(ReportContext):
         )
         self.prepared_data["learn_more_link"] = self.properties["learn_more_link"]
 
-        if message_override := self.recipient_data.get("message_body_override"):
-            self.prepared_data["message_body"] = message_override
-        else:
-            self.prepared_data["message_body"] = self.properties[
-                DEFAULT_MESSAGE_BODY_KEY
-            ]
+        self.prepared_data["message_body"] = self._get_message_body()
 
         self._convert_month_to_name("review_month")
 
-        self._set_congratulations_section()
+        self.prepared_data[
+            "headline"
+        ] = f"Your {self.prepared_data['review_month']} Report"
+
         self._round_float_values_to_ints(
             self.metrics_delegate.float_metrics_to_round_to_int
         )
@@ -153,90 +189,39 @@ class PoMonthlyReportContext(ReportContext):
         self, metric_key: str, metric_value: float, comparison_value: float
     ) -> bool:
         """Returns True if the value improved when compared to the comparison_value"""
-        change_value = float(metric_value - comparison_value)
+        change_value = metric_value - comparison_value
         if metric_key in self.metrics_delegate.metrics_improve_on_increase:
             return change_value > 0
         return change_value < 0
 
-    def _get_num_metrics_improved_from_last_month(self) -> int:
-        """Returns the number of metrics that performed better than last month"""
-        num_metrics_met_goal = 0
-        for metric_key in self.metrics_delegate.base_metrics_for_display:
-            metric_value = float(self.recipient_data[metric_key])
-            last_month_value = float(self.recipient_data[f"{metric_key}_last_month"])
-            if self._metric_improved(metric_key, metric_value, last_month_value):
-                num_metrics_met_goal += 1
-
-        return num_metrics_met_goal
-
     def _improved_over_state_average(self, metric_key: str) -> bool:
-        state_average = float(self.recipient_data[f"{metric_key}_state_average"])
-        metric_value = float(self.recipient_data[metric_key])
-        return self._metric_improved(metric_key, metric_value, state_average)
+        return self._metric_improved(
+            metric_key,
+            self.recipient_data[metric_key],
+            self.recipient_data[f"{metric_key}_state_average"],
+        )
 
     def _improved_over_district_average(self, metric_key: str) -> bool:
-        district_average = float(self.recipient_data[f"{metric_key}_district_average"])
-        metric_value = float(self.recipient_data[metric_key])
-        return self._metric_improved(metric_key, metric_value, district_average)
+        return self._metric_improved(
+            metric_key,
+            self.recipient_data[metric_key],
+            self.recipient_data[f"{metric_key}_district_average"],
+        )
 
-    def _get_num_metrics_outperformed_region_averages(self) -> int:
-        """Returns the number of metrics that performed better than the either district or state averages"""
-        num_metrics_outperformed_region_averages = 0
-        for metric_key in self.metrics_delegate.base_metrics_for_display:
-            if self._improved_over_district_average(
-                metric_key
-            ) or self._improved_over_state_average(metric_key):
-                num_metrics_outperformed_region_averages += 1
-
-        return num_metrics_outperformed_region_averages
+    def _get_metrics_outperformed_region_averages(self) -> List[str]:
+        """Returns a list of metrics that performed better than the either district or state averages"""
+        return [
+            metric_key
+            for metric_key in self.metrics_delegate.decarceral_actions_metrics
+            if self._improved_over_district_average(metric_key)
+            or self._improved_over_state_average(metric_key)
+        ]
 
     def _get_metric_text_singular_or_plural(self, metric_value: int) -> str:
         metric_text = (
             "metric_text_singular" if metric_value == 1 else "metric_text_plural"
         )
         return self.properties[metric_text].format(metric=metric_value)
-
-    def _set_congratulations_section(self) -> None:
-        """Set the text and the display property for the Congratulations section. Sets the display property to
-        'inherit' if the metrics met goals, or 'none' if no goals were met and it should be hidden."""
-        num_metrics_met_goal = self._get_num_metrics_improved_from_last_month()
-        num_metrics_outperformed_region_averages = (
-            self._get_num_metrics_outperformed_region_averages()
-        )
-        is_meeting_goals = (
-            num_metrics_met_goal > 0 or num_metrics_outperformed_region_averages > 0
-        )
-
-        self.prepared_data["display_congratulations"] = (
-            "inherit" if is_meeting_goals else "none"
-        )
-
-        met_goal_text = self.properties["met_goal_text"].format(
-            metric_text=self._get_metric_text_singular_or_plural(num_metrics_met_goal)
-        )
-        outperformed_region_averages_text = self.properties[
-            "outperformed_region_averages_text"
-        ].format(
-            metric_text=self._get_metric_text_singular_or_plural(
-                num_metrics_outperformed_region_averages
-            )
-        )
-
-        if num_metrics_met_goal > 0 and num_metrics_outperformed_region_averages > 0:
-            congratulations_text = (
-                f"You {met_goal_text} and {outperformed_region_averages_text}."
-            )
-
-        elif num_metrics_met_goal > 0:
-            congratulations_text = f"You {met_goal_text}."
-
-        elif num_metrics_outperformed_region_averages > 0:
-            congratulations_text = f"You {outperformed_region_averages_text}."
-
-        else:
-            congratulations_text = ""
-
-        self.prepared_data["congratulations_text"] = congratulations_text
 
     def _convert_month_to_name(self, month_key: str) -> None:
         """Converts the number at the given key, representing a calendar month, into the name of that month."""
@@ -468,7 +453,7 @@ class PoMonthlyReportContext(ReportContext):
         }
 
     def _get_adverse_outcome(self, data_key: str) -> AdverseOutcomeContext:
-        label = self.properties[f"{data_key}_label"]
+        label = _METRIC_DISPLAY_TEXT[data_key].title()
         count = int(self.recipient_data[data_key])
 
         outcome_context: AdverseOutcomeContext = {
@@ -488,6 +473,159 @@ class PoMonthlyReportContext(ReportContext):
                 outcome_context["amount_above_average"] = diff
 
         return outcome_context
+
+    def _get_message_body(self) -> str:
+        """Constructs message body string with optional highlight text."""
+
+        if message_override := self.recipient_data.get("message_body_override"):
+            return message_override
+
+        highlight_text = ""
+
+        highlight: Optional[OfficerHighlight] = None
+        for highlight_fn in [
+            self._get_most_decarceral_highlight,
+            self._get_longest_zero_streak_highlight,
+            self._get_above_average_highlight,
+        ]:
+            highlight = highlight_fn()
+            if highlight is not None:
+                break
+
+        if highlight is not None:
+            metrics = [_METRIC_DISPLAY_TEXT[m] for m in highlight["metrics"]]
+            if len(metrics) > 1:
+                serial_comma = "," if len(metrics) > 2 else ""
+                metrics_text = (
+                    ", ".join(metrics[:-1]) + f"{serial_comma} and {metrics[-1]}"
+                )
+            else:
+                metrics_text = metrics[0]
+
+            if highlight["type"] == OfficerHighlightType.ABOVE_AVERAGE_DECARCERAL:
+                highlight_text = (
+                    f"Last month, you had more {metrics_text} than officers like you. "
+                    "Keep up the great work! "
+                )
+            else:
+                comparison = highlight["compared_to"]
+
+                if comparison == OfficerHighlightComparison.STATE:
+                    comparison_text = self.state_name
+                elif comparison == OfficerHighlightComparison.DISTRICT:
+                    comparison_text = "your district"
+
+                if highlight["type"] == OfficerHighlightType.MOST_DECARCERAL:
+                    highlight_text = (
+                        f"Last month, you had the most {metrics_text} "
+                        f"out of any PO in {comparison_text}. Amazing work! "
+                    )
+
+                if (
+                    highlight["type"]
+                    == OfficerHighlightType.LONGEST_ADVERSE_ZERO_STREAK
+                ):
+                    # if there is more than one they should be the same; just use the first
+                    streak_length = self.recipient_data[highlight["metrics"][0]]
+                    if highlight["compared_to"] == OfficerHighlightComparison.SELF:
+                        exhortation = "Keep it up!"
+                    else:
+                        exhortation = (
+                            f"This is the most out of any PO in {comparison_text}. "
+                            "Way to go!"
+                        )
+                    highlight_text = (
+                        f"You have gone {streak_length} months without "
+                        f"having any {metrics_text}. {exhortation} "
+                    )
+
+        return f"{highlight_text}{self.properties[DEFAULT_MESSAGE_BODY_KEY]}"
+
+    def _get_max_comparison_highlight(
+        self,
+        metrics: List[str],
+        highlight_type: Literal[
+            OfficerHighlightType.MOST_DECARCERAL,
+            OfficerHighlightType.LONGEST_ADVERSE_ZERO_STREAK,
+        ],
+        min_threshold: int = 0,
+    ) -> Optional[OfficerHighlightMetricsComparison]:
+        """Compares recipient metric to state and district maximum. Returns a highlight
+        if recipient's value equals either maximum (state takes precedence),
+        None otherwise."""
+        state_highlights = [
+            m
+            for m in metrics
+            if self.recipient_data[m] == self.recipient_data[f"{m}_state_max"]
+            and self.recipient_data[m] > min_threshold
+        ]
+        if state_highlights:
+            return {
+                "type": highlight_type,
+                "metrics": state_highlights,
+                "compared_to": OfficerHighlightComparison.STATE,
+            }
+
+        district_highlights = [
+            m
+            for m in metrics
+            if self.recipient_data[m] == self.recipient_data[f"{m}_district_max"]
+            and self.recipient_data[m] > min_threshold
+        ]
+        if district_highlights:
+            return {
+                "type": highlight_type,
+                "metrics": district_highlights,
+                "compared_to": OfficerHighlightComparison.DISTRICT,
+            }
+
+        return None
+
+    def _get_most_decarceral_highlight(
+        self,
+    ) -> Optional[OfficerHighlightMetricsComparison]:
+        return self._get_max_comparison_highlight(
+            self.metrics_delegate.decarceral_actions_metrics,
+            OfficerHighlightType.MOST_DECARCERAL,
+        )
+
+    def _get_longest_zero_streak_highlight(
+        self,
+    ) -> Optional[OfficerHighlightMetricsComparison]:
+        highlight = self._get_max_comparison_highlight(
+            self.metrics_delegate.zero_streak_metrics,
+            OfficerHighlightType.LONGEST_ADVERSE_ZERO_STREAK,
+            min_threshold=1,
+        )
+
+        if highlight is None:
+            zero_streaks = [
+                self.recipient_data[m]
+                for m in self.metrics_delegate.zero_streak_metrics
+            ]
+            personal_metrics = [
+                m
+                for m in self.metrics_delegate.zero_streak_metrics
+                if self.recipient_data[m] > 1
+                and self.recipient_data[m] == max(zero_streaks)
+            ]
+            if personal_metrics:
+                highlight = {
+                    "type": OfficerHighlightType.LONGEST_ADVERSE_ZERO_STREAK,
+                    "metrics": personal_metrics,
+                    "compared_to": OfficerHighlightComparison.SELF,
+                }
+
+        return highlight
+
+    def _get_above_average_highlight(self) -> Optional[OfficerHighlightMetrics]:
+        metrics = self._get_metrics_outperformed_region_averages()
+        if metrics:
+            return {
+                "type": OfficerHighlightType.ABOVE_AVERAGE_DECARCERAL,
+                "metrics": metrics,
+            }
+        return None
 
 
 if __name__ == "__main__":
@@ -516,6 +654,12 @@ if __name__ == "__main__":
                 "earned_discharges_state_total": 163,
                 "supervision_downgrades_district_total": 56,
                 "supervision_downgrades_state_total": 391,
+                "pos_discharges_district_max": 5,
+                "pos_discharges_state_max": 5,
+                "earned_discharges_district_max": 5,
+                "earned_discharges_state_max": 5,
+                "supervision_downgrades_district_max": 5,
+                "supervision_downgrades_state_max": 5,
                 "technical_revocations_district_average": 0,
                 "technical_revocations_state_average": 0,
                 "crime_revocations_district_average": 1.356,
@@ -531,6 +675,12 @@ if __name__ == "__main__":
                 "technical_revocations_zero_streak": 5,
                 "crime_revocations_zero_streak": 0,
                 "absconsions_zero_streak": 0,
+                "technical_revocations_zero_streak_state_max": 5,
+                "technical_revocations_zero_streak_district_max": 5,
+                "crime_revocations_zero_streak_state_max": 12,
+                "crime_revocations_zero_streak_district_max": 12,
+                "absconsions_zero_streak_state_max": 12,
+                "absconsions_zero_streak_district_max": 12,
                 "pos_discharges_clients": [],
                 "earned_discharges_clients": [],
                 "supervision_downgrades_clients": [],

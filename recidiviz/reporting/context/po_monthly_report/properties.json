@@ -2,7 +2,7 @@
   "gray": "#7D9897",
   "red": "#A43939",
   "default_color": "#00413E",
-  "default_message_body": "We’re here to make your life a bit easier by helping you keep track of your caseload's health. You'll receive this email once a month as a customized, personal check-in just for you.",
+  "default_message_body": "Below is a full report of your highlights last month and opportunities for this month.",
   "learn_more_link": "https://docs.google.com/document/d/1kgG5LiIrFQaBupHYfoIwo59TCmYH5f_aIpRzGrtOkhU/edit#heading=h.r6s5tyc7ut6c",
   "increase": "more than last month.",
   "decrease": "fewer than last month.",
@@ -11,8 +11,5 @@
   "met_goal_text": "improved from last month {metric_text}",
   "outperformed_region_averages_text": "out-performed other officers like you {metric_text}",
   "metric_text_singular": "for {metric} metric",
-  "metric_text_plural": "across {metric} metrics",
-  "technical_revocations_label": "Technical Revocations",
-  "crime_revocations_label": "New Crime Revocations",
-  "absconsions_label": "Absconsions"
+  "metric_text_plural": "across {metric} metrics"
 }

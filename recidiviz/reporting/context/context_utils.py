@@ -24,8 +24,8 @@ from typing import List, Optional
 
 def format_greeting(name: Optional[str]) -> str:
     if not name:
-        return "Hey there!"
-    return f"Hey there, {format_name(name)}!"
+        return "Hey!"
+    return f"Hey, {format_name(name)}!"
 
 
 def format_name(name: str) -> str:

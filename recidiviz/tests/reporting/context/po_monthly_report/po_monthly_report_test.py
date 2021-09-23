@@ -20,6 +20,7 @@
 import json
 import os
 import textwrap
+from typing import Optional
 from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
@@ -44,6 +45,8 @@ FIXTURE_FILE = "po_monthly_report_data_fixture.json"
 
 TEST_SECRETS = {"po_report_cdn_static_IP": "123.456.7.8"}
 
+DEFAULT_MESSAGE_TEXT = "Below is a full report of your highlights last month and opportunities for this month."
+
 
 @patch("recidiviz.utils.metadata.project_id", MagicMock(return_value="RECIDIVIZ_TEST"))
 @patch("recidiviz.utils.secrets.get_secret", MagicMock(side_effect=TEST_SECRETS.get))
@@ -57,75 +60,279 @@ class PoMonthlyReportContextTests(TestCase):
             self.recipient = Recipient.from_report_json(json.loads(fixture_file.read()))
             self.recipient.data["batch_id"] = "20201105123033"
 
+    def _get_prepared_data(
+        self,
+        recipient_data: Optional[dict] = None,
+        state_code: StateCode = StateCode.US_ID,
+    ) -> dict:
+        if recipient_data is None:
+            recipient_data = {}
+        recipient = self.recipient.create_derived_recipient(recipient_data)
+        context = PoMonthlyReportContext(state_code, recipient)
+        return context.get_prepared_data()
+
     def test_get_report_type(self) -> None:
         context = PoMonthlyReportContext(StateCode.US_ID, self.recipient)
         self.assertEqual(ReportType.POMonthlyReport, context.get_report_type())
 
-    def test_congratulations_text_only_improved_from_last_month(self) -> None:
-        """Test that the congratulations text looks correct if only the goals were met for the last month."""
-        recipient_data = {
-            "pos_discharges_state_average": "6",
-            "pos_discharges_district_average": "6",
-            "earned_discharges": "0",
-            "supervision_downgrades": "0",
-            "technical_revocations": "3",
-            "crime_revocations": "4",
-        }
-        recipient = self.recipient.create_derived_recipient(recipient_data)
-        context = PoMonthlyReportContext(StateCode.US_ID, recipient)
-        actual = context.get_prepared_data()
-        self.assertEqual(
-            "You improved from last month for 1 metric.", actual["congratulations_text"]
-        )
-
-    def test_congratulations_text_only_outperformed_region_averages(self) -> None:
-        """Test that the congratulations text looks correct if only the region averages were outperformed."""
-        recipient_data = {
-            "pos_discharges": "0",
-            "earned_discharges": "2",
-            "supervision_downgrades": "0",
-            "technical_revocations": "3",
-            "crime_revocations": "4",
-        }
-        recipient = self.recipient.create_derived_recipient(recipient_data)
-        context = PoMonthlyReportContext(StateCode.US_ID, recipient)
-        actual = context.get_prepared_data()
-        self.assertEqual(
-            "You out-performed other officers like you for 1 metric.",
-            actual["congratulations_text"],
-        )
-
-    def test_congratulations_text_empty(self) -> None:
-        """Test that the congratulations text is an empty string and the display is none if neither
-        metric goals were met
-        """
-        recipient_data = {
-            "pos_discharges": "0",
-            "earned_discharges": "0",
-            "supervision_downgrades": "0",
-            "technical_revocations": "3",
-            "crime_revocations": "4",
-        }
-        recipient = self.recipient.create_derived_recipient(recipient_data)
-        context = PoMonthlyReportContext(StateCode.US_ID, recipient)
-        actual = context.get_prepared_data()
-        self.assertEqual("", actual["congratulations_text"])
-        self.assertEqual("none", actual["display_congratulations"])
-
     def test_message_body_override(self) -> None:
         """Test that the message body is overridden by the message_body_override"""
         recipient_data = {
-            "pos_discharges": "0",
-            "earned_discharges": "0",
-            "supervision_downgrades": "0",
-            "technical_revocations": "0",
-            "crime_revocations": "0",
             "message_body_override": "THIS IS A TEST",
         }
-        recipient = self.recipient.create_derived_recipient(recipient_data)
-        context = PoMonthlyReportContext(StateCode.US_ID, recipient)
-        actual = context.get_prepared_data()
+        actual = self._get_prepared_data(recipient_data)
         self.assertEqual("THIS IS A TEST", actual["message_body"])
+
+    def test_message_body_no_highlight(self) -> None:
+        actual = self._get_prepared_data()
+        self.assertEqual(
+            actual["message_body"],
+            DEFAULT_MESSAGE_TEXT,
+        )
+
+    def test_message_body_most_decarceral_highlight(self) -> None:
+        recipient_data = {
+            POS_DISCHARGES: "0",
+            f"{POS_DISCHARGES}_district_max": "0",
+        }
+        # has to be above zero for highlight
+        self.assertEqual(
+            self._get_prepared_data(recipient_data)["message_body"],
+            DEFAULT_MESSAGE_TEXT,
+        )
+
+        recipient_data.update(
+            {
+                POS_DISCHARGES: "2",
+                f"{POS_DISCHARGES}_district_max": "2",
+            }
+        )
+        self.assertEqual(
+            self._get_prepared_data(recipient_data)["message_body"],
+            (
+                "Last month, you had the most successful completions "
+                f"out of any PO in your district. Amazing work! {DEFAULT_MESSAGE_TEXT}"
+            ),
+        )
+
+        recipient_data.update(
+            {
+                f"{POS_DISCHARGES}_state_max": "2",
+            }
+        )
+        self.assertEqual(
+            self._get_prepared_data(recipient_data)["message_body"],
+            (
+                "Last month, you had the most successful completions out of any PO in Idaho. "
+                f"Amazing work! {DEFAULT_MESSAGE_TEXT}"
+            ),
+        )
+
+        recipient_data.update(
+            {EARNED_DISCHARGES: "2", f"{EARNED_DISCHARGES}_state_max": "2"}
+        )
+        self.assertIn(
+            "most successful completions and early discharges",
+            self._get_prepared_data(recipient_data)["message_body"],
+        )
+
+        recipient_data.update(
+            {SUPERVISION_DOWNGRADES: "2", f"{SUPERVISION_DOWNGRADES}_state_max": "2"}
+        )
+        self.assertIn(
+            "most successful completions, early discharges, and supervision downgrades",
+            self._get_prepared_data(recipient_data)["message_body"],
+        )
+
+    def test_message_body_adverse_streak(self) -> None:
+        recipient_data = {
+            f"{TECHNICAL_REVOCATIONS}_zero_streak": "1",
+            f"{TECHNICAL_REVOCATIONS}_zero_streak_state_max": "1",
+        }
+        # streak has to be above 1 for highlight
+        self.assertEqual(
+            self._get_prepared_data(recipient_data)["message_body"],
+            DEFAULT_MESSAGE_TEXT,
+        )
+
+        recipient_data.update(
+            {
+                f"{TECHNICAL_REVOCATIONS}_zero_streak": "10",
+                f"{TECHNICAL_REVOCATIONS}_zero_streak_district_max": "999",
+                f"{TECHNICAL_REVOCATIONS}_zero_streak_state_max": "999",
+            }
+        )
+        self.assertEqual(
+            self._get_prepared_data(recipient_data)["message_body"],
+            (
+                "You have gone 10 months without having any technical revocations. "
+                f"Keep it up! {DEFAULT_MESSAGE_TEXT}"
+            ),
+        )
+
+        recipient_data.update(
+            {
+                f"{TECHNICAL_REVOCATIONS}_zero_streak_district_max": "10",
+            }
+        )
+        self.assertEqual(
+            self._get_prepared_data(recipient_data)["message_body"],
+            (
+                "You have gone 10 months without having any technical revocations. "
+                f"This is the most out of any PO in your district. Way to go! {DEFAULT_MESSAGE_TEXT}"
+            ),
+        )
+
+        recipient_data.update(
+            {
+                f"{TECHNICAL_REVOCATIONS}_zero_streak_state_max": "10",
+            }
+        )
+        self.assertEqual(
+            self._get_prepared_data(recipient_data)["message_body"],
+            (
+                "You have gone 10 months without having any technical revocations. "
+                f"This is the most out of any PO in Idaho. Way to go! {DEFAULT_MESSAGE_TEXT}"
+            ),
+        )
+
+        recipient_data.update(
+            {
+                f"{CRIME_REVOCATIONS}_zero_streak": "3",
+                f"{CRIME_REVOCATIONS}_zero_streak_state_max": "3",
+            }
+        )
+        self.assertIn(
+            "any technical revocations and new crime revocations",
+            self._get_prepared_data(recipient_data)["message_body"],
+        )
+
+        recipient_data.update(
+            {
+                f"{ABSCONSIONS}_zero_streak": "6",
+                f"{ABSCONSIONS}_zero_streak_state_max": "6",
+            }
+        )
+        self.assertIn(
+            "any technical revocations, new crime revocations, and absconsions",
+            self._get_prepared_data(recipient_data)["message_body"],
+        )
+
+    def test_message_body_above_average(self) -> None:
+        expected = (
+            "Last month, you had more successful completions than officers like you. "
+            f"Keep up the great work! {DEFAULT_MESSAGE_TEXT}"
+        )
+
+        recipient_data = {
+            POS_DISCHARGES: "1",
+            f"{POS_DISCHARGES}_state_average": "0.43",
+            f"{POS_DISCHARGES}_district_average": "0.67",
+        }
+        self.assertEqual(
+            self._get_prepared_data(recipient_data)["message_body"], expected
+        )
+
+        recipient_data.update(
+            {
+                f"{POS_DISCHARGES}_district_average": "2.67",
+            }
+        )
+        self.assertEqual(
+            self._get_prepared_data(recipient_data)["message_body"], expected
+        )
+
+        recipient_data.update(
+            {
+                f"{POS_DISCHARGES}_state_average": "1.43",
+                f"{POS_DISCHARGES}_district_average": "0.67",
+            }
+        )
+        self.assertEqual(
+            self._get_prepared_data(recipient_data)["message_body"], expected
+        )
+
+        recipient_data.update(
+            {
+                EARNED_DISCHARGES: "1",
+                f"{EARNED_DISCHARGES}_state_average": "0.43",
+            }
+        )
+        self.assertIn(
+            "more successful completions and early discharges",
+            self._get_prepared_data(recipient_data)["message_body"],
+        )
+
+        recipient_data.update(
+            {
+                SUPERVISION_DOWNGRADES: "1",
+                f"{SUPERVISION_DOWNGRADES}_state_average": "0.43",
+            }
+        )
+        self.assertIn(
+            "more successful completions, early discharges, and supervision downgrades",
+            self._get_prepared_data(recipient_data)["message_body"],
+        )
+
+    def test_message_body_highlight_order(self) -> None:
+        """Verify highlight priority"""
+        # this recipient qualifies for every type of highlight.
+        # we will remove them one by one and verify which one is shown
+        recipient_data = {
+            POS_DISCHARGES: "4",
+            f"{POS_DISCHARGES}_state_max": "4",
+            f"{POS_DISCHARGES}_state_average": "1.43",
+            f"{TECHNICAL_REVOCATIONS}_zero_streak": "6",
+            f"{TECHNICAL_REVOCATIONS}_zero_streak_district_max": "6",
+            f"{ABSCONSIONS}_zero_streak": "7",
+            f"{ABSCONSIONS}_zero_streak_district_max": "10",
+        }
+        self.assertIn(
+            "you had the most successful completions",
+            self._get_prepared_data(recipient_data)["message_body"],
+        )
+
+        recipient_data.update(
+            {
+                f"{POS_DISCHARGES}_state_max": "12",
+            }
+        )
+        body = self._get_prepared_data(recipient_data)["message_body"]
+        self.assertIn(
+            "You have gone 6 months without having any technical revocations",
+            body,
+        )
+        self.assertIn(
+            "This is the most out of any PO",
+            body,
+        )
+
+        recipient_data.update(
+            {
+                f"{TECHNICAL_REVOCATIONS}_zero_streak_district_max": "10",
+            }
+        )
+
+        body = self._get_prepared_data(recipient_data)["message_body"]
+        self.assertIn(
+            "You have gone 7 months without having any absconsions",
+            body,
+        )
+        self.assertNotIn(
+            "This is the most out of any PO",
+            body,
+        )
+
+        recipient_data.update(
+            {
+                f"{TECHNICAL_REVOCATIONS}_zero_streak": "0",
+                f"{ABSCONSIONS}_zero_streak": "0",
+            }
+        )
+        self.assertIn(
+            "you had more successful completions than officers like you",
+            self._get_prepared_data(recipient_data)["message_body"],
+        )
 
     # pylint:disable=trailing-whitespace
     def test_attachment_content(self) -> None:
