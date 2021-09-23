@@ -15,17 +15,16 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for the Path Normalization in DirectIngestGCSFileSystem."""
-import os
 import datetime
+import os
 from unittest import TestCase
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
-    to_normalized_unprocessed_file_path_from_normalized_path,
-    to_normalized_processed_file_path_from_normalized_path,
+    DirectIngestGCSFileSystem,
     to_normalized_processed_file_name,
     to_normalized_unprocessed_file_name,
-    DirectIngestGCSFileSystem,
+    to_normalized_unprocessed_file_path_from_normalized_path,
 )
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsDirectIngestFileType,
@@ -250,20 +249,6 @@ class TestDirectIngestGcsFileSystem(TestCase):
 
 class TestPathNormalization(TestCase):
     """Class that tests path normalization functions created for both processed and unprocessed file paths"""
-
-    def test_to_normalized_processed_file_path_from_normalized_path(self) -> None:
-        original_file_path = (
-            "gs://test-bucket-direct-ingest-state-storage/us_nd/2019/08/12/"
-            "unprocessed_2019-08-12T00:00:00:000000_raw_test_file_tag.csv"
-        )
-        expected_file_path = (
-            "gs://test-bucket-direct-ingest-state-storage/us_nd/2019/08/12/"
-            "processed_2019-08-12T00:00:00:000000_raw_test_file_tag.csv"
-        )
-        self.assertEqual(
-            expected_file_path,
-            to_normalized_processed_file_path_from_normalized_path(original_file_path),
-        )
 
     def test_to_normalized_unprocessed_file_path_from_normalized_path(self) -> None:
         original_file_path = (

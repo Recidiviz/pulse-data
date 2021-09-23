@@ -26,7 +26,7 @@ import yaml
 from mock import patch
 from parameterized import parameterized
 
-from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
+from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct import regions, templates
@@ -36,6 +36,9 @@ from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
 )
 from recidiviz.ingest.direct.controllers.direct_ingest_controller_factory import (
     DirectIngestControllerFactory,
+)
+from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
+    to_normalized_unprocessed_file_name,
 )
 from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
     DirectIngestInstance,
@@ -54,6 +57,8 @@ from recidiviz.ingest.direct.controllers.direct_ingest_view_collector import (
     DirectIngestPreProcessedIngestViewCollector,
 )
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
+    GcsfsDirectIngestFileType,
+    filename_parts_from_path,
     gcsfs_direct_ingest_bucket_for_region,
 )
 from recidiviz.ingest.direct.direct_ingest_region_utils import (
@@ -241,6 +246,16 @@ class DirectIngestRegionDirStructureBase:
                     )
                     config_file_tags.add(config.file_tag)
 
+                    path = GcsfsFilePath.from_directory_and_file_name(
+                        GcsfsBucketPath("fake-bucket"),
+                        to_normalized_unprocessed_file_name(
+                            f"{config.file_tag}.csv",
+                            GcsfsDirectIngestFileType.RAW_DATA,
+                        ),
+                    )
+                    parts = filename_parts_from_path(path)
+                    self.test.assertEqual(parts.file_tag, config.file_tag)
+
     @parameterized.expand(
         [
             ("build_prod", "recidiviz-123", GCPEnvironment.PRODUCTION.value),
@@ -277,6 +292,15 @@ class DirectIngestRegionDirStructureBase:
                     ).collect_view_builders()
                     for builder in builders:
                         builder.build()
+                        path = GcsfsFilePath.from_directory_and_file_name(
+                            GcsfsBucketPath("fake-bucket"),
+                            to_normalized_unprocessed_file_name(
+                                f"{builder.file_tag}.csv",
+                                GcsfsDirectIngestFileType.INGEST_VIEW,
+                            ),
+                        )
+                        parts = filename_parts_from_path(path)
+                        self.test.assertEqual(parts.file_tag, builder.file_tag)
 
     def test_collect_and_build_raw_table_migrations(self) -> None:
         with patch("recidiviz.utils.metadata.project_id", return_value="recidiviz-789"):
