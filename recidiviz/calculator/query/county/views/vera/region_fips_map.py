@@ -28,8 +28,7 @@ VERA_DATASET = vera_view_constants.VERA_DATASET
 REGION_FIPS_MAP_VIEW_NAME = "region_fips_map"
 
 REGION_FIPS_MAP_VIEW_DESCRIPTION = """
-A view that contains fips, region"
-FROM census.person table.
+A view mapping county fips codes to scraper region codes
 """
 
 REGION_FIPS_MAP_VIEW_QUERY_TEMPLATE = """

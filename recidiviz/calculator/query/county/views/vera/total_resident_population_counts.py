@@ -20,7 +20,7 @@ from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.county import dataset_config
 from recidiviz.calculator.query.county.views.vera import vera_view_constants
 from recidiviz.calculator.query.county.views.vera.vera_view_constants import (
-    BRIDGED_RACE_POPULATION_ESTIMATED_TABLE,
+    BRIDGED_RACE_POPULATION_ESTIMATES_TABLE,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -49,7 +49,7 @@ TOTAL_RESIDENT_POPULATION_COUNTS_VIEW_BUILDER: SimpleBigQueryViewBuilder = (
         view_query_template=TOTAL_RESIDENT_POPULATION_COUNTS_VIEW_QUERY_TEMPLATE,
         description=TOTAL_RESIDENT_POPULATION_COUNTS_VIEW_DESCRIPTION,
         vera_dataset=VERA_DATASET,
-        bridged_race_population_estimates=BRIDGED_RACE_POPULATION_ESTIMATED_TABLE,
+        bridged_race_population_estimates=BRIDGED_RACE_POPULATION_ESTIMATES_TABLE,
     )
 )
 
