@@ -276,6 +276,9 @@ class StatePerson(Entity, BuildableAttr, DefaultableAttr):
     residency_status: Optional[ResidencyStatus] = attr.ib(
         default=None, validator=attr_validators.is_opt(ResidencyStatus)
     )
+    residency_status_raw_text: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
 
     # Primary key - Only optional when hydrated in the data converter, before we have
     # written this entity to the persistence layer

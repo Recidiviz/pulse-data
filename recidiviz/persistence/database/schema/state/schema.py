@@ -1223,6 +1223,10 @@ class _StatePersonSharedColumns:
     residency_status = Column(
         residency_status, comment="A person's reported residency status."
     )
+    residency_status_raw_text = Column(
+        String(255),
+        comment="The raw text used to derive a person's reported residency status.",
+    )
 
     @declared_attr
     def supervising_officer_id(self) -> Column:
