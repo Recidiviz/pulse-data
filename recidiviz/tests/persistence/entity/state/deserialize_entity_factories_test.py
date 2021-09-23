@@ -184,7 +184,13 @@ class TestDeserializeEntityFactories(unittest.TestCase):
             full_name='{"full_name": "full NAME"}',
             birthdate="12-31-1999",
             current_address="NNN\n  STREET \t ZIP",
-            residency_status="NNN\n  STREET \t ZIP",
+            residency_status=StrictEnumParser(
+                "PERMANENT",
+                ResidencyStatus,
+                EnumOverrides.Builder()
+                .add("PERMANENT", ResidencyStatus.PERMANENT)
+                .build(),
+            ),
         )
 
         # Assert
