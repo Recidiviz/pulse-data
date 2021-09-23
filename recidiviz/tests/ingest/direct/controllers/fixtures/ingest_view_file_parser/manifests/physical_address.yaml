@@ -1,0 +1,19 @@
+manifest_language: 1.0.0
+input_columns:
+  - PERSONNAME
+  - ADDR_1
+  - ADDR_2
+  - CITY
+  - STATE
+  - ZIP
+unused_columns: []
+output:
+  FakePerson:
+    name: PERSONNAME
+    current_address:
+      $physical_address:
+        $address_1: ADDR_1
+        $address_2: ADDR_2
+        $city: CITY
+        $state: STATE
+        $zip: ZIP
