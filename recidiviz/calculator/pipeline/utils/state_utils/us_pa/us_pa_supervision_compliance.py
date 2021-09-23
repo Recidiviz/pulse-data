@@ -17,7 +17,7 @@
 """State-specific utils for determining compliance with supervision standards for US_PA."""
 import logging
 from datetime import date
-from typing import Dict, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from dateutil.relativedelta import relativedelta
 
@@ -75,6 +75,27 @@ CURRENT_US_PA_ASSESSMENT_SCORE_RANGE: Dict[
     for gender in Gender
 }
 
+MEDIUM_HIGH_SANCTION_DECISION_RAW_TEXT_CODES: List[str] = [
+    "DFSE",
+    "URIN",
+    "ICRF",
+    "GVPB",
+    "COMS",
+    "OPAT",
+    "RECT",
+    "EMOS",
+    "MOTR",
+    "DRPT",
+    "IDOX",
+    "AGPS",
+    "CPCB",
+    "IPAT",
+    "IPMH",
+    "VCCF",
+    "HOTR",
+    "ARR2",
+]
+
 
 class UsPaSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
     """US_PA specific calculations for supervision case compliance."""
@@ -107,7 +128,9 @@ class UsPaSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
         if not compliance_evaluation_date:
             raise ValueError("PA supervision compliance requires an evaluation date")
         if self._can_skip_reassessment(
-            most_recent_assessment_score, compliance_evaluation_date
+            most_recent_assessment_date,
+            most_recent_assessment_score,
+            compliance_evaluation_date,
         ):
             # No reassessment is needed if criteria is met
             return None
@@ -124,6 +147,7 @@ class UsPaSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
 
     def _can_skip_reassessment(
         self,
+        most_recent_assessment_date: date,
         most_recent_assessment_score: int,
         compliance_evaluation_date: date,
     ) -> bool:
@@ -139,8 +163,20 @@ class UsPaSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
             self.supervision_period.supervision_level == StateSupervisionLevel.MINIMUM
             and days_since_start >= 365
         )
+        # Search for medium/high sanctions that occurred since the last assessment date
         incurred_medium_to_high_sanctions = (
-            False  # TODO(#9105): Bring in violations to further calculate
+            len(
+                [
+                    decision.decision_raw_text
+                    for response in self.violation_responses
+                    for decision in response.supervision_violation_response_decisions
+                    if response.response_date
+                    and response.response_date > most_recent_assessment_date
+                    and decision.decision_raw_text
+                    in MEDIUM_HIGH_SANCTION_DECISION_RAW_TEXT_CODES
+                ]
+            )
+            > 0
         )
         return (
             most_recent_score_is_low

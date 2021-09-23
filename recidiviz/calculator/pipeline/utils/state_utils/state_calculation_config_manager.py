@@ -150,6 +150,7 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionContact,
     StateSupervisionPeriod,
     StateSupervisionSentence,
+    StateSupervisionViolationResponse,
 )
 
 
@@ -280,6 +281,7 @@ def get_state_specific_case_compliance_manager(
     start_of_supervision: date,
     assessments: List[StateAssessment],
     supervision_contacts: List[StateSupervisionContact],
+    violation_responses: List[StateSupervisionViolationResponse],
 ) -> Optional[StateSupervisionCaseComplianceManager]:
     """Returns a state-specific SupervisionCaseComplianceManager object, containing information about whether the
     given supervision case is in compliance with state-specific standards. If the state of the
@@ -293,6 +295,7 @@ def get_state_specific_case_compliance_manager(
             start_of_supervision,
             assessments,
             supervision_contacts,
+            violation_responses,
         )
     if state_code == StateCode.US_ND.value:
         return UsNdSupervisionCaseCompliance(
@@ -302,6 +305,7 @@ def get_state_specific_case_compliance_manager(
             start_of_supervision,
             assessments,
             supervision_contacts,
+            violation_responses,
         )
     if state_code == StateCode.US_PA.value:
         return UsPaSupervisionCaseCompliance(
@@ -311,6 +315,7 @@ def get_state_specific_case_compliance_manager(
             start_of_supervision,
             assessments,
             supervision_contacts,
+            violation_responses,
         )
 
     return None
