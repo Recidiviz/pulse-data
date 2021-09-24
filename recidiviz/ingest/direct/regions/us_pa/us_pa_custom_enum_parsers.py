@@ -21,3 +21,17 @@ my_enum_field:
     $raw_text: MY_CSV_COL
     $custom_parser: us_pa_custom_enum_parsers.<function name>
 """
+
+from recidiviz.common.constants.person_characteristics import ResidencyStatus
+
+
+def residency_status_from_address(raw_text: str) -> ResidencyStatus:
+    normalized_address = raw_text.upper()
+    no_stable_housing_indicators = ["HOMELESS", "TRANSIENT"]
+    for indicator in no_stable_housing_indicators:
+        if indicator in normalized_address:
+            # TODO(#9301): Use the term NO_STABLE_HOUSING in the schema instead of
+            #  HOMELESS / TRANSIENT.
+            return ResidencyStatus.HOMELESS
+
+    return ResidencyStatus.PERMANENT
