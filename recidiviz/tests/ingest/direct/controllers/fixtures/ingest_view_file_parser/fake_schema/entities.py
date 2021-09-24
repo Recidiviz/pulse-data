@@ -62,6 +62,8 @@ class FakePerson(Entity):
         default=None, validator=attr_validators.is_opt_str
     )
 
+    ssn: Optional[int] = attr.ib(default=None, validator=attr_validators.is_opt_int)
+
     # Fake primary key field
     fake_person_id: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
