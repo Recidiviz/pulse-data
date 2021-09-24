@@ -76,6 +76,13 @@ columns:
   - name: confinement
     description: |-
       Whether confinement is a result of the conduct event.
+    known_values:
+      - value: C
+        description: Cell Confinement
+      - value: N
+        description: No Restricted Confinement
+      - value: Y
+        description: Restricted Confinement
   - name: confinement_date
     is_datetime: True
     description: |-
