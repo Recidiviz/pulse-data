@@ -1,23 +1,91 @@
-key_mappings:
-  Lst_Nm: state_person.surname
-  Frst_Nm: state_person.given_names
-  Mid_Nm: state_person.middle_names
-  Nm_Suff: state_person.name_suffix
-  sex: state_person.gender
-  date_of_birth: state_person.birthdate
-
-child_key_mappings:
-  race: state_person_race.race
-  control_number: state_person_external_id.state_person_external_id_id
-
-primary_key:
-  control_number: state_person.state_person_id
-
-keys_to_ignore:
-  - recidiviz_master_person_id  # Internal Recidiviz person ID - Unused
-  - inmate_numbers            # List of inmate numbers (sentence group ids) - Hydrated manually in the controller
-  - legal_address_1        # Legal address line 1 - Handled manually in the controller
-  - legal_address_2        # Legal address line 2 - Handled manually in the controller
-  - legal_city       # Legal address city - Handled manually in the controller
-  - legal_state    # Legal address state - Handled manually in the controller
-  - legal_zip_code      # Legal address zip - Handled manually in the controller
+manifest_language: 1.0.0
+input_columns:
+  - recidiviz_master_person_id
+  - control_number
+  - Frst_Nm
+  - Mid_Nm
+  - Lst_Nm
+  - Nm_Suff
+  - race
+  - sex
+  - date_of_birth
+  - legal_address_1
+  - legal_address_2
+  - legal_city
+  - legal_state
+  - legal_zip_code
+  - inmate_numbers
+unused_columns:
+  - recidiviz_master_person_id  # Internal Recidiviz person ID
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: control_number
+          id_type: $literal("US_PA_CONT")
+    birthdate: date_of_birth
+    full_name:
+      $person_name:
+        $given_names: Frst_Nm
+        $middle_names: Mid_Nm
+        $surname: Lst_Nm
+        $name_suffix: Nm_Suff
+    aliases:
+      - StatePersonAlias:
+          full_name:
+            $person_name:
+              $given_names: Frst_Nm
+              $middle_names: Mid_Nm
+              $surname: Lst_Nm
+              $name_suffix: Nm_Suff
+          alias_type:
+            # TODO(#9067): Add support for enum literals, E.g.
+            #  `alias_type: $literal_enum(StatePersonAliasType.GIVEN_NAME)`
+            $raw_text: $literal("GIVEN_NAME")
+            $mappings:
+              StatePersonAliasType.GIVEN_NAME: GIVEN_NAME
+    current_address:
+      $physical_address:
+        $address_1: legal_address_1
+        $address_2: legal_address_2
+        $city: legal_city
+        $state: legal_state
+        $zip: legal_zip_code
+    residency_status:
+      $raw_text:
+        $concat:
+          $values:
+            - legal_address_1
+            - legal_address_2
+          $include_nulls: False
+      $custom_parser: us_pa_custom_enum_parsers.residency_status_from_address
+    gender:
+      $raw_text: sex
+      $mappings:
+        Gender.MALE: MALE
+        Gender.FEMALE: FEMALE
+    races:
+      - StatePersonRace:
+          race:
+            $raw_text: race
+            $mappings:
+              Race.ASIAN: ASIAN
+              Race.BLACK: BLACK
+              Race.AMERICAN_INDIAN_ALASKAN_NATIVE: "AMERICAN INDIAN"
+              Race.OTHER: OTHER
+              Race.WHITE: WHITE
+            $ignore:
+              # This is an ethnicity value - ignore when mapping to race.
+              - HISPANIC
+    ethnicities:
+      - StatePersonEthnicity:
+          ethnicity:
+            $raw_text: race
+            $mappings:
+              Ethnicity.HISPANIC: HISPANIC
+            # These are race values - ignore when mapping to ethnicity.
+            $ignore: [ASIAN, BLACK, "AMERICAN INDIAN", OTHER, WHITE]
+    sentence_groups:
+      - $foreach: inmate_numbers
+        StateSentenceGroup:
+          external_id: $iter

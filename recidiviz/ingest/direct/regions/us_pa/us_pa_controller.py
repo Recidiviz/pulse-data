@@ -26,7 +26,7 @@ from recidiviz.common.constants.enum_overrides import (
     EnumMapperFn,
     EnumOverrides,
 )
-from recidiviz.common.constants.person_characteristics import Ethnicity, Gender, Race
+from recidiviz.common.constants.person_characteristics import Gender, Race
 from recidiviz.common.constants.standard_enum_overrides import (
     get_standard_enum_overrides,
 )
@@ -113,10 +113,8 @@ from recidiviz.ingest.direct.regions.us_pa.us_pa_violation_type_reference import
 )
 from recidiviz.ingest.direct.state_shared_row_posthooks import (
     IngestGatingContext,
-    copy_name_to_alias,
     gen_convert_person_ids_to_external_id_objects,
     gen_label_single_external_id_hook,
-    gen_rationalize_race_and_ethnicity,
 )
 from recidiviz.ingest.extractor.csv_data_extractor import IngestFieldCoordinates
 from recidiviz.ingest.models.ingest_info import (
@@ -129,7 +127,6 @@ from recidiviz.ingest.models.ingest_info import (
     StateIncarcerationSentence,
     StatePerson,
     StatePersonExternalId,
-    StateSentenceGroup,
     StateSupervisionContact,
     StateSupervisionPeriod,
     StateSupervisionViolation,
@@ -166,18 +163,6 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             self._set_sci_incarceration_period_custodial_authority,
         ]
 
-        doc_person_info_postprocessors: List[IngestRowPosthookCallable] = [
-            gen_label_single_external_id_hook(US_PA_CONTROL),
-            self.gen_hydrate_alternate_external_ids(
-                {
-                    "PBPP_Num": US_PA_PBPP,
-                }
-            ),
-            copy_name_to_alias,
-            gen_rationalize_race_and_ethnicity(self.ENUM_OVERRIDES),
-            self._compose_current_address,
-            self._hydrate_sentence_group_ids,
-        ]
         dbo_Miscon_postprocessors: List[IngestRowPosthookCallable] = [
             gen_label_single_external_id_hook(US_PA_CONTROL),
             self._specify_incident_location,
@@ -193,7 +178,6 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         ]
 
         self.row_post_processors_by_file: Dict[str, List[IngestRowPosthookCallable]] = {
-            "doc_person_info": doc_person_info_postprocessors,
             "dbo_tblInmTestScore": [
                 gen_label_single_external_id_hook(US_PA_CONTROL),
                 self._generate_doc_assessment_external_id,
@@ -239,7 +223,6 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         self.file_post_processors_by_file: Dict[
             str, List[IngestFilePostprocessorCallable]
         ] = {
-            "doc_person_info": [],
             "dbo_tblInmTestScore": [],
             "dbo_Senrec": [
                 gen_convert_person_ids_to_external_id_objects(self._get_id_type),
@@ -292,15 +275,6 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         }
 
     ENUM_OVERRIDES: Dict[Enum, List[str]] = {
-        Race.ASIAN: ["ASIAN"],
-        Race.BLACK: ["BLACK"],
-        Race.AMERICAN_INDIAN_ALASKAN_NATIVE: ["AMERICAN INDIAN"],
-        Race.OTHER: ["OTHER"],
-        Race.WHITE: ["WHITE"],
-        Ethnicity.HISPANIC: ["HISPANIC"],
-        Gender.FEMALE: ["FEMALE"],
-        Gender.MALE: ["MALE"],
-        Gender.OTHER: ["OTHER"],
         StateAssessmentType.CSSM: ["CSS-M"],
         StateAssessmentType.LSIR: ["LSI-R"],
         StateAssessmentType.PA_RST: ["RST"],
@@ -784,7 +758,7 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
                 if isinstance(obj, StatePerson):
                     external_ids_to_create = []
                     for column, id_type in columns_to_id_types.items():
-                        value = row.get(column, "").strip()
+                        value = row[column].strip()
 
                         if value:
                             external_ids_to_create.append(
@@ -823,49 +797,6 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         ]:
             return US_PA_PBPP
         return None
-
-    @staticmethod
-    def _hydrate_sentence_group_ids(
-        _gating_context: IngestGatingContext,
-        row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        for obj in extracted_objects:
-            if isinstance(obj, StatePerson):
-                inmate_numbers = (
-                    row["inmate_numbers"].split(",") if row["inmate_numbers"] else []
-                )
-
-                sentence_groups_to_create = []
-                for inmate_number in inmate_numbers:
-                    sentence_groups_to_create.append(
-                        StateSentenceGroup(state_sentence_group_id=inmate_number)
-                    )
-
-                for sg_to_create in sentence_groups_to_create:
-                    create_if_not_exists(sg_to_create, obj, "state_sentence_groups")
-
-    @staticmethod
-    def _compose_current_address(
-        _gating_context: IngestGatingContext,
-        row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        """Composes all of the address-related fields into a single address."""
-        line_1 = row["legal_address_1"]
-        line_2 = row["legal_address_2"]
-        city = row["legal_city"]
-        state = row["legal_state"]
-        zip_code = row["legal_zip_code"]
-        state_and_zip = f"{state} {zip_code}" if zip_code else state
-
-        address = ", ".join(filter(None, (line_1, line_2, city, state_and_zip)))
-
-        for obj in extracted_objects:
-            if isinstance(obj, StatePerson):
-                obj.current_address = address
 
     ASSESSMENT_CLASSES: Dict[str, StateAssessmentClass] = {
         "CSS-M": StateAssessmentClass.SOCIAL,
