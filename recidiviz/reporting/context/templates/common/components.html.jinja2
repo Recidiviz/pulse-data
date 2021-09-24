@@ -1,4 +1,4 @@
-{% macro card_divider(static_image_path) -%}
+{% macro card_divider() -%}
 <tr>
     <td bgcolor="#CDD2D0" height="1" colspan="2" style="height: 1px; font-size: 0px; line-height: 0px;">
         &nbsp;
@@ -15,7 +15,7 @@
 {% macro section_heading(text) %}
   <tr>
     <td class="em_heading em_dm_txt_white" valign="top" align="left"
-      style="font-family: 'Libre Franklin', Arial, sans-serif; padding-left: 3px; font-weight: 500; font-size: 24px; line-height: 24px; letter-spacing: -0.01em; color: #00413E;">
+      style="{{brand_styles.fonts.sans_serif}} padding-left: 3px; font-weight: 500; font-size: 24px; color: #00413E;">
       {{ text }} 
     </td>
   </tr>
@@ -32,28 +32,24 @@
   <td width="{{px}}" style="width: {{px}}px; font-size: 1px; line-height: 1px;">&nbsp;</td>
 {% endmacro %}
 
-{% macro card_heading(text, align="left", colspan=None, valign="top", size="lg") %}
+{% macro heading(text, align="left", colspan=None, valign="top", size="lg") %}
   {# default size lg #}
   {% set font_size = 29 %}
-  {% set line_height = 1.2 %}
 
   {% if size == "md" %}
     {% set font_size = 24 %}
-    {% set line_height = 1.3 %}
   {% endif %}
 
   {% if size == "xl" %}
     {% set font_size = 32 %}
   {% endif %}
 
-  <td class="em_dm_txt_white" valign="{{valign}}" align="{{align}}" 
+  <td class="em_dm_txt_white Heading Heading--{{size}}" valign="{{valign}}" align="{{align}}" 
     {% if colspan %}colspan="{{colspan}}"{% endif %}
     style="
-      font-family: 'Libre Baskerville', 'Times New Roman', Times, serif; 
+      {{brand_styles.fonts.serif}}
       font-size: {{font_size}}px; 
-      line-height: {{line_height}}; 
       font-weight: 400; 
-      letter-spacing: -0.03em; 
       color: #00413E;"
   >
     {{ text }}
@@ -61,8 +57,17 @@
 {% endmacro %}
 
 {# based on the CampaignMonitor "bulletproof button", https://buttons.cm/ #}
-{% macro button(text, link, size="lg", width=300) %}
+{% macro button(text, link, size="lg", width=300, kind="primary") %}
+  {# default for kind primary #}
   {% set fill = "#006C67" %}
+  {% set stroke = "#006C67" %}
+  {% set color = "#FFFFFF" %}
+
+  {% if kind == 'secondary' %}
+    {% set fill = "#EFF1F1" %}
+    {% set stroke = "rgba(53,83,98,0.3)" %}
+    {% set color = "#014C48" %}
+  {% endif %}
 
   {# default for size lg #}
   {% set height = 72 %}
@@ -70,6 +75,11 @@
 
   {% if size == "md" %}
     {% set height = 64 %}
+    {% set font_size = 16 %}
+  {% endif %}
+
+  {% if size == "sm" %}
+    {% set height = 48 %}
     {% set font_size = 16 %}
   {% endif %}
 
@@ -84,7 +94,7 @@
         width:{{width}}px;
       "
       arcsize="50%" 
-      stroke="f" 
+      stroke="{{stroke}}" 
       fillcolor="{{fill}}"
     >
       <w:anchorlock/>
@@ -93,14 +103,14 @@
     <a 
       href="{{link}}"
       style="
+        {{brand_styles.fonts.sans_serif}}
         background-color:{{ fill }};
+        border: 1px solid {{stroke}};
         border-radius:{{ height / 2 }}px;
-        color:#ffffff;
+        color: {{color}};
         display:inline-block;
-        font-family: 'Libre Franklin', Arial, sans-serif; 
         font-weight: 500; 
         font-size: {{font_size}}px; 
-        letter-spacing: -0.01em; 
         line-height:{{height}}px;
         text-align:center;
         text-decoration:none;

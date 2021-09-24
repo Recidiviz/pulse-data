@@ -10,7 +10,7 @@
   role="presentation"
 >
   <tr>
-    {{ components.card_heading("We found some supervision level mismatches.", align="center", colspan=3) }}
+    {{ components.heading("We found some supervision level mismatches.", align="center", colspan=3) }}
   </tr>
   <tr>
     <td class="em_h10" height="24" style="height: 24px">&nbsp;</td>
@@ -46,7 +46,7 @@
     </td>
   </tr>
   {{
-    components.card_divider(static_image_path)
+    components.card_divider()
   }}
   {% for mismatch in mismatches -%}
   <tr>
@@ -81,7 +81,7 @@
     </td>
   </tr>
   {{
-    components.card_divider(static_image_path)
+    components.card_divider()
   }}
   {% endfor -%}
   <tr>

@@ -5,7 +5,7 @@
   at the top level of "rows", as the name suggests.
 #}
 
-{% import 'common/components.html.jinja2' as components %}
+{% import 'common/components.html.jinja2' as components with context %}
 
 
 <table 
@@ -14,7 +14,7 @@
   border="0" 
   cellspacing="0" 
   cellpadding="0"
-  class="em_wrapper em_dark em_border_radius" 
+  class="em_wrapper em_dark em_border_radius {% block class %}{% endblock class%}" 
   bgcolor="{% block bgcolor %}#ffffff{% endblock bgcolor%}"
   style="width:600px; border-radius: 5px;" 
   role="presentation"

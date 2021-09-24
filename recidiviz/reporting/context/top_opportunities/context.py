@@ -66,7 +66,7 @@ class TopOpportunitiesReportContext(ReportContext):
     def html_template(self) -> Template:
         return self.jinja_env.get_template("top_opportunities/email.html.jinja2")
 
-    def prepare_for_generation(self) -> dict:
+    def _prepare_for_generation(self) -> dict:
         """Executes PO Monthly Report data preparation."""
         self.prepared_data = copy.deepcopy(self.recipient_data)
 
@@ -136,7 +136,7 @@ if __name__ == "__main__":
     )
 
     with local_project_id_override(GCP_PROJECT_STAGING):
-        prepared_data = context.prepare_for_generation()
+        prepared_data = context.get_prepared_data()
         prepared_data["static_image_path"] = "./recidiviz/reporting/context/static"
 
     print(context.html_template.render(**prepared_data))

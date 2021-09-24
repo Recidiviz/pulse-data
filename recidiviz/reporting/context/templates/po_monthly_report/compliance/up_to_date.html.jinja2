@@ -1,4 +1,4 @@
-{% import 'common/components.html.jinja2' as components %}
+{% import 'common/components.html.jinja2' as components with context %}
 
 {% macro up_to_date(metric) %}
   {% if metric == "assessments" %}
@@ -33,10 +33,10 @@
       <td>
         {{ components.layout_table_start() }}
           <tr>
-            <td style="width: 40px; padding-right: 16px;">
+            <td class="ComplianceCard__icon" style="width: 40px; padding-right: 16px;" valign="top">
               <img src="{{ static_image_path }}/{{icon_image}}" alt="" width="40" height="40">
             </td>
-            {{ components.card_heading("{}% {}s up to date".format(pct, metric_label|title), size="md", valign="center") }}
+            {{ components.heading("{}% {}s up to date".format(pct, metric_label|title), size="md", valign="center") }}
           </tr>
         {{ components.layout_table_end() }}
       </td>
@@ -49,6 +49,7 @@
         {{ components.layout_table_start() }}
           <tr>
             <td
+              class="ComplianceCard__chart"
               style="
                 {# fallback to solid color for clients that can't display the gradient #}
                 background-color: #014C48;
@@ -58,6 +59,7 @@
               "
             ></td>
             <td
+              class="ComplianceCard__chart"
               style="background-color: #E9EDED; width: {{100 - pct}}%; height: 56px;"
             ></td>
           </tr>
@@ -92,12 +94,11 @@
     }}
     <tr>
       <td
+        class="ComplianceCard__goal"
         style="
-          font-family: Libre Franklin, sans-serif;
+          {{brand_styles.fonts.sans_serif}}
           font-weight: 500;
           font-size: 16px;
-          line-height: 1.5;
-          letter-spacing: -0.01em;
           color: #237caf;
         "
       >
