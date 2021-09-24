@@ -26,6 +26,7 @@ import yaml
 from mock import patch
 from parameterized import parameterized
 
+from recidiviz.big_query.big_query_utils import normalize_column_name_for_bq
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.ingest_metadata import SystemLevel
@@ -255,6 +256,14 @@ class DirectIngestRegionDirStructureBase:
                     )
                     parts = filename_parts_from_path(path)
                     self.test.assertEqual(parts.file_tag, config.file_tag)
+
+                    # Assert that normalized column names in the config match the output of
+                    # the column name normalizer function
+                    for column in config.columns:
+                        normalized_column_name = normalize_column_name_for_bq(
+                            column.name
+                        )
+                        self.test.assertEqual(column.name, normalized_column_name)
 
     @parameterized.expand(
         [

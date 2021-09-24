@@ -18,7 +18,7 @@
 """Tool to create skeleton ingest raw file config yamls from raw data dumps.
 
 Usage:
-    python -m recidiviz.tools.create_ingest_config_skeleton --state [US_XX] \
+    python -m recidiviz.tools.ingest.development.create_ingest_config_skeleton --state [US_XX] \
     --delimiter <field separator> (--file|--folder) [path_to_raw_table(s)] \
     [--allow-overwrite] [--initialize-state]
 
@@ -34,6 +34,7 @@ from typing import List
 
 from pandas import read_csv
 
+from recidiviz.big_query.big_query_utils import normalize_column_name_for_bq
 from recidiviz.common.constants import states
 from recidiviz.ingest.direct import regions
 from recidiviz.tests.ingest.direct.direct_ingest_util import PLACEHOLDER_TO_DO_STRING
@@ -81,7 +82,9 @@ def write_skeleton_config(
 
     df = read_csv(raw_table_path, delimiter=delimiter)
 
-    fields = list(df.columns)
+    fields = [
+        normalize_column_name_for_bq(column_name) for column_name in list(df.columns)
+    ]
 
     if len(fields) == 1:
         logging.error(
