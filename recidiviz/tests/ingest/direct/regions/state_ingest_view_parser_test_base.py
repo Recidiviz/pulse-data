@@ -122,7 +122,7 @@ class StateIngestViewParserTestBase:
                 continue
             manifest_path = os.path.join(manifest_dir, file)
             try:
-                manifest_ast = parser.parse_manifest(manifest_path)
+                manifest_ast, _ = parser.parse_manifest(manifest_path)
             except KeyError as e:
                 if "Expected nonnull [manifest_language] in input" in str(e):
                     # TODO(#8905): Remove this check once all files have been migrated to
