@@ -179,7 +179,6 @@ class IngestViewFileParserDelegateImpl(
         )
 
 
-# TODO(#8980): Add support for (limited) custom python.
 class IngestViewFileParser:
     """Class that parses ingest view file contents into entities based on the manifest
     file for this ingest view.
@@ -396,6 +395,7 @@ class IngestViewFileParser:
                 BuildableAttrFieldType.BOOLEAN,
                 BuildableAttrFieldType.DATE,
                 BuildableAttrFieldType.STRING,
+                BuildableAttrFieldType.INTEGER,
             ):
                 if field_name.endswith(EnumEntity.RAW_TEXT_FIELD_SUFFIX):
                     raise ValueError(
@@ -404,7 +404,8 @@ class IngestViewFileParser:
                         f"for field [{field_name}]."
                     )
                 field_manifests[field_name] = build_str_manifest_from_raw(
-                    pop_raw_flat_field_manifest(field_name, raw_fields_manifest)
+                    pop_raw_flat_field_manifest(field_name, raw_fields_manifest),
+                    self.delegate.get_custom_function_registry(),
                 )
             else:
                 raise ValueError(
