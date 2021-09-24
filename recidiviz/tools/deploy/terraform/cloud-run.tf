@@ -150,7 +150,7 @@ module "unified-product-load-balancer" {
 
   ssl                             = true
   ssl_policy                      = google_compute_ssl_policy.modern-ssl-policy.name
-  managed_ssl_certificate_domains = ["app.recidiviz.org", local.is_production ? "app-prod.recidiviz.org" : "app-staging.recidiviz.org"]
+  managed_ssl_certificate_domains = local.is_production ? ["app-prod.recidiviz.org", "app.recidiviz.org"] : ["app-staging.recidiviz.org"]
   https_redirect                  = true
 
   backends = {
