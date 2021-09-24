@@ -1,0 +1,9 @@
+manifest_language: 1.0.0
+input_columns:
+  - PERSONNAME
+  - DOB
+unused_columns:
+  - DOB
+output:
+  FakePerson:
+    name: PERSONNAME

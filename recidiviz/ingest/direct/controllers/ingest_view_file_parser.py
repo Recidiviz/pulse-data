@@ -22,7 +22,7 @@ import csv
 import os
 from enum import Enum, auto
 from types import ModuleType
-from typing import Callable, Dict, Iterator, List, Optional, Type, Union
+from typing import Callable, Dict, Iterator, List, Optional, Set, Tuple, Type, Union
 
 import attr
 from more_itertools import one
@@ -33,6 +33,7 @@ from recidiviz.common.attr_mixins import (
     attr_field_enum_cls_for_field_name,
     attr_field_type_for_field_name,
 )
+from recidiviz.common.common_utils import bidirectional_set_difference
 from recidiviz.common.constants.enum_parser import EnumParser
 from recidiviz.common.module_collector_mixin import ModuleCollectorMixin
 from recidiviz.ingest.direct.controllers.ingest_view_manifest import (
@@ -207,16 +208,39 @@ class IngestViewFileParser:
         """
 
         manifest_path = self.delegate.get_ingest_view_manifest_path(file_tag)
-        output_manifest = self.parse_manifest(manifest_path)
+        output_manifest, expected_input_columns = self.parse_manifest(manifest_path)
         result = []
-        for row in self._row_iterator(contents_handle, file_format):
+        for i, row in enumerate(self._row_iterator(contents_handle, file_format)):
+            self._validate_row_columns(i, row, expected_input_columns)
             output_tree = output_manifest.build_from_row(row)
             if not output_tree:
                 raise ValueError("Unexpected null output tree for row.")
             result.append(output_tree)
         return result
 
-    def parse_manifest(self, manifest_path: str) -> EntityTreeManifest:
+    @staticmethod
+    def _validate_row_columns(
+        row_number: int, row: Dict[str, str], expected_columns: Set[str]
+    ) -> None:
+        """Checks that columns in the row match the set of expected columns. Throws if
+        there are missing or extra columns.
+        """
+        input_columns = set(row.keys())
+        missing_from_manifest, missing_from_file = bidirectional_set_difference(
+            input_columns, expected_columns
+        )
+        if missing_from_manifest:
+            raise ValueError(
+                f"Found columns in input file row [{row_number}] not present in manifest "
+                f"|input_columns| list: {missing_from_manifest}"
+            )
+        if missing_from_file:
+            raise ValueError(
+                f"Found columns in manifest |input_columns| list that are missing from "
+                f"file row [{row_number}]: {missing_from_file}"
+            )
+
+    def parse_manifest(self, manifest_path: str) -> Tuple[EntityTreeManifest, Set[str]]:
         manifest_dict = YAMLDict.from_path(manifest_path)
 
         version = manifest_dict.pop(MANIFEST_LANGUAGE_VERSION_KEY, str)
@@ -225,11 +249,8 @@ class IngestViewFileParser:
 
         # TODO(#8981): Add logic to enforce that version changes are accompanied with
         #  proper migrations / reruns.
-        # TODO(#8957): Check that input + unused columns match what is in input file and
-        #  match what is actually used.
-        # TODO(#8957): Check that input columns do not start with $ (protected char)
-        _ = manifest_dict.pop("input_columns", list)
-        _ = manifest_dict.pop("unused_columns", list)
+        input_columns = manifest_dict.pop("input_columns", list)
+        unused_columns = manifest_dict.pop("unused_columns", list)
 
         output_manifest = self._build_entity_tree_manifest(
             raw_entity_manifest=manifest_dict.pop_dict("output")
@@ -240,7 +261,78 @@ class IngestViewFileParser:
                 f"Found unused keys in ingest view manifest: {manifest_dict.keys()}"
             )
 
-        return output_manifest
+        self._validate_input_columns_lists(
+            input_columns_list=input_columns,
+            unused_columns_list=unused_columns,
+            referenced_columns=output_manifest.columns_referenced(),
+        )
+
+        return output_manifest, set(input_columns)
+
+    @staticmethod
+    def _validate_input_columns_lists(
+        input_columns_list: List[str],
+        unused_columns_list: List[str],
+        referenced_columns: Set[str],
+    ) -> None:
+        """Validates that the |input_columns| and |unused_columns| manifests lists
+        conform to expected structure and contain exactly the set of columns that are
+        referenced in the |output| section of the manifest.
+        """
+        input_columns = set()
+        for input_col in input_columns_list:
+            if input_col in input_columns:
+                raise ValueError(
+                    f"Found item listed multiple times in |input_columns|: [{input_col}]"
+                )
+            input_columns.add(input_col)
+
+        unused_columns = set()
+        for unused_col in unused_columns_list:
+            if unused_col in unused_columns:
+                raise ValueError(
+                    f"Found item listed multiple times in |unused_columns|: [{unused_col}]"
+                )
+            unused_columns.add(unused_col)
+
+        for column in input_columns:
+            if column.startswith("$"):
+                raise ValueError(
+                    f"Found column [{column}] that starts with protected "
+                    f"character '$'. Adjust ingest view output column "
+                    f"naming to remove the '$'."
+                )
+
+        (
+            expected_referenced_columns,
+            unexpected_unused_columns,
+        ) = bidirectional_set_difference(input_columns, unused_columns)
+
+        if unexpected_unused_columns:
+            raise ValueError(
+                f"Found values listed in |unused_columns| that were not also listed in "
+                f"|input_columns|: {unexpected_unused_columns}"
+            )
+
+        (
+            unlisted_referenced_columns,
+            unreferenced_columns,
+        ) = bidirectional_set_difference(
+            referenced_columns, expected_referenced_columns
+        )
+
+        if unlisted_referenced_columns:
+            raise ValueError(
+                f"Found columns referenced in |output| that are not listed in "
+                f"|input_columns|: {unlisted_referenced_columns}"
+            )
+
+        if unreferenced_columns:
+            raise ValueError(
+                f"Found columns listed in |input_columns| that are not referenced "
+                f"in |output| or listed in |unused_columns|: "
+                f"{unreferenced_columns}"
+            )
 
     def _build_entity_tree_manifest(
         self, *, raw_entity_manifest: YAMLDict

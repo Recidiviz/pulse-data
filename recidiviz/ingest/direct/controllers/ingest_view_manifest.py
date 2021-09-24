@@ -25,7 +25,18 @@ import json
 import re
 from enum import Enum
 from types import ModuleType
-from typing import Any, Callable, Dict, Generic, List, Optional, Type, TypeVar, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Generic,
+    List,
+    Optional,
+    Set,
+    Type,
+    TypeVar,
+    Union,
+)
 
 import attr
 from more_itertools import one
@@ -54,6 +65,12 @@ class ManifestNode(Generic[ManifestNodeT]):
     def build_from_row(self, row: Dict[str, str]) -> Optional[ManifestNodeT]:
         """Should be implemented by subclasses to return a recursively hydrated node
         in the entity tree, parsed out of the input row.
+        """
+
+    @abc.abstractmethod
+    def columns_referenced(self) -> Set[str]:
+        """Should be implemented by subclasses to set of columns that this node
+        references.
         """
 
 
@@ -179,6 +196,13 @@ class EntityTreeManifest(ManifestNode[EntityT]):
 
         return entity
 
+    def columns_referenced(self) -> Set[str]:
+        return {
+            col
+            for manifest in self.field_manifests.values()
+            for col in manifest.columns_referenced()
+        }
+
 
 @attr.s(kw_only=True)
 class ExpandableListItemManifest:
@@ -225,6 +249,16 @@ class ExpandableListItemManifest:
                 result.append(entity)
         return result
 
+    def columns_referenced(self) -> Set[str]:
+        return {
+            self.mapped_column,
+            *{
+                c
+                for c in self.child_entity_manifest.columns_referenced()
+                if c != self.FOREACH_LOOP_VALUE_NAME
+            },
+        }
+
 
 @attr.s(kw_only=True)
 class ListRelationshipFieldManifest(ManifestNode[List[Entity]]):
@@ -252,6 +286,13 @@ class ListRelationshipFieldManifest(ManifestNode[List[Entity]]):
                 )
         return child_entities
 
+    def columns_referenced(self) -> Set[str]:
+        return {
+            col
+            for manifest in self.child_manifests
+            for col in manifest.columns_referenced()
+        }
+
 
 @attr.s(kw_only=True)
 class DirectMappingFieldManifest(ManifestNode[str]):
@@ -263,6 +304,9 @@ class DirectMappingFieldManifest(ManifestNode[str]):
 
     def build_from_row(self, row: Dict[str, str]) -> str:
         return row[self.mapped_column]
+
+    def columns_referenced(self) -> Set[str]:
+        return {self.mapped_column}
 
 
 @attr.s(kw_only=True)
@@ -278,6 +322,9 @@ class StringLiteralFieldManifest(ManifestNode[str]):
 
     def build_from_row(self, row: Dict[str, str]) -> str:
         return self.literal_value
+
+    def columns_referenced(self) -> Set[str]:
+        return set()
 
 
 @attr.s(kw_only=True)
@@ -313,6 +360,9 @@ class EnumFieldManifest(ManifestNode[StrictEnumParser]):
             enum_cls=self.enum_cls,
             enum_overrides=self.enum_overrides,
         )
+
+    def columns_referenced(self) -> Set[str]:
+        return self.raw_text_field_manifest.columns_referenced()
 
     @classmethod
     def raw_text_field_name(cls, enum_field_name: str) -> str:
@@ -473,6 +523,13 @@ class SerializedJSONDictFieldManifest(ManifestNode[str]):
         }
         return json.dumps(result_dict, sort_keys=True)
 
+    def columns_referenced(self) -> Set[str]:
+        return {
+            col
+            for manifest in self.key_to_manifest_map.values()
+            for col in manifest.columns_referenced()
+        }
+
 
 @attr.s(kw_only=True)
 class ConcatenatedStringsManifest(ManifestNode[str]):
@@ -552,6 +609,13 @@ class ConcatenatedStringsManifest(ManifestNode[str]):
             include_nulls=(include_nulls if include_nulls is not None else True),
         )
 
+    def columns_referenced(self) -> Set[str]:
+        return {
+            col
+            for manifest in self.value_manifests
+            for col in manifest.columns_referenced()
+        }
+
 
 @attr.s(kw_only=True)
 class PhysicalAddressManifest(ManifestNode[str]):
@@ -595,6 +659,15 @@ class PhysicalAddressManifest(ManifestNode[str]):
         ]
 
         return ", ".join([s for s in address_parts if s])
+
+    def columns_referenced(self) -> Set[str]:
+        return {
+            *self.address_1_manifest.columns_referenced(),
+            *self.address_2_manifest.columns_referenced(),
+            *self.city_manifest.columns_referenced(),
+            *self.state_manifest.columns_referenced(),
+            *self.zip_manifest.columns_referenced(),
+        }
 
     @classmethod
     def from_raw_manifest(
@@ -685,6 +758,9 @@ class PersonNameManifest(ManifestNode[str]):
                 key_to_manifest_map=name_parts_to_manifest
             )
         )
+
+    def columns_referenced(self) -> Set[str]:
+        return self.name_json_manifest.columns_referenced()
 
 
 def _get_complex_flat_field_manifest(
