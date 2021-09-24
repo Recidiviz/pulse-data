@@ -162,9 +162,10 @@ class IngestViewFileParserTest(unittest.TestCase):
         delegate = FakeSchemaIngestViewFileParserDelegate()
         delegate.get_ingest_view_manifest_path(file_tag)
         parser = IngestViewFileParser(FakeSchemaIngestViewFileParserDelegate())
-        return parser.parse_manifest(
+        manifest_ast, _ = parser.parse_manifest(
             manifest_path=delegate.get_ingest_view_manifest_path(file_tag),
         )
+        return manifest_ast
 
     def test_simple_output(self) -> None:
         # Arrange
@@ -1294,32 +1295,77 @@ class IngestViewFileParserTest(unittest.TestCase):
         pass
 
     def test_no_unused_columns(self) -> None:
-        # TODO(#8957): Fill this out - should pass
-        pass
+        # Shouldn't crash
+        _ = self._run_parse_manifest_for_tag("no_unused_columns")
 
     def test_does_not_use_all_columns_in_input_cols(self) -> None:
-        # TODO(#8957): Fill this out - should fail
-        pass
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found columns listed in |input_columns| that are not referenced in "
+            r"|output| or listed in |unused_columns|: {'SSN'}",
+        ):
+            _ = self._run_parse_manifest_for_tag("unused_input_column")
 
-    def test_input_col_not_listed(self) -> None:
-        # TODO(#8957): Fill this out - should fail
-        pass
+    def test_referenced_col_not_listed(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found columns referenced in |output| that are not listed in "
+            r"|input_columns|: {'AGENTNAME'}",
+        ):
+            _ = self._run_parse_manifest_for_tag("unlisted_referenced_column")
+
+    def test_duplicate_input_col(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found item listed multiple times in |input_columns|: \[PERSONNAME\]",
+        ):
+            _ = self._run_parse_manifest_for_tag("duplicate_input_column")
+
+    def test_duplicate_unused_col(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found item listed multiple times in |unused_columns|: \[DOB\]",
+        ):
+            _ = self._run_parse_manifest_for_tag("duplicate_unused_column")
 
     def test_csv_does_not_have_input_column(self) -> None:
-        # TODO(#8957): Fill this out - should fail
-        pass
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found columns in manifest |input_columns| list that are missing from "
+            r"file row [0]: {'DOB'}",
+        ):
+            _ = self._run_parse_for_tag("input_col_not_in_csv")
 
     def test_unused_col_not_in_csv(self) -> None:
-        # TODO(#8957): Fill this out - should fail
-        pass
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found columns in manifest |input_columns| list that are missing from "
+            r"file row [0]: {'DOB'}",
+        ):
+            _ = self._run_parse_for_tag("unused_col_not_in_csv")
+
+    def test_extra_column_in_csv(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found columns in input file row [0] not present in manifest "
+            r"|input_columns| list: {'SSN'}",
+        ):
+            _ = self._run_parse_for_tag("extra_csv_column")
 
     def test_unused_col_not_in_input_cols_list(self) -> None:
-        # TODO(#8957): Fill this out - should fail
-        pass
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found values listed in |unused_columns| that were not also listed in "
+            r"|input_columns|: {'SSN'}",
+        ):
+            _ = self._run_parse_manifest_for_tag("unused_col_not_in_input_columns")
 
     def test_input_cols_do_not_start_with_dollar_sign(self) -> None:
-        # TODO(#8957): Fill this out - should fail
-        pass
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found column \[\$DOB\] that starts with protected character '\$'",
+        ):
+            _ = self._run_parse_manifest_for_tag("column_starts_with_dollar_sign")
 
     def test_multiple_rows_same_person(self) -> None:
         # TODO(#8908): Fill this out - should pass,
