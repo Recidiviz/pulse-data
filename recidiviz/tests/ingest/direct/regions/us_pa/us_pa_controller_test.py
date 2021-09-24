@@ -80,7 +80,6 @@ from recidiviz.ingest.direct.regions.us_pa.us_pa_controller import UsPaControlle
 from recidiviz.ingest.models.ingest_info import (
     IngestInfo,
     StateAgent,
-    StateAlias,
     StateAssessment,
     StateCharge,
     StateIncarcerationIncident,
@@ -88,9 +87,7 @@ from recidiviz.ingest.models.ingest_info import (
     StateIncarcerationPeriod,
     StateIncarcerationSentence,
     StatePerson,
-    StatePersonEthnicity,
     StatePersonExternalId,
-    StatePersonRace,
     StateSentenceGroup,
     StateSupervisionContact,
     StateSupervisionPeriod,
@@ -125,113 +122,6 @@ class TestUsPaController(BaseDirectIngestControllerTests):
     @classmethod
     def schema_type(cls) -> SchemaType:
         return SchemaType.STATE
-
-    def test_populate_data_doc_person_info(self) -> None:
-        expected = IngestInfo(
-            state_people=[
-                StatePerson(
-                    state_person_id="123456",
-                    surname="RUSSELL",
-                    given_names="BERTRAND",
-                    gender="MALE",
-                    birthdate="19760318",
-                    current_address="123 Easy Street, PITTSBURGH, PA 16161",
-                    state_person_external_ids=[
-                        StatePersonExternalId(
-                            state_person_external_id_id="123456", id_type=US_PA_CONTROL
-                        ),
-                    ],
-                    state_person_races=[StatePersonRace(race="BLACK")],
-                    state_aliases=[
-                        StateAlias(
-                            surname="RUSSELL",
-                            given_names="BERTRAND",
-                            alias_type="GIVEN_NAME",
-                        )
-                    ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(state_sentence_group_id="AB7413"),
-                        StateSentenceGroup(state_sentence_group_id="BC8524"),
-                    ],
-                ),
-                StatePerson(
-                    state_person_id="654321",
-                    surname="SARTRE",
-                    given_names="JEAN-PAUL",
-                    gender="MALE",
-                    birthdate="19821002",
-                    current_address="555 FLATBUSH DR, NEW YORK, NY 10031",
-                    state_person_external_ids=[
-                        StatePersonExternalId(
-                            state_person_external_id_id="654321", id_type=US_PA_CONTROL
-                        ),
-                    ],
-                    state_person_races=[StatePersonRace(race="BLACK")],
-                    state_aliases=[
-                        StateAlias(
-                            surname="SARTRE",
-                            given_names="JEAN-PAUL",
-                            alias_type="GIVEN_NAME",
-                        )
-                    ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(state_sentence_group_id="GF3374"),
-                    ],
-                ),
-                StatePerson(
-                    state_person_id="445566",
-                    surname="KIERKEGAARD",
-                    given_names="SOREN",
-                    name_suffix="JR",
-                    gender="FEMALE",
-                    birthdate="19911120",
-                    current_address="5000 SUNNY LANE, APT. 55D, PHILADELPHIA, PA 19129",
-                    state_person_external_ids=[
-                        StatePersonExternalId(
-                            state_person_external_id_id="445566", id_type=US_PA_CONTROL
-                        ),
-                    ],
-                    state_person_races=[StatePersonRace(race="WHITE")],
-                    state_aliases=[
-                        StateAlias(
-                            surname="KIERKEGAARD",
-                            given_names="SOREN",
-                            name_suffix="JR",
-                            alias_type="GIVEN_NAME",
-                        )
-                    ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(state_sentence_group_id="CJ1991"),
-                    ],
-                ),
-                StatePerson(
-                    state_person_id="778899",
-                    surname="RAWLS",
-                    given_names="JOHN",
-                    gender="MALE",
-                    birthdate="19890617",
-                    current_address="214 HAPPY PLACE, PHILADELPHIA, PA 19129",
-                    state_person_external_ids=[
-                        StatePersonExternalId(
-                            state_person_external_id_id="778899", id_type=US_PA_CONTROL
-                        ),
-                    ],
-                    state_person_ethnicities=[
-                        StatePersonEthnicity(ethnicity="HISPANIC")
-                    ],
-                    state_aliases=[
-                        StateAlias(
-                            surname="RAWLS", given_names="JOHN", alias_type="GIVEN_NAME"
-                        )
-                    ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(state_sentence_group_id="JE1989"),
-                    ],
-                ),
-            ]
-        )
-
-        self.run_legacy_parse_file_test(expected, "doc_person_info")
 
     def test_populate_data_dbo_tblInmTestScore(self) -> None:
         expected = IngestInfo(
@@ -2258,17 +2148,17 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         # doc_person_info
         ######################################
         # Arrange
-        person_1.full_name = '{"given_names": "BERTRAND", "surname": "RUSSELL"}'
+        person_1.full_name = '{"given_names": "BERTRAND", "middle_names": "", "name_suffix": "", "surname": "RUSSELL"}'
         person_1.gender = Gender.MALE
         person_1.gender_raw_text = "MALE"
         person_1.birthdate = datetime.date(year=1976, month=3, day=18)
-        person_1.birthdate_inferred_from_age = False
         person_1.current_address = "123 EASY STREET, PITTSBURGH, PA 16161"
         person_1.residency_status = ResidencyStatus.PERMANENT
+        person_1.residency_status_raw_text = "123 EASY STREET"
         person_1.state_code = _STATE_CODE_UPPER
         person_1.aliases = [
             entities.StatePersonAlias.new_with_defaults(
-                full_name='{"given_names": "BERTRAND", "surname": "RUSSELL"}',
+                full_name='{"given_names": "BERTRAND", "middle_names": "", "name_suffix": "", "surname": "RUSSELL"}',
                 state_code=_STATE_CODE_UPPER,
                 alias_type=StatePersonAliasType.GIVEN_NAME,
                 alias_type_raw_text="GIVEN_NAME",
@@ -2296,17 +2186,17 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         person_1.sentence_groups.append(p1_sg)
         person_1.sentence_groups.append(p1_sg2)
 
-        person_2.full_name = '{"given_names": "JEAN-PAUL", "surname": "SARTRE"}'
+        person_2.full_name = '{"given_names": "JEAN-PAUL", "middle_names": "", "name_suffix": "", "surname": "SARTRE"}'
         person_2.gender = Gender.MALE
         person_2.gender_raw_text = "MALE"
         person_2.birthdate = datetime.date(year=1982, month=10, day=2)
-        person_2.birthdate_inferred_from_age = False
         person_2.current_address = "555 FLATBUSH DR, NEW YORK, NY 10031"
         person_2.residency_status = ResidencyStatus.PERMANENT
+        person_2.residency_status_raw_text = "555 FLATBUSH DR"
         person_2.state_code = _STATE_CODE_UPPER
         person_2.aliases = [
             entities.StatePersonAlias.new_with_defaults(
-                full_name='{"given_names": "JEAN-PAUL", "surname": "SARTRE"}',
+                full_name='{"given_names": "JEAN-PAUL", "middle_names": "", "name_suffix": "", "surname": "SARTRE"}',
                 state_code=_STATE_CODE_UPPER,
                 alias_type=StatePersonAliasType.GIVEN_NAME,
                 alias_type_raw_text="GIVEN_NAME",
@@ -2326,19 +2216,17 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         )
         person_2.sentence_groups.append(p2_sg)
 
-        person_3.full_name = (
-            '{"given_names": "SOREN", "name_suffix": "JR", "surname": "KIERKEGAARD"}'
-        )
+        person_3.full_name = '{"given_names": "SOREN", "middle_names": "", "name_suffix": "JR", "surname": "KIERKEGAARD"}'
         person_3.gender = Gender.FEMALE
         person_3.gender_raw_text = "FEMALE"
         person_3.birthdate = datetime.date(year=1991, month=11, day=20)
-        person_3.birthdate_inferred_from_age = False
         person_3.current_address = "5000 SUNNY LANE, APT. 55D, PHILADELPHIA, PA 19129"
         person_3.residency_status = ResidencyStatus.PERMANENT
+        person_3.residency_status_raw_text = "5000 SUNNY LANE-APT. 55D"
         person_3.state_code = _STATE_CODE_UPPER
         person_3.aliases = [
             entities.StatePersonAlias.new_with_defaults(
-                full_name='{"given_names": "SOREN", "name_suffix": "JR", "surname": "KIERKEGAARD"}',
+                full_name='{"given_names": "SOREN", "middle_names": "", "name_suffix": "JR", "surname": "KIERKEGAARD"}',
                 state_code=_STATE_CODE_UPPER,
                 alias_type=StatePersonAliasType.GIVEN_NAME,
                 alias_type_raw_text="GIVEN_NAME",
@@ -2358,17 +2246,17 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         )
         person_3.sentence_groups.append(p3_sg)
 
-        person_4.full_name = '{"given_names": "JOHN", "surname": "RAWLS"}'
+        person_4.full_name = '{"given_names": "JOHN", "middle_names": "", "name_suffix": "", "surname": "RAWLS"}'
         person_4.gender = Gender.MALE
         person_4.gender_raw_text = "MALE"
         person_4.birthdate = datetime.date(year=1989, month=6, day=17)
-        person_4.birthdate_inferred_from_age = False
         person_4.current_address = "214 HAPPY PLACE, PHILADELPHIA, PA 19129"
         person_4.residency_status = ResidencyStatus.PERMANENT
+        person_4.residency_status_raw_text = "214 HAPPY PLACE"
         person_4.state_code = _STATE_CODE_UPPER
         person_4.aliases = [
             entities.StatePersonAlias.new_with_defaults(
-                full_name='{"given_names": "JOHN", "surname": "RAWLS"}',
+                full_name='{"given_names": "JOHN", "middle_names": "", "name_suffix": "", "surname": "RAWLS"}',
                 state_code=_STATE_CODE_UPPER,
                 alias_type=StatePersonAliasType.GIVEN_NAME,
                 alias_type_raw_text="GIVEN_NAME",
