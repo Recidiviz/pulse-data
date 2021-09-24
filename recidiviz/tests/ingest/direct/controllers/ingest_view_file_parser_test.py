@@ -1112,6 +1112,33 @@ class IngestViewFileParserTest(unittest.TestCase):
         # Assert
         self.assertEqual(expected_output, parsed_output)
 
+    def test_concatenate_values_filter_nulls(self) -> None:
+        # Arrange
+        expected_output = [
+            FakePerson(
+                fake_state_code="US_XX",
+                name="1-A",
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                name="2",
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                name="C",
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                name=None,
+            ),
+        ]
+
+        # Act
+        parsed_output = self._run_parse_for_tag("concatenate_values_filter_nulls")
+
+        # Assert
+        self.assertEqual(expected_output, parsed_output)
+
     def test_concatenate_values_enum_raw_text(self) -> None:
         # Arrange
         expected_output = [
@@ -1216,7 +1243,7 @@ class IngestViewFileParserTest(unittest.TestCase):
             ),
             FakePerson(
                 fake_state_code="US_XX",
-                name='{"GIVEN_NAMES": "NONE NONE", "MIDDLE_NAMES": "", "NAME_SUFFIX": "", "SURNAME": "KRAMER"}',
+                name='{"GIVEN_NAMES": "", "MIDDLE_NAMES": "", "NAME_SUFFIX": "", "SURNAME": "KRAMER"}',
             ),
         ]
 
