@@ -19,7 +19,6 @@ import csv
 import datetime
 import logging
 import os
-import string
 import time
 from types import ModuleType
 from typing import Any, Dict, List, Optional, Set, Tuple
@@ -31,6 +30,7 @@ from google.cloud import bigquery
 from more_itertools import one
 
 from recidiviz.big_query.big_query_client import BigQueryClient
+from recidiviz.big_query.big_query_utils import normalize_column_name_for_bq
 from recidiviz.cloud_storage.gcsfs_path import (
     GcsfsBucketPath,
     GcsfsDirectoryPath,
@@ -647,22 +647,6 @@ class DirectIngestRawFileImportManager:
             logging.info("Deleting temp file [%s].", temp_output_path.abs_path())
             self.fs.delete(temp_output_path)
 
-    @staticmethod
-    def remove_column_non_printable_characters(columns: List[str]) -> List[str]:
-        """Removes all non-printable characters that occasionally show up in column names. This is known to happen in
-        random columns"""
-        fixed_columns = []
-        for col in columns:
-            fixed_col = "".join([x for x in col if x in string.printable])
-            if fixed_col != col:
-                logging.info(
-                    "Found non-printable characters in column [%s]. Original: [%s]",
-                    fixed_col,
-                    col.__repr__(),
-                )
-            fixed_columns.append(fixed_col)
-        return fixed_columns
-
     def _get_validated_columns(
         self, path: GcsfsFilePath, file_config: DirectIngestRawFileConfig
     ) -> List[str]:
@@ -686,21 +670,14 @@ class DirectIngestRawFileImportManager:
         if not isinstance(df, pd.DataFrame):
             raise ValueError(f"Unexpected type for DataFrame: [{type(df)}]")
 
-        columns = self.remove_column_non_printable_characters(df.columns)
-
-        # Strip whitespace from head/tail of column names
-        columns = [c.strip() for c in columns]
+        columns = [
+            normalize_column_name_for_bq(column_name) for column_name in df.columns
+        ]
 
         normalized_columns = set()
         for i, column_name in enumerate(columns):
             if not column_name:
                 raise ValueError(f"Found empty column name in [{file_config.file_tag}]")
-
-            column_name = self._convert_non_allowable_bq_column_chars(column_name)
-
-            # BQ doesn't allow column names to begin with a number, so we prepend an underscore in that case
-            if column_name[0] in string.digits:
-                column_name = "_" + column_name
 
             # If the capitalization of the column name doesn't match the capitalization
             # listed in the file config, update the capitalization.
@@ -730,16 +707,6 @@ class DirectIngestRawFileImportManager:
                 )
 
         return columns
-
-    @staticmethod
-    def _convert_non_allowable_bq_column_chars(column_name: str) -> str:
-        def is_bq_allowable_column_char(x: str) -> bool:
-            return x in string.ascii_letters or x in string.digits or x == "_"
-
-        column_name = "".join(
-            [c if is_bq_allowable_column_char(c) else "_" for c in column_name]
-        )
-        return column_name
 
     @staticmethod
     def _create_raw_table_schema_from_columns(
