@@ -192,6 +192,9 @@ class YAMLDict:
 
         return self.get() == other.get()
 
+    def __repr__(self) -> str:
+        return str(self.get())
+
     def get(self) -> YAMLDictType:
         """Returns the underlying raw dictionary representation of the YAML."""
         return self.raw_yaml

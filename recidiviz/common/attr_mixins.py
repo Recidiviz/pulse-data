@@ -27,6 +27,7 @@ from recidiviz.common.attr_utils import (
     is_date,
     is_enum,
     is_forward_ref,
+    is_int,
     is_list,
     is_str,
 )
@@ -47,6 +48,7 @@ class BuildableAttrFieldType(Enum):
     ENUM = "ENUM"
     DATE = "DATE"
     STRING = "STRING"
+    INTEGER = "INTEGER"
     OTHER = "OTHER"
 
 
@@ -149,6 +151,10 @@ def _map_attr_to_type_for_class(
         elif is_str(attribute):
             attr_field_types[field_name] = CachedAttributeInfo(
                 attribute, BuildableAttrFieldType.STRING, None
+            )
+        elif is_int(attribute):
+            attr_field_types[field_name] = CachedAttributeInfo(
+                attribute, BuildableAttrFieldType.INTEGER, None
             )
         elif is_bool(attribute):
             attr_field_types[field_name] = CachedAttributeInfo(

@@ -1421,6 +1421,49 @@ class IngestViewFileParserTest(unittest.TestCase):
         # Assert
         self.assertEqual(expected_output, parsed_output)
 
+    def test_custom_parsers(self) -> None:
+        # Arrange
+        expected_output = [
+            FakePerson(
+                fake_state_code="US_XX",
+                name="ALBERT",
+                current_address="123 FOURTH ST, SAN FRANCISCO, CA 94110",
+                ssn=111223333,
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                name="BERTHA",
+                current_address="100 MAIN RD, NEW YORK, NY 10000",
+                ssn=444556666,
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                name="CHARLES",
+                current_address="INVALID",
+                ssn=777889999,
+            ),
+        ]
+
+        # Act
+        parsed_output = self._run_parse_for_tag("custom_parsers")
+
+        # Assert
+        self.assertEqual(expected_output, parsed_output)
+
+    def test_custom_conditional(self) -> None:
+        # Arrange
+        expected_output = [
+            FakePerson(fake_state_code="US_XX", name="ALBERT", ssn=None),
+            FakePerson(fake_state_code="US_XX", name="BERTHA", ssn=123456789),
+            FakePerson(fake_state_code="US_XX", name="CHARLES", ssn=987654321),
+        ]
+
+        # Act
+        parsed_output = self._run_parse_for_tag("custom_conditional")
+
+        # Assert
+        self.assertEqual(expected_output, parsed_output)
+
     def test_nested_foreach(self) -> None:
         # TODO(#8958): Fill this out - should fail
         pass
