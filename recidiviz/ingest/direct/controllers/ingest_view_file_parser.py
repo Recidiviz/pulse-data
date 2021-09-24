@@ -43,7 +43,7 @@ from recidiviz.ingest.direct.controllers.ingest_view_manifest import (
     ExpandableListItemManifest,
     ListRelationshipFieldManifest,
     ManifestNode,
-    build_manifest_from_raw,
+    build_str_manifest_from_raw,
     pop_raw_flat_field_manifest,
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
@@ -403,7 +403,7 @@ class IngestViewFileParser:
                         f"of their corresponding enum fields. Found direct mapping "
                         f"for field [{field_name}]."
                     )
-                field_manifests[field_name] = build_manifest_from_raw(
+                field_manifests[field_name] = build_str_manifest_from_raw(
                     pop_raw_flat_field_manifest(field_name, raw_fields_manifest)
                 )
             else:

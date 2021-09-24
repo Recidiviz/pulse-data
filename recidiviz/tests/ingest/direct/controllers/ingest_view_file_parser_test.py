@@ -1290,6 +1290,137 @@ class IngestViewFileParserTest(unittest.TestCase):
         # Assert
         self.assertEqual(expected_output, parsed_output)
 
+    def test_boolean_condition(self) -> None:
+        # Arrange
+        expected_output = [
+            FakePerson(
+                fake_state_code="US_XX",
+                name="ANNA ROSE",
+                birthdate=datetime.date(1962, 1, 29),
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                name="HANNAH ROSE",
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                name="JULIA",
+            ),
+        ]
+
+        # Act
+        parsed_output = self._run_parse_for_tag("boolean_condition")
+
+        # Assert
+        self.assertEqual(expected_output, parsed_output)
+
+    def test_boolean_condition_enum_raw_text(self) -> None:
+        # Arrange
+        expected_output = [
+            FakePerson(
+                fake_state_code="US_XX",
+                gender=FakeGender.MALE,
+                gender_raw_text="MALE",
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX", external_id="1", id_type="ID_TYPE"
+                    )
+                ],
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                gender=FakeGender.MALE,
+                gender_raw_text="M",
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX", external_id="2", id_type="ID_TYPE"
+                    )
+                ],
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                gender=FakeGender.MALE,
+                gender_raw_text="MA",
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX", external_id="2", id_type="ID_TYPE"
+                    )
+                ],
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                gender=FakeGender.MALE,
+                gender_raw_text="MALE",
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX", external_id="3", id_type="ID_TYPE"
+                    )
+                ],
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                gender=FakeGender.MALE,
+                gender_raw_text="MALE",
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX", external_id="4", id_type="ID_TYPE"
+                    )
+                ],
+            ),
+        ]
+
+        # Act
+        parsed_output = self._run_parse_for_tag("boolean_condition_enum_raw_text")
+
+        # Assert
+        self.assertEqual(expected_output, parsed_output)
+
+    def test_boolean_condition_simple_null(self) -> None:
+        # Arrange
+        expected_output = [
+            FakePerson(
+                fake_state_code="US_XX",
+                name="ALBERT",
+                birthdate=datetime.date(2010, 1, 1),
+                gender=FakeGender.MALE,
+                gender_raw_text="M",
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                name=None,
+                birthdate=None,
+                gender=FakeGender.FEMALE,
+                gender_raw_text="F",
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                name="CHARLES",
+                birthdate=datetime.date(2015, 2, 2),
+                gender=FakeGender.MALE,
+                gender_raw_text="MM",
+            ),
+        ]
+
+        # Act
+        parsed_output = self._run_parse_for_tag("boolean_condition_simple_null")
+
+        # Assert
+        self.assertEqual(expected_output, parsed_output)
+
+    def test_boolean_condition_complex_null(self) -> None:
+        # Arrange
+        expected_output = [
+            FakePerson(fake_state_code="US_XX", name="ANNA"),
+            FakePerson(fake_state_code="US_XX", name="BERTHA"),
+            FakePerson(fake_state_code="US_XX", name="BOTH NULL"),
+        ]
+
+        # Act
+        parsed_output = self._run_parse_for_tag("boolean_condition_complex_null")
+
+        # Assert
+        self.assertEqual(expected_output, parsed_output)
+
     def test_nested_foreach(self) -> None:
         # TODO(#8958): Fill this out - should fail
         pass

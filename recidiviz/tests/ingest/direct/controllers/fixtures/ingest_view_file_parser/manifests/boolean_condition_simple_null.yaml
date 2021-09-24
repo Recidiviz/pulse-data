@@ -1,0 +1,26 @@
+manifest_language: 1.0.0
+input_columns:
+  - PERSONNAME
+  - DOB
+  - GENDER
+unused_columns: []
+output:
+  FakePerson:
+    name:
+      $conditional:
+        $if:
+          $not_null: DOB
+        $then: PERSONNAME
+    birthdate: DOB
+    gender:
+      $raw_text:
+        $conditional:
+          $if:
+            $is_null: GENDER
+          $then: $literal("MM")
+          $else: GENDER
+      $mappings:
+        FakeGender.MALE:
+          - M
+          - MM
+        FakeGender.FEMALE: F
