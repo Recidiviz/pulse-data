@@ -1,0 +1,13 @@
+manifest_language: 1.0.0
+input_columns:
+  - FIRST
+  - LAST
+unused_columns: []
+output:
+  FakePerson:
+    name:
+      $concat:
+        $values:
+          - FIRST
+          - LAST
+        $include_nulls: False

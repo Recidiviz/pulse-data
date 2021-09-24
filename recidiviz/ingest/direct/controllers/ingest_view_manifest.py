@@ -489,6 +489,11 @@ class ConcatenatedStringsManifest(ManifestNode[str]):
     # Function argument key for the list of raw manifests for values to concatenate.
     VALUES_ARG_KEY = "$values"
 
+    # Function argument key for a boolean indicator whether to include null or empty
+    # values. If True, falsy values will be cast to the string "NONE" before
+    # concatenation. Optional argument, defaults to True.
+    INCLUDE_NULLS_ARG_KEY = "$include_nulls"
+
     # Separator that will be used by default when concatenating values, if one is not
     # specified.
     DEFAULT_SEPARATOR = "-"
@@ -500,11 +505,24 @@ class ConcatenatedStringsManifest(ManifestNode[str]):
     # The string separator that will be inserted between concatenated values.
     separator: str = attr.ib()
 
+    # If True, falsy values will be cast to the string "NONE" before
+    # concatenation. If False, they will omitted entirely.
+    include_nulls: bool = attr.ib()
+
     def build_from_row(self, row: Dict[str, str]) -> Optional[str]:
-        return self.separator.join(
-            value_manifest.build_from_row(row) or str(None).upper()
+        unfiltered_values = [
+            value_manifest.build_from_row(row)
             for value_manifest in self.value_manifests
-        )
+        ]
+
+        values = []
+        for value in unfiltered_values:
+            if value:
+                values.append(value)
+            elif self.include_nulls:
+                values.append(str(None).upper())
+
+        return self.separator.join(values)
 
     @classmethod
     def from_raw_manifest(
@@ -522,12 +540,16 @@ class ConcatenatedStringsManifest(ManifestNode[str]):
                 )
 
         separator = raw_function_manifest.pop_optional(cls.SEPARATOR_ARG_KEY, str)
+        include_nulls = raw_function_manifest.pop_optional(
+            cls.INCLUDE_NULLS_ARG_KEY, bool
+        )
         return ConcatenatedStringsManifest(
             separator=(separator if separator is not None else cls.DEFAULT_SEPARATOR),
             value_manifests=[
                 build_manifest_from_raw(raw_manifest)
                 for raw_manifest in concat_manifests
             ],
+            include_nulls=(include_nulls if include_nulls is not None else True),
         )
 
 

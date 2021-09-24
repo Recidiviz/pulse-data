@@ -16,6 +16,7 @@ output:
             $values:
               - FIRST
               - FIRST_2
+            $include_nulls: False
         $middle_names: MIDDLE
         $surname: LAST
         $name_suffix: SUFFIX
