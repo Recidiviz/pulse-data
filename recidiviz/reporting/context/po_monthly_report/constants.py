@@ -54,3 +54,11 @@ class OfficerHighlightComparison(Enum):
 class ReportType(Enum):
     POMonthlyReport = "po_monthly_report"
     TopOpportunities = "top_opportunities"
+
+
+BRAND_STYLES = {
+    "fonts": {
+        "serif": "font-family: 'Libre Baskerville', Garamond, serif; line-height: 1.33; letter-spacing: -0.03em;",
+        "sans_serif": "font-family: 'Libre Franklin', sans-serif; line-height: 1.33; letter-spacing: -0.01em;",
+    },
+}

@@ -185,6 +185,26 @@ expected_us_id = {
             "projected_end_date": "2021-06-18",
         },
     ],
+    "brand_styles": {
+        "fonts": {
+            "sans_serif": "font-family: 'Libre Franklin', sans-serif; line-height: 1.33; letter-spacing: -0.01em;",
+            "serif": "font-family: 'Libre Baskerville', Garamond, serif; line-height: 1.33; letter-spacing: -0.03em;",
+        }
+    },
+    "faq": [
+        {
+            "text": "Why am I getting this?",
+            "url": "https://docs.google.com/document/d/1kgG5LiIrFQaBupHYfoIwo59TCmYH5f_aIpRzGrtOkhU/edit#heading=h.dj2dhl2ardpg",
+        },
+        {
+            "text": "Who counts in these numbers?",
+            "url": "https://docs.google.com/document/d/1kgG5LiIrFQaBupHYfoIwo59TCmYH5f_aIpRzGrtOkhU/edit#heading=h.tgvlqjt7i5m4",
+        },
+        {
+            "text": "How are supervision task completion rates calculated?",
+            "url": "https://docs.google.com/document/d/1kgG5LiIrFQaBupHYfoIwo59TCmYH5f_aIpRzGrtOkhU/edit#heading=h.sg71pac5lon4",
+        },
+    ],
 }
 
 expected_us_pa = {
@@ -344,6 +364,26 @@ expected_us_pa = {
             "full_name": "Cortes, Rebekah",
             "person_external_id": "142",
             "projected_end_date": "2021-06-18",
+        },
+    ],
+    "brand_styles": {
+        "fonts": {
+            "sans_serif": "font-family: 'Libre Franklin', sans-serif; line-height: 1.33; letter-spacing: -0.01em;",
+            "serif": "font-family: 'Libre Baskerville', Garamond, serif; line-height: 1.33; letter-spacing: -0.03em;",
+        }
+    },
+    "faq": [
+        {
+            "text": "Why am I getting this?",
+            "url": "https://docs.google.com/document/d/1kgG5LiIrFQaBupHYfoIwo59TCmYH5f_aIpRzGrtOkhU/edit#heading=h.dj2dhl2ardpg",
+        },
+        {
+            "text": "Who counts in these numbers?",
+            "url": "https://docs.google.com/document/d/1kgG5LiIrFQaBupHYfoIwo59TCmYH5f_aIpRzGrtOkhU/edit#heading=h.tgvlqjt7i5m4",
+        },
+        {
+            "text": "How are supervision task completion rates calculated?",
+            "url": "https://docs.google.com/document/d/1kgG5LiIrFQaBupHYfoIwo59TCmYH5f_aIpRzGrtOkhU/edit#heading=h.sg71pac5lon4",
         },
     ],
 }

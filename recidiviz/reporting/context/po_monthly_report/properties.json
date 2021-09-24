@@ -4,6 +4,20 @@
   "default_color": "#00413E",
   "default_message_body": "Below is a full report of your highlights last month and opportunities for this month.",
   "learn_more_link": "https://docs.google.com/document/d/1kgG5LiIrFQaBupHYfoIwo59TCmYH5f_aIpRzGrtOkhU/edit#heading=h.r6s5tyc7ut6c",
+  "faq": [
+    {
+      "text": "Why am I getting this?",
+      "url": "https://docs.google.com/document/d/1kgG5LiIrFQaBupHYfoIwo59TCmYH5f_aIpRzGrtOkhU/edit#heading=h.dj2dhl2ardpg"
+    },
+    {
+      "text": "Who counts in these numbers?",
+      "url": "https://docs.google.com/document/d/1kgG5LiIrFQaBupHYfoIwo59TCmYH5f_aIpRzGrtOkhU/edit#heading=h.tgvlqjt7i5m4"
+    },
+    {
+      "text": "How are supervision task completion rates calculated?",
+      "url": "https://docs.google.com/document/d/1kgG5LiIrFQaBupHYfoIwo59TCmYH5f_aIpRzGrtOkhU/edit#heading=h.sg71pac5lon4"
+    }
+  ],
   "increase": "more than last month.",
   "decrease": "fewer than last month.",
   "same": "Same as last month",

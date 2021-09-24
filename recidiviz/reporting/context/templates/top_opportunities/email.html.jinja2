@@ -1,6 +1,6 @@
 {% extends "common/layout.html.jinja2" %}
 
-{% import "common/components.html.jinja2" as components %}
+{% import "common/components.html.jinja2" as components with context %}
 
 {% block body %}
 {{ components.preview_text(message_body) }}

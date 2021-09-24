@@ -1,101 +1,29 @@
-<table align="center" width="600" border="0" cellspacing="0" cellpadding="0"
-  class="em_wrapper" style="width:600px;" role="presentation">
+{{components.layout_table_start()}}
   <tr>
-    <td class="em_h20" height="40" style="height: 40px;">&nbsp;</td>
+    {{components.heading("Frequently Asked Questions", size="md")}}
   </tr>
-  {{ components.section_heading("Frequently Asked Questions")}}
+  {{components.y_padding(24)}}
+  {% for question in faq %}
   <tr>
-    <td valign="top" align="center">
-      <table align="center" width="599" border="0" cellspacing="0" cellpadding="0"
-        class="em_wrapper em_dark em_border_radius" bgcolor="#ffffff"
-        style="width:599px; border-radius: 5px;" role="presentation">
-        <tr>
-          <td valign="top" align="center">
-            <table width="100%" border="0" cellspacing="0" cellpadding="0" role="presentation">
-              <tr>
-                <td class="em_side15" width="24" style="width: 24px;">&nbsp;</td>
-                <td valign="top" align="left">
-                  <table width="100%" border="0" cellspacing="0" cellpadding="0" align="left" role="presentation">
-                    <tr>
-                      <td class="em_h18" height="32" style="height: 32px;">&nbsp;</td>
-                    </tr>
-                    <tr>
-                      <td class="em_defaultlink em_font em_dm_txt_white" valign="top"
-                        align="left"
-                        style="font-family: 'Libre Franklin', Arial, sans-serif; font-size: 24px; line-height: 36px; color: #00413E;">
-                        <a href="https://docs.google.com/document/d/1kgG5LiIrFQaBupHYfoIwo59TCmYH5f_aIpRzGrtOkhU/edit#heading=h.dj2dhl2ardpg"
-                          target="_blank" style="color: #00413E; text-decoration: none;">Why
-                          am I getting this?</a>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td class="em_h20" height="32" style="height: 32px;">&nbsp;</td>
-                    </tr>
-                  </table>
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>
-        {{ components.card_divider(static_image_path) }}
-        <tr>
-          <td valign="top" align="center">
-            <table width="100%" border="0" cellspacing="0" cellpadding="0" role="presentation">
-              <tr>
-                <td class="em_side15" width="24" style="width: 24px;">&nbsp;</td>
-                <td valign="top" align="left">
-                  <table width="100%" border="0" cellspacing="0" cellpadding="0" align="left" role="presentation">
-                    <tr>
-                      <td class="em_h18" height="32" style="height: 32px;">&nbsp;</td>
-                    </tr>
-                    <tr>
-                      <td class="em_defaultlink em_font em_dm_txt_white" valign="top"
-                        align="left"
-                        style="font-family: 'Libre Franklin', Arial, sans-serif; font-size: 24px; line-height: 36px; color: #00413E;">
-                        <a href="https://docs.google.com/document/d/1kgG5LiIrFQaBupHYfoIwo59TCmYH5f_aIpRzGrtOkhU/edit#heading=h.tgvlqjt7i5m4"
-                          target="_blank" style="color: #00413E; text-decoration: none;">Who
-                          counts in these numbers?</a>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td class="em_h20" height="32" style="height: 32px;">&nbsp;</td>
-                    </tr>
-                  </table>
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>
-        {{ components.card_divider(static_image_path) }}
-        <tr>
-          <td valign="top" align="center">
-            <table width="100%" border="0" cellspacing="0" cellpadding="0" role="presentation">
-              <tr>
-                <td class="em_side15" width="24" style="width: 24px;">&nbsp;</td>
-                <td valign="top" align="left">
-                  <table width="100%" border="0" cellspacing="0" cellpadding="0" align="left" role="presentation">
-                    <tr>
-                      <td class="em_h18" height="32" style="height: 32px;">&nbsp;</td>
-                    </tr>
-                    <tr>
-                      <td class="em_defaultlink em_font em_dm_txt_white" valign="top"
-                        align="left"
-                        style="font-family: 'Libre Franklin', Arial, sans-serif; font-size: 24px; line-height: 36px; color: #00413E;">
-                        <a href="https://docs.google.com/document/d/1kgG5LiIrFQaBupHYfoIwo59TCmYH5f_aIpRzGrtOkhU/edit#heading=h.sg71pac5lon4"
-                          target="_blank" style="color: #00413E; text-decoration: none;">How
-                          are supervision task completion rates calculated?</a>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td class="em_h20" height="32" style="height: 32px;">&nbsp;</td>
-                    </tr>
-                  </table>
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>
-      </table>
+    <td 
+      class="FAQ__question"
+      style="
+        {{brand_styles.fonts.sans_serif}}
+        border-top: 1px solid #CDD2D0;
+        font-size: 19px;
+        padding: 24px 0;
+        {% if loop.last %}border-bottom: 1px solid #CDD2D0;{% endif %}
+      "
+    >
+      <a 
+        target="_blank" 
+        href="{{question.url}}" 
+        style="color: #00413E; text-decoration: none;"
+      >
+        {{question.text}}
+      </a>
     </td>
   </tr>
-</table>
+  {% endfor %}
+  {{components.y_padding(40)}}
+{{components.layout_table_end()}}
