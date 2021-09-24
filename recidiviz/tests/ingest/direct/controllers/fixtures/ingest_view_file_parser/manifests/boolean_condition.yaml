@@ -1,0 +1,31 @@
+manifest_language: 1.0.0
+input_columns:
+  - PERSONNAME
+  - DOB
+unused_columns: []
+output:
+  FakePerson:
+    name:
+      $conditional:
+        $if:
+          $in:
+            $value: PERSONNAME
+            $options:
+              - $literal("ANNA")
+              - $literal("HANNAH")
+        $then:
+          $concat:
+            $separator: " "
+            $values:
+              - PERSONNAME
+              - $literal("ROSE")
+        $else: PERSONNAME
+    birthdate:
+      $conditional:
+        $if:
+          $not_in:
+            $value: DOB
+            $options:
+              - $literal("99999999")
+              - $literal("00000000")
+        $then: DOB
