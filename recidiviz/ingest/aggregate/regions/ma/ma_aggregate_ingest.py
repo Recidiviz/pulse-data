@@ -19,7 +19,7 @@ state aggregate datasets) pdfs from the Massachusetts Department of Correction
 Weekly collections.
 
 Author: Albert Sun"""
-
+import re
 from datetime import datetime
 from typing import Dict
 
@@ -27,6 +27,7 @@ import numpy as np
 import pandas as pd
 import tabula
 import us
+from PyPDF2 import PdfFileReader
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
 from recidiviz.common import fips
@@ -49,12 +50,22 @@ def parse(filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
     return {MaFacilityAggregate: table}
 
 
-def _parse_date(filename: str):
-    """Parse dates from the filename of filenames, i.e. """
-    all_num = "".join(x for x in filename if x.isdigit())  # return all digits
-    last_eight = all_num[-8:]  # look at last 8 digits, which are used for dates
-    date = datetime.strptime(last_eight, "%m%d%Y")
-    return date
+def _parse_date(filename: str) -> datetime:
+    """Parse date from file title, or, if not available, the DATE label on the top of the first page.
+    We can't use the date string from the filename because it's ambiguous. For example, 1252021 could be
+    Jan. 25 or Dec. 5, 2021."""
+    with open(filename, "rb") as f:
+        reader = PdfFileReader(f)
+        title = reader.getDocumentInfo().title  # type: ignore
+        try:
+            return datetime.strptime(title, "Weekly Count (%m-%d-%Y).xlsx")
+        except ValueError as e:
+            page = reader.getPage(0)
+            text = page.extractText()
+            match = re.search(r"DATE :(\w+ \d{1,2}, \d{4})", text)
+            if not match:
+                raise ValueError("Couldn't find date in PDF.") from e
+            return datetime.strptime(match.group(1), "%B %d, %Y")
 
 
 def _parse_table(filename: str) -> pd.DataFrame:
