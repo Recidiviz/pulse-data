@@ -51,7 +51,7 @@ resource "google_composer_environment" "default" {
         # TODO(#4900): I think we get 'GCP_PROJECT' by default, so we can probably clean this up.
         "GCP_PROJECT_ID" = var.project_id
       }
-      image_version  = "composer-1.13.0-airflow-1.10.12"
+      image_version  = "composer-1.17.0-airflow-1.10.15"
       python_version = "3"
     }
 
