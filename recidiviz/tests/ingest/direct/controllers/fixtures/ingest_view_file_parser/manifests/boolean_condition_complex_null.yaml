@@ -1,0 +1,18 @@
+manifest_language: 1.0.0
+input_columns:
+  - PART_1
+  - PART_2
+unused_columns: []
+output:
+  FakePerson:
+    name:
+      $conditional:
+        $if:
+          $not_null:
+            $concat:
+              $values:
+                - PART_1
+                - PART_2
+              $include_nulls: False
+        $then: PART_1
+        $else: $literal("BOTH NULL")

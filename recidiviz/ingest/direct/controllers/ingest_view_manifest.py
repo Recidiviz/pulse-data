@@ -378,7 +378,7 @@ class EnumFieldManifest(ManifestNode[StrictEnumParser]):
     ) -> "EnumFieldManifest":
         """Factory method for building an enum field manifest."""
 
-        raw_text_field_manifest = build_manifest_from_raw(
+        raw_text_field_manifest = build_str_manifest_from_raw(
             pop_raw_flat_field_manifest(
                 EnumFieldManifest.RAW_TEXT_KEY, field_enum_mappings_manifest
             )
@@ -603,7 +603,7 @@ class ConcatenatedStringsManifest(ManifestNode[str]):
         return ConcatenatedStringsManifest(
             separator=(separator if separator is not None else cls.DEFAULT_SEPARATOR),
             value_manifests=[
-                build_manifest_from_raw(raw_manifest)
+                build_str_manifest_from_raw(raw_manifest)
                 for raw_manifest in concat_manifests
             ],
             include_nulls=(include_nulls if include_nulls is not None else True),
@@ -677,21 +677,21 @@ class PhysicalAddressManifest(ManifestNode[str]):
             cls.ADDRESS_2_KEY, raw_function_manifest
         )
         return PhysicalAddressManifest(
-            address_1_manifest=build_manifest_from_raw(
+            address_1_manifest=build_str_manifest_from_raw(
                 pop_raw_flat_field_manifest(cls.ADDRESS_1_KEY, raw_function_manifest)
             ),
-            address_2_manifest=build_manifest_from_raw(
+            address_2_manifest=build_str_manifest_from_raw(
                 raw_address_2_manifest,
             )
             if raw_address_2_manifest
             else StringLiteralFieldManifest(literal_value=""),
-            city_manifest=build_manifest_from_raw(
+            city_manifest=build_str_manifest_from_raw(
                 pop_raw_flat_field_manifest(cls.CITY_KEY, raw_function_manifest)
             ),
-            state_manifest=build_manifest_from_raw(
+            state_manifest=build_str_manifest_from_raw(
                 pop_raw_flat_field_manifest(cls.STATE_KEY, raw_function_manifest)
             ),
-            zip_manifest=build_manifest_from_raw(
+            zip_manifest=build_str_manifest_from_raw(
                 pop_raw_flat_field_manifest(cls.ZIP_KEY, raw_function_manifest)
             ),
         )
@@ -748,7 +748,7 @@ class PersonNameManifest(ManifestNode[str]):
                 raise ValueError(f"Missing manifest for required key: {manifest_key}.")
 
             name_parts_to_manifest[json_key] = (
-                build_manifest_from_raw(raw_manifest)
+                build_str_manifest_from_raw(raw_manifest)
                 if raw_manifest
                 else StringLiteralFieldManifest(literal_value="")
             )
@@ -761,6 +761,179 @@ class PersonNameManifest(ManifestNode[str]):
 
     def columns_referenced(self) -> Set[str]:
         return self.name_json_manifest.columns_referenced()
+
+
+@attr.s(kw_only=True)
+class ContainsConditionManifest(ManifestNode[bool]):
+    """Manifest node that returns a boolean based on whether a value is present in a set
+    of options.
+    """
+
+    IN_CONDITION_KEY = "$in"
+
+    # Function argument key for the value to check for inclusion in the set.
+    VALUE_ARG_KEY = "$value"
+
+    # Function argument key for the set of options to check the value against.
+    OPTIONS_ARG_KEY = "$options"
+
+    value_manifest: ManifestNode[str] = attr.ib()
+    options_manifests: List[ManifestNode[str]] = attr.ib()
+
+    def build_from_row(self, row: Dict[str, str]) -> bool:
+        value = self.value_manifest.build_from_row(row)
+        options = {m.build_from_row(row) for m in self.options_manifests}
+
+        return value in options
+
+    def columns_referenced(self) -> Set[str]:
+        return {
+            *self.value_manifest.columns_referenced(),
+            *{col for m in self.options_manifests for col in m.columns_referenced()},
+        }
+
+    @classmethod
+    def from_raw_manifest(
+        cls, *, raw_function_manifest: YAMLDict
+    ) -> "ContainsConditionManifest":
+        return ContainsConditionManifest(
+            value_manifest=build_str_manifest_from_raw(
+                pop_raw_flat_field_manifest(cls.VALUE_ARG_KEY, raw_function_manifest)
+            ),
+            options_manifests=[
+                build_str_manifest_from_raw(raw_manifest)
+                for raw_manifest in raw_function_manifest.pop(cls.OPTIONS_ARG_KEY, list)
+            ],
+        )
+
+
+@attr.s(kw_only=True)
+class IsNullConditionManifest(ManifestNode[bool]):
+    """Manifest node that returns a boolean based on whether a value is null (or empty
+    string).
+    """
+
+    IS_NULL_CONDITION_KEY = "$is_null"
+
+    value_manifest: ManifestNode[str] = attr.ib()
+
+    def build_from_row(self, row: Dict[str, str]) -> bool:
+        value = self.value_manifest.build_from_row(row)
+        return not bool(value)
+
+    def columns_referenced(self) -> Set[str]:
+        return self.value_manifest.columns_referenced()
+
+    @classmethod
+    def from_raw_manifest(
+        cls,
+        *,
+        raw_function_manifest: Union[str, YAMLDict],
+    ) -> "IsNullConditionManifest":
+        return IsNullConditionManifest(
+            value_manifest=build_str_manifest_from_raw(raw_function_manifest)
+        )
+
+
+@attr.s(kw_only=True)
+class InvertConditionManifest(ManifestNode[bool]):
+
+    # Manifest node key for inverted ContainsConditionManifest
+    NOT_IN_CONDITION_KEY = "$not_in"
+
+    # Manifest node key for inverted IsNullConditionManifest
+    NOT_NULL_CONDITION_KEY = "$not_null"
+
+    condition_manifest: ManifestNode[bool] = attr.ib()
+
+    def build_from_row(self, row: Dict[str, str]) -> bool:
+        return not self.condition_manifest.build_from_row(row)
+
+    def columns_referenced(self) -> Set[str]:
+        return self.condition_manifest.columns_referenced()
+
+
+@attr.s(kw_only=True)
+class BooleanConditionManifest(ManifestNode[ManifestNodeT]):
+    """Manifest node that evalutes one of two child manifest nodes based on the result
+    of a boolean condition.
+    """
+
+    BOOLEAN_CONDITION_KEY = "$conditional"
+
+    # Function argument key for the boolean condition to evaluate.
+    CONDITION_ARG_KEY = "$if"
+
+    # Function argument key for the node to evaluate if the condition is True.
+    THEN_ARG_KEY = "$then"
+
+    # Function argument key for the node to evaluate if the condition is False.
+    ELSE_ARG_KEY = "$else"
+
+    result_type: Type[ManifestNodeT] = attr.ib()
+    condition_manifest: ManifestNode[bool] = attr.ib()
+    then_manifest: ManifestNode[ManifestNodeT] = attr.ib()
+    else_manifest: Optional[ManifestNode[ManifestNodeT]] = attr.ib()
+
+    def build_from_row(self, row: Dict[str, str]) -> Optional[ManifestNodeT]:
+        condition = self.condition_manifest.build_from_row(row)
+        if condition is None:
+            raise ValueError("Condition manifest should not return None.")
+
+        if condition:
+            return self.then_manifest.build_from_row(row)
+
+        if not self.else_manifest:
+            return None
+
+        return self.else_manifest.build_from_row(row)
+
+    def columns_referenced(self) -> Set[str]:
+        return {
+            *self.condition_manifest.columns_referenced(),
+            *self.then_manifest.columns_referenced(),
+            *(self.else_manifest.columns_referenced() if self.else_manifest else set()),
+        }
+
+    @classmethod
+    def from_raw_manifest_for_string_result(
+        cls, *, raw_function_manifest: YAMLDict
+    ) -> "BooleanConditionManifest[str]":
+        condition_manifest = build_boolean_manifest_from_raw(
+            pop_raw_flat_field_manifest(cls.CONDITION_ARG_KEY, raw_function_manifest)
+        )
+
+        then_manifest = build_str_manifest_from_raw(
+            pop_raw_flat_field_manifest(cls.THEN_ARG_KEY, raw_function_manifest)
+        )
+
+        else_manifest = None
+        else_manifest_raw = pop_raw_flat_field_manifest_optional(
+            cls.ELSE_ARG_KEY, raw_function_manifest
+        )
+        if else_manifest_raw:
+            else_manifest = build_str_manifest_from_raw(else_manifest_raw)
+
+        if len(raw_function_manifest):
+            raise ValueError(
+                f"Found unused keys in boolean condition manifest: "
+                f"{raw_function_manifest.keys()}"
+            )
+
+        return BooleanConditionManifest(
+            result_type=str,
+            condition_manifest=condition_manifest,
+            then_manifest=then_manifest,
+            else_manifest=else_manifest,
+        )
+
+    @classmethod
+    def from_raw_manifest_for_entity_result(
+        cls, *, entity_cls: Type[EntityT], raw_function_manifest: YAMLDict
+    ) -> "BooleanConditionManifest[EntityT]":
+        raise NotImplementedError(
+            "TODO(#9320): Add support for conditional entity expressions"
+        )
 
 
 def _get_complex_flat_field_manifest(
@@ -779,7 +952,7 @@ def _get_complex_flat_field_manifest(
     if function_name == SerializedJSONDictFieldManifest.JSON_DICT_KEY:
         manifest = SerializedJSONDictFieldManifest(
             key_to_manifest_map={
-                key: build_manifest_from_raw(
+                key: build_str_manifest_from_raw(
                     pop_raw_flat_field_manifest(key, function_arguments)
                 )
                 for key in function_arguments.keys()
@@ -795,6 +968,10 @@ def _get_complex_flat_field_manifest(
         )
     elif function_name == PhysicalAddressManifest.PHYSICAL_ADDRESS_KEY:
         manifest = PhysicalAddressManifest.from_raw_manifest(
+            raw_function_manifest=function_arguments
+        )
+    elif function_name == BooleanConditionManifest.BOOLEAN_CONDITION_KEY:
+        manifest = BooleanConditionManifest.from_raw_manifest_for_string_result(
             raw_function_manifest=function_arguments
         )
     else:
@@ -846,7 +1023,7 @@ def pop_raw_flat_field_manifest(
     )
 
 
-def build_manifest_from_raw(
+def build_str_manifest_from_raw(
     raw_field_manifest: Union[str, YAMLDict],
 ) -> ManifestNode[str]:
     """Builds a ManifestNode from the provided raw manifest """
@@ -854,6 +1031,38 @@ def build_manifest_from_raw(
         return _get_simple_flat_field_manifest(raw_field_manifest)
     if isinstance(raw_field_manifest, YAMLDict):
         return _get_complex_flat_field_manifest(raw_field_manifest)
-    raise ValueError(
-        f"Unexpected flat field manifest type: [{type(raw_field_manifest)}]"
-    )
+    raise ValueError(f"Unexpected string manifest type: [{type(raw_field_manifest)}]")
+
+
+def build_boolean_manifest_from_raw(
+    raw_field_manifest: Optional[Union[str, YAMLDict]]
+) -> ManifestNode[bool]:
+    """Builds a ManifestNode[bool] from the provided raw manifest."""
+    if isinstance(raw_field_manifest, YAMLDict):
+        function_name = one(raw_field_manifest.keys())
+        if function_name == ContainsConditionManifest.IN_CONDITION_KEY:
+            return ContainsConditionManifest.from_raw_manifest(
+                raw_function_manifest=raw_field_manifest.pop_dict(function_name)
+            )
+        if function_name == InvertConditionManifest.NOT_IN_CONDITION_KEY:
+            return InvertConditionManifest(
+                condition_manifest=ContainsConditionManifest.from_raw_manifest(
+                    raw_function_manifest=raw_field_manifest.pop_dict(function_name)
+                )
+            )
+        if function_name == IsNullConditionManifest.IS_NULL_CONDITION_KEY:
+            return IsNullConditionManifest.from_raw_manifest(
+                raw_function_manifest=pop_raw_flat_field_manifest(
+                    function_name, raw_field_manifest
+                ),
+            )
+        if function_name == InvertConditionManifest.NOT_NULL_CONDITION_KEY:
+            return InvertConditionManifest(
+                condition_manifest=IsNullConditionManifest.from_raw_manifest(
+                    raw_function_manifest=pop_raw_flat_field_manifest(
+                        function_name, raw_field_manifest
+                    )
+                )
+            )
+        raise ValueError(f"Unexpected boolean function name [{function_name}]")
+    raise ValueError(f"Unexpected boolean manifest type: [{type(raw_field_manifest)}]")
