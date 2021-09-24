@@ -2,50 +2,21 @@
 {% from "po_monthly_report/compliance/up_to_date.html.jinja2" import up_to_date with context %}
 
 
-{% set goal_img = "goal" 
-  ~ ("_assessments" if assessments_goal_met else "")
-  ~ ("_facetoface" if facetoface_goal_met else "") 
-  ~ ".png" 
-%}
 
-{% block rows %}
-  <tr>
-    <td>
-      <img 
-        src="{{ static_image_path }}/{{ goal_img }}" 
-        alt=""
-        width="600"
-        style="width: 600px; max-width: 100%;"
-      />
-    </td>
-  </tr>
-  {{ components.y_padding(8) }}
-  <tr>
-    <td>
-      {{ components.layout_table_start()}}
-        <tr>
-          {{ components.x_padding(32) }}
-          <td>
-            {{ components.layout_table_start()}}
-              <tr>
-                {{ components.card_heading("Great work!", align="center", size="xl") }}
-              </tr>
-              {{ components.y_padding(24) }}
-                <tr>
-                  <td>
-                    {% if assessments_goal_met %}
-                      {{ up_to_date("assessments") }}
-                    {% else %}
-                      {{ up_to_date("facetoface") }}
-                    {% endif %}
-                  </td>
-                </tr>
-            {{ components.layout_table_end()}}
-          </td>
-          {{ components.x_padding(32) }}
-        </tr>
-      {{ components.layout_table_end()}}
-    </td>
-  </tr>
-  {{ components.y_padding(32) }}
-{% endblock rows %}
+{% block children %}
+  {{ components.layout_table_start()}}
+    <tr>
+      {{ components.heading("Great work!", align="center", size="xl") }}
+    </tr>
+    {{ components.y_padding(24) }}
+    <tr>
+      <td>
+        {% if assessments_goal_met %}
+          {{ up_to_date("assessments") }}
+        {% else %}
+          {{ up_to_date("facetoface") }}
+        {% endif %}
+      </td>
+    </tr>
+  {{ components.layout_table_end()}}
+{% endblock children %}

@@ -26,7 +26,10 @@ from jinja2 import Template
 
 import recidiviz.reporting.email_reporting_utils as utils
 from recidiviz.common.constants.states import StateCode
-from recidiviz.reporting.context.po_monthly_report.constants import ReportType
+from recidiviz.reporting.context.po_monthly_report.constants import (
+    BRAND_STYLES,
+    ReportType,
+)
 from recidiviz.reporting.recipient import Recipient
 
 
@@ -89,9 +92,15 @@ class ReportContext(ABC):
         been called before, its value will be returned straight-away.
         """
         if self.prepared_data:
-            return self.prepared_data
+            prepared_data = self.prepared_data
+        else:
+            prepared_data = self._prepare_for_generation()
 
-        return self.prepare_for_generation()
+        # add data common to all report types
+        if "brand_styles" not in prepared_data:
+            prepared_data["brand_styles"] = BRAND_STYLES
+
+        return prepared_data
 
     def render_html(self, minify: bool = True) -> str:
         """Interpolates the report's prepared data into the template
@@ -104,7 +113,7 @@ class ReportContext(ABC):
         return str(soup).strip()
 
     @abstractmethod
-    def prepare_for_generation(self) -> dict:
+    def _prepare_for_generation(self) -> dict:
         """Execute report-specific rules that process the recipient data before templating, returning the prepared,
         report-ready template values.
         This will set self.prepared_data on the instance upon completion. It can be called at any time to reset and

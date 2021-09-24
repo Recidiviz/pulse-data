@@ -138,13 +138,14 @@ class PoMonthlyReportContext(ReportContext):
 
         return recipient_data
 
-    def prepare_for_generation(self) -> dict:
+    def _prepare_for_generation(self) -> dict:
         """Executes PO Monthly Report data preparation."""
         self.prepared_data = copy.deepcopy(self.recipient_data)
 
         self.prepared_data["static_image_path"] = utils.get_static_image_path(
             self.state_code, self.get_report_type()
         )
+
         self.prepared_data["greeting"] = format_greeting(
             self.recipient_data["officer_given_name"]
         )
@@ -173,6 +174,8 @@ class PoMonthlyReportContext(ReportContext):
 
         for metric in self.metrics_delegate.client_outcome_metrics:
             self.prepared_data[metric] = self._get_adverse_outcome(metric)
+
+        self.prepared_data["faq"] = self._get_faq()
 
         return self.prepared_data
 
@@ -627,6 +630,9 @@ class PoMonthlyReportContext(ReportContext):
             }
         return None
 
+    def _get_faq(self) -> dict:
+        return self.properties["faq"]
+
 
 if __name__ == "__main__":
     context = PoMonthlyReportContext(
@@ -750,7 +756,7 @@ if __name__ == "__main__":
     )
 
     with local_project_id_override(GCP_PROJECT_STAGING):
-        prepared_data = context.prepare_for_generation()
+        prepared_data = context.get_prepared_data()
         prepared_data["static_image_path"] = "./recidiviz/reporting/context/static"
 
     print(context.html_template.render(**prepared_data))
