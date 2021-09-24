@@ -62,5 +62,5 @@ class CreateIngestConfigSkeletonTest(unittest.TestCase):
         self.assertEqual(table_config.file_tag, INPUT_TABLE)
         self.assertEqual(
             [field.name for field in table_config.columns],
-            ["field1", "field2", "field3"],
+            ["field1", "field2", "field3", "field_4"],
         )
