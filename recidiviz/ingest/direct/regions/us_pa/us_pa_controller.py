@@ -43,10 +43,6 @@ from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentType,
 )
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
-from recidiviz.common.constants.state.state_incarceration_incident import (
-    StateIncarcerationIncidentOutcomeType,
-    StateIncarcerationIncidentType,
-)
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
@@ -121,8 +117,6 @@ from recidiviz.ingest.models.ingest_info import (
     IngestObject,
     StateAssessment,
     StateCharge,
-    StateIncarcerationIncident,
-    StateIncarcerationIncidentOutcome,
     StateIncarcerationPeriod,
     StateIncarcerationSentence,
     StatePerson,
@@ -163,13 +157,6 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             self._set_sci_incarceration_period_custodial_authority,
         ]
 
-        dbo_Miscon_postprocessors: List[IngestRowPosthookCallable] = [
-            gen_label_single_external_id_hook(US_PA_CONTROL),
-            self._specify_incident_location,
-            self._specify_incident_type,
-            self._specify_incident_details,
-            self._specify_incident_outcome,
-        ]
         supervision_period_postprocessors: List[IngestRowPosthookCallable] = [
             self._unpack_supervision_period_conditions,
             self._set_supervising_officer,
@@ -196,7 +183,6 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
                 self._add_incarceration_type,
                 self._concatenate_incarceration_purpose_codes,
             ],
-            "dbo_Miscon": dbo_Miscon_postprocessors,
             "dbo_LSIHistory": [
                 gen_label_single_external_id_hook(US_PA_PBPP),
                 self._generate_pbpp_assessment_external_id,
@@ -232,9 +218,6 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             ],
             "ccis_incarceration_period": [
                 gen_convert_person_ids_to_external_id_objects(self._get_id_type)
-            ],
-            "dbo_Miscon": [
-                gen_convert_person_ids_to_external_id_objects(self._get_id_type),
             ],
             "dbo_LSIR": [],
             "dbo_LSIHistory": [],
@@ -350,12 +333,6 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             "P",  # SIP Program
             "E",  # SIP Evaluation
             "SCI",  # State Correctional Institution
-        ],
-        StateIncarcerationIncidentOutcomeType.CELL_CONFINEMENT: [
-            "C",  # Cell Confinement
-        ],
-        StateIncarcerationIncidentOutcomeType.RESTRICTED_CONFINEMENT: [
-            "Y",  # Restricted Confinement
         ],
         StateSupervisionType.PROBATION: [
             "Y",  # Yes means Probation; anything else means Parole
@@ -779,7 +756,6 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         if file_tag in [
             "sci_incarceration_period",
             "ccis_incarceration_period",
-            "dbo_Miscon",
         ]:
             return US_PA_CONTROL
 
@@ -1052,91 +1028,6 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
                     obj.incarceration_type = "SCI"
                 elif gating_context.file_tag == "ccis_incarceration_period":
                     obj.incarceration_type = "CCIS"
-
-    @staticmethod
-    def _specify_incident_location(
-        _gating_context: IngestGatingContext,
-        row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        """Specifies the exact location where the incarceration incident took place."""
-        place_code = row.get("place_hvl_code", None)
-        place_extended = row.get("place_extended", None)
-        location = "-".join(filter(None, [place_code, place_extended]))
-
-        for obj in extracted_objects:
-            if isinstance(obj, StateIncarcerationIncident):
-                if location:
-                    obj.location_within_facility = location
-
-    @staticmethod
-    def _specify_incident_type(
-        _gating_context: IngestGatingContext,
-        row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        """Specifies the type of incarceration incident."""
-        drug_related = row.get("drug_related", None)
-        is_contraband = drug_related == "Y"
-
-        for obj in extracted_objects:
-            if isinstance(obj, StateIncarcerationIncident):
-                if is_contraband:
-                    obj.incident_type = StateIncarcerationIncidentType.CONTRABAND.value
-                else:
-                    obj.incident_type = StateIncarcerationIncidentType.REPORT.value
-
-    @staticmethod
-    def _specify_incident_details(
-        _gating_context: IngestGatingContext,
-        row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        """Specifies the incarceration incident details. This is a grouping of flags indicating whether certain
-        "classes" of charges are involved in the incident."""
-        category_1 = row.get("ctgory_of_chrgs_1", None)
-        category_2 = row.get("ctgory_of_chrgs_2", None)
-        category_3 = row.get("ctgory_of_chrgs_3", None)
-        category_4 = row.get("ctgory_of_chrgs_4", None)
-        category_5 = row.get("ctgory_of_chrgs_5", None)
-
-        details_mapping = {
-            "category_1": category_1,
-            "category_2": category_2,
-            "category_3": category_3,
-            "category_4": category_4,
-            "category_5": category_5,
-        }
-
-        for obj in extracted_objects:
-            if isinstance(obj, StateIncarcerationIncident):
-                obj.incident_details = json.dumps(details_mapping)
-
-    @staticmethod
-    def _specify_incident_outcome(
-        _gating_context: IngestGatingContext,
-        row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        """Specifies the type of outcome of the incarceration incident."""
-        misconduct_number = row.get("misconduct_number", None)
-        confinement_code = row.get("confinement", None)
-        confinement_date = row.get("confinement_date", None)
-        is_restricted = confinement_code == "Y"
-        is_cell = confinement_code == "C"
-
-        for obj in extracted_objects:
-            if isinstance(obj, StateIncarcerationIncidentOutcome):
-                if misconduct_number:
-                    obj.state_incarceration_incident_outcome_id = misconduct_number
-
-                if is_restricted or is_cell:
-                    obj.outcome_type = confinement_code
-                    obj.date_effective = confinement_date
 
     @staticmethod
     def _unpack_supervision_period_conditions(

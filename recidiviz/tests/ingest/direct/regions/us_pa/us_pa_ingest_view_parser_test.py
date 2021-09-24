@@ -29,10 +29,16 @@ from recidiviz.common.constants.state.external_id_types import (
     US_PA_INMATE,
     US_PA_PBPP,
 )
+from recidiviz.common.constants.state.state_incarceration_incident import (
+    StateIncarcerationIncidentOutcomeType,
+    StateIncarcerationIncidentType,
+)
 from recidiviz.common.constants.state.state_person_alias import StatePersonAliasType
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.entity.state.entities import (
+    StateIncarcerationIncident,
+    StateIncarcerationIncidentOutcome,
     StatePerson,
     StatePersonAlias,
     StatePersonEthnicity,
@@ -422,3 +428,154 @@ class UsPaIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
         ]
 
         self._run_parse_ingest_view_test("dbo_Offender", expected_output)
+
+    def test_parse_dbo_Miscon(self) -> None:
+        expected_output = [
+            StatePerson(
+                state_code="US_PA",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_PA", external_id="445566", id_type="US_PA_CONT"
+                    )
+                ],
+                incarceration_incidents=[
+                    StateIncarcerationIncident(
+                        external_id="A123456",
+                        state_code="US_PA",
+                        incident_type=StateIncarcerationIncidentType.REPORT,
+                        incident_type_raw_text="REPORT",
+                        incident_date=datetime.date(2018, 5, 10),
+                        facility="WAM",
+                        incident_details='{"CATEGORY_1": "", "CATEGORY_2": "", "CATEGORY_3": "", "CATEGORY_4": "", "CATEGORY_5": ""}',
+                        incarceration_incident_outcomes=[
+                            StateIncarcerationIncidentOutcome(
+                                external_id="A123456",
+                                state_code="US_PA",
+                                outcome_type=StateIncarcerationIncidentOutcomeType.RESTRICTED_CONFINEMENT,
+                                outcome_type_raw_text="Y",
+                                date_effective=datetime.date(2018, 5, 17),
+                                report_date=datetime.date(2018, 5, 16),
+                            )
+                        ],
+                    )
+                ],
+            ),
+            StatePerson(
+                state_code="US_PA",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_PA", external_id="778899", id_type="US_PA_CONT"
+                    )
+                ],
+                incarceration_incidents=[
+                    StateIncarcerationIncident(
+                        external_id="A234567",
+                        state_code="US_PA",
+                        incident_type=StateIncarcerationIncidentType.REPORT,
+                        incident_type_raw_text="REPORT",
+                        incident_date=datetime.date(1991, 3, 6),
+                        facility="GRA",
+                        location_within_facility="CELL-AA UNIT",
+                        incident_details='{"CATEGORY_1": "", "CATEGORY_2": "X", "CATEGORY_3": "X", "CATEGORY_4": "", "CATEGORY_5": ""}',
+                        incarceration_incident_outcomes=[
+                            StateIncarcerationIncidentOutcome(
+                                external_id="A234567",
+                                state_code="US_PA",
+                                outcome_type=StateIncarcerationIncidentOutcomeType.CELL_CONFINEMENT,
+                                outcome_type_raw_text="C",
+                                date_effective=datetime.date(1991, 3, 8),
+                                hearing_date=datetime.date(1991, 3, 6),
+                                report_date=datetime.date(1991, 3, 7),
+                            )
+                        ],
+                    )
+                ],
+            ),
+            StatePerson(
+                state_code="US_PA",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_PA", external_id="778899", id_type="US_PA_CONT"
+                    )
+                ],
+                incarceration_incidents=[
+                    StateIncarcerationIncident(
+                        external_id="B222333",
+                        state_code="US_PA",
+                        incident_type=StateIncarcerationIncidentType.REPORT,
+                        incident_type_raw_text="REPORT",
+                        incident_date=datetime.date(1993, 7, 6),
+                        facility="SMI",
+                        incident_details='{"CATEGORY_1": "", "CATEGORY_2": "", "CATEGORY_3": "", "CATEGORY_4": "", "CATEGORY_5": ""}',
+                        incarceration_incident_outcomes=[
+                            StateIncarcerationIncidentOutcome(
+                                external_id="B222333",
+                                state_code="US_PA",
+                                outcome_type=StateIncarcerationIncidentOutcomeType.RESTRICTED_CONFINEMENT,
+                                outcome_type_raw_text="Y",
+                                date_effective=datetime.date(1993, 7, 6),
+                                report_date=datetime.date(1993, 7, 6),
+                            )
+                        ],
+                    )
+                ],
+            ),
+            StatePerson(
+                state_code="US_PA",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_PA", external_id="778899", id_type="US_PA_CONT"
+                    )
+                ],
+                incarceration_incidents=[
+                    StateIncarcerationIncident(
+                        external_id="B444555",
+                        state_code="US_PA",
+                        incident_type=StateIncarcerationIncidentType.CONTRABAND,
+                        incident_type_raw_text="CONTRABAND",
+                        incident_date=datetime.date(1993, 12, 17),
+                        facility="SMI",
+                        location_within_facility="RHU-A 200",
+                        incident_details='{"CATEGORY_1": "", "CATEGORY_2": "X", "CATEGORY_3": "", "CATEGORY_4": "", "CATEGORY_5": ""}',
+                        incarceration_incident_outcomes=[
+                            StateIncarcerationIncidentOutcome(
+                                external_id="B444555",
+                                state_code="US_PA",
+                                outcome_type_raw_text="N",
+                                hearing_date=datetime.date(1993, 12, 18),
+                                report_date=datetime.date(1993, 12, 17),
+                            )
+                        ],
+                    )
+                ],
+            ),
+            StatePerson(
+                state_code="US_PA",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_PA", external_id="778899", id_type="US_PA_CONT"
+                    )
+                ],
+                incarceration_incidents=[
+                    StateIncarcerationIncident(
+                        external_id="B444556",
+                        state_code="US_PA",
+                        incident_type=StateIncarcerationIncidentType.CONTRABAND,
+                        incident_type_raw_text="CONTRABAND",
+                        incident_date=datetime.date(1993, 12, 17),
+                        facility="SMI",
+                        location_within_facility="RHU-A 200",
+                        incident_details='{"CATEGORY_1": "", "CATEGORY_2": "X", "CATEGORY_3": "", "CATEGORY_4": "", "CATEGORY_5": ""}',
+                        incarceration_incident_outcomes=[
+                            StateIncarcerationIncidentOutcome(
+                                external_id="B444556",
+                                state_code="US_PA",
+                                outcome_type_raw_text="N",
+                            )
+                        ],
+                    )
+                ],
+            ),
+        ]
+
+        self._run_parse_ingest_view_test("dbo_Miscon", expected_output)

@@ -82,8 +82,6 @@ from recidiviz.ingest.models.ingest_info import (
     StateAgent,
     StateAssessment,
     StateCharge,
-    StateIncarcerationIncident,
-    StateIncarcerationIncidentOutcome,
     StateIncarcerationPeriod,
     StateIncarcerationSentence,
     StatePerson,
@@ -906,153 +904,6 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         )
 
         self.run_legacy_parse_file_test(expected, "sci_incarceration_period")
-
-    def test_populate_data_dbo_Miscon(self) -> None:
-        expected = IngestInfo(
-            state_people=[
-                StatePerson(
-                    state_person_id="445566",
-                    state_person_external_ids=[
-                        StatePersonExternalId(
-                            state_person_external_id_id="445566", id_type=US_PA_CONTROL
-                        ),
-                    ],
-                    state_incarceration_incidents=[
-                        StateIncarcerationIncident(
-                            state_incarceration_incident_id="A123456",
-                            incident_type="REPORT",
-                            incident_date="20180510",
-                            facility="WAM",
-                            incident_details=json.dumps(
-                                {
-                                    "category_1": "",
-                                    "category_2": "",
-                                    "category_3": "",
-                                    "category_4": "",
-                                    "category_5": "",
-                                }
-                            ),
-                            state_incarceration_incident_outcomes=[
-                                StateIncarcerationIncidentOutcome(
-                                    state_incarceration_incident_outcome_id="A123456",
-                                    outcome_type="Y",
-                                    date_effective="20180517",
-                                    report_date="20180516",
-                                    hearing_date="00000000",
-                                )
-                            ],
-                        )
-                    ],
-                ),
-                StatePerson(
-                    state_person_id="778899",
-                    state_person_external_ids=[
-                        StatePersonExternalId(
-                            state_person_external_id_id="778899", id_type=US_PA_CONTROL
-                        ),
-                    ],
-                    state_incarceration_incidents=[
-                        StateIncarcerationIncident(
-                            state_incarceration_incident_id="A234567",
-                            incident_type="REPORT",
-                            incident_date="19910306",
-                            facility="GRA",
-                            location_within_facility="CELL-AA UNIT",
-                            incident_details=json.dumps(
-                                {
-                                    "category_1": "",
-                                    "category_2": "X",
-                                    "category_3": "X",
-                                    "category_4": "",
-                                    "category_5": "",
-                                }
-                            ),
-                            state_incarceration_incident_outcomes=[
-                                StateIncarcerationIncidentOutcome(
-                                    state_incarceration_incident_outcome_id="A234567",
-                                    outcome_type="C",
-                                    date_effective="19910308",
-                                    report_date="19910307",
-                                    hearing_date="19910306",
-                                )
-                            ],
-                        ),
-                        StateIncarcerationIncident(
-                            state_incarceration_incident_id="B222333",
-                            incident_type="REPORT",
-                            incident_date="19930706",
-                            facility="SMI",
-                            incident_details=json.dumps(
-                                {
-                                    "category_1": "",
-                                    "category_2": "",
-                                    "category_3": "",
-                                    "category_4": "",
-                                    "category_5": "",
-                                }
-                            ),
-                            state_incarceration_incident_outcomes=[
-                                StateIncarcerationIncidentOutcome(
-                                    state_incarceration_incident_outcome_id="B222333",
-                                    outcome_type="Y",
-                                    date_effective="19930706",
-                                    report_date="19930706",
-                                    hearing_date="00000000",
-                                )
-                            ],
-                        ),
-                        StateIncarcerationIncident(
-                            state_incarceration_incident_id="B444555",
-                            incident_type="CONTRABAND",
-                            incident_date="19931217",
-                            facility="SMI",
-                            location_within_facility="RHU-A 200",
-                            incident_details=json.dumps(
-                                {
-                                    "category_1": "",
-                                    "category_2": "X",
-                                    "category_3": "",
-                                    "category_4": "",
-                                    "category_5": "",
-                                }
-                            ),
-                            state_incarceration_incident_outcomes=[
-                                StateIncarcerationIncidentOutcome(
-                                    state_incarceration_incident_outcome_id="B444555",
-                                    report_date="19931217",
-                                    hearing_date="19931218",
-                                )
-                            ],
-                        ),
-                        StateIncarcerationIncident(
-                            state_incarceration_incident_id="B444556",
-                            incident_type="CONTRABAND",
-                            incident_date="19931217",
-                            facility="SMI",
-                            location_within_facility="RHU-A 200",
-                            incident_details=json.dumps(
-                                {
-                                    "category_1": "",
-                                    "category_2": "X",
-                                    "category_3": "",
-                                    "category_4": "",
-                                    "category_5": "",
-                                }
-                            ),
-                            state_incarceration_incident_outcomes=[
-                                StateIncarcerationIncidentOutcome(
-                                    state_incarceration_incident_outcome_id="B444556",
-                                    report_date="0 0 0",
-                                    hearing_date="0 0 0",
-                                )
-                            ],
-                        ),
-                    ],
-                ),
-            ]
-        )
-
-        self.run_legacy_parse_file_test(expected, "dbo_Miscon")
 
     def test_populate_data_dbo_LSIHistory(self) -> None:
         expected = IngestInfo(
@@ -3444,6 +3295,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             incarceration_incident=p4_ii_3,
             report_date=datetime.date(year=1993, month=12, day=17),
             hearing_date=datetime.date(year=1993, month=12, day=18),
+            outcome_type_raw_text="N",
         )
         p4_ii_3.incarceration_incident_outcomes.append(p4_ii_3_outcome)
         person_4.incarceration_incidents.append(p4_ii_3)
@@ -3472,6 +3324,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             state_code=_STATE_CODE_UPPER,
             person=person_4,
             incarceration_incident=p4_ii_4,
+            outcome_type_raw_text="N",
         )
         p4_ii_4.incarceration_incident_outcomes.append(p4_ii_4_outcome)
         person_4.incarceration_incidents.append(p4_ii_4)
