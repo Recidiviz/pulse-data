@@ -31,7 +31,7 @@ from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsIngestArgs,
 )
-from recidiviz.ingest.direct.controllers.ingest_view_file_parser import (
+from recidiviz.ingest.direct.controllers.ingest_view_file_parser_delegate import (
     yaml_mappings_filepath,
 )
 from recidiviz.ingest.direct.controllers.ingest_view_processor import (
