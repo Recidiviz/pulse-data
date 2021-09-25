@@ -49,7 +49,7 @@ WITH external_data AS (
     WHERE region_code != 'US_PA' or id_type = 'US_PA_CONT'
 ), internal_data AS (
     SELECT state_code as region_code, person_external_id, person_id, admission_date
-    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_admission_metrics_materialized`
+    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_admission_metrics_included_in_state_population_materialized`
     WHERE admission_reason NOT IN ('TRANSFER', 'STATUS_CHANGE')
     -- Exclude parole revocation admissions for states that have parole board hold admissions --
     AND (state_code NOT IN ('US_ID', 'US_MO', 'US_PA') OR admission_reason != 'PAROLE_REVOCATION')

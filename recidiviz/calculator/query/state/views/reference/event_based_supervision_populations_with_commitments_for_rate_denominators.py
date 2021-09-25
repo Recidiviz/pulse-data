@@ -81,7 +81,7 @@ EVENT_BASED_SUPERVISION_POPULATIONS_WITH_COMMITMENTS_FOR_RATE_DENOMINATORS_QUERY
           supervising_officer_external_id AS officer_external_id,
           prioritized_race_or_ethnicity as race_or_ethnicity,
           gender, {age_bucket}, assessment_score_bucket
-        FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_commitment_from_supervision_metrics_materialized`
+        FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_commitment_from_supervision_metrics_included_in_state_population_materialized`
     ), all_pop AS (
         SELECT * FROM supervision_pop
         UNION ALL

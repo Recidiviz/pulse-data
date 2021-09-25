@@ -49,6 +49,9 @@ class IncarcerationEvent(IdentifierEvent):
     interaction that we will want to track when calculating incarceration metrics.
     """
 
+    # Whether the period corresponding to the event is counted in the state's population
+    included_in_state_population: bool = attr.ib(default=True)
+
     # Facility
     facility: Optional[str] = attr.ib(default=None)
 

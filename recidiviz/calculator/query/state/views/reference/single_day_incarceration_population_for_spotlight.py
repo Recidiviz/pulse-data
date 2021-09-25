@@ -44,7 +44,7 @@ SINGLE_DAY_INCARCERATION_POPULATION_FOR_SPOTLIGHT_QUERY_TEMPLATE = """
       date_of_stay,
       facility
     FROM
-      `{project_id}.{materialized_metrics_dataset}.most_recent_single_day_incarceration_population_metrics_materialized`
+      `{project_id}.{materialized_metrics_dataset}.most_recent_single_day_incarceration_population_metrics_included_in_state_population_materialized`
     WHERE {state_specific_facility_exclusion}
     """
 

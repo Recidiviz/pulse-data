@@ -55,7 +55,7 @@ US_ID_INCARCERATION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
             CAST(NULL AS STRING) AS supervising_officer_external_id,
             CAST(NULL AS STRING) AS case_type
         FROM
-            `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_metrics_materialized`
+            `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_metrics_included_in_state_population_materialized`
         WHERE state_code = 'US_ID'
     )
     SELECT

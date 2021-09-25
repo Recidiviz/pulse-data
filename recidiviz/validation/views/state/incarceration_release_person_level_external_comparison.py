@@ -49,10 +49,10 @@ WITH external_data AS (
     WHERE region_code != 'US_PA' or id_type = 'US_PA_CONT'
 ), internal_data AS (
   SELECT internal.state_code as region_code, internal.person_external_id, internal.person_id, release_date
-  FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_release_metrics_materialized` internal
+  FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_release_metrics_included_in_state_population_materialized` internal
   -- Need to filter out all PA releases that occur on the same date as a PA admission, since those aren't counted in external and may actually be transfers
   LEFT JOIN 
-  `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_admission_metrics_materialized` metrics
+  `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_admission_metrics_included_in_state_population_materialized` metrics
   ON internal.state_code = metrics.state_code AND internal.person_id = metrics.person_id AND internal.release_date = metrics.admission_date
   WHERE internal.state_code != 'US_PA' OR  (release_reason != 'TRANSFER' AND admission_date IS NULL)
 ), internal_metrics_for_valid_regions_and_dates AS (

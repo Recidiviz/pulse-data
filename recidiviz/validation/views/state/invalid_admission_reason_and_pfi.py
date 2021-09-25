@@ -34,7 +34,7 @@ INVALID_ADMISSION_REASON_AND_PFI_QUERY_TEMPLATE = """
     /*{description}*/
     SELECT state_code AS region_code,
     * EXCEPT (state_code)
-    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_admission_metrics_materialized`
+    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_admission_metrics_included_in_state_population_materialized`
     -- Any REVOCATION admission_reason should have a purpose of GENERAL
     WHERE (admission_reason LIKE '%REVOCATION'
         AND specialized_purpose_for_incarceration NOT IN ('GENERAL'))

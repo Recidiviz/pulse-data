@@ -61,7 +61,7 @@ EVENT_BASED_COMMITMENTS_FROM_SUPERVISION_FOR_MATRIX_QUERY_TEMPLATE = """
             {state_specific_recommended_for_revocation},
             violation_history_description AS violation_record,
             violation_type_frequency_counter
-        FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_commitment_from_supervision_metrics_materialized`
+        FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_commitment_from_supervision_metrics_included_in_state_population_materialized`
         WHERE {state_specific_admission_type_inclusion_filter}
     )
     

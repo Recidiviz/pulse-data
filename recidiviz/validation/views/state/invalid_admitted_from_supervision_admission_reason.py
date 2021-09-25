@@ -26,6 +26,9 @@ import attr
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.dataflow_config import DATAFLOW_METRICS_TO_TABLES
 from recidiviz.calculator.query.state import dataset_config as state_dataset_config
+from recidiviz.calculator.query.state.views.dataflow_metrics_materialized.most_recent_dataflow_metrics import (
+    generate_metric_view_names,
+)
 from recidiviz.common.attr_utils import get_enum_cls
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
@@ -44,17 +47,18 @@ invalid, ingest-only admission_reason values of ADMITTED_FROM_SUPERVISION."""
 
 SELECT_FROM_METRICS_TEMPLATE = (
     "(SELECT state_code AS region_code, person_id, metric_type, job_id FROM "
-    "`{{project_id}}.{{materialized_metrics_dataset}}.most_recent_{metric_table}_materialized` "
+    "`{{project_id}}.{{materialized_metrics_dataset}}.most_recent_{metric_view_name}_materialized` "
     "WHERE admission_reason = 'ADMITTED_FROM_SUPERVISION')"
 )
 
 
 def _invalid_admitted_from_supervision_admissions_view_builder() -> str:
     applicable_tables = [
-        SELECT_FROM_METRICS_TEMPLATE.format(metric_table=table)
+        SELECT_FROM_METRICS_TEMPLATE.format(metric_view_name=metric_view_name)
         for metric, table in DATAFLOW_METRICS_TO_TABLES.items()
         if (field := attr.fields_dict(metric).get("admission_reason")) is not None
         and get_enum_cls(field) == StateIncarcerationPeriodAdmissionReason
+        for metric_view_name in generate_metric_view_names(table)
     ]
 
     return "\n UNION ALL \n".join(applicable_tables)

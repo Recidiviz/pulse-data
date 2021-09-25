@@ -43,7 +43,7 @@ INCARCERATION_POPULATION_BY_MONTH_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = """
         gender,
         {age_bucket},
       FROM
-        `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_metrics_materialized`
+        `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_metrics_included_in_state_population_materialized`
       WHERE date_of_stay = DATE(year, month, 1)
         AND {state_specific_facility_exclusion}
         AND {facility_type_filter}

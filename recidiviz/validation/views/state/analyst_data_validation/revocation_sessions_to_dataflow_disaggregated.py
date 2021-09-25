@@ -45,7 +45,7 @@ REVOCATION_SESSIONS_TO_DATAFLOW_DISAGGREGATED_QUERY_TEMPLATE = """
         person_id,
         state_code,
         admission_date AS revocation_date
-    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_commitment_from_supervision_metrics_materialized`
+    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_commitment_from_supervision_metrics_included_in_state_population_materialized`
     WHERE admission_reason LIKE '%REVOCATION' 
     )
     ,
