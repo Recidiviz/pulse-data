@@ -705,10 +705,12 @@ class CustomFunctionManifest(ManifestNode[ManifestNodeT]):
         kwarg_manifests: Dict[str, ManifestNode] = {}
         for arg, raw_manifest in raw_args_manifests.items():
             if isinstance(raw_manifest, str):
-                kwarg_manifests[arg] = build_manifest_from_raw(raw_manifest, delegate)
+                kwarg_manifests[arg] = build_manifest_from_raw(
+                    raw_manifest, delegate, object
+                )
             elif isinstance(raw_manifest, dict):
                 kwarg_manifests[arg] = build_manifest_from_raw(
-                    YAMLDict(raw_manifest), delegate
+                    YAMLDict(raw_manifest), delegate, object
                 )
             else:
                 raise ValueError(
@@ -1178,11 +1180,12 @@ class BooleanConditionManifestFactory:
         delegate: IngestViewFileParserDelegate,
     ) -> "BooleanConditionManifest[str]":
         """Builds a BooleanConditionManifest from the provided raw manifest."""
-        condition_manifest = build_boolean_manifest_from_raw(
+        condition_manifest = build_manifest_from_raw_typed(
             pop_raw_flat_field_manifest(
                 BooleanConditionManifest.CONDITION_ARG_KEY, raw_function_manifest
             ),
             delegate,
+            bool,
         )
 
         then_manifest = build_str_manifest_from_raw(
@@ -1213,82 +1216,6 @@ class BooleanConditionManifestFactory:
         )
 
 
-def _get_complex_flat_field_manifest(
-    raw_field_manifest: YAMLDict, delegate: IngestViewFileParserDelegate
-) -> ManifestNode[str]:
-    """Returns the manifest node for a flat field that should be hydrated with
-    the result of some function.
-
-    The input raw manifest must follow this structure:
-    $<function_name>:
-        <dict with function args>
-    """
-    function_name = one(raw_field_manifest.keys())
-    manifest: ManifestNode[str]
-    if function_name == SerializedJSONDictFieldManifest.JSON_DICT_KEY:
-        function_arguments = raw_field_manifest.pop_dict(function_name)
-        manifest = SerializedJSONDictFieldManifest(
-            key_to_manifest_map={
-                key: build_str_manifest_from_raw(
-                    pop_raw_flat_field_manifest(key, function_arguments),
-                    delegate=delegate,
-                )
-                for key in function_arguments.keys()
-            }
-        )
-    elif function_name == ConcatenatedStringsManifest.CONCATENATE_KEY:
-        manifest = ConcatenatedStringsManifest.from_raw_manifest(
-            raw_function_manifest=raw_field_manifest.pop_dict(function_name),
-            delegate=delegate,
-        )
-    elif function_name == PersonNameManifest.PERSON_NAME_KEY:
-        manifest = PersonNameManifest.from_raw_manifest(
-            raw_function_manifest=raw_field_manifest.pop_dict(function_name),
-            delegate=delegate,
-        )
-    elif function_name == PhysicalAddressManifest.PHYSICAL_ADDRESS_KEY:
-        manifest = PhysicalAddressManifest.from_raw_manifest(
-            raw_function_manifest=raw_field_manifest.pop_dict(function_name),
-            delegate=delegate,
-        )
-    elif function_name == BooleanConditionManifest.BOOLEAN_CONDITION_KEY:
-
-        manifest = BooleanConditionManifestFactory.from_raw_manifest(
-            raw_function_manifest=raw_field_manifest.pop_dict(function_name),
-            delegate=delegate,
-        )
-    elif function_name == CustomFunctionManifest.CUSTOM_FUNCTION_KEY:
-        manifest = CustomFunctionManifest.from_raw_manifest(
-            raw_function_manifest=raw_field_manifest.pop_dict(function_name),
-            delegate=delegate,
-            return_type=str,
-        )
-    else:
-        # TODO(#9086): Add support for building a string physical address from parts
-        raise ValueError(
-            f"Unexpected format for function field manifest: [{raw_field_manifest}]"
-        )
-
-    if len(raw_field_manifest):
-        raise ValueError(
-            f"Found unused keys in field manifest: {raw_field_manifest.keys()}"
-        )
-    return manifest
-
-
-def _get_simple_flat_field_manifest(raw_field_manifest: str) -> ManifestNode[str]:
-    # If the value in the manifest for this field is a string, it is either
-    #  a) A literal string value to hydrate the field with, or
-    #  b) The name of a column whose value we should hydrate the field with
-    match = re.match(
-        StringLiteralFieldManifest.STRING_LITERAL_VALUE_REGEX,
-        raw_field_manifest,
-    )
-    if match:
-        return StringLiteralFieldManifest(literal_value=match.group(1))
-    return DirectMappingFieldManifest(mapped_column=raw_field_manifest)
-
-
 def pop_raw_flat_field_manifest_optional(
     field_name: str, raw_parent_manifest: YAMLDict
 ) -> Optional[Union[str, YAMLDict]]:
@@ -1315,71 +1242,117 @@ def pop_raw_flat_field_manifest(
 def build_str_manifest_from_raw(
     raw_field_manifest: Union[str, YAMLDict], delegate: IngestViewFileParserDelegate
 ) -> ManifestNode[str]:
-    """Builds a ManifestNode from the provided raw manifest """
+    """Builds a ManifestNode[str] from the provided raw manifest."""
+    return build_manifest_from_raw_typed(raw_field_manifest, delegate, str)
+
+
+def build_manifest_from_raw_typed(
+    raw_field_manifest: Union[str, YAMLDict],
+    delegate: IngestViewFileParserDelegate,
+    result_type: Type[ManifestNodeT],
+) -> ManifestNode[ManifestNodeT]:
+    manifest = build_manifest_from_raw(raw_field_manifest, delegate, result_type)
+    if manifest.result_type != result_type:
+        raise ValueError(
+            f"Unexpected manifest node type: [{type(manifest)}]. Expected result_type: [{result_type}]."
+        )
+    return manifest
+
+
+def build_manifest_from_raw(
+    raw_field_manifest: Union[str, YAMLDict],
+    delegate: IngestViewFileParserDelegate,
+    result_type: Type[ManifestNodeT],
+) -> ManifestNode:
+    """Builds a ManifestNode from the provided raw manifest."""
     if isinstance(raw_field_manifest, str):
-        return _get_simple_flat_field_manifest(raw_field_manifest)
-    if isinstance(raw_field_manifest, YAMLDict):
-        return _get_complex_flat_field_manifest(raw_field_manifest, delegate)
-    raise ValueError(f"Unexpected string manifest type: [{type(raw_field_manifest)}]")
+        # If the value in the manifest for this field is a string, it is either
+        #  a) A literal string value to hydrate the field with, or
+        #  b) The name of a column whose value we should hydrate the field with
+        match = re.match(
+            StringLiteralFieldManifest.STRING_LITERAL_VALUE_REGEX,
+            raw_field_manifest,
+        )
+        if match:
+            return StringLiteralFieldManifest(literal_value=match.group(1))
+        return DirectMappingFieldManifest(mapped_column=raw_field_manifest)
 
-
-def build_boolean_manifest_from_raw(
-    raw_field_manifest: Union[str, YAMLDict], delegate: IngestViewFileParserDelegate
-) -> ManifestNode[bool]:
-    """Builds a ManifestNode[bool] from the provided raw manifest."""
     if isinstance(raw_field_manifest, YAMLDict):
-        function_name = one(raw_field_manifest.keys())
-        if function_name == ContainsConditionManifest.IN_CONDITION_KEY:
-            return ContainsConditionManifest.from_raw_manifest(
-                raw_function_manifest=raw_field_manifest.pop_dict(function_name),
+        manifest_node_name = one(raw_field_manifest.keys())
+
+        if manifest_node_name == SerializedJSONDictFieldManifest.JSON_DICT_KEY:
+            function_arguments = raw_field_manifest.pop_dict(manifest_node_name)
+            return SerializedJSONDictFieldManifest(
+                key_to_manifest_map={
+                    key: build_str_manifest_from_raw(
+                        pop_raw_flat_field_manifest(key, function_arguments),
+                        delegate=delegate,
+                    )
+                    for key in function_arguments.keys()
+                }
+            )
+        if manifest_node_name == ConcatenatedStringsManifest.CONCATENATE_KEY:
+            return ConcatenatedStringsManifest.from_raw_manifest(
+                raw_function_manifest=raw_field_manifest.pop_dict(manifest_node_name),
                 delegate=delegate,
             )
-        if function_name == InvertConditionManifest.NOT_IN_CONDITION_KEY:
+        if manifest_node_name == PersonNameManifest.PERSON_NAME_KEY:
+            return PersonNameManifest.from_raw_manifest(
+                raw_function_manifest=raw_field_manifest.pop_dict(manifest_node_name),
+                delegate=delegate,
+            )
+        if manifest_node_name == PhysicalAddressManifest.PHYSICAL_ADDRESS_KEY:
+            return PhysicalAddressManifest.from_raw_manifest(
+                raw_function_manifest=raw_field_manifest.pop_dict(manifest_node_name),
+                delegate=delegate,
+            )
+        if manifest_node_name == BooleanConditionManifest.BOOLEAN_CONDITION_KEY:
+
+            return BooleanConditionManifestFactory.from_raw_manifest(
+                raw_function_manifest=raw_field_manifest.pop_dict(manifest_node_name),
+                delegate=delegate,
+            )
+        if manifest_node_name == CustomFunctionManifest.CUSTOM_FUNCTION_KEY:
+            return CustomFunctionManifest.from_raw_manifest(
+                raw_function_manifest=raw_field_manifest.pop_dict(manifest_node_name),
+                delegate=delegate,
+                return_type=result_type,
+            )
+        if manifest_node_name == ContainsConditionManifest.IN_CONDITION_KEY:
+            return ContainsConditionManifest.from_raw_manifest(
+                raw_function_manifest=raw_field_manifest.pop_dict(manifest_node_name),
+                delegate=delegate,
+            )
+        if manifest_node_name == InvertConditionManifest.NOT_IN_CONDITION_KEY:
             return InvertConditionManifest(
                 condition_manifest=ContainsConditionManifest.from_raw_manifest(
-                    raw_function_manifest=raw_field_manifest.pop_dict(function_name),
-                    delegate=delegate,
-                )
-            )
-        if function_name == IsNullConditionManifest.IS_NULL_CONDITION_KEY:
-            return IsNullConditionManifest.from_raw_manifest(
-                raw_function_manifest=pop_raw_flat_field_manifest(
-                    function_name, raw_field_manifest
-                ),
-                delegate=delegate,
-            )
-        if function_name == InvertConditionManifest.NOT_NULL_CONDITION_KEY:
-            return InvertConditionManifest(
-                condition_manifest=IsNullConditionManifest.from_raw_manifest(
-                    raw_function_manifest=pop_raw_flat_field_manifest(
-                        function_name, raw_field_manifest
+                    raw_function_manifest=raw_field_manifest.pop_dict(
+                        manifest_node_name
                     ),
                     delegate=delegate,
                 )
             )
-        if function_name == CustomFunctionManifest.CUSTOM_FUNCTION_KEY:
-            return CustomFunctionManifest.from_raw_manifest(
-                raw_function_manifest=raw_field_manifest.pop_dict(function_name),
+        if manifest_node_name == IsNullConditionManifest.IS_NULL_CONDITION_KEY:
+            return IsNullConditionManifest.from_raw_manifest(
+                raw_function_manifest=pop_raw_flat_field_manifest(
+                    manifest_node_name, raw_field_manifest
+                ),
                 delegate=delegate,
-                return_type=bool,
             )
-        raise ValueError(f"Unexpected boolean function name [{function_name}]")
-    raise ValueError(f"Unexpected boolean manifest type: [{type(raw_field_manifest)}]")
+        if manifest_node_name == InvertConditionManifest.NOT_NULL_CONDITION_KEY:
+            return InvertConditionManifest(
+                condition_manifest=IsNullConditionManifest.from_raw_manifest(
+                    raw_function_manifest=pop_raw_flat_field_manifest(
+                        manifest_node_name, raw_field_manifest
+                    ),
+                    delegate=delegate,
+                )
+            )
 
-
-def build_manifest_from_raw(
-    raw_field_manifest: Union[str, YAMLDict], delegate: IngestViewFileParserDelegate
-) -> Union[ManifestNode[str], ManifestNode[bool]]:
-    try:
-        return build_str_manifest_from_raw(raw_field_manifest, delegate)
-    except ValueError:
-        pass
-
-    try:
-        return build_boolean_manifest_from_raw(raw_field_manifest, delegate)
-    except ValueError:
-        pass
+        raise ValueError(
+            f"Unexpected manifest name [{manifest_node_name}]: [{raw_field_manifest}]"
+        )
 
     raise ValueError(
-        f"Unexpected manifest type [{type(raw_field_manifest)}]: {raw_field_manifest}"
+        f"Unexpected manifest type: [{type(raw_field_manifest)}]: {raw_field_manifest}"
     )
