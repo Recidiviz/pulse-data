@@ -82,6 +82,8 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
 from recidiviz.ingest.direct.controllers.ingest_view_file_parser import (
     MANIFEST_LANGUAGE_VERSION_KEY,
     IngestViewFileParser,
+)
+from recidiviz.ingest.direct.controllers.ingest_view_file_parser_delegate import (
     IngestViewFileParserDelegateImpl,
     yaml_mappings_filepath,
 )
