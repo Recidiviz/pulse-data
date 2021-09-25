@@ -82,6 +82,9 @@ class IncarcerationMetric(
     # Month
     month: int = attr.ib(default=None)
 
+    # Whether the period corresponding to the metric is counted in the state's population
+    included_in_state_population: bool = attr.ib(default=True)
+
     # Optional characteristics
 
     # Facility

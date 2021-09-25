@@ -22,6 +22,9 @@ from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
 )
+from recidiviz.calculator.query.state.views.dataflow_metrics_materialized.most_recent_dataflow_metrics import (
+    generate_metric_view_names,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -39,7 +42,7 @@ MOST_RECENT_SINGLE_DAY_JOBS_TEMPLATE: str = """
             state_code,
             {metric_date_column}
         FROM
-            `{project_id}.{materialized_metrics_dataset}.most_recent_{metric_table}_materialized`),
+            `{project_id}.{materialized_metrics_dataset}.most_recent_{metric_table_view_name}_materialized`),
     ranked_job_ids AS (
         SELECT
             *,
@@ -48,7 +51,7 @@ MOST_RECENT_SINGLE_DAY_JOBS_TEMPLATE: str = """
       WHERE {metric_date_column} <= CURRENT_DATE('US/Pacific')
     )
     SELECT *
-    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_{metric_table}_materialized`
+    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_{metric_table_view_name}_materialized`
     JOIN (
         SELECT state_code, job_id, {metric_date_column}
         FROM ranked_job_ids
@@ -60,31 +63,40 @@ MOST_RECENT_SINGLE_DAY_JOBS_TEMPLATE: str = """
 
 def _make_most_recent_single_day_metric_view_builder(
     metric_name: str,
-) -> SimpleBigQueryViewBuilder:
+) -> List[SimpleBigQueryViewBuilder]:
     description = (
         f"{metric_name} output for the most recent single day recorded for this metric"
     )
-    view_id = f"most_recent_single_day_{metric_name}"
-    return SimpleBigQueryViewBuilder(
-        dataset_id=DATAFLOW_METRICS_MATERIALIZED_DATASET,
-        view_id=view_id,
-        view_query_template=MOST_RECENT_SINGLE_DAY_JOBS_TEMPLATE,
-        description=description,
-        metric_date_column=METRIC_DATE_COLUMNS_BY_SINGLE_DAY_METRICS_TABLES_TO_MATERIALIZE[
-            metric_name
-        ],
-        metric_table=metric_name,
-        materialized_metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
-        should_materialize=True,
-    )
+    metric_table_view_names = generate_metric_view_names(metric_name)
+    view_builders: List[SimpleBigQueryViewBuilder] = []
+
+    for metric_table_view_name in metric_table_view_names:
+        view_builders.append(
+            SimpleBigQueryViewBuilder(
+                dataset_id=DATAFLOW_METRICS_MATERIALIZED_DATASET,
+                view_id=f"most_recent_single_day_{metric_table_view_name}",
+                view_query_template=MOST_RECENT_SINGLE_DAY_JOBS_TEMPLATE,
+                description=description,
+                metric_date_column=METRIC_DATE_COLUMNS_BY_SINGLE_DAY_METRICS_TABLES_TO_MATERIALIZE[
+                    metric_name
+                ],
+                metric_table_view_name=metric_table_view_name,
+                materialized_metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
+                should_materialize=True,
+            )
+        )
+    return view_builders
 
 
 def generate_most_recent_single_day_metrics_view_builders(
     metric_tables: List[str],
 ) -> List[SimpleBigQueryViewBuilder]:
     return [
-        _make_most_recent_single_day_metric_view_builder(metric_table)
+        view_builder
         for metric_table in metric_tables
+        for view_builder in _make_most_recent_single_day_metric_view_builder(
+            metric_table
+        )
     ]
 
 

@@ -406,6 +406,13 @@ def get_state_specific_violation_response_preprocessing_delegate(
     raise ValueError(f"Unexpected state code [{state_code}]")
 
 
+# TODO(#9251): create state specific delegate to handle logic overrides
+def period_included_in_state_population(
+    incarceration_period: StateIncarcerationPeriod,
+) -> bool:
+    return incarceration_period is not None
+
+
 def get_state_specific_supervision_delegate(
     state_code: str,
 ) -> StateSpecificSupervisionDelegate:

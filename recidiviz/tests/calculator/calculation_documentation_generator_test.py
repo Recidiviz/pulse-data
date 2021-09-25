@@ -416,6 +416,7 @@ Attributes specific to the `IncarcerationAdmissionMetric`:
 |secondary_person_external_id         |STRING  |                                       |
 |year                                 |INTEGER |                                       |
 |month                                |INTEGER |                                       |
+|included_in_state_population         |BOOLEAN |                                       |
 |facility                             |STRING  |                                       |
 |county_of_residence                  |STRING  |                                       |
 |admission_reason                     |STRING  |StateIncarcerationPeriodAdmissionReason|
@@ -457,9 +458,10 @@ Attributes on all metrics:
 
 ####Dependent Views
 
-If you are interested in what views rely on this metric, please run the following script in your shell:
+If you are interested in what views rely on this metric, please run the following script(s) in your shell:
 
-```python -m recidiviz.tools.display_bq_dag_for_view --project_id recidiviz-staging --dataset_id dataflow_metrics_materialized --view_id most_recent_incarceration_admission_metrics --show_downstream_dependencies True```
+```python -m recidiviz.tools.display_bq_dag_for_view --project_id recidiviz-staging --dataset_id dataflow_metrics_materialized --view_id most_recent_incarceration_admission_metrics_included_in_state_population --show_downstream_dependencies True```
+```python -m recidiviz.tools.display_bq_dag_for_view --project_id recidiviz-staging --dataset_id dataflow_metrics_materialized --view_id most_recent_incarceration_admission_metrics_not_included_in_state_population --show_downstream_dependencies True```
 
 """
         self.assertEqual(expected_documentation_string, docs)

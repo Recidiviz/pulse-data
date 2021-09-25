@@ -45,7 +45,7 @@ EVENT_BASED_COMMITMENTS_FROM_SUPERVISION_QUERY_TEMPLATE = """
       prioritized_race_or_ethnicity as race_or_ethnicity,
       gender,
       {age_bucket}
-    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_commitment_from_supervision_metrics_materialized`,
+    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_commitment_from_supervision_metrics_included_in_state_population_materialized`,
     {district_dimension},
     {supervision_type_dimension}
     WHERE {thirty_six_month_filter}

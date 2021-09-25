@@ -37,7 +37,7 @@ INVALID_ADMISSION_REASONS_FOR_TEMPORARY_CUSTODY_DESCRIPTION = """ Incarceration 
 INVALID_ADMISSION_REASONS_FOR_TEMPORARY_CUSTODY_QUERY_TEMPLATE = """
     /*{description}*/
     SELECT state_code AS region_code, * EXCEPT (state_code)
-    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_admission_metrics_materialized`
+    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_admission_metrics_included_in_state_population_materialized`
     -- All admissions with PAROLE_BOARD_HOLD or TEMPORARY_CUSTODY pfi values should 
     -- have a TEMPORARY_CUSTODY admission reason
     WHERE specialized_purpose_for_incarceration IN ('PAROLE_BOARD_HOLD', 'TEMPORARY_CUSTODY')

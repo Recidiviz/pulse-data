@@ -53,7 +53,7 @@ SESSION_INCARCERATION_POPULATION_TO_DATAFLOW_DISAGGREGATED_QUERY_TEMPLATE = """
         population_date,
         person_id,
         1 AS in_dataflow
-    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_metrics_materialized` metrics
+    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_metrics_included_in_state_population_materialized` metrics
     JOIN population_dates
         ON metrics.date_of_stay = population_dates.population_date
     )

@@ -62,9 +62,9 @@ COMPARTMENT_SESSION_START_REASONS_QUERY_TEMPLATE = """
                                      --In both cases one of the records has a null reason, so here I dedup prioritizing the non-null one.
                                       IF(most_severe_violation_type IS NULL, 1, 0)) AS reason_priority,
     FROM
-     `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_admission_metrics_materialized` adm
+     `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_admission_metrics_included_in_state_population_materialized` adm
     LEFT JOIN 
-     `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_commitment_from_supervision_metrics_materialized` cfs
+     `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_commitment_from_supervision_metrics_included_in_state_population_materialized` cfs
     USING (state_code, person_id, admission_date, admission_reason)
     LEFT JOIN `{project_id}.{analyst_dataset}.admission_start_reason_dedup_priority` d
         ON d.metric_source = adm.metric_type

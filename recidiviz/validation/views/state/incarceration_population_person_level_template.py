@@ -46,7 +46,7 @@ sanitized_internal_metrics AS (
           AND facility NOT LIKE 'BONNEVILLE%'
           AND facility NOT LIKE 'JEFFERSON%',
           'COUNTY JAILS', facility) AS facility, 
-   FROM `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_incarceration_population_metrics_materialized`
+   FROM `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_incarceration_population_metrics_included_in_state_population_materialized`
 ),
 internal_metrics_for_valid_regions_and_dates AS (
   SELECT * FROM

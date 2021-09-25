@@ -19,11 +19,12 @@
 import unittest
 
 from mock import patch
+
 from recidiviz.calculator.query.state.views.dataflow_metrics_materialized.most_recent_dataflow_metrics import (
-    METRIC_TABLES_JOIN_OVERRIDES,
-    _make_most_recent_metric_view_builder,
-    METRICS_VIEWS_TO_MATERIALIZE,
     DEFAULT_JOIN_INDICES,
+    METRIC_TABLES_JOIN_OVERRIDES,
+    METRICS_VIEWS_TO_MATERIALIZE,
+    _make_most_recent_metric_view_builders,
 )
 
 
@@ -46,10 +47,13 @@ class MostRecentDataflowMetricsTest(unittest.TestCase):
         """Test that special-cased tables use the appropriate JOIN indices"""
         metric_names = METRIC_TABLES_JOIN_OVERRIDES.keys()
         for metric_name in metric_names:
-            builder = _make_most_recent_metric_view_builder(metric_name)
-            query = builder.build()
-            using_clause = make_using_clause(METRIC_TABLES_JOIN_OVERRIDES[metric_name])
-            self.assertIn(using_clause, query.__repr__())
+            builders = _make_most_recent_metric_view_builders(metric_name)
+            for builder in builders:
+                query = builder.build()
+                using_clause = make_using_clause(
+                    METRIC_TABLES_JOIN_OVERRIDES[metric_name]
+                )
+                self.assertIn(using_clause, query.__repr__())
 
     def test_default_join_clause(self) -> None:
         """Test that non-special-cased tables use the default JOIN indices"""
@@ -59,5 +63,7 @@ class MostRecentDataflowMetricsTest(unittest.TestCase):
             for name in METRICS_VIEWS_TO_MATERIALIZE
             if name not in METRIC_TABLES_JOIN_OVERRIDES
         ]:
-            query = _make_most_recent_metric_view_builder(metric_name).build()
-            self.assertIn(using_clause, query.__repr__())
+            builders = _make_most_recent_metric_view_builders(metric_name)
+            for builder in builders:
+                query = builder.build()
+                self.assertIn(using_clause, query.__repr__())

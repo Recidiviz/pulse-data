@@ -59,7 +59,7 @@ ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_QUERY_TEMPLATE = """
         metric_period_months,
         district,
         COUNT(DISTINCT person_id) as release_count
-      FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_release_metrics_materialized` m,
+      FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_release_metrics_included_in_state_population_materialized` m,
       {district_dimension},
       {metric_period_dimension}
       WHERE {metric_period_condition}
@@ -72,7 +72,7 @@ ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_QUERY_TEMPLATE = """
         district,
         COUNT(DISTINCT person_id) AS month_end_population,
         metric_period_months
-      FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_metrics_materialized` m,
+      FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_metrics_included_in_state_population_materialized` m,
       {district_dimension},
       {metric_period_dimension}
       WHERE 

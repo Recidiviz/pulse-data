@@ -137,6 +137,10 @@ class TestBQSchemaForMetricTable(unittest.TestCase):
             SchemaField("month", bigquery.enums.SqlTypeNames.INTEGER.value),
             SchemaField("facility", bigquery.enums.SqlTypeNames.STRING.value),
             SchemaField(
+                "included_in_state_population",
+                bigquery.enums.SqlTypeNames.BOOLEAN.value,
+            ),
+            SchemaField(
                 "county_of_residence", bigquery.enums.SqlTypeNames.STRING.value
             ),
         ]

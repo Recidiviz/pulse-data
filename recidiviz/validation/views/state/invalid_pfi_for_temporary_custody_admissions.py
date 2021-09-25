@@ -37,7 +37,7 @@ INVALID_PFI_FOR_TEMPORARY_CUSTODY_ADMISSIONS_QUERY_TEMPLATE = """
     /*{description}*/
     SELECT state_code AS region_code,
     * EXCEPT (state_code)
-    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_admission_metrics_materialized`
+    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_admission_metrics_included_in_state_population_materialized`
     -- Only PAROLE_BOARD_HOLD and TEMPORARY_CUSTODY periods should have an 
     -- admission_reason of TEMPORARY_CUSTODY
     WHERE admission_reason = 'TEMPORARY_CUSTODY'
