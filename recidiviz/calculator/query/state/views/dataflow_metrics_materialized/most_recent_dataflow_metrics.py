@@ -42,6 +42,12 @@ JOB_RECENCY_PRIMARY_KEY_OVERRIDES: Dict[str, str] = {
 
 METRICS_VIEWS_TO_MATERIALIZE: List[str] = list(DATAFLOW_METRICS_TO_TABLES.values())
 
+VIEWS_TO_SPLIT_ON_INCLUDED_IN_STATE_POPULATION: List[str] = [
+    view
+    for view in DATAFLOW_METRICS_TO_TABLES.values()
+    if view.startswith("incarceration")
+]
+
 MOST_RECENT_JOBS_TEMPLATE: str = """
     /*{description}*/
     WITH job_recency as (
@@ -51,6 +57,7 @@ MOST_RECENT_JOBS_TEMPLATE: str = """
         FROM (
              SELECT DISTINCT {job_recency_primary_keys}
             FROM `{project_id}.{metrics_dataset}.{metric_table}`
+            {metrics_filter}
         )
     )    
     SELECT *
@@ -64,35 +71,82 @@ MOST_RECENT_JOBS_TEMPLATE: str = """
     """
 
 
-def _make_most_recent_metric_view_builder(
+def generate_metric_view_names(metric_name: str) -> List[str]:
+    if metric_name in VIEWS_TO_SPLIT_ON_INCLUDED_IN_STATE_POPULATION:
+        return [
+            f"{metric_name}_included_in_state_population",
+            f"{metric_name}_not_included_in_state_population",
+        ]
+    return [metric_name]
+
+
+def _make_most_recent_metric_view_builders(
     metric_name: str,
-) -> SimpleBigQueryViewBuilder:
+) -> List[SimpleBigQueryViewBuilder]:
+    """Returns view builders for each metric, returning two view builders to account
+    for a person being in state populations for incarceration metrics"""
     description = f"{metric_name} for the most recent job run"
     view_id = f"most_recent_{metric_name}"
     join_indices = METRIC_TABLES_JOIN_OVERRIDES.get(metric_name, DEFAULT_JOIN_INDICES)
     job_recency_primary_keys = JOB_RECENCY_PRIMARY_KEY_OVERRIDES.get(
         metric_name, DEFAULT_JOB_RECENCY_PRIMARY_KEYS
     )
-    return SimpleBigQueryViewBuilder(
-        dataset_id=DATAFLOW_METRICS_MATERIALIZED_DATASET,
-        view_id=view_id,
-        view_query_template=MOST_RECENT_JOBS_TEMPLATE,
-        description=description,
-        join_indices=join_indices,
-        job_recency_primary_keys=job_recency_primary_keys,
-        metrics_dataset=DATAFLOW_METRICS_DATASET,
-        metric_table=metric_name,
-        materialized_metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
-        should_materialize=True,
-    )
+
+    if metric_name in VIEWS_TO_SPLIT_ON_INCLUDED_IN_STATE_POPULATION:
+        return [
+            SimpleBigQueryViewBuilder(
+                dataset_id=DATAFLOW_METRICS_MATERIALIZED_DATASET,
+                view_id=f"{view_id}_included_in_state_population",
+                view_query_template=MOST_RECENT_JOBS_TEMPLATE,
+                description=description
+                + ", for output that is included in the state's population.",
+                join_indices=join_indices,
+                job_recency_primary_keys=job_recency_primary_keys,
+                metrics_dataset=DATAFLOW_METRICS_DATASET,
+                metric_table=metric_name,
+                materialized_metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
+                should_materialize=True,
+                metrics_filter="WHERE included_in_state_population = TRUE",
+            ),
+            SimpleBigQueryViewBuilder(
+                dataset_id=DATAFLOW_METRICS_MATERIALIZED_DATASET,
+                view_id=f"{view_id}_not_included_in_state_population",
+                view_query_template=MOST_RECENT_JOBS_TEMPLATE,
+                description=description
+                + ", for output that is not included in the state's population.",
+                join_indices=join_indices,
+                job_recency_primary_keys=job_recency_primary_keys,
+                metrics_dataset=DATAFLOW_METRICS_DATASET,
+                metric_table=metric_name,
+                materialized_metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
+                should_materialize=True,
+                metrics_filter="WHERE included_in_state_population = FALSE",
+            ),
+        ]
+    return [
+        SimpleBigQueryViewBuilder(
+            dataset_id=DATAFLOW_METRICS_MATERIALIZED_DATASET,
+            view_id=view_id,
+            view_query_template=MOST_RECENT_JOBS_TEMPLATE,
+            description=description,
+            join_indices=join_indices,
+            job_recency_primary_keys=job_recency_primary_keys,
+            metrics_dataset=DATAFLOW_METRICS_DATASET,
+            metric_table=metric_name,
+            materialized_metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
+            should_materialize=True,
+            metrics_filter="",
+        )
+    ]
 
 
 def generate_most_recent_metrics_view_builders(
     metric_tables: List[str],
 ) -> List[SimpleBigQueryViewBuilder]:
     return [
-        _make_most_recent_metric_view_builder(metric_table)
+        view_builder
         for metric_table in metric_tables
+        for view_builder in _make_most_recent_metric_view_builders(metric_table)
     ]
 
 

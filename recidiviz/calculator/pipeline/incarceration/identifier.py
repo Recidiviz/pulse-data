@@ -59,6 +59,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_ma
     get_state_specific_commitment_from_supervision_delegate,
     get_state_specific_supervision_delegate,
     get_state_specific_violation_delegate,
+    period_included_in_state_population,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_commitment_from_supervision_delegate import (
     StateSpecificCommitmentFromSupervisionDelegate,
@@ -388,6 +389,9 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
             incarceration_stay_events.append(
                 IncarcerationStayEvent(
                     state_code=incarceration_period.state_code,
+                    included_in_state_population=period_included_in_state_population(
+                        incarceration_period
+                    ),
                     event_date=stay_date,
                     facility=incarceration_period.facility,
                     county_of_residence=county_of_residence,
@@ -550,6 +554,9 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
 
             return IncarcerationStandardAdmissionEvent(
                 state_code=incarceration_period.state_code,
+                included_in_state_population=period_included_in_state_population(
+                    incarceration_period
+                ),
                 event_date=admission_date,
                 facility=incarceration_period.facility,
                 admission_reason=admission_reason,
@@ -672,6 +679,9 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
 
         return IncarcerationCommitmentFromSupervisionAdmissionEvent(
             state_code=incarceration_period.state_code,
+            included_in_state_population=period_included_in_state_population(
+                incarceration_period
+            ),
             event_date=admission_date,
             facility=incarceration_period.facility,
             admission_reason=admission_reason,
@@ -757,6 +767,9 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
 
             return IncarcerationReleaseEvent(
                 state_code=incarceration_period.state_code,
+                included_in_state_population=period_included_in_state_population(
+                    incarceration_period
+                ),
                 event_date=release_date,
                 facility=incarceration_period.facility,
                 release_reason=release_reason,

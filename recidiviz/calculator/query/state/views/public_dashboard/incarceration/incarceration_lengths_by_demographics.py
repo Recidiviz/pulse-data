@@ -53,7 +53,7 @@ INCARCERATION_LENGTHS_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = """
           {age_bucket},
           IEEE_DIVIDE(total_days_incarcerated, 365.25) as years_incarcerated 
         FROM
-          `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_release_metrics_materialized` releases
+          `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_release_metrics_included_in_state_population_materialized` releases
         WHERE release_reason in ('COMMUTED', 'COMPASSIONATE', 'CONDITIONAL_RELEASE', 'SENTENCE_SERVED', 'DEATH', 'EXECUTION')
           AND admission_reason IN ('NEW_ADMISSION', 'PROBATION_REVOCATION')
     ), ranked_releases_by_period AS (

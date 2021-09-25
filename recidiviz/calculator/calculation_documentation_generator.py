@@ -59,6 +59,9 @@ from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_DATASET,
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
 )
+from recidiviz.calculator.query.state.views.dataflow_metrics_materialized.most_recent_dataflow_metrics import (
+    generate_metric_view_names,
+)
 from recidiviz.common import attr_validators
 from recidiviz.common.attr_utils import get_enum_cls
 from recidiviz.common.constants.states import StateCode
@@ -141,10 +144,9 @@ Attributes on all metrics:
 
 ####Dependent Views
 
-If you are interested in what views rely on this metric, please run the following script in your shell:
+If you are interested in what views rely on this metric, please run the following script(s) in your shell:
 
-```python -m recidiviz.tools.display_bq_dag_for_view --project_id recidiviz-staging --dataset_id dataflow_metrics_materialized --view_id most_recent_{metric_table_id} --show_downstream_dependencies True```
-
+{dependency_scripts_information_text}
 """
 
 RAW_DATA_LINKS_TEMPLATE = (
@@ -913,6 +915,20 @@ class CalculationDocumentationGenerator:
             )
         return f"This view has no {'child' if descendants else 'parent'} dependencies."
 
+    @staticmethod
+    def _create_script_text_for_dependencies(metric_name: str) -> str:
+        metric_view_names = generate_metric_view_names(metric_name)
+        output = ""
+
+        for metric_view_name in metric_view_names:
+            output = (
+                output
+                + f"```python -m recidiviz.tools.display_bq_dag_for_view --project_id recidiviz-staging "
+                f"--dataset_id dataflow_metrics_materialized --view_id most_recent_{metric_view_name} "
+                f"--show_downstream_dependencies True```\n"
+            )
+        return output
+
     def _get_view_information(self, view_key: DagKey) -> str:
         """Returns string contents for a view markdown."""
         view_node = self.dag_walker.nodes_by_key[view_key]
@@ -1072,6 +1088,9 @@ class CalculationDocumentationGenerator:
             description=metric.get_description(),
             metrics_cadence_table=state_info_writer.dumps(),
             metric_table_id=metric_table_id,
+            dependency_scripts_information_text=self._create_script_text_for_dependencies(
+                metric_table_id
+            ),
         )
 
         return documentation

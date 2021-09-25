@@ -49,7 +49,7 @@ ADMISSIONS_VERSUS_RELEASES_BY_MONTH_QUERY_TEMPLATE = """
         state_code, year, month, 
         district,
         COUNT(DISTINCT person_id) AS release_count
-      FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_release_metrics_materialized`,
+      FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_release_metrics_included_in_state_population_materialized`,
       {district_dimension}
       WHERE {thirty_six_month_filter}
       GROUP BY state_code, year, month, district
@@ -62,7 +62,7 @@ ADMISSIONS_VERSUS_RELEASES_BY_MONTH_QUERY_TEMPLATE = """
         EXTRACT(MONTH FROM incarceration_month_end_date) AS month,
         district,
         COUNT(DISTINCT person_id) AS month_end_population
-      FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_metrics_materialized`,
+      FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_metrics_included_in_state_population_materialized`,
         -- Convert the "month end" data in the incarceration_population_metrics to the "prior month end" by adding 1 month to the date
         UNNEST([DATE_ADD(DATE(year, month, 1), INTERVAL 1 MONTH)]) AS incarceration_month_end_date,
       {district_dimension}

@@ -46,7 +46,7 @@ COMPARTMENT_SESSION_END_REASONS_QUERY_TEMPLATE = """
         'INCARCERATION' AS compartment_level_1,
         metric_type AS metric_source,
         ROW_NUMBER() OVER(PARTITION BY person_id, release_date ORDER BY COALESCE(priority, 999)) AS rn
-    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_release_metrics_materialized` AS m
+    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_release_metrics_included_in_state_population_materialized` AS m
     LEFT JOIN `{project_id}.{analyst_dataset}.release_termination_reason_dedup_priority` AS d
         ON d.end_reason = m.release_reason
         AND d.metric_source = m.metric_type
