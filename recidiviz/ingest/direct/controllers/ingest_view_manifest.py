@@ -20,11 +20,9 @@ tree.
 """
 
 import abc
-import inspect
 import json
 import re
 from enum import Enum
-from types import ModuleType
 from typing import (
     Any,
     Callable,
@@ -41,14 +39,22 @@ from typing import (
 import attr
 from more_itertools import one
 
-from recidiviz.common.common_utils import bidirectional_set_difference
+from recidiviz.common.attr_mixins import (
+    BuildableAttrFieldType,
+    attr_field_enum_cls_for_field_name,
+    attr_field_type_for_field_name,
+)
 from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.constants.enum_parser import EnumParser
 from recidiviz.common.constants.strict_enum_parser import StrictEnumParser
-from recidiviz.common.module_collector_mixin import ModuleCollectorMixin
+from recidiviz.ingest.direct.controllers.custom_function_registry import (
+    CustomFunctionRegistry,
+)
+from recidiviz.ingest.direct.controllers.ingest_view_file_parser_delegate import (
+    IngestViewFileParserDelegate,
+)
 from recidiviz.persistence.entity.base_entity import Entity, EnumEntity
 from recidiviz.persistence.entity.entity_deserialize import EntityFactory, EntityT
-from recidiviz.utils.types import T
 from recidiviz.utils.yaml_dict import YAMLDict
 
 ManifestNodeT = TypeVar("ManifestNodeT")
@@ -79,81 +85,6 @@ class ManifestNode(Generic[ManifestNodeT]):
         """Should be implemented by subclasses to set of columns that this node
         references.
         """
-
-
-@attr.s(kw_only=True)
-class CustomFunctionRegistry(ModuleCollectorMixin):
-    """Object that can be used to retrieve custom python functions from raw manifest
-    descriptors.
-    """
-
-    # Module containing files (or packages) with custom python functions.
-    custom_functions_root_module: ModuleType = attr.ib()
-
-    def get_custom_python_function(
-        self,
-        function_reference: str,
-        expected_kwarg_types: Dict[str, Type[Any]],
-        expected_return_type: Type[T],
-    ) -> Callable[..., T]:
-        """Returns a reference to the python function specified by |function_reference|.
-
-        Args:
-            function_reference: Reference to the function, relative to the
-                |custom_functions_root_module|. Example: "us_xx_custom_parsers.my_fn"
-            expected_kwarg_types: Map of argument names to expected types. If the
-                function specified by |function_reference| does not have arguments with
-                 matching names / types, this will throw.
-            expected_return_type: Expected return type for the specified function. If
-                the function return type does not match, this will throw.
-        """
-        relative_path_parts = function_reference.split(".")
-        function_name = relative_path_parts[-1]
-
-        function_module = self.get_relative_module(
-            self.custom_functions_root_module, relative_path_parts[:-1]
-        )
-
-        function = getattr(function_module, function_name)
-        function_signature = inspect.signature(function)
-
-        function_argument_names = set(function_signature.parameters.keys())
-        expected_argument_names = set(expected_kwarg_types.keys())
-
-        module_name = self.custom_functions_root_module.__name__
-        extra_function_args, missing_function_args = bidirectional_set_difference(
-            function_argument_names, expected_argument_names
-        )
-
-        if extra_function_args:
-            raise ValueError(
-                f"Found extra, unexpected arguments for function [{function_name}] in "
-                f"module [{module_name}]: {extra_function_args}"
-            )
-
-        if missing_function_args:
-            raise ValueError(
-                f"Missing expected arguments for function [{function_name}] in module "
-                f"[{module_name}]: {missing_function_args}"
-            )
-
-        for arg_name in function_argument_names:
-            expected_type = expected_kwarg_types[arg_name]
-            actual_type = function_signature.parameters[arg_name].annotation
-            if actual_type != expected_type:
-                raise ValueError(
-                    f"Unexpected type for argument [{arg_name}] in function "
-                    f"[{function_name}] in module [{module_name}]. Expected "
-                    f"[{expected_type}], found [{actual_type}]."
-                )
-
-        if function_signature.return_annotation != expected_return_type:
-            raise ValueError(
-                f"Unexpected return type for function [{function_name}] in module "
-                f"[{module_name}]. Expected [{expected_return_type}], found "
-                f"[{function_signature.return_annotation}]."
-            )
-        return function
 
 
 @attr.s(kw_only=True)
@@ -213,6 +144,191 @@ class EntityTreeManifest(ManifestNode[EntityT]):
             for manifest in self.field_manifests.values()
             for col in manifest.columns_referenced()
         }
+
+
+class EntityTreeManifestFactory:
+    """Factory class for building EntityTreeManifests."""
+
+    @classmethod
+    def from_raw_manifest(
+        cls, *, raw_entity_manifest: YAMLDict, delegate: IngestViewFileParserDelegate
+    ) -> "EntityTreeManifest":
+        """Returns a single, recursively hydrated entity tree manifest, which can be
+        used to translate a single input row into an entity tree.
+        """
+        entity_cls_name = one(raw_entity_manifest.keys())
+        entity_cls = delegate.get_entity_cls(entity_cls_name)
+
+        raw_fields_manifest = raw_entity_manifest.pop_dict(entity_cls_name)
+
+        if len(raw_entity_manifest):
+            raise ValueError(
+                f"Found unused keys in entity manifest: {raw_entity_manifest.keys()}"
+            )
+
+        field_manifests: Dict[str, ManifestNode] = {}
+        for field_name in raw_fields_manifest.keys():
+            field_type = attr_field_type_for_field_name(entity_cls, field_name)
+            if field_name == entity_cls.get_primary_key_column_name():
+                error_message = (
+                    f"Cannot set autogenerated database primary key field "
+                    f"[{field_name}] in the ingest manifest."
+                )
+                if "external_id" in attr.fields_dict(entity_cls):
+                    error_message += " Did you mean to set the 'external_id' field?"
+                raise ValueError(error_message)
+
+            if field_type is BuildableAttrFieldType.LIST:
+                child_manifests: List[
+                    Union[ExpandableListItemManifest, EntityTreeManifest]
+                ] = []
+                for raw_child_manifest in raw_fields_manifest.pop_dicts(field_name):
+                    child_manifests.append(
+                        cls._build_list_item_manifest(
+                            list_item_manifest_raw=raw_child_manifest, delegate=delegate
+                        )
+                    )
+                field_manifests[field_name] = ListRelationshipFieldManifest(
+                    child_manifests=child_manifests
+                )
+            elif field_type is BuildableAttrFieldType.FORWARD_REF:
+                field_manifests[
+                    field_name
+                ] = EntityTreeManifestFactory.from_raw_manifest(
+                    raw_entity_manifest=raw_fields_manifest.pop_dict(field_name),
+                    delegate=delegate,
+                )
+            elif field_type is BuildableAttrFieldType.ENUM:
+                field_manifests.update(
+                    cls._build_enum_field_manifests_dict(
+                        entity_cls=entity_cls,
+                        field_name=field_name,
+                        field_enum_mappings_manifest=raw_fields_manifest.pop_dict(
+                            field_name
+                        ),
+                        delegate=delegate,
+                    )
+                )
+            elif field_type in (
+                # These are flat fields and should be parsed into a ManifestNode[str],
+                # since all values will be converted from string -> real value in the
+                # deserializing entity factory.
+                BuildableAttrFieldType.BOOLEAN,
+                BuildableAttrFieldType.DATE,
+                BuildableAttrFieldType.STRING,
+                BuildableAttrFieldType.INTEGER,
+            ):
+                if field_name.endswith(EnumEntity.RAW_TEXT_FIELD_SUFFIX):
+                    raise ValueError(
+                        f"Enum raw text fields should not be mapped independently "
+                        f"of their corresponding enum fields. Found direct mapping "
+                        f"for field [{field_name}]."
+                    )
+                field_manifests[field_name] = build_str_manifest_from_raw(
+                    pop_raw_flat_field_manifest(field_name, raw_fields_manifest),
+                    delegate,
+                )
+            else:
+                raise ValueError(
+                    f"Unexpected field type [{field_type}] for field [{field_name}]"
+                )
+
+        if len(raw_fields_manifest):
+            raise ValueError(
+                f"Found unused keys in fields manifest: {raw_fields_manifest.keys()}"
+            )
+
+        entity_factory_cls = delegate.get_entity_factory_class(entity_cls_name)
+        return EntityTreeManifest(
+            entity_cls=entity_cls,
+            entity_factory_cls=entity_factory_cls,
+            common_args=delegate.get_common_args(),
+            field_manifests=field_manifests,
+            filter_predicate=cls._get_filter_predicate(entity_cls, field_manifests),
+        )
+
+    @classmethod
+    def _build_list_item_manifest(
+        cls, list_item_manifest_raw: YAMLDict, delegate: IngestViewFileParserDelegate
+    ) -> Union[EntityTreeManifest, "ExpandableListItemManifest"]:
+        """Expands a list item into a list of entities based on the provided manifest."""
+        list_col_name = list_item_manifest_raw.pop_optional(
+            ExpandableListItemManifest.FOREACH_ITERATOR_KEY, str
+        )
+
+        child_entity_manifest = EntityTreeManifestFactory.from_raw_manifest(
+            raw_entity_manifest=list_item_manifest_raw, delegate=delegate
+        )
+
+        # Check for special $foreach keyword arg which tells us that we should expand
+        # this list item into N entities.
+        #
+        # Aside from the special $foreach key, this manifest should be shaped like a
+        # normal entity tree manifest, a dictionary with a single class name -> fields
+        # manifest mapping.
+        if not list_col_name:
+            return child_entity_manifest
+
+        return ExpandableListItemManifest(
+            mapped_column=list_col_name,
+            child_entity_manifest=child_entity_manifest,
+        )
+
+    # TODO(##9099): Make sure to add documentation about what gets filtered out.
+    # TODO(#8905): Consider using more general logic to build a filter predicate, like
+    #  building a @required field annotation for fields that must be hydrated, otherwise
+    #  the whole entity is filtered out.
+    @staticmethod
+    def _get_filter_predicate(
+        entity_cls: Type[EntityT], field_manifests: Dict[str, ManifestNode]
+    ) -> Optional[Callable[[EntityT], bool]]:
+        """Returns a predicate function which can be used to fully filter the evaluated
+        EntityTreeManifest from the result.
+        """
+        if issubclass(entity_cls, EnumEntity):
+            enum_field_name = one(
+                field_name
+                for field_name, manifest in field_manifests.items()
+                if isinstance(manifest, EnumFieldManifest)
+            )
+            enum_raw_field_name = EnumFieldManifest.raw_text_field_name(enum_field_name)
+
+            def enum_entity_filter_predicate(e: EntityT) -> bool:
+                return (
+                    getattr(e, enum_field_name) is None
+                    or getattr(e, enum_raw_field_name) is None
+                )
+
+            return enum_entity_filter_predicate
+        return None
+
+    @classmethod
+    def _build_enum_field_manifests_dict(
+        cls,
+        entity_cls: Type[Entity],
+        field_name: str,
+        field_enum_mappings_manifest: YAMLDict,
+        delegate: IngestViewFileParserDelegate,
+    ) -> Dict[str, ManifestNode]:
+        """Returns a dictionary (field_name -> FieldManifest) for this enum field and
+        its associated raw text field.
+        """
+        field_manifests: Dict[str, ManifestNode] = {}
+        enum_cls = attr_field_enum_cls_for_field_name(entity_cls, field_name)
+        if not enum_cls:
+            raise ValueError(
+                f"No enum class for field [{field_name}] in class " f"[{entity_cls}]."
+            )
+        enum_field_manifest = EnumFieldManifest.from_raw_manifest(
+            enum_cls=enum_cls,
+            field_enum_mappings_manifest=field_enum_mappings_manifest,
+            delegate=delegate,
+        )
+        field_manifests[field_name] = enum_field_manifest
+        field_manifests[
+            EnumFieldManifest.raw_text_field_name(field_name)
+        ] = enum_field_manifest.raw_text_field_manifest
+        return field_manifests
 
 
 @attr.s(kw_only=True)
@@ -401,7 +517,7 @@ class EnumFieldManifest(ManifestNode[StrictEnumParser]):
         *,
         enum_cls: Type[Enum],
         field_enum_mappings_manifest: YAMLDict,
-        fn_registry: CustomFunctionRegistry,
+        delegate: IngestViewFileParserDelegate,
     ) -> "EnumFieldManifest":
         """Factory method for building an enum field manifest."""
 
@@ -409,12 +525,12 @@ class EnumFieldManifest(ManifestNode[StrictEnumParser]):
             pop_raw_flat_field_manifest(
                 EnumFieldManifest.RAW_TEXT_KEY, field_enum_mappings_manifest
             ),
-            fn_registry,
+            delegate,
         )
 
         enum_overrides = cls._build_field_enum_overrides(
             enum_cls,
-            fn_registry,
+            delegate.get_custom_function_registry(),
             ignores_list=field_enum_mappings_manifest.pop_list_optional(
                 EnumFieldManifest.IGNORES_KEY, str
             ),
@@ -573,7 +689,7 @@ class CustomFunctionManifest(ManifestNode[ManifestNodeT]):
         cls,
         *,
         raw_function_manifest: YAMLDict,
-        fn_registry: CustomFunctionRegistry,
+        delegate: IngestViewFileParserDelegate,
         return_type: Type[ManifestNodeT],
     ) -> "CustomFunctionManifest[ManifestNodeT]":
         """Builds a CustomParserManifest node from the provide raw manifest. Verifies
@@ -589,12 +705,10 @@ class CustomFunctionManifest(ManifestNode[ManifestNodeT]):
         kwarg_manifests: Dict[str, ManifestNode] = {}
         for arg, raw_manifest in raw_args_manifests.items():
             if isinstance(raw_manifest, str):
-                kwarg_manifests[arg] = build_manifest_from_raw(
-                    raw_manifest, fn_registry
-                )
+                kwarg_manifests[arg] = build_manifest_from_raw(raw_manifest, delegate)
             elif isinstance(raw_manifest, dict):
                 kwarg_manifests[arg] = build_manifest_from_raw(
-                    YAMLDict(raw_manifest), fn_registry
+                    YAMLDict(raw_manifest), delegate
                 )
             else:
                 raise ValueError(
@@ -604,7 +718,7 @@ class CustomFunctionManifest(ManifestNode[ManifestNodeT]):
 
         return CustomFunctionManifest(
             function_return_type=return_type,
-            function=fn_registry.get_custom_python_function(
+            function=delegate.get_custom_function_registry().get_custom_python_function(
                 custom_parser_function_reference,
                 {
                     arg: manifest.result_type
@@ -706,7 +820,7 @@ class ConcatenatedStringsManifest(ManifestNode[str]):
         cls,
         *,
         raw_function_manifest: YAMLDict,
-        fn_registry: CustomFunctionRegistry,
+        delegate: IngestViewFileParserDelegate,
     ) -> "ConcatenatedStringsManifest":
         concat_manifests: List[Union[str, YAMLDict]] = []
         for raw_manifest in raw_function_manifest.pop(cls.VALUES_ARG_KEY, list):
@@ -726,7 +840,7 @@ class ConcatenatedStringsManifest(ManifestNode[str]):
         return ConcatenatedStringsManifest(
             separator=(separator if separator is not None else cls.DEFAULT_SEPARATOR),
             value_manifests=[
-                build_str_manifest_from_raw(raw_manifest, fn_registry)
+                build_str_manifest_from_raw(raw_manifest, delegate)
                 for raw_manifest in concat_manifests
             ],
             include_nulls=(include_nulls if include_nulls is not None else True),
@@ -798,7 +912,7 @@ class PhysicalAddressManifest(ManifestNode[str]):
 
     @classmethod
     def from_raw_manifest(
-        cls, *, raw_function_manifest: YAMLDict, fn_registry: CustomFunctionRegistry
+        cls, *, raw_function_manifest: YAMLDict, delegate: IngestViewFileParserDelegate
     ) -> "PhysicalAddressManifest":
         raw_address_2_manifest = pop_raw_flat_field_manifest_optional(
             cls.ADDRESS_2_KEY, raw_function_manifest
@@ -806,24 +920,24 @@ class PhysicalAddressManifest(ManifestNode[str]):
         return PhysicalAddressManifest(
             address_1_manifest=build_str_manifest_from_raw(
                 pop_raw_flat_field_manifest(cls.ADDRESS_1_KEY, raw_function_manifest),
-                fn_registry,
+                delegate,
             ),
             address_2_manifest=build_str_manifest_from_raw(
-                raw_address_2_manifest, fn_registry
+                raw_address_2_manifest, delegate
             )
             if raw_address_2_manifest
             else StringLiteralFieldManifest(literal_value=""),
             city_manifest=build_str_manifest_from_raw(
                 pop_raw_flat_field_manifest(cls.CITY_KEY, raw_function_manifest),
-                fn_registry,
+                delegate,
             ),
             state_manifest=build_str_manifest_from_raw(
                 pop_raw_flat_field_manifest(cls.STATE_KEY, raw_function_manifest),
-                fn_registry,
+                delegate,
             ),
             zip_manifest=build_str_manifest_from_raw(
                 pop_raw_flat_field_manifest(cls.ZIP_KEY, raw_function_manifest),
-                fn_registry,
+                delegate,
             ),
         )
 
@@ -869,7 +983,7 @@ class PersonNameManifest(ManifestNode[str]):
 
     @classmethod
     def from_raw_manifest(
-        cls, *, raw_function_manifest: YAMLDict, fn_registry: CustomFunctionRegistry
+        cls, *, raw_function_manifest: YAMLDict, delegate: IngestViewFileParserDelegate
     ) -> "PersonNameManifest":
         name_parts_to_manifest: Dict[str, ManifestNode[str]] = {}
         for manifest_key, is_required in cls.NAME_MANIFEST_KEYS.items():
@@ -883,7 +997,7 @@ class PersonNameManifest(ManifestNode[str]):
                 raise ValueError(f"Missing manifest for required key: {manifest_key}.")
 
             name_parts_to_manifest[json_key] = (
-                build_str_manifest_from_raw(raw_manifest, fn_registry)
+                build_str_manifest_from_raw(raw_manifest, delegate)
                 if raw_manifest
                 else StringLiteralFieldManifest(literal_value="")
             )
@@ -936,15 +1050,15 @@ class ContainsConditionManifest(ManifestNode[bool]):
         cls,
         *,
         raw_function_manifest: YAMLDict,
-        fn_registry: CustomFunctionRegistry,
+        delegate: IngestViewFileParserDelegate,
     ) -> "ContainsConditionManifest":
         return ContainsConditionManifest(
             value_manifest=build_str_manifest_from_raw(
                 pop_raw_flat_field_manifest(cls.VALUE_ARG_KEY, raw_function_manifest),
-                fn_registry,
+                delegate,
             ),
             options_manifests=[
-                build_str_manifest_from_raw(raw_manifest, fn_registry)
+                build_str_manifest_from_raw(raw_manifest, delegate)
                 for raw_manifest in raw_function_manifest.pop(cls.OPTIONS_ARG_KEY, list)
             ],
         )
@@ -976,12 +1090,10 @@ class IsNullConditionManifest(ManifestNode[bool]):
         cls,
         *,
         raw_function_manifest: Union[str, YAMLDict],
-        fn_registry: CustomFunctionRegistry,
+        delegate: IngestViewFileParserDelegate,
     ) -> "IsNullConditionManifest":
         return IsNullConditionManifest(
-            value_manifest=build_str_manifest_from_raw(
-                raw_function_manifest, fn_registry
-            ),
+            value_manifest=build_str_manifest_from_raw(raw_function_manifest, delegate),
         )
 
 
@@ -1053,26 +1165,39 @@ class BooleanConditionManifest(ManifestNode[ManifestNodeT]):
             *(self.else_manifest.columns_referenced() if self.else_manifest else set()),
         }
 
+
+# TODO(#9320): Add support for conditional entity expressions
+class BooleanConditionManifestFactory:
+    """Factory class for building BooleanConditionManifests."""
+
     @classmethod
-    def from_raw_manifest_for_string_result(
-        cls, *, raw_function_manifest: YAMLDict, fn_registry: CustomFunctionRegistry
+    def from_raw_manifest(
+        cls,
+        *,
+        raw_function_manifest: YAMLDict,
+        delegate: IngestViewFileParserDelegate,
     ) -> "BooleanConditionManifest[str]":
+        """Builds a BooleanConditionManifest from the provided raw manifest."""
         condition_manifest = build_boolean_manifest_from_raw(
-            pop_raw_flat_field_manifest(cls.CONDITION_ARG_KEY, raw_function_manifest),
-            fn_registry,
+            pop_raw_flat_field_manifest(
+                BooleanConditionManifest.CONDITION_ARG_KEY, raw_function_manifest
+            ),
+            delegate,
         )
 
         then_manifest = build_str_manifest_from_raw(
-            pop_raw_flat_field_manifest(cls.THEN_ARG_KEY, raw_function_manifest),
-            fn_registry,
+            pop_raw_flat_field_manifest(
+                BooleanConditionManifest.THEN_ARG_KEY, raw_function_manifest
+            ),
+            delegate,
         )
 
         else_manifest = None
         else_manifest_raw = pop_raw_flat_field_manifest_optional(
-            cls.ELSE_ARG_KEY, raw_function_manifest
+            BooleanConditionManifest.ELSE_ARG_KEY, raw_function_manifest
         )
         if else_manifest_raw:
-            else_manifest = build_str_manifest_from_raw(else_manifest_raw, fn_registry)
+            else_manifest = build_str_manifest_from_raw(else_manifest_raw, delegate)
 
         if len(raw_function_manifest):
             raise ValueError(
@@ -1087,17 +1212,9 @@ class BooleanConditionManifest(ManifestNode[ManifestNodeT]):
             else_manifest=else_manifest,
         )
 
-    @classmethod
-    def from_raw_manifest_for_entity_result(
-        cls, *, entity_cls: Type[EntityT], raw_function_manifest: YAMLDict
-    ) -> "BooleanConditionManifest[EntityT]":
-        raise NotImplementedError(
-            "TODO(#9320): Add support for conditional entity expressions"
-        )
-
 
 def _get_complex_flat_field_manifest(
-    raw_field_manifest: YAMLDict, fn_registry: CustomFunctionRegistry
+    raw_field_manifest: YAMLDict, delegate: IngestViewFileParserDelegate
 ) -> ManifestNode[str]:
     """Returns the manifest node for a flat field that should be hydrated with
     the result of some function.
@@ -1114,7 +1231,7 @@ def _get_complex_flat_field_manifest(
             key_to_manifest_map={
                 key: build_str_manifest_from_raw(
                     pop_raw_flat_field_manifest(key, function_arguments),
-                    fn_registry=fn_registry,
+                    delegate=delegate,
                 )
                 for key in function_arguments.keys()
             }
@@ -1122,27 +1239,28 @@ def _get_complex_flat_field_manifest(
     elif function_name == ConcatenatedStringsManifest.CONCATENATE_KEY:
         manifest = ConcatenatedStringsManifest.from_raw_manifest(
             raw_function_manifest=raw_field_manifest.pop_dict(function_name),
-            fn_registry=fn_registry,
+            delegate=delegate,
         )
     elif function_name == PersonNameManifest.PERSON_NAME_KEY:
         manifest = PersonNameManifest.from_raw_manifest(
             raw_function_manifest=raw_field_manifest.pop_dict(function_name),
-            fn_registry=fn_registry,
+            delegate=delegate,
         )
     elif function_name == PhysicalAddressManifest.PHYSICAL_ADDRESS_KEY:
         manifest = PhysicalAddressManifest.from_raw_manifest(
             raw_function_manifest=raw_field_manifest.pop_dict(function_name),
-            fn_registry=fn_registry,
+            delegate=delegate,
         )
     elif function_name == BooleanConditionManifest.BOOLEAN_CONDITION_KEY:
-        manifest = BooleanConditionManifest.from_raw_manifest_for_string_result(
+
+        manifest = BooleanConditionManifestFactory.from_raw_manifest(
             raw_function_manifest=raw_field_manifest.pop_dict(function_name),
-            fn_registry=fn_registry,
+            delegate=delegate,
         )
     elif function_name == CustomFunctionManifest.CUSTOM_FUNCTION_KEY:
         manifest = CustomFunctionManifest.from_raw_manifest(
             raw_function_manifest=raw_field_manifest.pop_dict(function_name),
-            fn_registry=fn_registry,
+            delegate=delegate,
             return_type=str,
         )
     else:
@@ -1195,18 +1313,18 @@ def pop_raw_flat_field_manifest(
 
 
 def build_str_manifest_from_raw(
-    raw_field_manifest: Union[str, YAMLDict], fn_registry: CustomFunctionRegistry
+    raw_field_manifest: Union[str, YAMLDict], delegate: IngestViewFileParserDelegate
 ) -> ManifestNode[str]:
     """Builds a ManifestNode from the provided raw manifest """
     if isinstance(raw_field_manifest, str):
         return _get_simple_flat_field_manifest(raw_field_manifest)
     if isinstance(raw_field_manifest, YAMLDict):
-        return _get_complex_flat_field_manifest(raw_field_manifest, fn_registry)
+        return _get_complex_flat_field_manifest(raw_field_manifest, delegate)
     raise ValueError(f"Unexpected string manifest type: [{type(raw_field_manifest)}]")
 
 
 def build_boolean_manifest_from_raw(
-    raw_field_manifest: Union[str, YAMLDict], fn_registry: CustomFunctionRegistry
+    raw_field_manifest: Union[str, YAMLDict], delegate: IngestViewFileParserDelegate
 ) -> ManifestNode[bool]:
     """Builds a ManifestNode[bool] from the provided raw manifest."""
     if isinstance(raw_field_manifest, YAMLDict):
@@ -1214,13 +1332,13 @@ def build_boolean_manifest_from_raw(
         if function_name == ContainsConditionManifest.IN_CONDITION_KEY:
             return ContainsConditionManifest.from_raw_manifest(
                 raw_function_manifest=raw_field_manifest.pop_dict(function_name),
-                fn_registry=fn_registry,
+                delegate=delegate,
             )
         if function_name == InvertConditionManifest.NOT_IN_CONDITION_KEY:
             return InvertConditionManifest(
                 condition_manifest=ContainsConditionManifest.from_raw_manifest(
                     raw_function_manifest=raw_field_manifest.pop_dict(function_name),
-                    fn_registry=fn_registry,
+                    delegate=delegate,
                 )
             )
         if function_name == IsNullConditionManifest.IS_NULL_CONDITION_KEY:
@@ -1228,7 +1346,7 @@ def build_boolean_manifest_from_raw(
                 raw_function_manifest=pop_raw_flat_field_manifest(
                     function_name, raw_field_manifest
                 ),
-                fn_registry=fn_registry,
+                delegate=delegate,
             )
         if function_name == InvertConditionManifest.NOT_NULL_CONDITION_KEY:
             return InvertConditionManifest(
@@ -1236,13 +1354,13 @@ def build_boolean_manifest_from_raw(
                     raw_function_manifest=pop_raw_flat_field_manifest(
                         function_name, raw_field_manifest
                     ),
-                    fn_registry=fn_registry,
+                    delegate=delegate,
                 )
             )
         if function_name == CustomFunctionManifest.CUSTOM_FUNCTION_KEY:
             return CustomFunctionManifest.from_raw_manifest(
                 raw_function_manifest=raw_field_manifest.pop_dict(function_name),
-                fn_registry=fn_registry,
+                delegate=delegate,
                 return_type=bool,
             )
         raise ValueError(f"Unexpected boolean function name [{function_name}]")
@@ -1250,15 +1368,15 @@ def build_boolean_manifest_from_raw(
 
 
 def build_manifest_from_raw(
-    raw_field_manifest: Union[str, YAMLDict], fn_registry: CustomFunctionRegistry
+    raw_field_manifest: Union[str, YAMLDict], delegate: IngestViewFileParserDelegate
 ) -> Union[ManifestNode[str], ManifestNode[bool]]:
     try:
-        return build_str_manifest_from_raw(raw_field_manifest, fn_registry)
+        return build_str_manifest_from_raw(raw_field_manifest, delegate)
     except ValueError:
         pass
 
     try:
-        return build_boolean_manifest_from_raw(raw_field_manifest, fn_registry)
+        return build_boolean_manifest_from_raw(raw_field_manifest, delegate)
     except ValueError:
         pass
 

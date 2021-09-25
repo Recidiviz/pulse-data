@@ -25,6 +25,8 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.controllers.ingest_view_file_parser import (
     FileFormat,
     IngestViewFileParser,
+)
+from recidiviz.ingest.direct.controllers.ingest_view_file_parser_delegate import (
     IngestViewFileParserDelegateImpl,
     ingest_view_manifest_dir,
 )
