@@ -172,7 +172,7 @@ columns:
       - value: COMMT
         description: COMMUTATION
       - value: CONIN
-        description: CNDCT INCNTVE / RELEASNG TO DETNR
+        description: CNDCT INCNTVE / RELEASNG TO DETNR - movement from higher to lower security
       - value: COURT
         description: COURT ORDERED
       - value: CUSTY
@@ -340,9 +340,9 @@ columns:
       - value: RVIA
         description: REVOKED IN ABSENCE
       - value: SAFED
-        description: SAFETY VALVE / DETAINER
+        description: SAFETY VALVE / DETAINER (From TDOC website - "Earliest date that an offender can be released under executive order for overcrowding. Most violent offenders are excluded from this provision.")
       - value: SAFEV
-        description: SAFETY VALVE
+        description: SAFETY VALVE (From TDOC website - "Earliest date that an offender can be released under executive order for overcrowding. Most violent offenders are excluded from this provision.")
       - value: SAREC
         description: SAFEKEEPING RECEIVED
       - value: SARET
