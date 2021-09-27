@@ -15,17 +15,30 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Ingest view parser tests for US_TN direct ingest."""
+import csv
 import datetime
 import unittest
 
+from recidiviz.cloud_storage.gcs_file_system import GcsfsFileContentsHandle
 from recidiviz.common.constants.person_characteristics import Ethnicity, Gender, Race
+from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateIncarcerationPeriodAdmissionReason,
+    StateIncarcerationPeriodReleaseReason,
+    StateIncarcerationPeriodStatus,
+)
+from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.entity.state.entities import (
+    StateIncarcerationPeriod,
+    StateIncarcerationSentence,
     StatePerson,
     StatePersonEthnicity,
     StatePersonExternalId,
     StatePersonRace,
+    StateSentenceGroup,
 )
+from recidiviz.tests.ingest.direct.fixture_util import direct_ingest_fixture_path
 from recidiviz.tests.ingest.direct.regions.state_ingest_view_parser_test_base import (
     StateIngestViewParserTestBase,
 )
@@ -145,4 +158,243 @@ class UsTnIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
 
         self._run_parse_ingest_view_test("OffenderName", expected_output)
 
-    # Add parsing tests for new ingest view files here #
+    def test_parse_OffenderMovementIncarcerationPeriod(self) -> None:
+        expected_output = [
+            # Person 2 only has one movement.
+            StatePerson(
+                state_code="US_TN",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_TN", external_id="00000002", id_type="US_TN_DOC"
+                    )
+                ],
+                sentence_groups=[
+                    StateSentenceGroup(
+                        state_code="US_TN",
+                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                        incarceration_sentences=[
+                            StateIncarcerationSentence(
+                                state_code="US_TN",
+                                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                                incarceration_periods=[
+                                    StateIncarcerationPeriod(
+                                        external_id="00000002-2",
+                                        state_code="US_TN",
+                                        status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+                                        status_raw_text=None,
+                                        incarceration_type=StateIncarcerationType.STATE_PRISON,
+                                        incarceration_type_raw_text=None,
+                                        admission_date=datetime.date(2021, 6, 20),
+                                        release_date=None,
+                                        county_code=None,
+                                        facility="088",
+                                        admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+                                        admission_reason_raw_text="CTFA-NEWAD",
+                                        release_reason=None,
+                                        release_reason_raw_text="NONE-NONE",
+                                    )
+                                ],
+                            )
+                        ],
+                    )
+                ],
+            ),
+            # Person 3 moves from parole to facility.
+            StatePerson(
+                state_code="US_TN",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_TN", external_id="00000003", id_type="US_TN_DOC"
+                    )
+                ],
+                sentence_groups=[
+                    StateSentenceGroup(
+                        state_code="US_TN",
+                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                        incarceration_sentences=[
+                            StateIncarcerationSentence(
+                                state_code="US_TN",
+                                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                                incarceration_periods=[
+                                    StateIncarcerationPeriod(
+                                        external_id="00000003-1",
+                                        state_code="US_TN",
+                                        incarceration_type=StateIncarcerationType.STATE_PRISON,
+                                        status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                                        status_raw_text=None,
+                                        admission_date=datetime.date(2010, 2, 5),
+                                        release_date=datetime.date(2010, 2, 26),
+                                        county_code=None,
+                                        facility="79A",
+                                        admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+                                        admission_reason_raw_text="PAFA-VIOLW",
+                                        release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+                                        release_reason_raw_text="FAFA-JAILT",
+                                    )
+                                ],
+                            )
+                        ],
+                    )
+                ],
+            ),
+            # Person 3 transfers facilities.
+            StatePerson(
+                state_code="US_TN",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_TN", external_id="00000003", id_type="US_TN_DOC"
+                    )
+                ],
+                sentence_groups=[
+                    StateSentenceGroup(
+                        state_code="US_TN",
+                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                        incarceration_sentences=[
+                            StateIncarcerationSentence(
+                                state_code="US_TN",
+                                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                                incarceration_periods=[
+                                    StateIncarcerationPeriod(
+                                        external_id="00000003-2",
+                                        state_code="US_TN",
+                                        status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                                        incarceration_type=StateIncarcerationType.STATE_PRISON,
+                                        status_raw_text=None,
+                                        admission_date=datetime.date(2010, 2, 26),
+                                        release_date=datetime.date(2010, 4, 6),
+                                        county_code=None,
+                                        facility="WTSP",
+                                        admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+                                        admission_reason_raw_text="FAFA-JAILT",
+                                        release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+                                        release_reason_raw_text="PAFA-PAVOK",
+                                    )
+                                ],
+                            )
+                        ],
+                    )
+                ],
+            ),
+            # Person 3 is released to supervision.
+            StatePerson(
+                state_code="US_TN",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_TN", external_id="00000003", id_type="US_TN_DOC"
+                    )
+                ],
+                sentence_groups=[
+                    StateSentenceGroup(
+                        state_code="US_TN",
+                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                        incarceration_sentences=[
+                            StateIncarcerationSentence(
+                                state_code="US_TN",
+                                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                                incarceration_periods=[
+                                    StateIncarcerationPeriod(
+                                        external_id="00000003-3",
+                                        state_code="US_TN",
+                                        status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                                        incarceration_type=StateIncarcerationType.STATE_PRISON,
+                                        status_raw_text=None,
+                                        admission_date=datetime.date(2010, 4, 6),
+                                        release_date=datetime.date(2010, 11, 4),
+                                        county_code=None,
+                                        facility="WTSP",
+                                        admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+                                        admission_reason_raw_text="PAFA-PAVOK",
+                                        release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_TO_SUPERVISION,
+                                        release_reason_raw_text="FAPA-RELEL",
+                                    )
+                                ],
+                            )
+                        ],
+                    )
+                ],
+            ),
+        ]
+
+        self._run_parse_ingest_view_test(
+            "OffenderMovementIncarcerationPeriod", expected_output
+        )
+
+    def test_parse_OffenderMovementIncarcerationPeriod_AdmissionReasons(self) -> None:
+        manifest_ast = self._parse_manifest("OffenderMovementIncarcerationPeriod")
+        enum_parser_manifest = (
+            # Drill down to get admission reasons.
+            manifest_ast.field_manifests["sentence_groups"]
+            .child_manifests[0]  # type: ignore[attr-defined]
+            .field_manifests["incarceration_sentences"]
+            .child_manifests[0]  # type: ignore[attr-defined]
+            .field_manifests["incarceration_periods"]
+            .child_manifests[0]  # type: ignore[attr-defined]
+            .field_manifests["admission_reason"]
+        )
+        self._parse_enum_manifest_test(
+            "OffenderMovementIncarcerationPeriod_AdmissionReasons", enum_parser_manifest
+        )
+
+    def test_parse_OffenderMovementIncarcerationPeriod_ReleaseReasons(self) -> None:
+        manifest_ast = self._parse_manifest("OffenderMovementIncarcerationPeriod")
+        enum_parser_manifest = (
+            # Drill down to get release reasons.
+            manifest_ast.field_manifests["sentence_groups"]
+            .child_manifests[0]  # type: ignore[attr-defined]
+            .field_manifests["incarceration_sentences"]
+            .child_manifests[0]  # type: ignore[attr-defined]
+            .field_manifests["incarceration_periods"]
+            .child_manifests[0]  # type: ignore[attr-defined]
+            .field_manifests["release_reason"]
+        )
+
+        # The values in the ReleaseReasons are all possible (StartMovementType,StartMovementReason)
+        # and (EndMovementType,EndMovementReason) combinations.
+        self._parse_enum_manifest_test(
+            "OffenderMovementIncarcerationPeriod_ReleaseReasons", enum_parser_manifest
+        )
+
+    def test_parse_OffenderMovementIncarcerationPeriod_AdmissionReasonIsSubsetOfReleaseReason(
+        self,
+    ) -> None:
+        admission_reason_file = "OffenderMovementIncarcerationPeriod_AdmissionReasons"
+        release_reason_file = "OffenderMovementIncarcerationPeriod_ReleaseReasons"
+
+        admissions_fixture_path = direct_ingest_fixture_path(
+            region_code=self.region_code(),
+            file_name=f"{admission_reason_file}.csv",
+        )
+
+        releases_fixture_path = direct_ingest_fixture_path(
+            region_code=self.region_code(),
+            file_name=f"{release_reason_file}.csv",
+        )
+
+        admissions_contents_handle = GcsfsFileContentsHandle(
+            admissions_fixture_path, cleanup_file=False
+        )
+        admission_reasons = []
+        for row in csv.DictReader(admissions_contents_handle.get_contents_iterator()):
+            admission_reason: str = (
+                row["StartMovementType"] + "-" + row["StartMovementReason"]
+            )
+            admission_reasons.append(admission_reason)
+
+        releases_contents_handle = GcsfsFileContentsHandle(
+            releases_fixture_path, cleanup_file=False
+        )
+        release_reasons = []
+        for row in csv.DictReader(releases_contents_handle.get_contents_iterator()):
+            release_reason: str = (
+                row["EndMovementType"] + "-" + row["EndMovementReason"]
+            )
+            release_reasons.append(release_reason)
+
+        # Assert that every pair of MovementType and MovementReason present in the list of Admissions reasons
+        # is also present in the list of Release reasons. This is to confirm that we properly handle all potential
+        # (valid or invalid) release reasons.
+        self.assertTrue(set(admission_reasons) <= set(release_reasons))

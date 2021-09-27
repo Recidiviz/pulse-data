@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Base test class for ingest view parser tests."""
+import csv
 import os
 import unittest
 from abc import abstractmethod
@@ -30,7 +31,10 @@ from recidiviz.ingest.direct.controllers.ingest_view_file_parser_delegate import
     IngestViewFileParserDelegateImpl,
     ingest_view_manifest_dir,
 )
-from recidiviz.ingest.direct.controllers.ingest_view_manifest import EntityTreeManifest
+from recidiviz.ingest.direct.controllers.ingest_view_manifest import (
+    EntityTreeManifest,
+    EnumFieldManifest,
+)
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import print_entity_trees
@@ -70,6 +74,25 @@ class StateIngestViewParserTestBase:
         return IngestViewFileParser(
             delegate=IngestViewFileParserDelegateImpl(region, self.schema_type())
         )
+
+    def _parse_manifest(self, file_tag: str) -> EntityTreeManifest:
+        parser = self._build_parser()
+        manifest_ast, _ = parser.parse_manifest(
+            manifest_path=parser.delegate.get_ingest_view_manifest_path(file_tag),
+        )
+        return manifest_ast
+
+    def _parse_enum_manifest_test(
+        self, file_tag: str, enum_parser_manifest: EnumFieldManifest
+    ) -> None:
+        fixture_path = direct_ingest_fixture_path(
+            region_code=self.region_code(),
+            file_name=f"{file_tag}.csv",
+        )
+
+        contents_handle = GcsfsFileContentsHandle(fixture_path, cleanup_file=False)
+        for row in csv.DictReader(contents_handle.get_contents_iterator()):
+            _ = enum_parser_manifest.build_from_row(row).parse()
 
     def _run_parse_ingest_view_test(
         self, file_tag: str, expected_output: Sequence[Entity], debug: bool = False
