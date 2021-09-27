@@ -30,14 +30,15 @@ import {
   SupervisionLevel,
 } from "./Client";
 import {
+  CLIENT_LIST_KIND,
   ClientListAssessmentComparator,
   ClientListBuilder,
   ClientListContactComparator,
   ClientListDaysWithCurrentPOComparator,
   ClientListPriorityComparator,
   ClientListSupervisionStartComparator,
-  CLIENT_LIST_KIND,
 } from "./ClientListBuilder";
+import { captureExceptionWithLogs } from "../../utils";
 
 interface ClientsStoreProps {
   api: API;
@@ -166,6 +167,7 @@ class ClientsStore {
       runInAction(() => {
         this.isLoading = false;
         this.error = error;
+        captureExceptionWithLogs(error);
       });
     }
   }

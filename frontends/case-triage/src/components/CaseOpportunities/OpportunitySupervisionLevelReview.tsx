@@ -48,9 +48,8 @@ const OpportunitySupervisionLevelReview: React.FC<OpportunitySupervisionLevelRev
           <strong>Supervision Downgrade Recommended</strong>
           <br />
           <Caption>
-            {titleCase(client.fullName.given_names)} was assessed with score{" "}
-            {client.assessmentScore} on{" "}
-            {client.mostRecentAssessmentDate?.format("LL")}.{" "}
+            {client.givenName} was assessed with score {client.assessmentScore}{" "}
+            on {client.mostRecentAssessmentDate?.format("LL")}.{" "}
             {titleCase(client.possessivePronoun)} risk level is recorded as{" "}
             <strong>{client.supervisionLevelText}</strong> but should be{" "}
             <strong>{client.riskLevelLabel}</strong> according to{" "}

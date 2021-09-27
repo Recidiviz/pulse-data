@@ -19,6 +19,7 @@ import { computed, makeObservable, observable, when } from "mobx";
 import { identify } from "../analytics";
 import ErrorMessageStore from "./ErrorMessageStore";
 import UserStore, { FeatureVariants } from "./UserStore";
+import { captureExceptionWithLogs } from "../utils";
 
 interface APIProps {
   errorMessageStore: ErrorMessageStore;
@@ -234,9 +235,9 @@ class API {
       }
 
       return json;
-    } catch (err) {
-      Sentry.captureException(err);
-      throw err;
+    } catch (error) {
+      captureExceptionWithLogs(error);
+      throw error;
     }
   }
 
