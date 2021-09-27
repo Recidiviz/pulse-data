@@ -24,6 +24,7 @@ import {
   ScoreMinMaxBySupervisionLevel,
   SupervisionContactFrequency,
 } from "./Policy";
+import { captureExceptionWithLogs } from "../../utils";
 
 interface PolicyStoreProps {
   api: API;
@@ -74,6 +75,7 @@ class PolicyStore {
       return runInAction(() => {
         this.isLoading = false;
         this.error = error;
+        captureExceptionWithLogs(error);
       });
     }
   }

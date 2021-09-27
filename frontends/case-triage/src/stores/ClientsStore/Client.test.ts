@@ -24,7 +24,7 @@ import { CaseUpdateActionType, CaseUpdateStatus } from "../CaseUpdatesStore";
 import { Opportunity } from "../OpportunityStore";
 import { OpportunityDeferralType } from "../OpportunityStore/Opportunity";
 import RootStore from "../RootStore";
-import { Client, PENDING_ID } from "./Client";
+import { Client, PENDING_ID, ClientData } from "./Client";
 import { Note } from "./Note";
 import { clientData, clientOpportunityData } from "./__fixtures__";
 
@@ -34,53 +34,63 @@ const APIMock = API as jest.MockedClass<typeof API>;
 const TEST_NOTE_TEXT = "test note";
 
 let rootStore: RootStore;
+let buildTestClient: (client: ClientData) => Client;
 let testClient: Client;
 
 beforeEach(() => {
   rootStore = new RootStore();
-  testClient = Client.build({
-    api: rootStore.api,
-    client: cloneDeep(clientData),
-    clientsStore: rootStore.clientsStore,
-    opportunityStore: rootStore.opportunityStore,
-    policyStore: rootStore.policyStore,
-    errorMessageStore: rootStore.errorMessageStore,
-  });
+
+  buildTestClient = (client: ClientData) =>
+    Client.build({
+      client: cloneDeep(client),
+      api: rootStore.api,
+      clientsStore: rootStore.clientsStore,
+      opportunityStore: rootStore.opportunityStore,
+      policyStore: rootStore.policyStore,
+      errorMessageStore: rootStore.errorMessageStore,
+    });
+
+  testClient = buildTestClient(clientData);
   APIMock.prototype.post.mockResolvedValue({});
 });
+
 afterEach(() => {
   APIMock.mockReset();
   MockDate.reset();
 });
 
 test("phone number parsing", () => {
-  testClient = Client.build({
-    api: rootStore.api,
-    client: cloneDeep({
-      ...clientData,
-      phoneNumber: null,
-    }),
-    clientsStore: rootStore.clientsStore,
-    opportunityStore: rootStore.opportunityStore,
-    policyStore: rootStore.policyStore,
-    errorMessageStore: rootStore.errorMessageStore,
+  testClient = buildTestClient({
+    ...clientData,
+    phoneNumber: null,
   });
 
   expect(testClient.phoneNumber).toBe(undefined);
 
-  testClient = Client.build({
-    api: rootStore.api,
-    client: cloneDeep({
-      ...clientData,
-      phoneNumber: "5108675309",
-    }),
-    clientsStore: rootStore.clientsStore,
-    opportunityStore: rootStore.opportunityStore,
-    policyStore: rootStore.policyStore,
-    errorMessageStore: rootStore.errorMessageStore,
+  testClient = buildTestClient({
+    ...clientData,
+    phoneNumber: "5108675309",
   });
 
   expect(testClient.phoneNumber).toEqual("(510) 867-5309");
+});
+
+test("name", () => {
+  testClient = buildTestClient({
+    ...clientData,
+    fullName: {},
+  });
+
+  expect(testClient.name).toEqual("");
+  expect(testClient.formalName).toEqual("");
+
+  testClient = buildTestClient({
+    ...clientData,
+    fullName: { given_names: "Nelle" },
+  });
+
+  expect(testClient.name).toEqual("Nelle");
+  expect(testClient.formalName).toEqual("Nelle");
 });
 
 test("create a note", async () => {

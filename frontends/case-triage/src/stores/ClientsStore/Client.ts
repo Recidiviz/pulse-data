@@ -37,9 +37,9 @@ import { Note, NoteData } from "./Note";
 
 /* eslint-disable camelcase */
 interface ClientFullName {
-  given_names: string;
-  middle_name: string;
-  surname: string;
+  given_names?: string;
+  middle_name?: string;
+  surname?: string;
 }
 /* eslint-enable camelcase */
 
@@ -263,14 +263,17 @@ export class Client {
       this.name = "Unknown";
       this.formalName = this.name;
     } else {
-      const { given_names: given, surname } = clientData.fullName;
+      const { given_names: given = "", surname = "" } = clientData.fullName;
 
-      this.name = `${titleCase(given)} ${titleCase(surname)}`;
+      this.name = [titleCase(given), titleCase(surname)]
+        .filter((name) => Boolean(name))
+        .join(" ")
+        .trim();
 
-      this.formalName = titleCase(surname);
-      if (given) {
-        this.formalName += `, ${titleCase(given)}`;
-      }
+      this.formalName = [titleCase(surname), titleCase(given)]
+        .filter((name) => Boolean(name))
+        .join(", ")
+        .trim();
     }
 
     this.possessivePronoun = POSSESSIVE_PRONOUNS[clientData.gender] || "their";
@@ -596,7 +599,7 @@ export class Client {
     if (this.fullName === null) {
       return "Unknown";
     }
-    return titleCase(this.fullName.given_names);
+    return titleCase(this.fullName.given_names || "");
   }
 
   get newToCaseload(): Opportunity | undefined {
