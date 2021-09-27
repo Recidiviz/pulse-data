@@ -26,7 +26,45 @@ from recidiviz.utils.metadata import local_project_id_override
 
 COMPARTMENT_SENTENCES_VIEW_NAME = "compartment_sentences"
 
-COMPARTMENT_SENTENCES_VIEW_DESCRIPTION = """Sentences associated with each compartment session. Joined based on sentence start date proximity to session start date"""
+COMPARTMENT_SENTENCES_VIEW_DESCRIPTION = """
+## Overview
+
+The table `compartment_sentences_materialized` joins to `compartment_sessions` based on `person_id` and `session_id` and is used to associate a sentence with a given stay within a compartment. This table is unique on `person_id` and `session_id`, but not every `session_id` in `compartment_sessions` will be associated with a sentence. Additionally, the same `sentence_id` can be associated with  more than one `session_id`. 
+
+Sentencing data is significantly messier and less-validated than sessions data with state-specific quirks that we do not yet know the full extent of. Nonetheless, sentences are matched to sessions based on the proximity of the session `start_date` to the `sentence_start_date`, which is the approach that we feel works most consistently. 
+
+## Field Definitions
+
+|	Field	|	Description	|
+|	--------------------	|	--------------------	|
+|	person_id	|	Unique person identifier	|
+|	state_code	|	State	|
+|	session_id	|	Session ID that the sentence best matches to. Each session only has a single sentence associated with it, but multiple sessions can map to the same sentence. Sentences should only map to incarceration and supervision sessions.	|
+|	sentence_id	|	The sentence id of the sentence that best matches the session. This value can be duplicated within a person - more than 1 session can be associated with the same sentence.	|
+|	sentence_data_source	|	Sentencing data source. This will be `SUPERVISION` if it came from `state_supervision_sentence` and `INCARCERATION` if it came from `state_incarceration_sentence`.<br><br>There is currently no condition enforcing that supervision sentences need to map to supervision sessions and incarceration sentences need to map to incarceration sessions. This is because in some states, the parole "sentence" is part of the incarceration sentence from which they were released onto parole.	|
+|	sentence_date_imposed	|	The date that the sentence was imposed. This is pulled directly from the state sentencing tables.	|
+|	sentence_start_date	|	The date that the sentence starts. This is also pulled directly from the state sentencing tables. This is generally the field that is compared to the session start date in determining matches (except in ID where the date imposed is used)	|
+|	sentence_completion_date	|	Sentence completion date. This is null for sentences that are currently being served.	|
+|	projected_completion_date_min	|	Minumum projected completion date. Used to determine the sentence length. The minimum and maximum values will be the same for supervision sentences.	|
+|	projected_completion_date_max	|	Maximum projected completion date. Used to determine the sentence length. The minimum and maximum values will be the same for supervision sentences.	|
+|	parole_eligibility_date	|	Date that the person is eligible for parole. Will only be populated for incarceration sentences.	|
+|	life_sentence	|	Boolean indicating whether the sentence is a life sentence. This will be FALSE for all supervision sentences.	|
+|	offense_count	|	A single sentence can have more than one offense associated with it. This captures the number of offenses associated with the sentence.	|
+|	most_severe_is_violent	|	Boolean that indicates whether the most severe offense associated with a sentence is a violent offense.	|
+|	most_severe_classification_type	|	Value of the most severe classification associated with a sentence. Most common values are `FELONY` and `MISDEMEANOR`	|
+|	classification_type	|	Array of all offense classification types associated with a sentence from which the most severe is chosen from.	|
+|	description	|	Array of all offense descriptions associated with a sentence.	|
+|	ncic_code	|	Array of all offense NCIC codes associated with a sentence	|
+|	offense_type	|	Array of all offense types associated with a sentence	|
+|	sentence_length_days	|	Difference between the sentence completion date and the estimated start date. The estimated start date is the lesser value between the sentence start date and the sentence date imposed	|
+|	min_projected_sentence_length	|	Difference between the minimum projected completion date and the start date	|
+|	max_projected_sentence_length	|	Difference between the maximum projected completion date and the start date	|
+
+
+## Methodology
+
+This view is constructed off of sentencing data in the `state` dataset, joined to `compartment_sessions`, and then deduped so that we have the best matched sentence for each session.
+"""
 
 COMPARTMENT_SENTENCES_QUERY_TEMPLATE = """
     /*{description}*/

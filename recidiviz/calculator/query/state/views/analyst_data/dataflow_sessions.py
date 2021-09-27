@@ -28,7 +28,50 @@ DATAFLOW_SESSIONS_VIEW_NAME = "dataflow_sessions"
 
 DATAFLOW_SESSIONS_SUPPORTED_STATES = ("US_ND", "US_ID", "US_MO", "US_PA")
 
-DATAFLOW_SESSIONS_VIEW_DESCRIPTION = """Sessionized view of each individual. Session defined as continuous stay with same dataflow population attributes"""
+DATAFLOW_SESSIONS_VIEW_DESCRIPTION = """
+## Overview
+
+Dataflow sessions is the most finely grained sessionized view. This view is unique on `person_id` and `dataflow_session_id`. New sessions are defined by a gap in population data or a change in _any_ of the following fields:
+
+1. `compartment_level_1`
+2. `compartment_level_2`
+3. `compartment_location`
+4. `correctional_level`
+5. `supervising_officer_external_id`
+6. `case_type`
+
+This table is the source of other sessions tables such as `compartment_sessions`, `location_sessions`, and `supervision_officer_sessions`. 
+
+## Field Definitions
+
+|	Field	|	Description	|
+|	--------------------	|	--------------------	|
+|	person_id	|	Unique person identifier	|
+|	state_code	|	State	|
+|	metric_source	|	The population dataflow metric from which the session was constructed (`INCARCERATION_POPULATION`, `SUPERVISION_POPULATION`, `SUPERVISION_OUT_OF_STATE_POPULATION` )	|
+|	compartment_level_1	|	Level 1 Compartment. Possible values are: <br>-`INCARCERATION`<br>-`INCARCERATION_OUT_OF_STATE`<br>-`SUPERVISION`<br>-`SUPERVISION_OUT_OF_STATE`<br>-`RELEASE`<br>-`INTERNAL_UNKNOWN`, <br>-`PENDING_CUSTODY`<br>-`PENDING_SUPERVISION`<br>-`SUSPENSION`<br>ERRONEOUS_RELEASE	|
+|	compartment_level_2	|	Level 2 Compartment. Possible values for the incarceration compartments are: <br>-`GENERAL`<br>-`PAROLE_BOARD_HOLD`<br>-`TREATMENT_IN_PRISON` <br>-`SHOCK_INCARCERATION`<br>-`ABSCONSION`<br>-`INTERNAL_UNKNOWN`<br>-`COMMUNITY_PLACEMENT_PROGRAM`<br>-`TEMPORARY_CUSTODY`<br><br>Possible values for the supervision compartments are: <br>-`PROBATION`<br>-`PAROLE`<br>-`ABSCONSION`<br>-`DUAL`<br>-`BENCH_WARRANT`<br>-`INFORMAL_PROBATION`<br>-`INTERNAL_UNKNOWN`<br><br>All other `compartment_level_1` values have the same value for `compartment_level_1` and `compartment_level_2`	|
+|	compartment_location	|	Facility or supervision district	|
+|	correctional_level	|	Person's custody level (for incarceration sessions) or supervision level (for supervision sessions)	|
+|	supervising_officer_external_id	|	Supervision officer at start of session (only populated for supervision sessions)	|
+|	case_type	|	The type of case that describes the associated period of supervision	|
+|	session_attributes	|	This is an array that stores values for compartment_level_2, supervising_officer_external_id, compartment_location in cases where there is more than of these values on a given day. The non-array versions of these fields determinstically and arbitrarily choose a single value, but this field allows us to unnest and look at cases where a person has more than one supervising officer or supervision location on a given day	|
+|	start_date	|	Start day of session	|
+|	end_date	|	Last full day of session	|
+|	last_day_of_data	|	The last day for which we have data, specific to a state. The is is calculated as the state min of the max day of which we have population data across supervision and population metrics within a state. For example, if in ID the max incarceration population date value is 2021-09-01 and the max supervision population date value is 2021-09-02, we would say that the last day of data for ID is 2021-09-01.	|
+|	dataflow_session_id	|	Ordered session number per person	|
+
+## Methodology
+
+1. Union together the three population metrics
+    1. There are three dataflow population metrics - `INCARCERATION_POPULATION`, `SUPERVISION_POPULATION`, and `SUPERVISION_OUT_OF_STATE_POPULATION`. Each of these has a value for each person and day for which they are counted towards that population. 
+
+2. Deduplicate 
+    1. There are cases in each of these individual dataflow metrics where we have the same person on the same day with different values for supervision types or specialized purpose for incarceration. If someone is present in both `PROBATION` and `PAROLE` on a given day, they are recategorized to `DUAL`. The unioned population data is then deduplicated to be unique on person and day. We prioritize the metrics in the following order: (1) `INCARCERATION_POPULATION`, (2) `SUPERVISION_POPULATION`, (3) `SUPERVISION_OUT_OF_STATE_POPULATION`. This means that if a person shows up in both incarceration and supervision population on the same day, we list that person as only being incarcerated.
+
+3. Aggregate into sessions 
+    1. Continuous dates within `metric_source`, `compartment_level_1`, `compartment_level_2`, `location`, `correctional_level`, `supervising_officer_external_id`, `case_type`, and `person_id`
+"""
 
 DATAFLOW_SESSIONS_QUERY_TEMPLATE = """
     /*{description}*/

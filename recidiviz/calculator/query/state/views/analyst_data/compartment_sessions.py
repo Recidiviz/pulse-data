@@ -23,7 +23,92 @@ from recidiviz.utils.metadata import local_project_id_override
 
 COMPARTMENT_SESSIONS_VIEW_NAME = "compartment_sessions"
 
-COMPARTMENT_SESSIONS_VIEW_DESCRIPTION = """Sessionized view of each individual. Session defined as continuous stay within a compartment"""
+COMPARTMENT_SESSIONS_VIEW_DESCRIPTION = """
+## Overview
+
+Compartment sessions is our most frequently used sessionized view. This table is unique on `person_id` and `session_id`. In this view a new session is triggered every time a `compartment_level_1` or `compartment_level_2` value changes. A "compartment" can generally be defined as someone's legal status within incarceration or supervision.
+
+In the data we’ve constructed we have a hierarchy of compartment level 1 and compartment level 2. The main compartment level 1 values are used to represent incarceration and supervision. Level 2 values further categorize the legal status. For example, the supervision level 1 sessions most frequently have level 2 values of probation or parole. This view also has columns for the preceding and ensuing sessions, referred to as "inflow" and "outflow" compartments.
+
+It is important to note that a compartment does not always equal legal status. There have been a number of cases where for analysis or reporting purposes it has been useful for us to define these slightly differently. For example, excluded facilities in ID trigger their own new compartment (`INCARCERATION_OUT_OF_STATE`) even if a person is of the same legal status because we want to be able to view those events separately.
+
+Compartment sessions differs from other sessionized views in that the edges should correspond with dataflow start and end events incarceration admission metrics, incarceration releases, supervision starts, and supervision terminations). As such, we leverage these start/end reason values to make inference in cases where we have missing data (a person shows up in neither incarceration or supervision population metrics). The following are the `compartment_level_1` values that are generated from population metrics:
+
+1. `INCARCERATION`
+2. `SUPERVISION`
+3. `SUPERVISION_OUT_OF_STATE`
+
+## Field Definitions
+
+|	Field	|	Description	|
+|	--------------------	|	--------------------	|
+|	person_id	|	Unique person identifier	|
+|	session_id	|	Ordered session number per person	|
+|	dataflow_session_id_start	|	Session ID from `dataflow_sessions` at start of compartment session. Dataflow sessions is a more finely disaggregated view of sessions where a new session is triggered by a change in any attribute (compartment, location, supervision officer, case type, etc)	|
+|	dataflow_session_id_end	|	Session ID from `dataflow_sessions` at end of compartment session	|
+|	start_date	|	Day that a person's session starts. This will correspond with the incarceration admission or supervision start date	|
+|	end_date	|	Last full-day of a person's session. The release or termination date will be the `end_date` + 1 day	|
+|	state_code	|	State	|
+|	compartment_level_1	|	Level 1 Compartment. Possible values are: <br>-`INCARCERATION`<br>-`INCARCERATION_OUT_OF_STATE` (inferred from location)<br>-`SUPERVISION`<br>-`SUPERVISION_OUT_OF_STATE`<br>-`RELEASE` (inferred from gap in data)<br>-`INTERNAL_UNKNOWN` (inferred from gap in data), <br>-`PENDING_CUSTODY` (inferred from gap in data)<br>-`PENDING_SUPERVISION` (inferred from gap in data)<br>-`SUSPENSION`<br>-`ERRONEOUS_RELEASE` (inferred from gap in data)	|
+|	compartment_level_2	|	Level 2 Compartment. Possible values for the incarceration compartments are: <br>-`GENERAL`<br>-`PAROLE_BOARD_HOLD`<br>-`TREATMENT_IN_PRISON` <br>-`SHOCK_INCARCERATION`<br>-`ABSCONSION`<br>-`INTERNAL_UNKNOWN`<br>-`COMMUNITY_PLACEMENT_PROGRAM`<br>-`TEMPORARY_CUSTODY`<br><br>Possible values for the supervision compartments are: <br>-`PROBATION`<br>-`PAROLE`<br>-`ABSCONSION`<br>-`DUAL`<br>-`BENCH_WARRANT`<br>-`INFORMAL_PROBATION`<br>-`INTERNAL_UNKNOWN`<br><br>All other `compartment_level_1` values have the same value for `compartment_level_1` and `compartment_level_2`	|
+|	session_length_days	|	Length of session in days. For active sessions this is the number of days between session start and the most recent day of data. The minimum value of this field is `1` in cases where the person has the same `start_date` and `end_date` (they spent one full day in the compartment)	|
+|	session_days_inferred	|	The number of days (out of the total `session_length_days`) that are inferred. This type inference happens when we have a gap between the same compartment with no dataflow start/end events indicating a compartment transition. As an example if someone was serving a `GENERAL` incarceration session for 30 days, then there was a gap in data for 5 days, and then they were in `GENERAL` again for 30 days. If there are no dataflow events at the transition edges, it is inferred that that person was in `GENERAL` for that entire time.	|
+|	start_reason	|	Reason for the session start. This is pulled from `compartment_session_start_reasons` which is generated from the union of the incarceration admission and supervision start dataflow metrics. Start events are deduplicated to unique person/days within supervision and within incarceration and then joined to sessions generated from the population metric. This field is not fully hydrated.	|
+|	start_sub_reason	|	This field represents the most severe violation associated with an admission and is only populated for incarceration commitments from supervision, which includes both revocation admissions and sanction admissions.	|
+|	end_reason	|	Reason for the session end. This is pulled from `compartment_session_end_reasons` which is generated from the union of the incarceration release and supervision termination dataflow metrics. End events are deduplicated to unique person/days within supervision and within incarceration and then joined to sessions generated from the population metric. If a session is currently active this field will be NULL. This field is not fully hydrated.	|
+|	earliest_start_date	|	The first date, across all sessions, that a person appears in our population data	|
+|	last_day_of_data	|	The last day for which we have data, specific to a state. The is is calculated as the state min of the max day of which we have population data across supervision and population metrics within a state. For example, if in ID the max incarceration population date value is 2021-09-01 and the max supervision population date value is 2021-09-02, we would say that the last day of data for ID is 2021-09-01.	|
+|	inflow_from_level_1	|	Compartment level 1 value of the preceding session	|
+|	inflow_from_level_2	|	Compartment level 2 value of the preceding session	|
+|	outflow_to_level_1	|	Compartment level 1 value of the subsequent session	|
+|	outflow_to_level_2	|	Compartment level 2 value of the subsequent session	|
+|	compartment_location_start	|	Facility or supervision district at the start of the session	|
+|	compartment_location_end	|	Facility or supervision district at the end of the session	|
+|	correctional_level_start	|	A person's custody level (for incarceration sessions) or supervision level (for supervision sessions) as of the start of the session	|
+|	correctional_level_end	|	A person's custody level (for incarceration sessions) or supervision level (for supervision sessions) as of the end of the session	|
+|	age_start	|	Age at start of session	|
+|	age_end	|	Age at end of session	|
+|	gender	|	Gender	|
+|	prioritized_race_or_ethnicity	|	Person's race or ethnicity. In cases where multiple race / ethnicities are listed, the least represented one for that state is chosen	|
+|	assessment_score_start	|	Assessment score at start of session	|
+|	assessment_score_end	|	Assessment score at end of session	|
+|	supervising_officer_external_id_start	|	Supervision officer at start of session (only populated for supervision sessions)	|
+|	supervising_officer_external_id_end	|	Supervision officer at end of session (only populated for supervision sessions)	|
+|	age_bucket_start	|	Age bucket at start of session	|
+|	age_bucket_end	|	Age bucket at end of session	|
+|	assessment_score_bucket_start	|	Assessment score bucket at start of session	|
+|	assessment_score_bucket_end	|	Assessment score bucket at end of session	|
+
+## Methodology
+
+At a high-level, the following steps are taken to generate `compartment_sessions`
+
+1. Aggregate dataflow sessions to compartment sessions
+    
+    1. Uses the `compartment_level_1` and `compartment_level_2` fields to identify when these values change and creates a new `session_id` every time they do within a `person_id`
+
+2. Join to dataflow start/end reasons
+    
+    1. Session start dates are joined to `compartment_session_start_reasons_materialized` and session end dates are joined to `compartment_session_end_reasons_materialized`. These views already handle deduplication in cases where there is more than one event on a given person/day. 
+
+3. Use start/end reasons to infer compartment values when there are gaps in population data
+    
+    1. There are two categories of sessions compartment inference worth distinguishing: 
+        
+        1. **Cases that lead to further aggregation**. This is occurs when we have a gap in data with identical compartment values for the periods surrounding that gap. If this occurs _and_ there are no matching dataflow events that indicate a transition, we assume that this is missing data and that this gap should take on the compartment values of its neighboring sessions. When this occurs, those adjacent sessions will then be re-aggregated into one larger compartment session. The `session_days_inferred` can be used to identify compartment sessions that have some portion of its time inferred by this methodology 
+        2. **Cases that take on an inferred compartment value**. This refers to cases where the session gap gets a new compartment value (not equal to one of our population metric-derived values) based on the dataflow start/end reasons. The most common and straightforward example of this is the `RELEASE` compartment. This occurs when we have a gap in the data where the preceding session end reason is one that would indicate the person leaving the system (`SENTENCE_SERVED`, `COMMUTED`, `DISCHARGE`, `EXPIRATION`, `PARDONED`). The full set of inferred compartment values is listed below along with the criteria used to determine compartment values.
+            1. `RELEASE` - preceding end reason indicates transition to liberty
+            2. `PENDING_CUSTODY` - preceding end reason of is a supervision session ending in revocation or the subsequent start reason indicates a revocation or sanction admission
+            3. `PENDING_SUPERVISION` - previous end reason is a incarceration session ending in conditional release
+            4. `SUSPENSION` - previous end reason is suspension
+            5. `ERRONEOUS_RELEASE` - previous end reason or subsequent start reason indicate erroneous release
+            6. `INCARCERATION_OUT_OF_STATE` - previous end reason indicates an incarceration transfer out of state
+            7. `INTERNAL_UNKNOWN` - the value given to any gap between sessions that does not meet one of the above criteria
+
+4. Join back to dataflow sessions and other demographic tables to get session characteristics
+    
+    1. Lastly, the re-aggregated compartment sessions are joined back to other views to add additional session characteristics 
+"""
 
 MO_DATA_GAP_DAYS = "10"
 
