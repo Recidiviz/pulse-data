@@ -26,6 +26,7 @@ import {
   opportunityPriorityComparator,
   OpportunityType,
 } from "./Opportunity";
+import { captureExceptionWithLogs } from "../../utils";
 
 // eslint-disable-next-line camelcase
 type CreateDeferralResponse = {
@@ -103,6 +104,7 @@ class OpportunityStore {
       runInAction(() => {
         this.isLoading = false;
         this.error = error;
+        captureExceptionWithLogs(error);
       });
     }
   }

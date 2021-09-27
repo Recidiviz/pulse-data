@@ -18,6 +18,7 @@
 import { rem, remToPx } from "polished";
 import { useMemo } from "react";
 import { v4 as uuidv4 } from "uuid";
+import * as Sentry from "@sentry/react";
 
 export const titleCase = (str: string): string => {
   // Step 1. Lowercase the string
@@ -79,4 +80,13 @@ export const redactLocalStorageCache = (): void => {
       localStorage.removeItem(key);
     }
   });
+};
+
+export const captureExceptionWithLogs = (error: Error): void => {
+  if (process.env.NODE_ENV === "development") {
+    // eslint-disable-next-line no-console
+    console.error(error);
+  } else {
+    Sentry.captureException(error);
+  }
 };
