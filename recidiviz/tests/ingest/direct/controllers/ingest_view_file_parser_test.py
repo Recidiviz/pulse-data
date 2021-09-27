@@ -24,6 +24,9 @@ from typing import Dict, List, Optional, Type, Union
 from recidiviz.cloud_storage.gcs_file_system import GcsfsFileContentsHandle
 from recidiviz.common.constants.enum_parser import EnumParser, EnumParsingError
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.controllers.custom_function_registry import (
+    CustomFunctionRegistry,
+)
 from recidiviz.ingest.direct.controllers.ingest_view_file_parser import (
     FileFormat,
     IngestViewFileParser,
@@ -31,12 +34,7 @@ from recidiviz.ingest.direct.controllers.ingest_view_file_parser import (
 from recidiviz.ingest.direct.controllers.ingest_view_file_parser_delegate import (
     IngestViewFileParserDelegate,
 )
-from recidiviz.ingest.direct.controllers.ingest_view_manifest import (
-    EntityTreeManifest,
-)
-from recidiviz.ingest.direct.controllers.custom_function_registry import (
-    CustomFunctionRegistry,
-)
+from recidiviz.ingest.direct.controllers.ingest_view_manifest import EntityTreeManifest
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_deserialize import (
     EntityFactory,

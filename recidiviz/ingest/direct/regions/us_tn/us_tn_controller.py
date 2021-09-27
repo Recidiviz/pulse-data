@@ -66,7 +66,7 @@ class UsTnController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         ] = {}
 
     def get_file_tag_rank_list(self) -> List[str]:
-        return ["OffenderName"]
+        return ["OffenderName", "OffenderMovementIncarcerationPeriod"]
 
     def get_enum_overrides(self) -> EnumOverrides:
         return self.enum_overrides
