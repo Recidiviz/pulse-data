@@ -27,27 +27,58 @@ REINCARCERATION_SESSIONS_FROM_SESSIONS_VIEW_NAME = (
 )
 
 REINCARCERATION_SESSIONS_FROM_SESSIONS_VIEW_DESCRIPTION = """
-A table of incarceration sessions that end in release with session identifiers for a subsequent reincarceration 
-sessions.
 
-This view is constructed directly from sessions. The query does a self join where reincarceration 
-sessions are left joined to incarceration sessions that end in release. The alias "release_session" 
-refers to the session from which a person is released, and the alias "reincarceration_session" refers to the
-incarceration sessions that follow this release.
+## Overview
 
-The table is deduped so that each person's release session is associated with their first reincarceration, if there 
-are more than one. For example, if a person was incarcerated three distinct times, the third reincarceration gets 
-associated with only the second release, not the first. 
+The table `reincarceration_sessions_from_sessions_materialized` joins to `compartment_sessions` and identifies incarceration releases and subsequent reincarcerations when / if they occur. The view has a record for every person and every incarceration release -  if there is a subsequent reincarceration the `session_id` and `reincarceration_date` associated with the reincarceration session will be populated.
 
-At this point, reincarcerations and releases are identified mainly based on inflows and outflows rather than 
-start reasons and end reasons. TODO(#5920) - use start and end reasons instead as to be more internally consistent.
+This table can be used to calculate reincarceration rates based on the time between release and reincarceration as well as cumulative reincarceration curves by time since release. Additionally, since the release session id and reincarceration session id are both included in this view, this table can be joined back to sessions to determine characteristics associated with the release cohort (age, gender, etc) as well as the reincarceration (crime type, inflow from, etc) by joining to sessions. 
 
-Releases are identified as those incarceration sessions that (1) outflow to SUPERVISION or RELEASE, (2) are not 
-parole board hold sessions, (3) do not have an end reason of ESCAPE.
+The logic is slightly more complex than just identifying incarceration sessions that follow an incarceration release, due to the way that states can have temporary parole board holds. The guidance that we have received is that these temporary holds should not count either as reincarcerations or as releases (in cases where the parole board does not revoke the person). The reincarceration should count when / if a person is revoked to an incarceration session following a parole board hold.  As an example, let’s say the person had the following set of sessions:
 
-Reincarcerations are then joined to these releases based on (1) being an incarceration session that is not a parole
-board hold (2) starting after the end date of the last supervision, (3) not inflowing from another incarceration
-term, unless that incarceration term is a parole board hold, (4) not a start reason of RETURN_FROM_ESCAPE.
+1. Incarceration - General Term
+2. Parole
+3. Incarceration - Parole Board Hold
+4. Parole
+5. Incarceration - Parole Board Hold
+6. Incarceration - General Term
+
+In the above example, session 1 would be the incarceration release session and session 6 would be the subsequent reincarceration session.
+
+## Field Definitions
+
+|	Field	|	Description	|
+|	--------------------	|	--------------------	|
+|	person_id	|	Unique person identifier	|
+|	state_code	|	State	|
+|	release_session_id	|	Session ID for the incarceration session from which the person was released from. This includes any incarceration session (except for temporary parole board holds) that transition to release or supervision compartments	|
+|	release_date	|	Date that the person was released (one day after the release session end date)	|
+|	days_since_release	|	Days between the person's release date and the last day of data	|
+|	months_since_release	|	Calendar count of full months between the last day of data and the release date. This field is generally used to identify the cohort to be used for a particular calculation (for example 12 month recidivism requires a cohort that has been released for at least 12 months). We can select that cohort using this field - months_since_release >=12 because a value of 12 is people that have been released a full 12 months.	|
+|	years_since_release	|	Calendar count of full years between the last day of data and the release date.	|
+|	reincarceration	|	Binary indicator for whether the person has been reincarcerated	|
+|	reincarceration_session_id	|	Session ID of the reincarceration session	|
+|	reincarceration_date	|	Date of the reincarceration	|
+|	release_to_reincarceration_days	|	Days between release and reincarceration	|
+|	release_to_reincarceration_months	|	Calendar months between release date and reincarceration date. These fields are generally used to determine whether the event occurred within that time period. As such, the value gets rounded up - a person that revoked 11 months and 5 days after their supervision start will get a value of 12 because they should count towards a 12 month revocation rate but not an 11 month revocation rate	|
+|	release_to_reincarceration_years	|	Years between the release and reincarceration. This value is rounded up as months are, as described above	|
+
+## Methodology
+
+This view is constructed directly from sessions. The query does a self join where reincarceration sessions are left joined to incarceration sessions that end in release. The alias "release_session" refers to the session from which a person is released, and the alias "reincarceration_session" refers to the incarceration sessions that follow this release.
+
+The table is deduped so that each person's release session is associated with their first reincarceration, if there are more than one. For example, if a person was incarcerated three distinct times, the third reincarceration gets associated with only the second release, not the first. 
+
+Releases are identified as those incarceration sessions that meet the following criteria:
+
+1. Outflow to `SUPERVISION` or `RELEASE`
+2. Are not parole board hold sessions
+
+Reincarcerations are then joined to these releases based on:
+
+1. Being an incarceration session that is not a parole board hold
+2. Starting after the end date of the last supervision
+3. Not inflowing from another incarceration term, unless that incarceration term is a parole board hold
 """
 
 REINCARCERATION_SESSIONS_FROM_SESSIONS_QUERY_TEMPLATE = """

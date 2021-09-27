@@ -31,9 +31,13 @@ ADMISSION_START_REASON_DEDUP_PRIORITY_VIEW_NAME = (
     "admission_start_reason_dedup_priority"
 )
 
-ADMISSION_START_REASON_DEDUP_PRIORITY_VIEW_DESCRIPTION = (
-    """Dedup priority for session start reasons"""
-)
+ADMISSION_START_REASON_DEDUP_PRIORITY_VIEW_DESCRIPTION = """
+This view defines a prioritized ranking for supervision start reasons and incarceration admission reasons. This view is
+ultimately used to deduplicate incarceration admissions and supervision starts so that there is only one event per person
+per day. Prioritization and deduplication is done within incarceration and within supervision meaning that a person
+could in theory have both a supervision start and incarceration admission on the same day. Deduplication across incarceration
+and supervision is handled based on a join condition to deduplicated population metrics
+"""
 
 SUPERVISION_START_REASON_ORDERED_PRIORITY = [
     StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,

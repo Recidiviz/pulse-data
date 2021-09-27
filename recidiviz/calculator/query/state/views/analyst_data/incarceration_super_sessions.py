@@ -24,8 +24,34 @@ from recidiviz.utils.metadata import local_project_id_override
 
 INCARCERATION_SUPER_SESSIONS_VIEW_NAME = "incarceration_super_sessions"
 
-INCARCERATION_SUPER_SESSIONS_VIEW_DESCRIPTION = """Incarceration super-sessions for each individual. Super-session defined as continuous stay within an incarceration
- compartment_level_2, aggregating across in-state and out-of-state incarceration."""
+INCARCERATION_SUPER_SESSIONS_VIEW_DESCRIPTION = """
+
+## Overview
+
+This view is unique on `person_id` and `incarceration_super_session_id`. Like supervision super-sessions, incarceration super-sessions aggregate across compartment sessions. However, the methodology is slightly different. Incarceration super-sessions only aggregates across incarceration `compartment_level_1` values _within_ a `compartment_level_2`. For example, `INCARCERATION - GENERAL` --> `INCARCERATION_OUT_OF_STATE - GENERAL` would become one incarceration super-session, but `INCARCERATION - TREATMENT_IN_PRISON` --> `INCARCERATION - GENERAL` would not. 
+
+This was done mainly for the specific use-case of calculating LOS within a given legal status. If someone on a general term transfers back and forth between in-state and out-of-state, we would want to measure that as a continous stay on a general term.
+
+## Field Definitions
+|	Field	|	Description	|
+|	--------------------	|	--------------------	|
+|	person_id	|	Unique person identifier	|
+|	incarceration_super_session_id	|	Session id for the incarceration super session. Aggregates across in-state and out-of-state incarceration within a `compartment_level_2` value	|
+|	start_date	|	Incarceration super-session start date	|
+|	end_date	|	Incarceration super-session end date	|
+|	state_code	|	State	|
+|	session_length_days	|	Difference between session start date and session end date. For active sessions the session start date is differenced from the last day of data	|
+|	session_id_start	|	Compartment session id associated with the start of the super-session. This field and the following field are used to join sessions and super-sessions	|
+|	session_id_end	|	Compartment session id associated with the end of the super-session. This field and the preceding field are used to join sessions and super-sessions	|
+|	start_reason	|	Start reason associated with the start of a super-session. This is pulled from the compartment session represented by `session_id_start`	|
+|	start_sub_reason	|	Start sub reason associated with the start of a super-session. This is pulled from the compartment session represented by `session_id_start`	|
+|	end_reason	|	End associated with the start of a super-session. This is pulled from the compartment session represented by `session_id_end`	|
+|	inflow_from_level_1	|	Compartment level 1 value of the preceding compartment session	|
+|	inflow_from_level_2	|	Compartment level 2 value of the preceding compartment session	|
+|	outflow_to_level_1	|	Compartment level 1 value of the subsequent compartment session	|
+|	outflow_to_level_2	|	Compartment level 2 value of the subsequent compartment session	|
+|	last_day_of_data	|	The last day for which we have data, specific to a state. This is pulled from `compartment_sessions`	|
+"""
 
 INCARCERATION_SUPER_SESSIONS_QUERY_TEMPLATE = """
     /*{description}*/
