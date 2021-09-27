@@ -171,7 +171,7 @@ historical_pipelines:
     # This calculation_month_count value must stay in-sync with the calculation_month_count arg in the
     # historical-pipelines.tf config for this pipeline
     calculation_month_count: 240
-    metric_types: SUPERVISION_POPULATION SUPERVISION_START SUPERVISION_TERMINATION
+    metric_types: SUPERVISION_POPULATION SUPERVISION_START SUPERVISION_TERMINATION SUPERVISION_SUCCESS
     # This region value must stay in-sync with the REGION arg in the
     # historical-pipelines.tf config for this pipeline
     region: us-east1
