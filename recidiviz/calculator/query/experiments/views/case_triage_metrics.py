@@ -22,8 +22,8 @@ from recidiviz.calculator.query.experiments.dataset_config import (
 )
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
-    DATAFLOW_METRICS_MATERIALIZED_DATASET,
     PO_REPORT_DATASET,
+    STATE_BASE_DATASET,
     STATIC_REFERENCE_TABLES_DATASET,
 )
 from recidiviz.case_triage.views.dataset_config import (
@@ -34,376 +34,251 @@ from recidiviz.utils.metadata import local_project_id_override
 
 CASE_TRIAGE_EVENTS_VIEW_NAME = "case_triage_metrics"
 
-CASE_TRIAGE_EVENTS_VIEW_DESCRIPTION = (
-    "Officer-day, week, and month-level event metrics for case triage"
-)
+CASE_TRIAGE_EVENTS_VIEW_DESCRIPTION = "Case triage event metrics per officer and day"
 
 CASE_TRIAGE_EVENTS_QUERY_TEMPLATE = """
-      WITH column_wise AS
-     (
-      SELECT user_id, EXTRACT(DATE from timestamp) as date_measurement, action_taken, count(*) as counts
-        from `{project_id}.{case_triage_segment_dataset}.frontend_person_action_taken`
-        group by 1,2,3
-     ),
 
-      action_set AS (
-            --updates that a PO makes on a given date
-            SELECT user_id
-            , date_measurement
-            , SUM(CASE WHEN action_taken = "FOUND_EMPLOYMENT" THEN 1 ELSE 0 END) AS actions_found_employment
-            , SUM(CASE WHEN action_taken = "INFORMATION_DOESNT_MATCH_OMS" THEN 1 ELSE 0 END) AS actions_doesnt_match_oms
-            , SUM(CASE WHEN action_taken = "SCHEDULED_FACE_TO_FACE" THEN 1 ELSE 0 END) AS actions_face_to_face
-            , SUM(CASE WHEN action_taken = "FILED_REVOCATION_OR_VIOLATION" THEN 1 ELSE 0 END) AS actions_filed_revocation
-            , SUM(CASE WHEN action_taken = "COMPLETED_ASSESSMENT" THEN 1 ELSE 0 END) AS actions_completed_assessment
-            , SUM(CASE WHEN action_taken = "OTHER_DISMISSAL" THEN 1 ELSE 0 END) AS actions_other_dismissal
-            , SUM(CASE WHEN action_taken = "NOT_ON_CASELOAD" THEN 1 ELSE 0 END) AS actions_not_on_caseload
-      FROM column_wise
-      GROUP BY user_id, date_measurement
-      ),
-
-      baseline AS (
-          --match main events on page with POs
-          SELECT recipients.state_code
-                , EXTRACT(DATE FROM metrics.timestamp) AS date
-                , district.district
-                , recipients.officer_external_id
-                , metrics.user_id AS segment_id
-                , CASE WHEN COUNT(DISTINCT page.timestamp) > 0 THEN 1 ELSE 0 END AS page_count
-                , COUNT(DISTINCT selected.timestamp) AS persons_selected_events
-                , COUNT(DISTINCT scrolled.timestamp) AS scrolled_to_bottom_events
-                , COUNT(DISTINCT updated.timestamp) AS case_updated_events
-          FROM `{project_id}.{case_triage_segment_dataset}.tracks` metrics
-          INNER JOIN `{project_id}.{static_reference_tables_dataset}.case_triage_users` recipients
-                ON metrics.user_id = recipients.segment_id
-          LEFT JOIN `{project_id}.{po_report_dataset}.officer_supervision_district_association_materialized` district
-                ON district.officer_external_id = recipients.officer_external_id
-                AND district.state_code = recipients.state_code
-                AND EXTRACT(MONTH FROM metrics.timestamp) = district.month
-                AND EXTRACT(YEAR FROM metrics.timestamp) = district.year
-           LEFT JOIN `{project_id}.{case_triage_segment_dataset}.pages` page
-                ON page.user_id = recipients.segment_id
-           LEFT JOIN `{project_id}.{case_triage_segment_dataset}.frontend_person_selected` selected
-                ON selected.user_id = recipients.segment_id
-                AND EXTRACT(DATE FROM selected.timestamp) = EXTRACT(DATE FROM metrics.timestamp)
-          LEFT JOIN `{project_id}.{case_triage_segment_dataset}.frontend_scrolled_to_bottom` scrolled
-                ON scrolled.user_id = recipients.segment_id
-                AND EXTRACT(DATE FROM scrolled.timestamp) = EXTRACT(DATE FROM metrics.timestamp)
-          LEFT JOIN `{project_id}.{case_triage_segment_dataset}.frontend_person_case_updated` updated
-                ON updated.user_id = recipients.segment_id
-                AND EXTRACT(DATE FROM updated.timestamp) = EXTRACT(DATE FROM metrics.timestamp)
-
-          GROUP BY state_code, date, district, officer_external_id, segment_id
-      ),
-
-      one_rolling_window AS (
-          --loop which options are being updated
-          SELECT state_code
-                , date
-                , district
-                , officer_external_id
-                , segment_id
-                , page_count
-                , persons_selected_events
-                , scrolled_to_bottom_events
-                , case_updated_events
-                , IFNULL(actions_found_employment, 0) AS actions_found_employment
-                , IFNULL(actions_face_to_face, 0) AS actions_face_to_face
-                , IFNULL(actions_completed_assessment, 0) AS actions_completed_assessment
-                , IFNULL(actions_filed_revocation, 0) AS actions_filed_revocation
-                , IFNULL(actions_doesnt_match_oms, 0) AS actions_doesnt_match_oms
-                , IFNULL(actions_other_dismissal, 0) AS actions_other_dismissal
-                , IFNULL(actions_not_on_caseload, 0) AS actions_not_on_caseload
-                , CASE WHEN (actions_filed_revocation + actions_doesnt_match_oms + actions_other_dismissal + actions_not_on_caseload > 0)
-                            THEN 1 ELSE 0 END AS actions_any_feedback_given
-          FROM baseline
-          LEFT JOIN action_set
-                ON action_set.user_id = baseline.segment_id
-                AND action_set.date_measurement = baseline.date
-          ORDER BY officer_external_id, date
-      ),
-
-      -- number of persons under supervision of a PO grouped by supervision levels and types
-      officer_caseload AS (
-          WITH unnested_level AS (
-            SELECT state_code
-                  , person_id
-                  , supervision_level
-                  , start_date
-                  , end_date
-                  , date_of_supervision
-            FROM `{project_id}.{analyst_dataset}.supervision_level_sessions_materialized` AS level,
-            UNNEST(GENERATE_DATE_ARRAY(start_date, COALESCE(end_date, CURRENT_DATE()))) AS date_of_supervision
-      ),
-
-      unnested_level_officer AS (
+    WITH updates_per_officer_day AS (
         SELECT state_code
-            , person_id
-            , supervising_officer_external_id
-            , start_date
-            , end_date
-            , date_of_supervision
-        FROM `{project_id}.{analyst_dataset}.supervision_officer_sessions_materialized` AS officer,
-        UNNEST(GENERATE_DATE_ARRAY(start_date, COALESCE(end_date, CURRENT_DATE()))) AS date_of_supervision
-      ),
+            , officer_external_id
+            , district
+            , segment_id
+            , feedback_date
+            , COUNT(*) AS case_updated_events
+        FROM `{project_id}.{experiments_dataset}.case_triage_feedback_actions`
+        GROUP BY state_code, officer_external_id, district, segment_id, feedback_date
+    ),
+    baseline AS (
+        --match main events on page with POs
+        SELECT recipients.state_code
+              , EXTRACT(DATE FROM tracks.timestamp AT TIME ZONE 'US/Pacific') AS date
+              , district.district
+              , recipients.officer_external_id
+              , tracks.user_id AS segment_id
+              , CASE WHEN COUNT(DISTINCT page.timestamp) > 0 THEN 1 ELSE 0 END AS page_count
+              , COUNT(DISTINCT selected.timestamp) AS persons_selected_events
+              , COUNT(DISTINCT scrolled.timestamp) AS scrolled_to_bottom_events
+              , COALESCE(MAX(case_updated_events), 0) AS case_updated_events
+        FROM `{project_id}.{case_triage_segment_dataset}.tracks` tracks
+        INNER JOIN `{project_id}.{static_reference_tables_dataset}.case_triage_users` recipients
+            ON tracks.user_id = recipients.segment_id
+        LEFT JOIN `{project_id}.{po_report_dataset}.officer_supervision_district_association_materialized` district
+            ON district.officer_external_id = recipients.officer_external_id
+            AND district.state_code = recipients.state_code
+            AND EXTRACT(MONTH FROM tracks.timestamp) = district.month
+            AND EXTRACT(YEAR FROM tracks.timestamp) = district.year
+        LEFT JOIN `{project_id}.{case_triage_segment_dataset}.pages` page
+            ON tracks.user_id = page.user_id
+            AND EXTRACT(DATE FROM tracks.timestamp AT TIME ZONE 'US/Pacific') = EXTRACT(DATE FROM page.timestamp AT TIME ZONE 'US/Pacific')
+        LEFT JOIN `{project_id}.{case_triage_segment_dataset}.frontend_person_selected` selected
+            ON tracks.user_id = selected.user_id
+            AND EXTRACT(DATE FROM tracks.timestamp AT TIME ZONE 'US/Pacific') = EXTRACT(DATE FROM selected.timestamp AT TIME ZONE 'US/Pacific')
+        LEFT JOIN `{project_id}.{case_triage_segment_dataset}.frontend_scrolled_to_bottom` scrolled
+            ON page.user_id = scrolled.user_id
+            AND EXTRACT(DATE FROM tracks.timestamp AT TIME ZONE 'US/Pacific') = EXTRACT(DATE FROM scrolled.timestamp AT TIME ZONE 'US/Pacific')
+        LEFT JOIN updates_per_officer_day updated
+            ON tracks.user_id = updated.segment_id
+            AND EXTRACT(DATE FROM tracks.timestamp AT TIME ZONE 'US/Pacific') = updated.feedback_date
 
-      supervision_by_day AS (
-        SELECT officer.state_code
-            , officer.supervising_officer_external_id
-            , officer.person_id
-            , officer.start_date
-            , officer.end_date
-            , officer.date_of_supervision
-            , level.supervision_level
-        FROM unnested_level_officer officer
-        JOIN unnested_level level
-            ON officer.date_of_supervision = level.date_of_supervision
-            AND officer.state_code = level.state_code
+        GROUP BY state_code, date, district, officer_external_id, segment_id
+    ),
+
+    -- number of persons under supervision per PO and day grouped by supervision levels and types
+    officer_caseload AS (
+        SELECT
+            officer.state_code,
+            officer.supervising_officer_external_id AS officer_external_id,
+            date_of_supervision AS date,
+            COUNTIF(session.compartment_level_2 = "PROBATION") AS caseload_probation,
+            COUNTIF(session.compartment_level_2 = "PAROLE") AS caseload_parole,
+            COUNTIF(session.compartment_level_2 = "DUAL") AS caseload_dual,
+            COUNTIF(level.supervision_level IN ("HIGH", "MAXIMUM")) AS caseload_high_supervision,
+            COUNTIF(level.supervision_level = "MEDIUM") AS caseload_medium_supervision,
+            COUNTIF(level.supervision_level = "MINIMUM") AS caseload_low_supervision,
+            COUNTIF(COALESCE(level.supervision_level, "INTERNAL_UNKNOWN") = "INTERNAL_UNKNOWN") AS caseload_unknown_supervision_level,
+        FROM
+            `{project_id}.{analyst_dataset}.supervision_officer_sessions_materialized` AS officer,
+        UNNEST(
+            -- Unnest supervision officer sessions that were open in 2021 or later
+            GENERATE_DATE_ARRAY(
+                GREATEST(officer.start_date, DATE("2021-01-01")),
+                COALESCE(officer.end_date, CURRENT_DATE)
+            )) AS date_of_supervision
+        INNER JOIN
+            `{project_id}.{analyst_dataset}.compartment_sessions_materialized` session
+            ON session.state_code = officer.state_code
+            AND session.person_id = officer.person_id
+            AND date_of_supervision BETWEEN session.start_date
+                AND COALESCE(session.end_date, CURRENT_DATE)
+        LEFT JOIN
+            `{project_id}.{analyst_dataset}.supervision_level_sessions_materialized` AS level
+            ON officer.state_code = level.state_code
             AND officer.person_id = level.person_id
-      ),
+            AND date_of_supervision BETWEEN level.start_date
+                AND COALESCE(level.end_date, CURRENT_DATE)
+        -- Drop clients that are not on a PO caseload
+        WHERE officer.supervising_officer_external_id IS NOT NULL
+        GROUP BY 1, 2, 3
+    ),
 
-      officers_and_client AS (
-        SELECT officer.state_code
-            , officer.person_id
-            , officer.supervising_officer_external_id
-            , officer.date_of_supervision
-            , officer.supervision_level
-            , compart.compartment_level_2
-        FROM `{project_id}.{analyst_dataset}.compartment_sessions_materialized` compart
-        RIGHT JOIN supervision_by_day officer
-            ON compart.state_code = officer.state_code
-            AND compart.person_id = officer.person_id
-            AND officer.date_of_supervision >= compart.start_date
-            AND officer.date_of_supervision <= COALESCE(compart.end_date, CURRENT_DATE())
-        GROUP BY state_code, supervising_officer_external_id, date_of_supervision, supervision_level, compartment_level_2, person_id
-      )
+    --employment periods of persons under supervision
+    employ AS (
+        SELECT state_code
+            , person_external_id
+            , recorded_start_date
+            -- verify that overlapping employment periods (new start date, but null end date on earlier emplyoment)
+            -- is due to missing data and not multiple employers/jobs
+            , IF((recorded_end_date IS NULL AND (recorded_start_date != MAX(recorded_start_date) OVER (PARTITION BY person_external_id) )),
+              LEAD(recorded_start_date) OVER(PARTITION BY person_external_id ORDER BY recorded_start_date) - 1,
+              recorded_end_date) AS recorded_end
+        FROM `{project_id}.{case_triage_dataset}.employment_periods_materialized`
+        GROUP BY state_code, person_external_id, recorded_start_date, recorded_end_date
+    ),
 
-      SELECT state_code
-             , supervising_officer_external_id AS officer_external_id
-             , date_of_supervision AS date
-             , COUNTIF(compartment_level_2 = "PROBATION") AS caseload_probation
-             , COUNTIF(compartment_level_2 = "PAROLE") AS caseload_parole
-             , COUNTIF(compartment_level_2 = "DUAL") AS caseload_dual
-             , COUNTIF(supervision_level = "HIGH" OR supervision_level = "MAXIMUM") AS caseload_high_supervision
-             , COUNTIF(supervision_level = "MEDIUM") AS caseload_medium_supervision
-             , COUNTIF(supervision_level = "MINIMUM") AS caseload_low_supervision
-      FROM officers_and_client
-      GROUP BY state_code, supervising_officer_external_id, date_of_supervision
-      ),
+    correct_levels_select AS (
+        SELECT DISTINCT
+           metrics.state_code
+           , selected.person_external_id
+           , EXTRACT(DATE FROM selected.timestamp AT TIME ZONE 'US/Pacific') as date
+           , metrics.compartment_level_2 AS supervision_type
+           , COALESCE(metrics.correctional_level, 'INTERNAL_UNKNOWN') AS supervision_level
+        FROM `{project_id}.{case_triage_segment_dataset}.frontend_person_selected` selected
+        INNER JOIN `{project_id}.{static_reference_tables_dataset}.case_triage_users` recipients
+            ON selected.user_id = recipients.segment_id
+        LEFT JOIN `{project_id}.{state_base_dataset}.state_person_external_id` client
+            ON selected.person_external_id = client.external_id
+            AND recipients.state_code = client.state_code
+        LEFT JOIN `{project_id}.{analyst_dataset}.dataflow_sessions_materialized` metrics
+            ON client.state_code = metrics.state_code
+            AND client.person_id = metrics.person_id
+            AND EXTRACT(DATE FROM selected.timestamp AT TIME ZONE 'US/Pacific')
+                BETWEEN metrics.start_date AND COALESCE(metrics.end_date, CURRENT_DATE())
+    ),
 
-      --employment periods of persons under supervision
-      employ AS (
-          SELECT state_code
-          , person_external_id
-          , recorded_start_date
-          -- verify that overlapping employment periods (new start date, but null end date on earlier emplyoment)
-          -- is due to missing data and not multiple employers/jobs
-          , IF((recorded_end_date IS NULL AND (recorded_start_date != MAX(recorded_start_date) OVER (PARTITION BY person_external_id) )),
-            LEAD(recorded_start_date) OVER(PARTITION BY person_external_id ORDER BY recorded_start_date) - 1,
-            recorded_end_date) AS recorded_end
-          FROM `{project_id}.{case_triage_dataset}.employment_periods_materialized`
-          GROUP BY state_code, person_external_id, recorded_start_date, recorded_end_date
-      ),
+    --match the timing of click events of a PO with whether a person was employed
+    selected_employment AS (
+        SELECT selected.person_external_id
+             , EXTRACT(DATE FROM selected.timestamp AT TIME ZONE 'US/Pacific') AS date
+             , selected.user_id AS segment_id
+             , employ.recorded_start_date
+             , employ.recorded_end AS recorded_end_date
+             , correct_levels_select.supervision_type
+             , correct_levels_select.supervision_level
+             --if they have employment during the timestamp period
+        FROM `{project_id}.{case_triage_segment_dataset}.frontend_person_selected` selected
+        LEFT JOIN employ
+            ON employ.person_external_id = selected.person_external_id
+            AND employ.recorded_start_date <= EXTRACT(DATE FROM selected.timestamp AT TIME ZONE 'US/Pacific')
+            AND COALESCE(employ.recorded_end, CURRENT_DATE()) >= EXTRACT(DATE FROM selected.timestamp AT TIME ZONE 'US/Pacific')
+        LEFT JOIN correct_levels_select
+            ON selected.person_external_id = correct_levels_select.person_external_id
+            AND correct_levels_select.date = EXTRACT(DATE FROM selected.timestamp AT TIME ZONE 'US/Pacific')
+    ),
 
-      correct_levels_select AS (
-          SELECT *
-          FROM (
-            SELECT metrics.state_code
-             , selected.person_external_id
-             , EXTRACT(DATE FROM selected.timestamp) as date
-             , ROW_NUMBER() OVER (PARTITION BY selected.person_external_id, EXTRACT(DATE FROM selected.timestamp) ORDER BY date_of_supervision desc) AS rn
-             , metrics.supervision_type
-             , metrics.supervision_level
-             FROM `{project_id}.{case_triage_segment_dataset}.frontend_person_selected` selected
-             LEFT JOIN `{project_id}.{dataflow_metrics_materialized_dataset}.most_recent_supervision_population_metrics_materialized` metrics
-                ON selected.person_external_id = metrics.person_external_id
-                AND metrics.date_of_supervision < EXTRACT(DATE FROM selected.timestamp)
-             ORDER BY person_external_id
-          )this
-          WHERE rn = 1
-      ),
-
-      --match the timing of click events of a PO with whether a person was employed
-      selected_employment AS (
-          SELECT selected.person_external_id
-                , EXTRACT(date from selected.timestamp) AS date_measurement
-                , selected.user_id
-                , employ.recorded_start_date
-                , employ.recorded_end AS recorded_end_date
-                , correct_levels_select.supervision_type
-                , correct_levels_select.supervision_level
-            --if they have employment during the timestamp period
-          FROM `{project_id}.{case_triage_segment_dataset}.frontend_person_selected` selected
-          LEFT JOIN employ
-                  ON employ.person_external_id = selected.person_external_id
-                  AND employ.recorded_start_date <= EXTRACT(date from selected.timestamp)
-                  AND COALESCE(employ.recorded_end, CURRENT_DATE()) >= EXTRACT(date from selected.timestamp)
-          LEFT JOIN correct_levels_select
-             ON selected.person_external_id = correct_levels_select.person_external_id
-             AND correct_levels_select.date = EXTRACT(DATE FROM selected.timestamp)
-      ),
-
-      client_narrow_select AS (
-          SELECT selected.person_external_id
-                 , date_measurement
-                 , selected.user_id
-                 , CASE WHEN (DATE_DIFF(CURRENT_DATE(), CAST(client.most_recent_face_to_face_date AS DATE), DAY) > 30) THEN 1 ELSE 0 END AS months_last_face_to_face
-                 , CASE WHEN (DATE_DIFF(CURRENT_DATE(), CAST(client.most_recent_face_to_face_date AS DATE), DAY) < 30
-                   AND DATE_DIFF(CURRENT_DATE(), CAST(client.most_recent_face_to_face_date AS DATE), DAY) > 0)
-                   THEN 1 ELSE 0 END AS weeks_last_face_to_face
-                 , client.assessment_score
-                 , selected.recorded_start_date
-                 , selected.supervision_level
-                 , selected.supervision_type
-          FROM selected_employment selected
-          LEFT JOIN `{project_id}.{case_triage_dataset}.etl_clients_materialized` client
+    client_narrow_select AS (
+        SELECT selected.person_external_id
+             , date
+             , selected.segment_id
+             , CASE WHEN (DATE_DIFF(CURRENT_DATE(), CAST(client.most_recent_face_to_face_date AS DATE), DAY) > 30)
+               THEN 1 ELSE 0 END AS months_last_face_to_face
+             , CASE WHEN (DATE_DIFF(CURRENT_DATE(), CAST(client.most_recent_face_to_face_date AS DATE), DAY) < 30
+               AND DATE_DIFF(CURRENT_DATE(), CAST(client.most_recent_face_to_face_date AS DATE), DAY) > 0)
+               THEN 1 ELSE 0 END AS weeks_last_face_to_face
+             , client.assessment_score
+             , selected.recorded_start_date
+             , selected.supervision_level
+             , selected.supervision_type
+        FROM selected_employment selected
+        LEFT JOIN `{project_id}.{case_triage_dataset}.etl_clients_materialized` client
             ON client.person_external_id = selected.person_external_id
-      ),
+    ),
 
-      --the number of click events of a PO for people with different attributes of supervision
-      selected_given AS (
-        SELECT client_narrow_select.user_id
-            , client_narrow_select.date_measurement
-            , SUM(IF(recorded_start_date IS NULL, 1, 0)) AS persons_selected_given_no_employment_indicated
-            , SUM(IF(assessment_score IS NULL, 1, 0)) AS persons_selected_given_no_assessment_indicated
-            , SUM(IF(months_last_face_to_face = 1, 1, 0)) AS persons_selected_given_months_last_face_to_face
-            , SUM(IF(weeks_last_face_to_face = 1, 1, 0)) AS persons_selected_given_weeks_last_face_to_face
-            , SUM(CAST(ARRAY_LENGTH(REGEXP_EXTRACT_ALL(supervision_type, "PROBATION")) > 0 AS INT64)) AS persons_selected_given_probation
-            , SUM(CAST(ARRAY_LENGTH(REGEXP_EXTRACT_ALL(supervision_type, "PAROLE")) > 0 AS INT64)) AS persons_selected_given_parole
-            , SUM(CAST(ARRAY_LENGTH(REGEXP_EXTRACT_ALL(supervision_type, "DUAL")) > 0 AS INT64)) AS persons_selected_given_dual
-            , SUM(CAST(ARRAY_LENGTH(REGEXP_EXTRACT_ALL(supervision_level, "HIGH|MAXIMUM")) > 0 AS INT64)) AS persons_selected_given_high_supervision
-            , SUM(CAST(ARRAY_LENGTH(REGEXP_EXTRACT_ALL(supervision_level, "MEDIUM")) > 0 AS INT64)) AS persons_selected_given_medium_supervision
-            , SUM(CAST(ARRAY_LENGTH(REGEXP_EXTRACT_ALL(supervision_level, "MINIMUM")) > 0 AS INT64)) AS persons_selected_given_low_supervision
+    --the number of click events of a PO for people with different attributes of supervision
+    selected_given AS (
+        SELECT client_narrow_select.segment_id
+             , client_narrow_select.date
+             , SUM(IF(recorded_start_date IS NULL, 1, 0)) AS persons_selected_given_no_employment_indicated
+             , SUM(IF(assessment_score IS NULL, 1, 0)) AS persons_selected_given_no_assessment_indicated
+             , SUM(IF(months_last_face_to_face = 1, 1, 0)) AS persons_selected_given_months_last_face_to_face
+             , SUM(IF(weeks_last_face_to_face = 1, 1, 0)) AS persons_selected_given_weeks_last_face_to_face
+             , SUM(CAST(ARRAY_LENGTH(REGEXP_EXTRACT_ALL(supervision_type, "PROBATION")) > 0 AS INT64)) AS persons_selected_given_probation
+             , SUM(CAST(ARRAY_LENGTH(REGEXP_EXTRACT_ALL(supervision_type, "PAROLE")) > 0 AS INT64)) AS persons_selected_given_parole
+             , SUM(CAST(ARRAY_LENGTH(REGEXP_EXTRACT_ALL(supervision_type, "DUAL")) > 0 AS INT64)) AS persons_selected_given_dual
+             , SUM(CAST(ARRAY_LENGTH(REGEXP_EXTRACT_ALL(supervision_level, "HIGH|MAXIMUM")) > 0 AS INT64)) AS persons_selected_given_high_supervision
+             , SUM(CAST(ARRAY_LENGTH(REGEXP_EXTRACT_ALL(supervision_level, "MEDIUM")) > 0 AS INT64)) AS persons_selected_given_medium_supervision
+             , SUM(CAST(ARRAY_LENGTH(REGEXP_EXTRACT_ALL(supervision_level, "MINIMUM")) > 0 AS INT64)) AS persons_selected_given_low_supervision
+             , SUM(CAST(ARRAY_LENGTH(REGEXP_EXTRACT_ALL(supervision_level, "INTERNAL_UNKNOWN")) > 0 AS INT64)) AS persons_selected_given_unknown_supervision
         FROM client_narrow_select
-        GROUP BY user_id, date_measurement
-      ),
+        GROUP BY segment_id, date
+    ),
 
-      correct_levels_update AS (
-          SELECT *
-          FROM (
-            SELECT
-             updated.person_external_id,
-             EXTRACT(DATE FROM updated.timestamp) as date,
-             ROW_NUMBER() OVER (PARTITION BY updated.person_external_id,
-                EXTRACT(DATE FROM updated.timestamp) ORDER BY date_of_supervision desc) AS rn,
-             metrics.supervision_type,
-             metrics.supervision_level,
-             FROM `{project_id}.{case_triage_segment_dataset}.frontend_person_case_updated` updated
-             LEFT JOIN `{project_id}.{dataflow_metrics_materialized_dataset}.most_recent_supervision_population_metrics_materialized` metrics
-                ON updated.person_external_id = metrics.person_external_id
-                AND metrics.date_of_supervision < EXTRACT(DATE FROM updated.timestamp)
-             ORDER BY person_external_id
-          )this
-          WHERE rn = 1
-      ),
+    client_data_updated AS (
+        -- Collect the supervision/employment info for the client that had a case update
+        SELECT DISTINCT updated.state_code
+            , updated.segment_id
+            , updated.person_external_id
+            , updated.feedback_date AS date
+            , metrics.compartment_level_2 AS supervision_type
+            , COALESCE(metrics.correctional_level, "INTERNAL_UNKNOWN") AS supervision_level
+            -- indicate if the client had employment when the feedback was given
+            , employ.recorded_start_date
+            , employ.recorded_end AS recorded_end_date
+        FROM `{project_id}.{experiments_dataset}.case_triage_feedback_actions` updated
+        LEFT JOIN `{project_id}.{analyst_dataset}.dataflow_sessions_materialized` metrics
+            ON updated.state_code = metrics.state_code
+            AND updated.person_id = metrics.person_id
+            AND updated.feedback_date BETWEEN metrics.start_date AND COALESCE(metrics.end_date, CURRENT_DATE())
+        LEFT JOIN employ
+            ON employ.state_code = updated.state_code
+            AND employ.person_external_id = updated.person_external_id
+            AND updated.feedback_date BETWEEN employ.recorded_start_date
+                AND COALESCE(employ.recorded_end, CURRENT_DATE())
+    ),
 
-     updated_employment AS (
-          SELECT employ.state_code
-                , updated.person_external_id
-                , EXTRACT(date from updated.timestamp) AS date_measurement
-                , updated.user_id
-                , employ.recorded_start_date
-                , employ.recorded_end AS recorded_end_date
-                , correct_levels_update.supervision_type
-                , correct_levels_update.supervision_level
-            --if they have employment during the timestmap period
-          FROM `{project_id}.{case_triage_segment_dataset}.frontend_person_case_updated` updated
-          LEFT JOIN employ
-            ON employ.person_external_id = updated.person_external_id
-            AND employ.recorded_start_date <= EXTRACT(date from updated.timestamp)
-            AND COALESCE(employ.recorded_end, CURRENT_DATE()) >= EXTRACT(date from updated.timestamp)
-          LEFT JOIN correct_levels_update
-            ON updated.person_external_id = correct_levels_update.person_external_id
-            AND correct_levels_update.date = EXTRACT(DATE FROM updated.timestamp)
-      ),
-
-      client_narrow_update AS (
-         SELECT updated.person_external_id
-             , updated.date_measurement
-             , updated.user_id
+    client_narrow_update AS (
+        SELECT updated.person_external_id
+             , updated.date
+             , updated.segment_id
              , CASE WHEN (DATE_DIFF(CURRENT_DATE(), CAST(client.most_recent_face_to_face_date AS DATE), DAY) > 30) THEN 1 ELSE 0 END AS months_last_face_to_face
              , CASE WHEN (DATE_DIFF(CURRENT_DATE(), CAST(client.most_recent_face_to_face_date AS DATE), DAY) < 30
-              AND DATE_DIFF(CURRENT_DATE(), CAST(client.most_recent_face_to_face_date AS DATE), DAY) > 0)  THEN 1 ELSE 0 END AS weeks_last_face_to_face
+               AND DATE_DIFF(CURRENT_DATE(), CAST(client.most_recent_face_to_face_date AS DATE), DAY) > 0)  THEN 1 ELSE 0 END AS weeks_last_face_to_face
              , client.assessment_score
              , updated.recorded_start_date
              , updated.supervision_level
              , updated.supervision_type
-         FROM updated_employment updated
-         LEFT JOIN `{project_id}.{case_triage_dataset}.etl_clients_materialized` client
+        FROM client_data_updated updated
+        -- This may cause issues since this table only has the client's current status
+        LEFT JOIN `{project_id}.{case_triage_dataset}.etl_clients_materialized` client
             ON client.person_external_id = updated.person_external_id
-      ),
+    ),
 
-      updated_given AS (
-        SELECT client_narrow_update.user_id
-            , client_narrow_update.date_measurement
-            , COUNTIF(recorded_start_date IS NULL) AS persons_updated_given_no_employment_indicated
-            , COUNTIF(assessment_score IS NULL) AS persons_updated_given_no_assessment_indicated
-            , COUNTIF(months_last_face_to_face = 1) AS persons_updated_given_months_last_face_to_face
-            , COUNTIF(weeks_last_face_to_face = 1) AS persons_updated_given_weeks_last_face_to_face
-            , SUM(CAST(ARRAY_LENGTH(REGEXP_EXTRACT_ALL(supervision_type, "PROBATION")) > 0 AS INT64)) AS persons_updated_given_probation
-            , SUM(CAST(ARRAY_LENGTH(REGEXP_EXTRACT_ALL(supervision_type, "PAROLE")) > 0 AS INT64)) AS persons_updated_given_parole
-            , SUM(CAST(ARRAY_LENGTH(REGEXP_EXTRACT_ALL(supervision_type, "DUAL")) > 0 AS INT64)) AS persons_updated_given_dual
-            , SUM(CAST(ARRAY_LENGTH(REGEXP_EXTRACT_ALL(supervision_level, "HIGH|MAXIMUM")) > 0 AS INT64)) AS persons_updated_given_high_supervision
-            , SUM(CAST(ARRAY_LENGTH(REGEXP_EXTRACT_ALL(supervision_level, "MEDIUM")) > 0 AS INT64)) AS persons_updated_given_medium_supervision
-            , SUM(CAST(ARRAY_LENGTH(REGEXP_EXTRACT_ALL(supervision_level, "MINIMUM")) > 0 AS INT64)) AS persons_updated_given_low_supervision
+    updated_given AS (
+        SELECT client_narrow_update.segment_id
+             , client_narrow_update.date
+             , COUNTIF(recorded_start_date IS NULL) AS persons_updated_given_no_employment_indicated
+             , COUNTIF(assessment_score IS NULL) AS persons_updated_given_no_assessment_indicated
+             , COUNTIF(months_last_face_to_face = 1) AS persons_updated_given_months_last_face_to_face
+             , COUNTIF(weeks_last_face_to_face = 1) AS persons_updated_given_weeks_last_face_to_face
+             , SUM(CAST(ARRAY_LENGTH(REGEXP_EXTRACT_ALL(supervision_type, "PROBATION")) > 0 AS INT64)) AS persons_updated_given_probation
+             , SUM(CAST(ARRAY_LENGTH(REGEXP_EXTRACT_ALL(supervision_type, "PAROLE")) > 0 AS INT64)) AS persons_updated_given_parole
+             , SUM(CAST(ARRAY_LENGTH(REGEXP_EXTRACT_ALL(supervision_type, "DUAL")) > 0 AS INT64)) AS persons_updated_given_dual
+             , SUM(CAST(ARRAY_LENGTH(REGEXP_EXTRACT_ALL(supervision_level, "HIGH|MAXIMUM")) > 0 AS INT64)) AS persons_updated_given_high_supervision
+             , SUM(CAST(ARRAY_LENGTH(REGEXP_EXTRACT_ALL(supervision_level, "MEDIUM")) > 0 AS INT64)) AS persons_updated_given_medium_supervision
+             , SUM(CAST(ARRAY_LENGTH(REGEXP_EXTRACT_ALL(supervision_level, "MINIMUM")) > 0 AS INT64)) AS persons_updated_given_low_supervision
+             , SUM(CAST(ARRAY_LENGTH(REGEXP_EXTRACT_ALL(supervision_level, "INTERNAL_UNKNOWN")) > 0 AS INT64)) AS persons_updated_given_unknown_supervision
         FROM client_narrow_update
-        GROUP BY user_id, date_measurement
-      )
+        GROUP BY segment_id, date
+    )
 
-      --combine base user data, aggregated PO caseload, click events, update events,
-      SELECT *  EXCEPT(user_id, date_measurement, segment_id)
-      FROM one_rolling_window
-      LEFT JOIN officer_caseload
-            USING(officer_external_id, date, state_code)
-      LEFT JOIN selected_given
-            ON selected_given.user_id = one_rolling_window.segment_id
-            AND selected_given.date_measurement = one_rolling_window.date
-      LEFT JOIN updated_given
-            ON updated_given.user_id = one_rolling_window.segment_id
-            AND updated_given.date_measurement = one_rolling_window.date
-      ORDER BY date, district, officer_external_id
-
-      --for adding rolling windows later if desired
-      /*
-      total AS (
-      SELECT *
-            , 1 AS rolling_window_days
-      FROM one_rolling_window
-
-      UNION ALL
-
-      SELECT *
-            , 7 AS rolling_window_days
-      FROM one_rolling_window
-
-      UNION ALL
-
-      SELECT *
-            , 30 AS rolling_window_days
-      FROM one_rolling_window
-      ORDER BY
-            officer_external_id, date, rolling_window_days
-      )
-
-      SELECT m1.state_code, m1.date, m1.district, m1.officer_external_id, m1.rolling_window_days, m1.segment_id
-            , CASE WHEN SUM(m2.page_count) > 0 THEN 1 ELSE 0 END AS page_count
-            , SUM(m2.person_selected_events) AS person_selected_events
-            , SUM(m2.scrolled_to_bottom_events) AS scrolled_to_bottom_events
-            , SUM(m2.case_updated_events) AS case_updated_events
-            , SUM(m2.actions_found_employment) AS actions_found_employment
-            , SUM(m2.actions_filed_revocation) AS actions_filed_revocation
-            , SUM(m2.actions_doesnt_match_oms) AS actions_doesnt_match_oms
-            , SUM(m2.actions_face_to_face) AS actions_face_to_face
-            , SUM(m2.actions_completed_assessment) AS actions_completed_assessment
-            , SUM(m2.actions_other_dismissal) AS actions_other_dismissal
-            , SUM(m2.actions_not_on_caseload) AS actions_not_on_caseload
-      FROM total m1
-      JOIN total m2
-            USING (state_code, district, officer_external_id, rolling_window_days, segment_id)
-      WHERE m1.date
-            BETWEEN m2.date AND DATE_ADD(m2.date, INTERVAL m1.rolling_window_days - 1 DAY)
-      GROUP BY m1.state_code, m1.date, m1.district, m1.officer_external_id, m1.rolling_window_days, m1.segment_id
-
-      */
+    --combine base user data, aggregated PO caseload, click events, update events,
+    SELECT *
+    FROM baseline
+    LEFT JOIN officer_caseload
+        USING(officer_external_id, date, state_code)
+    LEFT JOIN selected_given
+        USING (segment_id, date)
+    LEFT JOIN updated_given
+        USING (segment_id, date)
 """
 
 CASE_TRIAGE_EVENTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -411,12 +286,13 @@ CASE_TRIAGE_EVENTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=CASE_TRIAGE_EVENTS_VIEW_NAME,
     view_query_template=CASE_TRIAGE_EVENTS_QUERY_TEMPLATE,
     description=CASE_TRIAGE_EVENTS_VIEW_DESCRIPTION,
-    dataflow_metrics_materialized_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
     static_reference_tables_dataset=STATIC_REFERENCE_TABLES_DATASET,
     po_report_dataset=PO_REPORT_DATASET,
     analyst_dataset=ANALYST_VIEWS_DATASET,
     case_triage_dataset=CASE_TRIAGE_DATASET,
     case_triage_segment_dataset=CASE_TRIAGE_SEGMENT_DATASET,
+    experiments_dataset=EXPERIMENTS_DATASET,
+    state_base_dataset=STATE_BASE_DATASET,
     should_materialize=True,
 )
 

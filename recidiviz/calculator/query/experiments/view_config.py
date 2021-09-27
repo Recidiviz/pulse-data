@@ -18,10 +18,14 @@
 from typing import Sequence
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
+from recidiviz.calculator.query.experiments.views.case_triage_feedback_actions import (
+    CASE_TRIAGE_FEEDBACK_ACTIONS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.experiments.views.case_triage_metrics import (
     CASE_TRIAGE_EVENTS_VIEW_BUILDER,
 )
 
 VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = [
     CASE_TRIAGE_EVENTS_VIEW_BUILDER,
+    CASE_TRIAGE_FEEDBACK_ACTIONS_VIEW_BUILDER,
 ]
