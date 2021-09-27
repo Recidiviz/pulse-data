@@ -87,9 +87,7 @@ from recidiviz.view_registry.datasets import (
 from recidiviz.view_registry.deployed_views import all_deployed_view_builders
 
 ESCAPED_DOUBLE_UNDERSCORE = r"\__"
-DATASETS_TO_SKIP_VIEW_DOCUMENTATION = LATEST_VIEW_DATASETS | {
-    DATAFLOW_METRICS_MATERIALIZED_DATASET
-}
+DATASETS_TO_SKIP_VIEW_DOCUMENTATION = LATEST_VIEW_DATASETS
 CALC_DOCS_PATH = "docs/calculation"
 
 MAX_DEPENDENCY_TREE_LENGTH = 250
@@ -267,8 +265,7 @@ class CalculationDocumentationGenerator:
             # in various sections.
             self.dag_walker.populate_node_family_for_node(
                 node=node,
-                datasets_to_skip={DATAFLOW_METRICS_MATERIALIZED_DATASET}
-                | RAW_TABLE_DATASETS,
+                datasets_to_skip=RAW_TABLE_DATASETS,
                 custom_node_formatter=self._dependency_tree_formatter_for_gitbook,
                 view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS
                 | LATEST_VIEW_DATASETS,
