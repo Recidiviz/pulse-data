@@ -14,8 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Supervision super-sessions for each individual. Super-session defined as continuous stay under supervision including
- parole board holds, pending custody, temporary custody, and suspension."""
+"""Supervision super-sessions for each individual"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
@@ -24,8 +23,55 @@ from recidiviz.utils.metadata import local_project_id_override
 
 SUPERVISION_SUPER_SESSIONS_VIEW_NAME = "supervision_super_sessions"
 
-SUPERVISION_SUPER_SESSIONS_VIEW_DESCRIPTION = """Supervision super-sessions for each individual. Super-session defined as continuous stay under supervision including
- parole board holds, pending custody, temporary custody, and suspension"""
+SUPERVISION_SUPER_SESSIONS_VIEW_DESCRIPTION = """
+## Overview
+
+This view has a record for each person and each supervision super-session. A supervision super-session groups together compartment sessions that represent a continuous stay on supervision despite a person's legal status changing. The most frequent examples of this are (1) parole board holds where a person can either be revoked or returned to parole, and (2) bench warrants where a person often transitions from probation, to a bench warrant, and back to probation. 
+
+The view has a couple of important uses:
+
+1. Supervision LOS is probably more accurately calculated using this view because otherwise LOS will be artificially skewed down by transitions such as PAROLE --> PBH --> PAROLE or PROBATION --> BENCH_WARRANT --> PROBATION if we were to calculate LOS on those individual supervision sessions.
+2. This view is used as the denominator for revocation rate calculations as well as the starting point to determine when a revocation occurs relative to the supervision start. The views `revocation_sessions` and `revocation_cohort_sessions` are based on a `supervision_super_session` as the unit of analysis from which a person can be revoked.
+
+## Field Definitions
+
+|	Field	|	Description	|
+|	--------------------	|	--------------------	|
+|	person_id	|	Unique person identifier	|
+|	supervision_super_session_id	|	Super session identifier	|
+|	start_date	|	Super session start date	|
+|	end_date	|	Super session end date	|
+|	state_code	|	State	|
+|	incarceration_days	|	Number of days of the super session that are spent incarcerated. Someone spends part of their supervision super-session incarcerated because of parole board holds and shock incarceration 	|
+|	session_length_days	|	Difference between session start date and session end date. For active sessions the session start date is differenced from the last day of data	|
+|	session_id_start	|	Compartment session id associated with the start of the super session. This field and the following field are used to join sessions and super-sessions	|
+|	session_id_end	|	Compartment session id associated with the end of the super session. This field and the preceding field are used to join sessions and super-sessions	|
+|	start_reason	|	Start reason associated with the start of a super session. This is pulled from the compartment session represented by `session_id_start`	|
+|	start_sub_reason	|	Start sub reason associated with the start of a super session. This is pulled from the compartment session represented by `session_id_start`	|
+|	end_reason	|	End associated with the start of a super session. This is pulled from the compartment session represented by `session_id_end`	|
+|	inflow_from_level_1	|	Compartment level 1 value of the preceding compartment session	|
+|	inflow_from_level_2	|	Compartment level 2 value of the preceding compartment session	|
+|	outflow_to_level_1	|	Compartment level 1 value of the subsequent compartment session	|
+|	outflow_to_level_2	|	Compartment level 2 value of the subsequent compartment session	|
+|	last_day_of_data	|	The last day for which we have data, specific to a state. This is pulled from `compartment_sessions`	|
+
+## Methodology
+
+A supervision super session aggregates together sessions of the following types:
+
+1. Any session with `compartment_level_1` in one of the following:
+
+    1. `SUPERVISION` (this includes bench warrants and absconsions)
+    2. `SUPERVISION_OUT_OF_STATE`
+    
+2. Any session with `compartment_level_2` in one of the following:
+
+    1. `PAROLE_BOARD_HOLD`
+    2. `PENDING_CUSTODY`
+    3. `TEMPORARY_CUSTODY`
+    4. `SUSPENSION`
+    5. `SHOCK_INCARCERATION`
+"""
 
 SUPERVISION_SUPER_SESSIONS_QUERY_TEMPLATE = """
     /*{description}*/

@@ -24,8 +24,38 @@ from recidiviz.utils.metadata import local_project_id_override
 
 SYSTEM_SESSIONS_VIEW_NAME = "system_sessions"
 
-SYSTEM_SESSIONS_VIEW_DESCRIPTION = """An aggregated view of sessions that shows continuous stays within the system
-(supervision or incarceration). A session in a RELEASE compartment triggers the start of a new system session."""
+SYSTEM_SESSIONS_VIEW_DESCRIPTION = """
+## Overview
+
+This view is an aggregated view of sessions that represent a continuous stay within the system. A `RELEASE` session triggers the start of a new system session. This view is unique on person and system session id.
+
+As an example, say a person had the following compartment sessions:
+
+1. `INCARCERATION - GENERAL`
+2. `SUPERVISION - PAROLE`
+3. `INCARCERATION - GENERAL`
+4. `SUPERVISION - PAROLE`
+5. `RELEASE`
+6. `SUPERVISION - PROBATION`
+7. `RELEASE`
+
+This person would have two system sessions - one that encompasses compartment sessions 1 - 4 and one that encompasses compartment session 6. 
+
+## Field Definitions
+
+|	Field	|	Description	|
+|	--------------------	|	--------------------	|
+|	person_id	|	Unique person identifier	|
+|	system_session_id	|	System session identifier. A new ID is triggered based on a RELEASE compartment session	|
+|	start_date	|	System session start date	|
+|	end_date	|	System session end date	|
+|	incarceration_days	|	Days of system session spent in incarceration	|
+|	supervision_days	|	Days of system session spent under supervision	|
+|	session_length_days	|	Total length of system session	|
+|	session_id_start	|	Compartment session id associated with the start of the system session	|
+|	session_id_end	|	Compartment session id associated with the end of the system session	|
+
+"""
 
 SYSTEM_SESSIONS_QUERY_TEMPLATE = """
     /*{description}*/

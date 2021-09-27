@@ -32,12 +32,31 @@ from recidiviz.utils.metadata import local_project_id_override
 REVOCATION_COHORT_SESSIONS_VIEW_NAME = "revocation_cohort_sessions"
 
 REVOCATION_COHORT_SESSIONS_VIEW_DESCRIPTION = """
-View that is unique on person_id, supervision_super_session_id, and cohort_months. Each person and each super session
-has a record for each cohort that it is eligible to be a part of. Eligibility is determined based on having at least 
-that many months between the supervision start and the last day of data.
+## Overview
 
-Additionally, the revocation flag is altered so that it represents not just a super session ending in a revocation,
-but a super session ending in a revocation within that row's cohort month window.
+View that is unique on `person_id`, `supervision_super_session_id`, and `cohort_months`. Each person and each super session has a record for each cohort that it is eligible to be a part of. Eligibility is determined based on having at least that many months between the supervision start and the last day of data.
+
+Additionally, the `revocation` flag is altered so that it represents not just a super session ending in a revocation, but a super session ending in a revocation within that row's cohort month window.
+
+## Field Definitions
+
+|	Field	|	Description	|
+|	--------------------	|	--------------------	|
+|	state_code	|	State	|
+|	person_id	|	Unique person identifier	|
+|	supervision_start_date	|	Start date of the supervision super-session	|
+|	cohort_months	|	Month increment that each `person_id` and `supervision_super_session_id` are compared to. Used for calculating X month revocation rate. This value is incremented by 1-month for the first 18-months and then by 6-months up to 96 months. Each `person_id` and `supervision_super_session_id` will only be indexed for as many months as they have between the start date and the last day of data. For example, if a person started a supervision super-session 3-months and 5-days ago, they would have a record for months 1, 2, and 3.	|
+|	cohort_date	|	The supervision start date plus the cohort month index value. This is the date that each cohort is being evaluated at.	|
+|	cohort_session_id	|	The compartment `session_id` of the session that the person is in as of the `cohort_date`. This is used to measure outcomes 6-months, 12-months, etc after a supervision-start.	|
+|	supervision_super_session_id	|	The supervision super-session id of the session that outcomes are evaluated relative to	|
+|	supervision_session_id	|	The session id of the compartment session at the start of the supervision super-session	|
+|	revocation	|	A 0/1 indicator of whether the super-session ended in a revocation _as of the cohort month value_. If a person had a revocation 5-months and 10-days after the super-session start, they would have a value of 0 for all records up the 6-month value. All records 6-months onward would have a value of 1.	|
+|	revocation_date	|	Revocation date (for super-sessions that ended in a revocation)	|
+|	revocation_session_id	|	The compartment session id for the revocation session	|
+|	months_since_start	|	Calendar count of full months between a person's supervision start date and the last day of data. This field is pulled from `revocation_sessions` and is used to determine how many rows will exist within a given person and super-session. If a person has a `months_since_start` value of 48 they will have `cohort_months` values up to 48 as well.	|
+|	supervision_start_to_revocation_months	|	Calendar count of months between supervision start and revocation. This is the field to determine for which records within a person and super-session the `revocation` field takes on a value of 1.	|
+|	max_cohort_months	|	Within a person and super-session the max value of `cohort_months`. Used to determine the set of cohorts that a person / super-session is eligible for.	|
+
 """
 
 REVOCATION_COHORT_SESSIONS_QUERY_TEMPLATE = """
