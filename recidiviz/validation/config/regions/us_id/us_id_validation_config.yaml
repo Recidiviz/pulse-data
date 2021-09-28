@@ -31,7 +31,7 @@ max_allowed_error_overrides:
     hard_max_allowed_error_override: 0.20
     override_reason: TODO(#7156) - Lots of mismatches :(
   - validation_name: incarceration_population_person_level_external_comparison_matching_people_facility
-    hard_max_allowed_error_override: 0.8264
+    hard_max_allowed_error_override: 0.95
     override_reason: TODO(#9108) - Needs investigation.
   - validation_name: most_recent_assessment_date_by_person_by_state_comparison
     hard_max_allowed_error_override: 0.76
@@ -40,13 +40,13 @@ max_allowed_error_overrides:
     hard_max_allowed_error_override: 0.0241
     override_reason: Needs investigation.
   - validation_name: supervision_population_person_level_external_comparison_matching_people_district
-    hard_max_allowed_error_override: 0.83
+    hard_max_allowed_error_override: 0.95
     override_reason: TODO(#9108) - Needs investigation.
   - validation_name: supervision_population_person_level_external_comparison_matching_people_supervising_officer
-    hard_max_allowed_error_override: 0.831
+    hard_max_allowed_error_override: 0.95
     override_reason: TODO(#9108) - Needs investigation.
   - validation_name: supervision_population_person_level_external_comparison_matching_people_supervision_level
-    hard_max_allowed_error_override: 0.82
+    hard_max_allowed_error_override: 0.95
     override_reason: TODO(#9108) - Needs investigation.
   - validation_name: supervision_start_person_level_external_comparison
     hard_max_allowed_error_override: 0.2645
@@ -62,13 +62,13 @@ num_allowed_rows_overrides:
     hard_num_allowed_rows_override: 60
     override_reason: TODO(#4058) - Needs investigation.
   - validation_name: supervision_termination_prior_to_start
-    hard_num_allowed_rows_override: 2
+    hard_num_allowed_rows_override: 10
     override_reason: TODO(#4058) - Needs investigation.
   - validation_name: overlapping_incarceration_periods
     hard_num_allowed_rows_override: 87
     override_reason: TODO(#4618) - Needs investigation.
   - validation_name: overlapping_supervision_periods
-    hard_num_allowed_rows_override: 316
+    hard_num_allowed_rows_override: 400
     override_reason: TODO(#4618) - Needs investigation.
   - validation_name: case_triage_employment_freshness
     hard_num_allowed_rows_override: 1
