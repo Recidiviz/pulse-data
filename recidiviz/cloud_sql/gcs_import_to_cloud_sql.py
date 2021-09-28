@@ -16,11 +16,26 @@
 # =============================================================================
 """Implements admin panel route for importing GCS to Cloud SQL."""
 import logging
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
+
+import attr
+from sqlalchemy import Table, create_mock_engine
+from sqlalchemy.orm import declarative_base
+from sqlalchemy.sql.ddl import (
+    CreateIndex,
+    CreateTable,
+    DDLElement,
+    DropTable,
+    SetColumnComment,
+)
 
 from recidiviz.cloud_sql.cloud_sql_client import CloudSQLClientImpl
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.schema.case_triage.schema import (
+    ETLClient,
+    ETLOpportunity,
+)
+from recidiviz.persistence.database.schema_utils import SchemaType, SQLAlchemyModelType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
@@ -28,22 +43,109 @@ from recidiviz.persistence.database.sqlalchemy_engine_manager import (
 )
 
 
+def get_temporary_table_name(table: Table) -> str:
+    return f"tmp__{table.name}"
+
+
+temporary_etl_clients_name = get_temporary_table_name(ETLClient.__table__)
+temporary_etl_opps_name = get_temporary_table_name(ETLOpportunity.__table__)
+
+ADDITIONAL_DDL_QUERIES_BY_MODEL = {
+    # TODO(#8579): Remove when the duplicates in `etl_clients` have been removed
+    ETLClient: [
+        f"ALTER TABLE {temporary_etl_clients_name} DROP CONSTRAINT {temporary_etl_clients_name}_pkey;",
+        f"ALTER TABLE {temporary_etl_clients_name} DROP CONSTRAINT {temporary_etl_clients_name}_state_code_person_external_id_key;",
+    ],
+    # TODO(#9292): Remove when the duplicates in `etl_opportunities` have been removed
+    ETLOpportunity: [
+        f"ALTER TABLE {temporary_etl_opps_name} DROP CONSTRAINT {temporary_etl_opps_name}_pkey;"
+    ],
+}
+
+
+def build_temporary_sqlalchemy_table(table: Table) -> Table:
+    # Create a throwaway Base to map the model to
+    base = declarative_base()
+    return table.to_metadata(
+        base.metadata,
+        # Replace our model's table name with the temporary table's name
+        name=get_temporary_table_name(table),
+    )
+
+
+@attr.s
+class ModelSQL:
+    """ Given a SQLAlchemy table, captures the DDL statements necessary to create the table """
+
+    table: Table = attr.ib()
+    ddl_statements: List[DDLElement] = attr.ib(factory=list)
+
+    def __attrs_post_init__(self) -> None:
+        # Create a mock engine which captures the DDL statements
+        engine = create_mock_engine("postgresql://", self._capture_query)
+
+        # Creates the temporary table in the mock engine
+        self.table.create(engine)
+
+    def _capture_query(
+        self, sql: DDLElement, *_args: List[Any], **_kwargs: Dict[str, Any]
+    ) -> None:
+        self.ddl_statements.append(sql)
+
+    def build_rename_ddl_queries(self, new_base_name: str) -> List[str]:
+        """ Builds queries for renaming a table and its indexes """
+        queries = []
+
+        for ddl_statement in self.ddl_statements:
+            resource_name = ddl_statement.element.name
+
+            if isinstance(ddl_statement, CreateTable):
+                queries.append(f"ALTER TABLE {resource_name} RENAME TO {new_base_name}")
+            elif isinstance(ddl_statement, CreateIndex):
+                if self.table.name not in resource_name:
+                    raise NotImplementedError(
+                        f"Cannot rename indexes that do not contain the table's name ({self.table.name})"
+                    )
+
+                # SQLAlchemy includes the table name inside the index name by default;
+                # Map the index to the new base name
+                new_index_name = resource_name.replace(self.table.name, new_base_name)
+                queries.append(
+                    f"ALTER INDEX {resource_name} RENAME TO {new_index_name}"
+                )
+            elif isinstance(ddl_statement, SetColumnComment):
+                # Column comments will automatically be moved when renaming the table
+                continue
+            else:
+                raise ValueError(
+                    f"Unsupported DDL statement: {ddl_statement.__class__}"
+                )
+
+        return queries
+
+    @classmethod
+    def from_model(cls, model: SQLAlchemyModelType) -> "ModelSQL":
+        return cls(table=model.__table__)
+
+
+def _recreate_table(database_key: SQLAlchemyDatabaseKey, model_sql: ModelSQL) -> None:
+    """ Drops the table if it exists then recreates the table with the provided schema """
+    with SessionFactory.using_database(database_key=database_key) as session:
+        drop_table = DropTable(model_sql.table, if_exists=True)
+        session.execute(drop_table)
+
+        for ddl_statement in model_sql.ddl_statements:
+            session.execute(ddl_statement)
+
+
 def _import_csv_to_temp_table(
-    database_key: SQLAlchemyDatabaseKey,
     schema_type: SchemaType,
-    destination_table: str,
     tmp_table_name: str,
     gcs_uri: GcsfsFilePath,
     columns: List[str],
     seconds_to_wait: int,
 ) -> None:
     """Imports a GCS CSV file to a temp table that is created with the destination table as a template."""
-    with SessionFactory.using_database(database_key=database_key) as session:
-        # Drop old temp table if exists, Create new temp table
-        session.execute(f"DROP TABLE IF EXISTS {tmp_table_name}")
-        session.execute(
-            f"CREATE TABLE {tmp_table_name} AS TABLE {destination_table} WITH NO DATA"
-        )
 
     # Import CSV to temp table
     logging.info("Starting import from GCS URI: %s", gcs_uri)
@@ -79,7 +181,7 @@ def _import_csv_to_temp_table(
 
 def import_gcs_csv_to_cloud_sql(
     schema_type: SchemaType,
-    destination_table: str,
+    model: SQLAlchemyModelType,
     gcs_uri: GcsfsFilePath,
     columns: List[str],
     region_code: Optional[str] = None,
@@ -91,13 +193,25 @@ def import_gcs_csv_to_cloud_sql(
     If a region_code is provided, selects all rows in the destination_table that do not equal the region_code and
     inserts them into the temp table before swapping.
     """
-    tmp_table_name = f"tmp__{destination_table}"
     database_key = SQLAlchemyDatabaseKey.for_schema(schema_type=schema_type)
+
+    destination_table = model.__tablename__
+
+    # Generate DDL statements for the temporary table
+    temporary_table = build_temporary_sqlalchemy_table(model.__table__)
+    temporary_table_model_sql = ModelSQL(table=temporary_table)
+
+    with SessionFactory.using_database(database_key=database_key) as session:
+        _recreate_table(database_key, temporary_table_model_sql)
+
+        additional_ddl_queries = ADDITIONAL_DDL_QUERIES_BY_MODEL.get(model, [])
+
+        for query in additional_ddl_queries:
+            session.execute(query)
+
     _import_csv_to_temp_table(
-        database_key=database_key,
         schema_type=schema_type,
-        destination_table=destination_table,
-        tmp_table_name=tmp_table_name,
+        tmp_table_name=temporary_table.name,
         gcs_uri=gcs_uri,
         columns=columns,
         seconds_to_wait=seconds_to_wait,
@@ -107,12 +221,17 @@ def import_gcs_csv_to_cloud_sql(
         if region_code is not None:
             # Import the rest of the regions into temp table
             session.execute(
-                f"INSERT INTO {tmp_table_name} SELECT * FROM {destination_table} "
+                f"INSERT INTO {temporary_table.name} SELECT * FROM {destination_table} "
                 f"WHERE state_code != '{region_code}'"
             )
 
-        # Swap the temp table and destination table, dropping the old destination table at the end.
-        old_table_name = f"old__{destination_table}"
-        session.execute(f"ALTER TABLE {destination_table} RENAME TO {old_table_name}")
-        session.execute(f"ALTER TABLE {tmp_table_name} RENAME TO {destination_table}")
-        session.execute(f"DROP TABLE {old_table_name}")
+        # Drop the destination table
+        session.execute(f"DROP TABLE {destination_table}")
+
+        rename_queries = temporary_table_model_sql.build_rename_ddl_queries(
+            destination_table
+        )
+
+        # Rename temporary table and all indexes / constraint on the temporary table
+        for query in rename_queries:
+            session.execute(query)
