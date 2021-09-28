@@ -22,9 +22,9 @@ import pandas as pd
 import us
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
+from recidiviz.common import fips
 from recidiviz.common.constants.aggregate import enum_canonical_strings as enum_strings
 from recidiviz.ingest.aggregate import aggregate_ingest_utils
-from recidiviz.common import fips
 from recidiviz.persistence.database.schema.aggregate.schema import CaFacilityAggregate
 
 
@@ -88,5 +88,7 @@ def _pretend_jurisdiction_is_county(jurisdiction: str) -> str:
 
     if jurisdiction == "oakland":
         return "alameda"
+    if jurisdiction == "scapular house":
+        return "los angeles"
 
     return jurisdiction
