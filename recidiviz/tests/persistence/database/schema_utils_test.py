@@ -19,6 +19,7 @@ from typing import List
 
 import pytest
 
+import recidiviz.persistence.database.schema.case_triage.schema as case_triage_schema
 from recidiviz.persistence.database.schema.aggregate import schema as aggregate_schema
 from recidiviz.persistence.database.schema.county import schema as county_schema
 from recidiviz.persistence.database.schema.operations import schema as operations_schema
@@ -27,6 +28,7 @@ from recidiviz.persistence.database.schema_utils import (
     SchemaType,
     _get_all_database_entities_in_module,
     get_all_table_classes,
+    get_database_entity_by_table_name,
     get_non_history_state_database_entities,
     get_state_database_entity_with_name,
     schema_type_to_schema_base,
@@ -364,3 +366,14 @@ def test_schema_type_to_schema_base() -> None:
 
     # Shouldn't return duplicate schemas
     assert len(set(schema_bases)) == len(schema_bases)
+
+
+def test_get_database_entity_by_table_name() -> None:
+
+    assert (
+        get_database_entity_by_table_name(case_triage_schema, "etl_clients")
+        == case_triage_schema.ETLClient
+    )
+
+    with pytest.raises(ValueError, match="Could not find model with table named foo"):
+        get_database_entity_by_table_name(case_triage_schema, "foo")

@@ -35,7 +35,11 @@ from recidiviz.common.google_cloud.cloud_task_queue_manager import (
 from recidiviz.metrics.export.export_config import (
     CASE_TRIAGE_VIEWS_OUTPUT_DIRECTORY_URI,
 )
-from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.schema import case_triage as case_triage_schema
+from recidiviz.persistence.database.schema_utils import (
+    SchemaType,
+    get_database_entity_by_table_name,
+)
 from recidiviz.utils import metadata
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.params import get_only_str_param_value
@@ -68,7 +72,7 @@ def _run_gcs_imports() -> Tuple[str, HTTPStatus]:
 
         import_gcs_csv_to_cloud_sql(
             SchemaType.CASE_TRIAGE,
-            builder.view_id,
+            get_database_entity_by_table_name(case_triage_schema, builder.view_id),
             csv_path,
             builder.columns,
             seconds_to_wait=180,

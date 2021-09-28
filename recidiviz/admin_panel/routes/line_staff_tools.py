@@ -45,10 +45,14 @@ from recidiviz.common.results import MultiRequestResult
 from recidiviz.metrics.export.export_config import (
     CASE_TRIAGE_VIEWS_OUTPUT_DIRECTORY_URI,
 )
+from recidiviz.persistence.database.schema.case_triage import (
+    schema as case_triage_schema,
+)
 from recidiviz.persistence.database.schema.case_triage.schema import CaseUpdate
 from recidiviz.persistence.database.schema_utils import (
     SchemaType,
     get_case_triage_table_classes,
+    get_database_entity_by_table_name,
 )
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
@@ -167,7 +171,7 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
             # in code (yet), but the aim is to preserve this invariant for as long as possible.
             import_gcs_csv_to_cloud_sql(
                 SchemaType.CASE_TRIAGE,
-                view_id,
+                get_database_entity_by_table_name(case_triage_schema, view_id),
                 csv_path,
                 columns,
             )
