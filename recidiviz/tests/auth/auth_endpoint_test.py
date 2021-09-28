@@ -116,7 +116,7 @@ class AuthEndpointTests(TestCase):
             )
             mock_import_csv.assert_called_with(
                 schema_type=SchemaType.CASE_TRIAGE,
-                destination_table=DashboardUserRestrictions.__tablename__,
+                model=DashboardUserRestrictions,
                 gcs_uri=self.gcs_csv_uri,
                 columns=self.columns,
                 region_code=self.region_code,

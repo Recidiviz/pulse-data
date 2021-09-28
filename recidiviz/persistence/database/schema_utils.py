@@ -49,6 +49,14 @@ from recidiviz.persistence.database.schema.justice_counts import (
 from recidiviz.persistence.database.schema.operations import schema as operations_schema
 from recidiviz.persistence.database.schema.state import schema as state_schema
 
+SQLAlchemyModelType = Union[
+    JailsBase,
+    StateBase,
+    OperationsBase,
+    JusticeCountsBase,
+    CaseTriageBase,
+]
+
 _SCHEMA_MODULES: List[ModuleType] = [
     aggregate_schema,
     county_schema,
@@ -162,6 +170,20 @@ def _get_all_database_entities_in_module(
     for _, member in all_members_in_current_module:
         if _is_database_entity_subclass(member):
             yield member
+
+
+def get_database_entity_by_table_name(
+    module: ModuleType, table_name: str
+) -> Type[DeclarativeMeta]:
+    for name in dir(module):
+        member = getattr(module, name)
+        if not _is_database_entity_subclass(member):
+            continue
+
+        if member.__table__.name == table_name:
+            return member
+
+    raise ValueError(f"Could not find model with table named {table_name}")
 
 
 def _is_database_entity_subclass(member: Any) -> bool:
