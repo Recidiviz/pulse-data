@@ -177,7 +177,7 @@ SELECT
     StartMovementReason,
     EndMovementType,
     EndMovementReason,
-    ROW_NUMBER() OVER (PARTITION BY OffenderID ORDER BY MovementSequenceNumber ASC) AS IncarcerationSequenceNumber
+    ROW_NUMBER() OVER (PARTITION BY OffenderID ORDER BY MovementSequenceNumber ASC) AS IncarcerationPeriodSequenceNumber
 FROM all_incarceration_periods
 """
 

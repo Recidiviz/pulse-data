@@ -58,7 +58,7 @@ class OffenderMovementIncarcerationPeriodTest(BaseViewTest):
             "startmovementreason",
             "endmovementtype",
             "endmovementreason",
-            "incarcerationsequencenumber",
+            "incarcerationperiodsequencenumber",
         ]
 
     def run_test(
@@ -206,7 +206,7 @@ class OffenderMovementIncarcerationPeriodTest(BaseViewTest):
                     "NEWAD",  # StartMovementReason
                     "FAFA",  # EndMovementInfo
                     "INCIB",  # EndMovementReaso
-                    1,  # IncarcerationSequenceNumber
+                    1,  # IncarcerationPeriodSequenceNumber
                 ],
                 [
                     "12345678",  # OffenderID
@@ -217,7 +217,7 @@ class OffenderMovementIncarcerationPeriodTest(BaseViewTest):
                     "INCIB",  # StartMovementReason
                     None,  # EndMovementType
                     None,  # EndMovementReason
-                    2,  # IncarcerationSequenceNumber
+                    2,  # IncarcerationPeriodSequenceNumber
                 ],
             ],
         )
@@ -322,7 +322,7 @@ class OffenderMovementIncarcerationPeriodTest(BaseViewTest):
                     "NEWAD",  # StartMovementReason
                     "FAFA",  # EndMovementType
                     "INCIB",  # EndMovementReason
-                    1,  # IncarcerationSequenceNumber
+                    1,  # IncarcerationPeriodSequenceNumber
                 ],
                 [
                     "12345678",  # OffenderID
@@ -333,7 +333,7 @@ class OffenderMovementIncarcerationPeriodTest(BaseViewTest):
                     "INCIB",  # StartMovementReason
                     None,  # EndMovementType
                     None,  # EndMovementReason
-                    2,  # IncarcerationSequenceNumber
+                    2,  # IncarcerationPeriodSequenceNumber
                 ],
             ],
         )
@@ -440,7 +440,7 @@ class OffenderMovementIncarcerationPeriodTest(BaseViewTest):
                     "NEWAD",  # StartMovementReason
                     None,  # EndMovementType
                     None,  # EndMovementReason
-                    1,  # IncarcerationSequenceNumber
+                    1,  # IncarcerationPeriodSequenceNumber
                 ],
             ],
         )
