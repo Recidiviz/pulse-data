@@ -27,4 +27,4 @@ columns:
   - name: length_of_stay
     description: |-
       Duration of participation in days, for those who terminate participation
-encoding: ASCII
+encoding: UTF-8
