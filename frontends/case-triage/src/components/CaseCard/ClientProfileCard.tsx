@@ -111,8 +111,19 @@ const DetailsPanelContents: React.FC<CaseCardProps> = ({ client }) => {
         )}
 
         <SummaryItem icon={IconSVG.Envelope}>
-          {client.emailAddress || "No email on file"} /{" "}
-          {client.phoneNumber || "No phone number on file"}
+          {client.emailAddress ? (
+            <Link href={`mailto:${client.emailAddress}`}>
+              {client.emailAddress}
+            </Link>
+          ) : (
+            "No email on file"
+          )}{" "}
+          /{" "}
+          {client.phoneNumber ? (
+            <Link href={`tel:${client.phoneNumber}`}>{client.phoneNumber}</Link>
+          ) : (
+            "No phone number on file"
+          )}
         </SummaryItem>
 
         {client.hasUpcomingBirthday && (
