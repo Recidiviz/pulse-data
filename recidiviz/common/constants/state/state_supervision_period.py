@@ -29,15 +29,34 @@ from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 # TODO(#2891): Update supervision period objects in schema to use this type
 @unique
 class StateSupervisionPeriodSupervisionType(EntityEnum, metaclass=EntityEnumMeta):
-    """Enum that denotes what type of supervision someone is serving at a moment in time."""
+    """Enum that denotes what type of supervision someone is serving at a moment in
+    time."""
 
-    # If the person is serving both probation and parole at the same time, this may be modeled with just one supervision
-    # period if the PO is the same. In this case, the supervision period supervision type is DUAL.
+    # TODO(#9421): The way that this information is stored may be updated when we
+    #  standardize the representation of community centers
+    # A type of supervision where the person is being monitored while they are confined
+    # in the community instead of being incarcerated in a state prison facility. This
+    # happens when a person is transferred from prison into either a home or a facility
+    # in the community before they have been legally granted parole or released from
+    # incarceration. During this time they are monitored by supervision officers and
+    # not by correctional officers. They are still serving out the incarceration
+    # portion of their sentence, and are doing so confined in the community instead
+    # of in prison. Any information about the location of the person is captured in the
+    # overlapping incarceration period, if one exists. Some examples include the
+    # "Community Placement Program" in US_ND and the "Supervised Community
+    # Confinement Program" in US_ME.
+    COMMUNITY_CONFINEMENT = (
+        state_enum_strings.state_supervision_period_supervision_type_community_confinement
+    )
+    # If the person is serving both probation and parole at the same time, this may be
+    # modeled with just one supervision period if the PO is the same. In this case,
+    # the supervision period supervision type is DUAL.
     DUAL = state_enum_strings.state_supervision_period_supervision_type_dual
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
-    # A type of supervision where the person is not formally supervised and does not have to regularly report to a PO.
-    # The person does have certain conditions associated with their supervision, that when violated can lead to
-    # revocations. Might also be called "Court Probation".
+    # A type of supervision where the person is not formally supervised and does not
+    # have to regularly report to a PO. The person does have certain conditions
+    # associated with their supervision, that when violated can lead to revocations.
+    # Might also be called "Court Probation".
     INFORMAL_PROBATION = (
         state_enum_strings.state_supervision_period_supervision_type_informal_probation
     )
@@ -103,9 +122,13 @@ class StateSupervisionLevel(EntityEnum, metaclass=EntityEnumMeta):
     INTERNAL_UNKNOWN = enum_strings.internal_unknown
     PRESENT_WITHOUT_INFO = enum_strings.present_without_info
     DIVERSION = state_enum_strings.state_supervision_period_supervision_level_diversion
+    # TODO(#9421): Re-evaluate the use of this value when we standardize the
+    #  representation of community centers
     INCARCERATED = (
         state_enum_strings.state_supervision_period_supervision_level_incarcerated
     )
+    # TODO(#9421): Re-evaluate the use of this value when we standardize the
+    #  representation of community centers
     IN_CUSTODY = (
         state_enum_strings.state_supervision_period_supervision_level_in_custody
     )
@@ -229,6 +252,7 @@ class StateSupervisionPeriodTerminationReason(EntityEnum, metaclass=EntityEnumMe
 
 
 _STATE_SUPERVISION_PERIOD_SUPERVISION_TYPE_MAP = {
+    "COMMUNITY CONFINEMENT": StateSupervisionPeriodSupervisionType.COMMUNITY_CONFINEMENT,
     "DUAL": StateSupervisionPeriodSupervisionType.DUAL,
     "EXTERNAL UNKNOWN": StateSupervisionPeriodSupervisionType.EXTERNAL_UNKNOWN,
     "INFORMAL PROBATION": StateSupervisionPeriodSupervisionType.INFORMAL_PROBATION,
@@ -323,6 +347,8 @@ def get_most_relevant_supervision_type(
         return StateSupervisionPeriodSupervisionType.PAROLE
     if StateSupervisionPeriodSupervisionType.PROBATION in supervision_types:
         return StateSupervisionPeriodSupervisionType.PROBATION
+    if StateSupervisionPeriodSupervisionType.COMMUNITY_CONFINEMENT in supervision_types:
+        return StateSupervisionPeriodSupervisionType.COMMUNITY_CONFINEMENT
     if StateSupervisionPeriodSupervisionType.INVESTIGATION in supervision_types:
         return StateSupervisionPeriodSupervisionType.INVESTIGATION
     if StateSupervisionPeriodSupervisionType.INFORMAL_PROBATION in supervision_types:

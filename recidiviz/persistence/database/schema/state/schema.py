@@ -367,6 +367,7 @@ state_supervision_period_supervision_type = Enum(
     state_enum_strings.state_supervision_period_supervision_type_parole,
     state_enum_strings.state_supervision_period_supervision_type_probation,
     state_enum_strings.state_supervision_period_supervision_type_dual,
+    state_enum_strings.state_supervision_period_supervision_type_community_confinement,
     name="state_supervision_period_supervision_type",
 )
 

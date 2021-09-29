@@ -28,6 +28,7 @@ from recidiviz.calculator.pipeline.utils.supervision_type_identification import 
     _get_sentence_supervision_type_from_sentence,
     _get_sentences_overlapping_with_dates,
     _get_valid_attached_sentences,
+    get_commitment_admission_reason_from_preceding_supervision_period,
     get_pre_incarceration_supervision_type_from_ip_admission_reason,
 )
 from recidiviz.common.constants.state.state_incarceration_period import (
@@ -904,3 +905,28 @@ class TestGetSupervisionPeriodSupervisionTypeFromSentence(unittest.TestCase):
         )
 
         self.assertEqual(StateSupervisionType.PAROLE, supervision_type)
+
+
+class TestGetCommitmentAdmissionReasonFromPrecedingSupervisionPeriod(unittest.TestCase):
+    """Tests the get_commitment_admission_reason_from_preceding_supervision_period
+    function."""
+
+    def test_get_commitment_admission_reason_from_preceding_supervision_period(self):
+        for supervision_type in StateSupervisionPeriodSupervisionType:
+            supervision_period = StateSupervisionPeriod.new_with_defaults(
+                supervision_period_id=111,
+                external_id="sp1",
+                state_code="US_XX",
+                supervision_period_supervision_type=supervision_type,
+            )
+
+            if supervision_type == StateSupervisionPeriodSupervisionType.INVESTIGATION:
+                with self.assertRaises(ValueError):
+                    _ = get_commitment_admission_reason_from_preceding_supervision_period(
+                        supervision_period
+                    )
+            else:
+                # Assert none of them fail
+                _ = get_commitment_admission_reason_from_preceding_supervision_period(
+                    supervision_period
+                )

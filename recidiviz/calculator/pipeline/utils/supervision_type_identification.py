@@ -80,18 +80,34 @@ def get_pre_incarceration_supervision_type_from_ip_admission_reason(
     )
 
 
-def get_revocation_admission_reason_from_revoked_supervision_period(
+def get_commitment_admission_reason_from_preceding_supervision_period(
     supervision_period: StateSupervisionPeriod,
 ) -> Optional[StateIncarcerationPeriodAdmissionReason]:
-    """Derives the revocation admission reason from the supervision type the person was
-    serving prior to the incarceration admission due to a revocation."""
+    """Derives the commitment from supervision admission reason from the supervision
+    type the person was serving prior to the incarceration admission."""
     supervision_type = supervision_period.supervision_period_supervision_type
 
-    if not supervision_type:
+    if (
+        not supervision_type
+        or supervision_type == StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
+    ):
         return StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN
+
+    if supervision_type == StateSupervisionPeriodSupervisionType.EXTERNAL_UNKNOWN:
+        return StateIncarcerationPeriodAdmissionReason.EXTERNAL_UNKNOWN
 
     if supervision_type == StateSupervisionPeriodSupervisionType.INFORMAL_PROBATION:
         return StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION
+
+    if supervision_type == StateSupervisionPeriodSupervisionType.COMMUNITY_CONFINEMENT:
+        return StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION
+
+    if supervision_type == StateSupervisionPeriodSupervisionType.INVESTIGATION:
+        raise ValueError(
+            "Admissions from supervision periods of type INVESTIGATION "
+            "should not be considered commitment from supervision "
+            "admissions."
+        )
 
     supervision_types_to_commitment_admission_reasons = {
         supervision_type: admission_reason
