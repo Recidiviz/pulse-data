@@ -16,10 +16,17 @@
 # =============================================================================
 """Unit and integration tests for US_TN direct ingest."""
 import datetime
-from typing import Type
+from typing import Optional, Type
 
 from recidiviz.common.constants.person_characteristics import Ethnicity, Gender, Race
 from recidiviz.common.constants.state.external_id_types import US_TN_DOC
+from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateIncarcerationPeriodAdmissionReason,
+    StateIncarcerationPeriodReleaseReason,
+    StateIncarcerationPeriodStatus,
+)
+from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
 )
@@ -121,6 +128,70 @@ class TestUsTnController(BaseDirectIngestControllerTests):
         # Assert
         self.assert_expected_db_people(expected_people)
 
+        ######################################
+        # OffenderMovementIncarcerationPeriod
+        ######################################
+        _add_incarceration_period_to_person(
+            person=person_2,
+            external_id="00000002-2",
+            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+            admission_date=datetime.date(year=2021, month=6, day=20),
+            release_date=None,
+            facility="088",
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            admission_reason_raw_text="CTFA-NEWAD",
+            release_reason=None,
+            release_reason_raw_text="NONE-NONE",
+        )
+
+        # Person 3 moves from parole to facility.
+        _add_incarceration_period_to_person(
+            person=person_3,
+            external_id="00000003-1",
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=datetime.date(year=2010, month=2, day=5),
+            release_date=datetime.date(year=2010, month=2, day=26),
+            facility="79A",
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            admission_reason_raw_text="PAFA-VIOLW",
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+            release_reason_raw_text="FAFA-JAILT",
+        )
+        # Person 3 transfers facilities.
+        _add_incarceration_period_to_person(
+            person=person_3,
+            external_id="00000003-2",
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=datetime.date(year=2010, month=2, day=26),
+            release_date=datetime.date(year=2010, month=4, day=6),
+            facility="WTSP",
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            admission_reason_raw_text="FAFA-JAILT",
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+            release_reason_raw_text="PAFA-PAVOK",
+        )
+        # Person 3 is released to supervision.
+        _add_incarceration_period_to_person(
+            person=person_3,
+            external_id="00000003-3",
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=datetime.date(year=2010, month=4, day=6),
+            release_date=datetime.date(year=2010, month=11, day=4),
+            facility="WTSP",
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            admission_reason_raw_text="PAFA-PAVOK",
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_TO_SUPERVISION,
+            release_reason_raw_text="FAPA-RELEL",
+        )
+
+        expected_people = [person_1, person_2, person_3, person_4]
+
+        # Act
+        self._run_ingest_job_for_filename("OffenderMovementIncarcerationPeriod")
+
+        # Assert
+        self.assert_expected_db_people(expected_people)
+
 
 def _add_race_to_person(
     person: entities.StatePerson, race_raw_text: str, race: entities.Race
@@ -163,3 +234,52 @@ def _add_external_id_to_person(person: entities.StatePerson, external_id: str) -
         )
     )
     person.external_ids.append(external_id_to_add)
+
+
+def _add_incarceration_period_to_person(
+    person: entities.StatePerson,
+    external_id: str,
+    status: StateIncarcerationPeriodStatus,
+    admission_date: datetime.date,
+    release_date: Optional[datetime.date],
+    facility: str,
+    admission_reason: Optional[StateIncarcerationPeriodAdmissionReason],
+    admission_reason_raw_text: str,
+    release_reason: Optional[StateIncarcerationPeriodReleaseReason],
+    release_reason_raw_text: str,
+) -> None:
+    """Append an incarceration period to the person (updates the person entity in place)."""
+    sentence_group = entities.StateSentenceGroup.new_with_defaults(
+        state_code=_STATE_CODE_UPPER,
+        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+        person=person,
+    )
+
+    incarceration_sentence = entities.StateIncarcerationSentence.new_with_defaults(
+        state_code=_STATE_CODE_UPPER,
+        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+        incarceration_type=StateIncarcerationType.STATE_PRISON,
+        person=person,
+        sentence_group=sentence_group,
+    )
+
+    incarceration_period = entities.StateIncarcerationPeriod.new_with_defaults(
+        external_id=external_id,
+        state_code=_STATE_CODE_UPPER,
+        status=status,
+        incarceration_type=StateIncarcerationType.STATE_PRISON,
+        admission_date=admission_date,
+        release_date=release_date,
+        county_code=None,
+        facility=facility,
+        admission_reason=admission_reason,
+        admission_reason_raw_text=admission_reason_raw_text,
+        release_reason=release_reason,
+        release_reason_raw_text=release_reason_raw_text,
+        person=person,
+        incarceration_sentences=[incarceration_sentence],
+    )
+
+    incarceration_sentence.incarceration_periods.append(incarceration_period)
+    sentence_group.incarceration_sentences.append(incarceration_sentence)
+    person.sentence_groups.append(sentence_group)
