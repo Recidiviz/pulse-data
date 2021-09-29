@@ -21,6 +21,8 @@ import csv
 from enum import Enum, auto
 from typing import Dict, Iterator, List, Set, Tuple
 
+from more_itertools import one
+
 from recidiviz.cloud_storage.gcs_file_system import GcsfsFileContentsHandle
 from recidiviz.common.common_utils import bidirectional_set_difference
 from recidiviz.ingest.direct.controllers.ingest_view_file_parser_delegate import (
@@ -110,6 +112,10 @@ class IngestViewFileParser:
             )
 
     def parse_manifest(self, manifest_path: str) -> Tuple[EntityTreeManifest, Set[str]]:
+        """Parses the provided manifest, returning a hydrated AST for the output, as
+        well as the set of expected input columns for any CSVs we use this manifest
+        to parse.
+        """
         manifest_dict = YAMLDict.from_path(manifest_path)
 
         version = manifest_dict.pop(MANIFEST_LANGUAGE_VERSION_KEY, str)
@@ -121,8 +127,13 @@ class IngestViewFileParser:
         input_columns = manifest_dict.pop("input_columns", list)
         unused_columns = manifest_dict.pop("unused_columns", list)
 
+        raw_entity_manifest = manifest_dict.pop_dict("output")
+        entity_cls_name = one(raw_entity_manifest.keys())
+        entity_cls = self.delegate.get_entity_cls(entity_cls_name=entity_cls_name)
         output_manifest = EntityTreeManifestFactory.from_raw_manifest(
-            raw_entity_manifest=manifest_dict.pop_dict("output"), delegate=self.delegate
+            raw_fields_manifest=raw_entity_manifest.pop_dict(entity_cls_name),
+            delegate=self.delegate,
+            entity_cls=entity_cls,
         )
 
         if len(manifest_dict):
