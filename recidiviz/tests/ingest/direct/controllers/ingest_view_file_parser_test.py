@@ -1377,6 +1377,37 @@ class IngestViewFileParserTest(unittest.TestCase):
         # Assert
         self.assertEqual(expected_output, parsed_output)
 
+    def test_boolean_condition_entity_tree(self) -> None:
+        # Arrange
+        expected_output = [
+            FakePerson(
+                fake_state_code="US_XX",
+                name="ELAINE BENES",
+                current_officer=FakeAgent(
+                    external_id="A123", fake_state_code="US_XX", name="NEWMAN"
+                ),
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                name="JERRY SEINFELD",
+                current_officer=FakeAgent(
+                    external_id="B456", fake_state_code="US_XX", name="STEINBRENNER"
+                ),
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                name="COSMOS KRAMER",
+                birthdate=None,
+                current_officer=None,
+            ),
+        ]
+
+        # Act
+        parsed_output = self._run_parse_for_tag("boolean_condition_entity_tree")
+
+        # Assert
+        self.assertEqual(expected_output, parsed_output)
+
     def test_boolean_condition_simple_null(self) -> None:
         # Arrange
         expected_output = [

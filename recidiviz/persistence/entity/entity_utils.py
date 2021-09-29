@@ -28,10 +28,7 @@ from typing import Dict, Iterable, List, Optional, Sequence, Set, Type, Union, c
 import attr
 
 from recidiviz.common.attr_utils import (
-    _get_type_name_from_type,
-    _is_forward_ref,
-    _is_list,
-    _is_union,
+    get_non_flat_attribute_class,
     is_forward_ref,
     is_list,
 )
@@ -817,38 +814,19 @@ def get_non_flat_property_class_name(
     if is_property_flat_field(obj, property_name):
         return None
 
-    attribute = attr.fields_dict(obj.__class__).get(property_name)
+    parent_cls = obj.__class__
+    attribute = attr.fields_dict(parent_cls).get(property_name)
     if not attribute:
         return None
 
-    attr_type = attribute.type
+    property_class_name = get_non_flat_attribute_class(attribute)
 
-    if not attr_type:
-        raise ValueError(f"Unexpected None type for attribute [{attribute}]")
-
-    if _is_list(attr_type):
-        list_elem_type = attr_type.__args__[0]  # type: ignore
-        return _get_type_name_from_type(list_elem_type)
-
-    if _is_union(attr_type):
-        type_names = [
-            _get_type_name_from_type(t) for t in attr_type.__args__
-        ]  # type: ignore
-
-        type_names = [t for t in type_names if t != "NoneType"]
-        if len(type_names) > 1:
-            raise ValueError(f"Multiple nonnull types found: {type_names}")
-        if not type_names:
-            raise ValueError("Expected at least one nonnull type")
-        return type_names[0]
-
-    if _is_forward_ref(attr_type):
-        return _get_type_name_from_type(attr_type)
-
-    raise ValueError(
-        f"Non-flat field [{property_name}] on class [{obj.__class__}] should "
-        f"either correspond to list or union."
-    )
+    if not property_class_name:
+        raise ValueError(
+            f"Non-flat field [{property_name}] on class [{obj.__class__}] should "
+            f"either correspond to list or union."
+        )
+    return property_class_name
 
 
 def is_property_list(obj: Union[list, Entity], property_name: str) -> bool:
