@@ -38,12 +38,7 @@ output:
               $middle_names: Mid_Nm
               $surname: Lst_Nm
               $name_suffix: Nm_Suff
-          alias_type:
-            # TODO(#9067): Add support for enum literals, E.g.
-            #  `alias_type: $literal_enum(StatePersonAliasType.GIVEN_NAME)`
-            $raw_text: $literal("GIVEN_NAME")
-            $mappings:
-              StatePersonAliasType.GIVEN_NAME: GIVEN_NAME
+          alias_type: $literal_enum(StatePersonAliasType.GIVEN_NAME)
     current_address:
       $physical_address:
         $address_1: legal_address_1

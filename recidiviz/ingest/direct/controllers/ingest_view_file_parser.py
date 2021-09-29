@@ -112,9 +112,9 @@ class IngestViewFileParser:
             )
 
     def parse_manifest(self, manifest_path: str) -> Tuple[EntityTreeManifest, Set[str]]:
-        """Parses the provided manifest, returning a hydrated AST for the output, as
-        well as the set of expected input columns for any CSVs we use this manifest
-        to parse.
+        """Parses the provided manifest, returning a hydrated AST (abstract syntax tree)
+        for the output, as well as the set of expected input columns for any CSVs we use
+        this manifest to parse.
         """
         manifest_dict = YAMLDict.from_path(manifest_path)
 
