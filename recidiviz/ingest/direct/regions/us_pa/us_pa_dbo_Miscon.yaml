@@ -93,10 +93,9 @@ output:
               $raw_text:
                 $conditional:
                   $if:
-                    $in:
-                      $value: drug_related
-                      $options:
-                        - $literal("Y")
+                    $equal:
+                      - drug_related
+                      - $literal("Y")
                   $then: $literal("CONTRABAND")
                   $else: $literal("REPORT")
               $mappings:
