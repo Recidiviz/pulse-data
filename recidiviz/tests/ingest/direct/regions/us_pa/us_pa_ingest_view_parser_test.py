@@ -206,7 +206,6 @@ class UsPaIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                     StatePersonAlias(
                         state_code="US_PA",
                         alias_type=StatePersonAliasType.GIVEN_NAME,
-                        alias_type_raw_text="GIVEN_NAME",
                         full_name='{"given_names": "BERTRAND", "middle_names": "", "name_suffix": "", "surname": "RUSSELL"}',
                     )
                 ],
@@ -246,7 +245,6 @@ class UsPaIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                     StatePersonAlias(
                         state_code="US_PA",
                         alias_type=StatePersonAliasType.GIVEN_NAME,
-                        alias_type_raw_text="GIVEN_NAME",
                         full_name='{"given_names": "JEAN-PAUL", "middle_names": "", "name_suffix": "", "surname": "SARTRE"}',
                     )
                 ],
@@ -281,7 +279,6 @@ class UsPaIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                     StatePersonAlias(
                         state_code="US_PA",
                         alias_type=StatePersonAliasType.GIVEN_NAME,
-                        alias_type_raw_text="GIVEN_NAME",
                         full_name='{"given_names": "SOREN", "middle_names": "", "name_suffix": "JR", "surname": "KIERKEGAARD"}',
                     )
                 ],
@@ -316,7 +313,6 @@ class UsPaIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                     StatePersonAlias(
                         state_code="US_PA",
                         alias_type=StatePersonAliasType.GIVEN_NAME,
-                        alias_type_raw_text="GIVEN_NAME",
                         full_name='{"given_names": "JOHN", "middle_names": "", "name_suffix": "", "surname": "RAWLS"}',
                     )
                 ],
@@ -443,7 +439,6 @@ class UsPaIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         external_id="A123456",
                         state_code="US_PA",
                         incident_type=StateIncarcerationIncidentType.REPORT,
-                        incident_type_raw_text="REPORT",
                         incident_date=datetime.date(2018, 5, 10),
                         facility="WAM",
                         incident_details='{"CATEGORY_1": "", "CATEGORY_2": "", "CATEGORY_3": "", "CATEGORY_4": "", "CATEGORY_5": ""}',
@@ -472,7 +467,6 @@ class UsPaIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         external_id="A234567",
                         state_code="US_PA",
                         incident_type=StateIncarcerationIncidentType.REPORT,
-                        incident_type_raw_text="REPORT",
                         incident_date=datetime.date(1991, 3, 6),
                         facility="GRA",
                         location_within_facility="CELL-AA UNIT",
@@ -503,7 +497,6 @@ class UsPaIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         external_id="B222333",
                         state_code="US_PA",
                         incident_type=StateIncarcerationIncidentType.REPORT,
-                        incident_type_raw_text="REPORT",
                         incident_date=datetime.date(1993, 7, 6),
                         facility="SMI",
                         incident_details='{"CATEGORY_1": "", "CATEGORY_2": "", "CATEGORY_3": "", "CATEGORY_4": "", "CATEGORY_5": ""}',
@@ -532,7 +525,6 @@ class UsPaIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         external_id="B444555",
                         state_code="US_PA",
                         incident_type=StateIncarcerationIncidentType.CONTRABAND,
-                        incident_type_raw_text="CONTRABAND",
                         incident_date=datetime.date(1993, 12, 17),
                         facility="SMI",
                         location_within_facility="RHU-A 200",
@@ -561,7 +553,6 @@ class UsPaIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         external_id="B444556",
                         state_code="US_PA",
                         incident_type=StateIncarcerationIncidentType.CONTRABAND,
-                        incident_type_raw_text="CONTRABAND",
                         incident_date=datetime.date(1993, 12, 17),
                         facility="SMI",
                         location_within_facility="RHU-A 200",

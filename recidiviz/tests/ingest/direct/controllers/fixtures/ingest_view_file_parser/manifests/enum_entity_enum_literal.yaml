@@ -1,0 +1,15 @@
+manifest_language: 1.0.0
+input_columns:
+  - PERSONNAME
+  - RACE
+unused_columns: []
+output:
+  FakePerson:
+    name: PERSONNAME
+    races:
+      - FakePersonRace:
+          race:
+            $conditional:
+              $if:
+                $not_null: RACE
+              $then: $literal_enum(FakeRace.ASIAN)

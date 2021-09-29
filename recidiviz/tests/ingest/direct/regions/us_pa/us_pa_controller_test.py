@@ -2012,7 +2012,6 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                 full_name='{"given_names": "BERTRAND", "middle_names": "", "name_suffix": "", "surname": "RUSSELL"}',
                 state_code=_STATE_CODE_UPPER,
                 alias_type=StatePersonAliasType.GIVEN_NAME,
-                alias_type_raw_text="GIVEN_NAME",
             )
         ]
         person_1.races = [
@@ -2050,7 +2049,6 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                 full_name='{"given_names": "JEAN-PAUL", "middle_names": "", "name_suffix": "", "surname": "SARTRE"}',
                 state_code=_STATE_CODE_UPPER,
                 alias_type=StatePersonAliasType.GIVEN_NAME,
-                alias_type_raw_text="GIVEN_NAME",
             )
         ]
         person_2.races = [
@@ -2080,7 +2078,6 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                 full_name='{"given_names": "SOREN", "middle_names": "", "name_suffix": "JR", "surname": "KIERKEGAARD"}',
                 state_code=_STATE_CODE_UPPER,
                 alias_type=StatePersonAliasType.GIVEN_NAME,
-                alias_type_raw_text="GIVEN_NAME",
             )
         ]
         person_3.races = [
@@ -2110,7 +2107,6 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                 full_name='{"given_names": "JOHN", "middle_names": "", "name_suffix": "", "surname": "RAWLS"}',
                 state_code=_STATE_CODE_UPPER,
                 alias_type=StatePersonAliasType.GIVEN_NAME,
-                alias_type_raw_text="GIVEN_NAME",
             )
         ]
         person_4.ethnicities = [
@@ -3179,7 +3175,6 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             state_code=_STATE_CODE_UPPER,
             person=person_3,
             incident_type=StateIncarcerationIncidentType.REPORT,
-            incident_type_raw_text="REPORT",
             incident_date=datetime.date(year=2018, month=5, day=10),
             facility="WAM",
             incident_details=json.dumps(
@@ -3210,7 +3205,6 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             state_code=_STATE_CODE_UPPER,
             person=person_4,
             incident_type=StateIncarcerationIncidentType.REPORT,
-            incident_type_raw_text="REPORT",
             incident_date=datetime.date(year=1991, month=3, day=6),
             facility="GRA",
             location_within_facility="CELL-AA UNIT",
@@ -3243,7 +3237,6 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             state_code=_STATE_CODE_UPPER,
             person=person_4,
             incident_type=StateIncarcerationIncidentType.REPORT,
-            incident_type_raw_text="REPORT",
             incident_date=datetime.date(year=1993, month=7, day=6),
             facility="SMI",
             incident_details=json.dumps(
@@ -3274,7 +3267,6 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             state_code=_STATE_CODE_UPPER,
             person=person_4,
             incident_type=StateIncarcerationIncidentType.CONTRABAND,
-            incident_type_raw_text="CONTRABAND",
             incident_date=datetime.date(year=1993, month=12, day=17),
             facility="SMI",
             location_within_facility="RHU-A 200",
@@ -3305,7 +3297,6 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             state_code=_STATE_CODE_UPPER,
             person=person_4,
             incident_type=StateIncarcerationIncidentType.CONTRABAND,
-            incident_type_raw_text="CONTRABAND",
             incident_date=datetime.date(year=1993, month=12, day=17),
             facility="SMI",
             location_within_facility="RHU-A 200",

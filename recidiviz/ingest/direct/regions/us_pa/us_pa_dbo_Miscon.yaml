@@ -89,18 +89,13 @@ output:
                   - place_extended
                 $include_nulls: False
             incident_type:
-              # TODO(#9067): Add support for enum literals inside conditional
-              $raw_text:
-                $conditional:
-                  $if:
-                    $equal:
-                      - drug_related
-                      - $literal("Y")
-                  $then: $literal("CONTRABAND")
-                  $else: $literal("REPORT")
-              $mappings:
-                StateIncarcerationIncidentType.CONTRABAND: CONTRABAND
-                StateIncarcerationIncidentType.REPORT: REPORT
+              $conditional:
+                $if:
+                  $equal:
+                    - drug_related
+                    - $literal("Y")
+                $then: $literal_enum(StateIncarcerationIncidentType.CONTRABAND)
+                $else: $literal_enum(StateIncarcerationIncidentType.REPORT)
             incident_details:
               $json_dict:
                 category_1: ctgory_of_chrgs_1
