@@ -1,0 +1,19 @@
+manifest_language: 1.0.0
+input_columns:
+  - PERSONNAME
+  - SENTENCES
+  - CHARGES
+  - STATUTE
+unused_columns: []
+output:
+  FakePerson:
+    name: PERSONNAME
+    sentences:
+      - $foreach: SENTENCES
+        FakeSentence:
+          external_id: $iter
+          charges:
+            - $foreach: CHARGES
+              FakeCharge:
+               external_id: $iter
+               statute: STATUTE

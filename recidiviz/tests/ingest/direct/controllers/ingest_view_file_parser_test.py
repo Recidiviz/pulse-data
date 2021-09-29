@@ -47,12 +47,14 @@ from recidiviz.tests.ingest.direct.controllers.fixtures.ingest_view_file_parser 
 )
 from recidiviz.tests.ingest.direct.controllers.fixtures.ingest_view_file_parser.fake_schema.entities import (
     FakeAgent,
+    FakeCharge,
     FakeGender,
     FakePerson,
     FakePersonAlias,
     FakePersonExternalId,
     FakePersonRace,
     FakeRace,
+    FakeSentence,
 )
 
 #### Start Fake Schema Factories ####
@@ -98,6 +100,22 @@ class FakeAgentFactory(EntityFactory):
         )
 
 
+class FakeSentenceFactory(EntityFactory):
+    @staticmethod
+    def deserialize(**kwargs: Optional[Union[str, EnumParser]]) -> FakeSentence:
+        return entity_deserialize(
+            cls=FakeSentence, converter_overrides={}, defaults={}, **kwargs
+        )
+
+
+class FakeChargeFactory(EntityFactory):
+    @staticmethod
+    def deserialize(**kwargs: Optional[Union[str, EnumParser]]) -> FakeCharge:
+        return entity_deserialize(
+            cls=FakeCharge, converter_overrides={}, defaults={}, **kwargs
+        )
+
+
 #### End Fake Schema Factories ####
 
 
@@ -121,6 +139,10 @@ class FakeSchemaIngestViewFileParserDelegate(IngestViewFileParserDelegate):
             return FakePersonRaceFactory
         if entity_cls_name == FakeAgent.__name__:
             return FakeAgentFactory
+        if entity_cls_name == FakeSentence.__name__:
+            return FakeSentenceFactory
+        if entity_cls_name == FakeCharge.__name__:
+            return FakeChargeFactory
         raise ValueError(f"Unexpected class name [{entity_cls_name}]")
 
     def get_entity_cls(self, entity_cls_name: str) -> Type[Entity]:
@@ -134,6 +156,10 @@ class FakeSchemaIngestViewFileParserDelegate(IngestViewFileParserDelegate):
             return FakePersonRace
         if entity_cls_name == FakeAgent.__name__:
             return FakeAgent
+        if entity_cls_name == FakeSentence.__name__:
+            return FakeSentence
+        if entity_cls_name == FakeCharge.__name__:
+            return FakeCharge
         raise ValueError(f"Unexpected class name [{entity_cls_name}]")
 
     def get_custom_function_registry(self) -> CustomFunctionRegistry:
@@ -608,6 +634,30 @@ class IngestViewFileParserTest(unittest.TestCase):
 
         # Act
         parsed_output = self._run_parse_for_tag("enums_complex_capitalization")
+
+        # Assert
+        self.assertEqual(expected_output, parsed_output)
+
+    def test_simple_enum_literal(self) -> None:
+        expected_output = [
+            FakePerson(fake_state_code="US_XX", name="ANNA", gender=FakeGender.FEMALE),
+            FakePerson(fake_state_code="US_XX", name="JULIA", gender=FakeGender.FEMALE),
+        ]
+
+        # Act
+        parsed_output = self._run_parse_for_tag("simple_enum_literal")
+
+        # Assert
+        self.assertEqual(expected_output, parsed_output)
+
+    def test_enum_literal_in_conditional(self) -> None:
+        expected_output = [
+            FakePerson(fake_state_code="US_XX", name="ANNA", gender=FakeGender.FEMALE),
+            FakePerson(fake_state_code="US_XX", name="COLIN", gender=FakeGender.MALE),
+        ]
+
+        # Act
+        parsed_output = self._run_parse_for_tag("enum_literal_in_conditional")
 
         # Assert
         self.assertEqual(expected_output, parsed_output)
@@ -1528,9 +1578,73 @@ class IngestViewFileParserTest(unittest.TestCase):
         # Assert
         self.assertEqual(expected_output, parsed_output)
 
+    def test_enum_entity_enum_literal(self) -> None:
+        # Arrange
+        expected_output = [
+            FakePerson(
+                fake_state_code="US_XX",
+                name="ALICE",
+                races=[
+                    FakePersonRace(
+                        fake_state_code="US_XX", race=FakeRace.ASIAN, race_raw_text=None
+                    )
+                ],
+            ),
+            FakePerson(fake_state_code="US_XX", name="BOB", races=[]),
+        ]
+
+        # Act
+        parsed_output = self._run_parse_for_tag("enum_entity_enum_literal")
+
+        # Assert
+        self.assertEqual(expected_output, parsed_output)
+
+    def test_foreach_conditional(self) -> None:
+        # Arrange
+        expected_output = [
+            FakePerson(
+                fake_state_code="US_XX",
+                name="ALICE",
+                races=[
+                    FakePersonRace(fake_state_code="US_XX", race=FakeRace.ASIAN),
+                    FakePersonRace(
+                        fake_state_code="US_XX", race=FakeRace.BLACK, race_raw_text="B"
+                    ),
+                ],
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                name="BOB",
+                races=[
+                    FakePersonRace(
+                        fake_state_code="US_XX", race=FakeRace.WHITE, race_raw_text="W"
+                    )
+                ],
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                name="CHARLIE",
+                races=[
+                    FakePersonRace(
+                        fake_state_code="US_XX", race=FakeRace.BLACK, race_raw_text="B"
+                    )
+                ],
+            ),
+            FakePerson(fake_state_code="US_XX", name="DEV", races=[]),
+        ]
+
+        # Act
+        parsed_output = self._run_parse_for_tag("foreach_conditional")
+
+        # Assert
+        self.assertEqual(expected_output, parsed_output)
+
     def test_nested_foreach(self) -> None:
-        # TODO(#8958): Fill this out - should fail
-        pass
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Unexpected \$iter key value in row: \{.*\}. Nested loops not supported.$",
+        ):
+            _ = self._run_parse_for_tag("nested_foreach")
 
     def test_no_unused_columns(self) -> None:
         # Shouldn't crash

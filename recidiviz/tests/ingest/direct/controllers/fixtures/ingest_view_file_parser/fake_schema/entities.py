@@ -79,6 +79,10 @@ class FakePerson(Entity):
     )
     current_officer: Optional["FakeAgent"] = attr.ib(default=None)
 
+    sentences: List["FakeSentence"] = attr.ib(
+        factory=list, validator=attr_validators.is_list
+    )
+
 
 @attr.s(eq=False)
 class FakePersonAlias(Entity):
@@ -144,3 +148,22 @@ class FakeAgent(ExternalIdEntity):
     fake_agent_id: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
     )
+
+
+@attr.s(eq=False)
+class FakeSentence(ExternalIdEntity):
+    fake_state_code: str = attr.ib(validator=attr_validators.is_str)
+
+    length_days: Optional[int] = attr.ib(
+        default=None, validator=attr_validators.is_opt_int
+    )
+    charges: List["FakeCharge"] = attr.ib(
+        factory=list, validator=attr_validators.is_list
+    )
+
+
+@attr.s(eq=False)
+class FakeCharge(ExternalIdEntity):
+    fake_state_code: str = attr.ib(validator=attr_validators.is_str)
+
+    statute: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
