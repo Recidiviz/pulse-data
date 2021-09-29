@@ -59,6 +59,7 @@ from recidiviz.common.constants.state.state_supervision_contact import (
 )
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
+    StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.common.constants.state.state_supervision_violation_response import (
@@ -238,10 +239,24 @@ SHARED_OVERRIDES: Dict[Enum, List[str]] = {
         "SUPL",
     ],
     StateIncarcerationPeriodReleaseReason.TRANSFER_TO_OTHER_JURISDICTION: ["TRN"],
+    StateSupervisionPeriodSupervisionType.COMMUNITY_CONFINEMENT: [
+        "COMMUNITY PLACEMENT PGRM"
+    ],
+    StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN: ["CCC"],
+    StateSupervisionPeriodSupervisionType.INVESTIGATION: ["PRE-TRIAL"],
+    StateSupervisionPeriodSupervisionType.PAROLE: ["IC PAROLE", "PAROLE", "SSOP"],
+    StateSupervisionPeriodSupervisionType.PROBATION: [
+        "DEFERRED",
+        "IC PROBATION",
+        "SUSPENDED",
+    ],
     StateSupervisionType.HALFWAY_HOUSE: ["COMMUNITY PLACEMENT PGRM"],
-    StateSupervisionType.PAROLE: ["SSOP"],
-    # TODO(#2891): Ensure that this gets mapped down to a supervision_period_supervision_type of INVESTIGATION
-    # on the supervision period that this gets copied down to in the hook for Docstars Offender Cases
+    StateSupervisionType.PAROLE: ["IC PAROLE", "PAROLE", "SSOP"],
+    StateSupervisionType.PROBATION: [
+        "DEFERRED",
+        "IC PROBATION",
+        "SUSPENDED",
+    ],
     StateSupervisionType.PRE_CONFINEMENT: ["PRE-TRIAL"],
     StateSupervisionViolationResponseDecision.CONTINUANCE: [
         "PLACED BACK ON PROBATION/PAROLE",
