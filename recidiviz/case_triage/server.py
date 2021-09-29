@@ -17,6 +17,7 @@
 """Backend entry point for Case Triage API server."""
 import json
 import os
+import socket
 from typing import Dict
 
 import sentry_sdk
@@ -85,6 +86,15 @@ limiter = Limiter(
     key_func=get_remote_address,
     default_limits=["15 per second"],
     storage_uri=get_rate_limit_storage_uri(),
+    storage_options={
+        "health_check_interval": 30,
+        "socket_keepalive": True,
+        "socket_keepalive_options": {
+            socket.TCP_KEEPIDLE: 10,
+            socket.TCP_KEEPINTVL: 5,
+            socket.TCP_KEEPCNT: 5,
+        },
+    },
 )
 
 if in_development():
