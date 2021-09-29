@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-from typing import Callable, List
+from typing import Any, Callable, Dict, List
 
 from flask import Flask
 
@@ -25,4 +25,5 @@ class Limiter(object):
         key_func: Callable[[], str] = None,
         default_limits: List[str] = [],
         storage_uri: str = "memory://",
+        storage_options: Dict[Any, Any] = {},
     ) -> None: ...
