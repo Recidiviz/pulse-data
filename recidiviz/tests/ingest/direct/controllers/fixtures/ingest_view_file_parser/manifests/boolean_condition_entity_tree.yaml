@@ -1,0 +1,17 @@
+manifest_language: 1.0.0
+input_columns:
+  - PERSONNAME
+  - AGENTID
+  - AGENTNAME
+unused_columns: []
+output:
+  FakePerson:
+    name: PERSONNAME
+    current_officer:
+      $conditional:
+        $if:
+          $not_null: AGENTID
+        $then:
+          FakeAgent:
+            external_id: AGENTID
+            name: AGENTNAME

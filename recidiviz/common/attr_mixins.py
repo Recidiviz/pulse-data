@@ -109,6 +109,11 @@ def attr_field_type_for_field_name(
     return _attribute_field_type_reference_for_class(cls)[field_name].field_type
 
 
+def attr_field_attribute_for_field_name(cls: Type, field_name: str) -> attr.Attribute:
+    """Returns the Attribute on the |cls| for the given |field_name|."""
+    return _attribute_field_type_reference_for_class(cls)[field_name].attribute
+
+
 def attr_field_enum_cls_for_field_name(
     cls: Type, field_name: str
 ) -> Optional[Type[Enum]]:

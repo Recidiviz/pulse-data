@@ -17,10 +17,10 @@
 """Utils for working with Attr objects."""
 
 
-import inspect
-from typing import Optional, Type, Union, Any, Callable
-from enum import Enum
 import datetime
+import inspect
+from enum import Enum
+from typing import Any, Callable, Optional, Type, Union
 
 import attr
 
@@ -272,3 +272,34 @@ def _get_type_name_from_type(attr_type: Type) -> str:
     if _is_forward_ref(attr_type):
         return attr_type.__forward_arg__
     return attr_type.__name__
+
+
+def get_non_flat_attribute_class(attribute: attr.Attribute) -> Optional[str]:
+    """Returns the the inner class name for a type that is either List[<type>] or
+    Optional[<type>], or None if the attribute type does not match either format.
+    """
+    attr_type = attribute.type
+
+    if not attr_type:
+        raise ValueError(f"Unexpected None type for attribute [{attribute}]")
+
+    if _is_list(attr_type):
+        list_elem_type = attr_type.__args__[0]  # type: ignore
+        return _get_type_name_from_type(list_elem_type)
+
+    if _is_union(attr_type):
+        type_names = [
+            _get_type_name_from_type(t) for t in attr_type.__args__
+        ]  # type: ignore
+
+        type_names = [t for t in type_names if t != "NoneType"]
+        if len(type_names) > 1:
+            raise ValueError(f"Multiple nonnull types found: {type_names}")
+        if not type_names:
+            raise ValueError("Expected at least one nonnull type")
+        return type_names[0]
+
+    if _is_forward_ref(attr_type):
+        return _get_type_name_from_type(attr_type)
+
+    return None
