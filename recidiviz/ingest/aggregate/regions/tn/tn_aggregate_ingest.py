@@ -133,7 +133,26 @@ def _parse_table(
             pd.concat((table[3], table[4])),
         ]
 
-    formatted_dfs = [_format_table(df, is_female, report_date) for df in table]
+    if is_female and report_date.year == 2021 and report_date.month == 8:
+        table_0 = _format_table(table[0], is_female, report_date)
+        table_1 = (
+            table[1]
+            .T.reset_index()
+            .T.iloc[:, :10]
+            .applymap(lambda s: str(s).split(".", maxsplit=1)[0])
+        )
+        table_1.columns = table_0.columns
+        table_2 = _format_table(table[2], is_female, report_date)
+        table_3 = (
+            table[3]
+            .T.reset_index()
+            .T.iloc[:, :10]
+            .dropna()
+            .applymap(lambda s: str(s).split(".", maxsplit=1)[0])
+        )
+        table_3.columns = table_2.columns
+    else:
+        formatted_dfs = [_format_table(df, is_female, report_date) for df in table]
 
     table = pd.concat(formatted_dfs, ignore_index=True)
 
@@ -180,16 +199,10 @@ def _expand_columns_with_spaces_to_new_columns(df: pd.DataFrame) -> pd.DataFrame
         else:
             # Extract all the smashed together columns into their own
             # columns.
-
-            def grab_one_smashed_col(smashed, col_ind):
-                if pd.isnull(smashed) or len(smashed.split()) <= col_ind:
-                    return np.nan
-                return smashed.split()[col_ind]
-
             cur_smashed_col = 0
             while True:
                 smashed_col = col.apply(
-                    lambda smashed, col_ind=cur_smashed_col: grab_one_smashed_col(
+                    lambda smashed, col_ind=cur_smashed_col: _grab_one_smashed_col(
                         smashed, col_ind
                     )
                 )
@@ -305,3 +318,9 @@ def _pretend_facility_is_county(facility_name: str) -> str:
         facility_name = facility_name.split(delimiter)[0]
 
     return facility_name
+
+
+def _grab_one_smashed_col(smashed, col_ind):
+    if pd.isnull(smashed) or len(smashed.split()) <= col_ind:
+        return np.nan
+    return smashed.split()[col_ind]
