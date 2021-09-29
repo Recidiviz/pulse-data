@@ -844,17 +844,9 @@ class ConcatenatedStringsManifest(ManifestNode[str]):
         raw_function_manifest: YAMLDict,
         delegate: IngestViewFileParserDelegate,
     ) -> "ConcatenatedStringsManifest":
-        concat_manifests: List[Union[str, YAMLDict]] = []
-        for raw_manifest in raw_function_manifest.pop(cls.VALUES_ARG_KEY, list):
-            if isinstance(raw_manifest, str):
-                concat_manifests.append(raw_manifest)
-            elif isinstance(raw_manifest, dict):
-                concat_manifests.append(YAMLDict(raw_manifest))
-            else:
-                raise ValueError(
-                    f"Unexpected raw manifest type in $concat list: [{type(raw_manifest)}]"
-                )
-
+        raw_concat_manifests = pop_raw_manifest_nodes_list(
+            raw_function_manifest, cls.VALUES_ARG_KEY
+        )
         separator = raw_function_manifest.pop_optional(cls.SEPARATOR_ARG_KEY, str)
         include_nulls = raw_function_manifest.pop_optional(
             cls.INCLUDE_NULLS_ARG_KEY, bool
@@ -863,7 +855,7 @@ class ConcatenatedStringsManifest(ManifestNode[str]):
             separator=(separator if separator is not None else cls.DEFAULT_SEPARATOR),
             value_manifests=[
                 build_str_manifest_from_raw(raw_manifest, delegate)
-                for raw_manifest in concat_manifests
+                for raw_manifest in raw_concat_manifests
             ],
             include_nulls=(include_nulls if include_nulls is not None else True),
         )
@@ -1116,6 +1108,151 @@ class IsNullConditionManifest(ManifestNode[bool]):
     ) -> "IsNullConditionManifest":
         return IsNullConditionManifest(
             value_manifest=build_str_manifest_from_raw(raw_function_manifest, delegate),
+        )
+
+
+@attr.s(kw_only=True)
+class EqualsConditionManifest(ManifestNode[bool]):
+    """Manifest node that returns a boolean based on whether a set of values are all
+    equal.
+    """
+
+    EQUALS_CONDITION_KEY = "$equal"
+
+    value_manifests: List[ManifestNode] = attr.ib()
+
+    @value_manifests.validator
+    def _check_value_manifests(
+        self, _attribute: attr.Attribute, value_manifests: List[ManifestNode]
+    ) -> None:
+        if len(value_manifests) < 2:
+            raise ValueError(
+                f"Found only [{len(value_manifests)}] value manifests, expected at "
+                f"least 2."
+            )
+
+    @property
+    def result_type(self) -> Type[bool]:
+        return bool
+
+    def build_from_row(self, row: Dict[str, str]) -> bool:
+        first_value = self.value_manifests[0].build_from_row(row)
+        return all(
+            first_value == value_manifest.build_from_row(row)
+            for value_manifest in self.value_manifests[1:]
+        )
+
+    def columns_referenced(self) -> Set[str]:
+        return {c for m in self.value_manifests for c in m.columns_referenced()}
+
+    @classmethod
+    def from_raw_manifest(
+        cls,
+        *,
+        raw_value_manifests: List[Union[str, YAMLDict]],
+        delegate: IngestViewFileParserDelegate,
+    ) -> "EqualsConditionManifest":
+        return EqualsConditionManifest(
+            value_manifests=[
+                build_manifest_from_raw(raw_value_manifest, delegate, object)
+                for raw_value_manifest in raw_value_manifests
+            ],
+        )
+
+
+@attr.s(kw_only=True)
+class AndConditionManifest(ManifestNode[bool]):
+    """Manifest node that returns a boolean based on whether a set of values are all
+    True.
+    """
+
+    AND_CONDITION_KEY = "$and"
+
+    condition_manifests: List[ManifestNode[bool]] = attr.ib()
+
+    @condition_manifests.validator
+    def _check_condition_manifests(
+        self, _attribute: attr.Attribute, condition_manifests: List[ManifestNode]
+    ) -> None:
+        if len(condition_manifests) < 2:
+            raise ValueError(
+                f"Found only [{len(condition_manifests)}] condition manifests, expected at "
+                f"least 2."
+            )
+
+    @property
+    def result_type(self) -> Type[bool]:
+        return bool
+
+    def build_from_row(self, row: Dict[str, str]) -> bool:
+        return all(
+            value_manifest.build_from_row(row)
+            for value_manifest in self.condition_manifests
+        )
+
+    def columns_referenced(self) -> Set[str]:
+        return {c for m in self.condition_manifests for c in m.columns_referenced()}
+
+    @classmethod
+    def from_raw_manifest(
+        cls,
+        *,
+        raw_condition_manifests: List[YAMLDict],
+        delegate: IngestViewFileParserDelegate,
+    ) -> "AndConditionManifest":
+        return AndConditionManifest(
+            condition_manifests=[
+                build_manifest_from_raw_typed(raw_condition_manifest, delegate, bool)
+                for raw_condition_manifest in raw_condition_manifests
+            ],
+        )
+
+
+@attr.s(kw_only=True)
+class OrConditionManifest(ManifestNode[bool]):
+    """Manifest node that returns a boolean based on whether any in a set of values is
+    True.
+    """
+
+    OR_CONDITION_KEY = "$or"
+
+    condition_manifests: List[ManifestNode[bool]] = attr.ib()
+
+    @condition_manifests.validator
+    def _check_condition_manifests(
+        self, _attribute: attr.Attribute, condition_manifests: List[ManifestNode]
+    ) -> None:
+        if len(condition_manifests) < 2:
+            raise ValueError(
+                f"Found only [{len(condition_manifests)}] condition manifests, expected at "
+                f"least 2."
+            )
+
+    @property
+    def result_type(self) -> Type[bool]:
+        return bool
+
+    def build_from_row(self, row: Dict[str, str]) -> bool:
+        return any(
+            value_manifest.build_from_row(row)
+            for value_manifest in self.condition_manifests
+        )
+
+    def columns_referenced(self) -> Set[str]:
+        return {c for m in self.condition_manifests for c in m.columns_referenced()}
+
+    @classmethod
+    def from_raw_manifest(
+        cls,
+        *,
+        raw_condition_manifests: List[YAMLDict],
+        delegate: IngestViewFileParserDelegate,
+    ) -> "OrConditionManifest":
+        return OrConditionManifest(
+            condition_manifests=[
+                build_manifest_from_raw_typed(raw_condition_manifest, delegate, bool)
+                for raw_condition_manifest in raw_condition_manifests
+            ],
         )
 
 
@@ -1374,6 +1511,27 @@ def build_manifest_from_raw(
                     delegate=delegate,
                 )
             )
+        if manifest_node_name == AndConditionManifest.AND_CONDITION_KEY:
+            return AndConditionManifest.from_raw_manifest(
+                raw_condition_manifests=raw_field_manifest.pop_dicts(
+                    manifest_node_name
+                ),
+                delegate=delegate,
+            )
+        if manifest_node_name == OrConditionManifest.OR_CONDITION_KEY:
+            return OrConditionManifest.from_raw_manifest(
+                raw_condition_manifests=raw_field_manifest.pop_dicts(
+                    manifest_node_name
+                ),
+                delegate=delegate,
+            )
+        if manifest_node_name == EqualsConditionManifest.EQUALS_CONDITION_KEY:
+            return EqualsConditionManifest.from_raw_manifest(
+                raw_value_manifests=pop_raw_manifest_nodes_list(
+                    raw_field_manifest, manifest_node_name
+                ),
+                delegate=delegate,
+            )
         if issubclass(result_type, Entity):
             entity_cls = delegate.get_entity_cls(entity_cls_name=manifest_node_name)
             return EntityTreeManifestFactory.from_raw_manifest(
@@ -1388,3 +1546,19 @@ def build_manifest_from_raw(
     raise ValueError(
         f"Unexpected manifest type: [{type(raw_field_manifest)}]: {raw_field_manifest}"
     )
+
+
+def pop_raw_manifest_nodes_list(
+    parent_raw_manifest: YAMLDict, list_field_name: str
+) -> List[Union[str, YAMLDict]]:
+    manifests: List[Union[str, YAMLDict]] = []
+    for raw_manifest in parent_raw_manifest.pop(list_field_name, list):
+        if isinstance(raw_manifest, str):
+            manifests.append(raw_manifest)
+        elif isinstance(raw_manifest, dict):
+            manifests.append(YAMLDict(raw_manifest))
+        else:
+            raise ValueError(
+                f"Unexpected raw manifest type in list: [{type(raw_manifest)}]"
+            )
+    return manifests

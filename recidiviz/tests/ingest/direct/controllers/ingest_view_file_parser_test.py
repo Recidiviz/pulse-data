@@ -1454,6 +1454,37 @@ class IngestViewFileParserTest(unittest.TestCase):
         # Assert
         self.assertEqual(expected_output, parsed_output)
 
+    def test_boolean_boolean_equals_and_or(self) -> None:
+        # Arrange
+        expected_output = [
+            FakePerson(
+                fake_state_code="US_XX",
+                name="ROSIE",
+                birthdate=datetime.date(1962, 1, 29),
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                name="HANNAH",
+                birthdate=datetime.date(1999, 2, 2),
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                name="JULIA",
+                birthdate=datetime.date(1989, 5, 5),
+            ),
+            FakePerson(
+                fake_state_code="US_XX", name=None, birthdate=datetime.date(1997, 10, 5)
+            ),
+            FakePerson(fake_state_code="US_XX", name="ROSIE", birthdate=None),
+            FakePerson(fake_state_code="US_XX", name=None, birthdate=None),
+        ]
+
+        # Act
+        parsed_output = self._run_parse_for_tag("boolean_condition_equals_and_or")
+
+        # Assert
+        self.assertEqual(expected_output, parsed_output)
+
     def test_custom_parsers(self) -> None:
         # Arrange
         expected_output = [
