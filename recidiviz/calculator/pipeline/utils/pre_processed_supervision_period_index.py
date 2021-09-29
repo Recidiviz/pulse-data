@@ -173,14 +173,16 @@ def _transfer_from_supervision_type_is_official_admission(
         StateSupervisionPeriodSupervisionType
     ],
 ) -> bool:
-    """Returns whether being transferred from a supervision period with the given |supervision_period_supervision_type|
-    is considered an official start of supervision."""
+    """Returns whether being transferred from a supervision period with the given
+    |supervision_period_supervision_type| is considered an official start of
+    supervision."""
     if not supervision_period_supervision_type:
         return False
 
-    # If a person is transferred from one of these types of supervision to a new type of supervision, this counts as an
-    # official admission to new supervision
+    # If a person is transferred from one of these types of supervision to a new type
+    # of supervision, this counts as an official admission to new supervision
     official_start_supervision_types = [
+        StateSupervisionPeriodSupervisionType.COMMUNITY_CONFINEMENT,
         StateSupervisionPeriodSupervisionType.INVESTIGATION,
         StateSupervisionPeriodSupervisionType.INFORMAL_PROBATION,
     ]

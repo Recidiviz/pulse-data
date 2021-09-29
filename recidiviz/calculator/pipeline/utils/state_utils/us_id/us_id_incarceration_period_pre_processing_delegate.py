@@ -41,7 +41,7 @@ from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
     filter_out_unknown_supervision_period_supervision_type_periods,
 )
 from recidiviz.calculator.pipeline.utils.supervision_type_identification import (
-    get_revocation_admission_reason_from_revoked_supervision_period,
+    get_commitment_admission_reason_from_preceding_supervision_period,
 )
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
@@ -218,7 +218,7 @@ def _us_id_normalize_period_if_commitment_from_supervision(
             == StateSpecializedPurposeForIncarceration.GENERAL
         ):
             revocation_admission_reason = (
-                get_revocation_admission_reason_from_revoked_supervision_period(
+                get_commitment_admission_reason_from_preceding_supervision_period(
                     pre_commitment_supervision_period
                 )
             )
