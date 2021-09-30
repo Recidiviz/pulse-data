@@ -251,6 +251,7 @@ SHARED_OVERRIDES: Dict[Enum, List[str]] = {
         "SUSPENDED",
     ],
     StateSupervisionType.HALFWAY_HOUSE: ["COMMUNITY PLACEMENT PGRM"],
+    StateSupervisionType.INTERNAL_UNKNOWN: ["CCC"],
     StateSupervisionType.PAROLE: ["IC PAROLE", "PAROLE", "SSOP"],
     StateSupervisionType.PROBATION: [
         "DEFERRED",
