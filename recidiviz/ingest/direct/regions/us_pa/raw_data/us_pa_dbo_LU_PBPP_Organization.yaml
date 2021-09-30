@@ -54,6 +54,8 @@ columns:
     description: |-
       Date this record was last modified.
   - name: SO_Identifier
+    description: |-
+      Sub-office human-readable name.
   - name: Fax_No
     description: |-
       Fax number for contact purposes.
