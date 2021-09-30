@@ -17,10 +17,12 @@
 """Tests for state_entity_matcher.py."""
 import datetime
 import unittest
+from itertools import permutations
 from typing import Any, List, Tuple
 
 import attr
 from mock import patch
+from more_itertools import one
 
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.person_characteristics import Ethnicity, Gender, Race
@@ -48,6 +50,7 @@ from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.entity.state.entities import (
     StateAgent,
+    StateAssessment,
     StateCharge,
     StateCourtCase,
     StateIncarcerationIncident,
@@ -288,6 +291,67 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             ],
         )
 
+        # Act
+        session = self._session()
+        matched_entities = entity_matching.match(
+            session, _STATE_CODE, [person, person_2]
+        )
+
+        # Assert
+        self.assert_people_match_pre_and_post_commit(
+            [expected_person], matched_entities.people, session
+        )
+        self.assert_no_errors(matched_entities)
+        self.assertEqual(1, matched_entities.total_root_entities)
+
+    def test_match_twoMatchingIngestedPersons_with_children(self) -> None:
+        # Arrange
+        external_id = StatePersonExternalId.new_with_defaults(
+            state_code=_STATE_CODE, external_id=_EXTERNAL_ID, id_type=_ID_TYPE
+        )
+        external_id_dup = attr.evolve(external_id)
+
+        assessment = StateAssessment.new_with_defaults(
+            state_code=_STATE_CODE, external_id="1"
+        )
+        assessment_dup = attr.evolve(assessment)
+        assessment2 = StateAssessment.new_with_defaults(
+            state_code=_STATE_CODE, external_id="2"
+        )
+        assessment3 = StateAssessment.new_with_defaults(
+            state_code=_STATE_CODE, external_id="3"
+        )
+
+        person = StatePerson.new_with_defaults(
+            full_name=_FULL_NAME,
+            external_ids=[external_id],
+            assessments=[assessment, assessment2],
+            state_code=_STATE_CODE,
+        )
+
+        person_2 = StatePerson.new_with_defaults(
+            full_name=_FULL_NAME,
+            external_ids=[external_id_dup],
+            assessments=[assessment_dup, assessment3],
+            state_code=_STATE_CODE,
+        )
+
+        expected_external_id_1 = attr.evolve(external_id)
+        expected_assessment_1 = attr.evolve(assessment)
+        expected_assessment_2 = attr.evolve(assessment2)
+        expected_assessment_3 = attr.evolve(assessment3)
+        expected_person = attr.evolve(
+            person,
+            external_ids=[
+                expected_external_id_1,
+            ],
+            assessments=[
+                expected_assessment_1,
+                expected_assessment_2,
+                expected_assessment_3,
+            ],
+        )
+        self.maxDiff = None
         # Act
         session = self._session()
         matched_entities = entity_matching.match(
@@ -4600,3 +4664,187 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
             # Make sure all indices are in bounds
             self.assertFalse(any(index > i - 1 for index in indices))
+
+
+class TestBucketIngestedPersons(unittest.TestCase):
+    """Tests for bucket_ingested_persons() in StateEntityMatcher."""
+
+    def test_bucket_single_ingested_person(self) -> None:
+        ingested_persons = [
+            generate_person(
+                external_ids=[
+                    generate_external_id(external_id="ID_1", id_type="ID_TYPE_1")
+                ]
+            )
+        ]
+        buckets = StateEntityMatcher.bucket_ingested_persons(ingested_persons)
+        self.assertCountEqual(buckets, [ingested_persons])
+
+    def test_bucket_two_people_different_id_types(self) -> None:
+        ingested_persons = [
+            generate_person(
+                external_ids=[
+                    generate_external_id(external_id="ID_1", id_type="ID_TYPE_1")
+                ]
+            ),
+            generate_person(
+                external_ids=[
+                    generate_external_id(external_id="ID_1", id_type="ID_TYPE_2")
+                ]
+            ),
+        ]
+        buckets = StateEntityMatcher.bucket_ingested_persons(ingested_persons)
+        self.assertCountEqual(buckets, [[ingested_persons[0]], [ingested_persons[1]]])
+
+    def test_bucket_two_people_different_ids(self) -> None:
+        ingested_persons = [
+            generate_person(
+                external_ids=[
+                    generate_external_id(external_id="ID_1", id_type="ID_TYPE_1")
+                ]
+            ),
+            generate_person(
+                external_ids=[
+                    generate_external_id(external_id="ID_2", id_type="ID_TYPE_1")
+                ]
+            ),
+        ]
+        buckets = StateEntityMatcher.bucket_ingested_persons(ingested_persons)
+        self.assertCountEqual(buckets, [[ingested_persons[0]], [ingested_persons[1]]])
+
+    def test_bucket_two_people_single_matching_id(self) -> None:
+        ingested_persons = [
+            generate_person(
+                external_ids=[
+                    generate_external_id(external_id="ID_1", id_type="ID_TYPE_1")
+                ]
+            ),
+            generate_person(
+                external_ids=[
+                    generate_external_id(external_id="ID_1", id_type="ID_TYPE_1")
+                ]
+            ),
+        ]
+        buckets = StateEntityMatcher.bucket_ingested_persons(ingested_persons)
+        self.assertCountEqual(one(buckets), ingested_persons)
+
+    def test_bucket_three_people_joined_by_one(self) -> None:
+        ingested_persons = [
+            generate_person(
+                external_ids=[
+                    generate_external_id(external_id="ID_1", id_type="ID_TYPE_1")
+                ]
+            ),
+            generate_person(
+                external_ids=[
+                    generate_external_id(external_id="ID_2", id_type="ID_TYPE_1")
+                ]
+            ),
+            generate_person(
+                external_ids=[
+                    generate_external_id(external_id="ID_1", id_type="ID_TYPE_1"),
+                    generate_external_id(external_id="ID_2", id_type="ID_TYPE_1"),
+                ]
+            ),
+        ]
+
+        for ingested_persons_permutation in permutations(ingested_persons):
+            buckets = StateEntityMatcher.bucket_ingested_persons(
+                list(ingested_persons_permutation)
+            )
+            self.assertCountEqual(one(buckets), ingested_persons)
+
+    def test_bucket_multiple_levels_of_indirection(self) -> None:
+        ingested_persons = [
+            generate_person(
+                external_ids=[
+                    generate_external_id(external_id="ID_1", id_type="ID_TYPE_1")
+                ]
+            ),
+            generate_person(
+                external_ids=[
+                    generate_external_id(external_id="ID_2", id_type="ID_TYPE_1"),
+                    generate_external_id(external_id="ID_3", id_type="ID_TYPE_1"),
+                ]
+            ),
+            generate_person(
+                external_ids=[
+                    generate_external_id(external_id="ID_1", id_type="ID_TYPE_1"),
+                    generate_external_id(external_id="ID_2", id_type="ID_TYPE_1"),
+                ]
+            ),
+            generate_person(
+                external_ids=[
+                    generate_external_id(external_id="ID_3", id_type="ID_TYPE_1")
+                ]
+            ),
+        ]
+
+        for ingested_persons_permutation in permutations(ingested_persons):
+            buckets = StateEntityMatcher.bucket_ingested_persons(
+                list(ingested_persons_permutation)
+            )
+
+            self.assertCountEqual(one(buckets), ingested_persons)
+
+    def test_bucket_two_people_one_placeholder(self) -> None:
+        ingested_persons = [
+            generate_person(
+                sentence_groups=[generate_sentence_group(external_id="ID_1")]
+            ),
+            generate_person(
+                external_ids=[
+                    generate_external_id(external_id="ID_1", id_type="ID_TYPE_1")
+                ]
+            ),
+        ]
+        buckets = StateEntityMatcher.bucket_ingested_persons(ingested_persons)
+        self.assertCountEqual(buckets, [[ingested_persons[0]], [ingested_persons[1]]])
+
+    def test_bucket_two_placeholder_people(self) -> None:
+        ingested_persons = [
+            generate_person(
+                sentence_groups=[generate_sentence_group(external_id="ID_1")]
+            ),
+            generate_person(
+                sentence_groups=[generate_sentence_group(external_id="ID_2")]
+            ),
+        ]
+        buckets = StateEntityMatcher.bucket_ingested_persons(ingested_persons)
+        self.assertCountEqual(buckets, [[ingested_persons[0]], [ingested_persons[1]]])
+
+    def test_two_buckets(self) -> None:
+        ingested_persons = [
+            generate_person(
+                external_ids=[
+                    generate_external_id(external_id="ID_1", id_type="ID_TYPE_1")
+                ]
+            ),
+            generate_person(
+                external_ids=[
+                    generate_external_id(external_id="ID_1", id_type="ID_TYPE_1"),
+                    generate_external_id(external_id="ID_2", id_type="ID_TYPE_1"),
+                ]
+            ),
+            generate_person(
+                external_ids=[
+                    generate_external_id(external_id="ID_3", id_type="ID_TYPE_1"),
+                    generate_external_id(external_id="ID_4", id_type="ID_TYPE_1"),
+                ]
+            ),
+            generate_person(
+                external_ids=[
+                    generate_external_id(external_id="ID_3", id_type="ID_TYPE_1")
+                ]
+            ),
+        ]
+
+        for ingested_persons_permutation in permutations(ingested_persons):
+            buckets = StateEntityMatcher.bucket_ingested_persons(
+                list(ingested_persons_permutation)
+            )
+
+            self.assertCountEqual(
+                [set(b) for b in buckets],
+                [set(ingested_persons[0:2]), set(ingested_persons[2:])],
+            )
