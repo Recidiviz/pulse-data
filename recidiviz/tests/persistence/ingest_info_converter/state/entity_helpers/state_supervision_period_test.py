@@ -36,7 +36,7 @@ from recidiviz.persistence.ingest_info_converter.state.entity_helpers import (
 )
 from recidiviz.tests.persistence.database.database_test_utils import FakeIngestMetadata
 
-_EMPTY_METADATA = FakeIngestMetadata.for_state("us_nd")
+_EMPTY_METADATA = FakeIngestMetadata.for_state("US_XX")
 
 
 class StateSupervisionPeriodConverterTest(unittest.TestCase):
@@ -53,7 +53,7 @@ class StateSupervisionPeriodConverterTest(unittest.TestCase):
             state_supervision_period_id="SUPERVISION_ID",
             start_date="1/2/2111",
             termination_date="2/2/2112",
-            state_code="us_nd",
+            state_code="US_XX",
             county_code="bis",
             custodial_authority="SUPERVISION AUTHORITY",
             supervision_site="07-CENTRAL",
@@ -82,7 +82,7 @@ class StateSupervisionPeriodConverterTest(unittest.TestCase):
             external_id="SUPERVISION_ID",
             start_date=date(year=2111, month=1, day=2),
             termination_date=date(year=2112, month=2, day=2),
-            state_code="US_ND",
+            state_code="US_XX",
             county_code="BIS",
             supervision_site="07-CENTRAL",
             conditions="CURFEW, DRINKING",
@@ -94,7 +94,7 @@ class StateSupervisionPeriodConverterTest(unittest.TestCase):
 
     def testParseStateSupervisionPeriod_inferStatus_noDates(self):
         # Arrange
-        ingest_supervision = ingest_info_pb2.StateSupervisionPeriod(state_code="us_nd")
+        ingest_supervision = ingest_info_pb2.StateSupervisionPeriod(state_code="US_XX")
 
         # Act
         supervision_builder = entities.StateSupervisionPeriod.builder()
@@ -105,7 +105,7 @@ class StateSupervisionPeriodConverterTest(unittest.TestCase):
 
         # Assert
         expected_result = entities.StateSupervisionPeriod.new_with_defaults(
-            state_code="US_ND"
+            state_code="US_XX"
         )
 
         self.assertEqual(expected_result, result)
@@ -113,7 +113,7 @@ class StateSupervisionPeriodConverterTest(unittest.TestCase):
     def testParseStateSupervisionPeriod_inferStatus_terminationDate(self):
         # Arrange
         ingest_supervision = ingest_info_pb2.StateSupervisionPeriod(
-            state_code="us_nd",
+            state_code="US_XX",
             start_date="1/2/2111",
             termination_date="1/2/2112",
         )
@@ -129,7 +129,7 @@ class StateSupervisionPeriodConverterTest(unittest.TestCase):
         expected_result = entities.StateSupervisionPeriod.new_with_defaults(
             start_date=date(year=2111, month=1, day=2),
             termination_date=date(year=2112, month=1, day=2),
-            state_code="US_ND",
+            state_code="US_XX",
         )
 
         self.assertEqual(expected_result, result)
@@ -137,7 +137,7 @@ class StateSupervisionPeriodConverterTest(unittest.TestCase):
     def testParseStateSupervisionPeriod_inferStatus_startNoTermination(self):
         # Arrange
         ingest_supervision = ingest_info_pb2.StateSupervisionPeriod(
-            state_code="us_nd",
+            state_code="US_XX",
             start_date="1/2/2111",
         )
 
@@ -151,7 +151,7 @@ class StateSupervisionPeriodConverterTest(unittest.TestCase):
         # Assert
         expected_result = entities.StateSupervisionPeriod.new_with_defaults(
             start_date=date(year=2111, month=1, day=2),
-            state_code="US_ND",
+            state_code="US_XX",
         )
 
         self.assertEqual(expected_result, result)

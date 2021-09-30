@@ -1088,6 +1088,13 @@ class StateSupervisionPeriod(
         factory=list, validator=attr_validators.is_list
     )
 
+    def __attrs_post_init__(self) -> None:
+        validate_deprecated_entity_field_for_states(
+            entity=self,
+            field_name="supervision_type",
+            deprecated_state_codes=["US_ID", "US_MO", "US_ND", "US_PA"],
+        )
+
     @property
     def duration(self) -> DateRange:
         """Generates a DateRange for the days covered by the supervision period. Since
