@@ -840,7 +840,6 @@ class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
                 if supervision_periods:
                     supervision_periods[0].start_date = start_date
                     supervision_periods[0].termination_date = completion_date
-                    supervision_periods[0].supervision_type = supervision_type
                     supervision_periods[
                         0
                     ].supervision_period_supervision_type = supervision_type
