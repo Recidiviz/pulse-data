@@ -69,7 +69,6 @@ class TestUsNdSupervisionPeriodPreProcessingDelegate(unittest.TestCase):
                 start_date=date(2018, 2, 20),
                 termination_date=date(2018, 2, 22),
                 termination_reason=StateSupervisionPeriodTerminationReason.ABSCONSION,
-                supervision_type=None,
             )
         )
         current_supervision_period: StateSupervisionPeriod = (
@@ -80,7 +79,6 @@ class TestUsNdSupervisionPeriodPreProcessingDelegate(unittest.TestCase):
                 start_date=date(2018, 3, 5),
                 termination_date=date(2018, 5, 19),
                 termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-                supervision_type=None,
             )
         )
 

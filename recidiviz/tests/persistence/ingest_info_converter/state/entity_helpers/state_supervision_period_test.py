@@ -20,7 +20,6 @@ import unittest
 from datetime import date
 
 from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
-from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodSupervisionType,
@@ -45,7 +44,6 @@ class StateSupervisionPeriodConverterTest(unittest.TestCase):
     def testParseStateSupervisionPeriod(self):
         # Arrange
         ingest_supervision = ingest_info_pb2.StateSupervisionPeriod(
-            supervision_type="PAROLE",
             supervision_period_supervision_type="PAROLE",
             admission_reason="CONDITIONAL_RELEASE",
             termination_reason="DISCHARGE",
@@ -69,8 +67,6 @@ class StateSupervisionPeriodConverterTest(unittest.TestCase):
 
         # Assert
         expected_result = entities.StateSupervisionPeriod(
-            supervision_type=StateSupervisionType.PAROLE,
-            supervision_type_raw_text="PAROLE",
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             supervision_period_supervision_type_raw_text="PAROLE",
             admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
