@@ -285,7 +285,7 @@ class TestIncarcerationPipeline(unittest.TestCase):
             start_date=date(2010, 12, 4),
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
             termination_date=date(2011, 4, 5),
-            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MINIMUM,
             person_id=fake_person_id,
         )

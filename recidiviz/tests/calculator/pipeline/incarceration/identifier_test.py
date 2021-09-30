@@ -1194,7 +1194,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             start_date=date(2008, 3, 5),
             termination_date=date(2009, 12, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
-            supervision_type=StateSupervisionType.PROBATION,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_site="X",
         )
 
@@ -1334,7 +1334,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             start_date=date(2008, 3, 5),
             termination_date=date(2009, 12, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
-            supervision_type=StateSupervisionType.PROBATION,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_site="X",
         )
 
@@ -3786,7 +3786,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             state_code="US_ND",
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
-            supervision_type=StateSupervisionType.PAROLE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             supervision_site="X",
         )
 

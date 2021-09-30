@@ -22,9 +22,9 @@ from typing import Optional
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_pre_processing_delegate import (
     UsNdSupervisionPreProcessingDelegate,
 )
-from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
+    StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
@@ -37,16 +37,14 @@ class TestUsNdSupervisionPeriodPreProcessingDelegate(unittest.TestCase):
         self.delegate = UsNdSupervisionPreProcessingDelegate()
 
     def test_supervision_admission_reason_override_conditional_release(self) -> None:
-        current_supervision_period: StateSupervisionPeriod = (
-            StateSupervisionPeriod.new_with_defaults(
-                supervision_period_id=111,
-                external_id="sp1",
-                state_code="US_XX",
-                start_date=date(2018, 3, 5),
-                termination_date=date(2018, 5, 19),
-                termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-                supervision_type=StateSupervisionType.PAROLE,
-            )
+        current_supervision_period: StateSupervisionPeriod = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            state_code="US_XX",
+            start_date=date(2018, 3, 5),
+            termination_date=date(2018, 5, 19),
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         admission_reason: Optional[
@@ -104,27 +102,23 @@ class TestUsNdSupervisionPeriodPreProcessingDelegate(unittest.TestCase):
     def test_supervision_admission_reason_override_internal_unknown_after_probation(
         self,
     ) -> None:
-        previous_supervision_period: StateSupervisionPeriod = (
-            StateSupervisionPeriod.new_with_defaults(
-                supervision_period_id=111,
-                external_id="sp1",
-                state_code="US_XX",
-                start_date=date(2018, 2, 20),
-                termination_date=date(2018, 2, 22),
-                termination_reason=None,
-                supervision_type=StateSupervisionType.PROBATION,
-            )
+        previous_supervision_period: StateSupervisionPeriod = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            state_code="US_XX",
+            start_date=date(2018, 2, 20),
+            termination_date=date(2018, 2, 22),
+            termination_reason=None,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
-        current_supervision_period: StateSupervisionPeriod = (
-            StateSupervisionPeriod.new_with_defaults(
-                supervision_period_id=111,
-                external_id="sp1",
-                state_code="US_XX",
-                start_date=date(2018, 3, 5),
-                termination_date=date(2018, 5, 19),
-                termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-                supervision_type=StateSupervisionType.PAROLE,
-            )
+        current_supervision_period: StateSupervisionPeriod = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            state_code="US_XX",
+            start_date=date(2018, 3, 5),
+            termination_date=date(2018, 5, 19),
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         admission_reason: Optional[
@@ -145,27 +139,23 @@ class TestUsNdSupervisionPeriodPreProcessingDelegate(unittest.TestCase):
     def test_supervision_admission_reason_override_court_sentence_after_parole(
         self,
     ) -> None:
-        previous_supervision_period: StateSupervisionPeriod = (
-            StateSupervisionPeriod.new_with_defaults(
-                supervision_period_id=111,
-                external_id="sp1",
-                state_code="US_XX",
-                start_date=date(2018, 2, 20),
-                termination_date=date(2018, 2, 22),
-                termination_reason=None,
-                supervision_type=StateSupervisionType.PAROLE,
-            )
+        previous_supervision_period: StateSupervisionPeriod = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            state_code="US_XX",
+            start_date=date(2018, 2, 20),
+            termination_date=date(2018, 2, 22),
+            termination_reason=None,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
-        current_supervision_period: StateSupervisionPeriod = (
-            StateSupervisionPeriod.new_with_defaults(
-                supervision_period_id=111,
-                external_id="sp1",
-                state_code="US_XX",
-                start_date=date(2018, 3, 5),
-                termination_date=date(2018, 5, 19),
-                termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-                supervision_type=StateSupervisionType.PROBATION,
-            )
+        current_supervision_period: StateSupervisionPeriod = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            state_code="US_XX",
+            start_date=date(2018, 3, 5),
+            termination_date=date(2018, 5, 19),
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         admission_reason: Optional[
@@ -186,16 +176,14 @@ class TestUsNdSupervisionPeriodPreProcessingDelegate(unittest.TestCase):
     def test_supervision_admission_reason_override_no_previous_period_parole(
         self,
     ) -> None:
-        current_supervision_period: StateSupervisionPeriod = (
-            StateSupervisionPeriod.new_with_defaults(
-                supervision_period_id=111,
-                external_id="sp1",
-                state_code="US_XX",
-                start_date=date(2018, 3, 5),
-                termination_date=date(2018, 5, 19),
-                termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-                supervision_type=StateSupervisionType.PAROLE,
-            )
+        current_supervision_period: StateSupervisionPeriod = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            state_code="US_XX",
+            start_date=date(2018, 3, 5),
+            termination_date=date(2018, 5, 19),
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         admission_reason: Optional[
@@ -215,16 +203,14 @@ class TestUsNdSupervisionPeriodPreProcessingDelegate(unittest.TestCase):
     def test_supervision_admission_reason_override_no_previous_period_probation(
         self,
     ) -> None:
-        current_supervision_period: StateSupervisionPeriod = (
-            StateSupervisionPeriod.new_with_defaults(
-                supervision_period_id=111,
-                external_id="sp1",
-                state_code="US_XX",
-                start_date=date(2018, 3, 5),
-                termination_date=date(2018, 5, 19),
-                termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-                supervision_type=StateSupervisionType.PROBATION,
-            )
+        current_supervision_period: StateSupervisionPeriod = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            state_code="US_XX",
+            start_date=date(2018, 3, 5),
+            termination_date=date(2018, 5, 19),
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         admission_reason: Optional[
@@ -244,29 +230,25 @@ class TestUsNdSupervisionPeriodPreProcessingDelegate(unittest.TestCase):
     def test_supervision_admission_reason_override_change_supervising_officer(
         self,
     ) -> None:
-        previous_supervision_period: StateSupervisionPeriod = (
-            StateSupervisionPeriod.new_with_defaults(
-                supervision_period_id=111,
-                external_id="sp1",
-                state_code="US_XX",
-                supervising_officer="AGENTX",
-                start_date=date(2018, 2, 20),
-                termination_date=date(2018, 2, 22),
-                termination_reason=None,
-                supervision_type=StateSupervisionType.PROBATION,
-            )
+        previous_supervision_period: StateSupervisionPeriod = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            state_code="US_XX",
+            supervising_officer="AGENTX",
+            start_date=date(2018, 2, 20),
+            termination_date=date(2018, 2, 22),
+            termination_reason=None,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
-        current_supervision_period: StateSupervisionPeriod = (
-            StateSupervisionPeriod.new_with_defaults(
-                supervision_period_id=111,
-                external_id="sp1",
-                state_code="US_XX",
-                supervising_officer="AGENTY",
-                start_date=date(2018, 3, 5),
-                termination_date=date(2018, 5, 19),
-                termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-                supervision_type=StateSupervisionType.PROBATION,
-            )
+        current_supervision_period: StateSupervisionPeriod = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            state_code="US_XX",
+            supervising_officer="AGENTY",
+            start_date=date(2018, 3, 5),
+            termination_date=date(2018, 5, 19),
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         admission_reason: Optional[
@@ -284,32 +266,28 @@ class TestUsNdSupervisionPeriodPreProcessingDelegate(unittest.TestCase):
             StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
         )
 
-    def test_supervision_admission_reason_override_halfway_house_to_parole(
+    def test_supervision_admission_reason_override_community_confinement_to_parole(
         self,
     ) -> None:
-        previous_supervision_period: StateSupervisionPeriod = (
-            StateSupervisionPeriod.new_with_defaults(
-                supervision_period_id=111,
-                external_id="sp1",
-                state_code="US_XX",
-                supervising_officer="AGENTX",
-                start_date=date(2018, 2, 20),
-                termination_date=date(2018, 2, 22),
-                termination_reason=None,
-                supervision_type=StateSupervisionType.HALFWAY_HOUSE,
-            )
+        previous_supervision_period: StateSupervisionPeriod = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            state_code="US_XX",
+            supervising_officer="AGENTX",
+            start_date=date(2018, 2, 20),
+            termination_date=date(2018, 2, 22),
+            termination_reason=None,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.COMMUNITY_CONFINEMENT,
         )
-        current_supervision_period: StateSupervisionPeriod = (
-            StateSupervisionPeriod.new_with_defaults(
-                supervision_period_id=111,
-                external_id="sp1",
-                state_code="US_XX",
-                supervising_officer="AGENTY",
-                start_date=date(2018, 3, 5),
-                termination_date=date(2018, 5, 19),
-                termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-                supervision_type=StateSupervisionType.PAROLE,
-            )
+        current_supervision_period: StateSupervisionPeriod = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            state_code="US_XX",
+            supervising_officer="AGENTY",
+            start_date=date(2018, 3, 5),
+            termination_date=date(2018, 5, 19),
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         admission_reason: Optional[
@@ -330,29 +308,25 @@ class TestUsNdSupervisionPeriodPreProcessingDelegate(unittest.TestCase):
     def test_supervision_admission_reason_override_period_previous_period_termination_reason_revocation(
         self,
     ) -> None:
-        previous_supervision_period: StateSupervisionPeriod = (
-            StateSupervisionPeriod.new_with_defaults(
-                supervision_period_id=111,
-                external_id="sp1",
-                state_code="US_XX",
-                supervising_officer="AGENTX",
-                start_date=date(2018, 2, 20),
-                termination_date=date(2018, 2, 22),
-                termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
-                supervision_type=StateSupervisionType.PAROLE,
-            )
+        previous_supervision_period: StateSupervisionPeriod = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            state_code="US_XX",
+            supervising_officer="AGENTX",
+            start_date=date(2018, 2, 20),
+            termination_date=date(2018, 2, 22),
+            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
-        current_supervision_period: StateSupervisionPeriod = (
-            StateSupervisionPeriod.new_with_defaults(
-                supervision_period_id=111,
-                external_id="sp1",
-                state_code="US_XX",
-                supervising_officer="AGENTY",
-                start_date=date(2018, 3, 5),
-                termination_date=date(2018, 5, 19),
-                termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-                supervision_type=StateSupervisionType.PAROLE,
-            )
+        current_supervision_period: StateSupervisionPeriod = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            state_code="US_XX",
+            supervising_officer="AGENTY",
+            start_date=date(2018, 3, 5),
+            termination_date=date(2018, 5, 19),
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         admission_reason: Optional[

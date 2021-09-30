@@ -37,7 +37,6 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodReleaseReason,
     StateIncarcerationPeriodStatus,
 )
-from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
@@ -122,7 +121,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
             start_date=date(2019, 3, 5),
             termination_date=date(2019, 6, 9),
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
-            supervision_type=StateSupervisionType.PAROLE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         # Overlapping probation period
@@ -133,7 +132,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
             start_date=date(2019, 3, 5),
             termination_date=date(2019, 6, 9),
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
-            supervision_type=StateSupervisionType.PROBATION,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         pre_commitment_supervision_period = (
@@ -162,7 +161,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
             start_date=date(2019, 3, 5),
             termination_date=date(2019, 6, 9),
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
-            supervision_type=StateSupervisionType.PAROLE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         # Terminated parole period
@@ -173,7 +172,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
             start_date=date(2019, 3, 5),
             termination_date=date(2019, 5, 1),
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
-            supervision_type=StateSupervisionType.PAROLE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         pre_commitment_supervision_period = (
@@ -205,7 +204,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
             start_date=date(2019, 3, 5),
             termination_date=date(2019, 6, 9),
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
-            supervision_type=StateSupervisionType.PAROLE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         # Overlapping parole period
@@ -216,7 +215,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
             start_date=date(2019, 3, 5),
             termination_date=date(2019, 6, 9),
             termination_reason=StateSupervisionPeriodTerminationReason.EXPIRATION,
-            supervision_type=StateSupervisionType.PAROLE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         pre_commitment_supervision_period = (
@@ -245,7 +244,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
             start_date=date(2019, 3, 5),
             termination_date=date(2019, 6, 9),
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
-            supervision_type=StateSupervisionType.PAROLE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         # Overlapping revoked parole period, 1 day after admission
@@ -256,7 +255,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
             start_date=date(2019, 3, 5),
             termination_date=date(2019, 5, 26),
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
-            supervision_type=StateSupervisionType.PAROLE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         pre_commitment_supervision_period = (
@@ -288,7 +287,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
             start_date=date(2019, 3, 5),
             termination_date=date(2019, 6, 9),
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
-            supervision_type=StateSupervisionType.PAROLE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         # Overlapping probation period
@@ -299,7 +298,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
             start_date=date(2019, 3, 5),
             termination_date=date(2019, 6, 9),
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
-            supervision_type=StateSupervisionType.PROBATION,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         pre_commitment_supervision_period = (
@@ -328,7 +327,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
             start_date=date(2019, 3, 5),
             termination_date=date(2019, 6, 9),
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
-            supervision_type=StateSupervisionType.PROBATION,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         # Terminated probation period
@@ -339,7 +338,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
             start_date=date(2019, 3, 5),
             termination_date=date(2019, 5, 1),
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
-            supervision_type=StateSupervisionType.PROBATION,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         pre_commitment_supervision_period = (
@@ -371,7 +370,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
             start_date=date(2019, 3, 5),
             termination_date=date(2019, 5, 9),
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
-            supervision_type=StateSupervisionType.PROBATION,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         # Expired terminated probation period
@@ -382,7 +381,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
             start_date=date(2019, 3, 5),
             termination_date=date(2019, 5, 9),
             termination_reason=StateSupervisionPeriodTerminationReason.EXPIRATION,
-            supervision_type=StateSupervisionType.PROBATION,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         pre_commitment_supervision_period = (
@@ -414,7 +413,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
             start_date=date(2019, 3, 5),
             termination_date=date(2019, 6, 9),
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
-            supervision_type=StateSupervisionType.PROBATION,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         # Overlapping revoked probation period, 1 day after admission
@@ -425,7 +424,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
             start_date=date(2019, 3, 5),
             termination_date=date(2019, 5, 26),
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
-            supervision_type=StateSupervisionType.PROBATION,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         pre_commitment_supervision_period = (
@@ -516,7 +515,7 @@ class TestPreCommitmentSupervisionTypeIdentification(unittest.TestCase):
             start_date=date(2008, 3, 5),
             termination_date=date(2008, 12, 16),
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
-            supervision_type=StateSupervisionType.PROBATION,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -555,7 +554,7 @@ class TestPreCommitmentSupervisionTypeIdentification(unittest.TestCase):
             start_date=date(2008, 3, 5),
             termination_date=date(2008, 12, 16),
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
-            supervision_type=StateSupervisionType.PAROLE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(

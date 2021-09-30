@@ -33,7 +33,9 @@ from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric
 from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
 from recidiviz.common.constants.person_characteristics import Ethnicity, Gender, Race
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType
-from recidiviz.common.constants.state.state_supervision import StateSupervisionType
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionPeriodSupervisionType,
+)
 from recidiviz.persistence.entity.state.entities import (
     StatePerson,
     StatePersonEthnicity,
@@ -122,7 +124,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
                 state_code="US_ND",
                 event_date=event_date,
                 program_id="XXX",
-                supervision_type=StateSupervisionType.PAROLE,
+                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 assessment_score=22,
                 assessment_type=StateAssessmentType.LSIR,
                 supervising_officer_external_id="OFFICERZ",
@@ -133,7 +135,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
                 event_date=event_date,
                 program_id="XXX",
                 program_location_id="YYY",
-                supervision_type=StateSupervisionType.PAROLE,
+                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             ),
         ]
 
@@ -177,7 +179,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
                 state_code="US_ND",
                 event_date=event_date,
                 program_id="XXX",
-                supervision_type=StateSupervisionType.PROBATION,
+                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 assessment_score=22,
                 assessment_type=StateAssessmentType.LSIR,
                 supervising_officer_external_id="OFFICERZ",
@@ -188,7 +190,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
                 event_date=event_date,
                 program_id="XXX",
                 program_location_id="YYY",
-                supervision_type=StateSupervisionType.PROBATION,
+                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             ),
         ]
 
@@ -232,7 +234,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
                 state_code="US_ND",
                 event_date=event_date,
                 program_id="XXX",
-                supervision_type=StateSupervisionType.PAROLE,
+                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 assessment_score=22,
                 assessment_type=StateAssessmentType.LSIR,
                 supervising_officer_external_id="OFFICERZ",
@@ -242,7 +244,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
                 state_code="US_ND",
                 event_date=date(2009, 10, 7),
                 program_id="XXX",
-                supervision_type=StateSupervisionType.PROBATION,
+                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 assessment_score=22,
                 assessment_type=StateAssessmentType.LSIR,
                 supervising_officer_external_id="OFFICERZ",
@@ -253,14 +255,14 @@ class TestProduceProgramMetrics(unittest.TestCase):
                 event_date=event_date,
                 program_id="XXX",
                 program_location_id="YYY",
-                supervision_type=StateSupervisionType.PAROLE,
+                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             ),
             ProgramParticipationEvent(
                 state_code="US_ND",
                 event_date=event_date,
                 program_id="XXX",
                 program_location_id="YYY",
-                supervision_type=StateSupervisionType.PROBATION,
+                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             ),
         ]
 
