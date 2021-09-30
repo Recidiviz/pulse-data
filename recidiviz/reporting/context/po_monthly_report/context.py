@@ -28,6 +28,7 @@ python -m recidiviz.reporting.context.po_monthly_report.context
 import copy
 import os
 from datetime import date
+from math import isnan
 from typing import Dict, List, Literal, Optional
 
 from jinja2 import Environment, FileSystemLoader, Template
@@ -41,14 +42,14 @@ from recidiviz.reporting.context.context_utils import (
     format_name,
     format_violation_type,
     month_number_to_name,
-    round_float_value_to_int,
-    round_float_value_to_number_of_digits,
 )
 from recidiviz.reporting.context.po_monthly_report.constants import (
     ABSCONSIONS,
+    ASSESSMENTS,
     CRIME_REVOCATIONS,
     DEFAULT_MESSAGE_BODY_KEY,
     EARNED_DISCHARGES,
+    FACE_TO_FACE,
     POS_DISCHARGES,
     SUPERVISION_DOWNGRADES,
     TECHNICAL_REVOCATIONS,
@@ -61,6 +62,7 @@ from recidiviz.reporting.context.po_monthly_report.state_utils.po_monthly_report
 )
 from recidiviz.reporting.context.po_monthly_report.types import (
     AdverseOutcomeContext,
+    ComplianceTaskContext,
     DecarceralMetricContext,
     OfficerHighlight,
     OfficerHighlightMetrics,
@@ -140,7 +142,11 @@ class PoMonthlyReportContext(ReportContext):
 
     def _prepare_for_generation(self) -> dict:
         """Executes PO Monthly Report data preparation."""
-        self.prepared_data = copy.deepcopy(self.recipient_data)
+        self.prepared_data = {
+            k: v
+            for k, v in copy.deepcopy(self.recipient_data).items()
+            if k in [utils.KEY_BATCH_ID, utils.KEY_EMAIL_ADDRESS, utils.KEY_STATE_CODE]
+        }
 
         self.prepared_data["static_image_path"] = utils.get_static_image_path(
             self.state_code, self.get_report_type()
@@ -153,21 +159,7 @@ class PoMonthlyReportContext(ReportContext):
 
         self.prepared_data["message_body"] = self._get_message_body()
 
-        self._convert_month_to_name("review_month")
-
-        self.prepared_data[
-            "headline"
-        ] = f"Your {self.prepared_data['review_month']} Report"
-
-        self._round_float_values_to_ints(
-            self.metrics_delegate.float_metrics_to_round_to_int
-        )
-        self._round_float_values_to_number_of_digits(
-            self.metrics_delegate.average_metrics_for_display,
-            number_of_digits=_AVERAGE_VALUES_SIGNIFICANT_DIGITS,
-        )
-        self._set_compliance_goals()
-        self._prepare_attachment_content()
+        self.prepared_data["headline"] = f"Your {self._get_month_name()} Report"
 
         for metric in self.metrics_delegate.decarceral_actions_metrics:
             self.prepared_data[metric] = getattr(self, f"_get_{metric}")()
@@ -175,18 +167,20 @@ class PoMonthlyReportContext(ReportContext):
         for metric in self.metrics_delegate.client_outcome_metrics:
             self.prepared_data[metric] = self._get_adverse_outcome(metric)
 
+        for metric in self.metrics_delegate.compliance_action_metrics:
+            self.prepared_data[metric] = self._get_compliance_context(metric)
+
         self.prepared_data["faq"] = self._get_faq()
+
+        self.prepared_data["attachment_content"] = self._prepare_attachment_content()
 
         return self.prepared_data
 
-    def _prepare_attachment_content(self) -> None:
+    def _prepare_attachment_content(self) -> Optional[str]:
         if not self._should_generate_attachment():
-            self.prepared_data["attachment_content"] = None
-            return
+            return None
 
-        self.prepared_data["attachment_content"] = self.attachment_template.render(
-            self._prepare_attachment_data()
-        )
+        return self.attachment_template.render(self._prepare_attachment_data())
 
     def _metric_improved(
         self, metric_key: str, metric_value: float, comparison_value: float
@@ -220,56 +214,47 @@ class PoMonthlyReportContext(ReportContext):
             or self._improved_over_state_average(metric_key)
         ]
 
-    def _get_metric_text_singular_or_plural(self, metric_value: int) -> str:
-        metric_text = (
-            "metric_text_singular" if metric_value == 1 else "metric_text_plural"
-        )
-        return self.properties[metric_text].format(metric=metric_value)
-
-    def _convert_month_to_name(self, month_key: str) -> None:
+    def _get_month_name(self) -> str:
         """Converts the number at the given key, representing a calendar month, into the name of that month."""
-        month_number = self.recipient_data[month_key]
-        month_name = month_number_to_name(month_number)
-        self.prepared_data[month_key] = month_name
+        return month_number_to_name(self.recipient_data["review_month"])
 
-    def _round_float_values_to_ints(self, float_keys: List[str]) -> None:
-        """Rounds all of the values with the given keys to their nearest integer values for display."""
-        for float_key in float_keys:
-            self.prepared_data[float_key] = round_float_value_to_int(
-                self.recipient_data[float_key]
-            )
-
-    def _round_float_values_to_number_of_digits(
-        self, float_keys: List[str], number_of_digits: int
-    ) -> None:
-        """Rounds all of the values with the given keys to the given number of digits."""
-        for float_key in float_keys:
-            self.prepared_data[float_key] = round_float_value_to_number_of_digits(
-                self.recipient_data[float_key], number_of_digits
-            )
-
-    def _set_compliance_goals(self) -> None:
+    def _get_compliance_context(self, metric: str) -> ComplianceTaskContext:
         """Examines data to determine whether compliance goal prompts should be active
         and sets data properties accordingly."""
-        for metric in self.metrics_delegate.compliance_action_metrics:
-            goal_key = f"{metric}_goal_enabled"
-            success_key = f"{metric}_goal_met"
 
-            threshold = self.metrics_delegate.compliance_action_metric_goal_thresholds[
-                metric
-            ]
-            compliance_pct = self.prepared_data[f"{metric}_percent"]
+        if metric == ASSESSMENTS:
+            metric_label = "assessment"
+        elif metric == FACE_TO_FACE:
+            metric_label = "contact"
+        else:
+            raise ValueError(f"Unsupported metric type: {metric}")
 
-            if compliance_pct == "N/A":
-                goal_active = False
-                goal_met = False
-            else:
-                pct_as_num = int(compliance_pct)
-                goal_active = pct_as_num < threshold
-                goal_met = not goal_active
+        threshold = self.metrics_delegate.compliance_action_metric_goal_thresholds[
+            metric
+        ]
+        raw_compliance_pct = float(self.recipient_data[f"{metric}_percent"])
+        compliance_pct = None if isnan(raw_compliance_pct) else raw_compliance_pct
 
-            self.prepared_data[goal_key] = goal_active
-            self.prepared_data[success_key] = goal_met
+        raw_goal_pct = float(self.recipient_data[f"overdue_{metric}_goal_percent"])
+        goal_pct = None if isnan(raw_goal_pct) else raw_goal_pct
+
+        if compliance_pct is None or raw_goal_pct is None:
+            show_goal = False
+            goal_met = False
+        else:
+            show_goal = compliance_pct < threshold
+            goal_met = not show_goal
+
+        return {
+            "num_completed": int(self.recipient_data[metric]),
+            "pct": compliance_pct,
+            "goal": int(self.recipient_data[f"overdue_{metric}_goal"]),
+            "goal_pct": goal_pct,
+            "goal_met": goal_met,
+            "show_goal": show_goal,
+            "metric_label": metric_label,
+            "metric": metric,
+        }
 
     def _should_generate_attachment_section(self, clients_key: str) -> bool:
         return clients_key in self.recipient_data and self.recipient_data[clients_key]
