@@ -2636,7 +2636,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             start_date=date(2018, 3, 5),
             termination_date=supervision_period_termination_date,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=None,
         )
 
         supervision_sentence_completion_date = date(2018, 12, 19)
@@ -2754,7 +2753,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             start_date=date(2018, 3, 5),
             termination_date=supervision_period_termination_date,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=None,
         )
 
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
@@ -2869,7 +2867,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             start_date=supervision_period_start_date,
             termination_date=supervision_period_termination_date,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=None,
         )
 
         supervision_sentence = FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
@@ -3003,7 +3000,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             start_date=date(2018, 3, 5),
             termination_date=supervision_period_termination_date,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=None,
             supervision_level=StateSupervisionLevel.MINIMUM,
             supervision_level_raw_text="LOW",
         )
@@ -3096,7 +3092,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             start_date=date(2018, 3, 5),
             termination_date=supervision_period_termination_date,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=None,
         )
 
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
@@ -3260,7 +3255,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=None,
         )
 
         assessment = StateAssessment.new_with_defaults(

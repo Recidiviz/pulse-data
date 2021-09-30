@@ -21,7 +21,6 @@ from recidiviz.common.constants.defaulting_and_normalizing_enum_parser import (
     DefaultingAndNormalizingEnumParser,
 )
 from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
-from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
     StateSupervisionPeriodAdmissionReason,
@@ -62,12 +61,6 @@ def copy_fields_to_builder(
     new.conditions = getattr(proto, "conditions")
 
     # enum values
-    new.supervision_type = DefaultingAndNormalizingEnumParser(
-        getattr(proto, "supervision_type"),
-        StateSupervisionType,
-        metadata.enum_overrides,
-    )
-    new.supervision_type_raw_text = getattr(proto, "supervision_type")
     new.supervision_period_supervision_type = DefaultingAndNormalizingEnumParser(
         getattr(proto, "supervision_period_supervision_type"),
         StateSupervisionPeriodSupervisionType,
