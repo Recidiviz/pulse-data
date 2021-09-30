@@ -66,3 +66,24 @@ module "case-triage-data" {
   name_suffix                 = "case-triage-data"
   uniform_bucket_level_access = false
 }
+
+# TODO(#6052): Refactor to use ../cloud-storage-bucket
+resource "google_storage_bucket" "dataflow-templates-scratch" {
+  name                        = "${var.project_id}-dataflow-templates-scratch"
+  location                    = "us"
+  storage_class               = "STANDARD"
+  uniform_bucket_level_access = true
+
+  lifecycle_rule {
+    action {
+      type = "Delete"
+    }
+    condition {
+      age = 3
+    }
+  }
+
+  versioning {
+    enabled = true
+  }
+}
