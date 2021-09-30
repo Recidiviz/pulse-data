@@ -175,24 +175,30 @@ def _get_parsed_full_apache_beam_args(
     parsed_bucket: Optional[str],
     save_as_template: bool,
 ) -> argparse.Namespace:
-    """Parses and returns the full set of args to pass through to Apache Beam, in the form of an argparse.Namespace
-    object."""
-
-    bucket = parsed_bucket if parsed_bucket else f"{parsed_project}-dataflow-templates"
+    """Parses and returns the full set of args to pass through to Apache Beam, in the
+    form of an argparse.Namespace object."""
+    # The bucket for the temporary files created during the Dataflow job
+    scratch_space_bucket = (
+        parsed_bucket
+        if parsed_bucket
+        else f"{parsed_project}-dataflow-templates-scratch"
+    )
 
     parser = argparse.ArgumentParser()
 
-    # Must add the base args since we still want these to be parsed and returned in the known_args
+    # Must add the base args since we still want these to be parsed and returned in the
+    # known_args
     _add_base_apache_beam_args(parser)
 
-    # These args can be passed in, but generally will not and we will generate sane defaults if not
+    # These args can be passed in, but generally will not and we will generate sane
+    # defaults if not
     parser.add_argument(
         "--staging_location",
         type=str,
         help="A Cloud Storage path for Cloud Dataflow to stage"
         " code packages needed by workers executing the"
         " job.",
-        default=f"gs://{bucket}/staging/",
+        default=f"gs://{scratch_space_bucket}/staging/",
     )
 
     parser.add_argument(
@@ -201,23 +207,26 @@ def _get_parsed_full_apache_beam_args(
         help="A Cloud Storage path for Cloud Dataflow to stage"
         " temporary job files created during the execution"
         " of the pipeline.",
-        default=f"gs://{bucket}/temp/",
+        default=f"gs://{scratch_space_bucket}/temp/",
     )
 
     if save_as_template:
+        template_bucket = (
+            parsed_bucket if parsed_bucket else f"{parsed_project}-dataflow-templates"
+        )
         parser.add_argument(
             "--template_location",
             type=str,
             help="A Cloud Storage path for Cloud Dataflow to stage"
             " temporary job files created during the execution"
             " of the pipeline.",
-            default=f"gs://{bucket}/templates/{parsed_job_name}",
+            default=f"gs://{template_bucket}/templates/{parsed_job_name}",
         )
 
     parser.add_argument(
         "--subnetwork",
-        help="The Compute Engine subnetwork for launching Compute Engine instances to run the "
-        "pipeline.",
+        help="The Compute Engine subnetwork for launching Compute Engine instances to"
+        " run the pipeline.",
         default=f"https://www.googleapis.com/compute/v1/projects/{parsed_project}/regions/"
         f"{parsed_region}/subnetworks/default",
     )
@@ -230,10 +239,11 @@ def _get_parsed_full_apache_beam_args(
         " available machine types here: https://cloud.google.com/compute/docs/machine-types",
     )
 
-    # NOTE: We set the Compute Engine disk size to 50GB, up from the default of 25GB for shuffle mode. At 25GB we were
-    # running out of disk space on certain VMs and Dataflow/Compute Engine did not always handle scaling gracefully. In
-    # some cases, jobs would fail with a `EOFError: marshal data too short` error, which we think was a result of some
-    # python byte code getting deleted out from under us.
+    # NOTE: We set the Compute Engine disk size to 50GB, up from the default of 25GB
+    # for shuffle mode. At 25GB we were running out of disk space on certain VMs and
+    # Dataflow/Compute Engine did not always handle scaling gracefully. In some
+    # cases, jobs would fail with a `EOFError: marshal data too short` error, which we
+    # think was a result of some python byte code getting deleted out from under us.
     parser.add_argument(
         "--disk_size_gb",
         type=str,
@@ -253,8 +263,9 @@ def _get_parsed_full_apache_beam_args(
     parser.add_argument(
         "--experiments=use_beam_bq_sink",
         action="store_true",
-        help="Uses the new BigQuery sink to utilize the FILE_LOADS write option for batch pipelines"
-        " like ours. This avoids hitting a 'Too many sources provided' error for pipelines with"
+        help="Uses the new BigQuery sink to utilize the FILE_LOADS write option for"
+        " batch pipelines like ours. This avoids hitting a 'Too many sources"
+        " provided' error for pipelines with"
         " large outputs.",
         default=True,
     )
@@ -262,15 +273,17 @@ def _get_parsed_full_apache_beam_args(
     parser.add_argument(
         "--network=default",
         action="store_true",
-        help="The Compute Engine network for launching Compute Engine instances to run the pipeline. "
-        "Ignored when --no_use_public_ips is set and a subnetwork is specified.",
+        help="The Compute Engine network for launching Compute Engine instances to run"
+        " the pipeline. Ignored when --no_use_public_ips is set and a subnetwork"
+        " is specified.",
         default=True,
     )
 
     parser.add_argument(
         "--no_use_public_ips",
         action="store_true",
-        help="Specifies that Dataflow workers use private IP addresses for all communication.",
+        help="Specifies that Dataflow workers use private IP addresses for all"
+        " communication.",
         default=True,
     )
 
