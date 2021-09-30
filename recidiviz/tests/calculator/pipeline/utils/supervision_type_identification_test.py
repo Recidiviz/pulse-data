@@ -62,7 +62,6 @@ class TestGetMonthSupervisionType(unittest.TestCase):
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=None,
         )
 
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
@@ -109,7 +108,6 @@ class TestGetMonthSupervisionType(unittest.TestCase):
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=None,
         )
 
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
@@ -148,7 +146,6 @@ class TestGetMonthSupervisionType(unittest.TestCase):
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=None,
         )
 
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
@@ -185,7 +182,6 @@ class TestGetMonthSupervisionType(unittest.TestCase):
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=None,
         )
 
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
@@ -231,7 +227,6 @@ class TestGetMonthSupervisionType(unittest.TestCase):
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=None,
         )
 
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
@@ -269,7 +264,6 @@ class TestGetMonthSupervisionType(unittest.TestCase):
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=None,
         )
 
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
@@ -308,7 +302,6 @@ class TestGetMonthSupervisionType(unittest.TestCase):
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=None,
         )
 
         supervision_sentences = []
@@ -335,7 +328,6 @@ class TestGetMonthSupervisionType(unittest.TestCase):
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=None,
         )
 
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
@@ -383,7 +375,6 @@ class TestGetMonthSupervisionType(unittest.TestCase):
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=None,
         )
 
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
@@ -422,7 +413,6 @@ class TestGetMonthSupervisionType(unittest.TestCase):
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=None,
         )
 
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
@@ -460,7 +450,6 @@ class TestGetMonthSupervisionType(unittest.TestCase):
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=None,
         )
 
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
@@ -498,7 +487,6 @@ class TestGetMonthSupervisionType(unittest.TestCase):
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=None,
         )
 
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
@@ -533,7 +521,6 @@ class TestGetMonthSupervisionType(unittest.TestCase):
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=None,
         )
 
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
@@ -572,7 +559,6 @@ class TestGetMonthSupervisionType(unittest.TestCase):
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=None,
         )
 
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
@@ -610,7 +596,6 @@ class TestGetMonthSupervisionType(unittest.TestCase):
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=None,
         )
 
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
@@ -647,7 +632,6 @@ class TestGetMonthSupervisionType(unittest.TestCase):
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=None,
         )
 
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
@@ -684,7 +668,6 @@ class TestGetMonthSupervisionType(unittest.TestCase):
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=None,
         )
 
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
@@ -721,7 +704,6 @@ class TestGetMonthSupervisionType(unittest.TestCase):
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=None,
         )
 
         supervision_sentence = StateSupervisionSentence.new_with_defaults(

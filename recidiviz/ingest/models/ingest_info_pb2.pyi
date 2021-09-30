@@ -11,19 +11,21 @@ import typing_extensions
 
 DESCRIPTOR: google.protobuf.descriptor.FileDescriptor = ...
 
-# To regenerate, ensure `mypy-protobuf` is installed:
-# ```bash
-# pipenv install --dev
-# ```
-# See the README for instructions on installing protoc if you do not yet have
-# it installed.
-#
-# Re-generate the python files including type information:
-# ```bash
-# protoc recidiviz/ingest/models/ingest_info.proto --python_out . --mypy_out .
-# ```
-
 class IngestInfo(google.protobuf.message.Message):
+    """To regenerate, ensure `mypy-protobuf` is installed:
+    ```bash
+    pipenv install --dev
+    ```
+    See the README for instructions on installing protoc if you do not yet have
+    it installed.
+
+    Re-generate the python files including type information:
+    ```bash
+    protoc recidiviz/ingest/models/ingest_info.proto --python_out . --mypy_out .
+    ```
+
+    """
+
     DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
     PEOPLE_FIELD_NUMBER: builtins.int
     BOOKINGS_FIELD_NUMBER: builtins.int
@@ -107,14 +109,17 @@ class IngestInfo(google.protobuf.message.Message):
     ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
         global___SentenceRelationship
     ]: ...
-    # TODO(#8905): Delete all references to state schema objects from this file once
-    #  ingest mappings overhaul is complete for all states.
     @property
     def state_people(
         self,
     ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
         global___StatePerson
-    ]: ...
+    ]:
+        """TODO(#8905): Delete all references to state schema objects from this file once
+        ingest mappings overhaul is complete for all states.
+
+        """
+        pass
     @property
     def state_person_races(
         self,
@@ -2432,7 +2437,6 @@ global___StateIncarcerationPeriod = StateIncarcerationPeriod
 class StateSupervisionPeriod(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
     STATE_SUPERVISION_PERIOD_ID_FIELD_NUMBER: builtins.int
-    SUPERVISION_TYPE_FIELD_NUMBER: builtins.int
     SUPERVISION_PERIOD_SUPERVISION_TYPE_FIELD_NUMBER: builtins.int
     START_DATE_FIELD_NUMBER: builtins.int
     TERMINATION_DATE_FIELD_NUMBER: builtins.int
@@ -2449,7 +2453,6 @@ class StateSupervisionPeriod(google.protobuf.message.Message):
     STATE_SUPERVISION_CASE_TYPE_ENTRY_IDS_FIELD_NUMBER: builtins.int
     STATE_SUPERVISION_CONTACT_IDS_FIELD_NUMBER: builtins.int
     state_supervision_period_id: typing.Text = ...
-    supervision_type: typing.Text = ...
     supervision_period_supervision_type: typing.Text = ...
     start_date: typing.Text = ...
     termination_date: typing.Text = ...
@@ -2484,7 +2487,6 @@ class StateSupervisionPeriod(google.protobuf.message.Message):
         self,
         *,
         state_supervision_period_id: typing.Optional[typing.Text] = ...,
-        supervision_type: typing.Optional[typing.Text] = ...,
         supervision_period_supervision_type: typing.Optional[typing.Text] = ...,
         start_date: typing.Optional[typing.Text] = ...,
         termination_date: typing.Optional[typing.Text] = ...,
@@ -2532,8 +2534,6 @@ class StateSupervisionPeriod(google.protobuf.message.Message):
             b"supervision_period_supervision_type",
             "supervision_site",
             b"supervision_site",
-            "supervision_type",
-            b"supervision_type",
             "termination_date",
             b"termination_date",
             "termination_reason",
@@ -2571,8 +2571,6 @@ class StateSupervisionPeriod(google.protobuf.message.Message):
             b"supervision_period_supervision_type",
             "supervision_site",
             b"supervision_site",
-            "supervision_type",
-            b"supervision_type",
             "termination_date",
             b"termination_date",
             "termination_reason",

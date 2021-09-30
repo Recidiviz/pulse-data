@@ -1445,7 +1445,6 @@ class StateSupervisionPeriod(IngestObject):
     def __init__(
         self,
         state_supervision_period_id=None,
-        supervision_type=None,
         start_date=None,
         termination_date=None,
         state_code=None,
@@ -1463,7 +1462,6 @@ class StateSupervisionPeriod(IngestObject):
         state_supervision_contacts=None,
     ):
         self.state_supervision_period_id: Optional[str] = state_supervision_period_id
-        self.supervision_type: Optional[str] = supervision_type
         self.supervision_period_supervision_type: Optional[
             str
         ] = supervision_period_supervision_type

@@ -987,7 +987,6 @@ class TestDeserializeEntityFactories(unittest.TestCase):
     def test_deserialize_StateSupervisionPeriod(self) -> None:
         overrides = (
             EnumOverrides.Builder()
-            .add("PA", StateSupervisionType.PAROLE)
             .add("PAR", StateSupervisionPeriodSupervisionType.PAROLE)
             .add("CR", StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE)
             .add("D", StateSupervisionPeriodTerminationReason.DISCHARGE)
@@ -995,8 +994,6 @@ class TestDeserializeEntityFactories(unittest.TestCase):
             .build()
         )
         result = deserialize_entity_factories.StateSupervisionPeriodFactory.deserialize(
-            supervision_type=StrictEnumParser("PA", StateSupervisionType, overrides),
-            supervision_type_raw_text="PA",
             supervision_period_supervision_type=StrictEnumParser(
                 "PAR", StateSupervisionPeriodSupervisionType, overrides
             ),
@@ -1025,8 +1022,6 @@ class TestDeserializeEntityFactories(unittest.TestCase):
 
         # Assert
         expected_result = entities.StateSupervisionPeriod(
-            supervision_type=StateSupervisionType.PAROLE,
-            supervision_type_raw_text="PA",
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             supervision_period_supervision_type_raw_text="PAR",
             admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,

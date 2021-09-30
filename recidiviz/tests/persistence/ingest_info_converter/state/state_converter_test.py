@@ -42,9 +42,9 @@ from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
-from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
+    StateSupervisionPeriodSupervisionType,
 )
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
@@ -280,17 +280,18 @@ class TestIngestInfoStateConverter(unittest.TestCase):
         ingest_info.state_supervision_periods.add(
             state_supervision_period_id="S_PERIOD_ID1",
             state_supervision_violation_entry_ids=["VIOLATION_ID"],
-            supervision_type="PAROLE",
+            supervision_period_supervision_type="PAROLE",
             supervision_level="MED",
             state_supervision_contact_ids=["SUPERVISION_CONTACT_ID"],
         )
         ingest_info.state_supervision_periods.add(
-            state_supervision_period_id="S_PERIOD_ID2", supervision_type="PAROLE"
+            state_supervision_period_id="S_PERIOD_ID2",
+            supervision_period_supervision_type="PAROLE",
         )
         ingest_info.state_supervision_periods.add(
             state_supervision_period_id="S_PERIOD_ID3",
             supervising_officer_id="AGENT_ID_PO",
-            supervision_type="PROBATION",
+            supervision_period_supervision_type="PROBATION",
             state_supervision_case_type_entry_ids=["CASE_TYPE_ID"],
         )
         ingest_info.state_supervision_case_type_entries.add(
@@ -578,8 +579,8 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                 StateSupervisionPeriod.new_with_defaults(
                     external_id="S_PERIOD_ID3",
                     state_code="US_XX",
-                    supervision_type=StateSupervisionType.PROBATION,
-                    supervision_type_raw_text="PROBATION",
+                    supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+                    supervision_period_supervision_type_raw_text="PROBATION",
                     supervising_officer=StateAgent.new_with_defaults(
                         external_id="AGENT_ID_PO",
                         state_code="US_XX",
@@ -662,8 +663,8 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                                         supervision_level=StateSupervisionLevel.MEDIUM,
                                         supervision_level_raw_text="MED",
                                         state_code="US_XX",
-                                        supervision_type=StateSupervisionType.PAROLE,
-                                        supervision_type_raw_text="PAROLE",
+                                        supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+                                        supervision_period_supervision_type_raw_text="PAROLE",
                                         supervision_violation_entries=[violation],
                                         supervision_contacts=[supervision_contact],
                                     )
@@ -689,8 +690,8 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                                     StateSupervisionPeriod.new_with_defaults(
                                         external_id="S_PERIOD_ID2",
                                         state_code="US_XX",
-                                        supervision_type=StateSupervisionType.PAROLE,
-                                        supervision_type_raw_text="PAROLE",
+                                        supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+                                        supervision_period_supervision_type_raw_text="PAROLE",
                                     )
                                 ],
                             )

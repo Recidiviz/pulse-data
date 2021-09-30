@@ -2339,14 +2339,6 @@ class _StateSupervisionPeriodSharedColumns(_ReferencesStatePersonSharedColumns):
             object_name="StateSupervisionPeriod"
         ),
     )
-    supervision_type = Column(
-        state_supervision_type,
-        comment="DEPRECATED - use supervision_period_supervision_type instead. See #2891.",
-    )
-    supervision_type_raw_text = Column(
-        String(255),
-        comment="DEPRECATED - use supervision_period_supervision_type instead. See #2891.",
-    )
     supervision_period_supervision_type = Column(
         state_supervision_period_supervision_type,
         comment="The type of supervision the person is serving during "
