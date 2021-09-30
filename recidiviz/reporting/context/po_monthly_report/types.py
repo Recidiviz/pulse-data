@@ -69,3 +69,14 @@ class OfficerHighlightMetrics(TypedDict):
 
 
 OfficerHighlight = Union[OfficerHighlightMetrics, OfficerHighlightMetricsComparison]
+
+
+class ComplianceTaskContext(TypedDict):
+    pct: Optional[float]
+    num_completed: int
+    goal: int
+    goal_pct: Optional[float]
+    show_goal: bool
+    goal_met: bool
+    metric_label: str
+    metric: str

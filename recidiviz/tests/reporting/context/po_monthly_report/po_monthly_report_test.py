@@ -36,10 +36,6 @@ from recidiviz.reporting.context.po_monthly_report.constants import (
 )
 from recidiviz.reporting.context.po_monthly_report.context import PoMonthlyReportContext
 from recidiviz.reporting.recipient import Recipient
-from recidiviz.tests.reporting.context.po_monthly_report.po_monthly_report_expected_data import (
-    expected_us_id,
-    expected_us_pa,
-)
 
 FIXTURE_FILE = "po_monthly_report_data_fixture.json"
 
@@ -63,17 +59,30 @@ class PoMonthlyReportContextTests(TestCase):
     def _get_prepared_data(
         self,
         recipient_data: Optional[dict] = None,
-        state_code: StateCode = StateCode.US_ID,
     ) -> dict:
         if recipient_data is None:
             recipient_data = {}
         recipient = self.recipient.create_derived_recipient(recipient_data)
-        context = PoMonthlyReportContext(state_code, recipient)
+        context = PoMonthlyReportContext(recipient.state_code, recipient)
         return context.get_prepared_data()
 
     def test_get_report_type(self) -> None:
         context = PoMonthlyReportContext(StateCode.US_ID, self.recipient)
         self.assertEqual(ReportType.POMonthlyReport, context.get_report_type())
+
+    def test_required_generation_fields(self) -> None:
+        """These fields are required by the generation pipeline for all report types"""
+        id_prepared = self._get_prepared_data()
+        required_fields = {
+            "batch_id": "20201105123033",
+            "state_code": StateCode.US_ID,
+            "email_address": "letter@kenny.ca",
+        }
+        self.assertTrue(required_fields.items() <= id_prepared.items())
+
+        pa_prepared = self._get_prepared_data({"state_code": StateCode.US_PA})
+        required_fields["state_code"] = StateCode.US_PA
+        self.assertTrue(required_fields.items() <= pa_prepared.items())
 
     def test_message_body_override(self) -> None:
         """Test that the message body is overridden by the message_body_override"""
@@ -329,6 +338,7 @@ class PoMonthlyReportContextTests(TestCase):
                 f"{ABSCONSIONS}_zero_streak": "0",
             }
         )
+
         self.assertIn(
             "you had more successful completions than officers like you",
             self._get_prepared_data(recipient_data)["message_body"],
@@ -465,70 +475,142 @@ class PoMonthlyReportContextTests(TestCase):
         )
         self.assertEqual(expected, actual["attachment_content"])
 
-    def test_prepare_for_generation(self) -> None:
-        # these dicts are big, need to see the whole thing if something fails
-        self.maxDiff = None
+    def test_faq(self) -> None:
+        context = PoMonthlyReportContext(StateCode.US_ID, self.recipient)
+        self.assertEqual(context.get_prepared_data()["faq"], context.properties["faq"])
+
+    def test_static_path(self) -> None:
+        self.assertEqual(
+            self._get_prepared_data()["static_image_path"],
+            "http://123.456.7.8/US_ID/po_monthly_report/static",
+        )
 
         self.assertEqual(
-            expected_us_id,
-            PoMonthlyReportContext(StateCode.US_ID, self.recipient).get_prepared_data(),
+            self._get_prepared_data({"state_code": StateCode.US_PA})[
+                "static_image_path"
+            ],
+            "http://123.456.7.8/US_PA/po_monthly_report/static",
         )
 
-        pa_recipient = self.recipient.create_derived_recipient(
-            {"state_code": StateCode.US_PA.value}
-        )
-        self.assertEqual(
-            expected_us_pa,
-            PoMonthlyReportContext(StateCode.US_PA, pa_recipient).get_prepared_data(),
-        )
+    def test_intro_data(self) -> None:
+        """Data use to construct the greeting and other front matter"""
+        prepared = self._get_prepared_data()
+        expected = {
+            "headline": "Your May Report",
+            "greeting": "Hey, Christopher!",
+            "learn_more_link": "https://docs.google.com/document/d/1kgG5LiIrFQaBupHYfoIwo59TCmYH5f_aIpRzGrtOkhU/edit#heading=h.r6s5tyc7ut6c",
+        }
+        self.assertTrue(expected.items() < prepared.items())
 
     def test_compliance_goals_enabled(self) -> None:
         """Test that compliance goals are enabled if below baseline threshold"""
-        recipient_data = {
-            "assessments_percent": 90,
-            "facetoface_percent": 85,
-        }
-        recipient = self.recipient.create_derived_recipient(recipient_data)
-        context = PoMonthlyReportContext(StateCode.US_ID, recipient)
-        actual = context.get_prepared_data()
+        actual = self._get_prepared_data()
 
-        self.assertTrue(actual["assessments_goal_enabled"])
-        self.assertTrue(actual["facetoface_goal_enabled"])
+        self.assertEqual(
+            actual["assessments"],
+            {
+                "pct": 73.3,
+                "num_completed": 15,
+                "goal": 3,
+                "goal_pct": 81.32456,
+                "show_goal": True,
+                "goal_met": False,
+                "metric_label": "assessment",
+                "metric": "assessments",
+            },
+        )
 
-        self.assertFalse(actual["assessments_goal_met"])
-        self.assertFalse(actual["facetoface_goal_met"])
+        self.assertEqual(
+            actual["facetoface"],
+            {
+                "pct": 89.17543,
+                "num_completed": 77,
+                "goal": 9,
+                "goal_pct": 100,
+                "show_goal": True,
+                "goal_met": False,
+                "metric_label": "contact",
+                "metric": "facetoface",
+            },
+        )
 
     def test_compliance_goals_disabled(self) -> None:
         """Test that compliance goals are disabled if above baseline threshold"""
-        recipient_data = {
-            "assessments_percent": 95,
-            "facetoface_percent": 90,
-        }
-        recipient = self.recipient.create_derived_recipient(recipient_data)
-        context = PoMonthlyReportContext(StateCode.US_ID, recipient)
-        actual = context.get_prepared_data()
+        actual = self._get_prepared_data(
+            {
+                "assessments_percent": "95.0",
+                "overdue_assessments_goal_percent": "99.32",
+                "facetoface_percent": "90.0",
+            }
+        )
 
-        self.assertFalse(actual["assessments_goal_enabled"])
-        self.assertFalse(actual["facetoface_goal_enabled"])
+        self.assertEqual(
+            actual["assessments"],
+            {
+                "pct": 95.0,
+                "num_completed": 15,
+                "goal": 3,
+                "goal_pct": 99.32,
+                "show_goal": False,
+                "goal_met": True,
+                "metric_label": "assessment",
+                "metric": "assessments",
+            },
+        )
 
-        self.assertTrue(actual["assessments_goal_met"])
-        self.assertTrue(actual["facetoface_goal_met"])
+        self.assertEqual(
+            actual["facetoface"],
+            {
+                "pct": 90,
+                "num_completed": 77,
+                "goal": 9,
+                "goal_pct": 100,
+                "show_goal": False,
+                "goal_met": True,
+                "metric_label": "contact",
+                "metric": "facetoface",
+            },
+        )
 
     def test_compliance_goals_unavailable(self) -> None:
         """Test that compliance goals are disabled if metrics are unavailable"""
-        recipient_data = {
-            "assessments_percent": "NaN",
-            "facetoface_percent": "NaN",
-        }
-        recipient = self.recipient.create_derived_recipient(recipient_data)
-        context = PoMonthlyReportContext(StateCode.US_ID, recipient)
-        actual = context.get_prepared_data()
+        actual = self._get_prepared_data(
+            {
+                "assessments_percent": "NaN",
+                "facetoface_percent": "NaN",
+                # realistically these should always be NaN if the base percentages are
+                "overdue_assessments_goal_percent": "NaN",
+                "overdue_facetoface_goal_percent": "NaN",
+            }
+        )
 
-        self.assertFalse(actual["assessments_goal_enabled"])
-        self.assertFalse(actual["facetoface_goal_enabled"])
+        self.assertEqual(
+            actual["assessments"],
+            {
+                "pct": None,
+                "num_completed": 15,
+                "goal": 3,
+                "goal_pct": None,
+                "show_goal": False,
+                "goal_met": False,
+                "metric_label": "assessment",
+                "metric": "assessments",
+            },
+        )
 
-        self.assertFalse(actual["assessments_goal_met"])
-        self.assertFalse(actual["facetoface_goal_met"])
+        self.assertEqual(
+            actual["facetoface"],
+            {
+                "pct": None,
+                "num_completed": 77,
+                "goal": 9,
+                "goal_pct": None,
+                "show_goal": False,
+                "goal_met": False,
+                "metric_label": "contact",
+                "metric": "facetoface",
+            },
+        )
 
     def test_completions(self) -> None:
         """Test that completions context is populated according to input data."""

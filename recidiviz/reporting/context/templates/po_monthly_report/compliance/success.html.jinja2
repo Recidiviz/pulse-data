@@ -1,7 +1,4 @@
 {% extends "common/card.html.jinja2" %}
-{% from "po_monthly_report/compliance/up_to_date.html.jinja2" import up_to_date with context %}
-
-
 
 {% block children %}
   {{ components.layout_table_start()}}
@@ -11,11 +8,9 @@
     {{ components.y_padding(24) }}
     <tr>
       <td>
-        {% if assessments_goal_met %}
-          {{ up_to_date("assessments") }}
-        {% else %}
-          {{ up_to_date("facetoface") }}
-        {% endif %}
+        {% with task=assessments if assessments.goal_met else facetoface %}
+          {% include "po_monthly_report/compliance/up_to_date.html.jinja2" %}
+        {% endwith %}
       </td>
     </tr>
   {{ components.layout_table_end()}}
