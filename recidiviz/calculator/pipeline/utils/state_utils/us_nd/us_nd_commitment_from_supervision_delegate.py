@@ -30,7 +30,6 @@ from recidiviz.calculator.pipeline.utils.supervision_type_identification import 
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
 )
-from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
 )
@@ -144,8 +143,8 @@ class UsNdCommitmentFromSupervisionDelegate(
 
         if (
             previous_supervision_period
-            and previous_supervision_period.supervision_type
-            == StateSupervisionType.PROBATION
+            and previous_supervision_period.supervision_period_supervision_type
+            == StateSupervisionPeriodSupervisionType.PROBATION
         ):
             return StateSupervisionPeriodSupervisionType.PROBATION
 

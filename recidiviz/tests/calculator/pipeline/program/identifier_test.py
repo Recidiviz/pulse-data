@@ -34,8 +34,8 @@ from recidiviz.common.constants.state.state_assessment import StateAssessmentTyp
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
-from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.persistence.entity.state.entities import (
@@ -131,7 +131,7 @@ class TestFindProgramEvents(unittest.TestCase):
             state_code="US_XX",
             start_date=date(2019, 3, 5),
             termination_date=date(2020, 10, 1),
-            supervision_type=StateSupervisionType.PAROLE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             supervision_site="OFFICE_1",
         )
 
@@ -154,7 +154,7 @@ class TestFindProgramEvents(unittest.TestCase):
                 state_code=program_assignment.state_code,
                 event_date=program_assignment.referral_date,
                 program_id=program_assignment.program_id,
-                supervision_type=supervision_period.supervision_type,
+                supervision_type=supervision_period.supervision_period_supervision_type,
                 participation_status=program_assignment.participation_status,
                 assessment_score=assessment.assessment_score,
                 assessment_type=assessment.assessment_type,
@@ -169,7 +169,7 @@ class TestFindProgramEvents(unittest.TestCase):
                 is_first_day_in_program=True,
                 program_id=program_assignment.program_id,
                 program_location_id=program_assignment.program_location_id,
-                supervision_type=supervision_period.supervision_type,
+                supervision_type=supervision_period.supervision_period_supervision_type,
             ),
             ProgramParticipationEvent(
                 state_code=program_assignment.state_code,
@@ -177,7 +177,7 @@ class TestFindProgramEvents(unittest.TestCase):
                 is_first_day_in_program=False,
                 program_id=program_assignment.program_id,
                 program_location_id=program_assignment.program_location_id,
-                supervision_type=supervision_period.supervision_type,
+                supervision_type=supervision_period.supervision_period_supervision_type,
             ),
         ]
 
@@ -235,7 +235,7 @@ class TestFindProgramReferrals(unittest.TestCase):
             start_date=date(2008, 3, 5),
             termination_date=date(2010, 5, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=StateSupervisionType.PAROLE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             supervision_site="OFFICE_1",
         )
 
@@ -260,7 +260,7 @@ class TestFindProgramReferrals(unittest.TestCase):
                     participation_status=program_assignment.participation_status,
                     assessment_score=33,
                     assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
-                    supervision_type=supervision_period.supervision_type,
+                    supervision_type=supervision_period.supervision_period_supervision_type,
                     supervising_officer_external_id="XXX",
                     supervising_district_external_id="OFFICE_1",
                     level_1_supervision_location_external_id="OFFICE_1",
@@ -316,7 +316,7 @@ class TestFindProgramReferrals(unittest.TestCase):
             start_date=date(2008, 3, 5),
             termination_date=date(2010, 5, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=StateSupervisionType.PAROLE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         assessments = [assessment_1, assessment_2]
@@ -340,7 +340,7 @@ class TestFindProgramReferrals(unittest.TestCase):
                     participation_status=program_assignment.participation_status,
                     assessment_score=29,
                     assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
-                    supervision_type=supervision_period.supervision_type,
+                    supervision_type=supervision_period.supervision_period_supervision_type,
                 )
             ],
             program_referrals,
@@ -415,7 +415,7 @@ class TestFindProgramReferrals(unittest.TestCase):
             start_date=date(2008, 3, 5),
             termination_date=date(2010, 5, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=StateSupervisionType.PAROLE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
@@ -424,7 +424,7 @@ class TestFindProgramReferrals(unittest.TestCase):
             start_date=date(2006, 12, 1),
             termination_date=date(2013, 1, 4),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=StateSupervisionType.PROBATION,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         assessments = [assessment]
@@ -448,7 +448,7 @@ class TestFindProgramReferrals(unittest.TestCase):
                     participation_status=program_assignment.participation_status,
                     assessment_score=33,
                     assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
-                    supervision_type=supervision_period_1.supervision_type,
+                    supervision_type=supervision_period_1.supervision_period_supervision_type,
                 ),
                 ProgramReferralEvent(
                     state_code=program_assignment.state_code,
@@ -457,7 +457,7 @@ class TestFindProgramReferrals(unittest.TestCase):
                     participation_status=program_assignment.participation_status,
                     assessment_score=33,
                     assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
-                    supervision_type=supervision_period_2.supervision_type,
+                    supervision_type=supervision_period_2.supervision_period_supervision_type,
                 ),
             ],
             program_referrals,
@@ -484,7 +484,7 @@ class TestFindProgramReferrals(unittest.TestCase):
             start_date=date(2008, 3, 5),
             termination_date=date(2010, 5, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=StateSupervisionType.PAROLE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             supervision_site="DISTRICT8",
         )
 
@@ -518,7 +518,7 @@ class TestFindProgramReferrals(unittest.TestCase):
                     participation_status=program_assignment.participation_status,
                     assessment_score=33,
                     assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
-                    supervision_type=supervision_period.supervision_type,
+                    supervision_type=supervision_period.supervision_period_supervision_type,
                     supervising_officer_external_id="OFFICER10",
                     supervising_district_external_id="DISTRICT8",
                     level_1_supervision_location_external_id="DISTRICT8",
@@ -550,7 +550,7 @@ class TestFindProgramParticipationEvents(unittest.TestCase):
             supervision_period_id=111,
             state_code="US_XX",
             start_date=date(1990, 3, 5),
-            supervision_type=StateSupervisionType.PAROLE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         supervision_periods = [supervision_period]
@@ -568,7 +568,7 @@ class TestFindProgramParticipationEvents(unittest.TestCase):
                 event_date=program_assignment.start_date,
                 is_first_day_in_program=True,
                 program_location_id=program_assignment.program_location_id,
-                supervision_type=supervision_period.supervision_type,
+                supervision_type=supervision_period.supervision_period_supervision_type,
             ),
             ProgramParticipationEvent(
                 state_code=program_assignment.state_code,
@@ -576,7 +576,7 @@ class TestFindProgramParticipationEvents(unittest.TestCase):
                 event_date=program_assignment.start_date + relativedelta(days=1),
                 is_first_day_in_program=False,
                 program_location_id=program_assignment.program_location_id,
-                supervision_type=supervision_period.supervision_type,
+                supervision_type=supervision_period.supervision_period_supervision_type,
             ),
         ]
         self.assertListEqual(expected_events, participation_events)
@@ -596,7 +596,7 @@ class TestFindProgramParticipationEvents(unittest.TestCase):
             supervision_period_id=111,
             state_code="US_XX",
             start_date=date(1990, 3, 5),
-            supervision_type=StateSupervisionType.PAROLE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         supervision_periods = [supervision_period]
@@ -614,7 +614,7 @@ class TestFindProgramParticipationEvents(unittest.TestCase):
                 event_date=program_assignment.start_date,
                 is_first_day_in_program=True,
                 program_location_id=program_assignment.program_location_id,
-                supervision_type=supervision_period.supervision_type,
+                supervision_type=supervision_period.supervision_period_supervision_type,
             ),
             ProgramParticipationEvent(
                 state_code=program_assignment.state_code,
@@ -622,7 +622,7 @@ class TestFindProgramParticipationEvents(unittest.TestCase):
                 event_date=program_assignment.start_date + relativedelta(days=1),
                 is_first_day_in_program=False,
                 program_location_id=program_assignment.program_location_id,
-                supervision_type=supervision_period.supervision_type,
+                supervision_type=supervision_period.supervision_period_supervision_type,
             ),
             ProgramParticipationEvent(
                 state_code=program_assignment.state_code,
@@ -630,7 +630,7 @@ class TestFindProgramParticipationEvents(unittest.TestCase):
                 event_date=program_assignment.start_date + relativedelta(days=2),
                 is_first_day_in_program=False,
                 program_location_id=program_assignment.program_location_id,
-                supervision_type=supervision_period.supervision_type,
+                supervision_type=supervision_period.supervision_period_supervision_type,
             ),
         ]
 
@@ -689,7 +689,7 @@ class TestFindSupervisionPeriodsOverlappingWithDate(unittest.TestCase):
             start_date=date(2008, 3, 5),
             termination_date=date(2015, 5, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=StateSupervisionType.PAROLE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         supervision_periods = [supervision_period]
@@ -711,7 +711,7 @@ class TestFindSupervisionPeriodsOverlappingWithDate(unittest.TestCase):
             supervision_period_id=111,
             state_code="US_XX",
             start_date=date(2002, 11, 5),
-            supervision_type=StateSupervisionType.PAROLE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         supervision_periods = [supervision_period]
@@ -733,7 +733,7 @@ class TestFindSupervisionPeriodsOverlappingWithDate(unittest.TestCase):
             start_date=date(2008, 3, 5),
             termination_date=date(2015, 5, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=StateSupervisionType.PAROLE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         supervision_periods = [supervision_period]
@@ -768,7 +768,7 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
             start_date=date(2008, 3, 5),
             termination_date=date(2010, 5, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=StateSupervisionType.PAROLE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         program_referrals = self.identifier._referrals_for_supervision_periods(
@@ -791,7 +791,7 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
                     participation_status=StateProgramAssignmentParticipationStatus.DISCHARGED,
                     assessment_score=39,
                     assessment_type=StateAssessmentType.LSIR,
-                    supervision_type=supervision_period.supervision_type,
+                    supervision_type=supervision_period.supervision_period_supervision_type,
                 )
             ],
             program_referrals,
@@ -804,7 +804,7 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
             start_date=date(2008, 3, 5),
             termination_date=date(2010, 5, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=StateSupervisionType.PROBATION,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
@@ -813,7 +813,7 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
             start_date=date(2008, 3, 5),
             termination_date=date(2010, 5, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=StateSupervisionType.PROBATION,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         supervision_periods = [supervision_period_1, supervision_period_2]
@@ -838,7 +838,7 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
                     participation_status=StateProgramAssignmentParticipationStatus.DISCHARGED,
                     assessment_score=39,
                     assessment_type=StateAssessmentType.LSIR,
-                    supervision_type=StateSupervisionType.PROBATION,
+                    supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 ),
                 ProgramReferralEvent(
                     state_code="US_XX",
@@ -847,7 +847,7 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
                     participation_status=StateProgramAssignmentParticipationStatus.DISCHARGED,
                     assessment_score=39,
                     assessment_type=StateAssessmentType.LSIR,
-                    supervision_type=StateSupervisionType.PROBATION,
+                    supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 ),
             ],
             program_referrals,
@@ -860,7 +860,7 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
             start_date=date(2008, 3, 5),
             termination_date=date(2010, 5, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=StateSupervisionType.PAROLE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
@@ -869,7 +869,7 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
             start_date=date(2008, 3, 5),
             termination_date=date(2010, 5, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=StateSupervisionType.PROBATION,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         supervision_periods = [supervision_period_1, supervision_period_2]
@@ -894,7 +894,7 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
                     participation_status=StateProgramAssignmentParticipationStatus.DENIED,
                     assessment_score=39,
                     assessment_type=StateAssessmentType.LSIR,
-                    supervision_type=supervision_period_1.supervision_type,
+                    supervision_type=supervision_period_1.supervision_period_supervision_type,
                 ),
                 ProgramReferralEvent(
                     state_code="US_XX",
@@ -903,7 +903,7 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
                     participation_status=StateProgramAssignmentParticipationStatus.DENIED,
                     assessment_score=39,
                     assessment_type=StateAssessmentType.LSIR,
-                    supervision_type=supervision_period_2.supervision_type,
+                    supervision_type=supervision_period_2.supervision_period_supervision_type,
                 ),
             ],
             program_referrals,

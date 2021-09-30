@@ -56,7 +56,7 @@ def _get_query_prep_statement(reference_views_dataset: str) -> str:
         reference_views_dataset=reference_views_dataset,
         district_dimension=bq_utils.unnest_district(district_column="supervision_site"),
         supervision_type_dimension=bq_utils.unnest_supervision_type(
-            supervision_type_column="supervision_period.supervision_type"
+            supervision_type_column="supervision_period.supervision_period_supervision_type"
         ),
     )
 

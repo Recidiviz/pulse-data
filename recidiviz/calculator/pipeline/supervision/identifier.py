@@ -70,6 +70,9 @@ from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
     identify_most_severe_case_type,
     supervising_officer_and_location_info,
 )
+from recidiviz.calculator.pipeline.utils.supervision_type_identification import (
+    sentence_supervision_type_to_supervision_periods_supervision_type,
+)
 from recidiviz.calculator.pipeline.utils.violation_utils import (
     filter_violation_responses_for_violation_history,
     get_violation_and_response_history,
@@ -946,6 +949,11 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                 continue
 
             latest_supervision_period = None
+            supervision_period_supervision_type_for_sentence = (
+                sentence_supervision_type_to_supervision_periods_supervision_type(
+                    sentence_supervision_type
+                )
+            ) or StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
 
             for supervision_period in supervision_periods:
                 termination_date = supervision_period.termination_date
@@ -959,13 +967,14 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                 ):
                     continue
 
-                # TODO(#2891): Remove logic that relies on the `supervision_period.supervision_type` field
-                # If there is a non-null sentence_supervision_type and the (deprecated) supervision_type
-                # field is set on the supervision_period, assert that they match
+                # If there is a non-null sentence_supervision_type and
+                # supervision_period_supervision_type on the period, assert that they
+                # match
                 if (
-                    supervision_period.supervision_type
+                    supervision_period.supervision_period_supervision_type
                     and sentence_supervision_type
-                    and supervision_period.supervision_type != sentence_supervision_type
+                    and supervision_period.supervision_period_supervision_type
+                    != supervision_period_supervision_type_for_sentence
                 ):
                     continue
 
@@ -977,13 +986,14 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
 
             if latest_supervision_period:
                 completion_event = self._get_projected_completion_event(
-                    sentence,
-                    projected_completion_date,
-                    latest_supervision_period,
-                    incarceration_period_index,
-                    supervision_delegate,
-                    supervision_period_to_agent_associations,
-                    supervision_period_to_judicial_district_associations,
+                    sentence=sentence,
+                    projected_completion_date=projected_completion_date,
+                    supervision_period=latest_supervision_period,
+                    supervision_type_for_event=supervision_period_supervision_type_for_sentence,
+                    incarceration_period_index=incarceration_period_index,
+                    supervision_delegate=supervision_delegate,
+                    supervision_period_to_agent_associations=supervision_period_to_agent_associations,
+                    supervision_period_to_judicial_district_associations=supervision_period_to_judicial_district_associations,
                 )
 
                 if completion_event:
@@ -996,6 +1006,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         sentence: Union[StateSupervisionSentence, StateIncarcerationSentence],
         projected_completion_date: date,
         supervision_period: StateSupervisionPeriod,
+        supervision_type_for_event: StateSupervisionPeriodSupervisionType,
         incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
         supervision_delegate: StateSpecificSupervisionDelegate,
         supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
@@ -1041,20 +1052,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
             )
             return None
 
-        supervision_sentences = (
-            [sentence] if isinstance(sentence, StateSupervisionSentence) else []
-        )
-        incarceration_sentences = (
-            [sentence] if isinstance(sentence, StateIncarcerationSentence) else []
-        )
-
-        supervision_type = get_month_supervision_type(
-            completion_date,
-            supervision_sentences=supervision_sentences,
-            incarceration_sentences=incarceration_sentences,
-            supervision_period=supervision_period,
-        )
-
         sentence_days_served = (completion_date - start_date).days
 
         incarcerated_during_sentence = (
@@ -1093,7 +1090,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
             year=projected_completion_date.year,
             month=projected_completion_date.month,
             event_date=last_day_of_projected_month,
-            supervision_type=supervision_type,
+            supervision_type=supervision_type_for_event,
             supervision_level=supervision_period.supervision_level,
             supervision_level_raw_text=supervision_period.supervision_level_raw_text,
             case_type=case_type,

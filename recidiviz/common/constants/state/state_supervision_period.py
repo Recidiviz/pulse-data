@@ -26,7 +26,6 @@ from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 # TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass, and delete
 #  _get_default_map() once all state ingest views have been migrated to v2 mappings.
-# TODO(#2891): Update supervision period objects in schema to use this type
 @unique
 class StateSupervisionPeriodSupervisionType(EntityEnum, metaclass=EntityEnumMeta):
     """Enum that denotes what type of supervision someone is serving at a moment in

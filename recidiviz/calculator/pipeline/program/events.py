@@ -27,7 +27,9 @@ from recidiviz.calculator.pipeline.utils.event_utils import (
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
-from recidiviz.common.constants.state.state_supervision import StateSupervisionType
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionPeriodSupervisionType,
+)
 
 
 @attr.s(frozen=True)
@@ -47,8 +49,9 @@ class ProgramReferralEvent(ProgramEvent, AssessmentEventMixin):
     """Models a ProgramEvent where a the person was referred to a program."""
 
     # The type of supervision the person was on
-    # TODO(#2891): Make this of type StateSupervisionPeriodSupervisionType
-    supervision_type: Optional[StateSupervisionType] = attr.ib(default=None)
+    supervision_type: Optional[StateSupervisionPeriodSupervisionType] = attr.ib(
+        default=None
+    )
 
     # Program participation status
     participation_status: Optional[StateProgramAssignmentParticipationStatus] = attr.ib(
@@ -85,8 +88,9 @@ class ProgramParticipationEvent(ProgramEvent):
     program_location_id: Optional[str] = attr.ib(default=None)
 
     # The type of supervision the person was on
-    # TODO(#2891): Make this of type StateSupervisionPeriodSupervisionType
-    supervision_type: Optional[StateSupervisionType] = attr.ib(default=None)
+    supervision_type: Optional[StateSupervisionPeriodSupervisionType] = attr.ib(
+        default=None
+    )
 
     @property
     def date_of_participation(self) -> date:

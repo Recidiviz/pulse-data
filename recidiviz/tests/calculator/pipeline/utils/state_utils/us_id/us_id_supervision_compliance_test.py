@@ -1904,6 +1904,39 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             us_id_supervision_compliance._guidelines_applicable_for_case(start_date)
         )
 
+    # TODO(#9440): If we build support for calculating compliance for bench warrant
+    #  cases then this will no longer be an invalid case
+    def test_guidelines_applicable_for_case_invalid_bench_warrant(self) -> None:
+        start_date = date(2018, 3, 5)
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            state_code="US_ID",
+            custodial_authority_raw_text="US_ID_DOC",
+            start_date=start_date,
+            termination_date=date(2018, 5, 19),
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN,
+            supervision_period_supervision_type_raw_text="BW",
+            supervision_level=StateSupervisionLevel.HIGH,
+            supervision_level_raw_text="LEVEL 3",
+        )
+
+        us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
+            self.person,
+            supervision_period=supervision_period,
+            case_type=StateSupervisionCaseType.GENERAL,
+            start_of_supervision=start_date,
+            assessments=[],
+            supervision_contacts=[],
+            violation_responses=[],
+        )
+
+        self.assertFalse(
+            us_id_supervision_compliance._guidelines_applicable_for_case(start_date)
+        )
+
     def test_guideline_applicability_around_date_change(self) -> None:
         start_of_supervision = date(2018, 3, 5)
         supervision_period = StateSupervisionPeriod.new_with_defaults(

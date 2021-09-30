@@ -23,9 +23,9 @@ from recidiviz.calculator.pipeline.utils.period_utils import (
 from recidiviz.calculator.pipeline.utils.supervision_period_pre_processing_manager import (
     StateSpecificSupervisionPreProcessingDelegate,
 )
-from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
+    StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
@@ -60,11 +60,17 @@ class UsNdSupervisionPreProcessingDelegate(
             maximum_months_proximity=LOOKBACK_MONTHS_LIMIT,
         )
         if not most_recent_previous_period:
-            if supervision_period.supervision_type == StateSupervisionType.PAROLE:
+            if (
+                supervision_period.supervision_period_supervision_type
+                == StateSupervisionPeriodSupervisionType.PAROLE
+            ):
                 # If the person is under parole supervision, the current admission
                 # reason should be CONDITIONAL_RELEASE
                 return StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE
-            if supervision_period.supervision_type == StateSupervisionType.PROBATION:
+            if (
+                supervision_period.supervision_period_supervision_type
+                == StateSupervisionPeriodSupervisionType.PROBATION
+            ):
                 # If there was not a previous period and the person is under PROBATION
                 # supervision, the current admission reason should be COURT_SENTENCE
                 return StateSupervisionPeriodAdmissionReason.COURT_SENTENCE
@@ -84,18 +90,19 @@ class UsNdSupervisionPreProcessingDelegate(
                 # current supervision period's admission reason should be COURT_SENTENCE.
                 return StateSupervisionPeriodAdmissionReason.COURT_SENTENCE
             if (
-                most_recent_previous_period.supervision_type
-                == StateSupervisionType.HALFWAY_HOUSE
-                and supervision_period.supervision_type == StateSupervisionType.PAROLE
+                most_recent_previous_period.supervision_period_supervision_type
+                == StateSupervisionPeriodSupervisionType.COMMUNITY_CONFINEMENT
+                and supervision_period.supervision_period_supervision_type
+                == StateSupervisionPeriodSupervisionType.PAROLE
             ):
                 # If the supervision type transitioned from HALFWAY_HOUSE to PAROLE, the
                 # current supervision period's admission reason should be TRANSFER_WITHIN_STATE.
                 return StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE
             if (
-                most_recent_previous_period.supervision_type
-                == StateSupervisionType.PAROLE
-                and supervision_period.supervision_type
-                == StateSupervisionType.PROBATION
+                most_recent_previous_period.supervision_period_supervision_type
+                == StateSupervisionPeriodSupervisionType.PAROLE
+                and supervision_period.supervision_period_supervision_type
+                == StateSupervisionPeriodSupervisionType.PROBATION
             ):
                 # If the supervision type transitioned from PAROLE to PROBATION, the
                 # admission reason should be COURT_SENTENCE.
@@ -110,9 +117,10 @@ class UsNdSupervisionPreProcessingDelegate(
                 # supervision period, the admission reason should be TRANSFER_WITHIN_STATE.
                 return StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE
             if (
-                most_recent_previous_period.supervision_type
-                == StateSupervisionType.PROBATION
-                and supervision_period.supervision_type == StateSupervisionType.PAROLE
+                most_recent_previous_period.supervision_period_supervision_type
+                == StateSupervisionPeriodSupervisionType.PROBATION
+                and supervision_period.supervision_period_supervision_type
+                == StateSupervisionPeriodSupervisionType.PAROLE
             ):
                 # If the supervision type transitioned from PROBATION to PAROLE, the
                 # admission reason should be INTERNAL_UNKNOWN, since this should be

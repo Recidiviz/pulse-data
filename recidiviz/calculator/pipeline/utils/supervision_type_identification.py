@@ -215,7 +215,7 @@ def sentence_supervision_types_to_supervision_period_supervision_type(
 ) -> Optional[StateSupervisionPeriodSupervisionType]:
 
     supervision_period_supervision_types = [
-        _sentence_supervision_type_to_supervision_periods_supervision_type(
+        sentence_supervision_type_to_supervision_periods_supervision_type(
             supervision_type
         )
         for supervision_type in supervision_types
@@ -257,7 +257,7 @@ def _get_sentence_supervision_type_from_sentence(
     )
 
 
-def _sentence_supervision_type_to_supervision_periods_supervision_type(
+def sentence_supervision_type_to_supervision_periods_supervision_type(
     sentence_supervision_type: Optional[StateSupervisionType],
 ) -> Optional[StateSupervisionPeriodSupervisionType]:
     if not sentence_supervision_type:

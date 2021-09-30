@@ -45,7 +45,6 @@ from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
 )
 from recidiviz.calculator.pipeline.utils.supervision_type_identification import (
     get_pre_incarceration_supervision_type_from_ip_admission_reason,
-    sentence_supervision_types_to_supervision_period_supervision_type,
 )
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration_period import (
@@ -263,14 +262,6 @@ def _filter_to_matching_supervision_types(
         period
         for period in supervision_periods
         if period.supervision_period_supervision_type in supervision_types_to_match
-        # TODO(#2891): supervision_type is DEPRECATED - remove support for this field
-        #  when we delete the supervision_type attribute.
-        or (
-            sentence_supervision_types_to_supervision_period_supervision_type(
-                {period.supervision_type}
-            )
-            in supervision_types_to_match
-        )
     ]
 
 
