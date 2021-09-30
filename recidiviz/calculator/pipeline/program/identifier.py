@@ -298,8 +298,7 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
                             is_first_day_in_program=is_first_day_in_program,
                             program_id=program_id,
                             program_location_id=program_location_id,
-                            # TODO(#2891): Use supervision_period_supervision_type
-                            supervision_type=supervision_period.supervision_type,
+                            supervision_type=supervision_period.supervision_period_supervision_type,
                         )
                     )
             else:
@@ -362,8 +361,7 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
                         participation_status=participation_status,
                         assessment_score=assessment_score,
                         assessment_type=assessment_type,
-                        # TODO(#2891): Use supervision_period_supervision_type
-                        supervision_type=supervision_period.supervision_type,
+                        supervision_type=supervision_period.supervision_period_supervision_type,
                         supervising_officer_external_id=supervising_officer_external_id,
                         supervising_district_external_id=deprecated_supervising_district_external_id,
                         level_1_supervision_location_external_id=level_1_supervision_location_external_id,

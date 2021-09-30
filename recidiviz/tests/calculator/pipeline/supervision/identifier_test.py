@@ -770,7 +770,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             state_code="US_ND",
             start_date=date(2017, 3, 5),
             termination_date=date(2017, 5, 9),
-            supervision_type=StateSupervisionType.PROBATION,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         temporary_custody_period = StateIncarcerationPeriod.new_with_defaults(
@@ -1015,11 +1015,9 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         self.assertCountEqual(expected_events, supervision_events)
 
     def test_findSupervisionEvents_usNd_admittedAfterPreConfinement(self) -> None:
-        """Tests the find_supervision_events function for state code US_ND where the person is admitted after
-        being on PRE-CONFINEMENT supervision. These periods should produce no
-        SupervisionEvents.
-
-        TODO(#2891): This should be updated or removed once ND has been migrated to supervision_period_supervision_type
+        """Tests the find_supervision_events function for state code US_ND where the
+        person is admitted after being on INVESTIGATION supervision. These periods
+        should produce no SupervisionEvents.
         """
         self._stop_state_specific_delegate_patchers()
 
@@ -1030,7 +1028,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             custodial_authority_raw_text="US_ND_DOCR",
             start_date=date(2017, 3, 5),
             termination_date=date(2017, 5, 9),
-            supervision_type=StateSupervisionType.PRE_CONFINEMENT,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,
         )
 
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -5647,7 +5645,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             start_date=date(2018, 1, 5),
             termination_date=date(2018, 8, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=StateSupervisionType.PAROLE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         second_supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -5657,7 +5655,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             start_date=date(2018, 9, 5),
             termination_date=date(2018, 12, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
-            supervision_type=StateSupervisionType.PROBATION,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         first_supervision_sentence_projected_completion_date = date(2018, 12, 25)

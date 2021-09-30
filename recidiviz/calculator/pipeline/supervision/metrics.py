@@ -78,8 +78,6 @@ class SupervisionMetric(
 
     # Optional characteristics
 
-    # TODO(#2891): Consider moving this out of the base class, and making the supervision type specific to each
-    #   metric type
     # Supervision Type
     supervision_type: Optional[StateSupervisionPeriodSupervisionType] = attr.ib(
         default=None

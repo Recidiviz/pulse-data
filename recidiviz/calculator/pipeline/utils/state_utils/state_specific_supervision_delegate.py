@@ -22,7 +22,6 @@ import abc
 from typing import List, Optional, Tuple
 
 from recidiviz.calculator.pipeline.supervision.events import SupervisionPopulationEvent
-from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
 )
@@ -114,9 +113,6 @@ class StateSpecificSupervisionDelegate(abc.ABC):
         if (
             supervision_period.supervision_period_supervision_type
             == StateSupervisionPeriodSupervisionType.INVESTIGATION
-            # TODO(#2891): Remove this check when we remove supervision_type from StateSupervisionPeriods
-            or supervision_period.supervision_type
-            == StateSupervisionType.PRE_CONFINEMENT
         ):
             return False
 

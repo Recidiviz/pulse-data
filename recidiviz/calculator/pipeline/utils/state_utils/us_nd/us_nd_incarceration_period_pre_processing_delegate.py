@@ -38,8 +38,8 @@ from recidiviz.common.constants.state.state_incarceration import StateIncarcerat
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
 )
-from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.persistence.entity.state.entities import (
@@ -176,8 +176,11 @@ def _us_nd_normalize_period_if_commitment_from_supervision(
             most_recent_supervision_period
             and most_recent_supervision_period.termination_reason
             == StateSupervisionPeriodTerminationReason.REVOCATION
-            and most_recent_supervision_period.supervision_type
-            in (StateSupervisionType.PAROLE, StateSupervisionType.PROBATION)
+            and most_recent_supervision_period.supervision_period_supervision_type
+            in (
+                StateSupervisionPeriodSupervisionType.PAROLE,
+                StateSupervisionPeriodSupervisionType.PROBATION,
+            )
         ):
             was_intermediate_state_prison_admission = (
                 _intermediate_state_prison_admission(
@@ -197,8 +200,8 @@ def _us_nd_normalize_period_if_commitment_from_supervision(
                 incarceration_period,
                 admission_reason=(
                     StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION
-                    if most_recent_supervision_period.supervision_type
-                    == StateSupervisionType.PROBATION
+                    if most_recent_supervision_period.supervision_period_supervision_type
+                    == StateSupervisionPeriodSupervisionType.PROBATION
                     else StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION
                 ),
             )

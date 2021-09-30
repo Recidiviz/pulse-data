@@ -296,7 +296,7 @@ class TestSupervisionPipeline(unittest.TestCase):
             start_date=date(2015, 3, 14),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             termination_date=date(2016, 12, 29),
-            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MINIMUM,
             person_id=fake_person_id,
         )
@@ -644,7 +644,7 @@ class TestSupervisionPipeline(unittest.TestCase):
             start_date=date(2015, 3, 14),
             termination_date=date(2017, 1, 4),
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
-            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             person_id=fake_person_id,
         )
 
@@ -897,7 +897,7 @@ class TestSupervisionPipeline(unittest.TestCase):
             start_date=date(2016, 3, 14),
             termination_date=date(2016, 12, 29),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             person_id=fake_person_id_1,
         )
 
@@ -1223,7 +1223,7 @@ class TestClassifyEvents(unittest.TestCase):
             start_date=date(2015, 3, 14),
             termination_date=supervision_period_termination_date,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=StateSupervisionType.PROBATION,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
             supervision_level_raw_text="MEDM",
             supervision_site="10",
@@ -1394,18 +1394,16 @@ class TestClassifyEvents(unittest.TestCase):
 
         # This probation supervision period ended in a death
         termination_date = date(2017, 1, 4)
-        supervision_period_with_death = (
-            entities.StateSupervisionPeriod.new_with_defaults(
-                supervision_period_id=1111,
-                state_code="US_XX",
-                county_code="124",
-                admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
-                start_date=date(2017, 1, 3),
-                termination_date=termination_date,
-                termination_reason=StateSupervisionPeriodTerminationReason.DEATH,
-                supervision_type=StateSupervisionType.PROBATION,
-                person=fake_person,
-            )
+        supervision_period_with_death = entities.StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=1111,
+            state_code="US_XX",
+            county_code="124",
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            start_date=date(2017, 1, 3),
+            termination_date=termination_date,
+            termination_reason=StateSupervisionPeriodTerminationReason.DEATH,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            person=fake_person,
         )
 
         closed_post_mortem_supervision_period = entities.StateSupervisionPeriod.new_with_defaults(
@@ -1416,7 +1414,7 @@ class TestClassifyEvents(unittest.TestCase):
             start_date=date(2017, 1, 5),
             termination_date=date(2017, 1, 6),
             termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
-            supervision_type=StateSupervisionType.PROBATION,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             person=fake_person,
         )
 
@@ -1426,7 +1424,7 @@ class TestClassifyEvents(unittest.TestCase):
             county_code="124",
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
             start_date=date(2017, 1, 6),
-            supervision_type=StateSupervisionType.PROBATION,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             person=fake_person,
         )
 
@@ -1597,24 +1595,22 @@ class TestClassifyEvents(unittest.TestCase):
             county_code="124",
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
             start_date=date(2017, 1, 4),
-            supervision_type=StateSupervisionType.PROBATION,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             person=fake_person,
         )
 
         # This probation supervision period ended in a death
         termination_date = date(2017, 1, 5)
-        supervision_period_with_death = (
-            entities.StateSupervisionPeriod.new_with_defaults(
-                supervision_period_id=1111,
-                state_code="US_XX",
-                county_code="124",
-                admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
-                start_date=date(2017, 1, 3),
-                termination_date=termination_date,
-                termination_reason=StateSupervisionPeriodTerminationReason.DEATH,
-                supervision_type=StateSupervisionType.PROBATION,
-                person=fake_person,
-            )
+        supervision_period_with_death = entities.StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=1111,
+            state_code="US_XX",
+            county_code="124",
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            start_date=date(2017, 1, 3),
+            termination_date=termination_date,
+            termination_reason=StateSupervisionPeriodTerminationReason.DEATH,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            person=fake_person,
         )
 
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
@@ -1795,7 +1791,7 @@ class TestClassifyEvents(unittest.TestCase):
             start_date=date(2015, 3, 14),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             termination_date=supervision_period_termination,
-            supervision_type=StateSupervisionType.PROBATION,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.INTERNAL_UNKNOWN,
             supervision_level_raw_text="XXXX",
             supervision_site="10",
@@ -1912,7 +1908,7 @@ class TestClassifyEvents(unittest.TestCase):
             start_date=date(2015, 3, 14),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             termination_date=termination_date,
-            supervision_type=StateSupervisionType.PROBATION,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.INTERNAL_UNKNOWN,
             supervision_level_raw_text="XXXX",
             supervision_site="10",

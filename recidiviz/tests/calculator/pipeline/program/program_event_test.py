@@ -26,7 +26,9 @@ from recidiviz.common.constants.state.state_assessment import StateAssessmentTyp
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
-from recidiviz.common.constants.state.state_supervision import StateSupervisionType
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionPeriodSupervisionType,
+)
 
 
 class TestProgramEvent(unittest.TestCase):
@@ -47,7 +49,7 @@ class TestProgramEvent(unittest.TestCase):
         state_code = "CA"
         program_id = "PROGRAMX"
         event_date = date(2000, 11, 10)
-        supervision_type = StateSupervisionType.PROBATION
+        supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
         assessment_score = 5
         assessment_type = StateAssessmentType.ORAS_COMMUNITY_SUPERVISION
         assessment_level = None
@@ -99,7 +101,7 @@ class TestProgramEvent(unittest.TestCase):
         state_code = "CA"
         program_id = "PROGRAMX"
         event_date = date(2000, 11, 10)
-        supervision_type = StateSupervisionType.PROBATION
+        supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
         participation_status = StateProgramAssignmentParticipationStatus.IN_PROGRESS
         supervising_officer_external_id = "OFFICER211"
         supervising_district_external_id = "DISTRICT 100"

@@ -31,7 +31,9 @@ from recidiviz.calculator.pipeline.utils.metric_utils import (
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
-from recidiviz.common.constants.state.state_supervision import StateSupervisionType
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionPeriodSupervisionType,
+)
 
 
 class ProgramMetricType(RecidivizMetricType):
@@ -111,8 +113,9 @@ If a person was referred to a program while they were on supervision, then this 
     # Optional characteristics
 
     # Supervision Type
-    # TODO(#2891): Make this of type StateSupervisionPeriodSupervisionType
-    supervision_type: Optional[StateSupervisionType] = attr.ib(default=None)
+    supervision_type: Optional[StateSupervisionPeriodSupervisionType] = attr.ib(
+        default=None
+    )
 
     # Program participation status
     participation_status: Optional[StateProgramAssignmentParticipationStatus] = attr.ib(
@@ -165,5 +168,6 @@ If a person is participating in a program while they are on supervision, then th
     program_location_id: Optional[str] = attr.ib(default=None)
 
     # Supervision Type
-    # TODO(#2891): Make this of type StateSupervisionPeriodSupervisionType
-    supervision_type: Optional[StateSupervisionType] = attr.ib(default=None)
+    supervision_type: Optional[StateSupervisionPeriodSupervisionType] = attr.ib(
+        default=None
+    )
