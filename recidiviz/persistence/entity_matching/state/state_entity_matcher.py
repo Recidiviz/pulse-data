@@ -21,7 +21,7 @@ ingested entities.
 import datetime
 import logging
 from collections import defaultdict
-from typing import Dict, List, Optional, Sequence, Set, Tuple, Type, cast
+from typing import Dict, List, Optional, Set, Tuple, Type, cast
 
 from more_itertools import one
 
@@ -65,10 +65,8 @@ from recidiviz.persistence.entity_matching.state.state_matching_utils import (
     db_id_or_object_id,
     generate_child_entity_trees,
     get_all_entity_trees_of_cls,
-    get_external_id_keys_from_multiple_id_entity,
     get_external_ids_from_entity,
     get_multiparent_classes,
-    get_multiple_id_classes,
     get_root_entity_cls,
     get_total_entities_of_cls,
     is_match,
@@ -444,8 +442,10 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         After post processing, we guarantee that all backedges are properly
         set on entities within the |ingested_persons| trees.
         """
-        logging.info("[Entity matching] Pre-processing: Merge multi-id " "entities")
-        preprocessed_persons = self.merge_multiple_id_entities(ingested_persons)
+        logging.info(
+            "[Entity matching] Pre-processing: Merge duplicate ingested people"
+        )
+        preprocessed_persons = self.merge_ingested_root_entities(ingested_persons)
         self.state_matching_delegate.perform_match_preprocessing(preprocessed_persons)
         return preprocessed_persons
 
@@ -640,99 +640,99 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
                 return False
         return True
 
-    def merge_multiple_id_entities(
+    @staticmethod
+    def _person_external_id_keys(person: schema.StatePerson) -> Set[str]:
+        """Generates a set of unique string keys for a person's StatePersonExternalIds."""
+        return {f"{e.external_id}|{e.id_type}" for e in person.external_ids}
+
+    @classmethod
+    def bucket_ingested_persons(
+        cls,
+        ingested_persons: List[schema.StatePerson],
+    ) -> List[List[schema.StatePerson]]:
+        """Buckets the list of ingested persons into groups that all should be merged
+        into the same person, based on their external ids. Returns a tuple containing
+        a dictionary with buckets that need to be merged and a list of unique persons
+        that do not need to be merged into any other person.
+        """
+
+        result_buckets: List[List[schema.StatePerson]] = []
+
+        # First bucket all the people that should be merged
+        bucketed_persons_dict: Dict[str, List[schema.StatePerson]] = defaultdict(list)
+        external_id_key_to_primary: Dict[str, str] = {}
+        for person in ingested_persons:
+            external_id_keys = cls._person_external_id_keys(person)
+            if len(external_id_keys) == 0:
+                # We don't merge placeholder people
+                result_buckets.append([person])
+                continue
+
+            # Find all the people who should be related to this person based on their
+            # external_ids and merge them into one bucket.
+            merged_bucket = [person]
+            primary_buckets_to_merge = set()
+            for external_id_key in external_id_keys:
+                if external_id_key in external_id_key_to_primary:
+                    primary_id_for_id = external_id_key_to_primary[external_id_key]
+                    primary_buckets_to_merge.add(primary_id_for_id)
+
+            for external_id_key in primary_buckets_to_merge:
+                if external_id_key in bucketed_persons_dict:
+                    merged_bucket.extend(bucketed_persons_dict.pop(external_id_key))
+
+            # Deterministically pick one of the ids to be the new primary id for this
+            # merged bucket.
+            all_primary_id_candidates = primary_buckets_to_merge.union(external_id_keys)
+            primary_id = min(all_primary_id_candidates)
+
+            for bucket_person in merged_bucket:
+                for external_id_key in cls._person_external_id_keys(bucket_person):
+                    external_id_key_to_primary[external_id_key] = primary_id
+
+            bucketed_persons_dict[primary_id] = merged_bucket
+
+        for bucket in bucketed_persons_dict.values():
+            result_buckets.append(bucket)
+
+        return result_buckets
+
+    def merge_ingested_root_entities(
         self, ingested_persons: List[schema.StatePerson]
     ) -> List[schema.StatePerson]:
-        """Merges all entities in the list of |ingested_persons| that can have
-        multiple external ids (Currently just StatePerson).
+        """Merges all ingested StatePeople trees that can be connected via external_id.
 
         Returns the list of unique StatePeople after this merging.
         """
-        persons: List[schema.StatePerson] = []
-        for cls in get_multiple_id_classes():
-            merged_entities = self._merge_multiple_id_entities_helper(
-                ingested_person_trees=ingested_persons, multiple_id_cls=cls
-            )
-            if cls == schema.StatePerson:
-                persons = cast(List[schema.StatePerson], merged_entities)
 
-        return persons
+        buckets = self.bucket_ingested_persons(ingested_persons)
 
-    def _merge_multiple_id_entities_helper(
-        self,
-        ingested_person_trees: List[schema.StatePerson],
-        multiple_id_cls: Type[DatabaseEntity],
-    ) -> Sequence[DatabaseEntity]:
-        """Helper method to merge all entities of type |multiple_id_cls| with
-        colliding ids. Returns a list of unique entities after this merging
-        is complete.
-        """
-        to_return = []
-        processed_entities_by_external_id_key: Dict[str, EntityTree] = {}
-        ingested_entity_trees = get_all_entity_trees_of_cls(
-            ingested_person_trees, multiple_id_cls
-        )
+        unique_persons: List[schema.StatePerson] = []
 
-        for ingested_entity_tree in ingested_entity_trees:
-            ingested_entity = ingested_entity_tree.entity
-            external_id_keys = get_external_id_keys_from_multiple_id_entity(
-                ingested_entity
-            )
+        # Merge each bucket into one person
+        for people_to_merge in buckets:
+            merged_person: Optional[schema.StatePerson] = None
+            if people_to_merge:
+                merged_person = people_to_merge.pop()
 
-            # If no external_ids, don't worry about merging them with other
-            # ingested entities
-            if not external_id_keys:
-                to_return.append(ingested_entity)
-                continue
+            for person in people_to_merge:
+                if not merged_person:
+                    raise ValueError("Expected a nonnull merged_person.")
 
-            # Merge entities when external_ids collide
-            self._merge_ingested_entity_with_duplicates(
-                ingested_entity_tree,
-                external_id_keys,
-                processed_entities_by_external_id_key,
-            )
-
-            updated_external_id_keys = get_external_id_keys_from_multiple_id_entity(
-                ingested_entity
-            )
-            for external_id_key in updated_external_id_keys:
-                processed_entities_by_external_id_key[
-                    external_id_key
-                ] = ingested_entity_tree
-
-        # Only return unique entities
-        to_return.extend(
-            self._get_unique_entities(processed_entities_by_external_id_key)
-        )
-
-        return to_return
-
-    def _merge_ingested_entity_with_duplicates(
-        self,
-        entity_tree: EntityTree,
-        external_id_keys: List[str],
-        processed_entities_by_external_id_key: Dict[str, EntityTree],
-    ):
-        """Helper function that merges the provided |entity_tree| with all of
-        the colliding entities in |processed_entities_by_external_id_key|.
-        The provided |entity_tree| is modified in place as colliding entities
-        are merged onto the |entity_tree|.
-        """
-        trees_to_merge_into = []
-
-        for external_id_key in external_id_keys:
-            if external_id_key in processed_entities_by_external_id_key:
-                trees_to_merge_into.append(
-                    processed_entities_by_external_id_key[external_id_key]
+                result = self._match_matched_tree(
+                    ingested_entity_tree=EntityTree(entity=person, ancestor_chain=[]),
+                    db_match_tree=EntityTree(entity=merged_person, ancestor_chain=[]),
+                    matched_entities_by_db_ids={},
+                    root_entity_cls=schema.StatePerson,
                 )
+                merged_person = cast(
+                    schema.StatePerson, one(result.merged_entity_trees).entity
+                )
+            if not merged_person:
+                raise ValueError("Expected nonnull merged_person")
+            unique_persons.append(merged_person)
 
-        for tree_to_merge in trees_to_merge_into:
-            self._match_matched_tree(
-                ingested_entity_tree=tree_to_merge,
-                db_match_tree=entity_tree,
-                matched_entities_by_db_ids={},
-                root_entity_cls=schema.StatePerson,
-            )
+        return unique_persons
 
     def _get_unique_entities(self, d: Dict[str, EntityTree]):
         """Returns all unique entities found in the provided dict |d|."""

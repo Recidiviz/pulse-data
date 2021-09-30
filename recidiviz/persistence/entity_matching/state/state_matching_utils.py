@@ -17,8 +17,9 @@
 """State specific utils for entity matching. Utils in this file are generic to any DatabaseEntity."""
 import logging
 from collections import defaultdict
-from typing import List, cast, Optional, Set, Type, Dict, Sequence
+from typing import Dict, List, Optional, Sequence, Set, Type, cast
 
+from recidiviz.common.common_utils import check_all_objs_have_type
 from recidiviz.common.constants import enum_canonical_strings
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_court_case import StateCourtType
@@ -26,18 +27,17 @@ from recidiviz.common.constants.state.state_incarceration import StateIncarcerat
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.database.database_entity import DatabaseEntity
-from recidiviz.persistence.database.schema.state import schema, dao
+from recidiviz.persistence.database.schema.state import dao, schema
 from recidiviz.persistence.database.schema_utils import (
     get_non_history_state_database_entities,
 )
 from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.entity.entity_utils import (
     EntityFieldType,
-    is_placeholder,
-    get_set_entity_field_names,
     SchemaEdgeDirectionChecker,
+    get_set_entity_field_names,
+    is_placeholder,
 )
-from recidiviz.common.common_utils import check_all_objs_have_type
 from recidiviz.persistence.entity_matching.entity_matching_types import EntityTree
 from recidiviz.persistence.errors import EntityMatchingError
 
@@ -232,17 +232,6 @@ def get_multiple_id_classes() -> List[Type[DatabaseEntity]]:
                 )
             to_return.append(cls)
     return to_return
-
-
-def get_external_id_keys_from_multiple_id_entity(entity: DatabaseEntity) -> List[str]:
-    """Returns a list of strings that uniquely represent all external ids
-    on the given entity.
-    """
-    external_str_ids = []
-    for external_id in entity.get_field_as_list("external_ids"):
-        str_id = external_id.id_type + "|" + external_id.external_id
-        external_str_ids.append(str_id)
-    return external_str_ids
 
 
 def remove_child_from_entity(
