@@ -23,26 +23,26 @@ from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.persistence.database import schema_utils
 from recidiviz.persistence.database.schema.state import schema
+from recidiviz.persistence.database.schema_entity_converter import (
+    schema_entity_converter as converter,
+)
 from recidiviz.persistence.entity.entity_utils import (
+    CoreEntityFieldIndex,
     EntityFieldType,
-    get_set_entity_field_names,
-    is_standalone_class,
     SchemaEdgeDirectionChecker,
+    is_standalone_class,
     prune_dangling_placeholders_from_tree,
 )
 from recidiviz.persistence.entity.state.entities import (
-    StateSentenceGroup,
-    StatePerson,
-    StateSupervisionViolation,
-    StateSupervisionSentence,
     StateCharge,
+    StatePerson,
+    StateSentenceGroup,
+    StateSupervisionSentence,
+    StateSupervisionViolation,
 )
 from recidiviz.tests.persistence.database.schema.state.schema_test_utils import (
     generate_person,
     generate_sentence_group,
-)
-from recidiviz.persistence.database.schema_entity_converter import (
-    schema_entity_converter as converter,
 )
 
 _ID = 1
@@ -51,14 +51,11 @@ _EXTERNAL_ID = "EXTERNAL_ID-1"
 _ID_TYPE = "ID_TYPE"
 
 
-class TestEntityUtils(TestCase):
-    """Tests the functionality of our entity utils."""
+class TestCoreEntityFieldIndex(TestCase):
+    """Tests the functionality of CoreEntityFieldIndex."""
 
-    @staticmethod
-    def to_entity(schema_obj):
-        return converter.convert_schema_object_to_entity(
-            schema_obj, populate_back_edges=False
-        )
+    def setUp(self) -> None:
+        self.field_index = CoreEntityFieldIndex()
 
     def test_getEntityRelationshipFieldNames_children(self) -> None:
         entity = StateSupervisionSentence.new_with_defaults(
@@ -74,7 +71,9 @@ class TestEntityUtils(TestCase):
         )
         self.assertEqual(
             {"charges"},
-            get_set_entity_field_names(entity, EntityFieldType.FORWARD_EDGE),
+            self.field_index.get_fields_with_non_empty_values(
+                entity, EntityFieldType.FORWARD_EDGE
+            ),
         )
 
     def test_getDbEntityRelationshipFieldNames_children(self) -> None:
@@ -87,7 +86,9 @@ class TestEntityUtils(TestCase):
         )
         self.assertEqual(
             {"charges"},
-            get_set_entity_field_names(entity, EntityFieldType.FORWARD_EDGE),
+            self.field_index.get_fields_with_non_empty_values(
+                entity, EntityFieldType.FORWARD_EDGE
+            ),
         )
 
     def test_getEntityRelationshipFieldNames_backedges(self) -> None:
@@ -99,7 +100,10 @@ class TestEntityUtils(TestCase):
             supervision_sentence_id=_ID,
         )
         self.assertEqual(
-            {"person"}, get_set_entity_field_names(entity, EntityFieldType.BACK_EDGE)
+            {"person"},
+            self.field_index.get_fields_with_non_empty_values(
+                entity, EntityFieldType.BACK_EDGE
+            ),
         )
 
     def test_getEntityRelationshipFieldNames_flatFields(self) -> None:
@@ -112,7 +116,9 @@ class TestEntityUtils(TestCase):
         )
         self.assertEqual(
             {"state_code", "supervision_sentence_id"},
-            get_set_entity_field_names(entity, EntityFieldType.FLAT_FIELD),
+            self.field_index.get_fields_with_non_empty_values(
+                entity, EntityFieldType.FLAT_FIELD
+            ),
         )
 
     def test_getEntityRelationshipFieldNames_foreignKeys(self) -> None:
@@ -125,7 +131,9 @@ class TestEntityUtils(TestCase):
         )
         self.assertEqual(
             {"person_id"},
-            get_set_entity_field_names(entity, EntityFieldType.FOREIGN_KEYS),
+            self.field_index.get_fields_with_non_empty_values(
+                entity, EntityFieldType.FOREIGN_KEYS
+            ),
         )
 
     def test_getEntityRelationshipFieldNames_all(self) -> None:
@@ -138,7 +146,22 @@ class TestEntityUtils(TestCase):
         )
         self.assertEqual(
             {"state_code", "charges", "person", "person_id", "supervision_sentence_id"},
-            get_set_entity_field_names(entity, EntityFieldType.ALL),
+            self.field_index.get_fields_with_non_empty_values(
+                entity, EntityFieldType.ALL
+            ),
+        )
+
+
+class TestEntityUtils(TestCase):
+    """Tests the functionality of our entity utils."""
+
+    def setUp(self) -> None:
+        self.field_index = CoreEntityFieldIndex()
+
+    @staticmethod
+    def to_entity(schema_obj):
+        return converter.convert_schema_object_to_entity(
+            schema_obj, populate_back_edges=False
         )
 
     def test_isStandaloneClass(self) -> None:
@@ -186,10 +209,10 @@ class TestEntityUtils(TestCase):
 
         # Act
         pruned_person = prune_dangling_placeholders_from_tree(
-            dangling_placeholder_person
+            dangling_placeholder_person, field_index=self.field_index
         )
         pruned_sentence_group = prune_dangling_placeholders_from_tree(
-            dangling_placeholder_sg
+            dangling_placeholder_sg, field_index=self.field_index
         )
 
         # Assert
@@ -207,7 +230,9 @@ class TestEntityUtils(TestCase):
         )
 
         # Act
-        pruned_tree = prune_dangling_placeholders_from_tree(placeholder_person)
+        pruned_tree = prune_dangling_placeholders_from_tree(
+            placeholder_person, field_index=self.field_index
+        )
 
         # Assert
         self.assertIsNotNone(pruned_tree)
@@ -230,7 +255,9 @@ class TestEntityUtils(TestCase):
         )
 
         # Act
-        pruned_tree = prune_dangling_placeholders_from_tree(placeholder_person)
+        pruned_tree = prune_dangling_placeholders_from_tree(
+            placeholder_person, field_index=self.field_index
+        )
 
         # Assert
         self.assertIsNotNone(pruned_tree)

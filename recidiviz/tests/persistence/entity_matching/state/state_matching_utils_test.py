@@ -82,9 +82,21 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
             full_name="name_2", external_ids=[external_id_same]
         )
 
-        self.assertTrue(_is_match(ingested_entity=person, db_entity=person_another))
+        self.assertTrue(
+            _is_match(
+                ingested_entity=person,
+                db_entity=person_another,
+                field_index=self.field_index,
+            )
+        )
         person_another.external_ids = [external_id_different]
-        self.assertFalse(_is_match(ingested_entity=person, db_entity=person_another))
+        self.assertFalse(
+            _is_match(
+                ingested_entity=person,
+                db_entity=person_another,
+                field_index=self.field_index,
+            )
+        )
 
     def test_isMatch_statePersonExternalId_type(self) -> None:
         external_id = schema.StatePersonExternalId(
@@ -100,12 +112,20 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
             external_id=_EXTERNAL_ID,
         )
         self.assertTrue(
-            _is_match(ingested_entity=external_id, db_entity=external_id_different)
+            _is_match(
+                ingested_entity=external_id,
+                db_entity=external_id_different,
+                field_index=self.field_index,
+            )
         )
 
         external_id.id_type = _ID_TYPE_ANOTHER
         self.assertFalse(
-            _is_match(ingested_entity=external_id, db_entity=external_id_different)
+            _is_match(
+                ingested_entity=external_id,
+                db_entity=external_id_different,
+                field_index=self.field_index,
+            )
         )
 
     def test_isMatch_statePersonExternalId_externalId(self) -> None:
@@ -122,12 +142,20 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
             external_id=_EXTERNAL_ID,
         )
         self.assertTrue(
-            _is_match(ingested_entity=external_id, db_entity=external_id_different)
+            _is_match(
+                ingested_entity=external_id,
+                db_entity=external_id_different,
+                field_index=self.field_index,
+            )
         )
 
         external_id.external_id = _EXTERNAL_ID_2
         self.assertFalse(
-            _is_match(ingested_entity=external_id, db_entity=external_id_different)
+            _is_match(
+                ingested_entity=external_id,
+                db_entity=external_id_different,
+                field_index=self.field_index,
+            )
         )
 
     def test_isMatch_statePersonExternalId_stateCode(self) -> None:
@@ -144,12 +172,20 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
             external_id=_EXTERNAL_ID,
         )
         self.assertTrue(
-            _is_match(ingested_entity=external_id, db_entity=external_id_different)
+            _is_match(
+                ingested_entity=external_id,
+                db_entity=external_id_different,
+                field_index=self.field_index,
+            )
         )
 
         external_id.state_code = _STATE_CODE_ANOTHER
         self.assertFalse(
-            _is_match(ingested_entity=external_id, db_entity=external_id_different)
+            _is_match(
+                ingested_entity=external_id,
+                db_entity=external_id_different,
+                field_index=self.field_index,
+            )
         )
 
     def test_isMatch_statePersonAlias(self) -> None:
@@ -157,25 +193,61 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
         alias_another = schema.StatePersonAlias(
             state_code=_STATE_CODE, full_name="full_name"
         )
-        self.assertTrue(_is_match(ingested_entity=alias, db_entity=alias_another))
+        self.assertTrue(
+            _is_match(
+                ingested_entity=alias,
+                db_entity=alias_another,
+                field_index=self.field_index,
+            )
+        )
         alias_another.state_code = _STATE_CODE_ANOTHER
-        self.assertFalse(_is_match(ingested_entity=alias, db_entity=alias_another))
+        self.assertFalse(
+            _is_match(
+                ingested_entity=alias,
+                db_entity=alias_another,
+                field_index=self.field_index,
+            )
+        )
 
     def test_isMatch_defaultCompareExternalId(self) -> None:
         charge = schema.StateCharge(external_id=_EXTERNAL_ID, description="description")
         charge_another = schema.StateCharge(
             external_id=_EXTERNAL_ID, description="description_another"
         )
-        self.assertTrue(_is_match(ingested_entity=charge, db_entity=charge_another))
+        self.assertTrue(
+            _is_match(
+                ingested_entity=charge,
+                db_entity=charge_another,
+                field_index=self.field_index,
+            )
+        )
         charge.external_id = _EXTERNAL_ID_2
-        self.assertFalse(_is_match(ingested_entity=charge, db_entity=charge_another))
+        self.assertFalse(
+            _is_match(
+                ingested_entity=charge,
+                db_entity=charge_another,
+                field_index=self.field_index,
+            )
+        )
 
     def test_isMatch_defaultCompareNoExternalIds(self) -> None:
         charge = schema.StateCharge()
         charge_another = schema.StateCharge()
-        self.assertTrue(_is_match(ingested_entity=charge, db_entity=charge_another))
+        self.assertTrue(
+            _is_match(
+                ingested_entity=charge,
+                db_entity=charge_another,
+                field_index=self.field_index,
+            )
+        )
         charge.description = "description"
-        self.assertFalse(_is_match(ingested_entity=charge, db_entity=charge_another))
+        self.assertFalse(
+            _is_match(
+                ingested_entity=charge,
+                db_entity=charge_another,
+                field_index=self.field_index,
+            )
+        )
 
     def test_mergeFlatFields_twoDbEntities(self) -> None:
         to_entity = schema.StateSentenceGroup(
@@ -201,7 +273,7 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
         )
 
         merged_entity = default_merge_flat_fields(
-            new_entity=from_entity, old_entity=to_entity
+            new_entity=from_entity, old_entity=to_entity, field_index=self.field_index
         )
         self.assert_schema_objects_equal(expected_entity, merged_entity)
 
@@ -227,7 +299,7 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
         )
 
         merged_entity = default_merge_flat_fields(
-            new_entity=ing_entity, old_entity=db_entity
+            new_entity=ing_entity, old_entity=db_entity, field_index=self.field_index
         )
         self.assert_schema_objects_equal(expected_entity, merged_entity)
 
@@ -322,14 +394,14 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
         person = schema.StatePerson(sentence_groups=[placeholder_sentence_group])
 
         # Act
-        root_entity_cls = get_root_entity_cls([person])
+        root_entity_cls = get_root_entity_cls([person], field_index=self.field_index)
 
         # Assert
         self.assertEqual(schema.StateSupervisionViolation, root_entity_cls)
 
     def test_getRootEntity_emptyList_raises(self) -> None:
         with self.assertRaises(EntityMatchingError):
-            get_root_entity_cls([])
+            get_root_entity_cls([], field_index=self.field_index)
 
     def test_getRootEntity_allPlaceholders_raises(self) -> None:
         placeholder_incarceration_period = schema.StateIncarcerationPeriod()
@@ -343,7 +415,7 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
             sentence_groups=[placeholder_sentence_group]
         )
         with self.assertRaises(EntityMatchingError):
-            get_root_entity_cls([placeholder_person])
+            get_root_entity_cls([placeholder_person], field_index=self.field_index)
 
     def test_getAllEntityTreesOfCls(self) -> None:
         sentence_group = schema.StateSentenceGroup(sentence_group_id=_ID)
@@ -357,11 +429,15 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
                 EntityTree(entity=sentence_group, ancestor_chain=[person]),
                 EntityTree(entity=sentence_group_2, ancestor_chain=[person]),
             ],
-            get_all_entity_trees_of_cls([person], schema.StateSentenceGroup),
+            get_all_entity_trees_of_cls(
+                [person], schema.StateSentenceGroup, field_index=self.field_index
+            ),
         )
         self.assertEqual(
             [EntityTree(entity=person, ancestor_chain=[])],
-            get_all_entity_trees_of_cls([person], schema.StatePerson),
+            get_all_entity_trees_of_cls(
+                [person], schema.StatePerson, field_index=self.field_index
+            ),
         )
 
     def test_getTotalEntitiesOfCls(self) -> None:
@@ -377,12 +453,23 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
         person = schema.StatePerson(sentence_groups=[sentence_group, sentence_group_2])
 
         self.assertEqual(
-            3, get_total_entities_of_cls([person], schema.StateSupervisionSentence)
+            3,
+            get_total_entities_of_cls(
+                [person], schema.StateSupervisionSentence, field_index=self.field_index
+            ),
         )
         self.assertEqual(
-            2, get_total_entities_of_cls([person], schema.StateSentenceGroup)
+            2,
+            get_total_entities_of_cls(
+                [person], schema.StateSentenceGroup, field_index=self.field_index
+            ),
         )
-        self.assertEqual(1, get_total_entities_of_cls([person], schema.StatePerson))
+        self.assertEqual(
+            1,
+            get_total_entities_of_cls(
+                [person], schema.StatePerson, field_index=self.field_index
+            ),
+        )
 
     def test_getExternalIdsOfCls(self) -> None:
         supervision_sentence = schema.StateSupervisionSentence(external_id=_EXTERNAL_ID)
@@ -408,14 +495,21 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
 
         self.assertCountEqual(
             [_EXTERNAL_ID, _EXTERNAL_ID_2, _EXTERNAL_ID_3],
-            get_external_ids_of_cls([person], schema.StateSupervisionSentence),
+            get_external_ids_of_cls(
+                [person], schema.StateSupervisionSentence, field_index=self.field_index
+            ),
         )
         self.assertCountEqual(
             [_EXTERNAL_ID, _EXTERNAL_ID_2],
-            get_external_ids_of_cls([person], schema.StateSentenceGroup),
+            get_external_ids_of_cls(
+                [person], schema.StateSentenceGroup, field_index=self.field_index
+            ),
         )
         self.assertCountEqual(
-            [_EXTERNAL_ID], get_external_ids_of_cls([person], schema.StatePerson)
+            [_EXTERNAL_ID],
+            get_external_ids_of_cls(
+                [person], schema.StatePerson, field_index=self.field_index
+            ),
         )
 
     def test_getExternalIdsOfCls_emptyExternalId_raises(self) -> None:
@@ -428,12 +522,16 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
         )
 
         with self.assertRaises(EntityMatchingError):
-            get_external_ids_of_cls([person], schema.StateSentenceGroup)
+            get_external_ids_of_cls(
+                [person], schema.StateSentenceGroup, field_index=self.field_index
+            )
 
     def test_getExternalIdsOfCls_emptyPersonExternalId_raises(self) -> None:
         person = schema.StatePerson()
         with self.assertRaises(EntityMatchingError):
-            get_external_ids_of_cls([person], schema.StatePerson)
+            get_external_ids_of_cls(
+                [person], schema.StatePerson, field_index=self.field_index
+            )
 
     def test_completeEnumSet_admittedForCommitmentFromSupervision(self) -> None:
         period = schema.StateIncarcerationPeriod()
@@ -461,6 +559,7 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
             nonnull_fields_entity_match(
                 ingested_entity=EntityTree(entity=charge, ancestor_chain=[]),
                 db_entity=EntityTree(entity=charge_another, ancestor_chain=[]),
+                field_index=self.field_index,
             )
         )
 
@@ -477,6 +576,7 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
             nonnull_fields_entity_match(
                 ingested_entity=EntityTree(entity=charge, ancestor_chain=[]),
                 db_entity=EntityTree(entity=charge_another, ancestor_chain=[]),
+                field_index=self.field_index,
             )
         )
         charge_another.external_id = _EXTERNAL_ID
@@ -484,6 +584,7 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
             nonnull_fields_entity_match(
                 ingested_entity=EntityTree(entity=charge, ancestor_chain=[]),
                 db_entity=EntityTree(entity=charge_another, ancestor_chain=[]),
+                field_index=self.field_index,
             )
         )
 
@@ -505,6 +606,7 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
             nonnull_fields_entity_match(
                 ingested_entity=EntityTree(entity=charge, ancestor_chain=[]),
                 db_entity=EntityTree(entity=charge_another, ancestor_chain=[]),
+                field_index=self.field_index,
             )
         )
         charge_another.county_code = _COUNTY_CODE_ANOTHER
@@ -514,6 +616,7 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
             nonnull_fields_entity_match(
                 ingested_entity=EntityTree(entity=charge, ancestor_chain=[]),
                 db_entity=EntityTree(entity=charge_another, ancestor_chain=[]),
+                field_index=self.field_index,
             )
         )
         charge_another.county_code = _COUNTY_CODE
@@ -523,6 +626,7 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
             nonnull_fields_entity_match(
                 ingested_entity=EntityTree(entity=charge, ancestor_chain=[]),
                 db_entity=EntityTree(entity=charge_another, ancestor_chain=[]),
+                field_index=self.field_index,
             )
         )
 
@@ -548,9 +652,9 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
             person=schema.StatePerson(),
             sentence_group_id=_ID,
         )
-        self.assertTrue(is_placeholder(entity))
+        self.assertTrue(is_placeholder(entity, field_index=self.field_index))
         entity.county_code = "county_code"
-        self.assertFalse(is_placeholder(entity))
+        self.assertFalse(is_placeholder(entity, field_index=self.field_index))
 
     def test_isPlaceholder_personWithExternalId(self) -> None:
         sentence_group = schema.StateSentenceGroup(
@@ -559,22 +663,22 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
         person = schema.StatePerson(
             state_code=_STATE_CODE, sentence_groups=[sentence_group]
         )
-        self.assertTrue(is_placeholder(person))
+        self.assertTrue(is_placeholder(person, field_index=self.field_index))
         person.external_ids.append(
             schema.StatePersonExternalId(
                 state_code=_STATE_CODE, external_id=_EXTERNAL_ID, id_type=_ID_TYPE
             )
         )
-        self.assertFalse(is_placeholder(person))
+        self.assertFalse(is_placeholder(person, field_index=self.field_index))
 
     def test_isPlaceholder_defaultEnumValue(self) -> None:
         entity = schema.StateIncarcerationSentence(
             incarceration_type=StateIncarcerationType.STATE_PRISON.value
         )
-        self.assertTrue(is_placeholder(entity))
+        self.assertTrue(is_placeholder(entity, field_index=self.field_index))
 
         entity.incarceration_type_raw_text = "PRISON"
-        self.assertFalse(is_placeholder(entity))
+        self.assertFalse(is_placeholder(entity, field_index=self.field_index))
 
     def test_readPersonsByRootEntityCls(self) -> None:
         schema_person_with_root_entity = schema.StatePerson(
@@ -635,6 +739,7 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
                 _STATE_CODE,
                 [ingested_person],
                 allowed_root_entity_classes=[schema.StateSentenceGroup],
+                field_index=self.field_index,
             )
             self.assert_schema_object_lists_equal(expected_people, people)
 
@@ -656,6 +761,7 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
                     "us_nd",
                     [ingested_person],
                     allowed_root_entity_classes=[schema.StateSentenceGroup],
+                    field_index=self.field_index,
                 )
 
     def test_readDbEntitiesOfClsToMerge(self) -> None:
@@ -706,7 +812,10 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
 
             # Act
             trees_to_merge = read_db_entity_trees_of_cls_to_merge(
-                session, _STATE_CODE, schema.StateSentenceGroup
+                session,
+                _STATE_CODE,
+                schema.StateSentenceGroup,
+                field_index=self.field_index,
             )
 
             sentence_group_trees_to_merge = one(trees_to_merge)

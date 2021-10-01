@@ -60,6 +60,7 @@ from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import (
+    CoreEntityFieldIndex,
     person_has_id,
     print_entity_trees,
     prune_dangling_placeholders_from_tree,
@@ -325,6 +326,8 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
         #  delete this.
         ignore_dangling_placeholders: bool = False,
         print_tree_structure_only: bool = False,
+        # Default arg caches across calls to this function
+        field_index: CoreEntityFieldIndex = CoreEntityFieldIndex(),
     ) -> None:
         """Asserts that the set of expected people matches all the people that currently exist in the database.
 
@@ -357,7 +360,10 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
             pruned_found_people = []
             for person in found_people:
                 pruned_person = cast(
-                    StatePerson, prune_dangling_placeholders_from_tree(person)
+                    StatePerson,
+                    prune_dangling_placeholders_from_tree(
+                        person, field_index=field_index
+                    ),
                 )
                 if pruned_person is not None:
                     pruned_found_people.append(pruned_person)
@@ -366,7 +372,10 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
             pruned_expected_people: List[StatePerson] = []
             for person in expected_db_people:
                 pruned_expected_person = cast(
-                    StatePerson, prune_dangling_placeholders_from_tree(person)
+                    StatePerson,
+                    prune_dangling_placeholders_from_tree(
+                        person, field_index=field_index
+                    ),
                 )
                 if pruned_expected_person is not None:
                     pruned_expected_people.append(pruned_expected_person)
@@ -387,12 +396,16 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
 
             print_visible_header_label("FINAL")
             print_entity_trees(
-                found_people, print_tree_structure_only=print_tree_structure_only
+                found_people,
+                print_tree_structure_only=print_tree_structure_only,
+                field_index=field_index,
             )
 
             print_visible_header_label("EXPECTED")
             print_entity_trees(
-                expected_db_people, print_tree_structure_only=print_tree_structure_only
+                expected_db_people,
+                print_tree_structure_only=print_tree_structure_only,
+                field_index=field_index,
             )
 
         self.assertCountEqual(found_people, expected_db_people)

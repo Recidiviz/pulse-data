@@ -23,28 +23,27 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodStatus,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
-
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.schema_entity_converter import (
     schema_entity_converter as converter,
 )
 from recidiviz.persistence.entity.state.entities import (
+    StateIncarcerationPeriod,
+    StateIncarcerationSentence,
     StatePerson,
     StateSentenceGroup,
+    StateSupervisionContact,
     StateSupervisionPeriod,
     StateSupervisionSentence,
-    StateIncarcerationSentence,
-    StateIncarcerationPeriod,
     StateSupervisionViolation,
     StateSupervisionViolationResponse,
-    StateSupervisionContact,
 )
 from recidiviz.persistence.entity_matching.state.state_date_based_matching_utils import (
-    move_periods_onto_sentences_by_date,
     _is_sentence_ended_by_status,
-    move_violations_onto_supervision_periods_for_sentence,
-    move_violations_onto_supervision_periods_for_person,
     move_contacts_onto_supervision_periods_for_person,
+    move_periods_onto_sentences_by_date,
+    move_violations_onto_supervision_periods_for_person,
+    move_violations_onto_supervision_periods_for_sentence,
 )
 from recidiviz.tests.persistence.entity_matching.state.base_state_entity_matcher_test_classes import (
     BaseStateMatchingUtilsTest,
@@ -119,7 +118,7 @@ class TestStateDateBasedMatchingUtils(BaseStateMatchingUtilsTest):
 
         # Act
         input_people = converter.convert_entity_people_to_schema_people([state_person])
-        move_periods_onto_sentences_by_date(input_people)
+        move_periods_onto_sentences_by_date(input_people, field_index=self.field_index)
 
         # Assert
         self.assert_people_match([expected_person], input_people)
@@ -170,7 +169,7 @@ class TestStateDateBasedMatchingUtils(BaseStateMatchingUtilsTest):
 
         # Act
         input_people = converter.convert_entity_people_to_schema_people([state_person])
-        move_periods_onto_sentences_by_date(input_people)
+        move_periods_onto_sentences_by_date(input_people, field_index=self.field_index)
 
         # Assert
         self.assert_people_match([expected_person], input_people)
@@ -266,7 +265,7 @@ class TestStateDateBasedMatchingUtils(BaseStateMatchingUtilsTest):
 
         # Act
         input_people = converter.convert_entity_people_to_schema_people([state_person])
-        move_periods_onto_sentences_by_date(input_people)
+        move_periods_onto_sentences_by_date(input_people, field_index=self.field_index)
 
         # Assert
         self.assert_people_match([expected_person], input_people)
@@ -344,7 +343,9 @@ class TestStateDateBasedMatchingUtils(BaseStateMatchingUtilsTest):
         # Act
         input_people = converter.convert_entity_people_to_schema_people([state_person])
         move_periods_onto_sentences_by_date(
-            input_people, period_filter=schema.StateIncarcerationPeriod
+            input_people,
+            period_filter=schema.StateIncarcerationPeriod,
+            field_index=self.field_index,
         )
 
         # Assert
@@ -423,7 +424,9 @@ class TestStateDateBasedMatchingUtils(BaseStateMatchingUtilsTest):
         # Act
         input_people = converter.convert_entity_people_to_schema_people([state_person])
         move_periods_onto_sentences_by_date(
-            input_people, period_filter=schema.StateSupervisionPeriod
+            input_people,
+            period_filter=schema.StateSupervisionPeriod,
+            field_index=self.field_index,
         )
 
         # Assert
@@ -499,7 +502,7 @@ class TestStateDateBasedMatchingUtils(BaseStateMatchingUtilsTest):
 
         # Act
         input_people = converter.convert_entity_people_to_schema_people([state_person])
-        move_periods_onto_sentences_by_date(input_people)
+        move_periods_onto_sentences_by_date(input_people, field_index=self.field_index)
 
         # Assert
         self.assert_people_match([expected_person], input_people)
@@ -554,7 +557,7 @@ class TestStateDateBasedMatchingUtils(BaseStateMatchingUtilsTest):
 
         # Act
         input_people = converter.convert_entity_people_to_schema_people([state_person])
-        move_periods_onto_sentences_by_date(input_people)
+        move_periods_onto_sentences_by_date(input_people, field_index=self.field_index)
 
         # Assert
         self.assert_people_match([expected_person], input_people)
@@ -621,7 +624,7 @@ class TestStateDateBasedMatchingUtils(BaseStateMatchingUtilsTest):
 
         # Act
         input_people = converter.convert_entity_people_to_schema_people([state_person])
-        move_periods_onto_sentences_by_date(input_people)
+        move_periods_onto_sentences_by_date(input_people, field_index=self.field_index)
 
         # Assert
         self.assert_people_match([expected_person], input_people)
@@ -671,7 +674,7 @@ class TestStateDateBasedMatchingUtils(BaseStateMatchingUtilsTest):
 
         # Act
         input_people = converter.convert_entity_people_to_schema_people([state_person])
-        move_periods_onto_sentences_by_date(input_people)
+        move_periods_onto_sentences_by_date(input_people, field_index=self.field_index)
 
         # Assert
         self.assert_people_match([expected_person], input_people)
@@ -719,7 +722,7 @@ class TestStateDateBasedMatchingUtils(BaseStateMatchingUtilsTest):
 
         # Act
         input_people = converter.convert_entity_people_to_schema_people([state_person])
-        move_periods_onto_sentences_by_date(input_people)
+        move_periods_onto_sentences_by_date(input_people, field_index=self.field_index)
 
         # Assert
         self.assert_people_match([expected_person], input_people)
@@ -855,7 +858,9 @@ class TestStateDateBasedMatchingUtils(BaseStateMatchingUtilsTest):
 
         # Act
         input_people = converter.convert_entity_people_to_schema_people([state_person])
-        move_violations_onto_supervision_periods_for_sentence(input_people)
+        move_violations_onto_supervision_periods_for_sentence(
+            input_people, field_index=self.field_index
+        )
 
         # Assert
         self.assert_people_match([expected_person], input_people)
@@ -911,7 +916,9 @@ class TestStateDateBasedMatchingUtils(BaseStateMatchingUtilsTest):
 
         # Act
         input_people = converter.convert_entity_people_to_schema_people([state_person])
-        move_violations_onto_supervision_periods_for_sentence(input_people)
+        move_violations_onto_supervision_periods_for_sentence(
+            input_people, field_index=self.field_index
+        )
 
         # Assert
         self.assert_people_match([expected_person], input_people)
@@ -1042,7 +1049,9 @@ class TestStateDateBasedMatchingUtils(BaseStateMatchingUtilsTest):
 
         # Act
         input_people = converter.convert_entity_people_to_schema_people([state_person])
-        move_violations_onto_supervision_periods_for_person(input_people, _STATE_CODE)
+        move_violations_onto_supervision_periods_for_person(
+            input_people, _STATE_CODE, field_index=self.field_index
+        )
 
         # Assert
         self.assert_people_match([expected_person], input_people)
@@ -1111,7 +1120,9 @@ class TestStateDateBasedMatchingUtils(BaseStateMatchingUtilsTest):
 
         # Act
         input_people = converter.convert_entity_people_to_schema_people([state_person])
-        move_violations_onto_supervision_periods_for_person(input_people, _STATE_CODE)
+        move_violations_onto_supervision_periods_for_person(
+            input_people, _STATE_CODE, field_index=self.field_index
+        )
 
         # Assert
         self.assert_people_match([expected_person], input_people)
@@ -1229,7 +1240,9 @@ class TestStateDateBasedMatchingUtils(BaseStateMatchingUtilsTest):
 
         # Act
         input_people = converter.convert_entity_people_to_schema_people([state_person])
-        move_contacts_onto_supervision_periods_for_person(input_people, _STATE_CODE)
+        move_contacts_onto_supervision_periods_for_person(
+            input_people, _STATE_CODE, field_index=self.field_index
+        )
 
         # Assert
         self.assert_people_match([expected_person], input_people)
@@ -1298,7 +1311,9 @@ class TestStateDateBasedMatchingUtils(BaseStateMatchingUtilsTest):
 
         # Act
         input_people = converter.convert_entity_people_to_schema_people([state_person])
-        move_contacts_onto_supervision_periods_for_person(input_people, _STATE_CODE)
+        move_contacts_onto_supervision_periods_for_person(
+            input_people, _STATE_CODE, field_index=self.field_index
+        )
 
         # Assert
         self.assert_people_match([expected_person], input_people)

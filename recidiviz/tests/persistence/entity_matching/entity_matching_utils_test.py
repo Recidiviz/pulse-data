@@ -22,6 +22,7 @@ import attr
 
 from recidiviz.common.constants.county.booking import CustodyStatus
 from recidiviz.persistence.entity.county import entities as county_entities
+from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity_matching.county import county_matching_utils
 from recidiviz.persistence.entity_matching.entity_matching_utils import get_only_match
 
@@ -47,7 +48,11 @@ class TestEntityMatchingUtils(TestCase):
         self.assertEqual(county_matching_utils.diff_count(person, person_another), 1)
 
     def test_get_only_match_duplicates(self):
-        def match(db_entity, ingested_entity):
+        def match(
+            db_entity,
+            ingested_entity,
+            field_index,  # pylint: disable=unused-argument
+        ):
             return db_entity.birthdate == ingested_entity.birthdate
 
         person = county_entities.Person.new_with_defaults(person_id=1, birthdate=_DATE)
@@ -58,5 +63,11 @@ class TestEntityMatchingUtils(TestCase):
         ing_person = county_entities.Person.new_with_defaults(birthdate=_DATE)
 
         self.assertEqual(
-            get_only_match(ing_person, [person, person_2, person], match), person
+            get_only_match(
+                ing_person,
+                [person, person_2, person],
+                matcher=match,
+                field_index=CoreEntityFieldIndex(),
+            ),
+            person,
         )

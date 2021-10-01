@@ -52,6 +52,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
+from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
     StateSupervisionPeriod,
@@ -85,6 +86,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             pre_processed_supervision_period_index=sp_index,
             violation_responses=violation_responses,
             earliest_death_date=earliest_death_date,
+            field_index=CoreEntityFieldIndex(),
         )
 
         return ip_pre_processing_manager.pre_processed_incarceration_period_index_for_calculations(

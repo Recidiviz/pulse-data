@@ -23,9 +23,10 @@ from unittest import TestCase
 import attr
 from dateutil.relativedelta import relativedelta
 
-from recidiviz.common.constants.bond import BondType, BondStatus
+from recidiviz.common.constants.bond import BondStatus, BondType
 from recidiviz.common.constants.county.booking import CustodyStatus
 from recidiviz.persistence.entity.county import entities
+from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity_matching.county import county_matching_utils
 
 _PERSON_ID = 2
@@ -58,6 +59,9 @@ _JUDGE_NAME_OTHER = "jujj"
 class TestCountyMatchingUtils(TestCase):
     """Tests for entity matching logic"""
 
+    def setUp(self) -> None:
+        self.field_index = CoreEntityFieldIndex()
+
     def test_person_match_name(self):
         db_person = entities.Person.new_with_defaults(
             full_name=_FULL_NAME, resident_of_region=True
@@ -67,7 +71,9 @@ class TestCountyMatchingUtils(TestCase):
         )
         self.assertTrue(
             county_matching_utils.is_person_match(
-                db_entity=db_person, ingested_entity=ingested_person
+                db_entity=db_person,
+                ingested_entity=ingested_person,
+                field_index=self.field_index,
             )
         )
 
@@ -81,13 +87,17 @@ class TestCountyMatchingUtils(TestCase):
         )
         self.assertTrue(
             county_matching_utils.is_person_match(
-                db_entity=db_person, ingested_entity=ingested_person
+                db_entity=db_person,
+                ingested_entity=ingested_person,
+                field_index=self.field_index,
             )
         )
         ingested_person.birthdate = _DATE_OTHER
         self.assertFalse(
             county_matching_utils.is_person_match(
-                db_entity=db_person, ingested_entity=ingested_person
+                db_entity=db_person,
+                ingested_entity=ingested_person,
+                field_index=self.field_index,
             )
         )
 
@@ -106,13 +116,17 @@ class TestCountyMatchingUtils(TestCase):
         )
         self.assertTrue(
             county_matching_utils.is_person_match(
-                db_entity=db_person, ingested_entity=ingested_person
+                db_entity=db_person,
+                ingested_entity=ingested_person,
+                field_index=self.field_index,
             )
         )
         ingested_person.birthdate = date_plus_two_years
         self.assertFalse(
             county_matching_utils.is_person_match(
-                db_entity=db_person, ingested_entity=ingested_person
+                db_entity=db_person,
+                ingested_entity=ingested_person,
+                field_index=self.field_index,
             )
         )
 
@@ -121,13 +135,17 @@ class TestCountyMatchingUtils(TestCase):
         ingested_person = entities.Person.new_with_defaults(external_id=_EXTERNAL_ID)
         self.assertTrue(
             county_matching_utils.is_person_match(
-                db_entity=db_person, ingested_entity=ingested_person
+                db_entity=db_person,
+                ingested_entity=ingested_person,
+                field_index=self.field_index,
             )
         )
         ingested_person.external_id = _EXTERNAL_ID_OTHER
         self.assertFalse(
             county_matching_utils.is_person_match(
-                db_entity=db_person, ingested_entity=ingested_person
+                db_entity=db_person,
+                ingested_entity=ingested_person,
+                field_index=self.field_index,
             )
         )
 
@@ -136,13 +154,17 @@ class TestCountyMatchingUtils(TestCase):
         ingested_booking = entities.Booking.new_with_defaults(external_id=_EXTERNAL_ID)
         self.assertTrue(
             county_matching_utils.is_booking_match(
-                db_entity=db_booking, ingested_entity=ingested_booking
+                db_entity=db_booking,
+                ingested_entity=ingested_booking,
+                field_index=self.field_index,
             )
         )
         ingested_booking.external_id = _EXTERNAL_ID_OTHER
         self.assertFalse(
             county_matching_utils.is_booking_match(
-                db_entity=db_booking, ingested_entity=ingested_booking
+                db_entity=db_booking,
+                ingested_entity=ingested_booking,
+                field_index=self.field_index,
             )
         )
 
@@ -151,13 +173,17 @@ class TestCountyMatchingUtils(TestCase):
         ingested_booking = entities.Booking.new_with_defaults(admission_date=_DATE)
         self.assertTrue(
             county_matching_utils.is_booking_match(
-                db_entity=db_booking, ingested_entity=ingested_booking
+                db_entity=db_booking,
+                ingested_entity=ingested_booking,
+                field_index=self.field_index,
             )
         )
         ingested_booking.admission_date = None
         self.assertFalse(
             county_matching_utils.is_booking_match(
-                db_entity=db_booking, ingested_entity=ingested_booking
+                db_entity=db_booking,
+                ingested_entity=ingested_booking,
+                field_index=self.field_index,
             )
         )
 
@@ -168,13 +194,17 @@ class TestCountyMatchingUtils(TestCase):
         ingested_booking = entities.Booking.new_with_defaults()
         self.assertTrue(
             county_matching_utils.is_booking_match(
-                db_entity=db_booking, ingested_entity=ingested_booking
+                db_entity=db_booking,
+                ingested_entity=ingested_booking,
+                field_index=self.field_index,
             )
         )
         ingested_booking.custody_status = CustodyStatus.RELEASED
         self.assertFalse(
             county_matching_utils.is_booking_match(
-                db_entity=db_booking, ingested_entity=ingested_booking
+                db_entity=db_booking,
+                ingested_entity=ingested_booking,
+                field_index=self.field_index,
             )
         )
 
@@ -183,13 +213,17 @@ class TestCountyMatchingUtils(TestCase):
         ingested_hold = entities.Hold.new_with_defaults(external_id=_EXTERNAL_ID)
         self.assertTrue(
             county_matching_utils.is_hold_match(
-                db_entity=db_hold, ingested_entity=ingested_hold
+                db_entity=db_hold,
+                ingested_entity=ingested_hold,
+                field_index=self.field_index,
             )
         )
         ingested_hold.external_id = _EXTERNAL_ID_OTHER
         self.assertFalse(
             county_matching_utils.is_hold_match(
-                db_entity=db_hold, ingested_entity=ingested_hold
+                db_entity=db_hold,
+                ingested_entity=ingested_hold,
+                field_index=self.field_index,
             )
         )
 
@@ -200,13 +234,17 @@ class TestCountyMatchingUtils(TestCase):
         ingested_hold = entities.Hold.new_with_defaults(jurisdiction_name=_PLACE_1)
         self.assertTrue(
             county_matching_utils.is_hold_match(
-                db_entity=db_hold, ingested_entity=ingested_hold
+                db_entity=db_hold,
+                ingested_entity=ingested_hold,
+                field_index=self.field_index,
             )
         )
         ingested_hold.jurisdiction_name = _PLACE_2
         self.assertFalse(
             county_matching_utils.is_hold_match(
-                db_entity=db_hold, ingested_entity=ingested_hold
+                db_entity=db_hold,
+                ingested_entity=ingested_hold,
+                field_index=self.field_index,
             )
         )
 

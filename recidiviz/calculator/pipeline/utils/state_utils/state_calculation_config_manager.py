@@ -157,6 +157,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.state.entities import (
     StateAssessment,
     StateIncarcerationPeriod,
@@ -174,6 +175,7 @@ def get_month_supervision_type(
     supervision_sentences: List[StateSupervisionSentence],
     incarceration_sentences: List[StateIncarcerationSentence],
     supervision_period: StateSupervisionPeriod,
+    field_index: CoreEntityFieldIndex,
 ) -> StateSupervisionPeriodSupervisionType:
     """Supervision type can change over time even if the period does not change. This function calculates the
     supervision type that a given supervision period represents during the month that |any_date_in_month| falls in. The
@@ -205,6 +207,7 @@ def get_month_supervision_type(
         supervision_sentences,
         incarceration_sentences,
         supervision_period,
+        field_index,
     )
 
 
@@ -247,6 +250,7 @@ def terminating_supervision_period_supervision_type(
     supervision_period: StateSupervisionPeriod,
     supervision_sentences: List[StateSupervisionSentence],
     incarceration_sentences: List[StateIncarcerationSentence],
+    field_index: CoreEntityFieldIndex,
 ) -> StateSupervisionPeriodSupervisionType:
     """Calculates the supervision type that should be associated with a terminated supervision period. In some cases,
     the supervision period will be terminated long after the person has been incarcerated (e.g. in the case of a board
@@ -286,6 +290,7 @@ def terminating_supervision_period_supervision_type(
         supervision_sentences,
         incarceration_sentences,
         supervision_period,
+        field_index=field_index,
     )
 
 

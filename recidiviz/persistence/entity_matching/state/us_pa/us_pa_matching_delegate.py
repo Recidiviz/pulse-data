@@ -50,7 +50,10 @@ class UsPaMatchingDelegate(BaseStateMatchingDelegate):
             ingested_entity_tree.entity, (schema.StateAssessment, schema.StateCharge)
         ):
             return entity_matching_utils.get_only_match(
-                ingested_entity_tree, db_entity_trees, nonnull_fields_entity_match
+                ingested_entity_tree,
+                db_entity_trees,
+                field_index=self.field_index,
+                matcher=nonnull_fields_entity_match,
             )
         return None
 
@@ -64,5 +67,5 @@ class UsPaMatchingDelegate(BaseStateMatchingDelegate):
             "[Entity matching] Move supervision violations onto supervision periods by date."
         )
         move_violations_onto_supervision_periods_for_person(
-            matched_persons, self.get_region_code()
+            matched_persons, self.get_region_code(), field_index=self.field_index
         )

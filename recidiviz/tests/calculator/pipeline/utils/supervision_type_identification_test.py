@@ -41,6 +41,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
+from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
     StateIncarcerationSentence,
@@ -51,6 +52,9 @@ from recidiviz.persistence.entity.state.entities import (
 
 class TestGetMonthSupervisionType(unittest.TestCase):
     """Tests the get_month_supervision_type function."""
+
+    def setUp(self) -> None:
+        self.field_index = CoreEntityFieldIndex()
 
     def test_get_month_supervision_type_dual(self):
         any_date_in_month = date(2018, 4, 13)
@@ -94,6 +98,7 @@ class TestGetMonthSupervisionType(unittest.TestCase):
             supervision_sentences,
             incarceration_sentences,
             supervision_period,
+            field_index=self.field_index,
         )
 
         self.assertEqual(StateSupervisionPeriodSupervisionType.DUAL, supervision_type)
@@ -130,6 +135,7 @@ class TestGetMonthSupervisionType(unittest.TestCase):
             supervision_sentences,
             incarceration_sentences,
             supervision_period,
+            field_index=self.field_index,
         )
 
         self.assertEqual(
@@ -166,6 +172,7 @@ class TestGetMonthSupervisionType(unittest.TestCase):
             supervision_sentences,
             incarceration_sentences,
             supervision_period,
+            field_index=self.field_index,
         )
 
         self.assertEqual(StateSupervisionPeriodSupervisionType.PAROLE, supervision_type)
@@ -213,6 +220,7 @@ class TestGetMonthSupervisionType(unittest.TestCase):
             supervision_sentences,
             incarceration_sentences,
             supervision_period,
+            field_index=self.field_index,
         )
 
         self.assertEqual(StateSupervisionPeriodSupervisionType.DUAL, supervision_type)
@@ -248,6 +256,7 @@ class TestGetMonthSupervisionType(unittest.TestCase):
             supervision_sentences,
             incarceration_sentences,
             supervision_period,
+            field_index=self.field_index,
         )
 
         self.assertEqual(
@@ -286,6 +295,7 @@ class TestGetMonthSupervisionType(unittest.TestCase):
             supervision_sentences,
             incarceration_sentences,
             supervision_period,
+            field_index=self.field_index,
         )
 
         self.assertEqual(
@@ -312,6 +322,7 @@ class TestGetMonthSupervisionType(unittest.TestCase):
             supervision_sentences,
             incarceration_sentences,
             supervision_period,
+            field_index=self.field_index,
         )
 
         self.assertEqual(
@@ -359,6 +370,7 @@ class TestGetMonthSupervisionType(unittest.TestCase):
                 supervision_sentences,
                 incarceration_sentences,
                 supervision_period,
+                field_index=self.field_index,
             )
 
             self.assertEqual(
@@ -401,6 +413,7 @@ class TestGetMonthSupervisionType(unittest.TestCase):
                 supervision_sentences,
                 incarceration_sentences,
                 supervision_period,
+                field_index=self.field_index,
             )
 
     def test_get_month_supervision_type_no_start_date_on_sentence_drop_it(self):
@@ -434,6 +447,7 @@ class TestGetMonthSupervisionType(unittest.TestCase):
             supervision_sentences,
             incarceration_sentences,
             supervision_period,
+            field_index=self.field_index,
         )
 
         self.assertEqual(
@@ -471,6 +485,7 @@ class TestGetMonthSupervisionType(unittest.TestCase):
             supervision_sentences,
             incarceration_sentences,
             supervision_period,
+            field_index=self.field_index,
         )
 
         self.assertEqual(
@@ -505,6 +520,7 @@ class TestGetMonthSupervisionType(unittest.TestCase):
             supervision_sentences,
             incarceration_sentences,
             supervision_period,
+            field_index=self.field_index,
         )
 
         self.assertEqual(
@@ -543,6 +559,7 @@ class TestGetMonthSupervisionType(unittest.TestCase):
             supervision_sentences,
             incarceration_sentences,
             supervision_period,
+            field_index=self.field_index,
         )
 
         self.assertEqual(
@@ -580,6 +597,7 @@ class TestGetMonthSupervisionType(unittest.TestCase):
             supervision_sentences,
             incarceration_sentences,
             supervision_period,
+            field_index=self.field_index,
         )
 
         self.assertEqual(
@@ -618,6 +636,7 @@ class TestGetMonthSupervisionType(unittest.TestCase):
             supervision_sentences,
             incarceration_sentences,
             supervision_period,
+            field_index=self.field_index,
         )
 
         self.assertEqual(StateSupervisionPeriodSupervisionType.PAROLE, supervision_type)
@@ -654,6 +673,7 @@ class TestGetMonthSupervisionType(unittest.TestCase):
             supervision_sentences,
             incarceration_sentences,
             supervision_period,
+            field_index=self.field_index,
         )
 
         self.assertEqual(StateSupervisionPeriodSupervisionType.PAROLE, supervision_type)
@@ -690,6 +710,7 @@ class TestGetMonthSupervisionType(unittest.TestCase):
             supervision_sentences,
             incarceration_sentences,
             supervision_period,
+            field_index=self.field_index,
         )
 
         self.assertEqual(StateSupervisionPeriodSupervisionType.PAROLE, supervision_type)
@@ -725,6 +746,7 @@ class TestGetMonthSupervisionType(unittest.TestCase):
             supervision_sentences,
             incarceration_sentences,
             supervision_period,
+            field_index=self.field_index,
         )
 
         self.assertEqual(
@@ -813,7 +835,9 @@ class TestGetPreIncarcerationSupervisionType(unittest.TestCase):
 
         self.assertEqual(
             [valid_incarceration_sentence],
-            _get_valid_attached_sentences(sentences, supervision_period),
+            _get_valid_attached_sentences(
+                sentences, supervision_period, CoreEntityFieldIndex()
+            ),
         )
 
     def test_getSentencesOverlappingWithDates(self):

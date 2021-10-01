@@ -28,6 +28,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.persistence.database.schema.state import schema
+from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity_matching.state.state_matching_utils import (
     default_merge_flat_fields,
 )
@@ -86,6 +87,7 @@ class TestUsNdMatchingUtils(BaseStateMatchingUtilsTest):
             "ADM", StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION
         )
         self.overrides = overrides_builder.build()
+        self.field_index = CoreEntityFieldIndex()
 
     def test_mergeFlatFields(self) -> None:
         ing_entity = schema.StateSentenceGroup(
@@ -109,7 +111,7 @@ class TestUsNdMatchingUtils(BaseStateMatchingUtilsTest):
         )
 
         merged_entity = default_merge_flat_fields(
-            new_entity=ing_entity, old_entity=db_entity
+            new_entity=ing_entity, old_entity=db_entity, field_index=self.field_index
         )
         self.assert_schema_objects_equal(expected_entity, merged_entity)
 
@@ -144,7 +146,11 @@ class TestUsNdMatchingUtils(BaseStateMatchingUtilsTest):
         )
         self.assert_schema_objects_equal(
             expected_incarceration_period,
-            merge_incomplete_periods(new_entity=ingested_entity, old_entity=db_entity),
+            merge_incomplete_periods(
+                new_entity=ingested_entity,
+                old_entity=db_entity,
+                field_index=self.field_index,
+            ),
         )
 
     def test_transformToHolds(self) -> None:
@@ -437,7 +443,7 @@ class TestUsNdMatchingUtils(BaseStateMatchingUtilsTest):
         ]
 
         merged_periods = _merge_incarceration_periods_helper(
-            ingested_incarceration_periods
+            ingested_incarceration_periods, field_index=self.field_index
         )
 
         self.assert_schema_object_lists_equal(
@@ -541,7 +547,7 @@ class TestUsNdMatchingUtils(BaseStateMatchingUtilsTest):
         ]
 
         merged_periods = _merge_incarceration_periods_helper(
-            ingested_incarceration_periods
+            ingested_incarceration_periods, field_index=self.field_index
         )
 
         self.assert_schema_object_lists_equal(
@@ -575,7 +581,7 @@ class TestUsNdMatchingUtils(BaseStateMatchingUtilsTest):
             incarceration_period_2,
         ]
         merged_periods = _merge_incarceration_periods_helper(
-            ingested_incarceration_periods
+            ingested_incarceration_periods, field_index=self.field_index
         )
         self.assert_schema_object_lists_equal(
             expected_incarceration_periods, merged_periods
@@ -594,7 +600,7 @@ class TestUsNdMatchingUtils(BaseStateMatchingUtilsTest):
         )
         expected_incarceration_periods = [expected_merged_incarceration_period_1]
         merged_periods = _merge_incarceration_periods_helper(
-            ingested_incarceration_periods
+            ingested_incarceration_periods, field_index=self.field_index
         )
         self.assert_schema_object_lists_equal(
             expected_incarceration_periods, merged_periods
@@ -620,6 +626,6 @@ class TestUsNdMatchingUtils(BaseStateMatchingUtilsTest):
 
         expected_periods = [incarceration_period, placeholder_incarceration_period]
         merged_periods = _merge_incarceration_periods_helper(
-            ingested_incarceration_periods
+            ingested_incarceration_periods, field_index=self.field_index
         )
         self.assert_schema_object_lists_equal(expected_periods, merged_periods)

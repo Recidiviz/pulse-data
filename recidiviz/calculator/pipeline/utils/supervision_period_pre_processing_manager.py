@@ -32,7 +32,10 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodTerminationReason,
 )
-from recidiviz.persistence.entity.entity_utils import is_placeholder
+from recidiviz.persistence.entity.entity_utils import (
+    CoreEntityFieldIndex,
+    is_placeholder,
+)
 from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
 
 
@@ -71,6 +74,8 @@ class SupervisionPreProcessingManager:
         # The end date of the earliest incarceration or supervision period ending in
         # death. None if no periods end in death.
         self.earliest_death_date = earliest_death_date
+
+        self.field_index = CoreEntityFieldIndex()
 
     def pre_processed_supervision_period_index_for_calculations(
         self,
@@ -118,12 +123,16 @@ class SupervisionPreProcessingManager:
             )
         return self._pre_processed_supervision_period_index
 
-    @staticmethod
     def _drop_placeholder_periods(
+        self,
         supervision_periods: List[StateSupervisionPeriod],
     ) -> List[StateSupervisionPeriod]:
         """Drops all placeholder supervision periods."""
-        return [period for period in supervision_periods if not is_placeholder(period)]
+        return [
+            period
+            for period in supervision_periods
+            if not is_placeholder(period, self.field_index)
+        ]
 
     @staticmethod
     def _infer_missing_dates_and_statuses(

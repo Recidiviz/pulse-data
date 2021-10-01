@@ -20,7 +20,6 @@ import datetime
 import attr
 
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
-
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.state.entities import (
     StatePerson,
@@ -131,7 +130,7 @@ class TestUsMoMatchingUtils(BaseStateMatchingUtilsTest):
             state_code=_STATE_CODE, sentence_groups=[expected_sg]
         )
 
-        remove_suffix_from_violation_ids([p])
+        remove_suffix_from_violation_ids([p], field_index=self.field_index)
         self.assertEqual(expected_p, self.to_entity(p))
 
     def test_removeSeosFromViolationIds_unexpectedFormat(self) -> None:
@@ -146,7 +145,7 @@ class TestUsMoMatchingUtils(BaseStateMatchingUtilsTest):
             ss = schema.StateSupervisionSentence(supervision_periods=[sp])
             sg = schema.StateSentenceGroup(supervision_sentences=[ss])
             p = schema.StatePerson(sentence_groups=[sg])
-            remove_suffix_from_violation_ids([p])
+            remove_suffix_from_violation_ids([p], field_index=self.field_index)
 
     def test_setCurrentSupervisingOfficerFromSupervision_periods(self) -> None:
         # Arrange
@@ -208,7 +207,9 @@ class TestUsMoMatchingUtils(BaseStateMatchingUtilsTest):
         person.sentence_groups = [sentence_group]
 
         # Act
-        set_current_supervising_officer_from_supervision_periods([person])
+        set_current_supervising_officer_from_supervision_periods(
+            [person], field_index=self.field_index
+        )
 
         # Assert
         self.assertEqual(

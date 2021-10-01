@@ -29,8 +29,8 @@ from recidiviz.ingest.direct.regions.us_nd import us_nd_legacy_enum_helpers
 from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.entity_utils import (
+    CoreEntityFieldIndex,
     EntityFieldType,
-    get_set_entity_field_names,
     is_placeholder,
 )
 from recidiviz.persistence.entity_matching.entity_matching_types import EntityTree
@@ -213,7 +213,9 @@ def _are_consecutive(
     )
 
 
-def merge_incarceration_periods(ingested_persons: List[schema.StatePerson]):
+def merge_incarceration_periods(
+    ingested_persons: List[schema.StatePerson], field_index: CoreEntityFieldIndex
+):
     """Merges any incomplete StateIncarcerationPeriods in the provided
     |ingested_persons|.
     """
@@ -222,13 +224,14 @@ def merge_incarceration_periods(ingested_persons: List[schema.StatePerson]):
             for incarceration_sentence in sentence_group.incarceration_sentences:
                 incarceration_sentence.incarceration_periods = (
                     _merge_incarceration_periods_helper(
-                        incarceration_sentence.incarceration_periods
+                        incarceration_sentence.incarceration_periods, field_index
                     )
                 )
 
 
 def _merge_incarceration_periods_helper(
     incomplete_incarceration_periods: List[schema.StateIncarcerationPeriod],
+    field_index: CoreEntityFieldIndex,
 ) -> List[schema.StateIncarcerationPeriod]:
     """Using the provided |incomplete_incarceration_periods|, attempts to merge
     consecutive admission and release periods from the same facility.
@@ -239,10 +242,12 @@ def _merge_incarceration_periods_helper(
     """
 
     placeholder_periods = [
-        p for p in incomplete_incarceration_periods if is_placeholder(p)
+        p for p in incomplete_incarceration_periods if is_placeholder(p, field_index)
     ]
     non_placeholder_periods = [
-        p for p in incomplete_incarceration_periods if not is_placeholder(p)
+        p
+        for p in incomplete_incarceration_periods
+        if not is_placeholder(p, field_index)
     ]
 
     # Within any IncarcerationSentence, IncarcerationPeriod external_ids are all
@@ -255,8 +260,10 @@ def _merge_incarceration_periods_helper(
         if not last_period:
             last_period = period
             continue
-        if is_incomplete_incarceration_period_match(last_period, period):
-            merged_periods.append(merge_incomplete_periods(period, last_period))
+        if is_incomplete_incarceration_period_match(last_period, period, field_index):
+            merged_periods.append(
+                merge_incomplete_periods(period, last_period, field_index)
+            )
             last_period = None
         else:
             merged_periods.append(last_period)
@@ -274,6 +281,7 @@ _INCARCERATION_PERIOD_ID_DELIMITER = "|"
 def merge_incomplete_periods(
     new_entity: schema.StateIncarcerationPeriod,
     old_entity: schema.StateIncarcerationPeriod,
+    field_index: CoreEntityFieldIndex,
 ) -> schema.StateIncarcerationPeriod:
     """Merges two incarceration periods with information about
     admission and release into one period. Assumes the status of
@@ -287,7 +295,9 @@ def merge_incomplete_periods(
 
     # Complete match, perform normal merge.
     if new_entity.external_id == old_entity.external_id:
-        default_merge_flat_fields(new_entity=new_entity, old_entity=old_entity)
+        default_merge_flat_fields(
+            new_entity=new_entity, old_entity=old_entity, field_index=field_index
+        )
         return old_entity
 
     # Determine updated external_id
@@ -318,7 +328,9 @@ def merge_incomplete_periods(
     )
 
     # Copy all fields from new onto old
-    new_fields = get_set_entity_field_names(new_entity, EntityFieldType.FLAT_FIELD)
+    new_fields = field_index.get_fields_with_non_empty_values(
+        new_entity, EntityFieldType.FLAT_FIELD
+    )
     for child_field_name in new_fields:
         old_entity.set_field(child_field_name, new_entity.get_field(child_field_name))
 
@@ -333,6 +345,7 @@ def merge_incomplete_periods(
 def is_incarceration_period_match(
     ingested_entity: Union[EntityTree, StateBase],
     db_entity: Union[EntityTree, StateBase],
+    field_index: CoreEntityFieldIndex,
 ) -> bool:
     """
     Determines if the provided |ingested_entity| matches the |db_entity| based
@@ -352,7 +365,9 @@ def is_incarceration_period_match(
     ingested_complete = is_incarceration_period_complete(ingested_entity)
     db_complete = is_incarceration_period_complete(db_entity)
     if not ingested_complete and not db_complete:
-        return is_incomplete_incarceration_period_match(ingested_entity, db_entity)
+        return is_incomplete_incarceration_period_match(
+            ingested_entity, db_entity, field_index=field_index
+        )
     if ingested_complete and db_complete:
         return ingested_entity.external_id == db_entity.external_id
 
@@ -381,12 +396,15 @@ def is_incarceration_period_match(
 def is_incomplete_incarceration_period_match(
     ingested_entity: schema.StateIncarcerationPeriod,
     db_entity: schema.StateIncarcerationPeriod,
+    field_index: CoreEntityFieldIndex,
 ) -> bool:
     """Given two incomplete StateIncarcerationPeriods, determines if they
     should be considered the same StateIncarcerationPeriod.
     """
     # Cannot match with a placeholder StateIncarcerationPeriod
-    if is_placeholder(ingested_entity) or is_placeholder(db_entity):
+    if is_placeholder(ingested_entity, field_index) or is_placeholder(
+        db_entity, field_index
+    ):
         return False
 
     ingested_seq_no = _get_sequence_no(ingested_entity)

@@ -43,22 +43,28 @@ class UsMoMatchingDelegate(BaseStateMatchingDelegate):
         logging.info(
             "[Entity matching] Pre-processing: Remove SEOs from " "violation ids"
         )
-        remove_suffix_from_violation_ids(ingested_persons)
+        remove_suffix_from_violation_ids(ingested_persons, field_index=self.field_index)
 
     def perform_match_postprocessing(self, matched_persons: List[schema.StatePerson]):
         logging.info(
             "[Entity matching] Move supervision periods onto sentences by date."
         )
         move_periods_onto_sentences_by_date(
-            matched_persons, period_filter=schema.StateSupervisionPeriod
+            matched_persons,
+            period_filter=schema.StateSupervisionPeriod,
+            field_index=self.field_index,
         )
 
         logging.info(
             "[Entity matching] Set current / last supervising officer from supervision periods."
         )
-        set_current_supervising_officer_from_supervision_periods(matched_persons)
+        set_current_supervising_officer_from_supervision_periods(
+            matched_persons, field_index=self.field_index
+        )
 
         logging.info(
             "[Entity matching] Post-processing: Move SupervisionViolationResponses onto SupervisionPeriods by date."
         )
-        move_violations_onto_supervision_periods_for_sentence(matched_persons)
+        move_violations_onto_supervision_periods_for_sentence(
+            matched_persons, field_index=self.field_index
+        )

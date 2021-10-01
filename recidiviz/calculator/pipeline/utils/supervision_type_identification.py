@@ -29,7 +29,11 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
 )
 from recidiviz.common.date import first_day_of_month, last_day_of_month
-from recidiviz.persistence.entity.entity_utils import get_ids, is_placeholder
+from recidiviz.persistence.entity.entity_utils import (
+    CoreEntityFieldIndex,
+    get_ids,
+    is_placeholder,
+)
 from recidiviz.persistence.entity.state.entities import (
     SentenceType,
     StateIncarcerationSentence,
@@ -128,6 +132,7 @@ def get_month_supervision_type_default(
     supervision_sentences: List[StateSupervisionSentence],
     incarceration_sentences: List[StateIncarcerationSentence],
     supervision_period: StateSupervisionPeriod,
+    field_index: CoreEntityFieldIndex,
 ) -> StateSupervisionPeriodSupervisionType:
     """Supervision type can change over time even if the period does not change. This function calculates the
     supervision type that a given supervision period represents during the month that |any_date_in_month| falls in. We
@@ -143,7 +148,7 @@ def get_month_supervision_type_default(
     if not supervision_period.supervision_period_id:
         raise ValueError("All objects should have database ids.")
 
-    if is_placeholder(supervision_period):
+    if is_placeholder(supervision_period, field_index):
         raise ValueError("Do not expect placeholder periods!")
 
     start_of_month = first_day_of_month(any_date_in_month)
@@ -151,14 +156,14 @@ def get_month_supervision_type_default(
 
     # Find sentences that are attached to the period and overlap with the month
     incarceration_sentences = _get_valid_attached_sentences(
-        incarceration_sentences, supervision_period
+        incarceration_sentences, supervision_period, field_index=field_index
     )
     incarceration_sentences = _get_sentences_overlapping_with_dates(
         start_of_month, end_of_month, incarceration_sentences
     )
 
     supervision_sentences = _get_valid_attached_sentences(
-        supervision_sentences, supervision_period
+        supervision_sentences, supervision_period, field_index=field_index
     )
     supervision_sentences = _get_sentences_overlapping_with_dates(
         start_of_month, end_of_month, supervision_sentences
@@ -286,9 +291,11 @@ def sentence_supervision_type_to_supervision_periods_supervision_type(
 
 
 def _get_valid_attached_sentences(
-    sentences: List[SentenceType], supervision_period: StateSupervisionPeriod
+    sentences: List[SentenceType],
+    supervision_period: StateSupervisionPeriod,
+    field_index: CoreEntityFieldIndex,
 ) -> List[SentenceType]:
-    valid_sentences = _filter_sentences_with_missing_fields(sentences)
+    valid_sentences = _filter_sentences_with_missing_fields(sentences, field_index)
     attached_sentences = _filter_attached_sentences(valid_sentences, supervision_period)
     return attached_sentences
 
@@ -312,11 +319,11 @@ def _filter_attached_sentences(
 
 
 def _filter_sentences_with_missing_fields(
-    sentences: List[SentenceType],
+    sentences: List[SentenceType], field_index: CoreEntityFieldIndex
 ) -> List[SentenceType]:
     valid_sentences: List[SentenceType] = []
     for sentence in sentences:
-        if is_placeholder(sentence):
+        if is_placeholder(sentence, field_index):
             continue
 
         if not sentence.start_date:

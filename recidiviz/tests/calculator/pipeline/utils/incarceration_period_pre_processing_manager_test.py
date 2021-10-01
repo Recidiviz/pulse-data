@@ -49,6 +49,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_incarceration_period_pre_processing_delegate import (
     UsXxIncarcerationPreProcessingDelegate,
@@ -173,6 +174,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             pre_processed_supervision_period_index=sp_index,
             violation_responses=violation_responses,
             earliest_death_date=earliest_death_date,
+            field_index=CoreEntityFieldIndex(),
         )
 
         return ip_pre_processing_manager.pre_processed_incarceration_period_index_for_calculations(
@@ -760,6 +762,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             pre_processed_supervision_period_index=sp_index,
             violation_responses=violation_responses,
             earliest_death_date=None,
+            field_index=CoreEntityFieldIndex(),
         )
 
         collapsed_incarceration_periods = ip_pre_processing_manager.pre_processed_incarceration_period_index_for_calculations(
@@ -1600,6 +1603,7 @@ class TestCollapseIncarcerationPeriods(unittest.TestCase):
             pre_processed_supervision_period_index=sp_index,
             violation_responses=violation_responses,
             earliest_death_date=None,
+            field_index=CoreEntityFieldIndex(),
         )
 
         return ip_pre_processing_manager._collapse_incarceration_period_transfers(
@@ -2221,6 +2225,7 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             pre_processed_supervision_period_index=sp_index,
             violation_responses=violation_responses,
             earliest_death_date=None,
+            field_index=CoreEntityFieldIndex(),
         )
 
         return ip_pre_processing_manager._sort_and_infer_missing_dates_and_statuses(
