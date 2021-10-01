@@ -28,9 +28,11 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_sentence_classi
 from recidiviz.calculator.pipeline.utils.supervision_type_identification import (
     sentence_supervision_types_to_supervision_period_supervision_type,
 )
-from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
+)
+from recidiviz.common.constants.state.state_supervision_sentence import (
+    StateSupervisionSentenceSupervisionType,
 )
 from recidiviz.common.date import first_day_of_month, last_day_of_month
 from recidiviz.persistence.entity.state.entities import (
@@ -81,7 +83,7 @@ def us_mo_get_most_recent_supervision_type_before_upper_bound_day(
     type found (e.g. the person has only been incarcerated for the time window).
     """
     supervision_types_by_end_date: Dict[
-        datetime.date, Set[Optional[StateSupervisionType]]
+        datetime.date, Set[Optional[StateSupervisionSentenceSupervisionType]]
     ] = defaultdict(set)
     sentences = itertools.chain(supervision_sentences, incarceration_sentences)
     for sentence in sentences:

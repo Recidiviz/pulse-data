@@ -51,7 +51,6 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 )
 from recidiviz.common.constants.state.state_person_alias import StatePersonAliasType
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
-from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactLocation,
     StateSupervisionContactMethod,
@@ -64,6 +63,9 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
+)
+from recidiviz.common.constants.state.state_supervision_sentence import (
+    StateSupervisionSentenceSupervisionType,
 )
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
@@ -1728,7 +1730,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             external_id="1111-1-2",
             status=StateSentenceStatus.REVOKED,
             status_raw_text="K",
-            supervision_type=StateSupervisionType.PROBATION,
+            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
             supervision_type_raw_text="PROBATION",
             date_imposed=datetime.date(year=2018, month=1, day=1),
             start_date=datetime.date(year=2018, month=1, day=1),
@@ -1761,7 +1763,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             external_id="2222-2-1",
             status=StateSentenceStatus.REVOKED,
             status_raw_text="K",
-            supervision_type=StateSupervisionType.PROBATION,
+            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
             supervision_type_raw_text="PROBATION",
             date_imposed=datetime.date(year=2009, month=1, day=1),
             start_date=datetime.date(year=2009, month=1, day=1),
@@ -1801,7 +1803,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             external_id="3333-3-1",
             status=StateSentenceStatus.SUSPENDED,
             status_raw_text="B",
-            supervision_type=StateSupervisionType.PROBATION,
+            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
             supervision_type_raw_text="PROBATION",
             date_imposed=datetime.date(year=2015, month=1, day=1),
             start_date=datetime.date(year=2015, month=1, day=1),

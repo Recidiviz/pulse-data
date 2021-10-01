@@ -29,9 +29,11 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodStatus,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
-from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
+)
+from recidiviz.common.constants.state.state_supervision_sentence import (
+    StateSupervisionSentenceSupervisionType,
 )
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
@@ -67,14 +69,14 @@ class TestUsMoCommitmentFromSupervisionDelegate(unittest.TestCase):
                     supervision_sentence_id=1,
                     external_id="1167633-20171012-2",
                     start_date=datetime.date(2017, 2, 1),
-                    supervision_type=StateSupervisionType.PROBATION,
+                    supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
                     status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
                 ),
                 supervision_type_spans=[
                     SupervisionTypeSpan(
                         start_date=datetime.date(2017, 2, 1),
                         end_date=None,
-                        supervision_type=StateSupervisionType.PAROLE,
+                        supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
                     )
                 ],
             )
@@ -111,14 +113,14 @@ class TestUsMoCommitmentFromSupervisionDelegate(unittest.TestCase):
                     supervision_sentence_id=1,
                     external_id="1167633-20171012-2",
                     start_date=datetime.date(2017, 2, 1),
-                    supervision_type=StateSupervisionType.PROBATION,
+                    supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
                     status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
                 ),
                 supervision_type_spans=[
                     SupervisionTypeSpan(
                         start_date=datetime.date(2017, 2, 1),
                         end_date=None,
-                        supervision_type=StateSupervisionType.PAROLE,
+                        supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
                     )
                 ],
             )
@@ -138,7 +140,7 @@ class TestUsMoCommitmentFromSupervisionDelegate(unittest.TestCase):
                     SupervisionTypeSpan(
                         start_date=datetime.date(2017, 2, 1),
                         end_date=datetime.date(2017, 3, 4),
-                        supervision_type=StateSupervisionType.PAROLE,
+                        supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
                     ),
                     SupervisionTypeSpan(
                         start_date=datetime.date(2017, 3, 4),

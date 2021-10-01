@@ -38,11 +38,13 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 )
 from recidiviz.common.constants.state.state_person_alias import StatePersonAliasType
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
-from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
     StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodTerminationReason,
+)
+from recidiviz.common.constants.state.state_supervision_sentence import (
+    StateSupervisionSentenceSupervisionType,
 )
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
@@ -2454,7 +2456,7 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             external_id="910324-19890825-1",
             status=StateSentenceStatus.REVOKED,
             status_raw_text="REVOKED",
-            supervision_type=StateSupervisionType.PROBATION,
+            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
             supervision_type_raw_text="PROBATION",
             start_date=datetime.date(year=1987, month=1, day=26),
             projected_completion_date=datetime.date(year=1992, month=1, day=25),
@@ -2483,7 +2485,7 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             external_id="910324-19890825-2",
             status=StateSentenceStatus.COMPLETED,
             status_raw_text="COMPLETED",
-            supervision_type=StateSupervisionType.PROBATION,
+            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
             supervision_type_raw_text="PROBATION",
             start_date=datetime.date(year=1987, month=4, day=16),
             projected_completion_date=datetime.date(year=1988, month=2, day=6),
@@ -2514,7 +2516,7 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             external_id="310261-19890821-1",
             status=StateSentenceStatus.COMPLETED,
             status_raw_text="COMPLETED",
-            supervision_type=StateSupervisionType.PROBATION,
+            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
             supervision_type_raw_text="PROBATION",
             projected_completion_date=datetime.date(year=1980, month=10, day=6),
             completion_date=datetime.date(year=1979, month=6, day=7),
@@ -2550,7 +2552,7 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             external_id="110035-20040712-1",
             status=StateSentenceStatus.COMPLETED,
             status_raw_text="COMPLETED",
-            supervision_type=StateSupervisionType.PROBATION,
+            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
             supervision_type_raw_text="PROBATION",
             start_date=datetime.date(year=2004, month=2, day=1),
             projected_completion_date=datetime.date(year=2008, month=1, day=20),
@@ -2581,7 +2583,7 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             external_id="110035-20040712-3",
             status=StateSentenceStatus.COMPLETED,
             status_raw_text="COMPLETED",
-            supervision_type=StateSupervisionType.INTERNAL_UNKNOWN,
+            supervision_type=StateSupervisionSentenceSupervisionType.INTERNAL_UNKNOWN,
             supervision_type_raw_text="UNKNOWN",
             start_date=datetime.date(year=2004, month=2, day=1),
             completion_date=datetime.date(year=2006, month=10, day=10),
@@ -2620,7 +2622,7 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             external_id="110035-20081010-1",
             status=StateSentenceStatus.COMPLETED,
             status_raw_text="COMPLETED",
-            supervision_type=StateSupervisionType.PAROLE,
+            supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
             supervision_type_raw_text="PAROLE",
             start_date=datetime.date(year=2008, month=11, day=1),
             projected_completion_date=datetime.date(year=2010, month=1, day=13),

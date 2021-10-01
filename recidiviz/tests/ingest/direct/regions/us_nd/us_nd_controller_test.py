@@ -58,7 +58,6 @@ from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
-from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactLocation,
     StateSupervisionContactMethod,
@@ -70,6 +69,9 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
+)
+from recidiviz.common.constants.state.state_supervision_sentence import (
+    StateSupervisionSentenceSupervisionType,
 )
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
@@ -2464,7 +2466,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             entities.StateSupervisionSentence.new_with_defaults(
                 external_id="105640-2",
                 status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                supervision_type=StateSupervisionType.PROBATION,
+                supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
                 supervision_type_raw_text="PROBATION",
                 max_length_days=3652,
                 state_code=_STATE_CODE,
@@ -2476,7 +2478,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             entities.StateSupervisionSentence.new_with_defaults(
                 external_id="105640-6",
                 status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                supervision_type=StateSupervisionType.PROBATION,
+                supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
                 supervision_type_raw_text="PROBATION",
                 max_length_days=1826,
                 state_code=_STATE_CODE,
@@ -3639,21 +3641,19 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             person=person_1,
         )
-        supervision_sentence_117109 = (
-            entities.StateSupervisionSentence.new_with_defaults(
-                external_id="117109",
-                supervision_type=StateSupervisionType.PRE_CONFINEMENT,
-                supervision_type_raw_text="PRE-TRIAL",
-                start_date=datetime.date(year=2013, month=1, day=1),
-                projected_completion_date=datetime.date(year=2013, month=3, day=3),
-                completion_date=datetime.date(year=2013, month=2, day=2),
-                max_length_days=59,
-                state_code=_STATE_CODE,
-                status=StateSentenceStatus.COMPLETED,
-                status_raw_text="COMPLETED",
-                person=sentence_group_placeholder_ss.person,
-                sentence_group=sentence_group_placeholder_ss,
-            )
+        supervision_sentence_117109 = entities.StateSupervisionSentence.new_with_defaults(
+            external_id="117109",
+            supervision_type=StateSupervisionSentenceSupervisionType.PRE_CONFINEMENT,
+            supervision_type_raw_text="PRE-TRIAL",
+            start_date=datetime.date(year=2013, month=1, day=1),
+            projected_completion_date=datetime.date(year=2013, month=3, day=3),
+            completion_date=datetime.date(year=2013, month=2, day=2),
+            max_length_days=59,
+            state_code=_STATE_CODE,
+            status=StateSentenceStatus.COMPLETED,
+            status_raw_text="COMPLETED",
+            person=sentence_group_placeholder_ss.person,
+            sentence_group=sentence_group_placeholder_ss,
         )
         supervision_period_117109 = entities.StateSupervisionPeriod.new_with_defaults(
             external_id="117109",
@@ -3679,7 +3679,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
         supervision_sentence_117110 = (
             entities.StateSupervisionSentence.new_with_defaults(
                 external_id="117110",
-                supervision_type=StateSupervisionType.PAROLE,
+                supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
                 supervision_type_raw_text="PAROLE",
                 start_date=datetime.date(year=2014, month=7, day=17),
                 projected_completion_date=datetime.date(year=2014, month=10, day=6),
@@ -3736,7 +3736,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
         supervision_sentence_117111 = (
             entities.StateSupervisionSentence.new_with_defaults(
                 external_id="117111",
-                supervision_type=StateSupervisionType.PAROLE,
+                supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
                 supervision_type_raw_text="PAROLE",
                 start_date=datetime.date(year=2014, month=7, day=17),
                 projected_completion_date=datetime.date(year=2015, month=8, day=7),
@@ -3853,7 +3853,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
         supervision_sentence_140408 = (
             entities.StateSupervisionSentence.new_with_defaults(
                 external_id="140408",
-                supervision_type=StateSupervisionType.PROBATION,
+                supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
                 supervision_type_raw_text="SUSPENDED",
                 start_date=datetime.date(year=2017, month=3, day=24),
                 projected_completion_date=datetime.date(year=2019, month=3, day=23),
@@ -3948,7 +3948,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
         supervision_sentence_147777 = (
             entities.StateSupervisionSentence.new_with_defaults(
                 external_id="147777",
-                supervision_type=StateSupervisionType.PROBATION,
+                supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
                 supervision_type_raw_text="SUSPENDED",
                 start_date=datetime.date(year=2013, month=3, day=24),
                 projected_completion_date=datetime.date(year=2015, month=3, day=23),

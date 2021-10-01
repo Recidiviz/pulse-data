@@ -74,7 +74,6 @@ from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
-from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactLocation,
     StateSupervisionContactReason,
@@ -85,6 +84,9 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
+)
+from recidiviz.common.constants.state.state_supervision_sentence import (
+    StateSupervisionSentenceSupervisionType,
 )
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
@@ -502,7 +504,7 @@ class TestDeserializeEntityFactories(unittest.TestCase):
         overrides = (
             EnumOverrides.Builder()
             .add("S", StateSentenceStatus.SUSPENDED)
-            .add("PR", StateSupervisionType.PROBATION)
+            .add("PR", StateSupervisionSentenceSupervisionType.PROBATION)
             .build()
         )
         result = (
@@ -510,7 +512,7 @@ class TestDeserializeEntityFactories(unittest.TestCase):
                 status=StrictEnumParser("S", StateSentenceStatus, overrides),
                 status_raw_text="S",
                 supervision_type=StrictEnumParser(
-                    "PR", StateSupervisionType, overrides
+                    "PR", StateSupervisionSentenceSupervisionType, overrides
                 ),
                 supervision_type_raw_text="PR",
                 external_id="SENTENCE_ID",
@@ -529,7 +531,7 @@ class TestDeserializeEntityFactories(unittest.TestCase):
         expected_result = entities.StateSupervisionSentence(
             status=StateSentenceStatus.SUSPENDED,
             status_raw_text="S",
-            supervision_type=StateSupervisionType.PROBATION,
+            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
             supervision_type_raw_text="PR",
             external_id="SENTENCE_ID",
             date_imposed=date(year=2000, month=12, day=13),

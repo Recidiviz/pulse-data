@@ -36,12 +36,14 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodStatus,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
-from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
+from recidiviz.common.constants.state.state_supervision_sentence import (
+    StateSupervisionSentenceSupervisionType,
+)
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
     StateIncarcerationSentence,
@@ -76,7 +78,7 @@ class TestGetMonthSupervisionType(unittest.TestCase):
             completion_date=date(2018, 5, 30),
             status=StateSentenceStatus.COMPLETED,
             projected_completion_date=date(2018, 5, 19),
-            supervision_type=StateSupervisionType.PROBATION,
+            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
             supervision_periods=[supervision_period],
         )
 
@@ -123,7 +125,7 @@ class TestGetMonthSupervisionType(unittest.TestCase):
             completion_date=date(2018, 5, 30),
             status=StateSentenceStatus.COMPLETED,
             projected_completion_date=date(2018, 5, 19),
-            supervision_type=StateSupervisionType.PROBATION,
+            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
             supervision_periods=[supervision_period],
         )
 
@@ -283,7 +285,7 @@ class TestGetMonthSupervisionType(unittest.TestCase):
             completion_date=date(2018, 5, 30),
             status=StateSentenceStatus.COMPLETED,
             projected_completion_date=date(2018, 5, 19),
-            supervision_type=StateSupervisionType.INTERNAL_UNKNOWN,
+            supervision_type=StateSupervisionSentenceSupervisionType.INTERNAL_UNKNOWN,
             supervision_periods=[supervision_period],
         )
 
@@ -356,10 +358,10 @@ class TestGetMonthSupervisionType(unittest.TestCase):
         incarceration_sentences = []
 
         probation_types = [
-            StateSupervisionType.PRE_CONFINEMENT,
-            StateSupervisionType.POST_CONFINEMENT,
-            StateSupervisionType.HALFWAY_HOUSE,
-            StateSupervisionType.CIVIL_COMMITMENT,
+            StateSupervisionSentenceSupervisionType.PRE_CONFINEMENT,
+            StateSupervisionSentenceSupervisionType.POST_CONFINEMENT,
+            StateSupervisionSentenceSupervisionType.HALFWAY_HOUSE,
+            StateSupervisionSentenceSupervisionType.CIVIL_COMMITMENT,
         ]
 
         for sup_type in probation_types:
@@ -397,14 +399,14 @@ class TestGetMonthSupervisionType(unittest.TestCase):
             completion_date=date(2018, 5, 30),
             status=StateSentenceStatus.COMPLETED,
             projected_completion_date=date(2018, 5, 19),
-            supervision_type=StateSupervisionType.INTERNAL_UNKNOWN,
+            supervision_type=StateSupervisionSentenceSupervisionType.INTERNAL_UNKNOWN,
             supervision_periods=[supervision_period],
         )
 
         supervision_sentences = [supervision_sentence]
         incarceration_sentences = []
 
-        for sup_type in StateSupervisionType:
+        for sup_type in StateSupervisionSentenceSupervisionType:
             supervision_sentence.supervision_type = sup_type
 
             # Tests that all cases are covered
@@ -434,7 +436,7 @@ class TestGetMonthSupervisionType(unittest.TestCase):
             external_id="ss1",
             completion_date=date(2018, 5, 30),
             status=StateSentenceStatus.COMPLETED,
-            supervision_type=StateSupervisionType.PROBATION,
+            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
             projected_completion_date=date(2018, 5, 19),
             supervision_periods=[supervision_period],
         )
@@ -472,7 +474,7 @@ class TestGetMonthSupervisionType(unittest.TestCase):
             external_id="ss1",
             start_date=date(2018, 2, 28),
             status=StateSentenceStatus.COMPLETED,
-            supervision_type=StateSupervisionType.PROBATION,
+            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
             projected_completion_date=date(2018, 5, 19),
             supervision_periods=[supervision_period],
         )
@@ -546,7 +548,7 @@ class TestGetMonthSupervisionType(unittest.TestCase):
             start_date=date(2018, 2, 28),
             completion_date=date(2018, 4, 30),
             status=StateSentenceStatus.COMPLETED,
-            supervision_type=StateSupervisionType.PROBATION,
+            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
             projected_completion_date=date(2018, 5, 19),
             supervision_periods=[supervision_period],
         )
@@ -584,7 +586,7 @@ class TestGetMonthSupervisionType(unittest.TestCase):
             external_id="ss1",
             start_date=date(2018, 4, 30),
             status=StateSentenceStatus.COMPLETED,
-            supervision_type=StateSupervisionType.PROBATION,
+            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
             projected_completion_date=date(2018, 5, 19),
             supervision_periods=[supervision_period],
         )
@@ -623,7 +625,7 @@ class TestGetMonthSupervisionType(unittest.TestCase):
             start_date=date(2018, 2, 28),
             completion_date=date(2018, 4, 1),
             status=StateSentenceStatus.COMPLETED,
-            supervision_type=StateSupervisionType.PAROLE,
+            supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
             projected_completion_date=date(2018, 5, 19),
             supervision_periods=[supervision_period],
         )
@@ -660,7 +662,7 @@ class TestGetMonthSupervisionType(unittest.TestCase):
             start_date=date(2018, 4, 1),
             completion_date=date(2018, 4, 1),
             status=StateSentenceStatus.COMPLETED,
-            supervision_type=StateSupervisionType.PAROLE,
+            supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
             projected_completion_date=date(2018, 5, 19),
             supervision_periods=[supervision_period],
         )
@@ -697,7 +699,7 @@ class TestGetMonthSupervisionType(unittest.TestCase):
             start_date=date(2018, 4, 30),
             completion_date=date(2018, 4, 30),
             status=StateSentenceStatus.COMPLETED,
-            supervision_type=StateSupervisionType.PAROLE,
+            supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
             projected_completion_date=date(2018, 5, 19),
             supervision_periods=[supervision_period],
         )
@@ -733,7 +735,7 @@ class TestGetMonthSupervisionType(unittest.TestCase):
             external_id="ss1",
             start_date=date(2018, 5, 1),
             status=StateSentenceStatus.COMPLETED,
-            supervision_type=StateSupervisionType.PROBATION,
+            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
             projected_completion_date=date(2018, 5, 19),
             supervision_periods=[supervision_period],
         )
@@ -891,7 +893,7 @@ class TestGetSupervisionPeriodSupervisionTypeFromSentence(unittest.TestCase):
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
         )
 
-        for supervision_type in StateSupervisionType:
+        for supervision_type in StateSupervisionSentenceSupervisionType:
             supervision_sentence.supervision_type = supervision_type
 
             # Assert this doesn't fail for all possible supervision types
@@ -910,7 +912,9 @@ class TestGetSupervisionPeriodSupervisionTypeFromSentence(unittest.TestCase):
             incarceration_sentence
         )
 
-        self.assertEqual(StateSupervisionType.PAROLE, supervision_type)
+        self.assertEqual(
+            StateSupervisionSentenceSupervisionType.PAROLE, supervision_type
+        )
 
 
 class TestGetCommitmentAdmissionReasonFromPrecedingSupervisionPeriod(unittest.TestCase):

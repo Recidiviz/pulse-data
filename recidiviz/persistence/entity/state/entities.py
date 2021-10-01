@@ -76,7 +76,6 @@ from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
-from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactLocation,
     StateSupervisionContactMethod,
@@ -89,6 +88,9 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
+)
+from recidiviz.common.constants.state.state_supervision_sentence import (
+    StateSupervisionSentenceSupervisionType,
 )
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
@@ -628,9 +630,9 @@ class StateSupervisionSentence(ExternalIdEntity, BuildableAttr, DefaultableAttr)
     )
 
     # Type
-    # TODO(#2891): Make this of type StateSupervisionSentenceType (new type)
-    supervision_type: Optional[StateSupervisionType] = attr.ib(
-        default=None, validator=attr_validators.is_opt(StateSupervisionType)
+    supervision_type: Optional[StateSupervisionSentenceSupervisionType] = attr.ib(
+        default=None,
+        validator=attr_validators.is_opt(StateSupervisionSentenceSupervisionType),
     )
     supervision_type_raw_text: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_str
