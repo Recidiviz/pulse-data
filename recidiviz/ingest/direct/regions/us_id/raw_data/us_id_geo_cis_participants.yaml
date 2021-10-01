@@ -28,3 +28,4 @@ columns:
     description: |-
       Duration of participation in days, for those who terminate participation
 encoding: UTF-8
+separator: ","
