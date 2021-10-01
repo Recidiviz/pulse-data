@@ -21,13 +21,13 @@ import os
 import stat
 import unittest
 from base64 import decodebytes
-from typing import Callable, List
+from typing import List
 
-import pysftp
+import paramiko
 import pytz
 from mock import MagicMock, Mock, patch
-from paramiko import HostKeys, RSAKey, SFTPAttributes
-from pysftp import CnOpts
+from paramiko import RSAKey, SFTPAttributes
+from paramiko.hostkeys import HostKeyEntry
 
 from recidiviz.cloud_storage.content_types import (
     FileContentsHandle,
@@ -60,15 +60,9 @@ TEST_SSH_RSA_KEY = (
     "jQQZHK0OEZmWJjR4eW6xeepXb//F/xG7Vh809WturazOIKs4YEFdjM6DUIfPxmZhGuya0YSSl1GIkoxo5gPITd1R"
     "usN7l0VM2XgiNpz4tvhH"
 )
-INNER_FILE_TREE = [
-    "file1.txt",
-    "subdir1",
-    "subdir2",
-    "subdir3",
-    "subdir1/file1.txt",
-    "already_processed.csv",
-    "discovered.csv",
-]
+FIXTURE_PATH = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)), "fixtures", "sftp_test"
+)
 
 
 def create_files(
@@ -78,7 +72,7 @@ def create_files(
         path=GcsfsDirectoryPath.from_absolute_path(f"{download_dir}/{remotedir}"),
         local_path=None,
     )
-    for item in INNER_FILE_TREE:
+    for item in os.listdir(os.path.join(FIXTURE_PATH, remotedir)):
         path_to_add = f"{download_dir}/{remotedir}/{item}"
         if os.path.isdir(item):
             gcsfs.test_add_path(
@@ -95,21 +89,25 @@ def create_sftp_attrs() -> List[SFTPAttributes]:
     test_today_attr = SFTPAttributes()
     test_today_attr.st_mtime = int(TODAY.timestamp())
     test_today_attr.filename = "testToday"
+    test_today_attr.st_mode = stat.S_IFDIR
 
     test_two_days_ago_attr = SFTPAttributes()
     test_two_days_ago_attr.st_mtime = int(TWO_DAYS_AGO.timestamp())
     test_two_days_ago_attr.filename = "testTwoDaysAgo"
+    test_two_days_ago_attr.st_mode = stat.S_IFDIR
 
     not_test_attr = SFTPAttributes()
     not_test_attr.filename = "nottest.txt"
     not_test_attr.st_mtime = int(YESTERDAY.timestamp())
+    not_test_attr.st_mode = stat.S_IFREG
 
     return [test_today_attr, test_two_days_ago_attr, not_test_attr]
 
 
 def mock_stat(path: str) -> SFTPAttributes:
     sftp_attr = SFTPAttributes()
-    sftp_attr.filename = path
+    sftp_attr.filename = os.path.relpath(path)
+    sftp_attr.st_mtime = int(TODAY.timestamp())
     if ".txt" not in path and ".csv" not in path:
         sftp_attr.st_mode = stat.S_IFDIR
     else:
@@ -119,40 +117,16 @@ def mock_stat(path: str) -> SFTPAttributes:
 
 def mock_listdir(remotepath: str = ".") -> List[str]:
     if remotepath == ".":
-        return [sftp_attr.filename for sftp_attr in create_sftp_attrs()]
-    return [f"{remotepath}/{item}" for item in INNER_FILE_TREE]
+        return os.listdir(FIXTURE_PATH)
+    return os.listdir(os.path.join(FIXTURE_PATH, remotepath))
 
 
-def mock_listdir_attr(_: str = ".") -> List[SFTPAttributes]:
-    return create_sftp_attrs()
-
-
-def mock_isdir(remotepath: str) -> bool:
-    return ".txt" not in remotepath and ".csv" not in remotepath
-
-
-def mock_init_connection_options(self: CnOpts) -> None:
-    self.hostkeys = HostKeys()
-    self.hostkeys.add(
-        "testhost.ftp",
-        "ssh-rsa",
-        RSAKey(data=decodebytes(bytes(TEST_SSH_RSA_KEY, "utf-8"))),
-    )
-
-
-def mock_walktree(
-    remotepath: str,
-    fcallback: Callable[[str], None],
-    dcallback: Callable[[str], None],
-    ucallback: Callable[[str], None],
-    recurse: bool,
-) -> None:
-    # pylint: disable=unused-argument
-    for item in mock_listdir(remotepath):
-        if mock_isdir(item):
-            dcallback(item)
-        else:
-            fcallback(item)
+def mock_listdir_attr(remotepath: str = ".") -> List[SFTPAttributes]:
+    if remotepath == ".":
+        return create_sftp_attrs()
+    return [
+        mock_stat(path) for path in os.listdir(os.path.join(FIXTURE_PATH, remotepath))
+    ]
 
 
 class _TestSftpDownloadDelegate(BaseSftpDownloadDelegate):
@@ -199,8 +173,10 @@ class TestSftpAuth(unittest.TestCase):
         self.assertEqual(result.hostname, "testhost.ftp")
         self.assertEqual(result.username, "username")
         self.assertEqual(result.password, "password")
-        self.assertTrue(
-            result.connection_options.hostkeys.lookup("testhost.ftp") is not None
+        self.assertEqual(result.hostkey_entry.hostnames, ["testhost.ftp"])
+        self.assertEqual(
+            result.hostkey_entry.key,
+            RSAKey(data=decodebytes(bytes(TEST_SSH_RSA_KEY, "utf-8"))),
         )
 
     @patch("recidiviz.utils.secrets.get_secret")
@@ -211,9 +187,7 @@ class TestSftpAuth(unittest.TestCase):
             _ = SftpAuth.for_region("us_yy")
 
     @patch("recidiviz.utils.secrets.get_secret")
-    def test_initialization_connection_options_error(
-        self, mock_secret: MagicMock
-    ) -> None:
+    def test_initialization_no_hostkeys_error(self, mock_secret: MagicMock) -> None:
         test_secrets = {
             "us_xx_sftp_host": "testhost.ftp",
             "us_xx_sftp_username": "username",
@@ -224,39 +198,27 @@ class TestSftpAuth(unittest.TestCase):
             _ = SftpAuth.for_region("us_xx")
 
     @patch("recidiviz.utils.secrets.get_secret")
-    def test_set_up_connection_options_succeeds(self, mock_secret: MagicMock) -> None:
-        test_secrets = {
-            "us_xx_sftp_hostkey": "testhost.ftp ssh-rsa " + TEST_SSH_RSA_KEY
-        }
-        mock_secret.side_effect = test_secrets.get
-        result = SftpAuth.set_up_connection_options("us_xx_sftp", "testhost.ftp")
-        self.assertTrue(result.hostkeys.lookup("testhost.ftp") is not None)
-        mock_secret.assert_called_with("us_xx_sftp_hostkey")
-
-    @patch("recidiviz.utils.secrets.get_secret")
-    def test_set_up_connection_options_empty_hostkey_error(
-        self, mock_secret: MagicMock
-    ) -> None:
+    def test_initialization_no_password_error(self, mock_secret: MagicMock) -> None:
         test_secrets = {
             "us_xx_sftp_host": "testhost.ftp",
-            "us_non_existent_hostkey": "somehost.ftp ssh-rsa someNonKey",
+            "us_xx_sftp_username": "username",
+            "us_xx_sftp_hostkey": "testhost.ftp ssh-rsa " + TEST_SSH_RSA_KEY,
         }
         mock_secret.side_effect = test_secrets.get
         with self.assertRaises(ValueError):
-            _ = SftpAuth.set_up_connection_options("us_xx_sftp", "testhost.ftp")
+            _ = SftpAuth.for_region("us_xx")
 
     @patch("recidiviz.utils.secrets.get_secret")
-    @patch.object(CnOpts, "__init__", mock_init_connection_options)
-    def test_set_up_connection_options_uses_known_hosts_first(
-        self, mock_secret: MagicMock
-    ) -> None:
+    def test_initialization_unknown_keytype_error(self, mock_secret: MagicMock) -> None:
         test_secrets = {
-            "us_xx_sftp_hostkey": "testhost.ftp ssh-rsa " + TEST_SSH_RSA_KEY
+            "us_xx_sftp_host": "testhost.ftp",
+            "us_xx_sftp_username": "username",
+            "us_xx_sftp_password": "password",
+            "us_xx_sftp_hostkey": "testhost.ftp ssh-nonsense " + TEST_SSH_RSA_KEY,
         }
         mock_secret.side_effect = test_secrets.get
-        result = SftpAuth.set_up_connection_options("us_xx_sftp", "testhost.ftp")
-        self.assertTrue(result.hostkeys.lookup("testhost.ftp") is not None)
-        mock_secret.assert_not_called()
+        with self.assertRaises(ValueError):
+            _ = SftpAuth.for_region("us_xx")
 
 
 @patch.object(
@@ -265,7 +227,15 @@ class TestSftpAuth(unittest.TestCase):
 @patch.object(
     SftpAuth,
     "for_region",
-    return_value=SftpAuth("testhost.ftp", "username", "password", None, CnOpts()),
+    return_value=SftpAuth(
+        "testhost.ftp",
+        HostKeyEntry(
+            ["testhost.ftp"], RSAKey(data=decodebytes(bytes(TEST_SSH_RSA_KEY, "utf-8")))
+        ),
+        "username",
+        "password",
+        None,
+    ),
 )
 @patch("recidiviz.ingest.direct.direct_ingest_control.GcsfsFactory.build")
 @patch.object(
@@ -293,17 +263,13 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
         self.project_id_patcher.stop()
 
     @patch.object(
-        target=pysftp,
-        attribute="Connection",
-        autospec=True,
+        target=DownloadFilesFromSftpController,
+        attribute="_client",
         return_value=Mock(
-            spec=pysftp.Connection,
-            __enter__=lambda self: self,
-            __exit__=lambda *args: None,
+            spec=paramiko.sftp_client.SFTPClient,
             listdir=mock_listdir,
             listdir_attr=mock_listdir_attr,
-            isdir=mock_isdir,
-            walktree=mock_walktree,
+            stat=mock_stat,
         ),
     )
     def test_get_paths_to_download(
@@ -327,20 +293,16 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
             ("testToday/already_processed.csv", TODAY.astimezone(pytz.UTC)),
             ("testToday/discovered.csv", TODAY.astimezone(pytz.UTC)),
         ]
-        self.assertListEqual(files_with_timestamps, expected)
+        self.assertCountEqual(files_with_timestamps, expected)
 
     @patch.object(
-        target=pysftp,
-        attribute="Connection",
-        autospec=True,
+        DownloadFilesFromSftpController,
+        "_client",
         return_value=Mock(
-            spec=pysftp.Connection,
-            __enter__=lambda self: self,
-            __exit__=lambda *args: None,
+            spec=paramiko.sftp_client.SFTPClient,
             listdir=mock_listdir,
             listdir_attr=mock_listdir_attr,
-            isdir=mock_isdir,
-            walktree=mock_walktree,
+            stat=mock_stat,
         ),
     )
     def test_do_fetch_succeeds(
@@ -358,7 +320,7 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
         )
 
         result = controller.do_fetch()
-        self.assertListEqual(
+        self.assertCountEqual(
             result.successes,
             [
                 (
@@ -370,24 +332,19 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
                     ),
                     TODAY.astimezone(pytz.UTC),
                 )
-                for item in INNER_FILE_TREE
-                if ".txt" in item
+                for item in ["subdir1/file1.txt", "file1.txt"]
             ],
         )
         self.assertEqual(len(mock_fs.files), len(result.successes))
 
     @patch.object(
-        target=pysftp,
-        attribute="Connection",
-        autospec=True,
+        DownloadFilesFromSftpController,
+        "_client",
         return_value=Mock(
-            spec=pysftp.Connection,
-            __enter__=lambda self: self,
-            __exit__=lambda *args: None,
+            spec=paramiko.sftp_client.SFTPClient,
             listdir=mock_listdir,
             listdir_attr=mock_listdir_attr,
-            isdir=mock_isdir,
-            walktree=mock_walktree,
+            stat=mock_stat,
         ),
     )
     def test_do_fetch_succeeds_with_timezone(
@@ -406,7 +363,7 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
         )
 
         result = controller.do_fetch()
-        self.assertListEqual(
+        self.assertCountEqual(
             result.successes,
             [
                 (
@@ -418,20 +375,19 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
                     ),
                     TODAY.astimezone(pytz.UTC),
                 )
-                for item in INNER_FILE_TREE
-                if ".txt" in item
+                for item in ["subdir1/file1.txt", "file1.txt"]
             ],
         )
         self.assertEqual(len(mock_fs.files), len(result.successes))
 
     @patch.object(
-        target=pysftp,
-        attribute="Connection",
-        autospec=True,
+        DownloadFilesFromSftpController,
+        "_client",
         return_value=Mock(
-            spec=pysftp.Connection,
-            __enter__=lambda _: Exception("Connection failed"),
-            __exit__=lambda *args: None,
+            spec=paramiko.sftp_client.SFTPClient,
+            listdir=lambda _: Exception("SomeError"),
+            listdir_attr=mock_listdir_attr,
+            stat=mock_stat,
         ),
     )
     def test_do_fetch_fails(
@@ -451,17 +407,13 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
             _ = controller.do_fetch()
 
     @patch.object(
-        target=pysftp,
-        attribute="Connection",
-        autospec=True,
+        DownloadFilesFromSftpController,
+        "_client",
         return_value=Mock(
-            spec=pysftp.Connection,
-            __enter__=lambda self: self,
-            __exit__=lambda *args: None,
+            spec=paramiko.sftp_client.SFTPClient,
             listdir=mock_listdir,
             listdir_attr=mock_listdir_attr,
-            isdir=mock_isdir,
-            walktree=mock_walktree,
+            stat=mock_stat,
         ),
     )
     def test_do_fetch_gets_all_files_if_no_lower_bound_date(
@@ -501,8 +453,7 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
                                 TWO_DAYS_AGO.astimezone(pytz.UTC),
                             ),
                         ]
-                        for item in INNER_FILE_TREE
-                        if ".txt" in item
+                        for item in ["subdir1/file1.txt", "file1.txt"]
                     ]
                 )
             ),
@@ -510,17 +461,13 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
         self.assertEqual(len(mock_fs.files), len(result.successes))
 
     @patch.object(
-        target=pysftp,
-        attribute="Connection",
-        autospec=True,
+        DownloadFilesFromSftpController,
+        "_client",
         return_value=Mock(
-            spec=pysftp.Connection,
-            __enter__=lambda self: self,
-            __exit__=lambda *args: None,
+            spec=paramiko.sftp_client.SFTPClient,
             listdir=mock_listdir,
             listdir_attr=mock_listdir_attr,
-            isdir=mock_isdir,
-            walktree=mock_walktree,
+            stat=mock_stat,
         ),
     )
     def test_do_fetch_graceful_file_failures(
@@ -553,17 +500,13 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
         self.assertEqual(len(mock_fs.files), len(result.successes))
 
     @patch.object(
-        target=pysftp,
-        attribute="Connection",
-        autospec=True,
+        DownloadFilesFromSftpController,
+        "_client",
         return_value=Mock(
-            spec=pysftp.Connection,
-            __enter__=lambda self: self,
-            __exit__=lambda *args: None,
+            spec=paramiko.sftp_client.SFTPClient,
             listdir=mock_listdir,
             listdir_attr=mock_listdir_attr,
-            isdir=mock_isdir,
-            walktree=mock_walktree,
+            stat=mock_stat,
         ),
     )
     def test_do_fetch_skips_already_discovered_or_processed_files(
@@ -580,14 +523,28 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
             self.project_id, self.region, self.lower_bound_date
         )
         result = controller.do_fetch()
-        self.assertListEqual(
+        self.assertCountEqual(
             result.skipped,
             ["testToday/already_processed.csv", "testToday/discovered.csv"],
         )
         self.assertEqual(len(mock_fs.files), len(result.successes))
 
+    @patch.object(
+        target=DownloadFilesFromSftpController,
+        attribute="_client",
+        return_value=Mock(
+            spec=paramiko.sftp_client.SFTPClient,
+            listdir=mock_listdir,
+            listdir_attr=mock_listdir_attr,
+            stat=mock_stat,
+        ),
+    )
     def test_clean_up_succeeds(
-        self, mock_fs_factory: Mock, _mock_auth: Mock, _mock_download: Mock
+        self,
+        _mock_connection: Mock,
+        mock_fs_factory: Mock,
+        _mock_auth: Mock,
+        _mock_download: Mock,
     ) -> None:
         mock_fs = create_files(
             download_dir=f"recidiviz-456-direct-ingest-state-us-xx-sftp/{RAW_INGEST_DIRECTORY}",
@@ -606,8 +563,22 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
         )
         self.assertEqual(0, len(items))
 
+    @patch.object(
+        target=DownloadFilesFromSftpController,
+        attribute="_client",
+        return_value=Mock(
+            spec=paramiko.sftp_client.SFTPClient,
+            listdir=mock_listdir,
+            listdir_attr=mock_listdir_attr,
+            stat=mock_stat,
+        ),
+    )
     def test_clean_up_fails_gracefully(
-        self, mock_fs_factory: Mock, _mock_auth: Mock, _mock_download: Mock
+        self,
+        _mock_connection: Mock,
+        mock_fs_factory: Mock,
+        _mock_auth: Mock,
+        _mock_download: Mock,
     ) -> None:
         mock_fs = BrokenGCSFSFakeSystem()
         mock_fs_factory.return_value = mock_fs
