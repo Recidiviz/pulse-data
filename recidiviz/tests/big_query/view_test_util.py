@@ -266,7 +266,7 @@ class BaseViewTest(unittest.TestCase):
         self,
         region_code: str,
         file_config: DirectIngestRawFileConfig,
-        mock_data: List[Tuple[Any, ...]],
+        mock_data: Sequence[Tuple[Any, ...]],
         update_datetime: datetime.datetime = DEFAULT_FILE_UPDATE_DATETIME,
     ) -> None:
         mock_schema = MockTableSchema.from_raw_file_config(file_config)
@@ -506,12 +506,15 @@ class BaseViewTest(unittest.TestCase):
             "DATE_TRUNC('{second}', {first})::date",
         )
 
+        # Replace BigQuery case insensitive flag which does not exist in PG
+        query = _replace_iter(query, r"\(\?i\)", "")
+
         # The REGEXP_CONTAINS function does not exist in postgres, so we replace with
-        # 'SUBSTRING() IS NOT NULL', which has the same behavior.
+        # 'REGEXP_MATCH(text, pattern) IS NOT NULL', which has the same behavior.
         query = _replace_iter(
             query,
-            r"REGEXP_CONTAINS\((?P<first>.+?), r?(?P<second>.+?)\)",
-            "SUBSTRING({first}, {second}) IS NOT NULL",
+            r"REGEXP_CONTAINS\((?P<first>.+?), r?(?P<second>.+?\)?')\)",
+            "REGEXP_MATCH({first}, {second}) IS NOT NULL",
         )
 
         # EXTRACT returns a double in postgres, but for all part types shared between
