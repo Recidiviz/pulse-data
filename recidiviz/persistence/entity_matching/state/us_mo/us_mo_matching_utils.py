@@ -19,7 +19,10 @@ import datetime
 from typing import List, Union
 
 from recidiviz.persistence.database.schema.state import schema
-from recidiviz.persistence.entity.entity_utils import is_placeholder
+from recidiviz.persistence.entity.entity_utils import (
+    CoreEntityFieldIndex,
+    is_placeholder,
+)
 from recidiviz.persistence.entity_matching.state.state_matching_utils import (
     get_all_entities_of_cls,
 )
@@ -27,14 +30,20 @@ from recidiviz.persistence.entity_matching.state.state_matching_utils import (
 
 # TODO(#1883): Remove this once our proto converter and data extractor can handle the presence of multiple paths to
 #  entities with the same id
-def remove_suffix_from_violation_ids(ingested_persons: List[schema.StatePerson]):
+def remove_suffix_from_violation_ids(
+    ingested_persons: List[schema.StatePerson], field_index: CoreEntityFieldIndex
+):
     """Removes SEO (sentence sequence numbers) and FSO (field sequence numbers) from the end of
     StateSupervisionViolation external_ids. This allows violations across sentences to be merged correctly by
     entity matching.
     """
-    ssvs = get_all_entities_of_cls(ingested_persons, schema.StateSupervisionViolation)
+    ssvs = get_all_entities_of_cls(
+        ingested_persons, schema.StateSupervisionViolation, field_index=field_index
+    )
     ssvrs = get_all_entities_of_cls(
-        ingested_persons, schema.StateSupervisionViolationResponse
+        ingested_persons,
+        schema.StateSupervisionViolationResponse,
+        field_index=field_index,
     )
     _remove_suffix_from_violation_entity(ssvs)
     _remove_suffix_from_violation_entity(ssvrs)
@@ -59,7 +68,7 @@ def _remove_suffix_from_violation_entity(
 
 
 def set_current_supervising_officer_from_supervision_periods(
-    matched_persons: List[schema.StatePerson],
+    matched_persons: List[schema.StatePerson], field_index: CoreEntityFieldIndex
 ):
     """For every matched person, update the supervising_officer field to pull in the supervising_officer from the latest
     supervision period (sorted by termination date).
@@ -67,10 +76,12 @@ def set_current_supervising_officer_from_supervision_periods(
     for person in matched_persons:
 
         sps = get_all_entities_of_cls(
-            person.sentence_groups, schema.StateSupervisionPeriod
+            person.sentence_groups,
+            schema.StateSupervisionPeriod,
+            field_index=field_index,
         )
 
-        non_placeholder_sps = [sp for sp in sps if not is_placeholder(sp)]
+        non_placeholder_sps = [sp for sp in sps if not is_placeholder(sp, field_index)]
 
         if not non_placeholder_sps:
             continue

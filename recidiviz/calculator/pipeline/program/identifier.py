@@ -51,6 +51,7 @@ from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
 from recidiviz.persistence.entity.entity_utils import (
+    CoreEntityFieldIndex,
     get_single_state_code,
     is_placeholder,
 )
@@ -69,6 +70,7 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
 
     def __init__(self) -> None:
         self.identifier_event_class = ProgramEvent
+        self.field_index = CoreEntityFieldIndex()
 
     def find_events(
         self, _person: StatePerson, identifier_context: IdentifierContextT
@@ -122,6 +124,7 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
             # Note: This pipeline cannot be run for any state that relies on
             # StateSupervisionViolationResponse entities in IP pre-processing
             pre_processed_violation_responses=None,
+            field_index=self.field_index,
         )
 
         if not sp_pre_processing_manager:
@@ -394,7 +397,7 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
         return [
             sp
             for sp in supervision_periods
-            if not is_placeholder(sp)
+            if not is_placeholder(sp, self.field_index)
             and sp.start_date is not None
             and sp.start_date <= event_date
             and (sp.termination_date is None or event_date < sp.termination_date)

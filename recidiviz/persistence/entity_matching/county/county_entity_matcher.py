@@ -20,7 +20,7 @@ ingested entities."""
 
 import logging
 from collections import defaultdict
-from typing import List, Dict, cast, Set, Tuple
+from typing import Dict, List, Set, Tuple, cast
 
 from recidiviz.common.constants.bond import BondStatus
 from recidiviz.common.constants.charge import ChargeStatus
@@ -33,30 +33,34 @@ from recidiviz.persistence.database.schema_entity_converter import (
 from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.county import entities
+from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity_matching.base_entity_matcher import (
     BaseEntityMatcher,
     increment_error,
 )
 from recidiviz.persistence.entity_matching.county import county_matching_utils
 from recidiviz.persistence.entity_matching.county.county_matching_utils import (
-    is_booking_match,
-    is_hold_match,
-    is_charge_match_with_children,
-    is_charge_match,
+    generate_id_from_obj,
     get_best_match,
     get_next_available_match,
-    generate_id_from_obj,
+    is_booking_match,
+    is_charge_match,
+    is_charge_match_with_children,
+    is_hold_match,
 )
 from recidiviz.persistence.entity_matching.entity_matching_types import MatchedEntities
 from recidiviz.persistence.entity_matching.entity_matching_utils import get_only_match
 from recidiviz.persistence.errors import (
-    MatchedMultipleIngestedEntitiesError,
     EntityMatchingError,
+    MatchedMultipleIngestedEntitiesError,
 )
 
 
 class CountyEntityMatcher(BaseEntityMatcher[entities.Person]):
     """Base class for all entity matchers."""
+
+    def __init__(self) -> None:
+        self.field_index = CoreEntityFieldIndex()
 
     def run_match(
         self, session: Session, region_code: str, ingested_people: List[entities.Person]
@@ -78,7 +82,9 @@ class CountyEntityMatcher(BaseEntityMatcher[entities.Person]):
             session, region_code, with_external_ids
         )
         matches_with_external_id = match_people_and_return_error_count(
-            db_people=db_people_with_external_ids, ingested_people=with_external_ids
+            db_people=db_people_with_external_ids,
+            ingested_people=with_external_ids,
+            field_index=self.field_index,
         )
 
         db_people_without_external_ids = dao.read_people_with_open_bookings(
@@ -87,13 +93,17 @@ class CountyEntityMatcher(BaseEntityMatcher[entities.Person]):
         matches_without_external_ids = match_people_and_return_error_count(
             db_people=db_people_without_external_ids,
             ingested_people=without_external_ids,
+            field_index=self.field_index,
         )
 
         return matches_with_external_id + matches_without_external_ids
 
 
 def match_people_and_return_error_count(
-    *, db_people: List[entities.Person], ingested_people: List[entities.Person]
+    *,
+    db_people: List[entities.Person],
+    ingested_people: List[entities.Person],
+    field_index: CoreEntityFieldIndex
 ) -> MatchedEntities:
     """
     Attempts to match all people from |ingested_people| with people from the
@@ -113,6 +123,7 @@ def match_people_and_return_error_count(
                 db_people=db_people,
                 orphaned_entities=ingested_person_orphans,
                 matched_people_by_db_id=matched_people_by_db_id,
+                field_index=field_index,
             )
 
             people.append(ingested_person)
@@ -140,7 +151,8 @@ def match_person(
     ingested_person: entities.Person,
     db_people: List[entities.Person],
     orphaned_entities: List[Entity],
-    matched_people_by_db_id: Dict[int, entities.Person]
+    matched_people_by_db_id: Dict[int, entities.Person],
+    field_index: CoreEntityFieldIndex
 ) -> None:
     """
     Finds the best match for the provided |ingested_person| from the
@@ -155,6 +167,7 @@ def match_person(
             db_people,
             county_matching_utils.is_person_match,
             matched_people_by_db_id.keys(),
+            field_index=field_index,
         ),
     )
 
@@ -173,6 +186,7 @@ def match_person(
             db_person=db_person,
             ingested_person=ingested_person,
             orphaned_entities=orphaned_entities,
+            field_index=field_index,
         )
 
 
@@ -180,7 +194,8 @@ def match_bookings(
     *,
     db_person: entities.Person,
     ingested_person: entities.Person,
-    orphaned_entities: List[Entity]
+    orphaned_entities: List[Entity],
+    field_index: CoreEntityFieldIndex
 ) -> None:
     """
     Attempts to match all bookings on the |ingested_person| with bookings on
@@ -193,7 +208,12 @@ def match_bookings(
     for ingested_booking in ingested_person.bookings:
         db_booking: entities.Booking = cast(
             entities.Booking,
-            get_only_match(ingested_booking, db_person.bookings, is_booking_match),
+            get_only_match(
+                ingested_booking,
+                db_person.bookings,
+                field_index=field_index,
+                matcher=is_booking_match,
+            ),
         )
         if db_booking:
             logging.debug(
@@ -225,7 +245,11 @@ def match_bookings(
                 ingested_booking.admission_date_inferred = True
 
             match_arrest(db_booking=db_booking, ingested_booking=ingested_booking)
-            match_holds(db_booking=db_booking, ingested_booking=ingested_booking)
+            match_holds(
+                db_booking=db_booking,
+                ingested_booking=ingested_booking,
+                field_index=field_index,
+            )
             match_charges(db_booking=db_booking, ingested_booking=ingested_booking)
             match_bonds(
                 db_booking=db_booking,
@@ -264,7 +288,10 @@ def match_arrest(
 
 
 def match_holds(
-    *, db_booking: entities.Booking, ingested_booking: entities.Booking
+    *,
+    db_booking: entities.Booking,
+    ingested_booking: entities.Booking,
+    field_index: CoreEntityFieldIndex
 ) -> None:
     """
     Attempts to match all holds on the |ingested_booking| with holds on
@@ -278,7 +305,12 @@ def match_holds(
     for ingested_hold in ingested_booking.holds:
         db_hold = cast(
             entities.Hold,
-            get_only_match(ingested_hold, db_booking.holds, is_hold_match),
+            get_only_match(
+                ingested_hold,
+                db_booking.holds,
+                matcher=is_hold_match,
+                field_index=field_index,
+            ),
         )
 
         if db_hold:

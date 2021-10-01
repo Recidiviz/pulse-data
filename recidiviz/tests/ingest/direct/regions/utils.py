@@ -18,13 +18,16 @@
 
 from typing import List
 
-from recidiviz.persistence.entity.entity_utils import get_all_entities_from_tree
+from recidiviz.persistence.entity.entity_utils import (
+    CoreEntityFieldIndex,
+    get_all_entities_from_tree,
+)
 from recidiviz.persistence.entity.state import entities
 
 
 def populate_person_backedges(persons: List[entities.StatePerson]) -> None:
     for person in persons:
-        children = get_all_entities_from_tree(person)
+        children = get_all_entities_from_tree(person, CoreEntityFieldIndex())
         for child in children:
             if (
                 child is not person

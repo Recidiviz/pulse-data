@@ -47,7 +47,10 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     is_official_admission,
     release_reason_overrides_released_from_temporary_custody,
 )
-from recidiviz.persistence.entity.entity_utils import is_placeholder
+from recidiviz.persistence.entity.entity_utils import (
+    CoreEntityFieldIndex,
+    is_placeholder,
+)
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
     StateSupervisionViolationResponse,
@@ -269,6 +272,7 @@ class IncarcerationPreProcessingManager:
             PreProcessedSupervisionPeriodIndex
         ],
         violation_responses: Optional[List[StateSupervisionViolationResponse]],
+        field_index: CoreEntityFieldIndex,
         earliest_death_date: Optional[date] = None,
     ):
         self._incarceration_periods = deepcopy(incarceration_periods)
@@ -299,6 +303,8 @@ class IncarcerationPreProcessingManager:
         # The end date of the earliest incarceration or supervision period ending in
         # death. None if no periods end in death.
         self.earliest_death_date = earliest_death_date
+
+        self.field_index = field_index
 
     def pre_processed_incarceration_period_index_for_calculations(
         self,
@@ -400,13 +406,15 @@ class IncarcerationPreProcessingManager:
                 )
         return self._pre_processed_incarceration_period_index_for_calculations[config]
 
-    @staticmethod
     def _drop_placeholder_periods(
+        self,
         incarceration_periods: List[StateIncarcerationPeriod],
     ) -> List[StateIncarcerationPeriod]:
         """Removes any incarceration periods that are placeholders."""
         filtered_periods = [
-            ip for ip in incarceration_periods if not is_placeholder(ip)
+            ip
+            for ip in incarceration_periods
+            if not is_placeholder(ip, self.field_index)
         ]
         return filtered_periods
 

@@ -17,17 +17,16 @@
 """Tests for state_period_matching_utils.py"""
 import datetime
 
-
 from recidiviz.persistence.entity_matching.state.state_period_matching_utils import (
     add_supervising_officer_to_open_supervision_periods,
 )
 from recidiviz.tests.persistence.database.schema.state.schema_test_utils import (
     generate_agent,
-    generate_person,
     generate_external_id,
+    generate_person,
+    generate_sentence_group,
     generate_supervision_period,
     generate_supervision_sentence,
-    generate_sentence_group,
 )
 from recidiviz.tests.persistence.entity_matching.state.base_state_entity_matcher_test_classes import (
     BaseStateMatchingUtilsTest,
@@ -104,7 +103,9 @@ class TestStatePeriodMatchingUtils(BaseStateMatchingUtilsTest):
         person.sentence_groups = [sentence_group]
 
         # Act
-        add_supervising_officer_to_open_supervision_periods([person])
+        add_supervising_officer_to_open_supervision_periods(
+            [person], field_index=self.field_index
+        )
 
         # Assert
         self.assertEqual(

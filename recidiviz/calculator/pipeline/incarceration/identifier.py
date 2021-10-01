@@ -96,7 +96,10 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
 )
-from recidiviz.persistence.entity.entity_utils import get_single_state_code
+from recidiviz.persistence.entity.entity_utils import (
+    CoreEntityFieldIndex,
+    get_single_state_code,
+)
 from recidiviz.persistence.entity.state.entities import (
     PeriodType,
     StateAssessment,
@@ -116,6 +119,7 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
 
     def __init__(self) -> None:
         self.identifier_event_class = IncarcerationEvent
+        self.field_index = CoreEntityFieldIndex()
 
     def find_events(
         self, _person: StatePerson, identifier_context: IdentifierContextT
@@ -197,6 +201,7 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
             incarceration_periods=incarceration_periods,
             supervision_periods=supervision_periods,
             pre_processed_violation_responses=pre_processed_violation_responses,
+            field_index=self.field_index,
         )
 
         if not ip_pre_processing_manager or not sp_pre_processing_manager:

@@ -34,6 +34,7 @@ from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.entity.county import entities
+from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity_matching import entity_matching
 from recidiviz.persistence.entity_matching.county import (
     county_entity_matcher,
@@ -76,6 +77,7 @@ class TestCountyEntityMatcher(TestCase):
     def setUp(self) -> None:
         self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.JAILS)
         fakes.use_in_memory_sqlite_database(self.database_key)
+        self.field_index = CoreEntityFieldIndex()
 
     def tearDown(self) -> None:
         fakes.teardown_in_memory_sqlite_databases()
@@ -458,12 +460,16 @@ class TestCountyEntityMatcher(TestCase):
         # similar one.
         self.assertTrue(
             county_matching_utils.is_person_match(
-                db_entity=schema_person, ingested_entity=ingested_person
+                db_entity=schema_person,
+                ingested_entity=ingested_person,
+                field_index=self.field_index,
             )
         )
         self.assertTrue(
             county_matching_utils.is_person_match(
-                db_entity=schema_person_mismatch, ingested_entity=ingested_person
+                db_entity=schema_person_mismatch,
+                ingested_entity=ingested_person,
+                field_index=self.field_index,
             )
         )
 
@@ -500,6 +506,7 @@ class TestCountyEntityMatcher(TestCase):
                 db_person=db_person,
                 ingested_person=ingested_person,
                 orphaned_entities=orphaned_entities,
+                field_index=self.field_index,
             )
 
     def test_matchBooking_withInferredDate(self):
@@ -526,6 +533,7 @@ class TestCountyEntityMatcher(TestCase):
             db_person=db_person,
             ingested_person=ingested_person,
             orphaned_entities=orphaned_entities,
+            field_index=self.field_index,
         )
 
         self.assertCountEqual(ingested_person.bookings, [expected_booking])
@@ -558,7 +566,10 @@ class TestCountyEntityMatcher(TestCase):
         db_person = entities.Person.new_with_defaults(bookings=[db_booking])
         ingested_person = entities.Person.new_with_defaults(bookings=[ingested_booking])
         county_entity_matcher.match_bookings(
-            db_person=db_person, ingested_person=ingested_person, orphaned_entities=[]
+            db_person=db_person,
+            ingested_person=ingested_person,
+            orphaned_entities=[],
+            field_index=self.field_index,
         )
 
         self.assertCountEqual(ingested_person.bookings, [expected_booking])
@@ -602,6 +613,7 @@ class TestCountyEntityMatcher(TestCase):
             db_person=db_person,
             ingested_person=ingested_person,
             orphaned_entities=orphaned_entities,
+            field_index=self.field_index,
         )
 
         self.assertCountEqual(
@@ -651,6 +663,7 @@ class TestCountyEntityMatcher(TestCase):
             db_person=db_person,
             ingested_person=ingested_person,
             orphaned_entities=orphaned_entities,
+            field_index=self.field_index,
         )
         self.assertCountEqual(
             ingested_person.bookings,
@@ -744,6 +757,7 @@ class TestCountyEntityMatcher(TestCase):
             db_person=db_person,
             ingested_person=ingested_person,
             orphaned_entities=orphaned_entities,
+            field_index=self.field_index,
         )
 
         self.assertCountEqual(ingested_person.bookings, [expected_booking])
@@ -761,7 +775,9 @@ class TestCountyEntityMatcher(TestCase):
 
         with self.assertRaises(EntityMatchingError):
             county_entity_matcher.match_holds(
-                db_booking=db_booking, ingested_booking=ingested_booking
+                db_booking=db_booking,
+                ingested_booking=ingested_booking,
+                field_index=self.field_index,
             )
 
     def test_matchHolds(self):
@@ -786,7 +802,9 @@ class TestCountyEntityMatcher(TestCase):
         )
 
         county_entity_matcher.match_holds(
-            db_booking=db_booking, ingested_booking=ingested_booking
+            db_booking=db_booking,
+            ingested_booking=ingested_booking,
+            field_index=self.field_index,
         )
 
         self.assertCountEqual(

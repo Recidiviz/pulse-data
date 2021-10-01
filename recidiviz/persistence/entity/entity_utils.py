@@ -90,23 +90,32 @@ _COUNTY_CLASS_HIERARCHY = [
     county_entities.Sentence.__name__,
 ]
 
+_state_direction_checker = None
+_county_direction_checker = None
+
 
 class SchemaEdgeDirectionChecker:
     """A utility class to determine whether relationships between two objects
     are forward or back edges"""
 
-    def __init__(self, class_hierarchy, module):
+    def __init__(self, class_hierarchy: List[str], module: ModuleType):
         self._class_hierarchy_map: Dict[str, int] = _build_class_hierarchy_map(
             class_hierarchy, module
         )
 
     @classmethod
     def state_direction_checker(cls):
-        return cls(_STATE_CLASS_HIERARCHY, state_entities)
+        global _state_direction_checker
+        if not _state_direction_checker:
+            _state_direction_checker = cls(_STATE_CLASS_HIERARCHY, state_entities)
+        return _state_direction_checker
 
     @classmethod
     def county_direction_checker(cls):
-        return cls(_COUNTY_CLASS_HIERARCHY, county_entities)
+        global _county_direction_checker
+        if not _county_direction_checker:
+            _county_direction_checker = cls(_COUNTY_CLASS_HIERARCHY, county_entities)
+        return _county_direction_checker
 
     def is_back_edge(self, from_obj, to_field_name) -> bool:
         """Given an object and a field name on that object, returns whether
@@ -283,135 +292,194 @@ class EntityFieldType(Enum):
     ALL = auto()
 
 
-# TODO(#2383): Move all functions that take in a CoreEntity onto the CoreEntity
-#  object itself, once we figure out the circular dependency with the
-#  SchemaEdgeDirectionChecker.
-def get_set_entity_field_names(
-    entity: CoreEntity, entity_field_type: EntityFieldType
-) -> Set[str]:
-    result = set()
-    for field_name in get_all_core_entity_field_names(entity, entity_field_type):
-        v = entity.get_field(field_name)
-        if isinstance(v, list):
-            if v:
-                result.add(field_name)
-        elif v is not None:
-            result.add(field_name)
-    return result
-
-
-def get_all_core_entity_field_names(
-    entity: CoreEntity, entity_field_type: EntityFieldType
-) -> Set[str]:
-    """Returns a set of field_names that correspond to any set fields on the
-    provided |entity| that match the provided |entity_field_type|.
+class CoreEntityFieldIndex:
+    """Class that caches the results of certain CoreEntity class introspection
+    functionality.
     """
-    if entity.get_entity_name().startswith("state_"):
-        direction_checker = SchemaEdgeDirectionChecker.state_direction_checker()
-    else:
-        direction_checker = SchemaEdgeDirectionChecker.county_direction_checker()
 
-    if isinstance(entity, DatabaseEntity):
-        return _get_all_database_entity_field_names(
-            entity, entity_field_type, direction_checker
+    def __init__(self) -> None:
+        self.state_direction_checker = (
+            SchemaEdgeDirectionChecker.state_direction_checker()
         )
-    if isinstance(entity, Entity):
-        return _get_all_entity_field_names(entity, entity_field_type, direction_checker)
+        self.county_direction_checker = (
+            SchemaEdgeDirectionChecker.county_direction_checker()
+        )
+        self.database_entity_fields_by_field_type: Dict[
+            str, Dict[EntityFieldType, Set[str]]
+        ] = defaultdict(lambda: defaultdict(set))
 
-    raise ValueError(f"Invalid entity type [{type(entity)}]")
+    def _direction_checker(self, entity_name: str) -> SchemaEdgeDirectionChecker:
+        if entity_name.startswith("state_"):
+            return self.state_direction_checker
+        return self.county_direction_checker
 
+    def get_fields_with_non_empty_values(
+        self, entity: CoreEntity, entity_field_type: EntityFieldType
+    ) -> Set[str]:
+        """Returns a set of field_names that correspond to any non-empty (nonnull or
+        non-empty list) fields on the provided |entity| class that match the provided
+        |entity_field_type|.
 
-def _get_all_database_entity_field_names(
-    entity: DatabaseEntity, entity_field_type: EntityFieldType, direction_checker
-):
-    """Returns a set of field_names that correspond to any set fields on the
-    provided DatabaseEntity |entity| that match the provided
-    |entity_field_type|.
-    """
-    back_edges = set()
-    forward_edges = set()
-    flat_fields = set()
-    foreign_keys = set()
+        Note: This function is relatively slow for Entity type entities and should not
+        be called in a tight loop.
+        """
+        if isinstance(entity, DatabaseEntity):
+            return self._get_database_entity_fields_with_non_empty_values(
+                entity, entity_field_type
+            )
+        if isinstance(entity, Entity):
+            return self._get_entity_fields_with_non_empty_values_slow(
+                entity, entity_field_type
+            )
+        raise ValueError(f"Unexpected entity type: {type(entity)}")
 
-    for relationship_field_name in entity.get_relationship_property_names():
-        if direction_checker.is_back_edge(entity, relationship_field_name):
-            back_edges.add(relationship_field_name)
-        else:
-            forward_edges.add(relationship_field_name)
+    def get_all_database_entity_fields(
+        self, entity: DatabaseEntity, entity_field_type: EntityFieldType
+    ) -> Set[str]:
+        """Returns a set of field_names that correspond to any fields (non-empty or
+        otherwise) on the provided DatabaseEntity |entity| class that match the provided
+        |entity_field_type|. Fields are included whether or not the values are non-empty
+        on the provided object.
 
-    for foreign_key_name in entity.get_foreign_key_names():
-        foreign_keys.add(foreign_key_name)
+        This function is caches the results for subsequent calls.
+        """
+        entity_name = entity.get_entity_name()
 
-    for column_field_name in entity.get_column_property_names():
-        if column_field_name not in foreign_keys:
-            flat_fields.add(column_field_name)
+        if not isinstance(entity, DatabaseEntity):
+            raise ValueError(f"Unexpected entity type: {type(entity)}")
 
-    if entity_field_type is EntityFieldType.FLAT_FIELD:
-        return flat_fields
-    if entity_field_type is EntityFieldType.FOREIGN_KEYS:
-        return foreign_keys
-    if entity_field_type is EntityFieldType.FORWARD_EDGE:
-        return forward_edges
-    if entity_field_type is EntityFieldType.BACK_EDGE:
-        return back_edges
-    if entity_field_type is EntityFieldType.ALL:
-        return flat_fields | foreign_keys | forward_edges | back_edges
-    raise ValueError(
-        f"Unrecognized EntityFieldType [{entity_field_type}] on entity [{entity}]"
-    )
+        if not self.database_entity_fields_by_field_type[entity_name][
+            entity_field_type
+        ]:
+            self.database_entity_fields_by_field_type[entity_name][
+                entity_field_type
+            ] = self._get_all_database_entity_fields_slow(entity, entity_field_type)
+        return self.database_entity_fields_by_field_type[entity_name][entity_field_type]
 
+    def _get_database_entity_fields_with_non_empty_values(
+        self, entity: DatabaseEntity, entity_field_type: EntityFieldType
+    ) -> Set[str]:
+        """Returns a set of field_names that correspond to any non-empty (nonnull or
+        non-empty list) fields on the provided DatabaseEntity |entity| that match the
+        provided |entity_field_type|.
+        """
+        result = set()
+        for field_name in self.get_all_database_entity_fields(
+            entity, entity_field_type
+        ):
+            v = entity.get_field(field_name)
+            if isinstance(v, list):
+                if v:
+                    result.add(field_name)
+            elif v is not None:
+                result.add(field_name)
+        return result
 
-def _get_all_entity_field_names(
-    entity: Entity, entity_field_type: EntityFieldType, direction_checker
-):
-    """Returns a set of field_names that correspond to any set fields on the
-    provided Entity |entity| that match the provided |entity_field_type|.
-    """
-    back_edges = set()
-    forward_edges = set()
-    flat_fields = set()
-    for field, _ in attr.fields_dict(entity.__class__).items():
-        v = getattr(entity, field)
+    def _get_all_database_entity_fields_slow(
+        self,
+        entity: DatabaseEntity,
+        entity_field_type: EntityFieldType,
+    ) -> Set[str]:
+        """Returns a set of field_names that correspond to any fields (non-empty or
+        otherwise) on the provided DatabaseEntity |entity| that match the provided
+        |entity_field_type|.
 
-        if v is None:
-            continue
+        This function is relatively slow and the results should be cached across
+        repeated calls.
+        """
+        entity_name = entity.get_entity_name()
+        direction_checker = self._direction_checker(entity_name)
 
-        # TODO(#1908): Update traversal logic if relationship fields can be
-        # different types aside from Entity and List
-        if issubclass(type(v), Entity):
-            is_back_edge = direction_checker.is_back_edge(entity, field)
-            if is_back_edge:
-                back_edges.add(field)
+        back_edges = set()
+        forward_edges = set()
+        flat_fields = set()
+        foreign_keys = set()
+
+        for relationship_field_name in entity.get_relationship_property_names():
+            if direction_checker.is_back_edge(entity, relationship_field_name):
+                back_edges.add(relationship_field_name)
             else:
-                forward_edges.add(field)
-        elif isinstance(v, list):
-            # Disregard empty lists
-            if not v:
+                forward_edges.add(relationship_field_name)
+
+        for foreign_key_name in entity.get_foreign_key_names():
+            foreign_keys.add(foreign_key_name)
+
+        for column_field_name in entity.get_column_property_names():
+            if column_field_name not in foreign_keys:
+                flat_fields.add(column_field_name)
+
+        if entity_field_type is EntityFieldType.FLAT_FIELD:
+            return flat_fields
+        if entity_field_type is EntityFieldType.FOREIGN_KEYS:
+            return foreign_keys
+        if entity_field_type is EntityFieldType.FORWARD_EDGE:
+            return forward_edges
+        if entity_field_type is EntityFieldType.BACK_EDGE:
+            return back_edges
+        if entity_field_type is EntityFieldType.ALL:
+            return flat_fields | foreign_keys | forward_edges | back_edges
+        raise ValueError(
+            f"Unrecognized EntityFieldType [{entity_field_type}] on entity [{entity}]"
+        )
+
+    def _get_entity_fields_with_non_empty_values_slow(
+        self, entity: Entity, entity_field_type: EntityFieldType
+    ) -> Set[str]:
+        """Returns a set of field_names that correspond to any non-empty (nonnull or
+        non-empty list) fields on the provided Entity |entity| that match the provided
+        |entity_field_type|.
+        """
+        entity_name = entity.get_entity_name()
+        direction_checker = self._direction_checker(entity_name)
+
+        back_edges = set()
+        forward_edges = set()
+        flat_fields = set()
+        for field, _ in attr.fields_dict(entity.__class__).items():
+            v = getattr(entity, field)
+
+            if v is None:
                 continue
-            is_back_edge = direction_checker.is_back_edge(entity, field)
-            if is_back_edge:
-                back_edges.add(field)
+
+            # TODO(#1908): Update traversal logic if relationship fields can be
+            # different types aside from Entity and List
+            if issubclass(type(v), Entity):
+                is_back_edge = direction_checker.is_back_edge(entity, field)
+                if is_back_edge:
+                    back_edges.add(field)
+                else:
+                    forward_edges.add(field)
+            elif isinstance(v, list):
+                # Disregard empty lists
+                if not v:
+                    continue
+                is_back_edge = direction_checker.is_back_edge(entity, field)
+                if is_back_edge:
+                    back_edges.add(field)
+                else:
+                    forward_edges.add(field)
             else:
-                forward_edges.add(field)
-        else:
-            flat_fields.add(field)
+                flat_fields.add(field)
 
-    if entity_field_type is EntityFieldType.FLAT_FIELD:
-        return flat_fields
-    if entity_field_type is EntityFieldType.FOREIGN_KEYS:
-        return set()  # Entity objects never have foreign keys
-    if entity_field_type is EntityFieldType.FORWARD_EDGE:
-        return forward_edges
-    if entity_field_type is EntityFieldType.BACK_EDGE:
-        return back_edges
-    if entity_field_type is EntityFieldType.ALL:
-        return flat_fields | forward_edges | back_edges
-    raise ValueError(
-        f"Unrecognized EntityFieldType {entity_field_type} on entity [{entity}]"
-    )
+        if entity_field_type is EntityFieldType.FLAT_FIELD:
+            return flat_fields
+        if entity_field_type is EntityFieldType.FOREIGN_KEYS:
+            return set()  # Entity objects never have foreign keys
+        if entity_field_type is EntityFieldType.FORWARD_EDGE:
+            return forward_edges
+        if entity_field_type is EntityFieldType.BACK_EDGE:
+            return back_edges
+        if entity_field_type is EntityFieldType.ALL:
+            return flat_fields | forward_edges | back_edges
+        raise ValueError(
+            f"Unrecognized EntityFieldType {entity_field_type} on entity [{entity}]"
+        )
 
 
-def prune_dangling_placeholders_from_tree(entity: CoreEntity) -> Optional[CoreEntity]:
+def prune_dangling_placeholders_from_tree(
+    entity: CoreEntity,
+    field_index: CoreEntityFieldIndex = CoreEntityFieldIndex(),
+) -> Optional[CoreEntity]:
     """Recursively prunes dangling placeholders from the entity tree, returning
     the pruned entity tree, or None if the tree itself is a dangling
     placeholder. The returned tree will have no subtrees where all the nodes are
@@ -419,24 +487,26 @@ def prune_dangling_placeholders_from_tree(entity: CoreEntity) -> Optional[CoreEn
     """
 
     has_non_placeholder_children = False
-    for field_name in get_set_entity_field_names(entity, EntityFieldType.FORWARD_EDGE):
+    for field_name in field_index.get_fields_with_non_empty_values(
+        entity, EntityFieldType.FORWARD_EDGE
+    ):
 
         children_to_keep = []
         for child in entity.get_field_as_list(field_name):
-            pruned_tree = prune_dangling_placeholders_from_tree(child)
+            pruned_tree = prune_dangling_placeholders_from_tree(child, field_index)
             if pruned_tree:
                 children_to_keep.append(pruned_tree)
                 has_non_placeholder_children = True
 
         entity.set_field_from_list(field_name, children_to_keep)
 
-    if has_non_placeholder_children or not is_placeholder(entity):
+    if has_non_placeholder_children or not is_placeholder(entity, field_index):
         return entity
 
     return None
 
 
-def is_placeholder(entity: CoreEntity) -> bool:
+def is_placeholder(entity: CoreEntity, field_index: CoreEntityFieldIndex) -> bool:
     """Determines if the provided entity is a placeholder. Conceptually, a
     placeholder is an object that we have no information about, but have
     inferred its existence based on other objects we do have information about.
@@ -451,7 +521,9 @@ def is_placeholder(entity: CoreEntity) -> bool:
         if any([entity.external_ids, entity.races, entity.aliases, entity.ethnicities]):
             return False
 
-    set_flat_fields = get_set_entity_field_names(entity, EntityFieldType.FLAT_FIELD)
+    set_flat_fields = field_index.get_fields_with_non_empty_values(
+        entity, EntityFieldType.FLAT_FIELD
+    )
 
     primary_key_name = entity.get_primary_key_column_name()
     if primary_key_name in set_flat_fields:
@@ -483,30 +555,34 @@ def is_placeholder(entity: CoreEntity) -> bool:
     return not bool(set_flat_fields)
 
 
-def _get_entity_sort_key(entity: CoreEntity) -> str:
-    """Generates a sort key for the given entity based on the flat field values
-    in this entity."""
-    return f"{entity.get_external_id()}#{_get_flat_fields_json_str(entity)}"
-
-
-def _sort_based_on_flat_fields(db_entities: Sequence[CoreEntity]):
+def _sort_based_on_flat_fields(
+    db_entities: Sequence[CoreEntity], field_index: CoreEntityFieldIndex
+) -> None:
     """Helper function that sorts all entities in |db_entities| in place as
     well as all children of |db_entities|. Sorting is done by first by an
     external_id if that field exists, then present flat fields.
     """
+
+    def _get_entity_sort_key(e: CoreEntity) -> str:
+        """Generates a sort key for the given entity based on the flat field values
+        in this entity."""
+        return f"{e.get_external_id()}#{_get_flat_fields_json_str(e, field_index)}"
+
     db_entities = cast(List, db_entities)
     db_entities.sort(key=_get_entity_sort_key)
     for entity in db_entities:
-        for field_name in get_set_entity_field_names(
+        for field_name in field_index.get_fields_with_non_empty_values(
             entity, EntityFieldType.FORWARD_EDGE
         ):
             field = entity.get_field_as_list(field_name)
-            _sort_based_on_flat_fields(field)
+            _sort_based_on_flat_fields(field, field_index)
 
 
-def _get_flat_fields_json_str(entity: CoreEntity):
+def _get_flat_fields_json_str(entity: CoreEntity, field_index: CoreEntityFieldIndex):
     flat_fields_dict: Dict[str, str] = {}
-    for field_name in get_set_entity_field_names(entity, EntityFieldType.FLAT_FIELD):
+    for field_name in field_index.get_fields_with_non_empty_values(
+        entity, EntityFieldType.FLAT_FIELD
+    ):
         flat_fields_dict[field_name] = str(entity.get_field(field_name))
     return json.dumps(flat_fields_dict, sort_keys=True)
 
@@ -531,6 +607,8 @@ def print_entity_trees(
     entities_list: Sequence[CoreEntity],
     print_tree_structure_only: bool = False,
     python_id_to_fake_id: Dict[int, int] = None,
+    # Default arg caches across calls to this function
+    field_index: CoreEntityFieldIndex = CoreEntityFieldIndex(),
 ):
     """Recursively prints out all objects in the trees below the given list of
     entities. Each time we encounter a new object, we assign a new fake id (an
@@ -546,13 +624,14 @@ def print_entity_trees(
 
     if python_id_to_fake_id is None:
         python_id_to_fake_id = {}
-        _sort_based_on_flat_fields(entities_list)
+        _sort_based_on_flat_fields(entities_list, field_index)
 
     for entity in entities_list:
         print_entity_tree(
             entity,
             python_id_to_fake_id=python_id_to_fake_id,
             print_tree_structure_only=print_tree_structure_only,
+            field_index=field_index,
         )
 
 
@@ -561,6 +640,8 @@ def print_entity_tree(
     print_tree_structure_only: bool = False,
     indent: int = 0,
     python_id_to_fake_id: Dict[int, int] = None,
+    # Default arg caches across calls to this function
+    field_index: CoreEntityFieldIndex = CoreEntityFieldIndex(),
 ):
     """Recursively prints out all objects in the tree below the given entity. Each time we encounter a new object, we
     assign a new fake id (an auto-incrementing count) and print that with the object.
@@ -573,17 +654,19 @@ def print_entity_tree(
     """
     if python_id_to_fake_id is None:
         python_id_to_fake_id = {}
-        _sort_based_on_flat_fields([entity])
+        _sort_based_on_flat_fields([entity], field_index)
 
     _print_indented(_obj_id_str(entity, python_id_to_fake_id), indent)
 
     indent = indent + 2
-    for field in get_all_core_entity_field_names(entity, EntityFieldType.FLAT_FIELD):
+    for field in field_index.get_fields_with_non_empty_values(
+        entity, EntityFieldType.FLAT_FIELD
+    ):
         if field == "external_id" or not print_tree_structure_only:
             val = entity.get_field(field)
             _print_indented(f"{field}: {str(val)}", indent)
 
-    for child_field in get_all_core_entity_field_names(
+    for child_field in field_index.get_fields_with_non_empty_values(
         entity, EntityFieldType.FORWARD_EDGE
     ):
         child = entity.get_field(child_field)
@@ -600,56 +683,62 @@ def print_entity_tree(
                             print_tree_structure_only,
                             indent + 2,
                             python_id_to_fake_id,
+                            field_index=field_index,
                         )
                     _print_indented("]", indent)
 
             else:
                 _print_indented(f"{child_field}:", indent)
                 print_entity_tree(
-                    child, print_tree_structure_only, indent + 2, python_id_to_fake_id
+                    child,
+                    print_tree_structure_only,
+                    indent + 2,
+                    python_id_to_fake_id,
+                    field_index=field_index,
                 )
         else:
             _print_indented(f"{child_field}: None", indent)
 
-    for child_field in get_all_core_entity_field_names(
+    for child_field in field_index.get_fields_with_non_empty_values(
         entity, EntityFieldType.BACK_EDGE
     ):
         child = entity.get_field(child_field)
-        if child:
-            if isinstance(child, list):
-                first_child = next(iter(child))
-                unique = {id(c) for c in child}
-                len_str = (
-                    f"{len(child)}"
-                    if len(unique) == len(child)
-                    else f"{len(child)} - ONLY {len(unique)} UNIQUE!"
-                )
+        if not child:
+            raise ValueError(f"Expected non-empty child value for field {child_field}")
+        if isinstance(child, list):
+            first_child = next(iter(child))
+            unique = {id(c) for c in child}
+            len_str = (
+                f"{len(child)}"
+                if len(unique) == len(child)
+                else f"{len(child)} - ONLY {len(unique)} UNIQUE!"
+            )
 
-                id_str = _obj_id_str(first_child, python_id_to_fake_id)
-                ellipsis_str = ", ..." if len(child) > 1 else ""
+            id_str = _obj_id_str(first_child, python_id_to_fake_id)
+            ellipsis_str = ", ..." if len(child) > 1 else ""
 
-                _print_indented(
-                    f"{child_field} ({len_str}): [{id_str}{ellipsis_str}] - backedge",
-                    indent,
-                )
-            else:
-                id_str = _obj_id_str(child, python_id_to_fake_id)
-                _print_indented(f"{child_field}: {id_str} - backedge", indent)
+            _print_indented(
+                f"{child_field} ({len_str}): [{id_str}{ellipsis_str}] - backedge",
+                indent,
+            )
         else:
-            _print_indented(f"{child_field}: None - backedge", indent)
+            id_str = _obj_id_str(child, python_id_to_fake_id)
+            _print_indented(f"{child_field}: {id_str} - backedge", indent)
 
 
-def get_all_db_objs_from_trees(db_objs: Sequence[DatabaseEntity], result=None):
+def get_all_db_objs_from_trees(
+    db_objs: Sequence[DatabaseEntity], field_index: CoreEntityFieldIndex, result=None
+):
     if result is None:
         result = set()
     for root_obj in db_objs:
-        for obj in get_all_db_objs_from_tree(root_obj, result):
+        for obj in get_all_db_objs_from_tree(root_obj, field_index, result):
             result.add(obj)
     return result
 
 
 def get_all_db_objs_from_tree(
-    db_obj: DatabaseEntity, result=None
+    db_obj: DatabaseEntity, field_index: CoreEntityFieldIndex, result=None
 ) -> Set[DatabaseEntity]:
     if result is None:
         result = set()
@@ -659,16 +748,19 @@ def get_all_db_objs_from_tree(
 
     result.add(db_obj)
 
-    set_fields = get_set_entity_field_names(db_obj, EntityFieldType.FORWARD_EDGE)
+    set_fields = field_index.get_fields_with_non_empty_values(
+        db_obj, EntityFieldType.FORWARD_EDGE
+    )
     for field in set_fields:
         child = db_obj.get_field_as_list(field)
-        get_all_db_objs_from_trees(child, result)
+        get_all_db_objs_from_trees(child, field_index, result)
 
     return result
 
 
 def get_all_entities_from_tree(
     entity: Entity,
+    field_index: CoreEntityFieldIndex,
     result: Optional[List[Entity]] = None,
     seen_ids: Optional[Set[int]] = None,
 ) -> List[Entity]:
@@ -687,25 +779,28 @@ def get_all_entities_from_tree(
     result.append(entity)
     seen_ids.add(id(entity))
 
-    fields = get_all_core_entity_field_names(entity, EntityFieldType.FORWARD_EDGE)
+    fields = field_index.get_fields_with_non_empty_values(
+        entity, EntityFieldType.FORWARD_EDGE
+    )
 
     for field in fields:
         child = entity.get_field(field)
 
         if child is None:
-            continue
+            raise ValueError("Expected only nonnull values at this point")
 
         if isinstance(child, list):
             for c in child:
-                get_all_entities_from_tree(c, result, seen_ids)
+                get_all_entities_from_tree(c, field_index, result, seen_ids)
         else:
-            get_all_entities_from_tree(child, result, seen_ids)
+            get_all_entities_from_tree(child, field_index, result, seen_ids)
 
     return result
 
 
 def get_entities_by_type(
     all_entities: Sequence[DatabaseEntity],
+    field_index: CoreEntityFieldIndex,
     entities_of_type: Dict[Type, List[DatabaseEntity]] = None,
     seen_entities: Optional[Set[int]] = None,
 ) -> Dict[Type, List[DatabaseEntity]]:
@@ -730,11 +825,13 @@ def get_entities_by_type(
         if entity_cls not in entities_of_type:
             entities_of_type[entity_cls] = []
         entities_of_type[entity_cls].append(entity)
-        for child_name in get_set_entity_field_names(
+        for child_name in field_index.get_fields_with_non_empty_values(
             entity, EntityFieldType.FORWARD_EDGE
         ):
             child_list = entity.get_field_as_list(child_name)
-            get_entities_by_type(child_list, entities_of_type, seen_entities)
+            get_entities_by_type(
+                child_list, field_index, entities_of_type, seen_entities
+            )
 
     return entities_of_type
 
@@ -753,11 +850,13 @@ def is_standalone_entity(entity: DatabaseEntity) -> bool:
     return is_standalone_class(entity.__class__)
 
 
-def log_entity_count(db_persons: List[schema.StatePerson]):
+def log_entity_count(
+    db_persons: List[schema.StatePerson], field_index: CoreEntityFieldIndex
+):
     """Counts and logs the total number of entities of each class included in
     the |db_persons| trees.
     """
-    entities_by_type = get_entities_by_type(db_persons)
+    entities_by_type = get_entities_by_type(db_persons, field_index)
     debug_msg = "Entity counter\n"
     for cls, entities_of_cls in entities_by_type.items():
         debug_msg += f"{str(cls.__name__)}: {str(len(entities_of_cls))}\n"

@@ -15,11 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains the base class to handle state specific matching."""
-from typing import List, Optional, Type, Callable
+from typing import List, Optional, Type
 
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.session import Session
+from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity_matching.entity_matching_types import EntityTree
 from recidiviz.persistence.entity_matching.state.state_matching_utils import (
     default_merge_flat_fields,
@@ -43,6 +44,7 @@ class BaseStateMatchingDelegate:
             if not allowed_root_entity_classes_override
             else allowed_root_entity_classes_override
         )
+        self.field_index = CoreEntityFieldIndex()
 
     def get_region_code(self) -> str:
         """Returns the region code for this object."""
@@ -59,6 +61,7 @@ class BaseStateMatchingDelegate:
             self.region_code,
             ingested_persons,
             self.allowed_root_entity_classes,
+            self.field_index,
         )
         return db_persons
 
@@ -67,22 +70,14 @@ class BaseStateMatchingDelegate:
     ) -> DatabaseEntity:
         """Merges appropriate non-relationship fields on the |new_entity| onto the |old_entity|. Returns the newly
         merged entity.
-        """
 
-        merge_for_type = (
-            self.get_merge_flat_fields_override_for_type(from_entity.__class__)
-            or default_merge_flat_fields
-        )
-        return merge_for_type(new_entity=from_entity, old_entity=to_entity)
-
-    def get_merge_flat_fields_override_for_type(
-        self, _cls: Type[DatabaseEntity]
-    ) -> Optional[Callable[..., DatabaseEntity]]:
-        """This can be overridden by child classes to specify an state-specific merge method for the provided |_cls|.
+        This can be overridden by child classes to specify an state-specific merge method for the provided |_cls|.
         If a callable is returned, it must have the keyword inputs of `new_entity` and `old_entity`.
 
-        If nothing is returned, entities of type |_cls| will be merged with `default_merge_flat_fields`.
         """
+        return default_merge_flat_fields(
+            new_entity=from_entity, old_entity=to_entity, field_index=self.field_index
+        )
 
     def perform_match_preprocessing(
         self, ingested_persons: List[schema.StatePerson]

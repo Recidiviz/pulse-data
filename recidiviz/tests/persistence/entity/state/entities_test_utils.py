@@ -82,9 +82,9 @@ from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.core_entity import CoreEntity
 from recidiviz.persistence.entity.entity_utils import (
+    CoreEntityFieldIndex,
     EntityFieldType,
     get_entities_by_type,
-    get_set_entity_field_names,
     is_standalone_class,
     print_entity_tree,
 )
@@ -96,27 +96,34 @@ from recidiviz.persistence.entity.state.entities import (
 )
 
 
-def clear_db_ids(db_entities: Sequence[CoreEntity]):
+def clear_db_ids(
+    db_entities: Sequence[CoreEntity],
+    # Default arg caches across calls to this function
+    field_index: CoreEntityFieldIndex = CoreEntityFieldIndex(),
+):
     """Clears primary key fields off of all entities in all of the provided
     |db_entities| graphs.
     """
     for entity in db_entities:
         entity.clear_id()
-        for field_name in get_set_entity_field_names(
+        for field_name in field_index.get_fields_with_non_empty_values(
             entity, EntityFieldType.FORWARD_EDGE
         ):
             clear_db_ids(entity.get_field_as_list(field_name))
 
 
 def assert_no_unexpected_entities_in_db(
-    expected_entities: Sequence[DatabaseEntity], session: Session
+    expected_entities: Sequence[DatabaseEntity],
+    session: Session,
+    # Default arg caches across calls to this function
+    field_index: CoreEntityFieldIndex = CoreEntityFieldIndex(),
 ):
     """Counts all of the entities present in the |expected_entities| graph by
     type and ensures that the same number of entities exists in the DB for each
     type.
     """
     entity_counter: Dict[Type, List[DatabaseEntity]] = defaultdict(list)
-    get_entities_by_type(expected_entities, entity_counter)
+    get_entities_by_type(expected_entities, field_index, entity_counter)
     for cls, entities_of_cls in entity_counter.items():
         # Standalone classes do not need to be attached to a person by design,
         # so it is valid if some standalone entities are not reachable from the
@@ -135,10 +142,10 @@ def assert_no_unexpected_entities_in_db(
         if expected_ids != db_ids:
             print("\n********** Entities from |found_persons| **********\n")
             for entity in sorted(entities_of_cls, key=lambda x: x.get_id()):
-                print_entity_tree(entity)
+                print_entity_tree(entity, field_index=field_index)
             print("\n********** Entities from db **********\n")
             for entity in sorted(db_entities, key=lambda x: x.get_id()):
-                print_entity_tree(entity)
+                print_entity_tree(entity, field_index=field_index)
             raise ValueError(
                 f"For cls {cls.__name__}, found difference in primary keys from"
                 f"expected entities and those of entities read from db.\n"

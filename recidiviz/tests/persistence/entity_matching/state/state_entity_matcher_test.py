@@ -54,6 +54,7 @@ from recidiviz.persistence.entity.state.entities import (
     StateCharge,
     StateCourtCase,
     StateIncarcerationIncident,
+    StateIncarcerationIncidentOutcome,
     StateIncarcerationPeriod,
     StateIncarcerationSentence,
     StatePerson,
@@ -356,6 +357,64 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         session = self._session()
         matched_entities = entity_matching.match(
             session, _STATE_CODE, [person, person_2]
+        )
+
+        # Assert
+        self.assert_people_match_pre_and_post_commit(
+            [expected_person], matched_entities.people, session
+        )
+        self.assert_no_errors(matched_entities)
+        self.assertEqual(1, matched_entities.total_root_entities)
+
+    def test_match_MatchingIngestedPersons_with_children_perf(self) -> None:
+        # Arrange
+        people = []
+        incidents = []
+        for i in range(250):
+            external_id = StatePersonExternalId.new_with_defaults(
+                state_code=_STATE_CODE, external_id=_EXTERNAL_ID, id_type=_ID_TYPE
+            )
+
+            incident = StateIncarcerationIncident.new_with_defaults(
+                state_code=_STATE_CODE,
+                external_id=f"{i}",
+                incarceration_incident_outcomes=[
+                    StateIncarcerationIncidentOutcome.new_with_defaults(
+                        state_code=_STATE_CODE,
+                        external_id=f"{i}",
+                    )
+                ],
+            )
+            incidents.append(incident)
+
+            people.append(
+                StatePerson.new_with_defaults(
+                    full_name=_FULL_NAME,
+                    external_ids=[external_id],
+                    incarceration_incidents=[incident],
+                    state_code=_STATE_CODE,
+                )
+            )
+
+        expected_person = StatePerson.new_with_defaults(
+            full_name=_FULL_NAME,
+            external_ids=[
+                StatePersonExternalId.new_with_defaults(
+                    state_code=_STATE_CODE, external_id=_EXTERNAL_ID, id_type=_ID_TYPE
+                )
+            ],
+            incarceration_incidents=incidents,
+            state_code=_STATE_CODE,
+        )
+
+        # Act
+        session = self._session()
+        start = datetime.datetime.now()
+        matched_entities = entity_matching.match(session, _STATE_CODE, people)
+        end = datetime.datetime.now()
+        duration_seconds = (end - start).total_seconds()
+        self.assertTrue(
+            duration_seconds < 10, f"Runtime [{duration_seconds}] not below threshold"
         )
 
         # Assert

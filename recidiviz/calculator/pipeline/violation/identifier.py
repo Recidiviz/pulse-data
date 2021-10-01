@@ -52,7 +52,10 @@ from recidiviz.calculator.pipeline.violation.events import (
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseDecision,
 )
-from recidiviz.persistence.entity.entity_utils import is_placeholder
+from recidiviz.persistence.entity.entity_utils import (
+    CoreEntityFieldIndex,
+    is_placeholder,
+)
 from recidiviz.persistence.entity.state.entities import (
     StatePerson,
     StateSupervisionViolation,
@@ -65,6 +68,7 @@ class ViolationIdentifier(BaseIdentifier[List[ViolationEvent]]):
 
     def __init__(self) -> None:
         self.identifier_event_class = ViolationEvent
+        self.field_index = CoreEntityFieldIndex()
 
     def find_events(
         self, _person: StatePerson, identifier_context: IdentifierContextT
@@ -90,7 +94,7 @@ class ViolationIdentifier(BaseIdentifier[List[ViolationEvent]]):
 
         violation_with_response_events: List[ViolationWithResponseEvent] = []
         for violation in violations:
-            if is_placeholder(violation):
+            if is_placeholder(violation, self.field_index):
                 continue
             violation_with_response_events.extend(
                 self._find_violation_with_response_events(violation)

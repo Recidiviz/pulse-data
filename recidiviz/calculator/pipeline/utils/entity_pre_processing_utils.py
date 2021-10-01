@@ -38,6 +38,7 @@ from recidiviz.calculator.pipeline.utils.supervision_period_pre_processing_manag
 from recidiviz.calculator.pipeline.utils.supervision_violation_responses_pre_processing_manager import (
     ViolationResponsePreProcessingManager,
 )
+from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
     StateSupervisionPeriod,
@@ -52,6 +53,7 @@ def pre_processing_managers_for_calculations(
     pre_processed_violation_responses: Optional[
         List[StateSupervisionViolationResponse]
     ],
+    field_index: CoreEntityFieldIndex,
 ) -> Tuple[
     Optional[IncarcerationPreProcessingManager],
     Optional[SupervisionPreProcessingManager],
@@ -123,6 +125,7 @@ def pre_processing_managers_for_calculations(
             pre_processed_supervision_period_index=supervision_period_index,
             violation_responses=pre_processed_violation_responses,
             earliest_death_date=earliest_death_date,
+            field_index=field_index,
         )
         if incarceration_periods is not None
         else None
