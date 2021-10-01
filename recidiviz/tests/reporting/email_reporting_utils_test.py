@@ -95,10 +95,8 @@ class EmailReportingUtilsTests(TestCase):
         test_secrets = {"po_report_cdn_static_IP": expected}
         mock_secret.side_effect = test_secrets.get
 
-        expected = "http://123.456.7.8/US_XX/top_opportunities/static"
-        actual = self.eru.get_static_image_path(
-            StateCode.US_XX, ReportType.TopOpportunities
-        )
+        expected = "http://123.456.7.8/top_opportunities/static"
+        actual = self.eru.get_static_image_path(ReportType.TopOpportunities)
         self.assertEqual(expected, actual)
 
     def test_get_data_filename(self) -> None:

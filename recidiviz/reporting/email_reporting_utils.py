@@ -110,8 +110,8 @@ def get_cdn_static_ip() -> str:
 
 
 # TODO(#3265): Convert from HTTP to HTTPS when a certificate has been set up
-def get_static_image_path(state_code: StateCode, report_type: ReportType) -> str:
-    return f"http://{get_cdn_static_ip()}/{state_code.value}/{report_type.value}/static"
+def get_static_image_path(report_type: ReportType) -> str:
+    return f"http://{get_cdn_static_ip()}/{report_type.value}/static"
 
 
 def get_data_filename(state_code: StateCode, report_type: ReportType) -> str:

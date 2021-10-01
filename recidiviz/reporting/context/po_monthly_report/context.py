@@ -149,7 +149,7 @@ class PoMonthlyReportContext(ReportContext):
         }
 
         self.prepared_data["static_image_path"] = utils.get_static_image_path(
-            self.state_code, self.get_report_type()
+            self.get_report_type()
         )
 
         self.prepared_data["greeting"] = format_greeting(
