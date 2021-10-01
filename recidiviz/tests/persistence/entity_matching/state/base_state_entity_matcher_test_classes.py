@@ -28,7 +28,10 @@ from recidiviz.persistence.database.schema_entity_converter import (
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.persistence.entity.entity_utils import print_entity_trees
+from recidiviz.persistence.entity.entity_utils import (
+    CoreEntityFieldIndex,
+    print_entity_trees,
+)
 from recidiviz.persistence.entity.state.entities import StatePerson
 from recidiviz.tests.persistence.entity.state.entities_test_utils import (
     assert_no_unexpected_entities_in_db,
@@ -137,6 +140,7 @@ class BaseStateMatchingUtilsTest(TestCase):
     def setUp(self) -> None:
         self.database_key = SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
         local_postgres_helpers.use_on_disk_postgresql_database(self.database_key)
+        self.field_index = CoreEntityFieldIndex()
 
     def tearDown(self) -> None:
         local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)

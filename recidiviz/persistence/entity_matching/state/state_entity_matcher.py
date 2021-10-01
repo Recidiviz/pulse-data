@@ -34,10 +34,9 @@ from recidiviz.persistence.database.schema_entity_converter.schema_entity_conver
 )
 from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.entity.entity_utils import (
-    get_all_core_entity_field_names,
+    CoreEntityFieldIndex,
     get_all_db_objs_from_tree,
     get_all_db_objs_from_trees,
-    get_set_entity_field_names,
     is_placeholder,
     is_standalone_class,
     is_standalone_entity,
@@ -143,6 +142,8 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
 
         self.session: Optional[Session] = None
 
+        self.field_index = CoreEntityFieldIndex()
+
     def set_session(self, session: Session):
         if self.session:
             raise ValueError(
@@ -161,7 +162,9 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         if not db_persons:
             return
 
-        trees = get_all_entity_trees_of_cls(db_persons, self.root_entity_cls)
+        trees = get_all_entity_trees_of_cls(
+            db_persons, self.root_entity_cls, self.field_index
+        )
         for tree in trees:
             external_ids = get_external_ids_from_entity(tree.entity)
             for external_id in external_ids:
@@ -171,7 +174,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         """Entity matching-specific wrapper around is_placeholder() that checks that
         we didn't fail to add any types to the non_placeholder_ingest_types set.
         """
-        entity_is_placeholder = is_placeholder(entity)
+        entity_is_placeholder = is_placeholder(entity, self.field_index)
         entity_cls = type(entity)
         if (
             not entity_is_placeholder
@@ -240,8 +243,8 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
 
         for i in indices_to_search:
             ingested_person = ingested_db_persons[i]
-            for obj in get_all_db_objs_from_tree(ingested_person):
-                if not is_placeholder(obj):
+            for obj in get_all_db_objs_from_tree(ingested_person, self.field_index):
+                if not is_placeholder(obj, self.field_index):
                     non_placeholder_ingest_types.add(type(obj))
         return non_placeholder_ingest_types
 
@@ -255,7 +258,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
                 len(ingested_db_persons),
             )
             for person in ingested_db_persons:
-                person_ingest_objs = get_all_db_objs_from_tree(person)
+                person_ingest_objs = get_all_db_objs_from_tree(person, self.field_index)
                 for obj in person_ingest_objs:
                     self.ingest_obj_id_to_person_id[id(obj)] = id(person)
                     self.person_id_to_ingest_objs[id(person)].add(obj)
@@ -306,20 +309,19 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
     def get_ingest_objs_from_list(
         self, db_objs: List[DatabaseEntity]
     ) -> Set[DatabaseEntity]:
-        all_objs = get_all_db_objs_from_trees(db_objs)
+        all_objs = get_all_db_objs_from_trees(db_objs, self.field_index)
         intersection = self.all_ingested_db_objs.intersection(all_objs)
 
         return intersection
 
-    @staticmethod
-    def describe_db_entity(entity) -> str:
+    def describe_db_entity(self, entity) -> str:
         external_id = (
             entity.get_external_id() if hasattr(entity, "external_id") else "N/A"
         )
 
         return (
             f"{entity.get_entity_name()}({id(entity)}) "
-            f"external_id={external_id} placeholder={is_placeholder(entity)}"
+            f"external_id={external_id} placeholder={is_placeholder(entity, self.field_index)}"
         )
 
     def run_match(
@@ -345,7 +347,9 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
             ingested_db_persons
         )
         self.set_ingest_objs_for_persons(ingested_db_persons)
-        self.root_entity_cls = get_root_entity_cls(ingested_db_persons)
+        self.root_entity_cls = get_root_entity_cls(
+            ingested_db_persons, self.field_index
+        )
 
         logging.info(
             "[Entity matching] Starting reading and converting persons "
@@ -360,7 +364,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
 
         if self.log_entity_counts:
             logging.info("Entity counts for all people read from the DB:")
-            log_entity_count(db_persons)
+            log_entity_count(db_persons, self.field_index)
 
         logging.info(
             "Read [%d] persons from DB in region [%s]",
@@ -521,7 +525,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
 
         for cls in classes_to_merge:
             tree_groups = read_db_entity_trees_of_cls_to_merge(
-                session, region_code, cls
+                session, region_code, cls, self.field_index
             )
 
             for tree_group in tree_groups:
@@ -629,7 +633,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
                 b_ancestor_tree.entity
             ):
                 pass
-            elif not is_match(a_ancestor_tree, b_ancestor_tree):
+            elif not is_match(a_ancestor_tree, b_ancestor_tree, self.field_index):
                 logging.error(
                     "Ancestor chains do not match for entities to merge of type"
                     " [%s] with ids [%s] and [%s].",
@@ -768,9 +772,9 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
             for ingested_person in ingested_persons
         ]
 
-        root_entity_cls = get_root_entity_cls(ingested_persons)
+        root_entity_cls = get_root_entity_cls(ingested_persons, self.field_index)
         total_root_entities = get_total_entities_of_cls(
-            ingested_persons, root_entity_cls
+            ingested_persons, root_entity_cls, self.field_index
         )
         persons_match_results = self._match_entity_trees(
             ingested_entity_trees=ingested_person_trees,
@@ -823,7 +827,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
 
     def _populate_person_backedges(self, updated_persons: List[schema.StatePerson]):
         for person in updated_persons:
-            children = get_all_db_objs_from_tree(person)
+            children = get_all_db_objs_from_tree(person, self.field_index)
             self.check_no_ingest_objs(list(children))
             for child in children:
                 if child is not person and not is_standalone_entity(child):
@@ -901,7 +905,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         placeholder object or removes it from the session altogether.
         """
         if entity.get_id():
-            convert_to_placeholder(entity)
+            convert_to_placeholder(entity, self.field_index)
         else:
             session = self.get_session()
             if entity in session:
@@ -1052,7 +1056,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
             # If we updated any of the entity trees, check to see if the placeholder
             # tree still has any children. If it doesn't have any children, it
             # doesn't need to be committed into our DB.
-            set_child_fields = get_set_entity_field_names(
+            set_child_fields = self.field_index.get_fields_with_non_empty_values(
                 db_placeholder_tree.entity,
                 entity_field_type=EntityFieldType.FORWARD_EDGE,
             )
@@ -1077,7 +1081,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         # Perform shallow copy
         ent_cls = entity.__class__
         new_entity = ent_cls()
-        for field in get_all_core_entity_field_names(
+        for field in self.field_index.get_all_database_entity_fields(
             entity, EntityFieldType.FLAT_FIELD
         ):
             new_entity.set_field(field, entity.get_field(field))
@@ -1323,7 +1327,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         """
         results = []
         ingested_entity = ingested_entity_tree.entity
-        set_child_fields = get_set_entity_field_names(
+        set_child_fields = self.field_index.get_fields_with_non_empty_values(
             ingested_entity, EntityFieldType.FORWARD_EDGE
         )
 
@@ -1414,7 +1418,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
             )
         else:
             exact_match = entity_matching_utils.get_only_match(
-                ingested_entity_tree, db_match_candidates, is_match
+                ingested_entity_tree, db_match_candidates, self.field_index, is_match
             )
 
         if not exact_match:
@@ -1447,7 +1451,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         """
 
         db_matches = entity_matching_utils.get_all_matches(
-            ingested_entity_tree, db_entity_trees, is_match
+            ingested_entity_tree, db_entity_trees, self.field_index, is_match
         )
 
         if not db_matches:
@@ -1540,12 +1544,12 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         """Checks if all fields on the provided |subset| are present in the
         provided |entity|. Returns True if so, otherwise False.
         """
-        for field_name in get_set_entity_field_names(
+        for field_name in self.field_index.get_fields_with_non_empty_values(
             subset, EntityFieldType.FLAT_FIELD
         ):
             if entity.get_field(field_name) != entity.get_field(field_name):
                 return False
-        for field_name in get_set_entity_field_names(
+        for field_name in self.field_index.get_fields_with_non_empty_values(
             subset, EntityFieldType.FORWARD_EDGE
         ):
             for field in subset.get_field_as_list(field_name):
@@ -1584,7 +1588,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         """Looks through all children in the provided |entity|, and if they are
         of type |entity_cls|, adds an entry to the provided |multiparent_map|.
         """
-        for child_field_name in get_set_entity_field_names(
+        for child_field_name in self.field_index.get_fields_with_non_empty_values(
             entity, EntityFieldType.FORWARD_EDGE
         ):
             linked_parent = _ParentInfo(entity, child_field_name)

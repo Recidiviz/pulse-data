@@ -89,7 +89,10 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.common.date import DateRange, DateRangeDiff, last_day_of_month
-from recidiviz.persistence.entity.entity_utils import get_single_state_code
+from recidiviz.persistence.entity.entity_utils import (
+    CoreEntityFieldIndex,
+    get_single_state_code,
+)
 from recidiviz.persistence.entity.state.entities import (
     PeriodType,
     StateAssessment,
@@ -108,6 +111,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
 
     def __init__(self) -> None:
         self.identifier_event_class = SupervisionEvent
+        self.field_index = CoreEntityFieldIndex()
 
     def find_events(
         self, person: StatePerson, identifier_context: IdentifierContextT
@@ -178,6 +182,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
             incarceration_periods=incarceration_periods,
             supervision_periods=supervision_periods,
             pre_processed_violation_responses=pre_processed_violation_responses,
+            field_index=self.field_index,
         )
 
         if not ip_pre_processing_manager or not sp_pre_processing_manager:
@@ -396,6 +401,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                     supervision_sentences,
                     incarceration_sentences,
                     supervision_period,
+                    self.field_index,
                 )
 
                 assessment_score = None
@@ -742,7 +748,10 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
             case_type = identify_most_severe_case_type(supervision_period)
 
             supervision_type = terminating_supervision_period_supervision_type(
-                supervision_period, supervision_sentences, incarceration_sentences
+                supervision_period,
+                supervision_sentences,
+                incarceration_sentences,
+                field_index=self.field_index,
             )
 
             deprecated_supervising_district_external_id = (

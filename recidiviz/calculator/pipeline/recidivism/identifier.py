@@ -53,7 +53,10 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.date import DateRange, DateRangeDiff
-from recidiviz.persistence.entity.entity_utils import get_single_state_code
+from recidiviz.persistence.entity.entity_utils import (
+    CoreEntityFieldIndex,
+    get_single_state_code,
+)
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
     StatePerson,
@@ -66,6 +69,7 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
 
     def __init__(self) -> None:
         self.identifier_event_class = ReleaseEvent
+        self.field_index = CoreEntityFieldIndex()
 
     def find_events(
         self, _person: StatePerson, identifier_context: IdentifierContextT
@@ -120,6 +124,7 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
             # Note: This pipeline cannot be run for any state that relies on
             # StateSupervisionViolationResponse entities in IP pre-processing
             pre_processed_violation_responses=None,
+            field_index=self.field_index,
         )
 
         if not ip_pre_processing_manager:

@@ -17,7 +17,7 @@
 """Contains utils for match database entities with ingested entities."""
 import datetime
 import logging
-from typing import Optional, Sequence, Callable, Iterable, Set, Dict, Any, cast, List
+from typing import Any, Callable, Dict, Iterable, List, Optional, Sequence, Set, cast
 
 import deepdiff
 from more_itertools import pairwise
@@ -26,6 +26,7 @@ from recidiviz.common.constants.county.booking import CustodyStatus
 from recidiviz.persistence.entity.base_entity import Entity, ExternalIdEntity
 from recidiviz.persistence.entity.county import entities
 from recidiviz.persistence.entity.entities import EntityPersonType
+from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity_matching.entity_matching_utils import get_all_matches
 from recidiviz.persistence.persistence_utils import is_booking_active
 
@@ -68,7 +69,10 @@ _SENTENCE_MATCH_FIELDS = {
 
 
 def is_person_match(
-    *, db_entity: entities.Person, ingested_entity: entities.Person
+    *,
+    db_entity: entities.Person,
+    ingested_entity: entities.Person,
+    field_index: CoreEntityFieldIndex  # pylint: disable=unused-argument
 ) -> bool:
     """
     Given a database person and an ingested person, determine if they should be
@@ -117,7 +121,10 @@ def _db_open_booking_matches_ingested_booking(
 
 # '*' catches positional arguments, making our arguments named and required.
 def is_booking_match(
-    *, db_entity: entities.Booking, ingested_entity: entities.Booking
+    *,
+    db_entity: entities.Booking,
+    ingested_entity: entities.Booking,
+    field_index: CoreEntityFieldIndex  # pylint: disable=unused-argument
 ) -> bool:
     """
     Given a database booking and an ingested booking, determine if they should
@@ -139,7 +146,12 @@ def is_booking_match(
 
 
 # '*' catches positional arguments, making our arguments named and required.
-def is_hold_match(*, db_entity: entities.Hold, ingested_entity: entities.Hold) -> bool:
+def is_hold_match(
+    *,
+    db_entity: entities.Hold,
+    ingested_entity: entities.Hold,
+    field_index: CoreEntityFieldIndex  # pylint: disable=unused-argument
+) -> bool:
     """
     Given a database hold and an ingested hold, determine if they should
     be considered the same hold. Should only be used to compare holds for
@@ -249,6 +261,7 @@ def get_best_match(
     db_entities: Sequence[Entity],
     matcher: Callable,
     matched_db_ids: Iterable[int],
+    field_index: CoreEntityFieldIndex,
 ) -> Optional[Entity]:
     """
     Selects the database entity that most closely matches the ingest entity,
@@ -258,7 +271,12 @@ def get_best_match(
         - Select the candidate match that differs minimally from the ingested
           entity.
     """
-    matches = cast(List[Entity], get_all_matches(ingest_entity, db_entities, matcher))
+    matches = cast(
+        List[Entity],
+        get_all_matches(
+            ingest_entity, db_entities, matcher=matcher, field_index=field_index
+        ),
+    )
     matches = [m for m in matches if m.get_id() not in matched_db_ids]
     if not matches:
         return None

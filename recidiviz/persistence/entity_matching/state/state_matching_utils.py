@@ -33,23 +33,36 @@ from recidiviz.persistence.database.schema_utils import (
 )
 from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.entity.entity_utils import (
+    CoreEntityFieldIndex,
     EntityFieldType,
     SchemaEdgeDirectionChecker,
-    get_set_entity_field_names,
     is_placeholder,
 )
 from recidiviz.persistence.entity_matching.entity_matching_types import EntityTree
 from recidiviz.persistence.errors import EntityMatchingError
 
 
-def is_match(ingested_entity: EntityTree, db_entity: EntityTree) -> bool:
+def is_match(
+    ingested_entity: EntityTree,
+    db_entity: EntityTree,
+    field_index: CoreEntityFieldIndex,
+) -> bool:
     """Returns true if the provided |ingested_entity| matches the provided
     |db_entity|. Otherwise returns False.
     """
-    return _is_match(ingested_entity=ingested_entity.entity, db_entity=db_entity.entity)
+    return _is_match(
+        ingested_entity=ingested_entity.entity,
+        db_entity=db_entity.entity,
+        field_index=field_index,
+    )
 
 
-def _is_match(*, ingested_entity: DatabaseEntity, db_entity: DatabaseEntity) -> bool:
+def _is_match(
+    *,
+    ingested_entity: DatabaseEntity,
+    db_entity: DatabaseEntity,
+    field_index: CoreEntityFieldIndex,
+) -> bool:
     """Returns true if the provided |ingested_entity| matches the provided
     |db_entity|. Otherwise returns False.
     """
@@ -76,7 +89,9 @@ def _is_match(*, ingested_entity: DatabaseEntity, db_entity: DatabaseEntity) -> 
         for ingested_external_id in ingested_entity.external_ids:
             for db_external_id in db_entity.external_ids:
                 if _is_match(
-                    ingested_entity=ingested_external_id, db_entity=db_external_id
+                    ingested_entity=ingested_external_id,
+                    db_entity=db_external_id,
+                    field_index=field_index,
                 ):
                     return True
         return False
@@ -115,20 +130,25 @@ def _is_match(*, ingested_entity: DatabaseEntity, db_entity: DatabaseEntity) -> 
             schema.StateSupervisionCaseTypeEntry,
         ),
     ):
-        return _base_entity_match(ingested_entity, db_entity, skip_fields=set())
+        return _base_entity_match(
+            ingested_entity, db_entity, skip_fields=set(), field_index=field_index
+        )
 
     # Placeholders entities are considered equal
     if (
         ingested_entity.get_external_id() is None
         and db_entity.get_external_id() is None
     ):
-        return is_placeholder(ingested_entity) and is_placeholder(db_entity)
+        return is_placeholder(ingested_entity, field_index) and is_placeholder(
+            db_entity, field_index
+        )
     return ingested_entity.get_external_id() == db_entity.get_external_id()
 
 
 def nonnull_fields_entity_match(
     ingested_entity: EntityTree,
     db_entity: EntityTree,
+    field_index: CoreEntityFieldIndex,
     skip_fields: Optional[Set[str]] = None,
 ) -> bool:
     """
@@ -142,13 +162,16 @@ def nonnull_fields_entity_match(
 
     a = ingested_entity.entity
     b = db_entity.entity
-    return _base_entity_match(a, b, skip_fields=skip_fields, allow_null_mismatch=True)
+    return _base_entity_match(
+        a, b, skip_fields=skip_fields, allow_null_mismatch=True, field_index=field_index
+    )
 
 
 def _base_entity_match(
     a: DatabaseEntity,
     b: DatabaseEntity,
     skip_fields: Set[str],
+    field_index: CoreEntityFieldIndex,
     allow_null_mismatch: bool = False,
 ) -> bool:
     """Returns whether two objects of the same type are an entity match.
@@ -163,7 +186,7 @@ def _base_entity_match(
     """
 
     # Placeholders never match
-    if is_placeholder(a) or is_placeholder(b):
+    if is_placeholder(a, field_index) or is_placeholder(b, field_index):
         return False
 
     # Compare external ids if one is present
@@ -171,9 +194,9 @@ def _base_entity_match(
         return a.get_external_id() == b.get_external_id()
 
     # Compare all flat fields of the two entities
-    all_set_flat_field_names = get_set_entity_field_names(
+    all_set_flat_field_names = field_index.get_fields_with_non_empty_values(
         a, EntityFieldType.FLAT_FIELD
-    ) | get_set_entity_field_names(b, EntityFieldType.FLAT_FIELD)
+    ) | field_index.get_fields_with_non_empty_values(b, EntityFieldType.FLAT_FIELD)
     for field_name in all_set_flat_field_names:
         # Skip primary key
         if field_name == a.get_class_id_name() or field_name in skip_fields:
@@ -276,8 +299,10 @@ def add_child_to_entity(
 
 
 # TODO(#2244): Create general approach for required fields/default values
-def convert_to_placeholder(entity: DatabaseEntity):
-    for field_name in get_set_entity_field_names(entity, EntityFieldType.FLAT_FIELD):
+def convert_to_placeholder(entity: DatabaseEntity, field_index: CoreEntityFieldIndex):
+    for field_name in field_index.get_fields_with_non_empty_values(
+        entity, EntityFieldType.FLAT_FIELD
+    ):
         if field_name == entity.get_class_id_name():
             continue
         if field_name == "state_code":
@@ -299,11 +324,14 @@ def convert_to_placeholder(entity: DatabaseEntity):
 
 # TODO(#2244): Create general approach for required fields/default values
 def default_merge_flat_fields(
-    *, new_entity: DatabaseEntity, old_entity: DatabaseEntity
+    *,
+    new_entity: DatabaseEntity,
+    old_entity: DatabaseEntity,
+    field_index: CoreEntityFieldIndex,
 ) -> DatabaseEntity:
     """Merges all set non-relationship fields on the |new_entity| onto the |old_entity|. Returns the newly merged
     entity."""
-    for child_field_name in get_set_entity_field_names(
+    for child_field_name in field_index.get_fields_with_non_empty_values(
         new_entity, EntityFieldType.FLAT_FIELD
     ):
         if child_field_name == old_entity.get_class_id_name():
@@ -317,16 +345,20 @@ def default_merge_flat_fields(
     return old_entity
 
 
-def get_total_entities_of_cls(persons: List[schema.StatePerson], cls: Type) -> int:
+def get_total_entities_of_cls(
+    persons: List[schema.StatePerson], cls: Type, field_index: CoreEntityFieldIndex
+) -> int:
     """Counts the total number of unique objects of type |cls| in the entity
     graphs passed in by |persons|.
     """
     check_all_objs_have_type(persons, schema.StatePerson)
-    return len(get_all_entities_of_cls(persons, cls))
+    return len(get_all_entities_of_cls(persons, cls, field_index))
 
 
 def get_external_ids_of_cls(
-    persons: List[schema.StatePerson], cls: Type[DatabaseEntity]
+    persons: List[schema.StatePerson],
+    cls: Type[DatabaseEntity],
+    field_index: CoreEntityFieldIndex,
 ) -> Set[str]:
     """Returns the external ids of all entities of type |cls| found in the
     provided |persons| trees.
@@ -334,7 +366,7 @@ def get_external_ids_of_cls(
     check_all_objs_have_type(persons, schema.StatePerson)
 
     ids: Set[str] = set()
-    entities = get_all_entities_of_cls(persons, cls)
+    entities = get_all_entities_of_cls(persons, cls, field_index)
     for entity in entities:
         external_ids = get_external_ids_from_entity(entity)
         if not external_ids:
@@ -377,17 +409,21 @@ def get_multiparent_classes() -> List[Type[DatabaseEntity]]:
 
 
 def get_all_entities_of_cls(
-    sources: Sequence[DatabaseEntity], cls: Type[DatabaseEntity]
+    sources: Sequence[DatabaseEntity],
+    cls: Type[DatabaseEntity],
+    field_index: CoreEntityFieldIndex,
 ):
     """Returns all entities found in the provided |sources| of type |cls|."""
     seen_entities: List[DatabaseEntity] = []
-    for tree in get_all_entity_trees_of_cls(sources, cls):
+    for tree in get_all_entity_trees_of_cls(sources, cls, field_index):
         seen_entities.append(tree.entity)
     return seen_entities
 
 
 def get_all_entity_trees_of_cls(
-    sources: Sequence[DatabaseEntity], cls: Type[DatabaseEntity]
+    sources: Sequence[DatabaseEntity],
+    cls: Type[DatabaseEntity],
+    field_index: CoreEntityFieldIndex,
 ) -> List[EntityTree]:
     """Finds all unique entities of type |cls| in the provided |sources|,
     and returns their corresponding EntityTrees."""
@@ -397,7 +433,7 @@ def get_all_entity_trees_of_cls(
     for source in sources:
         tree = EntityTree(entity=source, ancestor_chain=[])
         _get_all_entity_trees_of_cls_helper(
-            tree, cls, seen_ids, seen_trees, direction_checker
+            tree, cls, seen_ids, seen_trees, direction_checker, field_index
         )
     return seen_trees
 
@@ -408,6 +444,7 @@ def _get_all_entity_trees_of_cls_helper(
     seen_ids: Set[int],
     seen_trees: List[EntityTree],
     direction_checker: SchemaEdgeDirectionChecker,
+    field_index: CoreEntityFieldIndex,
 ):
     """
     Finds all objects in the provided |tree| graph which have the type |cls|. When an object of type |cls| is found,
@@ -424,7 +461,7 @@ def _get_all_entity_trees_of_cls_helper(
         seen_ids.add(id(entity))
         seen_trees.append(tree)
         return
-    for child_field_name in get_set_entity_field_names(
+    for child_field_name in field_index.get_fields_with_non_empty_values(
         entity, EntityFieldType.FORWARD_EDGE
     ):
         child_trees = tree.generate_child_trees(
@@ -432,12 +469,12 @@ def _get_all_entity_trees_of_cls_helper(
         )
         for child_tree in child_trees:
             _get_all_entity_trees_of_cls_helper(
-                child_tree, cls, seen_ids, seen_trees, direction_checker
+                child_tree, cls, seen_ids, seen_trees, direction_checker, field_index
             )
 
 
 def get_root_entity_cls(
-    ingested_persons: List[schema.StatePerson],
+    ingested_persons: List[schema.StatePerson], field_index: CoreEntityFieldIndex
 ) -> Type[DatabaseEntity]:
     """
     Attempts to find the highest entity class within the |ingested_persons| for
@@ -454,7 +491,7 @@ def get_root_entity_cls(
 
     root_cls = None
     if ingested_persons:
-        root_cls = _get_root_entity_helper(ingested_persons[0])
+        root_cls = _get_root_entity_helper(ingested_persons[0], field_index)
     if root_cls is None:
         raise EntityMatchingError(
             "Could not find root class for ingested persons", "state_person"
@@ -462,13 +499,17 @@ def get_root_entity_cls(
     return root_cls
 
 
-def _get_root_entity_helper(entity: DatabaseEntity) -> Optional[Type[DatabaseEntity]]:
-    if not is_placeholder(entity):
+def _get_root_entity_helper(
+    entity: DatabaseEntity, field_index: CoreEntityFieldIndex
+) -> Optional[Type[DatabaseEntity]]:
+    if not is_placeholder(entity, field_index):
         return entity.__class__
 
-    for field_name in get_set_entity_field_names(entity, EntityFieldType.FORWARD_EDGE):
+    for field_name in field_index.get_fields_with_non_empty_values(
+        entity, EntityFieldType.FORWARD_EDGE
+    ):
         field = entity.get_field_as_list(field_name)[0]
-        result = _get_root_entity_helper(field)
+        result = _get_root_entity_helper(field, field_index)
         if result is not None:
             return result
     return None
@@ -496,7 +537,10 @@ def read_persons(
 
 
 def read_db_entity_trees_of_cls_to_merge(
-    session: Session, state_code: str, schema_cls: Type[StateBase]
+    session: Session,
+    state_code: str,
+    schema_cls: Type[StateBase],
+    field_index: CoreEntityFieldIndex,
 ) -> List[List[EntityTree]]:
     """
     Returns a list of lists of EntityTree where each inner list is a group
@@ -514,7 +558,7 @@ def read_db_entity_trees_of_cls_to_merge(
     people = dao.read_people_by_cls_external_ids(
         session, state_code, schema_cls, external_ids
     )
-    all_cls_trees = get_all_entity_trees_of_cls(people, schema_cls)
+    all_cls_trees = get_all_entity_trees_of_cls(people, schema_cls, field_index)
 
     external_ids_map: Dict[str, List[EntityTree]] = defaultdict(list)
     for tree in all_cls_trees:
@@ -532,6 +576,7 @@ def read_persons_by_root_entity_cls(
     region: str,
     ingested_people: List[schema.StatePerson],
     allowed_root_entity_classes: Optional[List[Type[DatabaseEntity]]],
+    field_index: CoreEntityFieldIndex,
 ) -> List[schema.StatePerson]:
     """Looks up all people necessary for entity matching based on the provided
     |region| and |ingested_people|.
@@ -539,7 +584,7 @@ def read_persons_by_root_entity_cls(
     If |allowed_root_entity_classes| is provided, throw an error if any
     unexpected root entity class is found.
     """
-    root_entity_cls = get_root_entity_cls(ingested_people)
+    root_entity_cls = get_root_entity_cls(ingested_people, field_index)
     if (
         allowed_root_entity_classes
         and root_entity_cls not in allowed_root_entity_classes
@@ -548,7 +593,9 @@ def read_persons_by_root_entity_cls(
             f"For region [{region}] found unexpected root_entity_cls: [{root_entity_cls.__name__}]. "
             f"Allowed classes: [{allowed_root_entity_classes}]"
         )
-    root_external_ids = get_external_ids_of_cls(ingested_people, root_entity_cls)
+    root_external_ids = get_external_ids_of_cls(
+        ingested_people, root_entity_cls, field_index
+    )
     logging.info(
         "[Entity Matching] Reading [%s] external ids of class [%s]",
         len(root_external_ids),
@@ -575,6 +622,7 @@ def read_persons_by_root_entity_cls(
 
 def get_or_create_placeholder_child(
     parent_entity: DatabaseEntity,
+    field_index: CoreEntityFieldIndex,
     child_field_name: str,
     child_class: Type[DatabaseEntity],
     **child_kwargs,
@@ -584,7 +632,7 @@ def get_or_create_placeholder_child(
     using |child_kw_args|.
     """
     children = parent_entity.get_field_as_list(child_field_name)
-    placeholder_children = [c for c in children if is_placeholder(c)]
+    placeholder_children = [c for c in children if is_placeholder(c, field_index)]
 
     if placeholder_children:
         return placeholder_children[0]
@@ -596,7 +644,7 @@ def get_or_create_placeholder_child(
         child_field_name,
     )
     new_child = child_class(**child_kwargs)
-    if not is_placeholder(new_child):
+    if not is_placeholder(new_child, field_index):
         raise EntityMatchingError(
             f"Child created with kwargs is not a placeholder [{child_kwargs}]. Parent entity: [{parent_entity}]. Child "
             f"field name: [{child_field_name}]. Child class: [{child_class}].",

@@ -16,9 +16,10 @@
 # =============================================================================
 """Contains utils for match database entities with ingested entities."""
 
-from typing import Callable, Sequence, List, cast, Optional, TypeVar
+from typing import Callable, List, Optional, Sequence, TypeVar, cast
 
 from recidiviz.persistence.entity.core_entity import CoreEntity
+from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity_matching.entity_matching_types import EntityTree
 from recidiviz.persistence.errors import MatchedMultipleDatabaseEntitiesError
 
@@ -29,6 +30,7 @@ MatchObject = TypeVar("MatchObject", CoreEntity, EntityTree)
 def get_only_match(
     ingested_entity_obj: MatchObject,
     db_entities: Sequence[MatchObject],
+    field_index: CoreEntityFieldIndex,
     matcher: Callable,
 ) -> Optional[MatchObject]:
     """
@@ -45,7 +47,7 @@ def get_only_match(
     Raises:
         EntityMatchingError: if more than one unique match is found.
     """
-    matches = get_all_matches(ingested_entity_obj, db_entities, matcher)
+    matches = get_all_matches(ingested_entity_obj, db_entities, field_index, matcher)
     if len(matches) > 1:
         if isinstance(ingested_entity_obj, EntityTree):
             ingested_entity: CoreEntity = ingested_entity_obj.entity
@@ -66,7 +68,10 @@ def get_only_match(
 
 
 def get_all_matches(
-    ingested_entity: MatchObject, db_entities: Sequence[MatchObject], matcher: Callable
+    ingested_entity: MatchObject,
+    db_entities: Sequence[MatchObject],
+    field_index: CoreEntityFieldIndex,
+    matcher: Callable,
 ) -> List[MatchObject]:
     """
     Finds all |db_entities| that match the provided |ingested_entity| based
@@ -75,5 +80,9 @@ def get_all_matches(
     return [
         db_entity
         for db_entity in db_entities
-        if matcher(db_entity=db_entity, ingested_entity=ingested_entity)
+        if matcher(
+            db_entity=db_entity,
+            ingested_entity=ingested_entity,
+            field_index=field_index,
+        )
     ]

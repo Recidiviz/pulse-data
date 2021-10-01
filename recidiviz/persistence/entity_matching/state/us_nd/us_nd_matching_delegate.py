@@ -17,7 +17,7 @@
 
 """Contains logic for US_ND specific entity matching overrides."""
 import logging
-from typing import Callable, List, Optional, Type
+from typing import List, Optional
 
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.state import schema
@@ -61,8 +61,8 @@ class UsNdMatchingDelegate(BaseStateMatchingDelegate):
         |ingested_persons| directly before they are entity matched:
             - Merge incomplete IncarcerationPeriods when possible.
         """
-        logging.info("[Entity matching] Pre-processing: Merge incarceration " "periods")
-        merge_incarceration_periods(ingested_persons)
+        logging.info("[Entity matching] Pre-processing: Merge incarceration periods")
+        merge_incarceration_periods(ingested_persons, self.field_index)
 
     def get_non_external_id_match(
         self, ingested_entity_tree: EntityTree, db_entity_trees: List[EntityTree]
@@ -73,7 +73,10 @@ class UsNdMatchingDelegate(BaseStateMatchingDelegate):
         """
         if isinstance(ingested_entity_tree.entity, schema.StateIncarcerationPeriod):
             return entity_matching_utils.get_only_match(
-                ingested_entity_tree, db_entity_trees, is_incarceration_period_match
+                ingested_entity_tree,
+                db_entity_trees,
+                self.field_index,
+                is_incarceration_period_match,
             )
         if isinstance(
             ingested_entity_tree.entity,
@@ -87,16 +90,25 @@ class UsNdMatchingDelegate(BaseStateMatchingDelegate):
             ),
         ):
             return entity_matching_utils.get_only_match(
-                ingested_entity_tree, db_entity_trees, nonnull_fields_entity_match
+                ingested_entity_tree,
+                db_entity_trees,
+                self.field_index,
+                nonnull_fields_entity_match,
             )
         return None
 
-    def get_merge_flat_fields_override_for_type(
-        self, cls: Type[DatabaseEntity]
-    ) -> Optional[Callable[..., DatabaseEntity]]:
+    def merge_flat_fields(
+        self, from_entity: DatabaseEntity, to_entity: DatabaseEntity
+    ) -> DatabaseEntity:
         """Returns ND specific callable to handle merging of entities of type
         |cls|, if a specialized merge is necessary.
         """
-        if cls == schema.StateIncarcerationPeriod:
-            return merge_incomplete_periods
-        return None
+        if isinstance(from_entity, schema.StateIncarcerationPeriod):
+            if not isinstance(to_entity, schema.StateIncarcerationPeriod):
+                raise ValueError(f"Unexpected type for to_entity: {to_entity}")
+            return merge_incomplete_periods(
+                new_entity=from_entity,
+                old_entity=to_entity,
+                field_index=self.field_index,
+            )
+        return super().merge_flat_fields(from_entity=from_entity, to_entity=to_entity)
