@@ -85,7 +85,9 @@ def get_dataflow_default_args(pipeline_config: YAMLDict) -> Dict[str, Any]:
             "project": project_id,
             "region": region,
             "zone": zone,
-            "tempLocation": f"gs://{project_id}-dataflow-templates/staging/",
+            # NOTE: This value must match the default value for temp_location in
+            # recidiviz/calculator/pipeline/utils/pipeline_args_utils.py
+            "tempLocation": f"gs://{project_id}-dataflow-templates-scratch/temp/",
         }
     )
 
