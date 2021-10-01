@@ -23,10 +23,10 @@ from typing import List
 
 from recidiviz.ingest.direct import regions
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_table_migration import (
-    DeleteFromRawTableMigration,
-    UpdateRawTableMigration,
     RAW_TABLE_MIGRATION_FILE_PREFIX,
+    DeleteFromRawTableMigration,
     RawTableMigration,
+    UpdateRawTableMigration,
 )
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_table_migration_generator import (
     RawTableMigrationGenerator,
@@ -71,7 +71,7 @@ class TestDirectIngestRawTableMigrationGenerator(unittest.TestCase):
         expected_project_1_queries = [
             """DELETE FROM `recidiviz-456.us_xx_raw_data.tagC`
 WHERE STRUCT(COL1, update_datetime) IN (
-    STRUCT('31415', '2020-04-14T00:31:00')
+    STRUCT("31415", "2020-04-14T00:31:00")
 );"""
         ]
         self.assertEqual(expected_project_1_queries, project_1_queries)
@@ -79,7 +79,7 @@ WHERE STRUCT(COL1, update_datetime) IN (
         expected_project_2_queries = [
             """DELETE FROM `recidiviz-789.us_xx_raw_data.tagC`
 WHERE STRUCT(COL1, update_datetime) IN (
-    STRUCT('31415', '2020-04-14T00:31:00')
+    STRUCT("31415", "2020-04-14T00:31:00")
 );"""
         ]
         self.assertEqual(expected_project_2_queries, project_2_queries)
@@ -96,8 +96,8 @@ WHERE STRUCT(COL1, update_datetime) IN (
         expected_queries = [
             """DELETE FROM `recidiviz-456.us_xx_raw_data.file_tag_first`
 WHERE STRUCT(col_name_1a, col_name_1b, update_datetime) IN (
-    STRUCT('31415', '45678', '2020-04-14T00:31:00'),
-    STRUCT('31415', '45678', '2020-08-16T01:02:03')
+    STRUCT("31415", "45678", "2020-04-14T00:31:00"),
+    STRUCT("31415", "45678", "2020-08-16T01:02:03")
 );"""
         ]
         self.assertEqual(expected_queries, queries)
@@ -121,7 +121,7 @@ WHERE STRUCT(col_name_1a, col_name_1b, update_datetime) IN (
         expected_project_1_queries = [
             """DELETE FROM `recidiviz-456.us_xx_raw_data.tagC`
 WHERE STRUCT(COL1) IN (
-    STRUCT('31415')
+    STRUCT("31415")
 );"""
         ]
         self.assertEqual(expected_project_1_queries, project_1_queries)
@@ -129,7 +129,7 @@ WHERE STRUCT(COL1) IN (
         expected_project_2_queries = [
             """DELETE FROM `recidiviz-789.us_xx_raw_data.tagC`
 WHERE STRUCT(COL1) IN (
-    STRUCT('31415')
+    STRUCT("31415")
 );"""
         ]
         self.assertEqual(expected_project_2_queries, project_2_queries)
@@ -290,8 +290,8 @@ WHERE original.COL1 = updates.COL1;"""
         expected_queries_map = [
             f"""DELETE FROM `recidiviz-456.us_xx_raw_data.tagC`
 WHERE STRUCT(COL1, update_datetime) IN (
-    STRUCT('31415', '{_DATE_1.isoformat()}'),
-    STRUCT('1234', '{_DATE_1.isoformat()}')
+    STRUCT("31415", "{_DATE_1.isoformat()}"),
+    STRUCT("1234", "{_DATE_1.isoformat()}")
 );"""
         ]
 
@@ -319,8 +319,8 @@ WHERE STRUCT(COL1, update_datetime) IN (
         expected_queries_map = [
             f"""DELETE FROM `recidiviz-456.us_xx_raw_data.tagC`
 WHERE STRUCT(COL1, update_datetime) IN (
-    STRUCT('31415', '{_DATE_2.isoformat()}'),
-    STRUCT('1234', '{_DATE_1.isoformat()}')
+    STRUCT("31415", "{_DATE_2.isoformat()}"),
+    STRUCT("1234", "{_DATE_1.isoformat()}")
 );"""
         ]
 
@@ -353,12 +353,12 @@ WHERE STRUCT(COL1, update_datetime) IN (
         expected_queries_map = [
             f"""DELETE FROM `recidiviz-456.us_xx_raw_data.tagC`
 WHERE STRUCT(COL1, update_datetime) IN (
-    STRUCT('31415', '{_DATE_2.isoformat()}'),
-    STRUCT('1234', '{_DATE_1.isoformat()}')
+    STRUCT("31415", "{_DATE_2.isoformat()}"),
+    STRUCT("1234", "{_DATE_1.isoformat()}")
 );""",
             """DELETE FROM `recidiviz-456.us_xx_raw_data.tagC`
 WHERE STRUCT(COL1) IN (
-    STRUCT('6666')
+    STRUCT("6666")
 );""",
         ]
 
@@ -386,11 +386,11 @@ WHERE STRUCT(COL1) IN (
         expected_queries_map = [
             f"""DELETE FROM `recidiviz-456.us_xx_raw_data.tagC`
 WHERE STRUCT(COL1, update_datetime) IN (
-    STRUCT('31415', '{_DATE_1.isoformat()}')
+    STRUCT("31415", "{_DATE_1.isoformat()}")
 );""",
             f"""DELETE FROM `recidiviz-456.us_xx_raw_data.tagC`
 WHERE STRUCT(COL2, update_datetime) IN (
-    STRUCT('1234', '{_DATE_1.isoformat()}')
+    STRUCT("1234", "{_DATE_1.isoformat()}")
 );""",
         ]
 
@@ -420,11 +420,11 @@ WHERE STRUCT(COL2, update_datetime) IN (
         expected_queries_map = [
             f"""DELETE FROM `recidiviz-456.us_xx_raw_data.tagC`
 WHERE STRUCT(COL1, update_datetime) IN (
-    STRUCT('1234', '{_DATE_1.isoformat()}')
+    STRUCT("1234", "{_DATE_1.isoformat()}")
 );""",
             f"""DELETE FROM `recidiviz-456.us_xx_raw_data.tagC`
 WHERE STRUCT(COL2, update_datetime) IN (
-    STRUCT('1234', '{_DATE_1.isoformat()}')
+    STRUCT("1234", "{_DATE_1.isoformat()}")
 );""",
         ]
 
@@ -642,7 +642,7 @@ WHERE original.COL1 = updates.COL1 AND original.update_datetime = updates.update
         expected_queries_map = [
             f"""DELETE FROM `recidiviz-456.us_xx_raw_data.tagC`
 WHERE STRUCT(COL1, update_datetime) IN (
-    STRUCT('1234', '{_DATE_1.isoformat()}')
+    STRUCT("1234", "{_DATE_1.isoformat()}")
 );""",
             f"""UPDATE `recidiviz-456.us_xx_raw_data.tagC` original
 SET COL2 = updates.new__COL2

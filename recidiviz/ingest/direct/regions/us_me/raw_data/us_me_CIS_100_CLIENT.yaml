@@ -5,29 +5,44 @@ primary_key_cols:
   - Client_Id
 columns:
   - name : Adult_Ind
-    description : |-
-      TODO(#9296): Add raw data descriptions
   - name : Birth_Date
     description : |-
-      TODO(#9296): Add raw data descriptions
+      The date on which this person was born.
   - name : Cis_1002_Citizenship_Cd
     description : |-
-      TODO(#9296): Add raw data descriptions
+      The code that maps to the person's citizenship.
   - name : Cis_1004_Eye_Colour_Cd
     description : |-
-      TODO(#9296): Add raw data descriptions
+      The code that maps to the person's eye color.
   - name : Cis_1005_Hair_Colour_Cd
     description : |-
-      TODO(#9296): Add raw data descriptions
+      The code that maps to the person's hair color.
   - name : Cis_1006_Race_Cd
     description : |-
-      TODO(#9296): Add raw data descriptions
+      The code that maps to the person's race.
+    known_values:
+      - value: '1'
+        description: "Native American"
+      - value: '2'
+        description: "Asian"
+      - value: '3'
+        description: "Black or African American"
+      - value: '4'
+        description: "Native Hawaiian or Pacific Islander"
+      - value: '5'
+        description: "White"
+      - value: '6'
+        description: "Unknown"
+      - value: '8'
+        description: "Other"
+      - value: '9'
+        description: "Two or More Races"
   - name : Cis_1010_Marital_Status_Cd
     description : |-
-      TODO(#9296): Add raw data descriptions
+      The code that maps to the person's marital status.
   - name : Cis_1013_Complexion_Type_Cd
     description : |-
-      TODO(#9296): Add raw data descriptions
+      The code that maps to the person's complexion.
   - name : Cis_1016_Disch_Type_Cd
     description : |-
       TODO(#9296): Add raw data descriptions
@@ -39,7 +54,14 @@ columns:
       TODO(#9296): Add raw data descriptions
   - name : Cis_1016_Hispanic_Cd
     description : |-
-      TODO(#9296): Add raw data descriptions
+      The code that maps to whether the person has Hispanic ethnicity. This field is more up to date than Hispanic_Ind.
+    known_values:
+      - value: '186'
+        description: "Hispanic"
+      - value: '187'
+        description: "Non-Hispanic"
+      - value: '188'
+        description: "Unknown"
   - name : Cis_1016_Milit_Br_Cd
     description : |-
       TODO(#9296): Add raw data descriptions
@@ -60,10 +82,17 @@ columns:
       TODO(#9296): Add raw data descriptions
   - name : Cis_900_Employee_Id
     description : |-
-      TODO(#9296): Add raw data descriptions
+      The MDOC Employee ID associated with the person who updated whether the client is deceased.
   - name : Cis_9012_Gender_Cd
     description : |-
-      TODO(#9296): Add raw data descriptions
+      The code that maps to the person's gender.
+    known_values:
+      - value: '1'
+        description: "Male"
+      - value: '2'
+        description: "Female"
+      - value: '3'
+        description: "Unknown"
   - name : Cis_9013_Lang_Preferred_Cd
     description : |-
       TODO(#9296): Add raw data descriptions
@@ -72,7 +101,7 @@ columns:
       TODO(#9296): Add raw data descriptions
   - name : Client_Id
     description : |-
-      TODO(#9296): Add raw data descriptions
+      The unique identifier for all clients in the offender management system.
   - name : Clothing_Description_Tx
     description : |-
       TODO(#9296): Add raw data descriptions
@@ -120,7 +149,7 @@ columns:
       TODO(#9296): Add raw data descriptions
   - name : First_Name
     description : |-
-      TODO(#9296): Add raw data descriptions
+      This is the first name of a person.
   - name : Furlough_Date
     description : |-
       TODO(#9296): Add raw data descriptions
@@ -135,7 +164,12 @@ columns:
       TODO(#9296): Add raw data descriptions
   - name : Hispanic_Ind
     description : |-
-      TODO(#9296): Add raw data descriptions
+      Whether the person has hispanic ethnicity. This field is no longer used and is kept for historical reasons.
+    known_values:
+      - value: Y
+        description: "Yes"
+      - value: N
+        description: "No"
   - name : Home_Visit_Ind
     description : |-
       TODO(#9296): Add raw data descriptions
@@ -147,7 +181,7 @@ columns:
       TODO(#9296): Add raw data descriptions
   - name : Last_Name
     description : |-
-      TODO(#9296): Add raw data descriptions
+      This is the last name of a person.
   - name : Laundry_Num
     description : |-
       TODO(#9296): Add raw data descriptions
@@ -177,7 +211,7 @@ columns:
       TODO(#9296): Add raw data descriptions
   - name : Middle_Name
     description : |-
-      TODO(#9296): Add raw data descriptions
+      This is the middle name of a person.
   - name : Modified_By_Tx
     description : |-
       TODO(#9296): Add raw data descriptions

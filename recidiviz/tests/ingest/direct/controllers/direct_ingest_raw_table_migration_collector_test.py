@@ -18,13 +18,12 @@
 
 import datetime
 import unittest
-from unittest.mock import patch, Mock
+from unittest.mock import Mock, patch
 
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_table_migration_collector import (
     DirectIngestRawTableMigrationCollector,
 )
 from recidiviz.tests.ingest.direct import fake_regions
-
 
 DATE_1 = datetime.datetime(2020, 6, 10, 0, 0)
 DATE_2 = datetime.datetime(2020, 9, 21, 0, 0)
@@ -50,7 +49,7 @@ WHERE original.column_1a = updates.column_1a AND original.update_datetime = upda
 
         file_tag_first_query_2 = """DELETE FROM `recidiviz-456.us_xx_raw_data.file_tag_first`
 WHERE STRUCT(column_1a, update_datetime) IN (
-    STRUCT(\'00000000\', \'2020-09-21T00:00:00\')
+    STRUCT(\"00000000\", \"2020-09-21T00:00:00\")
 );"""
 
         tagC_query_1 = """UPDATE `recidiviz-456.us_xx_raw_data.tagC` original
@@ -63,7 +62,7 @@ WHERE original.COL1 = updates.COL1 AND original.update_datetime = updates.update
 
         tagC_query_2 = """DELETE FROM `recidiviz-456.us_xx_raw_data.tagC`
 WHERE STRUCT(COL1) IN (
-    STRUCT(\'789\')
+    STRUCT(\"789\")
 );"""
 
         expected_queries_map = {
