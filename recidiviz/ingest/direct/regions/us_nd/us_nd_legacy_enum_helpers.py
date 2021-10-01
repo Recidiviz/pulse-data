@@ -49,7 +49,6 @@ from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
-from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactLocation,
     StateSupervisionContactMethod,
@@ -61,6 +60,9 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
+)
+from recidiviz.common.constants.state.state_supervision_sentence import (
+    StateSupervisionSentenceSupervisionType,
 )
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseDecision,
@@ -250,15 +252,15 @@ SHARED_OVERRIDES: Dict[Enum, List[str]] = {
         "IC PROBATION",
         "SUSPENDED",
     ],
-    StateSupervisionType.HALFWAY_HOUSE: ["COMMUNITY PLACEMENT PGRM"],
-    StateSupervisionType.INTERNAL_UNKNOWN: ["CCC"],
-    StateSupervisionType.PAROLE: ["IC PAROLE", "PAROLE", "SSOP"],
-    StateSupervisionType.PROBATION: [
+    StateSupervisionSentenceSupervisionType.HALFWAY_HOUSE: ["COMMUNITY PLACEMENT PGRM"],
+    StateSupervisionSentenceSupervisionType.INTERNAL_UNKNOWN: ["CCC"],
+    StateSupervisionSentenceSupervisionType.PAROLE: ["IC PAROLE", "PAROLE", "SSOP"],
+    StateSupervisionSentenceSupervisionType.PROBATION: [
         "DEFERRED",
         "IC PROBATION",
         "SUSPENDED",
     ],
-    StateSupervisionType.PRE_CONFINEMENT: ["PRE-TRIAL"],
+    StateSupervisionSentenceSupervisionType.PRE_CONFINEMENT: ["PRE-TRIAL"],
     StateSupervisionViolationResponseDecision.CONTINUANCE: [
         "PLACED BACK ON PROBATION/PAROLE",
     ],
@@ -373,9 +375,8 @@ SHARED_OVERRIDES: Dict[Enum, List[str]] = {
     StateSupervisionPeriodTerminationReason.EXTERNAL_UNKNOWN: [
         "14"  # Terminated - Other
     ],
-    # TODO(#2891): Ensure that all of these codes are migrated to to new admission and
-    #  release reasons when we migrate these periods to
-    #  StateSupervisionPeriodSupervisionType.INVESTIGATION
+    # TODO(#3276): Migrate these termination reasons to other values so that we can
+    #  remove this termination reason
     StateSupervisionPeriodTerminationReason.INVESTIGATION: [
         "21",  # Guilty
         "22",  # Guilty of Lesser Charge

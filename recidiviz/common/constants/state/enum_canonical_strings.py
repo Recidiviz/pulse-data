@@ -193,15 +193,15 @@ state_sentence_status_serving = "SERVING"
 state_sentence_status_suspended = "SUSPENDED"
 state_sentence_status_vacated = "VACATED"
 
-# state_supervision.py
-state_supervision_type_civil_commitment = "CIVIL_COMMITMENT"
-state_supervision_type_halfway_house = "HALFWAY_HOUSE"
-state_supervision_type_parole = "PAROLE"
-state_supervision_type_post_confinement = "POST_CONFINEMENT"
-state_supervision_type_pre_confinement = "PRE_CONFINEMENT"
-state_supervision_type_probation = "PROBATION"
+# state_supervision_sentence.py
+state_supervision_sentence_supervision_type_civil_commitment = "CIVIL_COMMITMENT"
+state_supervision_sentence_supervision_type_halfway_house = "HALFWAY_HOUSE"
+state_supervision_sentence_supervision_type_parole = "PAROLE"
+state_supervision_sentence_supervision_type_post_confinement = "POST_CONFINEMENT"
+state_supervision_sentence_supervision_type_pre_confinement = "PRE_CONFINEMENT"
+state_supervision_sentence_supervision_type_probation = "PROBATION"
 
-# supervision_period.py
+# state_supervision_period.py
 state_supervision_period_supervision_type_informal_probation = "INFORMAL_PROBATION"
 state_supervision_period_supervision_type_investigation = "INVESTIGATION"
 state_supervision_period_supervision_type_parole = "PAROLE"

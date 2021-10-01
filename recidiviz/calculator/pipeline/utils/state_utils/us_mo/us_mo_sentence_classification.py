@@ -19,16 +19,18 @@
 import logging
 from collections import defaultdict
 from datetime import date, timedelta
-from typing import Optional, Dict, List, Any, Generic, Tuple
+from typing import Any, Dict, Generic, List, Optional, Tuple
 
 import attr
 
 from recidiviz.common.attr_mixins import BuildableAttr
-from recidiviz.common.constants.state.state_supervision import StateSupervisionType
+from recidiviz.common.constants.state.state_supervision_sentence import (
+    StateSupervisionSentenceSupervisionType,
+)
 from recidiviz.persistence.entity.state.entities import (
+    SentenceType,
     StateIncarcerationSentence,
     StateSupervisionSentence,
-    SentenceType,
 )
 
 
@@ -168,10 +170,14 @@ class UsMoSentenceStatus(BuildableAttr):
 
     # For a status that is found to be the most recent critical status when determining supervision type, this tells us
     # what supervision type should be associated with this sentence.
-    supervision_type_status_classification: Optional[StateSupervisionType] = attr.ib()
+    supervision_type_status_classification: Optional[
+        StateSupervisionSentenceSupervisionType
+    ] = attr.ib()
 
     @supervision_type_status_classification.default
-    def _supervision_type_status_classification(self) -> Optional[StateSupervisionType]:
+    def _supervision_type_status_classification(
+        self,
+    ) -> Optional[StateSupervisionSentenceSupervisionType]:
         """Calculates what supervision type should be associated with this sentence if this status that is found to be
         the most recent critical status for determining supervision type.
         """
@@ -190,43 +196,43 @@ class UsMoSentenceStatus(BuildableAttr):
             # statuses, it does.
             "75I3000",  # MO Field-Interstate Returned
         ):
-            return StateSupervisionType.PROBATION
+            return StateSupervisionSentenceSupervisionType.PROBATION
 
         if self.status_code in (
             # In July 2008, MO transitioned people in CRC transitional facilities from the control of the DAI
             # (incarceration) to the parole board. If we see this status it means someone is on parole.
             "40O6000"  # Converted-CRC DAI to CRC Field
         ):
-            return StateSupervisionType.PAROLE
+            return StateSupervisionSentenceSupervisionType.PAROLE
 
         if self.is_lifetime_supervision_start_status:
-            return StateSupervisionType.PAROLE
+            return StateSupervisionSentenceSupervisionType.PAROLE
 
         if "Prob" in self.status_description:
-            return StateSupervisionType.PROBATION
+            return StateSupervisionSentenceSupervisionType.PROBATION
         if "Court Parole" in self.status_description:
             # Confirmed from MO that 'Court Parole' should be treated as a probation sentence
-            return StateSupervisionType.PROBATION
+            return StateSupervisionSentenceSupervisionType.PROBATION
         if "Diversion Sup" in self.status_description:
-            return StateSupervisionType.PROBATION
+            return StateSupervisionSentenceSupervisionType.PROBATION
         if "Parole" in self.status_description:
-            return StateSupervisionType.PAROLE
+            return StateSupervisionSentenceSupervisionType.PAROLE
         if "Board" in self.status_description:
-            return StateSupervisionType.PAROLE
+            return StateSupervisionSentenceSupervisionType.PAROLE
         if "Conditional Release" in self.status_description:
-            return StateSupervisionType.PAROLE
+            return StateSupervisionSentenceSupervisionType.PAROLE
         if "CR " in self.status_description:
             # CR stands for Conditional Release
-            return StateSupervisionType.PAROLE
+            return StateSupervisionSentenceSupervisionType.PAROLE
 
-        return StateSupervisionType.INTERNAL_UNKNOWN
+        return StateSupervisionSentenceSupervisionType.INTERNAL_UNKNOWN
 
 
 @attr.s(frozen=True)
 class SupervisionTypeSpan:
     # Sentence supervision type to associate with this time span, or None if the person was not on supervision at this
     # time.
-    supervision_type: Optional[StateSupervisionType] = attr.ib()
+    supervision_type: Optional[StateSupervisionSentenceSupervisionType] = attr.ib()
 
     # First day where the sentence has the given supervision type, inclusive
     start_date: date = attr.ib()
@@ -328,7 +334,7 @@ class UsMoSentenceMixin(Generic[SentenceType]):
     @staticmethod
     def _get_sentence_supervision_type_from_critical_day_statuses(
         critical_day_statuses: List[UsMoSentenceStatus],
-    ) -> Optional[StateSupervisionType]:
+    ) -> Optional[StateSupervisionSentenceSupervisionType]:
         """Given a set of 'supervision type critical' statuses, returns the supervision type for the
         SupervisionTypeSpan starting on that day."""
 
@@ -343,7 +349,8 @@ class UsMoSentenceMixin(Generic[SentenceType]):
 
         if (
             supervision_type is None
-            or supervision_type != StateSupervisionType.INTERNAL_UNKNOWN
+            or supervision_type
+            != StateSupervisionSentenceSupervisionType.INTERNAL_UNKNOWN
         ):
             return supervision_type
 
@@ -353,7 +360,7 @@ class UsMoSentenceMixin(Generic[SentenceType]):
             if (
                 status.supervision_type_status_classification is not None
                 and status.supervision_type_status_classification
-                != StateSupervisionType.INTERNAL_UNKNOWN
+                != StateSupervisionSentenceSupervisionType.INTERNAL_UNKNOWN
             ):
                 return status.supervision_type_status_classification
 
@@ -381,7 +388,7 @@ class UsMoSentenceMixin(Generic[SentenceType]):
 
     def get_sentence_supervision_type_on_day(
         self, supervision_type_day: date
-    ) -> Optional[StateSupervisionType]:
+    ) -> Optional[StateSupervisionSentenceSupervisionType]:
         """Calculates the supervision type to be associated with this sentence on a given day, or None if the sentence
         has been completed/terminated, if the person is incarcerated on this date, or if there are no statuses for this
         person on/before a given date.
@@ -401,7 +408,8 @@ class UsMoSentenceMixin(Generic[SentenceType]):
             span = self.supervision_type_spans[overlapping_span_index]
             if (
                 span.supervision_type is not None
-                and span.supervision_type != StateSupervisionType.INTERNAL_UNKNOWN
+                and span.supervision_type
+                != StateSupervisionSentenceSupervisionType.INTERNAL_UNKNOWN
             ):
                 return span.supervision_type
 
@@ -415,7 +423,7 @@ class UsMoSentenceMixin(Generic[SentenceType]):
         self,
         upper_bound_exclusive_date: date,
         lower_bound_inclusive_date: Optional[date],
-    ) -> Optional[Tuple[date, StateSupervisionType]]:
+    ) -> Optional[Tuple[date, StateSupervisionSentenceSupervisionType]]:
         """Finds the most recent nonnull type associated this sentence, preceding the provided date. An optional lower
         bound may be provided to limit the lookback window.
 

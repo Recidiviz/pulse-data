@@ -21,7 +21,9 @@ import unittest
 from datetime import date
 
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
-from recidiviz.common.constants.state.state_supervision import StateSupervisionType
+from recidiviz.common.constants.state.state_supervision_sentence import (
+    StateSupervisionSentenceSupervisionType,
+)
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state.deserialize_entity_factories import (
@@ -64,7 +66,7 @@ class StateSupervisionSentenceConverterTest(unittest.TestCase):
         expected_result = entities.StateSupervisionSentence(
             status=StateSentenceStatus.SUSPENDED,
             status_raw_text="SUSPENDED",
-            supervision_type=StateSupervisionType.PROBATION,
+            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
             supervision_type_raw_text="PROBATION",
             external_id="SENTENCE_ID",
             date_imposed=date(year=2000, month=12, day=13),

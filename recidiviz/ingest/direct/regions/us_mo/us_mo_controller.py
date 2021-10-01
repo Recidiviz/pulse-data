@@ -46,11 +46,13 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
-from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
     StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodTerminationReason,
+)
+from recidiviz.common.constants.state.state_supervision_sentence import (
+    StateSupervisionSentenceSupervisionType,
 )
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
@@ -250,11 +252,11 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             "SHK",  # 120 Day Incarceration
         ],
         StateChargeClassificationType.INFRACTION: ["L"],  # Local/ordinance
-        StateSupervisionType.INTERNAL_UNKNOWN: ["UNKNOWN"],
-        StateSupervisionType.PAROLE: [
+        StateSupervisionSentenceSupervisionType.INTERNAL_UNKNOWN: ["UNKNOWN"],
+        StateSupervisionSentenceSupervisionType.PAROLE: [
             "PAROLE",
         ],
-        StateSupervisionType.PROBATION: ["PROBATION"],
+        StateSupervisionSentenceSupervisionType.PROBATION: ["PROBATION"],
         StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE: [
             # TODO(#2898) - Use TAK026 statuses to populate release reason
             "BP-FF",  # Board Parole
@@ -421,7 +423,7 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
     }
 
     ENUM_IGNORES: Dict[Type[Enum], List[str]] = {
-        StateSupervisionType: ["INT"],  # Unknown meaning, rare
+        StateSupervisionSentenceSupervisionType: ["INT"],  # Unknown meaning, rare
         StateSpecializedPurposeForIncarceration: [
             "X",  # Unknown
         ],
@@ -980,9 +982,9 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         is_probation_sentence = (
             supervision_sentence_type
             and self.get_enum_overrides().parse(
-                supervision_sentence_type, StateSupervisionType
+                supervision_sentence_type, StateSupervisionSentenceSupervisionType
             )
-            == StateSupervisionType.PROBATION
+            == StateSupervisionSentenceSupervisionType.PROBATION
         )
 
         if (

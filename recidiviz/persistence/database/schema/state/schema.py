@@ -170,16 +170,16 @@ state_sentence_status = Enum(
     name="state_sentence_status",
 )
 
-state_supervision_type = Enum(
-    state_enum_strings.state_supervision_type_civil_commitment,
+state_supervision_sentence_supervision_type = Enum(
+    state_enum_strings.state_supervision_sentence_supervision_type_civil_commitment,
     enum_strings.internal_unknown,
     enum_strings.external_unknown,
-    state_enum_strings.state_supervision_type_halfway_house,
-    state_enum_strings.state_supervision_type_parole,
-    state_enum_strings.state_supervision_type_post_confinement,
-    state_enum_strings.state_supervision_type_pre_confinement,
-    state_enum_strings.state_supervision_type_probation,
-    name="state_supervision_type",
+    state_enum_strings.state_supervision_sentence_supervision_type_halfway_house,
+    state_enum_strings.state_supervision_sentence_supervision_type_parole,
+    state_enum_strings.state_supervision_sentence_supervision_type_post_confinement,
+    state_enum_strings.state_supervision_sentence_supervision_type_pre_confinement,
+    state_enum_strings.state_supervision_sentence_supervision_type_probation,
+    name="state_supervision_sentence_supervision_type",
 )
 
 state_supervision_case_type = Enum(
@@ -1723,19 +1723,19 @@ class _StateSentenceGroupSharedColumns(_ReferencesStatePersonSharedColumns):
             raise Exception(f"[{cls}] cannot be instantiated")
         return super().__new__(cls)  # type: ignore
 
-    external_id = Column(String(255), index=True, comment="DEPRECATED. See #2891.")
+    external_id = Column(String(255), index=True, comment="DEPRECATED. See #5411.")
     status = Column(
-        state_sentence_status, nullable=False, comment="DEPRECATED. See #2891."
+        state_sentence_status, nullable=False, comment="DEPRECATED. See #5411."
     )
-    status_raw_text = Column(String(255), comment="DEPRECATED. See #2891.")
-    date_imposed = Column(Date, comment="DEPRECATED. See #2891.")
+    status_raw_text = Column(String(255), comment="DEPRECATED. See #5411.")
+    date_imposed = Column(Date, comment="DEPRECATED. See #5411.")
     state_code = Column(
-        String(255), nullable=False, index=True, comment="DEPRECATED. See #2891."
+        String(255), nullable=False, index=True, comment="DEPRECATED. See #5411."
     )
-    county_code = Column(String(255), index=True, comment="DEPRECATED. See #2891.")
-    min_length_days = Column(Integer, comment="DEPRECATED. See #2891.")
-    max_length_days = Column(Integer, comment="DEPRECATED. See #2891.")
-    is_life = Column(Boolean, comment="DEPRECATED. See #2891.")
+    county_code = Column(String(255), index=True, comment="DEPRECATED. See #5411.")
+    min_length_days = Column(Integer, comment="DEPRECATED. See #5411.")
+    max_length_days = Column(Integer, comment="DEPRECATED. See #5411.")
+    is_life = Column(Boolean, comment="DEPRECATED. See #5411.")
 
 
 class StateSentenceGroup(StateBase, _StateSentenceGroupSharedColumns):
@@ -1750,7 +1750,7 @@ class StateSentenceGroup(StateBase, _StateSentenceGroupSharedColumns):
             deferrable=True,
             initially="DEFERRED",
         ),
-        {"comment": "DEPRECATED. See #2891."},
+        {"comment": "DEPRECATED. See #5411."},
     )
 
     sentence_group_id = Column(
@@ -1773,12 +1773,12 @@ class StateSentenceGroupHistory(
     """Represents the historical state of a StateSentenceGroup"""
 
     __tablename__ = "state_sentence_group_history"
-    __table_args__ = {"comment": "DEPRECATED. See #2891."}
+    __table_args__ = {"comment": "DEPRECATED. See #5411."}
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
     sentence_group_history_id = Column(
-        Integer, primary_key=True, comment="DEPRECATED. See #2891."
+        Integer, primary_key=True, comment="DEPRECATED. See #5411."
     )
 
     sentence_group_id = Column(
@@ -1786,7 +1786,7 @@ class StateSentenceGroupHistory(
         ForeignKey("state_sentence_group.sentence_group_id"),
         nullable=False,
         index=True,
-        comment="DEPRECATED. See #2891.",
+        comment="DEPRECATED. See #5411.",
     )
 
 
@@ -1822,7 +1822,7 @@ class _StateSupervisionSentenceSharedColumns(
         comment="The raw text value of the current status of this sentence.",
     )
     supervision_type = Column(
-        state_supervision_type,
+        state_supervision_sentence_supervision_type,
         comment="The type of supervision the person is being sentenced to.",
     )
     supervision_type_raw_text = Column(

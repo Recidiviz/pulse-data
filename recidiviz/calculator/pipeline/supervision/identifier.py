@@ -82,11 +82,13 @@ from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentLevel,
     StateAssessmentType,
 )
-from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
+)
+from recidiviz.common.constants.state.state_supervision_sentence import (
+    StateSupervisionSentenceSupervisionType,
 )
 from recidiviz.common.date import DateRange, DateRangeDiff, last_day_of_month
 from recidiviz.persistence.entity.entity_utils import (
@@ -936,8 +938,8 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                 )
 
                 sentence_supervision_type: Optional[
-                    StateSupervisionType
-                ] = StateSupervisionType.PAROLE
+                    StateSupervisionSentenceSupervisionType
+                ] = StateSupervisionSentenceSupervisionType.PAROLE
             elif isinstance(sentence, StateSupervisionSentence):
                 if not sentence.projected_completion_date:
                     continue
