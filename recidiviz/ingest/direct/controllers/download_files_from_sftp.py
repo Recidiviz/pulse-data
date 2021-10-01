@@ -19,18 +19,21 @@ import datetime
 import io
 import logging
 import os
-from contextlib import contextmanager
-from functools import partial
-from typing import Iterator, List, Optional, Tuple
+import stat
+from collections import deque
+from typing import List, Optional, Tuple
 
 import paramiko
-import pysftp
 import pytz
-from paramiko import SFTPAttributes, SSHException
+from paramiko import SFTPAttributes
 from paramiko.hostkeys import HostKeyEntry
-from pysftp import CnOpts
+from paramiko.sftp_client import SFTPClient
+from paramiko.transport import Transport
 
-from recidiviz.cloud_storage.gcs_file_system import SftpFileContentsHandle
+from recidiviz.cloud_storage.gcs_file_system import (
+    BYTES_CONTENT_TYPE,
+    SftpFileContentsHandle,
+)
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
@@ -56,7 +59,6 @@ from recidiviz.ingest.direct.sftp_download_delegate_factory import (
 from recidiviz.utils import secrets
 
 RAW_INGEST_DIRECTORY = "raw_data"
-BYTES_CONTENT_TYPE = "application/octet-stream"
 
 
 class SftpAuth:
@@ -65,52 +67,45 @@ class SftpAuth:
     def __init__(
         self,
         hostname: str,
-        username: Optional[str],
-        password: Optional[str],
+        hostkey_entry: HostKeyEntry,
+        username: str,
+        password: str,
         client_private_key: Optional[paramiko.RSAKey],
-        connection_options: Optional[CnOpts],
     ):
         self.hostname = hostname
+        self.hostkey_entry = hostkey_entry
         self.username = username
         self.password = password
         # If we need a client key, this variable contains the private part of the private/public
         # key pair.
         self.client_private_key = client_private_key
-        # connection_options hold advanced options that help when creating a pysftp Connection
-        # such as overriding where to check for hosts or enabling compression.
-        self.connection_options = connection_options if connection_options else CnOpts()
-
-    @staticmethod
-    def set_up_connection_options(prefix: str, host: str) -> CnOpts:
-        connection_options = CnOpts()
-        try:
-            connection_options.get_hostkey(host)
-        except SSHException as s:
-            hostkey = secrets.get_secret(f"{prefix}_hostkey")
-            if hostkey is None:
-                raise ValueError(
-                    f"Unable to find hostkey for secret key {prefix}_hostkey"
-                ) from s
-            hostkeyEntry = HostKeyEntry.from_line(hostkey)
-            if hostkeyEntry:
-                key = hostkeyEntry.key
-                name, keytype, _ = hostkey.split(" ")
-                connection_options.hostkeys.add(name, keytype, key)
-            else:
-                raise ValueError(
-                    f"Unable to add hostkey to connection_options for secret key {prefix}_hostkey"
-                ) from s
-        return connection_options
 
     @classmethod
     def for_region(cls, region_code: str) -> "SftpAuth":
+        """Creates a specific region's SFTP authentication method."""
         prefix = f"{region_code}_sftp"
         host = secrets.get_secret(f"{prefix}_host")
         if host is None:
             raise ValueError(f"Unable to find host name for secret key {prefix}_host")
+        hostkey = secrets.get_secret(f"{prefix}_hostkey")
+        if hostkey is None:
+            raise ValueError(f"Unable to find hostkey for secret key {prefix}_hostkey")
+        hostkey_entry = HostKeyEntry.from_line(hostkey)
+        if hostkey_entry is None:
+            raise ValueError(
+                "Unable to convert to proper hostkey. Make sure it's "
+                "in the format of hostname keytype key."
+            )
         username = secrets.get_secret(f"{prefix}_username")
+        if username is None:
+            raise ValueError(
+                f"Unable to find username for secret key {prefix}_username"
+            )
         password = secrets.get_secret(f"{prefix}_password")
-
+        if password is None:
+            raise ValueError(
+                f"Unable to find password for secret key {prefix}_password"
+            )
         raw_client_private_key = secrets.get_secret(f"{prefix}_client_private_key")
         client_private_key = (
             None
@@ -118,11 +113,7 @@ class SftpAuth:
             else paramiko.RSAKey.from_private_key(io.StringIO(raw_client_private_key))
         )
 
-        connection_options = SftpAuth.set_up_connection_options(prefix, host)
-
-        return SftpAuth(
-            host, username, password, client_private_key, connection_options
-        )
+        return SftpAuth(host, hostkey_entry, username, password, client_private_key)
 
 
 class DownloadFilesFromSftpController:
@@ -140,6 +131,7 @@ class DownloadFilesFromSftpController:
 
         self.auth = SftpAuth.for_region(region_code)
         self.delegate = SftpDownloadDelegateFactory.build(region_code=region_code)
+        self.sftp_client = self._client()
         self.gcsfs = DirectIngestGCSFileSystem(GcsfsFactory.build())
 
         self.unable_to_download_items: List[str] = []
@@ -167,16 +159,37 @@ class DownloadFilesFromSftpController:
             )
         )
 
-    @contextmanager
-    def using_sftp_connection(self) -> Iterator[pysftp.Connection]:
-        with pysftp.Connection(
-            host=self.auth.hostname,
-            username=self.auth.username,
-            password=self.auth.password,
-            private_key=self.auth.client_private_key,
-            cnopts=self.auth.connection_options,
-        ) as conn:
-            yield conn
+    def _client(self) -> SFTPClient:
+        """Creates a proper authentication to the SFTP server via SSH and then
+        returns a client that allows for file system commands to be executed against
+        the SFTP server."""
+        transport = Transport((self.auth.hostname, 22))
+        transport.connect()
+        if self.auth.client_private_key:
+            try:
+                transport.auth_publickey(
+                    self.auth.username, self.auth.client_private_key
+                )
+            except Exception:
+                # Generally, if a private key authentication method is required, then
+                # a password has to be inputted as well as a second factor of auth.
+                # This allows paramiko to continue to create the connection by manually
+                # sending a message with password credentials forward.
+                message = paramiko.Message()
+                message.add_byte(paramiko.common.cMSG_USERAUTH_REQUEST)
+                message.add_string(self.auth.username)
+                message.add_string("ssh-connection")
+                message.add_string("password")
+                message.add_boolean(False)
+                message.add_string(self.auth.password)
+                # pylint: disable=protected-access
+                transport._send_message(message)  # type: ignore
+        else:
+            transport.auth_password(self.auth.username, self.auth.password)
+        client = SFTPClient.from_transport(transport)
+        if not client:
+            raise ValueError("Expected proper SFTP client to be created.")
+        return client
 
     def _is_after_update_bound(self, sftp_attr: SFTPAttributes) -> bool:
         if self.lower_bound_update_datetime is None:
@@ -193,12 +206,11 @@ class DownloadFilesFromSftpController:
 
     def _fetch(
         self,
-        connection: pysftp.Connection,
         file_path: str,
         file_timestamp: datetime.datetime,
     ) -> None:
         """Fetches data files from the SFTP, tracking which items downloaded and failed to download."""
-        normalized_sftp_path = os.path.normpath(file_path)
+        normalized_sftp_path = os.path.normpath(file_path).replace("-", "_")
         normalized_upload_path = GcsfsFilePath.from_directory_and_file_name(
             dir_path=self.download_dir,
             file_name=os.path.basename(
@@ -224,7 +236,7 @@ class DownloadFilesFromSftpController:
                 self.gcsfs.upload_from_contents_handle_stream(
                     path=path,
                     contents_handle=SftpFileContentsHandle(
-                        sftp_connection=connection, local_file_path=file_path
+                        sftp_client=self.sftp_client, local_file_path=file_path
                     ),
                     content_type=BYTES_CONTENT_TYPE,
                 )
@@ -259,52 +271,56 @@ class DownloadFilesFromSftpController:
         """Opens a connection to SFTP and based on the delegate, find and recursively list items
         that are after the update bound and match the delegate's criteria, returning items and
         corresponding timestamps that are to be downloaded."""
-        with self.using_sftp_connection() as connection:
-            remote_dirs = connection.listdir()
-            root = self.delegate.root_directory(remote_dirs)
-            dirs_with_attributes = connection.listdir_attr(root)
-            paths_post_timestamp = {}
-            for sftp_attr in dirs_with_attributes:
-                if not self._is_after_update_bound(sftp_attr):
-                    continue
+        remote_dirs = self.sftp_client.listdir()
+        root = self.delegate.root_directory(remote_dirs)
+        dirs_with_attributes = self.sftp_client.listdir_attr(root)
+        paths_post_timestamp = {}
+        file_modes_of_paths = {}
+        for sftp_attr in dirs_with_attributes:
+            if not self._is_after_update_bound(sftp_attr):
+                continue
 
-                if sftp_attr.st_mtime is None:
-                    # We should never reach this point because we should have filtered out
-                    # None mtimes already.
-                    raise ValueError("mtime for SFTP file was unexepctedly None")
+            if sftp_attr.st_mtime is None:
+                # We should never reach this point because we should have filtered out
+                # None mtimes already.
+                raise ValueError("mtime for SFTP file was unexpectedly None")
 
-                paths_post_timestamp[
-                    sftp_attr.filename
-                ] = datetime.datetime.fromtimestamp(sftp_attr.st_mtime).astimezone(
-                    pytz.UTC
+            paths_post_timestamp[sftp_attr.filename] = datetime.datetime.fromtimestamp(
+                sftp_attr.st_mtime
+            ).astimezone(pytz.UTC)
+            file_modes_of_paths[sftp_attr.filename] = sftp_attr.st_mode
+
+        paths_to_download = self.delegate.filter_paths(
+            list(paths_post_timestamp.keys())
+        )
+
+        files_to_download_with_timestamps: List[Tuple[str, datetime.datetime]] = []
+        for path in paths_to_download:
+            file_timestamp = paths_post_timestamp[path]
+            file_mode = file_modes_of_paths[path]
+            if file_mode and stat.S_ISREG(file_mode):
+                files_to_download_with_timestamps.append((path, file_timestamp))
+            else:
+                inner_paths = deque(
+                    [
+                        os.path.join(path, inner_path)
+                        for inner_path in self.sftp_client.listdir(path)
+                    ]
                 )
-
-            paths_to_download = self.delegate.filter_paths(
-                list(paths_post_timestamp.keys())
-            )
-
-            files_to_download_with_timestamps: List[Tuple[str, datetime.datetime]] = []
-            for path in paths_to_download:
-                file_timestamp = paths_post_timestamp[path]
-                if connection.isdir(path):
-
-                    def set_file(
-                        file_to_fetch: str, file_timestamp: datetime.datetime
-                    ) -> None:
+                while len(inner_paths) > 0:
+                    current_path = inner_paths.popleft()
+                    sftp_attr_of_current_path = self.sftp_client.stat(current_path)
+                    if sftp_attr_of_current_path.st_mode and stat.S_ISDIR(
+                        sftp_attr_of_current_path.st_mode
+                    ):
+                        for entry in self.sftp_client.listdir(current_path):
+                            inner_paths.append(os.path.join(current_path, entry))
+                    else:
                         files_to_download_with_timestamps.append(
-                            (file_to_fetch, file_timestamp)
+                            (current_path, file_timestamp)
                         )
 
-                    connection.walktree(
-                        remotepath=path,
-                        fcallback=partial(set_file, file_timestamp=file_timestamp),
-                        dcallback=lambda _: None,
-                        ucallback=self.unable_to_download_items.append,
-                        recurse=True,
-                    )
-                else:
-                    files_to_download_with_timestamps.append((path, file_timestamp))
-            return files_to_download_with_timestamps
+        return files_to_download_with_timestamps
 
     def clean_up(self) -> None:
         """Attempts to recursively remove any downloaded folders created as part of do_fetch."""
@@ -327,9 +343,8 @@ class DownloadFilesFromSftpController:
     ) -> None:
         """Opens up one connection and loops through all of the files with timestamps to upload
         to the GCS bucket."""
-        with self.using_sftp_connection() as connection:
-            for file_path, file_timestamp in files_to_download_with_timestamps:
-                self._fetch(connection, file_path, file_timestamp)
+        for file_path, file_timestamp in files_to_download_with_timestamps:
+            self._fetch(file_path, file_timestamp)
 
     def do_fetch(
         self,

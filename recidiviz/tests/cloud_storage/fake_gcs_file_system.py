@@ -176,6 +176,15 @@ class FakeGCSFileSystem(GCSFileSystem):
         with open(self.real_absolute_path_for_path(path), "r", encoding=encoding) as f:
             return f.read()
 
+    def download_as_bytes(self, path: GcsfsFilePath) -> bytes:
+        """Downloads file contents into memory, returning the contents as bytes
+        or raising if the path no-longer exists in the GCS file system"""
+        if not self.exists(path):
+            raise GCSBlobDoesNotExistError(f"Could not find blob at {path}")
+
+        with open(self.real_absolute_path_for_path(path), "rb") as f:
+            return f.read()
+
     def upload_from_string(
         self, path: GcsfsFilePath, contents: str, content_type: str
     ) -> None:
