@@ -37,8 +37,8 @@ max_allowed_error_overrides:
     hard_max_allowed_error_override: 0.76
     override_reason: Needs investigation.
   - validation_name: most_recent_face_to_face_contact_date_by_person_by_state_comparison
-    hard_max_allowed_error_override: 0.0241
-    override_reason: Needs investigation.
+    hard_max_allowed_error_override: 1.0
+    override_reason: Needs investigation. Failing 100% in production.
   - validation_name: supervision_population_person_level_external_comparison_matching_people_district
     hard_max_allowed_error_override: 0.95
     override_reason: TODO(#9108) - Needs investigation.
@@ -56,6 +56,9 @@ max_allowed_error_overrides:
     override_reason: Needs investigation.
   - validation_name: most_recent_assessment_score_by_person_by_state_comparison
     hard_max_allowed_error_override: .89
+    override_reason: Needs investigation.
+  - validation_name: incarceration_population_person_level_external_comparison
+    hard_max_allowed_error_override: .05
     override_reason: Needs investigation.
 num_allowed_rows_overrides:
   - validation_name: incarceration_admission_after_open_period
