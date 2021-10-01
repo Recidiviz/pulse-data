@@ -18,7 +18,8 @@
 our database schema, whether or not they are actual SQLAlchemy objects."""
 
 from enum import Enum
-from typing import Optional, List, Any, Type
+from functools import lru_cache
+from typing import Any, List, Optional, Type
 
 from recidiviz.common.constants import enum_canonical_strings
 from recidiviz.common.str_field_utils import to_snake_case
@@ -35,7 +36,8 @@ class CoreEntity:
         return super().__new__(cls)
 
     @classmethod
-    def get_primary_key_column_name(cls):
+    @lru_cache(maxsize=None)
+    def get_primary_key_column_name(cls) -> str:
         """Returns string name of primary key column of the table
 
         NOTE: This name is the *column* name on the table, which is not
@@ -45,7 +47,8 @@ class CoreEntity:
         return primary_key_name_from_cls(cls)
 
     @classmethod
-    def get_class_id_name(cls):
+    @lru_cache(maxsize=None)
+    def get_class_id_name(cls) -> str:
         id_name = to_snake_case(cls.__name__) + "_id"
         if id_name.startswith("state_"):
             id_name = id_name.replace("state_", "")
@@ -55,7 +58,8 @@ class CoreEntity:
         return getattr(self, self.get_class_id_name())
 
     @classmethod
-    def get_entity_name(cls):
+    @lru_cache(maxsize=None)
+    def get_entity_name(cls) -> str:
         return to_snake_case(cls.__name__)
 
     def clear_id(self):

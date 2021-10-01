@@ -16,6 +16,7 @@
 # =============================================================================
 
 """Mixin class for database entities"""
+from functools import lru_cache
 from typing import Dict, List, Optional, Set, Type, TypeVar
 
 from sqlalchemy.inspection import inspect
@@ -34,6 +35,7 @@ class DatabaseEntity(CoreEntity):
     Property = TypeVar("Property", RelationshipProperty, ColumnProperty)
 
     @classmethod
+    @lru_cache(maxsize=None)
     def get_primary_key_column_name(cls) -> str:
         """Returns string name of primary key column of the table
 
@@ -44,6 +46,7 @@ class DatabaseEntity(CoreEntity):
         return inspect(cls).primary_key[0].name
 
     @classmethod
+    @lru_cache(maxsize=None)
     def get_column_property_names(cls) -> Set[str]:
         """Returns set of string names of all properties of the entity that
         correspond to columns in the table.
@@ -56,6 +59,7 @@ class DatabaseEntity(CoreEntity):
         return cls._get_entity_property_names_by_type(ColumnProperty)
 
     @classmethod
+    @lru_cache(maxsize=None)
     def get_foreign_key_names(cls) -> List[str]:
         """Returns set of string names of all properties of the entity that
         correspond to foreign keys of other database entities.
@@ -63,6 +67,7 @@ class DatabaseEntity(CoreEntity):
         return [col.name for col in inspect(cls).columns if col.foreign_keys]
 
     @classmethod
+    @lru_cache(maxsize=None)
     def get_relationship_property_names(cls) -> Set[str]:
         """Returns set of string names of all properties of the entity that
         correspond to relationships to other database entities.
@@ -70,10 +75,12 @@ class DatabaseEntity(CoreEntity):
         return inspect(cls).relationships.keys()
 
     @classmethod
+    @lru_cache(maxsize=None)
     def is_relationship_property(cls, property_name: str) -> Boolean:
         return property_name in cls.get_relationship_property_names()
 
     @classmethod
+    @lru_cache(maxsize=None)
     def get_relationship_property_class_name(cls, property_name: str) -> Optional[str]:
         if not cls.is_relationship_property(property_name):
             return None
@@ -81,6 +88,7 @@ class DatabaseEntity(CoreEntity):
         return prop.entity.class_.__name__
 
     @classmethod
+    @lru_cache(maxsize=None)
     def get_relationship_property_names_and_properties(
         cls,
     ) -> Dict[str, RelationshipProperty]:
@@ -91,6 +99,7 @@ class DatabaseEntity(CoreEntity):
         return cls._get_entity_names_and_properties_by_type(RelationshipProperty)
 
     @classmethod
+    @lru_cache(maxsize=None)
     def get_property_name_by_column_name(cls, column_name: str) -> str:
         """Returns string name of ORM object attribute corresponding to
         |column_name| on table
@@ -104,6 +113,7 @@ class DatabaseEntity(CoreEntity):
         return getattr(self, type(self)._get_primary_key_property_name(), None)
 
     @classmethod
+    @lru_cache(maxsize=None)
     def _get_primary_key_property_name(cls) -> str:
         """Returns string name of primary key column property of the entity
 
@@ -113,6 +123,7 @@ class DatabaseEntity(CoreEntity):
         return cls.get_property_name_by_column_name(cls.get_primary_key_column_name())
 
     @classmethod
+    @lru_cache(maxsize=None)
     def _get_entity_property_names_by_type(
         cls, property_type: Type[Property]
     ) -> Set[str]:
