@@ -1,0 +1,19 @@
+file_tag: CIS_1016_CLIENT_CODE
+file_description: |-
+  TODO(#9296): Add raw data descriptions
+primary_key_cols: []
+columns:
+  - name : Adult_Ind
+  - name : Cis_1015_Client_Sub_Type_Cd
+  - name : Client_Cd_Desc
+  - name : Created_By_Tx
+  - name : Created_On_Date
+  - name : Juvenile_Ind
+  - name : Locking_Tsp
+  - name : Logical_Delete_Ind
+  - name : Modified_By_Tx
+  - name : Modified_On_Date
+  - name : Sys_Row_Ind
+  - name : System_Ref_Comments_Tx
+  - name : System_Ref_Tx
+  - name : Client_Cd

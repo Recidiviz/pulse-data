@@ -1,0 +1,37 @@
+file_tag: CIS_480_VIOLATION
+file_description: |-
+  TODO(#9296): Add raw data descriptions
+primary_key_cols: []
+columns:
+  - name : Arrested_Warr_Date
+  - name : Cis_100_Client_Id
+  - name : Cis_1016_Extradition_Cd
+  - name : Cis_4009_Client_Loc_Cd
+  - name : Cis_4009_Disposition_Cd
+  - name : Cis_4009_Served_At_Cd
+  - name : Cis_4009_Supervision_Type_Cd
+  - name : Cis_4009_Toll_Violation_Cd
+  - name : Cis_4009_Violation_Type_Cd
+  - name : Cis_4800_Violation_Finding_Cd
+  - name : Cis_900_Employee_Id
+  - name : Created_By_Tx
+  - name : Created_On_Date
+  - name : Extradition_Other_Tx
+  - name : Finding_Date
+  - name : Finding_Notes_Tx
+  - name : Fta_Date
+  - name : Fta_Ind
+  - name : Locking_Tsp
+  - name : Logical_Delete_Ind
+  - name : Modified_By_Tx
+  - name : Modified_On_Date
+  - name : Start_Date
+  - name : Stayed_Ind
+  - name : Toll_End_Date
+  - name : Toll_Start_Date
+  - name : Violation_Descr_Tx
+  - name : Violation_Id
+  - name : Warning_Issued_Ind
+  - name : Serve_Days
+  - name : Serve_Mths
+  - name : Serve_Yrs

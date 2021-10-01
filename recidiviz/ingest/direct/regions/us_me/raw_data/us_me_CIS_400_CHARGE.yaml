@@ -1,0 +1,46 @@
+file_tag: CIS_400_CHARGE
+file_description: |-
+  TODO(#9296): Add raw data descriptions
+primary_key_cols: []
+columns:
+  - name : Atn_Tx
+  - name : Bind_Over_Result_Tx
+  - name : Charge_Id
+  - name : Charge_Outcome_Date
+  - name : Charge_Outcome_Notes_Tx
+  - name : Cis_100_Client_Id
+  - name : Cis_4000_Charge_Outcome_Cd
+  - name : Cis_4002_Plea_Type_Cd
+  - name : Cis_4003_Offence_Type_Cd
+  - name : Cis_4003_Pet_Offence_Type_Cd
+  - name : Cis_4004_Charge_Mode_Cd
+  - name : Cis_4006_Victim_Relation_Cd
+  - name : Cis_4009_Det_Status_Cd
+  - name : Cis_4009_Rel_Status_Cd
+  - name : Cis_4009_Type_Offense_Cd
+  - name : Cis_4020_Offense_Class_Cd
+  - name : Cis_4020_Pet_Class_Cd
+  - name : Cis_9003_Jurisd_County_Cd
+  - name : Cis_9901_Police_Dept_Cd
+  - name : Comments_Tx
+  - name : Created_By_Tx
+  - name : Created_On_Date
+  - name : Ctn_Tx
+  - name : Detention_Req_Date
+  - name : Drugs_Alc_Inv_Ind
+  - name : Interstate_Comp_In_Ind
+  - name : Juvenile_Ind
+  - name : Locking_Tsp
+  - name : Modified_By_Tx
+  - name : Modified_On_Date
+  - name : Offense_Date
+  - name : Offense_Note_Tx
+  - name : Oos_Inv_Compl_Date
+  - name : Oos_Inv_Req_Date
+  - name : Petition_Outcome_Tx
+  - name : Petition_Req_Date
+  - name : Petition_Req_Ind
+  - name : Police_Officer_Tx
+  - name : Police_Rep_No_Tx
+  - name : Referral_Date
+  - name : Summons_Date

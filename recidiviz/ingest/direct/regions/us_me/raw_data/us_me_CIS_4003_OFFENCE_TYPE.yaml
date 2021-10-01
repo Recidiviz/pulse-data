@@ -1,0 +1,33 @@
+file_tag: CIS_4003_OFFENCE_TYPE
+file_description: |-
+  TODO(#9296): Add raw data descriptions
+primary_key_cols: []
+columns:
+  - name : Adult_Ind
+  - name : Cis_4009_40026_Cd
+  - name : Cis_4009_40028_Severity_2_Cd
+  - name : Cis_4009_40028_Severity_Cd
+  - name : Cis_4020_Class_Cd
+  - name : Created_By_Tx
+  - name : Created_On_Date
+  - name : Dna_Ind
+  - name : Domestic_Violence_Ind
+  - name : E_Offence_Type_Desc
+  - name : Effct_Date
+  - name : Ineffct_Date
+  - name : Juv_Dna_Ind
+  - name : Juvenile_Ind
+  - name : Locking_Tsp
+  - name : Logical_Delete_Ind
+  - name : Mejis_Name_Indx_Cd
+  - name : Mejis_Offns_Class_Tx
+  - name : Mejis_Offns_Section_Tx
+  - name : Mejis_Offns_Title_Tx
+  - name : Modified_By_Tx
+  - name : Modified_On_Date
+  - name : Sexreg_Ind
+  - name : Statute_2004_Xmt_Ind
+  - name : Sys_Row_Ind
+  - name : System_Ref_Comments_Tx
+  - name : System_Ref_Tx
+  - name : Offence_Type_Cd

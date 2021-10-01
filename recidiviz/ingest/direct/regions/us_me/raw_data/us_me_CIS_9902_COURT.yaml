@@ -1,0 +1,42 @@
+file_tag: CIS_9902_COURT
+file_description: |-
+  TODO(#9296): Add raw data descriptions
+primary_key_cols: []
+columns:
+  - name : Building_Name_Tx
+  - name : Cis_9911_Court_Place_Cd
+  - name : Created_By_Tx
+  - name : Created_On_Date
+  - name : Da_Add1_Tx
+  - name : Da_Add2_Tx
+  - name : Da_Fax_Num
+  - name : Da_First_Name
+  - name : Da_Last_Name
+  - name : Da_Middle_Name
+  - name : Da_Phone_Num
+  - name : Da_State_Tx
+  - name : Da_Suffix_Tx
+  - name : Da_Town_Tx
+  - name : Da_Zip_Code_Tx
+  - name : District_Num
+  - name : Division_Name_Tx
+  - name : E_Court_Desc
+  - name : Fax_Num
+  - name : Legal_Add1_Tx
+  - name : Legal_Add2_Tx
+  - name : Locking_Tsp
+  - name : Logical_Delete_Ind
+  - name : Mail_Add1_Tx
+  - name : Mail_Add2_Tx
+  - name : Mail_Zip_Code_Tx
+  - name : Mejis_Abrv_Cd
+  - name : Mejis_Hierarch_Cd
+  - name : Modified_By_Tx
+  - name : Modified_On_Date
+  - name : Ori_Tx
+  - name : Phone_Num
+  - name : State_Tx
+  - name : Sys_Row_Ind
+  - name : System_Ref_Comments_Tx
+  - name : System_Ref_Tx
+  - name : Court_Cd
