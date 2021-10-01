@@ -482,14 +482,7 @@ class PoMonthlyReportContextTests(TestCase):
     def test_static_path(self) -> None:
         self.assertEqual(
             self._get_prepared_data()["static_image_path"],
-            "http://123.456.7.8/US_ID/po_monthly_report/static",
-        )
-
-        self.assertEqual(
-            self._get_prepared_data({"state_code": StateCode.US_PA})[
-                "static_image_path"
-            ],
-            "http://123.456.7.8/US_PA/po_monthly_report/static",
+            "http://123.456.7.8/po_monthly_report/static",
         )
 
     def test_intro_data(self) -> None:
