@@ -58,7 +58,6 @@ from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
-from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactLocation,
     StateSupervisionContactReason,
@@ -69,6 +68,9 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
     StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodSupervisionType,
+)
+from recidiviz.common.constants.state.state_supervision_sentence import (
+    StateSupervisionSentenceSupervisionType,
 )
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
@@ -355,7 +357,7 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
         external_id="BOOK_ID1234-2",
         status=StateSentenceStatus.SERVING,
         status_raw_text="SERVING",
-        supervision_type=StateSupervisionType.PAROLE,
+        supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
         supervision_type_raw_text="PAROLE",
         projected_completion_date=datetime.date(year=2020, month=5, day=14),
         completion_date=None,

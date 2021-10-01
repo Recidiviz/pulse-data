@@ -22,7 +22,9 @@ from recidiviz.common.constants.defaulting_and_normalizing_enum_parser import (
     DefaultingAndNormalizingEnumParser,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
-from recidiviz.common.constants.state.state_supervision import StateSupervisionType
+from recidiviz.common.constants.state.state_supervision_sentence import (
+    StateSupervisionSentenceSupervisionType,
+)
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import StateSupervisionSentence
 from recidiviz.persistence.entity.state import entities
@@ -51,7 +53,7 @@ def copy_fields_to_builder(
     new.status_raw_text = getattr(proto, "status")
     new.supervision_type = DefaultingAndNormalizingEnumParser(
         getattr(proto, "supervision_type"),
-        StateSupervisionType,
+        StateSupervisionSentenceSupervisionType,
         metadata.enum_overrides,
     )
     new.supervision_type_raw_text = getattr(proto, "supervision_type")

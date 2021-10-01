@@ -49,7 +49,6 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
-from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactLocation,
     StateSupervisionContactMethod,
@@ -61,6 +60,9 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
+)
+from recidiviz.common.constants.state.state_supervision_sentence import (
+    StateSupervisionSentenceSupervisionType,
 )
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
@@ -334,7 +336,7 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             "E",  # SIP Evaluation
             "SCI",  # State Correctional Institution
         ],
-        StateSupervisionType.PROBATION: [
+        StateSupervisionSentenceSupervisionType.PROBATION: [
             "Y",  # Yes means Probation; anything else means Parole
         ],
         StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE: [

@@ -93,11 +93,13 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
-from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
+)
+from recidiviz.common.constants.state.state_supervision_sentence import (
+    StateSupervisionSentenceSupervisionType,
 )
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
@@ -1220,7 +1222,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             external_id="ss1",
             state_code="US_ND",
             status=StateSentenceStatus.COMPLETED,
-            supervision_type=StateSupervisionType.PROBATION,
+            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
             completion_date=date(2018, 5, 19),
             supervision_periods=[supervision_period],
             incarceration_periods=[incarceration_period],
@@ -1368,7 +1370,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             external_id="ss1",
             state_code="US_XX",
             status=StateSentenceStatus.COMPLETED,
-            supervision_type=StateSupervisionType.PROBATION,
+            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
             completion_date=date(2018, 5, 19),
             supervision_periods=[supervision_period],
             incarceration_periods=[
@@ -1515,7 +1517,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                     SupervisionTypeSpan(
                         start_date=supervision_period.start_date,
                         end_date=temp_custody_period.admission_date,
-                        supervision_type=StateSupervisionType.PAROLE,
+                        supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
                     ),
                     SupervisionTypeSpan(
                         start_date=temp_custody_period.admission_date,
@@ -1544,7 +1546,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                 SupervisionTypeSpan(
                     start_date=supervision_period.start_date,
                     end_date=temp_custody_period.admission_date,
-                    supervision_type=StateSupervisionType.PROBATION,
+                    supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
                 ),
                 SupervisionTypeSpan(
                     start_date=temp_custody_period.admission_date,
@@ -1677,38 +1679,36 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         assert temp_custody_period.admission_reason is not None
         assert temp_custody_period.release_date is not None
         assert temp_custody_period.release_reason is not None
-        incarceration_sentence = (
-            FakeUsMoIncarcerationSentence.fake_sentence_from_sentence(
-                StateIncarcerationSentence.new_with_defaults(
-                    state_code="US_MO",
-                    incarceration_sentence_id=123,
-                    status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                    incarceration_periods=[temp_custody_period],
-                    supervision_periods=[],
-                    start_date=date(2008, 1, 1),
-                    charges=[
-                        StateCharge.new_with_defaults(
-                            state_code="US_MO",
-                            status=ChargeStatus.PRESENT_WITHOUT_INFO,
-                            offense_date=date(2007, 12, 11),
-                            ncic_code="0901",
-                            statute="9999",
-                        )
-                    ],
-                ),
-                supervision_type_spans=[
-                    SupervisionTypeSpan(
-                        start_date=temp_custody_period.admission_date,
-                        end_date=temp_custody_period.release_date,
-                        supervision_type=StateSupervisionType.PROBATION,
-                    ),
-                    SupervisionTypeSpan(
-                        start_date=temp_custody_period.release_date,
-                        end_date=None,
-                        supervision_type=None,
-                    ),
+        incarceration_sentence = FakeUsMoIncarcerationSentence.fake_sentence_from_sentence(
+            StateIncarcerationSentence.new_with_defaults(
+                state_code="US_MO",
+                incarceration_sentence_id=123,
+                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                incarceration_periods=[temp_custody_period],
+                supervision_periods=[],
+                start_date=date(2008, 1, 1),
+                charges=[
+                    StateCharge.new_with_defaults(
+                        state_code="US_MO",
+                        status=ChargeStatus.PRESENT_WITHOUT_INFO,
+                        offense_date=date(2007, 12, 11),
+                        ncic_code="0901",
+                        statute="9999",
+                    )
                 ],
-            )
+            ),
+            supervision_type_spans=[
+                SupervisionTypeSpan(
+                    start_date=temp_custody_period.admission_date,
+                    end_date=temp_custody_period.release_date,
+                    supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
+                ),
+                SupervisionTypeSpan(
+                    start_date=temp_custody_period.release_date,
+                    end_date=None,
+                    supervision_type=None,
+                ),
+            ],
         )
 
         supervision_sentence = FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
@@ -1724,7 +1724,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                 SupervisionTypeSpan(
                     start_date=temp_custody_period.admission_date,
                     end_date=temp_custody_period.release_date,
-                    supervision_type=StateSupervisionType.PROBATION,
+                    supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
                 ),
                 SupervisionTypeSpan(
                     start_date=temp_custody_period.release_date,
@@ -2267,7 +2267,7 @@ class TestFindIncarcerationStays(unittest.TestCase):
             StateSupervisionSentence.new_with_defaults(
                 supervision_sentence_id=1111,
                 state_code="US_MO",
-                supervision_type=StateSupervisionType.PROBATION,
+                supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
                 start_date=date(2010, 1, 1),
                 supervision_periods=[supervision_period],
                 incarceration_periods=[incarceration_period],
@@ -2277,7 +2277,7 @@ class TestFindIncarcerationStays(unittest.TestCase):
                 SupervisionTypeSpan(
                     start_date=date(2010, 1, 1),
                     end_date=None,
-                    supervision_type=StateSupervisionType.PROBATION,
+                    supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
                 )
             ],
         )
@@ -3044,7 +3044,7 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
             StateSupervisionSentence.new_with_defaults(
                 supervision_sentence_id=1111,
                 state_code="US_MO",
-                supervision_type=StateSupervisionType.PROBATION,
+                supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
                 start_date=date(2010, 1, 1),
                 supervision_periods=[supervision_period],
                 incarceration_periods=[incarceration_period],
@@ -3054,7 +3054,7 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
                 SupervisionTypeSpan(
                     start_date=date(2010, 1, 1),
                     end_date=None,
-                    supervision_type=StateSupervisionType.PROBATION,
+                    supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
                 )
             ],
         )
@@ -3686,7 +3686,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
                 supervision_sentence_id=111,
                 start_date=date(2008, 3, 5),
                 external_id="ss1",
-                supervision_type=StateSupervisionType.PROBATION,
+                supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
                 status=StateSentenceStatus.REVOKED,
                 completion_date=date(2018, 5, 19),
                 supervision_periods=[supervision_period],
@@ -3695,7 +3695,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
                 SupervisionTypeSpan(
                     start_date=supervision_period.start_date,
                     end_date=supervision_period.termination_date,
-                    supervision_type=StateSupervisionType.PROBATION,
+                    supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
                 ),
                 SupervisionTypeSpan(
                     start_date=supervision_period.termination_date,
@@ -3821,7 +3821,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             start_date=date(2017, 1, 1),
             external_id="ss1",
             status=StateSentenceStatus.COMPLETED,
-            supervision_type=StateSupervisionType.PROBATION,
+            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
             supervision_periods=[supervision_period],
         )
 
@@ -4095,7 +4095,7 @@ class TestReleaseEventForPeriod(unittest.TestCase):
             StateSupervisionSentence.new_with_defaults(
                 supervision_sentence_id=1111,
                 state_code="US_MO",
-                supervision_type=StateSupervisionType.PROBATION,
+                supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
                 start_date=date(2019, 11, 24),
                 supervision_periods=[supervision_period],
                 incarceration_periods=[incarceration_period],
@@ -4105,7 +4105,7 @@ class TestReleaseEventForPeriod(unittest.TestCase):
                 SupervisionTypeSpan(
                     start_date=date(2019, 12, 4),
                     end_date=None,
-                    supervision_type=StateSupervisionType.PROBATION,
+                    supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
                 )
             ],
         )

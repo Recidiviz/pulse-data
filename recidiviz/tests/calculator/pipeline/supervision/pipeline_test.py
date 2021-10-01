@@ -62,12 +62,14 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodStatus,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
-from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
     StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
+)
+from recidiviz.common.constants.state.state_supervision_sentence import (
+    StateSupervisionSentenceSupervisionType,
 )
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
@@ -304,7 +306,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         supervision_sentence = schema.StateSupervisionSentence(
             supervision_sentence_id=1122,
             state_code="US_XX",
-            supervision_type=StateSupervisionType.PROBATION,
+            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
             supervision_periods=[supervision_period],
             start_date=date(2015, 3, 1),
             projected_completion_date=date(2016, 12, 31),
@@ -652,7 +654,7 @@ class TestSupervisionPipeline(unittest.TestCase):
             supervision_sentence_id=1122,
             external_id="ss-1122",
             state_code="US_XX",
-            supervision_type=StateSupervisionType.PROBATION,
+            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
             start_date=date(2008, 11, 20),
             projected_completion_date=date(2017, 12, 31),
             supervision_periods=[supervision_period],
@@ -906,7 +908,7 @@ class TestSupervisionPipeline(unittest.TestCase):
             state_code="US_XX",
             external_id="ss1",
             status=StateSentenceStatus.COMPLETED,
-            supervision_type=StateSupervisionType.PROBATION,
+            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
             supervision_periods=[supervision_period__1],
             start_date=date(2016, 3, 1),
             projected_completion_date=date(2017, 12, 31),
@@ -1237,7 +1239,7 @@ class TestClassifyEvents(unittest.TestCase):
             supervision_sentence_id=111,
             external_id="ss1",
             status=StateSentenceStatus.COMPLETED,
-            supervision_type=StateSupervisionType.PROBATION,
+            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
             start_date=start_date,
             projected_completion_date=date(2015, 5, 30),
             completion_date=completion_date,
@@ -1432,7 +1434,7 @@ class TestClassifyEvents(unittest.TestCase):
             supervision_sentence_id=1122,
             external_id="ss-1122",
             state_code="US_XX",
-            supervision_type=StateSupervisionType.PROBATION,
+            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
             start_date=date(2008, 11, 20),
             projected_completion_date=date(2017, 12, 31),
             supervision_periods=[
@@ -1619,7 +1621,7 @@ class TestClassifyEvents(unittest.TestCase):
             supervision_sentence_id=1122,
             external_id="ss-1122",
             state_code="US_XX",
-            supervision_type=StateSupervisionType.PROBATION,
+            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
             start_date=date(2017, 1, 1),
             projected_completion_date=date(2017, 1, 31),
             supervision_periods=[
@@ -1805,7 +1807,7 @@ class TestClassifyEvents(unittest.TestCase):
             supervision_sentence_id=111,
             external_id="ss1",
             start_date=date(2015, 3, 1),
-            supervision_type=StateSupervisionType.PROBATION,
+            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
             status=StateSentenceStatus.COMPLETED,
             supervision_periods=[supervision_period],
         )
@@ -1920,7 +1922,7 @@ class TestClassifyEvents(unittest.TestCase):
             supervision_sentence_id=111,
             external_id="ss1",
             start_date=date(2015, 3, 1),
-            supervision_type=StateSupervisionType.PROBATION,
+            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
             status=StateSentenceStatus.COMPLETED,
             supervision_periods=[supervision_period],
         )

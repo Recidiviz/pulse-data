@@ -50,7 +50,6 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
-from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactLocation,
     StateSupervisionContactMethod,
@@ -63,6 +62,9 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
+)
+from recidiviz.common.constants.state.state_supervision_sentence import (
+    StateSupervisionSentenceSupervisionType,
 )
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
@@ -926,7 +928,9 @@ class UsIdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             if isinstance(obj, StateIncarcerationSentence):
                 obj.is_life = str(is_life)
             if isinstance(obj, StateSupervisionSentence):
-                obj.supervision_type = StateSupervisionType.PROBATION.value
+                obj.supervision_type = (
+                    StateSupervisionSentenceSupervisionType.PROBATION.value
+                )
 
     @staticmethod
     def _override_facilities(

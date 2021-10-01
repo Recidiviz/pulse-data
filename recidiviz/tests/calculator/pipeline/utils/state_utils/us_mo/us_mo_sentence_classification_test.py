@@ -25,7 +25,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_sentence_classi
     UsMoSupervisionSentence,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
-from recidiviz.common.constants.state.state_supervision import StateSupervisionType
+from recidiviz.common.constants.state.state_supervision_sentence import (
+    StateSupervisionSentenceSupervisionType,
+)
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationSentence,
     StateSupervisionSentence,
@@ -453,7 +455,7 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
 
         self.assertEqual(
             us_mo_sentence.get_sentence_supervision_type_on_day(self.validation_date),
-            StateSupervisionType.PROBATION,
+            StateSupervisionSentenceSupervisionType.PROBATION,
         )
 
     def test_supervision_type_parole(self) -> None:
@@ -486,7 +488,7 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
 
         self.assertEqual(
             us_mo_sentence.get_sentence_supervision_type_on_day(self.validation_date),
-            StateSupervisionType.PAROLE,
+            StateSupervisionSentenceSupervisionType.PAROLE,
         )
 
     def test_supervision_type_court_parole(self) -> None:
@@ -513,7 +515,7 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
 
         self.assertEqual(
             us_mo_sentence.get_sentence_supervision_type_on_day(self.validation_date),
-            StateSupervisionType.PROBATION,
+            StateSupervisionSentenceSupervisionType.PROBATION,
         )
 
     def test_supervision_type_conditional_release_cr(self) -> None:
@@ -559,7 +561,7 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
 
         self.assertEqual(
             us_mo_sentence.get_sentence_supervision_type_on_day(self.validation_date),
-            StateSupervisionType.PAROLE,
+            StateSupervisionSentenceSupervisionType.PAROLE,
         )
 
     def test_supervision_type_board_holdover_release(self) -> None:
@@ -613,7 +615,7 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
 
         self.assertEqual(
             us_mo_sentence.get_sentence_supervision_type_on_day(self.validation_date),
-            StateSupervisionType.PAROLE,
+            StateSupervisionSentenceSupervisionType.PAROLE,
         )
 
     def test_supervision_type_lifetime_supervision(self) -> None:
@@ -653,7 +655,7 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
 
         self.assertEqual(
             us_mo_sentence.get_sentence_supervision_type_on_day(self.validation_date),
-            StateSupervisionType.PAROLE,
+            StateSupervisionSentenceSupervisionType.PAROLE,
         )
 
     def test_supervision_type_lifetime_supervision_after_inst_completion(self) -> None:
@@ -693,7 +695,7 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
 
         self.assertEqual(
             us_mo_sentence.get_sentence_supervision_type_on_day(self.validation_date),
-            StateSupervisionType.PAROLE,
+            StateSupervisionSentenceSupervisionType.PAROLE,
         )
 
     def test_lifetime_supervision_no_supervision_in(self) -> None:
@@ -726,7 +728,7 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
 
         self.assertEqual(
             us_mo_sentence.get_sentence_supervision_type_on_day(self.validation_date),
-            StateSupervisionType.PAROLE,
+            StateSupervisionSentenceSupervisionType.PAROLE,
         )
 
     def test_probation_after_investigation_status_list_unsorted(self) -> None:
@@ -766,7 +768,7 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
 
         self.assertEqual(
             us_mo_sentence.get_sentence_supervision_type_on_day(self.validation_date),
-            StateSupervisionType.PROBATION,
+            StateSupervisionSentenceSupervisionType.PROBATION,
         )
 
     def test_diversion_probation_after_investigation(self) -> None:
@@ -806,7 +808,7 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
 
         self.assertEqual(
             us_mo_sentence.get_sentence_supervision_type_on_day(self.validation_date),
-            StateSupervisionType.PROBATION,
+            StateSupervisionSentenceSupervisionType.PROBATION,
         )
 
         # Also test that we count the person as on probation if we are looking at the exact day they started this
@@ -815,7 +817,7 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
             us_mo_sentence.get_sentence_supervision_type_on_day(
                 datetime.date(year=2018, month=3, day=23)
             ),
-            StateSupervisionType.PROBATION,
+            StateSupervisionSentenceSupervisionType.PROBATION,
         )
 
     def test_diversion_probation_after_community_court_ref_investigation(self) -> None:
@@ -855,7 +857,7 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
 
         self.assertEqual(
             us_mo_sentence.get_sentence_supervision_type_on_day(self.validation_date),
-            StateSupervisionType.PROBATION,
+            StateSupervisionSentenceSupervisionType.PROBATION,
         )
 
     def test_interstate_compact_parole_classified_as_probation(self) -> None:
@@ -895,7 +897,7 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
 
         self.assertEqual(
             us_mo_sentence.get_sentence_supervision_type_on_day(self.validation_date),
-            StateSupervisionType.PROBATION,
+            StateSupervisionSentenceSupervisionType.PROBATION,
         )
 
     def test_interstate_compact_parole_classified_as_probation_2(self) -> None:
@@ -928,7 +930,7 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
 
         self.assertEqual(
             us_mo_sentence.get_sentence_supervision_type_on_day(self.validation_date),
-            StateSupervisionType.PROBATION,
+            StateSupervisionSentenceSupervisionType.PROBATION,
         )
 
     def test_probation_starts_same_day_as_new_investigation(self) -> None:
@@ -982,7 +984,7 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
 
         self.assertEqual(
             us_mo_sentence.get_sentence_supervision_type_on_day(self.validation_date),
-            StateSupervisionType.PROBATION,
+            StateSupervisionSentenceSupervisionType.PROBATION,
         )
 
     def test_resentenced_probation_revisit(self) -> None:
@@ -1022,7 +1024,7 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
 
         self.assertEqual(
             us_mo_sentence.get_sentence_supervision_type_on_day(self.validation_date),
-            StateSupervisionType.PROBATION,
+            StateSupervisionSentenceSupervisionType.PROBATION,
         )
 
     def test_release_to_field_other_sentence(self) -> None:
@@ -1069,7 +1071,7 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
 
         self.assertEqual(
             us_mo_sentence.get_sentence_supervision_type_on_day(self.validation_date),
-            StateSupervisionType.PROBATION,
+            StateSupervisionSentenceSupervisionType.PROBATION,
         )
 
     def test_prob_rev_codes_not_applicable(self) -> None:
@@ -1109,7 +1111,7 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
 
         self.assertEqual(
             us_mo_sentence.get_sentence_supervision_type_on_day(self.validation_date),
-            StateSupervisionType.PROBATION,
+            StateSupervisionSentenceSupervisionType.PROBATION,
         )
 
     def test_incarcerated_on_date(self) -> None:
@@ -1200,7 +1202,7 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
             us_mo_sentence.get_sentence_supervision_type_on_day(
                 datetime.date(2018, 7, 26)
             ),
-            StateSupervisionType.PROBATION,
+            StateSupervisionSentenceSupervisionType.PROBATION,
         )
 
         # Suspension #2 - treated same as termination
@@ -1256,7 +1258,7 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
 
         self.assertEqual(
             us_mo_sentence.get_sentence_supervision_type_on_day(self.validation_date),
-            StateSupervisionType.PROBATION,
+            StateSupervisionSentenceSupervisionType.PROBATION,
         )
 
     def test_release_to_field_statuses_cancel_each_other_out(self) -> None:
@@ -1305,7 +1307,7 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
 
         self.assertEqual(
             us_mo_sentence.get_sentence_supervision_type_on_day(self.validation_date),
-            StateSupervisionType.PROBATION,
+            StateSupervisionSentenceSupervisionType.PROBATION,
         )
 
     def test_interstate_transfer_not_on_supervision(self) -> None:
@@ -1418,7 +1420,7 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
 
         self.assertEqual(
             us_mo_sentence.get_sentence_supervision_type_on_day(self.validation_date),
-            StateSupervisionType.PROBATION,
+            StateSupervisionSentenceSupervisionType.PROBATION,
         )
 
     def test_conditional_release(self) -> None:
@@ -1451,7 +1453,7 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
 
         self.assertEqual(
             us_mo_sentence.get_sentence_supervision_type_on_day(self.validation_date),
-            StateSupervisionType.PAROLE,
+            StateSupervisionSentenceSupervisionType.PAROLE,
         )
 
     def test_conditional_re_release(self) -> None:
@@ -1505,7 +1507,7 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
 
         self.assertEqual(
             us_mo_sentence.get_sentence_supervision_type_on_day(self.validation_date),
-            StateSupervisionType.PAROLE,
+            StateSupervisionSentenceSupervisionType.PAROLE,
         )
 
     def test_interstate_transfer_and_return_same_day(self) -> None:
@@ -1545,7 +1547,7 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
 
         self.assertEqual(
             us_mo_sentence.get_sentence_supervision_type_on_day(self.validation_date),
-            StateSupervisionType.PROBATION,
+            StateSupervisionSentenceSupervisionType.PROBATION,
         )
 
     def test_crc_converted_from_dai_to_parole(self) -> None:
@@ -1592,7 +1594,7 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
 
         self.assertEqual(
             us_mo_sentence.get_sentence_supervision_type_on_day(self.validation_date),
-            StateSupervisionType.PAROLE,
+            StateSupervisionSentenceSupervisionType.PAROLE,
         )
 
 
@@ -1725,7 +1727,7 @@ class UsMoGetMostRecentSupervisionTypeBeforeDay(unittest.TestCase):
             us_mo_sentence.get_most_recent_supervision_type_before_upper_bound_day(
                 datetime.date(2015, 5, 8), lower_bound_inclusive_date=None
             ),
-            (datetime.date(2015, 5, 7), StateSupervisionType.PAROLE),
+            (datetime.date(2015, 5, 7), StateSupervisionSentenceSupervisionType.PAROLE),
         )
 
         # Initial Board Holdover day
@@ -1733,7 +1735,10 @@ class UsMoGetMostRecentSupervisionTypeBeforeDay(unittest.TestCase):
             us_mo_sentence.get_most_recent_supervision_type_before_upper_bound_day(
                 datetime.date(2017, 11, 8), lower_bound_inclusive_date=None
             ),
-            (datetime.date(2017, 11, 7), StateSupervisionType.PAROLE),
+            (
+                datetime.date(2017, 11, 7),
+                StateSupervisionSentenceSupervisionType.PAROLE,
+            ),
         )
 
         # Parole Update day
@@ -1741,7 +1746,10 @@ class UsMoGetMostRecentSupervisionTypeBeforeDay(unittest.TestCase):
             us_mo_sentence.get_most_recent_supervision_type_before_upper_bound_day(
                 datetime.date(2017, 11, 30), lower_bound_inclusive_date=None
             ),
-            (datetime.date(2017, 11, 7), StateSupervisionType.PAROLE),
+            (
+                datetime.date(2017, 11, 7),
+                StateSupervisionSentenceSupervisionType.PAROLE,
+            ),
         )
 
         # Second stint on parole
@@ -1749,7 +1757,10 @@ class UsMoGetMostRecentSupervisionTypeBeforeDay(unittest.TestCase):
             us_mo_sentence.get_most_recent_supervision_type_before_upper_bound_day(
                 datetime.date(2018, 3, 31), lower_bound_inclusive_date=None
             ),
-            (datetime.date(2018, 3, 30), StateSupervisionType.PAROLE),
+            (
+                datetime.date(2018, 3, 30),
+                StateSupervisionSentenceSupervisionType.PAROLE,
+            ),
         )
 
         # After sentence completion
@@ -1757,5 +1768,8 @@ class UsMoGetMostRecentSupervisionTypeBeforeDay(unittest.TestCase):
             us_mo_sentence.get_most_recent_supervision_type_before_upper_bound_day(
                 datetime.date(2019, 1, 31), lower_bound_inclusive_date=None
             ),
-            (datetime.date(2019, 1, 19), StateSupervisionType.PAROLE),
+            (
+                datetime.date(2019, 1, 19),
+                StateSupervisionSentenceSupervisionType.PAROLE,
+            ),
         )

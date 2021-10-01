@@ -36,10 +36,12 @@ from recidiviz.common.constants.state.state_incarceration_incident import (
     StateIncarcerationIncidentOutcomeType,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
-from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactLocation,
     StateSupervisionContactStatus,
+)
+from recidiviz.common.constants.state.state_supervision_sentence import (
+    StateSupervisionSentenceSupervisionType,
 )
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
@@ -1021,7 +1023,7 @@ class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
                 if term_code == "SUSP":
                     supervision_sentence = StateSupervisionSentence(
                         state_supervision_sentence_id=sentence_id,
-                        supervision_type=StateSupervisionType.PROBATION.value,
+                        supervision_type=StateSupervisionSentenceSupervisionType.PROBATION.value,
                         max_length=max_length,
                     )
                     create_if_not_exists(
