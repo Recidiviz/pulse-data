@@ -143,6 +143,7 @@ auth0-python = "*"
 sentry-sdk = {extras = ["flask"], version = "*"}
 blinker = "*"
 beautifulsoup4 = "*"
+paramiko = "*"
 
 [requires]
 python_version = "3.8"
