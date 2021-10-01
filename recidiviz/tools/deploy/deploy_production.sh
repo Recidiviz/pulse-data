@@ -77,7 +77,8 @@ CALC_CHANGES_SINCE_LAST_DEPLOY=$(calculation_pipeline_changes_since_last_deploy 
 echo "Starting deploy of main app - default"
 run_cmd gcloud -q container images add-tag ${STAGING_IMAGE_URL} ${PROD_IMAGE_URL}
 
-run_cmd pipenv run python -m recidiviz.tools.deploy.deploy_static_files --project_id recidiviz-123
+# TODO(#9475): Uncomment when error is fixed.
+#run_cmd pipenv run python -m recidiviz.tools.deploy.deploy_static_files --project_id recidiviz-123
 
 # TODO(#3928): Migrate deploy of app engine services to terraform.
 GAE_VERSION=$(echo ${GIT_VERSION_TAG} | tr '.' '-') || exit_on_fail
