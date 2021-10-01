@@ -326,7 +326,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             start_date=date(2019, 3, 5),
             termination_date=date(2019, 6, 9),
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -367,7 +367,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             start_date=date(2019, 3, 5),
             termination_date=date(2019, 6, 9),
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -408,7 +408,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             start_date=date(2019, 3, 5),
             termination_date=date(2019, 6, 9),
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,
         )
 
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -447,7 +447,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             start_date=date(2019, 3, 5),
             termination_date=date(2019, 6, 9),
             termination_reason=StateSupervisionPeriodTerminationReason.EXPIRATION,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -488,7 +488,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             start_date=date(2019, 3, 5),
             termination_date=date(2019, 5, 4),
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         later_parole_supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -498,7 +498,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             start_date=date(2019, 3, 5),
             termination_date=date(2019, 6, 9),
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,
         )
 
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -542,7 +542,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             start_date=date(1996, 3, 5),
             termination_date=date(2000, 1, 9),
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         initial_commitment_incarceration_period = (
@@ -610,7 +610,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             start_date=date(1996, 3, 5),
             termination_date=date(2000, 1, 9),
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         initial_commitment_incarceration_period = StateIncarcerationPeriod.new_with_defaults(

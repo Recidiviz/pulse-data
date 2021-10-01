@@ -89,7 +89,7 @@ class StateSupervisionPeriodAdmissionReason(EntityEnum, metaclass=EntityEnumMeta
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
     INTERNAL_UNKNOWN = enum_strings.internal_unknown
     # TODO(#3276): Remove this enum once we've completely transitioned to using
-    #  StateSupervisionPeriod.supervision_period_supervision_type for Investigation
+    #  StateSupervisionPeriodSupervisionType for Investigation
     INVESTIGATION = (
         state_enum_strings.state_supervision_period_admission_reason_investigation
     )
@@ -220,7 +220,7 @@ class StateSupervisionPeriodTerminationReason(EntityEnum, metaclass=EntityEnumMe
     )
     INTERNAL_UNKNOWN = enum_strings.internal_unknown
     # TODO(#3276): Remove this enum once we've completely transitioned to using
-    #  StateSupervisionPeriod.supervision_period_supervision_type for Investigation
+    #  StateSupervisionPeriodSupervisionType for Investigation
     INVESTIGATION = (
         state_enum_strings.state_supervision_period_termination_reason_investigation
     )

@@ -44,7 +44,7 @@ class StateSupervisionPeriodConverterTest(unittest.TestCase):
     def testParseStateSupervisionPeriod(self):
         # Arrange
         ingest_supervision = ingest_info_pb2.StateSupervisionPeriod(
-            supervision_period_supervision_type="PAROLE",
+            supervision_type="PAROLE",
             admission_reason="CONDITIONAL_RELEASE",
             termination_reason="DISCHARGE",
             supervision_level=None,
@@ -67,8 +67,8 @@ class StateSupervisionPeriodConverterTest(unittest.TestCase):
 
         # Assert
         expected_result = entities.StateSupervisionPeriod(
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-            supervision_period_supervision_type_raw_text="PAROLE",
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type_raw_text="PAROLE",
             admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
             admission_reason_raw_text="CONDITIONAL_RELEASE",
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,

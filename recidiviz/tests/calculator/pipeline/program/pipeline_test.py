@@ -205,7 +205,7 @@ class TestProgramPipeline(unittest.TestCase):
             county_code="124",
             start_date=date(2015, 3, 14),
             termination_date=date(2016, 12, 29),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             person_id=fake_person_id,
         )
 
@@ -393,7 +393,7 @@ class TestProgramPipeline(unittest.TestCase):
             county_code="124",
             start_date=date(2015, 3, 14),
             termination_date=date(2016, 12, 29),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             person_id=fake_person_id,
         )
 
@@ -535,7 +535,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             state_code="US_XX",
             start_date=date(2008, 3, 5),
             termination_date=date(2010, 2, 19),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             supervision_site="10",
         )
 
@@ -566,7 +566,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
                 participation_status=program_assignment.participation_status,
                 assessment_score=33,
                 assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
-                supervision_type=supervision_period.supervision_period_supervision_type,
+                supervision_type=supervision_period.supervision_type,
                 supervising_officer_external_id="OFFICER0009",
                 supervising_district_external_id="10",
                 level_1_supervision_location_external_id="10",
@@ -577,7 +577,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
                 program_location_id=program_assignment.program_location_id,
                 event_date=date.today(),
                 is_first_day_in_program=True,
-                supervision_type=supervision_period.supervision_period_supervision_type,
+                supervision_type=supervision_period.supervision_type,
             ),
         ]
 
@@ -629,7 +629,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             state_code="US_ND",
             start_date=date(2008, 3, 5),
             termination_date=date(2010, 3, 1),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             supervision_site="10",
         )
 
@@ -660,7 +660,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
                 participation_status=program_assignment.participation_status,
                 assessment_score=33,
                 assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
-                supervision_type=supervision_period.supervision_period_supervision_type,
+                supervision_type=supervision_period.supervision_type,
                 supervising_officer_external_id="OFFICER0009",
                 supervising_district_external_id="10",
                 level_1_supervision_location_external_id="10",
@@ -671,7 +671,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
                 program_location_id=program_assignment.program_location_id,
                 event_date=date.today(),
                 is_first_day_in_program=True,
-                supervision_type=supervision_period.supervision_period_supervision_type,
+                supervision_type=supervision_period.supervision_type,
             ),
         ]
 
@@ -714,7 +714,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             start_date=date(2008, 3, 5),
             termination_date=date(2010, 5, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         supervision_period_to_agent_map = {
@@ -771,7 +771,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             start_date=date(2008, 3, 5),
             termination_date=date(2010, 5, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             supervision_site="10",
         )
 
@@ -799,7 +799,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             program_id=program_assignment.program_id,
             event_date=program_assignment.referral_date,
             participation_status=program_assignment.participation_status,
-            supervision_type=supervision_period.supervision_period_supervision_type,
+            supervision_type=supervision_period.supervision_type,
             supervising_officer_external_id="OFFICER0009",
             supervising_district_external_id="10",
             level_1_supervision_location_external_id="10",

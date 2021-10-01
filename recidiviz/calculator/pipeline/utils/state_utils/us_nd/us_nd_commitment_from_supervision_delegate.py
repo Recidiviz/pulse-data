@@ -143,7 +143,7 @@ class UsNdCommitmentFromSupervisionDelegate(
 
         if (
             previous_supervision_period
-            and previous_supervision_period.supervision_period_supervision_type
+            and previous_supervision_period.supervision_type
             == StateSupervisionPeriodSupervisionType.PROBATION
         ):
             return StateSupervisionPeriodSupervisionType.PROBATION

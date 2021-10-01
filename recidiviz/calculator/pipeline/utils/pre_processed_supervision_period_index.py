@@ -78,8 +78,8 @@ class PreProcessedSupervisionPeriodIndex:
                 and _transfer_from_supervision_type_is_official_admission(
                     most_recent_nonnull_supervision_type
                 )
-                and supervision_period.supervision_period_supervision_type is not None
-                and supervision_period.supervision_period_supervision_type
+                and supervision_period.supervision_type is not None
+                and supervision_period.supervision_type
                 != most_recent_nonnull_supervision_type
             ):
                 # This transfer to a new kind of supervision type indicates the person is officially starting a new
@@ -95,9 +95,9 @@ class PreProcessedSupervisionPeriodIndex:
                     supervision_period_id
                 ] = most_recent_official_start
 
-            if supervision_period.supervision_period_supervision_type is not None:
+            if supervision_period.supervision_type is not None:
                 most_recent_nonnull_supervision_type = (
-                    supervision_period.supervision_period_supervision_type
+                    supervision_period.supervision_type
                 )
 
         return supervision_start_dates_by_period_id
@@ -169,14 +169,12 @@ class PreProcessedSupervisionPeriodIndex:
 
 
 def _transfer_from_supervision_type_is_official_admission(
-    supervision_period_supervision_type: Optional[
-        StateSupervisionPeriodSupervisionType
-    ],
+    supervision_type: Optional[StateSupervisionPeriodSupervisionType],
 ) -> bool:
     """Returns whether being transferred from a supervision period with the given
-    |supervision_period_supervision_type| is considered an official start of
+    |supervision_type| is considered an official start of
     supervision."""
-    if not supervision_period_supervision_type:
+    if not supervision_type:
         return False
 
     # If a person is transferred from one of these types of supervision to a new type
@@ -195,11 +193,11 @@ def _transfer_from_supervision_type_is_official_admission(
         StateSupervisionPeriodSupervisionType.PROBATION,
     ]
 
-    if supervision_period_supervision_type in official_start_supervision_types:
+    if supervision_type in official_start_supervision_types:
         return True
-    if supervision_period_supervision_type in non_official_start_supervision_types:
+    if supervision_type in non_official_start_supervision_types:
         return False
 
     raise ValueError(
-        f"Unsupported StateSupervisionPeriodSupervisionType value: {supervision_period_supervision_type}"
+        f"Unsupported StateSupervisionPeriodSupervisionType value: {supervision_type}"
     )

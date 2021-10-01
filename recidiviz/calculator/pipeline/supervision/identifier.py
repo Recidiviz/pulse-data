@@ -641,7 +641,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
             month=start_date.month,
             in_incarceration_population_on_date=in_incarceration_population_on_date,
             in_supervision_population_on_date=in_supervision_population_on_date,
-            supervision_type=supervision_period.supervision_period_supervision_type,
+            supervision_type=supervision_period.supervision_type,
             case_type=identify_most_severe_case_type(supervision_period),
             supervision_level=supervision_period.supervision_level,
             supervision_level_raw_text=supervision_period.supervision_level_raw_text,
@@ -977,12 +977,12 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                     continue
 
                 # If there is a non-null sentence_supervision_type and
-                # supervision_period_supervision_type on the period, assert that they
+                # supervision_type on the period, assert that they
                 # match
                 if (
-                    supervision_period.supervision_period_supervision_type
+                    supervision_period.supervision_type
                     and sentence_supervision_type
-                    and supervision_period.supervision_period_supervision_type
+                    and supervision_period.supervision_type
                     != supervision_period_supervision_type_for_sentence
                 ):
                     continue

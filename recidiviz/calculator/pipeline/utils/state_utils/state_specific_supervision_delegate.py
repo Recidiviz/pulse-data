@@ -111,7 +111,7 @@ class StateSpecificSupervisionDelegate(abc.ABC):
         with investigation or pre-confinement supervision.
         """
         if (
-            supervision_period.supervision_period_supervision_type
+            supervision_period.supervision_type
             == StateSupervisionPeriodSupervisionType.INVESTIGATION
         ):
             return False

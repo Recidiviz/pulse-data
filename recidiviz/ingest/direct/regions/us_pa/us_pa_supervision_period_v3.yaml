@@ -1,5 +1,5 @@
 key_mappings:
-  supervision_types: state_supervision_period.supervision_period_supervision_type
+  supervision_types: state_supervision_period.supervision_type
   admission_reason: state_supervision_period.admission_reason
   start_date: state_supervision_period.start_date
   termination_reason: state_supervision_period.termination_reason

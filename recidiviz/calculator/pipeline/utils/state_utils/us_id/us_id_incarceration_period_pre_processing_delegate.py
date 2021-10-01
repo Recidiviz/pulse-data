@@ -38,7 +38,7 @@ from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index 
     PreProcessedSupervisionPeriodIndex,
 )
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
-    filter_out_unknown_supervision_period_supervision_type_periods,
+    filter_out_unknown_supervision_type_periods,
 )
 from recidiviz.calculator.pipeline.utils.supervision_type_identification import (
     get_commitment_admission_reason_from_preceding_supervision_period,
@@ -150,7 +150,7 @@ def _us_id_normalize_period_if_commitment_from_supervision(
             "Expected non-null supervision_period_index."
         )
 
-    relevant_sps = filter_out_unknown_supervision_period_supervision_type_periods(
+    relevant_sps = filter_out_unknown_supervision_type_periods(
         supervision_period_index.supervision_periods
     )
 
@@ -192,7 +192,7 @@ def _us_id_normalize_period_if_commitment_from_supervision(
 
         if (
             pre_commitment_supervision_period
-            and pre_commitment_supervision_period.supervision_period_supervision_type
+            and pre_commitment_supervision_period.supervision_type
             == StateSupervisionPeriodSupervisionType.INVESTIGATION
         ):
             # The most recent supervision period was of type INVESTIGATION,

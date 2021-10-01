@@ -102,13 +102,15 @@ class TestIdentifyMostSevereCaseType(unittest.TestCase):
         self.assertEqual(most_severe_case_type, StateSupervisionCaseType.GENERAL)
 
 
-DEFAULT_SUPERVISION_PERIOD_NO_SUPERVISION_SITE: StateSupervisionPeriod = StateSupervisionPeriod.new_with_defaults(
-    supervision_period_id=111,
-    external_id="sp1",
-    state_code="US_XX",
-    start_date=date(2017, 3, 5),
-    termination_date=date(2017, 5, 9),
-    supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+DEFAULT_SUPERVISION_PERIOD_NO_SUPERVISION_SITE: StateSupervisionPeriod = (
+    StateSupervisionPeriod.new_with_defaults(
+        supervision_period_id=111,
+        external_id="sp1",
+        state_code="US_XX",
+        start_date=date(2017, 3, 5),
+        termination_date=date(2017, 5, 9),
+        supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+    )
 )
 
 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS = {

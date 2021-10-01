@@ -21,7 +21,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_
     StateSpecificSupervisionDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_supervision_utils import (
-    us_mo_get_most_recent_supervision_period_supervision_type_before_upper_bound_day,
+    us_mo_get_most_recent_supervision_type_before_upper_bound_day,
 )
 from recidiviz.common.date import DateRange, DateRangeDiff
 from recidiviz.persistence.entity.state.entities import (
@@ -60,7 +60,7 @@ class UsMoSupervisionDelegate(StateSpecificSupervisionDelegate):
             return False
 
         return (
-            us_mo_get_most_recent_supervision_period_supervision_type_before_upper_bound_day(
+            us_mo_get_most_recent_supervision_type_before_upper_bound_day(
                 upper_bound_exclusive_date=overlapping_range.upper_bound_exclusive_date,
                 lower_bound_inclusive_date=overlapping_range.lower_bound_inclusive_date,
                 incarceration_sentences=incarceration_sentences,
@@ -82,7 +82,7 @@ class UsMoSupervisionDelegate(StateSpecificSupervisionDelegate):
         sp_range = supervision_period.duration
 
         return (
-            us_mo_get_most_recent_supervision_period_supervision_type_before_upper_bound_day(
+            us_mo_get_most_recent_supervision_type_before_upper_bound_day(
                 upper_bound_exclusive_date=sp_range.upper_bound_exclusive_date,
                 lower_bound_inclusive_date=sp_range.lower_bound_inclusive_date,
                 incarceration_sentences=incarceration_sentences,

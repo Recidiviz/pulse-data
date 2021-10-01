@@ -22,7 +22,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_specific_commitment_f
     StateSpecificCommitmentFromSupervisionDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_supervision_utils import (
-    us_mo_get_most_recent_supervision_period_supervision_type_before_upper_bound_day,
+    us_mo_get_most_recent_supervision_type_before_upper_bound_day,
 )
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
@@ -55,7 +55,7 @@ class UsMoCommitmentFromSupervisionDelegate(
                 f"No admission date for incarceration period {incarceration_period.incarceration_period_id}"
             )
 
-        return us_mo_get_most_recent_supervision_period_supervision_type_before_upper_bound_day(
+        return us_mo_get_most_recent_supervision_type_before_upper_bound_day(
             upper_bound_exclusive_date=incarceration_period.admission_date,
             lower_bound_inclusive_date=None,
             incarceration_sentences=incarceration_sentences,

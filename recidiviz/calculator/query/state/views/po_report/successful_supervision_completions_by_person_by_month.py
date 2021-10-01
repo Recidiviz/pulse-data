@@ -45,7 +45,7 @@ SUCCESSFUL_SUPERVISION_COMPLETIONS_BY_PERSON_BY_MONTH_QUERY_TEMPLATE = """
       LEFT JOIN `{project_id}.{reference_views_dataset}.supervision_period_to_agent_association` agent
         USING (state_code, supervision_period_id)
       -- Only the following supervision types should be included in the PO report
-      WHERE supervision_period_supervision_type IN ('DUAL', 'PROBATION', 'PAROLE', 'INTERNAL_UNKNOWN')
+      WHERE supervision_type IN ('DUAL', 'PROBATION', 'PAROLE', 'INTERNAL_UNKNOWN')
       AND agent.agent_external_id IS NOT NULL
     ),
     successful_supervision_completions AS (

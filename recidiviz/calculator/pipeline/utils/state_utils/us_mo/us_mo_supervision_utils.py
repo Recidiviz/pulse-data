@@ -59,7 +59,7 @@ def us_mo_get_post_incarceration_supervision_type(
             f"No release date for incarceration period {incarceration_period.incarceration_period_id}"
         )
 
-    return us_mo_get_most_recent_supervision_period_supervision_type_before_upper_bound_day(
+    return us_mo_get_most_recent_supervision_type_before_upper_bound_day(
         upper_bound_exclusive_date=incarceration_period.release_date
         + relativedelta(days=POST_INCARCERATION_SUPERVISION_DAYS_LIMIT),
         lower_bound_inclusive_date=incarceration_period.release_date,
@@ -68,7 +68,7 @@ def us_mo_get_post_incarceration_supervision_type(
     )
 
 
-def us_mo_get_most_recent_supervision_period_supervision_type_before_upper_bound_day(
+def us_mo_get_most_recent_supervision_type_before_upper_bound_day(
     upper_bound_exclusive_date: datetime.date,
     lower_bound_inclusive_date: Optional[datetime.date],
     incarceration_sentences: List[StateIncarcerationSentence],
@@ -132,7 +132,7 @@ def us_mo_get_month_supervision_type(
         start_of_month, supervision_period.start_date or datetime.date.min
     )
 
-    supervision_type = us_mo_get_most_recent_supervision_period_supervision_type_before_upper_bound_day(
+    supervision_type = us_mo_get_most_recent_supervision_type_before_upper_bound_day(
         upper_bound_exclusive_date=upper_bound_exclusive_date,
         lower_bound_inclusive_date=lower_bound_inclusive,
         supervision_sentences=supervision_sentences,
