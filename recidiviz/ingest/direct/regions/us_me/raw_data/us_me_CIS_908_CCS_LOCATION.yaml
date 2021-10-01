@@ -1,0 +1,33 @@
+file_tag: CIS_908_CCS_LOCATION
+file_description: |-
+  TODO(#9296): Add raw data descriptions
+primary_key_cols: []
+columns:
+  - name : Capacity_Num
+  - name : Ccs_Location_Id
+  - name : Cis_900_Employee_Id
+  - name : Cis_9009_Region_Cd
+  - name : Cis_908_Canteen_Location_Id
+  - name : Cis_9080_Ccs_Location_Type_Cd
+  - name : Cis_9083_9085_Area_Cd
+  - name : Cis_9083_9086_Fund_Cd
+  - name : Cis_9083_9087_Oper_Cd
+  - name : Cis_9083_9088_Type_Cd
+  - name : Created_By_Tx
+  - name : Created_On_Date
+  - name : Loc_Cd_3Char_Tx
+  - name : Loc_Cd_Tx
+  - name : Location_Name
+  - name : Locking_Tsp
+  - name : Logical_Delete_Ind
+  - name : Lss_Export_Location
+  - name : Lss_Export_Password
+  - name : Lss_Export_Username
+  - name : Lss_Ori
+  - name : Modified_By_Tx
+  - name : Modified_On_Date
+  - name : Sys_Row_Ind
+  - name : System_Ref_Comments_Tx
+  - name : System_Ref_Tx
+  - name : Use_Client_Level_Limits_Ind
+  - name : Year_Founded_Num

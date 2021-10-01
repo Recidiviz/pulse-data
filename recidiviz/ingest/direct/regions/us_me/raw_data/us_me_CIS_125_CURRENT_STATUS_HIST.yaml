@@ -1,0 +1,32 @@
+file_tag: CIS_125_CURRENT_STATUS_HIST
+file_description: |-
+  TODO(#9296): Add raw data descriptions
+primary_key_cols: []
+columns:
+  - name : Cis_100_Client_Id
+  - name : Cis_1000_Current_Status_Cd
+  - name : Cis_3091_Mvmt_Reason_Cd
+  - name : Cis_314_Transfer_Id
+  - name : Cis_908_Ccs_Location_2_Id
+  - name : Cis_908_Ccs_Location_Id
+  - name : Cis_912_Unit_Id
+  - name : Cis_913_Pod_Id
+  - name : Cis_914_Cell_Id
+  - name : Cis_915_Bed_Id
+  - name : Community_Ind
+  - name : Created_By_Tx
+  - name : Created_On_Date
+  - name : Current_Status_Hist_Id
+  - name : Effct_Date
+  - name : End_Date
+  - name : End_Datetime
+  - name : Furlough_Ind
+  - name : Hospital_Ind
+  - name : Ineffct_Date
+  - name : Locking_Tsp
+  - name : Modified_By_Tx
+  - name : Modified_On_Date
+  - name : Out_Pop_Count_Ind
+  - name : Prim_Mess_Ind
+  - name : Rca_Mess_Ind
+  - name : Start_Datetime

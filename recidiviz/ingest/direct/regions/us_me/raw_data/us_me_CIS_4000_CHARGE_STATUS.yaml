@@ -1,0 +1,20 @@
+file_tag: CIS_4000_CHARGE_STATUS
+file_description: |-
+  TODO(#9296): Add raw data descriptions
+primary_key_cols: []
+columns:
+  - name : Adult_Ind
+  - name : Charge_Outcome_Cd
+  - name : Created_By_Tx
+  - name : Created_On_Date
+  - name : E_Charge_Outcome_Desc
+  - name : Justice_Cd
+  - name : Justice_Db_Type_Tx
+  - name : Juvenile_Ind
+  - name : Locking_Tsp
+  - name : Logical_Delete_Ind
+  - name : Modified_By_Tx
+  - name : Modified_On_Date
+  - name : Sntc_Ind
+  - name : System_Ref_Comments_Tx
+  - name : System_Ref_Tx

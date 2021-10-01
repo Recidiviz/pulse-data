@@ -1,0 +1,27 @@
+file_tag: CIS_309_MOVEMENT
+file_description: |-
+  TODO(#9296): Add raw data descriptions
+primary_key_cols: []
+columns:
+  - name : Actual_Time
+  - name : Cis_3090_Movement_Type_Cd
+  - name : Cis_3092_Transport_Type_Cd
+  - name : Cis_3093_Mvmt_Status_Cd
+  - name : Cis_3095_Mvmt_Direction_Cd
+  - name : Cis_310_Remand_Id
+  - name : Cis_314_Transfer_Id
+  - name : Cis_317_Ta_Tr_Days_Id
+  - name : Cis_319_Term_Id
+  - name : Cis_322_Escorted_Leave_Id
+  - name : Cis_324_Awol_Id
+  - name : Cis_908_Ccs_Location_2_Id
+  - name : Cis_908_Ccs_Location_Id
+  - name : Cis_Client_Id
+  - name : Created_By_Tx
+  - name : Created_On_Date
+  - name : Estimated_Time
+  - name : Locking_Tsp
+  - name : Modified_By_Tx
+  - name : Modified_On_Date
+  - name : Movement_Date
+  - name : Movement_Id

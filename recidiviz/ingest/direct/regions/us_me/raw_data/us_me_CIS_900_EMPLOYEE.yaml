@@ -1,0 +1,43 @@
+file_tag: CIS_900_EMPLOYEE
+file_description: |-
+  TODO(#9296): Add raw data descriptions
+primary_key_cols: []
+columns:
+  - name : Administrator_Ind
+  - name : Canteen_Balance_Num
+  - name : Cis_900_Employee_Supervisor_Id
+  - name : Cis_9001_Employee_Type_Cd
+  - name : Cis_908_Ccs_Location_Id
+  - name : Cis_908_Secondary_Location_Id
+  - name : Coordinator_Ind
+  - name : Created_By_Tx
+  - name : Created_On_Date
+  - name : Email_Tx
+  - name : Employee_Id
+  - name : End_Date
+  - name : First_Name
+  - name : Fw_Message_To_Asl_Ind
+  - name : Fw_Message_To_User_Id
+  - name : Health_Ind
+  - name : Hris_Number_Tx
+  - name : Internal_Escape_Contact_Ind
+  - name : Last_Name
+  - name : Locking_Tsp
+  - name : Logical_Delete_Ind
+  - name : Math_Test_Ind
+  - name : Mental_Ind
+  - name : Middle_Name
+  - name : Modified_By_Tx
+  - name : Modified_On_Date
+  - name : Msg_Viewed_Date
+  - name : Oracle_User_Name
+  - name : Physical_Fitness_Ind
+  - name : Psychosocial_Ind
+  - name : Reading_Test_Ind
+  - name : Start_Date
+  - name : Substance_Ind
+  - name : Sys_Row_Ind
+  - name : System_Ref_Comments_Tx
+  - name : System_Ref_Tx
+  - name : Team_Member_Ind
+  - name : Vocational_Ind

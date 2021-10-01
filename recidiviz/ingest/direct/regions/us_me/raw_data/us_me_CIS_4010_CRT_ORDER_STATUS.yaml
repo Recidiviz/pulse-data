@@ -1,0 +1,15 @@
+file_tag: CIS_4010_CRT_ORDER_STATUS
+file_description: |-
+  TODO(#9296): Add raw data descriptions
+primary_key_cols: []
+columns:
+  - name : Created_By_Tx
+  - name : Created_On_Date
+  - name : E_Crt_Order_Status_Desc
+  - name : Locking_Tsp
+  - name : Logical_Delete_Ind
+  - name : Modified_By_Tx
+  - name : Modified_On_Date
+  - name : System_Ref_Comments_Tx
+  - name : System_Ref_Tx
+  - name : Crt_Order_Status_Cd

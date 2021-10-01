@@ -1,0 +1,18 @@
+file_tag: CIS_4009_SENT_CALC_SYS
+file_description: |-
+  TODO(#9296): Add raw data descriptions
+primary_key_cols: []
+columns:
+  - name : Adult_Ind
+  - name : Cis_4007_Sent_Calc_Sub_Type_Cd
+  - name : Created_By_Tx
+  - name : Created_On_Date
+  - name : Juvenile_Ind
+  - name : Locking_Tsp
+  - name : Logical_Delete_Ind
+  - name : Modified_By_Tx
+  - name : Modified_On_Date
+  - name : Sent_Calc_Sys_Desc
+  - name : System_Ref_Comments_Tx
+  - name : System_Ref_Tx
+  - name : Sent_Calc_Sys_Cd

@@ -1,0 +1,33 @@
+file_tag: CIS_314_TRANSFER
+file_description: |-
+  TODO(#9296): Add raw data descriptions
+primary_key_cols: []
+columns:
+  - name : Cancelled_Ind
+  - name : Cancelled_Reason_Tx
+  - name : Cis_100_Client_Id
+  - name : Cis_3140_Transfer_Type_Cd
+  - name : Cis_3141_Transfer_Reason_Cd
+  - name : Cis_3142_Tran_Typ_Rsn_Cd
+  - name : Cis_319_Term_Cust_Id
+  - name : Cis_900_Employee_Id
+  - name : Cis_900_Weekly_Tfr_Employee_Id
+  - name : Cis_908_Ccs_Loc_Jur_From_Id
+  - name : Cis_908_Ccs_Loc_Jur_To_Id
+  - name : Cis_908_Ccs_Location_Frm_Id
+  - name : Cis_908_Ccs_Location_To_Id
+  - name : Cis_912_Unit_Id
+  - name : Created_By_Tx
+  - name : Created_On_Date
+  - name : Hearing_Date
+  - name : Keep_Separate_Tx
+  - name : Location_Tx
+  - name : Locking_Tsp
+  - name : Modified_By_Tx
+  - name : Modified_On_Date
+  - name : Notes_Tx
+  - name : Officer_Name
+  - name : Phone_Tx
+  - name : Recommended_Date
+  - name : Transfer_Date
+  - name : Transfer_Id
