@@ -160,7 +160,8 @@ else
     echo "Skipping configuration and pipeline deploy steps for debug or no promote release build."
 fi
 
-run_cmd pipenv run python -m recidiviz.tools.deploy.deploy_static_files --project_id ${PROJECT_ID}
+# TODO(#9475): Uncomment when error is fixed.
+#run_cmd pipenv run python -m recidiviz.tools.deploy.deploy_static_files --project_id ${PROJECT_ID}
 
 # TODO(#3928): Migrate deploy of app engine services to terraform.
 echo "Deploying application - default"
