@@ -50,5 +50,5 @@ num_allowed_rows_overrides:
     hard_num_allowed_rows_override: 300
     override_reason: TODO(#5803) - Needs investigation.
   - validation_name: invalid_admission_reasons_for_temporary_custody
-    hard_num_allowed_rows_override: 75
+    hard_num_allowed_rows_override: 100
     override_reason: Needs investigation.
