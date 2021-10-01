@@ -1,0 +1,27 @@
+file_tag: CIS_319_TERM
+file_description: |-
+  TODO(#9296): Add raw data descriptions
+primary_key_cols: []
+columns:
+  - name : Cis_100_Client_Id
+  - name : Cis_1200_Term_Status_Cd
+  - name : Comm_Rel_Date
+  - name : Created_By_Tx
+  - name : Created_On_Date
+  - name : Curr_Cust_Rel_Date
+  - name : Det_Release_Rsn_Tx
+  - name : Detainers_Not_Ind
+  - name : Detainers_Not_Tx
+  - name : Early_Cust_Rel_Date
+  - name : Intake_Date
+  - name : Locking_Tsp
+  - name : Max_Cust_Rel_Date
+  - name : Message_30_Ind
+  - name : Message_Ind
+  - name : Modified_By_Tx
+  - name : Modified_On_Date
+  - name : Rpt_Comm_Rel_Date
+  - name : Rpt_Curr_Cust_Rel_Date
+  - name : Rpt_Early_Cust_Rel_Date
+  - name : Rpt_Max_Cust_Rel_Date
+  - name : Term_Id
