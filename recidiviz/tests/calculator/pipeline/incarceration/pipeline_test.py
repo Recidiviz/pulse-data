@@ -285,7 +285,7 @@ class TestIncarcerationPipeline(unittest.TestCase):
             start_date=date(2010, 12, 4),
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
             termination_date=date(2011, 4, 5),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MINIMUM,
             person_id=fake_person_id,
         )
@@ -854,7 +854,7 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
             start_date=date(2010, 3, 14),
             termination_date=date(2010, 11, 20),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
             supervision_level_raw_text="MEDM",
             supervision_site="10",

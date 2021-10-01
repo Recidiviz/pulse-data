@@ -984,13 +984,11 @@ class StateSupervisionPeriod(
     state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Type
-    supervision_period_supervision_type: Optional[
-        StateSupervisionPeriodSupervisionType
-    ] = attr.ib(
+    supervision_type: Optional[StateSupervisionPeriodSupervisionType] = attr.ib(
         default=None,
         validator=attr_validators.is_opt(StateSupervisionPeriodSupervisionType),
     )
-    supervision_period_supervision_type_raw_text: Optional[str] = attr.ib(
+    supervision_type_raw_text: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_str
     )
 

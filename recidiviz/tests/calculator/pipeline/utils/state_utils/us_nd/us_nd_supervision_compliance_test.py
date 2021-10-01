@@ -93,7 +93,7 @@ class TestAssessmentsCompletedInComplianceMonth(unittest.TestCase):
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         assessments = [
@@ -176,7 +176,7 @@ class TestFaceToFaceContactsInComplianceMonth(unittest.TestCase):
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         contacts = [
@@ -223,7 +223,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.EXTERNAL_UNKNOWN,
             supervision_level_raw_text="5",
         )
@@ -255,7 +255,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.INTERSTATE_COMPACT,
             supervision_level_raw_text="9",
         )
@@ -287,7 +287,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.DIVERSION,
             supervision_level_raw_text="7",
         )
@@ -319,7 +319,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
             supervision_level_raw_text="2",
         )
@@ -352,7 +352,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.HIGH,
             supervision_level_raw_text="SO HIGH",
         )
@@ -384,7 +384,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.HIGH,
             supervision_level_raw_text="SO HIGH",
         )
@@ -428,7 +428,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             termination_date=termination_date,
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=supervision_level,
         )
 
@@ -465,7 +465,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MINIMUM,
         )
 
@@ -507,7 +507,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MINIMUM,
         )
 
@@ -554,7 +554,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MAXIMUM,
         )
 
@@ -601,7 +601,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MINIMUM,
         )
 
@@ -647,7 +647,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MINIMUM,
         )
 
@@ -850,7 +850,7 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         assessment_date = date(2018, 4, 2)
@@ -888,7 +888,7 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         assessment_date = date(2010, 4, 2)
@@ -939,7 +939,7 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MINIMUM,
         )
 
@@ -986,7 +986,7 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MINIMUM,
         )
 
@@ -1027,7 +1027,7 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MINIMUM,
         )
 
@@ -1077,7 +1077,7 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MINIMUM,
         )
 
@@ -1131,7 +1131,7 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
         )
 
@@ -1178,7 +1178,7 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
         )
 

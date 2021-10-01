@@ -89,7 +89,7 @@ def get_commitment_admission_reason_from_preceding_supervision_period(
 ) -> Optional[StateIncarcerationPeriodAdmissionReason]:
     """Derives the commitment from supervision admission reason from the supervision
     type the person was serving prior to the incarceration admission."""
-    supervision_type = supervision_period.supervision_period_supervision_type
+    supervision_type = supervision_period.supervision_type
 
     if (
         not supervision_type

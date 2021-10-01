@@ -1016,7 +1016,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                                     state_supervision_periods=[
                                         StateSupervisionPeriod(
                                             state_supervision_period_id="456B-1",
-                                            supervision_period_supervision_type="C2",
+                                            supervision_type="C2",
                                             admission_reason="C2",
                                             start_date="2012-03-16",
                                             termination_reason="TRANSFER_WITHIN_STATE",
@@ -1035,7 +1035,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                                         ),
                                         StateSupervisionPeriod(
                                             state_supervision_period_id="456B-2",
-                                            supervision_period_supervision_type="04,C2",
+                                            supervision_type="04,C2",
                                             admission_reason="TRANSFER_WITHIN_STATE",
                                             start_date="2013-04-01",
                                             termination_reason="TRANSFER_WITHIN_STATE",
@@ -1048,7 +1048,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                                         ),
                                         StateSupervisionPeriod(
                                             state_supervision_period_id="456B-3",
-                                            supervision_period_supervision_type="04",
+                                            supervision_type="04",
                                             admission_reason="TRANSFER_WITHIN_STATE",
                                             start_date="2014-08-10",
                                             termination_reason="43",
@@ -1085,7 +1085,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                                     state_supervision_periods=[
                                         StateSupervisionPeriod(
                                             state_supervision_period_id="789C-1",
-                                            supervision_period_supervision_type="05",
+                                            supervision_type="05",
                                             admission_reason="05",
                                             start_date="2003-10-10",
                                             termination_reason="42",
@@ -1104,7 +1104,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                                         ),
                                         StateSupervisionPeriod(
                                             state_supervision_period_id="789C-2",
-                                            supervision_period_supervision_type="05",
+                                            supervision_type="05",
                                             admission_reason="05",
                                             start_date="2004-08-10",
                                             termination_reason="44",
@@ -1122,7 +1122,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                                         ),
                                         StateSupervisionPeriod(
                                             state_supervision_period_id="789C-3",
-                                            supervision_period_supervision_type="04",
+                                            supervision_type="04",
                                             admission_reason="04",
                                             start_date="2005-12-31",
                                             termination_reason="43",
@@ -1156,7 +1156,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                                     state_supervision_periods=[
                                         StateSupervisionPeriod(
                                             state_supervision_period_id="345E-1",
-                                            supervision_period_supervision_type="03",
+                                            supervision_type="03",
                                             admission_reason="03",
                                             start_date="2016-01-14",
                                             county_code="PHILAD",
@@ -3535,8 +3535,8 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         p2_sp_1_1 = entities.StateSupervisionPeriod.new_with_defaults(
             external_id="456B-1",
             state_code=_STATE_CODE_UPPER,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-            supervision_period_supervision_type_raw_text="C2",
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type_raw_text="C2",
             admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
             admission_reason_raw_text="C2",
             start_date=datetime.date(year=2012, month=3, day=16),
@@ -3563,8 +3563,8 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         p2_sp_1_2 = entities.StateSupervisionPeriod.new_with_defaults(
             external_id="456B-2",
             state_code=_STATE_CODE_UPPER,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
-            supervision_period_supervision_type_raw_text="04,C2",
+            supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
+            supervision_type_raw_text="04,C2",
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
             admission_reason_raw_text="TRANSFER_WITHIN_STATE",
             start_date=datetime.date(year=2013, month=4, day=1),
@@ -3584,8 +3584,8 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         p2_sp_2_1 = entities.StateSupervisionPeriod.new_with_defaults(
             external_id="456B-3",
             state_code=_STATE_CODE_UPPER,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            supervision_period_supervision_type_raw_text="04",
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type_raw_text="04",
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
             admission_reason_raw_text="TRANSFER_WITHIN_STATE",
             start_date=datetime.date(year=2014, month=8, day=10),
@@ -3629,8 +3629,8 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         p5_sp_1_1 = entities.StateSupervisionPeriod.new_with_defaults(
             external_id="789C-1",
             state_code=_STATE_CODE_UPPER,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-            supervision_period_supervision_type_raw_text="05",
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type_raw_text="05",
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             admission_reason_raw_text="05",
             start_date=datetime.date(year=2003, month=10, day=10),
@@ -3656,8 +3656,8 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         p5_sp_2_1 = entities.StateSupervisionPeriod.new_with_defaults(
             external_id="789C-2",
             state_code=_STATE_CODE_UPPER,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-            supervision_period_supervision_type_raw_text="05",
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type_raw_text="05",
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             admission_reason_raw_text="05",
             start_date=datetime.date(year=2004, month=8, day=10),
@@ -3682,8 +3682,8 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         p5_sp_3_1 = entities.StateSupervisionPeriod.new_with_defaults(
             external_id="789C-3",
             state_code=_STATE_CODE_UPPER,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            supervision_period_supervision_type_raw_text="04",
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type_raw_text="04",
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             admission_reason_raw_text="04",
             start_date=datetime.date(year=2005, month=12, day=31),
@@ -3724,8 +3724,8 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         p4_sp_1_1 = entities.StateSupervisionPeriod.new_with_defaults(
             external_id="345E-1",
             state_code=_STATE_CODE_UPPER,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-            supervision_period_supervision_type_raw_text="03",
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type_raw_text="03",
             admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
             admission_reason_raw_text="03",
             start_date=datetime.date(year=2016, month=1, day=14),

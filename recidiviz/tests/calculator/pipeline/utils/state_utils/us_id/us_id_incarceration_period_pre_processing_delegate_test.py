@@ -204,7 +204,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             supervision_period_id=111,
             start_date=date(2017, 1, 1),
             termination_date=date(2017, 5, 17),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -273,7 +273,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             state_code="US_ID",
             start_date=date(2017, 1, 1),
             termination_date=date(2017, 5, 17),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         treatment_period = StateIncarcerationPeriod.new_with_defaults(
@@ -333,7 +333,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             state_code="US_ID",
             start_date=date(2017, 3, 5),
             termination_date=date(2017, 5, 9),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,
         )
 
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -374,7 +374,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             supervision_period_id=111,
             start_date=date(2017, 1, 1),
             termination_date=date(2017, 5, 17),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         incarceration_revocation_period = StateIncarcerationPeriod.new_with_defaults(
@@ -413,7 +413,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             supervision_period_id=111,
             start_date=date(2017, 1, 1),
             termination_date=date(2017, 5, 17),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         incarceration_revocation_period = StateIncarcerationPeriod.new_with_defaults(
@@ -450,7 +450,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             supervision_period_id=111,
             start_date=date(2017, 1, 1),
             termination_date=date(2017, 5, 17),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         shock_incarceration_admission = StateIncarcerationPeriod.new_with_defaults(
@@ -482,7 +482,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             supervision_period_id=111,
             start_date=date(2017, 1, 1),
             termination_date=date(2017, 5, 17),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         board_hold_period = StateIncarcerationPeriod.new_with_defaults(
@@ -546,7 +546,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             supervision_period_id=111,
             start_date=date(2017, 1, 1),
             termination_date=date(2017, 5, 17),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         board_hold_period = StateIncarcerationPeriod.new_with_defaults(
@@ -610,7 +610,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             supervision_period_id=111,
             start_date=date(2017, 1, 1),
             termination_date=date(2017, 5, 17),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         treatment_period = StateIncarcerationPeriod.new_with_defaults(
@@ -727,7 +727,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             supervision_period_id=111,
             start_date=date(2017, 1, 1),
             termination_date=date(2017, 5, 17),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,
         )
 
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(

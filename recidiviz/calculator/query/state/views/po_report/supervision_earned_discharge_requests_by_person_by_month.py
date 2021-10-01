@@ -49,7 +49,7 @@ SUPERVISION_EARNED_DISCHARGE_REQUESTS_BY_PERSON_BY_MONTH_QUERY_TEMPLATE = """
         AND period.start_date <= discharge.request_date
         AND discharge.request_date < COALESCE(period.termination_date, '9999-12-31')
         -- Only the following supervision types should be included in the PO report
-        AND supervision_period_supervision_type IN ('DUAL', 'PROBATION', 'PAROLE', 'INTERNAL_UNKNOWN')
+        AND supervision_type IN ('DUAL', 'PROBATION', 'PAROLE', 'INTERNAL_UNKNOWN')
         AND agent.agent_external_id IS NOT NULL
     GROUP BY state_code, year, month, person_id, officer_external_id
     """

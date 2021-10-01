@@ -157,17 +157,14 @@ class StateSpecificCommitmentFromSupervisionDelegate(abc.ABC):
         """Returns the supervision type the person was on before they were committed to
         incarceration from supervision.
 
-        Default behavior is to return the supervision_period_supervision_type on the
+        Default behavior is to return the supervision_type on the
         |previous_supervision_period|, if provided, else infers the supervision type
         from the admission_reason on the |incarceration_period|.
 
         Should be overridden by state-specific implementations if necessary.
         """
-        if (
-            previous_supervision_period
-            and previous_supervision_period.supervision_period_supervision_type
-        ):
-            return previous_supervision_period.supervision_period_supervision_type
+        if previous_supervision_period and previous_supervision_period.supervision_type:
+            return previous_supervision_period.supervision_type
 
         if not incarceration_period.admission_reason:
             raise ValueError(

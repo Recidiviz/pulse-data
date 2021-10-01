@@ -30,10 +30,10 @@ class UsIdCommitmentFromSupervisionDelegate(
         self,
     ) -> bool:
         """In US_ID it's common for there to be periods with unset
-        supervision_period_supervision_type values prior to an admission to
+        supervision_type values prior to an admission to
         incarceration, since these periods may signify that there is a warrant out for
         the person's arrest. So, for US_ID we need to filter
         the list of supervision periods to only include ones with a set
-        supervision_period_supervision_type before looking for a
+        supervision_type before looking for a
         pre-commitment supervision period."""
         return True

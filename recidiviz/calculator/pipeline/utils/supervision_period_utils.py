@@ -132,19 +132,19 @@ def identify_most_severe_case_type(
     )
 
 
-def filter_out_unknown_supervision_period_supervision_type_periods(
+def filter_out_unknown_supervision_type_periods(
     supervision_periods: List[StateSupervisionPeriod],
 ) -> List[StateSupervisionPeriod]:
     """Filters the list of supervision periods to only include ones with a set
-    supervision_period_supervision_type."""
+    supervision_type."""
     # Drop any supervision periods that don't have a set
-    # supervision_period_supervision_type (this could signify a bench warrant,
+    # supervision_type (this could signify a bench warrant,
     # for example).
     return [
         period
         for period in supervision_periods
-        if period.supervision_period_supervision_type is not None
-        and period.supervision_period_supervision_type
+        if period.supervision_type is not None
+        and period.supervision_type
         != StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
     ]
 

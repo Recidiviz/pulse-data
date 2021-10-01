@@ -47,7 +47,7 @@ US_ID_PPO_METRICS_EARLY_DISCHARGES_QUERY_TEMPLATE = """
         state_code, 
         person_id, 
         termination_date as end_date, 
-        supervision_period_supervision_type AS supervision_type  
+        supervision_type  
       FROM `{project_id}.{base_dataset}.state_supervision_period`
       WHERE termination_reason = 'DISCHARGE'
       

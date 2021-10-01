@@ -256,7 +256,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             start_date=date(2018, 3, 5),
             termination_date=termination_date,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
             supervision_level_raw_text="M",
         )
@@ -291,9 +291,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         supervision_contacts: List[StateSupervisionContact] = []
         incarceration_sentences: List[StateIncarcerationSentence] = []
 
-        supervision_period_supervision_type = (
-            StateSupervisionPeriodSupervisionType.PROBATION
-        )
+        supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
 
         expected_events = [
             ProjectedSupervisionCompletionEvent(
@@ -301,7 +299,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 year=2018,
                 month=5,
                 event_date=last_day_of_month(completion_date),
-                supervision_type=supervision_period_supervision_type,
+                supervision_type=supervision_type,
                 sentence_days_served=(completion_date - start_date).days,
                 case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
                 supervision_level=supervision_period.supervision_level,
@@ -314,7 +312,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 year=termination_date.year,
                 month=termination_date.month,
                 event_date=termination_date,
-                supervision_type=supervision_period_supervision_type,
+                supervision_type=supervision_type,
                 supervision_level=supervision_period.supervision_level,
                 supervision_level_raw_text=supervision_period.supervision_level_raw_text,
                 case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
@@ -330,7 +328,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         expected_events.extend(
             expected_population_events(
                 supervision_period,
-                supervision_period_supervision_type,
+                supervision_type,
                 case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
                 assessment_score=assessment.assessment_score,
                 assessment_level=assessment.assessment_level,
@@ -364,7 +362,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             state_code="US_XX",
             start_date=date(2018, 3, 5),
             termination_date=date(2019, 1, 19),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
@@ -385,9 +383,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         supervision_contacts: List[StateSupervisionContact] = []
         incarceration_sentences: List[StateIncarcerationSentence] = []
 
-        supervision_period_supervision_type = (
-            StateSupervisionPeriodSupervisionType.PROBATION
-        )
+        supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
 
         expected_events = [
             create_start_event_from_period(
@@ -396,7 +392,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             ),
             create_termination_event_from_period(
                 supervision_period,
-                supervision_type=supervision_period_supervision_type,
+                supervision_type=supervision_type,
                 in_supervision_population_on_date=True,
             ),
         ]
@@ -404,7 +400,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         expected_events.extend(
             expected_population_events(
                 supervision_period,
-                supervision_period_supervision_type,
+                supervision_type,
                 case_type=StateSupervisionCaseType.GENERAL,
                 case_compliances=_generate_case_compliances(
                     person=self.person,
@@ -439,7 +435,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             state_code="US_XX",
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         second_supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -448,7 +444,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             state_code="US_XX",
             start_date=date(2019, 8, 5),
             termination_date=date(2019, 12, 19),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
@@ -469,22 +465,18 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         supervision_contacts: List[StateSupervisionContact] = []
         incarceration_sentences: List[StateIncarcerationSentence] = []
 
-        first_supervision_period_supervision_type = (
-            StateSupervisionPeriodSupervisionType.PROBATION
-        )
-        second_supervision_period_supervision_type = (
-            StateSupervisionPeriodSupervisionType.PROBATION
-        )
+        first_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
+        second_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
 
         expected_events = [
             create_termination_event_from_period(
                 first_supervision_period,
-                supervision_type=first_supervision_period_supervision_type,
+                supervision_type=first_supervision_type,
                 in_supervision_population_on_date=True,
             ),
             create_termination_event_from_period(
                 second_supervision_period,
-                supervision_type=second_supervision_period_supervision_type,
+                supervision_type=second_supervision_type,
                 in_supervision_population_on_date=True,
             ),
             create_start_event_from_period(
@@ -500,7 +492,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         expected_events.extend(
             expected_population_events(
                 first_supervision_period,
-                first_supervision_period_supervision_type,
+                first_supervision_type,
                 case_compliances=_generate_case_compliances(
                     person=self.person,
                     start_date=first_supervision_period.start_date,
@@ -512,7 +504,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         expected_events.extend(
             expected_population_events(
                 second_supervision_period,
-                second_supervision_period_supervision_type,
+                second_supervision_type,
                 case_compliances=_generate_case_compliances(
                     person=self.person,
                     start_date=first_supervision_period.start_date,
@@ -549,7 +541,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             state_code="US_XX",
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         second_supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -558,7 +550,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             state_code="US_XX",
             start_date=date(2018, 4, 15),
             termination_date=date(2018, 7, 19),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
@@ -579,22 +571,18 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         supervision_contacts: List[StateSupervisionContact] = []
         incarceration_sentences: List[StateIncarcerationSentence] = []
 
-        first_supervision_period_supervision_type = (
-            StateSupervisionPeriodSupervisionType.PROBATION
-        )
-        second_supervision_period_supervision_type = (
-            StateSupervisionPeriodSupervisionType.PROBATION
-        )
+        first_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
+        second_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
 
         expected_events = [
             create_termination_event_from_period(
                 first_supervision_period,
                 in_supervision_population_on_date=True,
-                supervision_type=first_supervision_period_supervision_type,
+                supervision_type=first_supervision_type,
             ),
             create_termination_event_from_period(
                 second_supervision_period,
-                supervision_type=second_supervision_period_supervision_type,
+                supervision_type=second_supervision_type,
                 in_supervision_population_on_date=True,
             ),
             create_start_event_from_period(
@@ -610,7 +598,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         expected_events.extend(
             expected_population_events(
                 first_supervision_period,
-                first_supervision_period_supervision_type,
+                first_supervision_type,
                 case_compliances=_generate_case_compliances(
                     person=self.person,
                     start_date=first_supervision_period.start_date,
@@ -622,7 +610,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         expected_events.extend(
             expected_population_events(
                 second_supervision_period,
-                second_supervision_period_supervision_type,
+                second_supervision_type,
                 case_compliances=_generate_case_compliances(
                     person=self.person,
                     start_date=first_supervision_period.start_date,
@@ -659,7 +647,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             state_code="US_XX",
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
         )
 
@@ -669,7 +657,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             state_code="US_XX",
             start_date=date(2018, 4, 15),
             termination_date=date(2018, 7, 19),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
         )
 
@@ -692,22 +680,18 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         supervision_contacts: List[StateSupervisionContact] = []
         incarceration_sentences: List[StateIncarcerationSentence] = []
 
-        first_supervision_period_supervision_type = (
-            StateSupervisionPeriodSupervisionType.PROBATION
-        )
-        overlapping_supervision_period_supervision_type = (
-            StateSupervisionPeriodSupervisionType.PROBATION
-        )
+        first_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
+        overlapping_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
 
         expected_events = [
             create_termination_event_from_period(
                 first_supervision_period,
                 in_supervision_population_on_date=True,
-                supervision_type=first_supervision_period_supervision_type,
+                supervision_type=first_supervision_type,
             ),
             create_termination_event_from_period(
                 second_supervision_period,
-                supervision_type=overlapping_supervision_period_supervision_type,
+                supervision_type=overlapping_supervision_type,
                 in_supervision_population_on_date=True,
             ),
             create_start_event_from_period(
@@ -723,7 +707,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         expected_events.extend(
             expected_population_events(
                 first_supervision_period,
-                first_supervision_period_supervision_type,
+                first_supervision_type,
                 case_compliances=_generate_case_compliances(
                     person=self.person,
                     start_date=first_supervision_period.start_date,
@@ -735,7 +719,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         expected_events.extend(
             expected_population_events(
                 second_supervision_period,
-                overlapping_supervision_period_supervision_type,
+                overlapping_supervision_type,
                 case_compliances=_generate_case_compliances(
                     person=self.person,
                     start_date=first_supervision_period.start_date,
@@ -770,7 +754,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             state_code="US_ND",
             start_date=date(2017, 3, 5),
             termination_date=date(2017, 5, 9),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         temporary_custody_period = StateIncarcerationPeriod.new_with_defaults(
@@ -815,9 +799,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         violation_responses: List[StateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
 
-        first_supervision_period_supervision_type = (
-            StateSupervisionPeriodSupervisionType.PROBATION
-        )
+        first_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
 
         expected_events = [
             create_start_event_from_period(
@@ -826,7 +808,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             ),
             create_termination_event_from_period(
                 first_supervision_period,
-                supervision_type=first_supervision_period_supervision_type,
+                supervision_type=first_supervision_type,
                 case_type=StateSupervisionCaseType.GENERAL,
                 in_supervision_population_on_date=True,
             ),
@@ -835,7 +817,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         expected_events.extend(
             expected_population_events(
                 first_supervision_period,
-                first_supervision_period_supervision_type,
+                first_supervision_type,
                 case_compliances=_generate_case_compliances(
                     person=self.person,
                     start_date=first_supervision_period.start_date,
@@ -877,7 +859,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             start_date=date(2017, 3, 5),
             termination_date=date(2017, 5, 9),
             termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,
         )
 
         supervision_period_start_date = date(2017, 5, 9)
@@ -892,7 +874,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
             termination_date=supervision_period_termination_date,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=supervision_period_type,
+            supervision_type=supervision_period_type,
         )
 
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
@@ -921,7 +903,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 year=supervision_period_termination_date.year,
                 month=supervision_period_termination_date.month,
                 event_date=supervision_period_termination_date,
-                supervision_type=supervision_period.supervision_period_supervision_type,
+                supervision_type=supervision_period.supervision_type,
                 supervision_level=supervision_period.supervision_level,
                 case_type=StateSupervisionCaseType.GENERAL,
                 termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
@@ -966,7 +948,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             custodial_authority_raw_text="US_ID_DOC",
             start_date=date(2017, 3, 5),
             termination_date=date(2017, 5, 9),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,
         )
 
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -1028,7 +1010,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             custodial_authority_raw_text="US_ND_DOCR",
             start_date=date(2017, 3, 5),
             termination_date=date(2017, 5, 9),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,
         )
 
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -1086,7 +1068,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             state_code="US_XX",
             start_date=date(2017, 3, 5),
             termination_date=date(2017, 5, 19),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         first_admission_date = date(2017, 5, 25)
@@ -1107,7 +1089,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             state_code="US_XX",
             start_date=date(2018, 8, 5),
             termination_date=date(2018, 12, 19),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         second_admission_date = date(2018, 12, 25)
@@ -1143,22 +1125,18 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         supervision_contacts: List[StateSupervisionContact] = []
         incarceration_sentences: List[StateIncarcerationSentence] = []
 
-        first_supervision_period_supervision_type = (
-            StateSupervisionPeriodSupervisionType.PROBATION
-        )
-        second_supervision_period_supervision_type = (
-            StateSupervisionPeriodSupervisionType.PROBATION
-        )
+        first_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
+        second_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
 
         expected_events = [
             create_termination_event_from_period(
                 first_supervision_period,
-                supervision_type=first_supervision_period_supervision_type,
+                supervision_type=first_supervision_type,
                 in_supervision_population_on_date=True,
             ),
             create_termination_event_from_period(
                 second_supervision_period,
-                supervision_type=second_supervision_period_supervision_type,
+                supervision_type=second_supervision_type,
                 in_supervision_population_on_date=True,
             ),
             create_start_event_from_period(
@@ -1174,7 +1152,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         expected_events.extend(
             expected_population_events(
                 first_supervision_period,
-                first_supervision_period_supervision_type,
+                first_supervision_type,
                 case_compliances=_generate_case_compliances(
                     person=self.person,
                     start_date=first_supervision_period.start_date,
@@ -1186,7 +1164,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         expected_events.extend(
             expected_population_events(
                 second_supervision_period,
-                second_supervision_period_supervision_type,
+                second_supervision_type,
                 case_compliances=_generate_case_compliances(
                     person=self.person,
                     start_date=first_supervision_period.start_date,
@@ -1219,7 +1197,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             state_code="US_XX",
             start_date=date(2017, 3, 5),
             termination_date=date(2017, 5, 9),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         first_admission_date = date(2017, 5, 11)
@@ -1267,14 +1245,12 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         supervision_contacts: List[StateSupervisionContact] = []
         incarceration_sentences: List[StateIncarcerationSentence] = []
 
-        first_supervision_period_supervision_type = (
-            StateSupervisionPeriodSupervisionType.PROBATION
-        )
+        first_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
 
         expected_events = [
             create_termination_event_from_period(
                 first_supervision_period,
-                supervision_type=first_supervision_period_supervision_type,
+                supervision_type=first_supervision_type,
                 in_supervision_population_on_date=True,
             ),
             create_start_event_from_period(
@@ -1286,7 +1262,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         expected_events.extend(
             expected_population_events(
                 first_supervision_period,
-                first_supervision_period_supervision_type,
+                first_supervision_type,
                 case_compliances=_generate_case_compliances(
                     person=self.person,
                     start_date=first_supervision_period.start_date,
@@ -1321,7 +1297,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             state_code="US_XX",
             start_date=date(2017, 3, 5),
             termination_date=date(2017, 5, 19),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         admission_date = date(2017, 5, 15)
@@ -1342,7 +1318,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             state_code="US_XX",
             start_date=date(2017, 8, 5),
             termination_date=date(2017, 12, 19),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
@@ -1364,22 +1340,18 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         supervision_contacts: List[StateSupervisionContact] = []
         incarceration_sentences: List[StateIncarcerationSentence] = []
 
-        first_supervision_period_supervision_type = (
-            StateSupervisionPeriodSupervisionType.PROBATION
-        )
-        second_supervision_period_supervision_type = (
-            StateSupervisionPeriodSupervisionType.PROBATION
-        )
+        first_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
+        second_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
 
         expected_events = [
             create_termination_event_from_period(
                 first_supervision_period,
                 in_incarceration_population_on_date=True,
-                supervision_type=first_supervision_period_supervision_type,
+                supervision_type=first_supervision_type,
             ),
             create_termination_event_from_period(
                 second_supervision_period,
-                supervision_type=second_supervision_period_supervision_type,
+                supervision_type=second_supervision_type,
                 in_supervision_population_on_date=True,
             ),
             create_start_event_from_period(
@@ -1397,7 +1369,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         expected_events.extend(
             expected_population_events(
                 first_supervision_period,
-                first_supervision_period_supervision_type,
+                first_supervision_type,
                 incarceration_period.admission_date,
                 case_compliances=_generate_case_compliances(
                     person=self.person,
@@ -1413,7 +1385,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     second_supervision_period,
                     start_date=incarceration_period.release_date,
                 ),
-                second_supervision_period_supervision_type,
+                second_supervision_type,
                 case_compliances=_generate_case_compliances(
                     person=self.person,
                     start_date=first_supervision_period.start_date,
@@ -1451,7 +1423,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             state_code="US_XX",
             start_date=date(2017, 3, 5),
             termination_date=date(2017, 5, 19),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -1472,7 +1444,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             state_code="US_XX",
             start_date=date(2017, 8, 5),
             termination_date=date(2017, 12, 19),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
@@ -1494,23 +1466,19 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         supervision_contacts: List[StateSupervisionContact] = []
         incarceration_sentences: List[StateIncarcerationSentence] = []
 
-        first_supervision_period_supervision_type = (
-            StateSupervisionPeriodSupervisionType.PROBATION
-        )
-        second_supervision_period_supervision_type = (
-            StateSupervisionPeriodSupervisionType.PROBATION
-        )
+        first_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
+        second_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
 
         expected_events = [
             create_termination_event_from_period(
                 first_supervision_period,
-                supervision_type=first_supervision_period_supervision_type,
+                supervision_type=first_supervision_type,
                 in_incarceration_population_on_date=True,
                 in_supervision_population_on_date=True,
             ),
             create_termination_event_from_period(
                 second_supervision_period,
-                supervision_type=second_supervision_period_supervision_type,
+                supervision_type=second_supervision_type,
                 in_supervision_population_on_date=True,
             ),
             create_start_event_from_period(first_supervision_period),
@@ -1522,14 +1490,12 @@ class TestClassifySupervisionEvents(unittest.TestCase):
 
         # The entirety of both supervision periods should be counted as SupervisionPopulationEvents
         expected_events.extend(
-            expected_population_events(
-                first_supervision_period, first_supervision_period_supervision_type
-            )
+            expected_population_events(first_supervision_period, first_supervision_type)
         )
 
         expected_events.extend(
             expected_population_events(
-                second_supervision_period, second_supervision_period_supervision_type
+                second_supervision_period, second_supervision_type
             )
         )
 
@@ -1557,7 +1523,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             state_code="US_XX",
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         second_supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -1566,7 +1532,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             state_code="US_XX",
             start_date=date(2018, 5, 19),
             termination_date=date(2018, 6, 20),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
@@ -1587,22 +1553,18 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         supervision_contacts: List[StateSupervisionContact] = []
         incarceration_sentences: List[StateIncarcerationSentence] = []
 
-        first_supervision_period_supervision_type = (
-            StateSupervisionPeriodSupervisionType.PROBATION
-        )
-        second_supervision_period_supervision_type = (
-            StateSupervisionPeriodSupervisionType.PROBATION
-        )
+        first_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
+        second_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
 
         expected_events = [
             create_termination_event_from_period(
                 first_supervision_period,
                 in_supervision_population_on_date=True,
-                supervision_type=first_supervision_period_supervision_type,
+                supervision_type=first_supervision_type,
             ),
             create_termination_event_from_period(
                 second_supervision_period,
-                supervision_type=second_supervision_period_supervision_type,
+                supervision_type=second_supervision_type,
                 in_supervision_population_on_date=True,
             ),
             create_start_event_from_period(
@@ -1618,7 +1580,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         expected_events.extend(
             expected_population_events(
                 first_supervision_period,
-                first_supervision_period_supervision_type,
+                first_supervision_type,
                 case_compliances=_generate_case_compliances(
                     person=self.person,
                     start_date=first_supervision_period.start_date,
@@ -1630,7 +1592,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         expected_events.extend(
             expected_population_events(
                 second_supervision_period,
-                second_supervision_period_supervision_type,
+                second_supervision_type,
                 case_compliances=_generate_case_compliances(
                     person=self.person,
                     start_date=first_supervision_period.start_date,
@@ -1665,7 +1627,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             state_code="US_XX",
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 26),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_site="X",
         )
 
@@ -1698,14 +1660,12 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         supervision_contacts: List[StateSupervisionContact] = []
         incarceration_sentences: List[StateIncarcerationSentence] = []
 
-        supervision_period_supervision_type = (
-            StateSupervisionPeriodSupervisionType.PROBATION
-        )
+        supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
 
         expected_events = [
             create_termination_event_from_period(
                 supervision_period,
-                supervision_type=supervision_period_supervision_type,
+                supervision_type=supervision_type,
                 supervising_officer_external_id="XXX",
                 judicial_district_code="XXX",
                 supervising_district_external_id="X",
@@ -1726,7 +1686,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         expected_events.extend(
             expected_population_events(
                 supervision_period,
-                supervision_period_supervision_type,
+                supervision_type,
                 supervising_officer_external_id="XXX",
                 level_1_supervision_location_external_id="X",
                 level_2_supervision_location_external_id=None,
@@ -1765,7 +1725,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             state_code="US_XX",
             start_date=date(2018, 1, 5),
             termination_date=date(2018, 12, 19),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             supervision_level=StateSupervisionLevel.MINIMUM,
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
         )
@@ -1816,14 +1776,12 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         supervision_contacts: List[StateSupervisionContact] = []
         incarceration_sentences: List[StateIncarcerationSentence] = []
 
-        supervision_period_supervision_type = (
-            StateSupervisionPeriodSupervisionType.PAROLE
-        )
+        supervision_type = StateSupervisionPeriodSupervisionType.PAROLE
 
         expected_events = [
             create_termination_event_from_period(
                 supervision_period,
-                supervision_type=supervision_period_supervision_type,
+                supervision_type=supervision_type,
                 supervision_level=StateSupervisionLevel.MINIMUM,
                 in_supervision_population_on_date=True,
             ),
@@ -1836,7 +1794,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         expected_events.extend(
             expected_population_events(
                 supervision_period,
-                supervision_period_supervision_type,
+                supervision_type,
                 first_incarceration_period.admission_date,
                 case_compliances=_generate_case_compliances(
                     person=self.person,
@@ -1852,7 +1810,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     supervision_period,
                     start_date=first_incarceration_period.release_date,
                 ),
-                supervision_period_supervision_type,
+                supervision_type,
                 second_incarceration_period.admission_date,
                 case_compliances=_generate_case_compliances(
                     person=self.person,
@@ -1868,7 +1826,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     supervision_period,
                     start_date=second_incarceration_period.release_date,
                 ),
-                supervision_period_supervision_type,
+                supervision_type,
                 case_compliances=_generate_case_compliances(
                     person=self.person,
                     start_date=supervision_period.start_date,
@@ -1903,7 +1861,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             state_code="US_XX",
             start_date=date(2018, 1, 5),
             termination_date=date(2018, 12, 19),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         first_admission_date = date(2018, 3, 25)
@@ -1936,7 +1894,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             state_code="US_XX",
             start_date=date(2019, 1, 1),
             termination_date=date(2019, 1, 19),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         first_supervision_sentence = StateSupervisionSentence.new_with_defaults(
@@ -1975,22 +1933,18 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         supervision_contacts: List[StateSupervisionContact] = []
         incarceration_sentences: List[StateIncarcerationSentence] = []
 
-        first_supervision_period_supervision_type = (
-            StateSupervisionPeriodSupervisionType.PAROLE
-        )
-        second_supervision_period_supervision_type = (
-            StateSupervisionPeriodSupervisionType.PAROLE
-        )
+        first_supervision_type = StateSupervisionPeriodSupervisionType.PAROLE
+        second_supervision_type = StateSupervisionPeriodSupervisionType.PAROLE
 
         expected_events = [
             create_termination_event_from_period(
                 first_supervision_period,
-                supervision_type=first_supervision_period_supervision_type,
+                supervision_type=first_supervision_type,
                 in_supervision_population_on_date=True,
             ),
             create_termination_event_from_period(
                 second_supervision_period,
-                supervision_type=second_supervision_period_supervision_type,
+                supervision_type=second_supervision_type,
                 in_supervision_population_on_date=True,
             ),
             create_start_event_from_period(
@@ -2006,7 +1960,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         expected_events.extend(
             expected_population_events(
                 first_supervision_period,
-                first_supervision_period_supervision_type,
+                first_supervision_type,
                 first_incarceration_period.admission_date,
                 case_compliances=_generate_case_compliances(
                     person=self.person,
@@ -2022,7 +1976,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     first_supervision_period,
                     start_date=first_incarceration_period.release_date,
                 ),
-                first_supervision_period_supervision_type,
+                first_supervision_type,
                 second_incarceration_period.admission_date,
                 case_compliances=_generate_case_compliances(
                     person=self.person,
@@ -2038,7 +1992,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     first_supervision_period,
                     start_date=second_incarceration_period.release_date,
                 ),
-                first_supervision_period_supervision_type,
+                first_supervision_type,
                 case_compliances=_generate_case_compliances(
                     person=self.person,
                     start_date=second_incarceration_period.release_date,
@@ -2050,7 +2004,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         expected_events.extend(
             expected_population_events(
                 second_supervision_period,
-                second_supervision_period_supervision_type,
+                second_supervision_type,
                 case_compliances=_generate_case_compliances(
                     person=self.person,
                     start_date=second_supervision_period.start_date,
@@ -2096,7 +2050,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             # Termination date is after sentence's projected completion date
             termination_date=supervision_period_termination_date,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
             supervision_level_raw_text="M",
         )
@@ -2128,9 +2082,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         supervision_contacts: List[StateSupervisionContact] = []
         incarceration_sentences: List[StateIncarcerationSentence] = []
 
-        supervision_period_supervision_type = (
-            StateSupervisionPeriodSupervisionType.PROBATION
-        )
+        supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
 
         expected_events = [
             SupervisionTerminationEvent(
@@ -2138,7 +2090,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 year=supervision_period_termination_date.year,
                 month=supervision_period_termination_date.month,
                 event_date=supervision_period_termination_date,
-                supervision_type=supervision_period_supervision_type,
+                supervision_type=supervision_type,
                 supervision_level=supervision_period.supervision_level,
                 supervision_level_raw_text=supervision_period.supervision_level_raw_text,
                 case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
@@ -2154,7 +2106,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         expected_events.extend(
             expected_population_events(
                 supervision_period,
-                supervision_period_supervision_type,
+                supervision_type,
                 case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
                 assessment_score=assessment.assessment_score,
                 assessment_level=assessment.assessment_level,
@@ -2192,7 +2144,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             start_date=date(2018, 1, 1),
             # termination date is after first supervision sentence's projected completion date
             termination_date=date(2018, 1, 3),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         second_supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -2202,7 +2154,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             start_date=date(2019, 2, 1),
             # termination date is after second supervision sentence's projected completion date
             termination_date=date(2019, 2, 3),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         first_supervision_sentence = StateSupervisionSentence.new_with_defaults(
@@ -2238,22 +2190,18 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         supervision_contacts: List[StateSupervisionContact] = []
         incarceration_sentences: List[StateIncarcerationSentence] = []
 
-        first_supervision_period_supervision_type = (
-            StateSupervisionPeriodSupervisionType.PAROLE
-        )
-        second_supervision_period_supervision_type = (
-            StateSupervisionPeriodSupervisionType.PAROLE
-        )
+        first_supervision_type = StateSupervisionPeriodSupervisionType.PAROLE
+        second_supervision_type = StateSupervisionPeriodSupervisionType.PAROLE
 
         expected_events = [
             create_termination_event_from_period(
                 first_supervision_period,
-                supervision_type=first_supervision_period_supervision_type,
+                supervision_type=first_supervision_type,
                 in_supervision_population_on_date=True,
             ),
             create_termination_event_from_period(
                 second_supervision_period,
-                supervision_type=second_supervision_period_supervision_type,
+                supervision_type=second_supervision_type,
                 in_supervision_population_on_date=True,
             ),
             create_start_event_from_period(
@@ -2269,7 +2217,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         expected_events.extend(
             expected_population_events(
                 first_supervision_period,
-                first_supervision_period_supervision_type,
+                first_supervision_type,
                 projected_supervision_completion_date=first_supervision_sentence.projected_completion_date,
                 case_compliances=_generate_case_compliances(
                     person=self.person,
@@ -2282,7 +2230,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         expected_events.extend(
             expected_population_events(
                 second_supervision_period,
-                second_supervision_period_supervision_type,
+                second_supervision_type,
                 projected_supervision_completion_date=second_supervision_sentence.projected_completion_date,
                 case_compliances=_generate_case_compliances(
                     person=self.person,
@@ -2318,7 +2266,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             state_code="US_XX",
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         supervision_period_placeholder = StateSupervisionPeriod.new_with_defaults(
@@ -2354,14 +2302,12 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         supervision_contacts: List[StateSupervisionContact] = []
         incarceration_sentences: List[StateIncarcerationSentence] = []
 
-        supervision_period_supervision_type = (
-            StateSupervisionPeriodSupervisionType.PROBATION
-        )
+        supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
 
         expected_events = [
             create_termination_event_from_period(
                 supervision_period,
-                supervision_type=supervision_period_supervision_type,
+                supervision_type=supervision_type,
                 in_supervision_population_on_date=True,
             ),
             create_start_event_from_period(
@@ -2373,7 +2319,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         expected_events.extend(
             expected_population_events(
                 supervision_period,
-                supervision_period_supervision_type,
+                supervision_type,
                 case_compliances=_generate_case_compliances(
                     person=self.person,
                     start_date=supervision_period.start_date,
@@ -2399,7 +2345,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
 
     def test_find_supervision_events_us_id(self) -> None:
         """Tests the find_supervision_events function where the supervision type should be taken from the
-        supervision_period_supervision_type off of the supervision_period."""
+        supervision_type off of the supervision_period."""
         self._stop_state_specific_delegate_patchers()
 
         supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
@@ -2419,7 +2365,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             start_date=date(2018, 3, 5),
             termination_date=supervision_period_termination_date,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=supervision_type,
+            supervision_type=supervision_type,
             supervision_level=StateSupervisionLevel.MINIMUM,
             supervision_level_raw_text="LOW",
         )
@@ -2534,7 +2480,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             start_date=date(2018, 3, 5),
             termination_date=supervision_period_termination_date,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             supervision_level=StateSupervisionLevel.MINIMUM,
             supervision_level_raw_text="LOW",
         )
@@ -2994,7 +2940,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
+            supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
             state_code="US_ID",
             custodial_authority_raw_text="US_ID_DOC",
             start_date=date(2018, 3, 5),
@@ -3299,7 +3245,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             external_id="sp1",
             state_code="US_XX",
             start_date=date(2019, 6, 2),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         admission_date = date.today()
@@ -3378,7 +3324,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             state_code="US_XX",
             start_date=date(2018, 3, 5),
             termination_date=supervision_period_termination_date,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
         )
 
@@ -3420,9 +3366,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         violation_reports: List[StateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
 
-        supervision_period_supervision_type = (
-            StateSupervisionPeriodSupervisionType.PAROLE
-        )
+        supervision_type = StateSupervisionPeriodSupervisionType.PAROLE
 
         expected_events = [
             SupervisionTerminationEvent(
@@ -3444,7 +3388,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         expected_events.extend(
             expected_population_events(
                 supervision_period,
-                supervision_period_supervision_type,
+                supervision_type,
                 first_incarceration_period.admission_date,
                 case_compliances=_generate_case_compliances(
                     person=self.person,
@@ -3478,7 +3422,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             state_code=state_code,
             start_date=date(2018, 1, 1),
             termination_date=date(2020, 1, 1),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         supervision_violation_1 = StateSupervisionViolation.new_with_defaults(
@@ -3550,9 +3494,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         violation_reports = [violation_report_1, violation_report_2]
         supervision_contacts: List[StateSupervisionContact] = []
 
-        supervision_period_supervision_type = (
-            StateSupervisionPeriodSupervisionType.PROBATION
-        )
+        supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
 
         expected_events = [
             create_termination_event_from_period(
@@ -3574,7 +3516,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         expected_events.extend(
             expected_population_events(
                 supervision_period,
-                supervision_period_supervision_type,
+                supervision_type,
                 end_date=violation_report_1.response_date,
             )
         )
@@ -3585,7 +3527,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     supervision_period,
                     start_date=violation_report_1.response_date,
                 ),
-                supervision_period_supervision_type,
+                supervision_type,
                 end_date=violation_report_2.response_date,
                 most_severe_violation_type=StateSupervisionViolationType.FELONY,
                 most_severe_violation_type_subtype=StateSupervisionViolationType.FELONY.value,
@@ -3600,7 +3542,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     supervision_period,
                     start_date=violation_report_2.response_date,
                 ),
-                supervision_period_supervision_type,
+                supervision_type,
                 end_date=date(2019, 4, 21),
                 most_severe_violation_type=StateSupervisionViolationType.FELONY,
                 most_severe_violation_type_subtype=StateSupervisionViolationType.FELONY.value,
@@ -3612,7 +3554,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         expected_events.extend(
             expected_population_events(
                 attr.evolve(supervision_period, start_date=date(2019, 4, 21)),
-                supervision_period_supervision_type,
+                supervision_type,
                 most_severe_violation_type=StateSupervisionViolationType.MISDEMEANOR,
                 most_severe_violation_type_subtype=StateSupervisionViolationType.MISDEMEANOR.value,
                 most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
@@ -3653,7 +3595,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             supervising_officer="AGENTX",
             start_date=start_date,
             termination_date=date(2019, 10, 9),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         supervision_sentence = FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
@@ -3735,7 +3677,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             supervising_officer="AGENTX",
             start_date=start_date,
             termination_date=date(2019, 11, 9),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         supervision_sentence = FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
@@ -3836,7 +3778,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             supervising_officer="AGENTX",
             start_date=date(2019, 10, 3),
             termination_date=date(2019, 11, 9),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         supervision_sentence = FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
@@ -3930,7 +3872,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             supervising_officer="AGENTX",
             start_date=date(2019, 10, 3),
             termination_date=date(2019, 11, 9),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         supervision_sentence = FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
@@ -3996,7 +3938,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             supervising_officer="AGENTX",
             start_date=date(2019, 10, 3),
             termination_date=date(2019, 10, 20),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         supervision_sentence = FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
@@ -4092,7 +4034,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             # An erroneous date in the future
             termination_date=date(2018, 5, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
             supervision_level_raw_text="M",
         )
@@ -4111,7 +4053,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             start_date=date(2020, 1, 1),
             termination_date=date(2020, 5, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
             supervision_level_raw_text="M",
         )
@@ -4135,9 +4077,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         supervision_contacts: List[StateSupervisionContact] = []
         incarceration_sentences: List[StateIncarcerationSentence] = []
 
-        supervision_period_supervision_type = (
-            StateSupervisionPeriodSupervisionType.PROBATION
-        )
+        supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
 
         expected_events: List[SupervisionEvent] = [
             create_start_event_from_period(
@@ -4150,7 +4090,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             expected_population_events(
                 supervision_period,
                 end_date=date.today() + relativedelta(days=1),
-                supervision_type=supervision_period_supervision_type,
+                supervision_type=supervision_type,
                 case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
             )
         )
@@ -4206,7 +4146,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
             external_id="sp1",
             state_code="US_XX",
             start_date=date(2003, 7, 5),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -4264,14 +4204,12 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
             )
         )
 
-        supervision_period_supervision_type = (
-            StateSupervisionPeriodSupervisionType.PROBATION
-        )
+        supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
 
         self.assertCountEqual(
             expected_population_events(
                 supervision_period,
-                supervision_period_supervision_type,
+                supervision_type,
                 incarceration_period.admission_date,
                 case_compliances=_generate_case_compliances(
                     person=self.person,
@@ -4296,7 +4234,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
             state_code="US_XX",
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -4339,13 +4277,11 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
         supervision_contacts: List[StateSupervisionContact] = []
         supervision_sentences = [supervision_sentence]
 
-        supervision_period_supervision_type = (
-            StateSupervisionPeriodSupervisionType.PROBATION
-        )
+        supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
 
         expected_events = expected_population_events(
             supervision_period,
-            supervision_period_supervision_type,
+            supervision_type,
             incarceration_period.admission_date,
             case_compliances=_generate_case_compliances(
                 person=self.person,
@@ -4385,7 +4321,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
             external_id="sp1",
             state_code="US_XX",
             start_date=date(2019, 3, 5),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MINIMUM,
             case_type_entries=[
                 StateSupervisionCaseTypeEntry.new_with_defaults(
@@ -4432,13 +4368,11 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
         incarceration_sentences: List[StateIncarcerationSentence] = []
         supervision_sentences = [supervision_sentence]
 
-        supervision_period_supervision_type = (
-            StateSupervisionPeriodSupervisionType.PROBATION
-        )
+        supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
 
         expected_events = expected_population_events(
             supervision_period,
-            supervision_period_supervision_type,
+            supervision_type,
             incarceration_period.admission_date,
             case_compliances=_generate_case_compliances(
                 person=self.person,
@@ -4453,7 +4387,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                 attr.evolve(
                     supervision_period, start_date=incarceration_period.release_date
                 ),
-                supervision_period_supervision_type,
+                supervision_type,
                 case_compliances=_generate_case_compliances(
                     person=self.person,
                     start_date=supervision_period.start_date,
@@ -4493,7 +4427,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
             state_code="US_XX",
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 6, 19),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -4535,13 +4469,11 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
         incarceration_sentences: List[StateIncarcerationSentence] = []
         supervision_sentences = [supervision_sentence]
 
-        supervision_period_supervision_type = (
-            StateSupervisionPeriodSupervisionType.PROBATION
-        )
+        supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
 
         expected_events = expected_population_events(
             supervision_period,
-            supervision_period_supervision_type,
+            supervision_type,
             incarceration_period.admission_date,
             case_compliances=_generate_case_compliances(
                 person=self.person,
@@ -4579,7 +4511,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
             state_code="US_XX",
             start_date=date(2008, 3, 5),
             termination_date=date(2010, 3, 19),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -4623,13 +4555,11 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
         incarceration_sentences: List[StateIncarcerationSentence] = []
         supervision_sentences = [supervision_sentence]
 
-        supervision_period_supervision_type = (
-            StateSupervisionPeriodSupervisionType.PROBATION
-        )
+        supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
 
         expected_events = expected_population_events(
             supervision_period,
-            supervision_period_supervision_type,
+            supervision_type,
             incarceration_period.admission_date,
             case_compliances=_generate_case_compliances(
                 person=self.person,
@@ -4643,7 +4573,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                 attr.evolve(
                     supervision_period, start_date=incarceration_period.release_date
                 ),
-                supervision_period_supervision_type,
+                supervision_type,
                 case_compliances=_generate_case_compliances(
                     person=self.person,
                     start_date=supervision_period.start_date,
@@ -4682,7 +4612,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
             state_code="US_XX",
             start_date=date(2001, 1, 5),
             termination_date=date(2001, 7, 1),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MINIMUM,
         )
 
@@ -4711,13 +4641,11 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
         incarceration_sentences: List[StateIncarcerationSentence] = []
         supervision_sentences = [supervision_sentence]
 
-        supervision_period_supervision_type = (
-            StateSupervisionPeriodSupervisionType.PROBATION
-        )
+        supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
 
         expected_events = expected_population_events(
             supervision_period,
-            supervision_period_supervision_type,
+            supervision_type,
         )
 
         self.assertEqual(
@@ -4727,7 +4655,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                 year=2001,
                 month=6,
                 event_date=date(2001, 6, 30),
-                supervision_type=supervision_period_supervision_type,
+                supervision_type=supervision_type,
                 supervision_level=supervision_period.supervision_level,
                 case_type=StateSupervisionCaseType.GENERAL,
             ),
@@ -4763,7 +4691,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
             state_code="US_XX",
             start_date=date(2001, 1, 5),
             termination_date=date(2001, 6, 30),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MINIMUM,
         )
 
@@ -4792,13 +4720,11 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
         incarceration_sentences: List[StateIncarcerationSentence] = []
         supervision_sentences = [supervision_sentence]
 
-        supervision_period_supervision_type = (
-            StateSupervisionPeriodSupervisionType.PROBATION
-        )
+        supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
 
         expected_events = expected_population_events(
             supervision_period,
-            supervision_period_supervision_type,
+            supervision_type,
         )
 
         self.assertEqual(
@@ -4808,7 +4734,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                 year=2001,
                 month=6,
                 event_date=date(2001, 6, 29),
-                supervision_type=supervision_period_supervision_type,
+                supervision_type=supervision_type,
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervision_level=supervision_period.supervision_level,
             ),
@@ -4842,7 +4768,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
             state_code="US_XX",
             start_date=date(2001, 3, 3),
             termination_date=date(2001, 3, 3),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
@@ -4903,7 +4829,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
             state_code="US_XX",
             start_date=date(2018, 3, 11),
             termination_date=date(2018, 12, 10),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -4962,13 +4888,11 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
         incarceration_sentences: List[StateIncarcerationSentence] = []
         supervision_sentences = [supervision_sentence]
 
-        supervision_period_supervision_type = (
-            StateSupervisionPeriodSupervisionType.PROBATION
-        )
+        supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
 
         expected_events = expected_population_events(
             supervision_period,
-            supervision_period_supervision_type,
+            supervision_type,
             end_date=incarceration_period.admission_date,
             assessment_score=assessment_1.assessment_score,
             assessment_level=assessment_1.assessment_level,
@@ -4980,7 +4904,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                 attr.evolve(
                     supervision_period, start_date=incarceration_period.release_date
                 ),
-                supervision_period_supervision_type,
+                supervision_type,
                 assessment_score=assessment_2.assessment_score,
                 assessment_level=assessment_2.assessment_level,
                 assessment_type=assessment_2.assessment_type,
@@ -5019,7 +4943,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
             state_code="US_XX",
             start_date=date(2018, 1, 5),
             termination_date=date(2018, 3, 19),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         assessment = StateAssessment.new_with_defaults(
@@ -5053,13 +4977,11 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
         incarceration_sentences: List[StateIncarcerationSentence] = []
         supervision_sentences = [supervision_sentence]
 
-        supervision_period_supervision_type = (
-            StateSupervisionPeriodSupervisionType.PROBATION
-        )
+        supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
 
         expected_events = expected_population_events(
             supervision_period,
-            supervision_period_supervision_type,
+            supervision_type,
             assessment_score=assessment.assessment_score,
             assessment_level=assessment.assessment_level,
             assessment_type=assessment.assessment_type,
@@ -5103,7 +5025,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                 state_code="US_XX",
                 start_date=date(2018, 1, 5),
                 termination_date=date(2018, 3, 19),
-                supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 supervision_level=StateSupervisionLevel.HIGH,
             ),
             StateSupervisionPeriod.new_with_defaults(
@@ -5112,7 +5034,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                 state_code="US_XX",
                 start_date=date(2018, 3, 19),
                 termination_date=date(2018, 4, 30),
-                supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 supervision_level=StateSupervisionLevel.MEDIUM,
             ),
         ]
@@ -5141,13 +5063,11 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
         incarceration_sentences: List[StateIncarcerationSentence] = []
         supervision_sentences = [supervision_sentence]
 
-        supervision_period_supervision_type = (
-            StateSupervisionPeriodSupervisionType.PROBATION
-        )
+        supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
 
         expected_events = expected_population_events(
             supervision_periods[1],
-            supervision_period_supervision_type,
+            supervision_type,
             supervision_downgrade_date=date(2018, 3, 19),
             supervision_downgrade_occurred=True,
             previous_supervision_level=StateSupervisionLevel.HIGH,
@@ -5191,7 +5111,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                 state_code="US_XX",
                 start_date=date(2010, 1, 5),
                 termination_date=date(2010, 3, 19),
-                supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 supervision_level=StateSupervisionLevel.MAXIMUM,
             ),
             StateSupervisionPeriod.new_with_defaults(
@@ -5200,7 +5120,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                 state_code="US_XX",
                 start_date=date(2018, 3, 19),
                 termination_date=date(2018, 4, 30),
-                supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 supervision_level=StateSupervisionLevel.MEDIUM,
             ),
         ]
@@ -5245,13 +5165,11 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
             )
         )
 
-        supervision_period_supervision_type = (
-            StateSupervisionPeriodSupervisionType.PROBATION
-        )
+        supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
 
         expected_events = expected_population_events(
             supervision_periods[1],
-            supervision_period_supervision_type,
+            supervision_type,
             case_compliances=_generate_case_compliances(
                 person=self.person,
                 start_date=supervision_periods[0].start_date,
@@ -5282,7 +5200,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             start_date=date(2018, 1, 5),
             termination_date=date(2018, 12, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         supervision_sentence_projected_completion_date = date(2018, 12, 25)
@@ -5316,9 +5234,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
 
         self.assertEqual(1, len(projected_completion_events))
 
-        supervision_period_supervision_type = (
-            StateSupervisionPeriodSupervisionType.PAROLE
-        )
+        supervision_type = StateSupervisionPeriodSupervisionType.PAROLE
 
         self.assertEqual(
             [
@@ -5329,7 +5245,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                     event_date=last_day_of_month(
                         supervision_sentence_projected_completion_date
                     ),
-                    supervision_type=supervision_period_supervision_type,
+                    supervision_type=supervision_type,
                     successful_completion=True,
                     incarcerated_during_sentence=False,
                     case_type=StateSupervisionCaseType.GENERAL,
@@ -5350,7 +5266,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             start_date=date(2018, 1, 5),
             termination_date=date(2018, 12, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -5400,9 +5316,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
 
         self.assertEqual(1, len(projected_completion_events))
 
-        supervision_period_supervision_type = (
-            StateSupervisionPeriodSupervisionType.PAROLE
-        )
+        supervision_type = StateSupervisionPeriodSupervisionType.PAROLE
 
         self.assertEqual(
             [
@@ -5413,7 +5327,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                     event_date=last_day_of_month(
                         supervision_sentence_projected_completion_date
                     ),
-                    supervision_type=supervision_period_supervision_type,
+                    supervision_type=supervision_type,
                     successful_completion=False,
                     incarcerated_during_sentence=True,
                     case_type=StateSupervisionCaseType.GENERAL,
@@ -5434,7 +5348,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             start_date=date(2018, 1, 5),
             termination_date=date(2018, 8, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         second_supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -5444,7 +5358,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             start_date=date(2018, 9, 5),
             termination_date=date(2018, 12, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         supervision_sentence_projected_completion_date = date(2018, 12, 25)
@@ -5484,9 +5398,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
 
         self.assertEqual(1, len(projected_completion_events))
 
-        second_supervision_period_supervision_type = (
-            StateSupervisionPeriodSupervisionType.PAROLE
-        )
+        second_supervision_type = StateSupervisionPeriodSupervisionType.PAROLE
 
         self.assertEqual(
             [
@@ -5497,7 +5409,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                     event_date=last_day_of_month(
                         supervision_sentence_projected_completion_date
                     ),
-                    supervision_type=second_supervision_period_supervision_type,
+                    supervision_type=second_supervision_type,
                     case_type=StateSupervisionCaseType.GENERAL,
                     successful_completion=False,
                     incarcerated_during_sentence=False,
@@ -5518,7 +5430,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             start_date=date(2018, 1, 5),
             termination_date=date(2018, 8, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         second_supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -5528,7 +5440,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             start_date=date(2018, 9, 5),
             termination_date=date(2018, 12, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         first_supervision_sentence_projected_completion_date = date(2018, 8, 19)
@@ -5586,12 +5498,8 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
 
         self.assertEqual(2, len(projected_completion_events))
 
-        first_supervision_period_supervision_type = (
-            StateSupervisionPeriodSupervisionType.PAROLE
-        )
-        second_supervision_period_supervision_type = (
-            StateSupervisionPeriodSupervisionType.PAROLE
-        )
+        first_supervision_type = StateSupervisionPeriodSupervisionType.PAROLE
+        second_supervision_type = StateSupervisionPeriodSupervisionType.PAROLE
 
         self.assertEqual(
             [
@@ -5602,7 +5510,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                     event_date=last_day_of_month(
                         first_supervision_sentence_projected_completion_date
                     ),
-                    supervision_type=first_supervision_period_supervision_type,
+                    supervision_type=first_supervision_type,
                     successful_completion=True,
                     incarcerated_during_sentence=False,
                     case_type=StateSupervisionCaseType.GENERAL,
@@ -5618,7 +5526,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                     event_date=last_day_of_month(
                         second_supervision_sentence_projected_completion_date
                     ),
-                    supervision_type=second_supervision_period_supervision_type,
+                    supervision_type=second_supervision_type,
                     case_type=StateSupervisionCaseType.GENERAL,
                     successful_completion=False,
                     incarcerated_during_sentence=False,
@@ -5639,7 +5547,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             start_date=date(2018, 1, 5),
             termination_date=date(2018, 8, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         second_supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -5649,7 +5557,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             start_date=date(2018, 9, 5),
             termination_date=date(2018, 12, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         first_supervision_sentence_projected_completion_date = date(2018, 12, 25)
@@ -5707,12 +5615,8 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
 
         self.assertEqual(2, len(projected_completion_events))
 
-        first_supervision_period_supervision_type = (
-            StateSupervisionPeriodSupervisionType.PAROLE
-        )
-        second_supervision_period_supervision_type = (
-            StateSupervisionPeriodSupervisionType.PROBATION
-        )
+        first_supervision_type = StateSupervisionPeriodSupervisionType.PAROLE
+        second_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
 
         self.assertEqual(
             [
@@ -5723,7 +5627,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                     event_date=last_day_of_month(
                         first_supervision_sentence_projected_completion_date
                     ),
-                    supervision_type=first_supervision_period_supervision_type,
+                    supervision_type=first_supervision_type,
                     case_type=StateSupervisionCaseType.GENERAL,
                     successful_completion=True,
                     incarcerated_during_sentence=False,
@@ -5739,7 +5643,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                     event_date=last_day_of_month(
                         second_supervision_sentence_projected_completion_date
                     ),
-                    supervision_type=second_supervision_period_supervision_type,
+                    supervision_type=second_supervision_type,
                     case_type=StateSupervisionCaseType.GENERAL,
                     successful_completion=False,
                     incarcerated_during_sentence=False,
@@ -5760,7 +5664,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             start_date=date(2018, 1, 5),
             termination_date=date(2018, 12, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             supervision_site="DISTRICTX",
         )
 
@@ -5813,9 +5717,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
 
         self.assertEqual(1, len(projected_completion_events))
 
-        supervision_period_supervision_type = (
-            StateSupervisionPeriodSupervisionType.PAROLE
-        )
+        supervision_type = StateSupervisionPeriodSupervisionType.PAROLE
 
         self.assertEqual(
             [
@@ -5826,7 +5728,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                     event_date=last_day_of_month(
                         supervision_sentence_projected_completion_date
                     ),
-                    supervision_type=supervision_period_supervision_type,
+                    supervision_type=supervision_type,
                     case_type=StateSupervisionCaseType.GENERAL,
                     successful_completion=True,
                     incarcerated_during_sentence=False,
@@ -5851,7 +5753,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             start_date=date(2018, 1, 5),
             termination_date=date(2018, 12, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         supervision_sentence_projected_completion_date = date(2018, 12, 25)
@@ -5902,9 +5804,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         )
         self.assertEqual(1, len(projected_completion_events))
 
-        supervision_period_supervision_type = (
-            StateSupervisionPeriodSupervisionType.PAROLE
-        )
+        supervision_type = StateSupervisionPeriodSupervisionType.PAROLE
 
         self.assertEqual(
             [
@@ -5915,7 +5815,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                     event_date=last_day_of_month(
                         supervision_sentence_projected_completion_date
                     ),
-                    supervision_type=supervision_period_supervision_type,
+                    supervision_type=supervision_type,
                     case_type=StateSupervisionCaseType.GENERAL,
                     successful_completion=True,
                     incarcerated_during_sentence=False,
@@ -5941,7 +5841,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             start_date=date(2018, 1, 5),
             termination_date=date(2018, 12, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         start_date = date(2017, 1, 1)
@@ -5981,9 +5881,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
 
         self.assertEqual(1, len(projected_completion_events))
 
-        supervision_period_supervision_type = (
-            StateSupervisionPeriodSupervisionType.PAROLE
-        )
+        supervision_type = StateSupervisionPeriodSupervisionType.PAROLE
 
         self.assertEqual(
             [
@@ -5992,7 +5890,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                     year=2018,
                     month=12,
                     event_date=last_day_of_month(projected_completion_date),
-                    supervision_type=supervision_period_supervision_type,
+                    supervision_type=supervision_type,
                     successful_completion=True,
                     incarcerated_during_sentence=False,
                     case_type=StateSupervisionCaseType.GENERAL,
@@ -6012,7 +5910,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             start_date=date(2018, 1, 5),
             termination_date=date(2018, 12, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.DEATH,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
@@ -6054,7 +5952,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             start_date=date(2018, 1, 5),
             termination_date=date(2018, 12, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.SUSPENSION,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
@@ -6095,7 +5993,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             start_date=date(2018, 1, 5),
             termination_date=date(2018, 12, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.SUSPENSION,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
@@ -6139,7 +6037,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             start_date=date(2018, 1, 5),
             termination_date=date(2018, 12, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         projected_completion_date = date(2018, 12, 25)
@@ -6188,9 +6086,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
 
         self.assertEqual(1, len(projected_completion_events))
 
-        supervision_period_supervision_type = (
-            StateSupervisionPeriodSupervisionType.PAROLE
-        )
+        supervision_type = StateSupervisionPeriodSupervisionType.PAROLE
 
         sentence_length = (completion_date - start_date).days
 
@@ -6201,7 +6097,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                     year=2018,
                     month=12,
                     event_date=last_day_of_month(projected_completion_date),
-                    supervision_type=supervision_period_supervision_type,
+                    supervision_type=supervision_type,
                     successful_completion=True,
                     incarcerated_during_sentence=True,
                     case_type=StateSupervisionCaseType.GENERAL,
@@ -6219,7 +6115,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             start_date=date(2018, 1, 5),
             termination_date=date(2018, 12, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         start_date = date(2017, 1, 1)
@@ -6255,9 +6151,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
 
         self.assertEqual(1, len(projected_completion_events))
 
-        supervision_period_supervision_type = (
-            StateSupervisionPeriodSupervisionType.PAROLE
-        )
+        supervision_type = StateSupervisionPeriodSupervisionType.PAROLE
 
         self.assertEqual(
             [
@@ -6268,7 +6162,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                     event_date=last_day_of_month(
                         start_date + datetime.timedelta(days=max_length_days)
                     ),
-                    supervision_type=supervision_period_supervision_type,
+                    supervision_type=supervision_type,
                     successful_completion=True,
                     incarcerated_during_sentence=False,
                     case_type=StateSupervisionCaseType.GENERAL,
@@ -6288,7 +6182,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             start_date=date.today() + datetime.timedelta(days=10),
             termination_date=date.today() + datetime.timedelta(days=1000),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
@@ -6331,7 +6225,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             start_date=date(2018, 1, 5),
             termination_date=date(2018, 12, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
@@ -6373,7 +6267,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             start_date=date(2018, 1, 5),
             termination_date=date(2018, 12, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
@@ -6416,7 +6310,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             start_date=date(2018, 1, 5),
             termination_date=date(2018, 12, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         supervision_sentence_completion_date = date(2018, 12, 25)
@@ -6442,7 +6336,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             start_date=date(2007, 6, 3),
             termination_date=date(2007, 12, 3),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         start_date = date(2006, 2, 21)
@@ -6478,9 +6372,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
 
         self.assertEqual(2, len(projected_completion_events))
 
-        supervision_period_supervision_type = (
-            StateSupervisionPeriodSupervisionType.PAROLE
-        )
+        supervision_type = StateSupervisionPeriodSupervisionType.PAROLE
 
         self.assertEqual(
             [
@@ -6489,7 +6381,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                     year=2018,
                     month=12,
                     event_date=last_day_of_month(supervision_sentence_completion_date),
-                    supervision_type=supervision_period_supervision_type,
+                    supervision_type=supervision_type,
                     successful_completion=True,
                     incarcerated_during_sentence=False,
                     case_type=StateSupervisionCaseType.GENERAL,
@@ -6505,7 +6397,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                     event_date=last_day_of_month(
                         start_date + datetime.timedelta(days=max_length_days)
                     ),
-                    supervision_type=supervision_period_supervision_type,
+                    supervision_type=supervision_type,
                     successful_completion=True,
                     incarcerated_during_sentence=False,
                     case_type=StateSupervisionCaseType.GENERAL,
@@ -6531,7 +6423,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             start_date=date(2018, 3, 5),
             termination_date=supervision_period_termination_date,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         first_assessment = StateAssessment.new_with_defaults(
@@ -6597,16 +6489,14 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
 
         assessment_score_change = last_assessment_score - first_reassessment_score
 
-        supervision_period_supervision_type = (
-            StateSupervisionPeriodSupervisionType.PROBATION
-        )
+        supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
 
         expected_termination_event = SupervisionTerminationEvent(
             state_code=supervision_period.state_code,
             year=supervision_period_termination_date.year,
             month=supervision_period_termination_date.month,
             event_date=supervision_period_termination_date,
-            supervision_type=supervision_period_supervision_type,
+            supervision_type=supervision_type,
             case_type=StateSupervisionCaseType.GENERAL,
             assessment_score=last_assessment.assessment_score,
             assessment_type=last_assessment.assessment_type,
@@ -6626,7 +6516,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             start_date=date(2018, 3, 5),
             termination_date=supervision_period_termination_date,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
@@ -6667,16 +6557,14 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             supervision_delegate=UsXxSupervisionDelegate(),
         )
 
-        supervision_period_supervision_type = (
-            StateSupervisionPeriodSupervisionType.PROBATION
-        )
+        supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
 
         expected_termination_event = SupervisionTerminationEvent(
             state_code=supervision_period.state_code,
             year=supervision_period_termination_date.year,
             month=supervision_period_termination_date.month,
             event_date=supervision_period_termination_date,
-            supervision_type=supervision_period_supervision_type,
+            supervision_type=supervision_type,
             case_type=StateSupervisionCaseType.GENERAL,
             assessment_score=None,
             assessment_type=None,
@@ -6696,7 +6584,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             start_date=date(2018, 3, 5),
             termination_date=supervision_period_termination_date,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         first_assessment = StateAssessment.new_with_defaults(
@@ -6744,16 +6632,14 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             supervision_delegate=UsXxSupervisionDelegate(),
         )
 
-        supervision_period_supervision_type = (
-            StateSupervisionPeriodSupervisionType.PROBATION
-        )
+        supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
 
         expected_termination_event = SupervisionTerminationEvent(
             state_code=supervision_period.state_code,
             year=supervision_period_termination_date.year,
             month=supervision_period_termination_date.month,
             event_date=supervision_period_termination_date,
-            supervision_type=supervision_period_supervision_type,
+            supervision_type=supervision_type,
             case_type=StateSupervisionCaseType.GENERAL,
             assessment_score=None,
             assessment_type=None,
@@ -6770,7 +6656,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             external_id="sp1",
             state_code="US_XX",
             start_date=date(2018, 3, 5),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
@@ -6823,7 +6709,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             state_code="US_XX",
             start_date=date(2018, 3, 5),
             termination_date=first_supervision_period_termination_date,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         second_supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -6832,7 +6718,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             state_code="US_XX",
             start_date=date(2018, 1, 1),
             termination_date=date(2019, 11, 23),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         too_early_assessment = StateAssessment.new_with_defaults(
@@ -6903,9 +6789,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             supervision_delegate=UsXxSupervisionDelegate(),
         )
 
-        first_supervision_period_supervision_type = (
-            StateSupervisionPeriodSupervisionType.PROBATION
-        )
+        first_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
 
         # in_supervision_population_on_date=True because another SP was in progress the same day as this termination
         expected_termination_event = SupervisionTerminationEvent(
@@ -6914,7 +6798,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             month=first_supervision_period_termination_date.month,
             event_date=first_supervision_period_termination_date,
             in_supervision_population_on_date=True,
-            supervision_type=first_supervision_period_supervision_type,
+            supervision_type=first_supervision_type,
             case_type=StateSupervisionCaseType.GENERAL,
             assessment_score=assessment_3_score,
             assessment_type=assessment_3.assessment_type,
@@ -6935,7 +6819,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             start_date=date(2018, 3, 5),
             termination_date=supervision_period_termination_date,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
@@ -6970,16 +6854,14 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             supervision_delegate=UsXxSupervisionDelegate(),
         )
 
-        supervision_period_supervision_type = (
-            StateSupervisionPeriodSupervisionType.PROBATION
-        )
+        supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
 
         expected_termination_event = SupervisionTerminationEvent(
             state_code=supervision_period.state_code,
             year=supervision_period_termination_date.year,
             month=supervision_period_termination_date.month,
             event_date=supervision_period_termination_date,
-            supervision_type=supervision_period_supervision_type,
+            supervision_type=supervision_type,
             case_type=StateSupervisionCaseType.GENERAL,
             termination_reason=supervision_period.termination_reason,
             in_supervision_population_on_date=True,
@@ -7063,7 +6945,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 3, 6),
             termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         second_supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -7073,7 +6955,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             start_date=date(2018, 3, 6),
             termination_date=date(2020, 5, 18),
             termination_reason=StateSupervisionPeriodTerminationReason.EXPIRATION,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
@@ -7114,9 +6996,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             supervision_delegate=UsXxSupervisionDelegate(),
         )
 
-        supervision_period_supervision_type = (
-            StateSupervisionPeriodSupervisionType.PROBATION
-        )
+        supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
 
         if first_supervision_period.termination_date is None:
             raise ValueError(
@@ -7130,7 +7010,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             event_date=first_supervision_period.termination_date,
             in_incarceration_population_on_date=False,
             in_supervision_population_on_date=True,
-            supervision_type=supervision_period_supervision_type,
+            supervision_type=supervision_type,
             case_type=StateSupervisionCaseType.GENERAL,
             assessment_score=None,
             assessment_type=None,
@@ -7174,7 +7054,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 3, 5),
             termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         second_supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -7184,7 +7064,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             start_date=date(2018, 3, 5),
             termination_date=date(2020, 5, 18),
             termination_reason=StateSupervisionPeriodTerminationReason.EXPIRATION,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
@@ -7225,9 +7105,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             supervision_delegate=UsXxSupervisionDelegate(),
         )
 
-        supervision_period_supervision_type = (
-            StateSupervisionPeriodSupervisionType.PROBATION
-        )
+        supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
 
         if first_supervision_period.termination_date is None:
             raise ValueError(
@@ -7241,7 +7119,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             event_date=first_supervision_period.termination_date,
             in_incarceration_population_on_date=False,
             in_supervision_population_on_date=False,
-            supervision_type=supervision_period_supervision_type,
+            supervision_type=supervision_type,
             case_type=StateSupervisionCaseType.GENERAL,
             assessment_score=None,
             assessment_type=None,
@@ -7268,7 +7146,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             start_date=date(2018, 3, 5),
             termination_date=supervision_termination_date,
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
@@ -7325,9 +7203,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             supervision_delegate=UsXxSupervisionDelegate(),
         )
 
-        supervision_period_supervision_type = (
-            StateSupervisionPeriodSupervisionType.PROBATION
-        )
+        supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
 
         if supervision_period.termination_date is None:
             raise ValueError(
@@ -7341,7 +7217,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             event_date=supervision_period.termination_date,
             in_incarceration_population_on_date=expected_in_incarceration_population_on_date,
             in_supervision_population_on_date=expected_in_supervision_population_on_date,
-            supervision_type=supervision_period_supervision_type,
+            supervision_type=supervision_type,
             case_type=StateSupervisionCaseType.GENERAL,
             assessment_score=None,
             assessment_type=None,
@@ -7446,7 +7322,7 @@ class TestFindSupervisionStartEvent(unittest.TestCase):
             start_date=first_supervision_period_start_date,
             termination_date=date(2018, 3, 6),
             termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         second_supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -7456,7 +7332,7 @@ class TestFindSupervisionStartEvent(unittest.TestCase):
             start_date=date(2018, 3, 6),
             termination_date=date(2020, 5, 18),
             termination_reason=StateSupervisionPeriodTerminationReason.EXPIRATION,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         supervision_period_index = PreProcessedSupervisionPeriodIndex(
@@ -7504,7 +7380,7 @@ class TestFindSupervisionStartEvent(unittest.TestCase):
             event_date=first_supervision_period_start_date,
             in_incarceration_population_on_date=False,
             in_supervision_population_on_date=True,
-            supervision_type=first_supervision_period.supervision_period_supervision_type,
+            supervision_type=first_supervision_period.supervision_type,
             supervision_level=first_supervision_period.supervision_level,
             case_type=StateSupervisionCaseType.GENERAL,
             admission_reason=first_supervision_period.admission_reason,
@@ -7546,7 +7422,7 @@ class TestFindSupervisionStartEvent(unittest.TestCase):
             start_date=start_date,
             termination_date=date(2018, 3, 5),
             termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         second_supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -7556,7 +7432,7 @@ class TestFindSupervisionStartEvent(unittest.TestCase):
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 18),
             termination_reason=StateSupervisionPeriodTerminationReason.EXPIRATION,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         supervision_period_index = PreProcessedSupervisionPeriodIndex(
@@ -7604,7 +7480,7 @@ class TestFindSupervisionStartEvent(unittest.TestCase):
             event_date=start_date,
             in_incarceration_population_on_date=False,
             in_supervision_population_on_date=True,
-            supervision_type=first_supervision_period.supervision_period_supervision_type,
+            supervision_type=first_supervision_period.supervision_type,
             supervision_level=first_supervision_period.supervision_level,
             case_type=StateSupervisionCaseType.GENERAL,
             admission_reason=first_supervision_period.admission_reason,
@@ -7630,7 +7506,7 @@ class TestFindSupervisionStartEvent(unittest.TestCase):
             start_date=supervision_start_date,
             termination_date=date(2019, 5, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -7693,7 +7569,7 @@ class TestFindSupervisionStartEvent(unittest.TestCase):
             event_date=supervision_period.start_date,
             in_incarceration_population_on_date=expected_in_incarceration_population_on_date,
             in_supervision_population_on_date=expected_in_supervision_population_on_date,
-            supervision_type=supervision_period.supervision_period_supervision_type,
+            supervision_type=supervision_period.supervision_type,
             supervision_level=supervision_period.supervision_level,
             case_type=StateSupervisionCaseType.GENERAL,
             admission_reason=supervision_period.admission_reason,
@@ -8412,7 +8288,7 @@ class TestProjectedCompletionDate(unittest.TestCase):
             # Termination date is after sentence's projected completion date
             termination_date=date(2018, 5, 15),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
             supervision_level_raw_text="M",
         )
@@ -8453,7 +8329,7 @@ class TestProjectedCompletionDate(unittest.TestCase):
             start_date=date(2018, 5, 1),
             termination_date=date(2018, 5, 15),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
             supervision_level_raw_text="M",
         )
@@ -8486,7 +8362,7 @@ class TestProjectedCompletionDate(unittest.TestCase):
             # Termination date is after sentence's projected completion date
             termination_date=date(2018, 5, 15),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
             supervision_level_raw_text="M",
         )
@@ -8531,7 +8407,7 @@ class TestProjectedCompletionDate(unittest.TestCase):
             # Termination date is after sentence's projected completion date
             termination_date=date(2018, 5, 15),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
             supervision_level_raw_text="M",
         )
@@ -8575,7 +8451,7 @@ class TestProjectedCompletionDate(unittest.TestCase):
             # Termination date is after sentence's projected completion date
             termination_date=date(2018, 5, 15),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
             supervision_level_raw_text="M",
         )
@@ -8663,7 +8539,7 @@ def create_start_event_from_period(
         year=period.start_date.year,
         month=period.start_date.month,
         event_date=period.start_date,
-        supervision_type=period.supervision_period_supervision_type,
+        supervision_type=period.supervision_type,
         supervision_level_raw_text=period.supervision_level_raw_text,
         supervising_district_external_id=deprecated_supervising_district_external_id,
         level_1_supervision_location_external_id=level_1_supervision_location_external_id,
@@ -8709,7 +8585,7 @@ def create_termination_event_from_period(
         year=period.termination_date.year,
         month=period.termination_date.month,
         event_date=period.termination_date,
-        supervision_type=period.supervision_period_supervision_type,
+        supervision_type=period.supervision_type,
         supervision_level=period.supervision_level,
         supervision_level_raw_text=period.supervision_level_raw_text,
         supervising_district_external_id=deprecated_supervising_district_external_id,

@@ -25,7 +25,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_pre
     SUPERVISION_TYPE_LOOKBACK_MONTH_LIMIT,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_utils import (
-    us_id_get_most_recent_supervision_period_supervision_type_before_upper_bound_day,
+    us_id_get_most_recent_supervision_type_before_upper_bound_day,
     us_id_get_post_incarceration_supervision_type,
 )
 from recidiviz.common.constants.state.state_incarceration_period import (
@@ -63,7 +63,7 @@ class UsIdGetPostIncarcerationSupervisionTypeTest(unittest.TestCase):
             state_code="US_ID",
             supervision_period_id=1,
             start_date=incarceration_period.release_date,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
@@ -103,7 +103,7 @@ class UsIdGetPostIncarcerationSupervisionTypeTest(unittest.TestCase):
             supervision_period_id=1,
             start_date=release_date
             + relativedelta(months=SUPERVISION_TYPE_LOOKBACK_MONTH_LIMIT, days=100),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
@@ -144,7 +144,7 @@ class UsIdGetPostIncarcerationSupervisionTypeTest(unittest.TestCase):
             - relativedelta(months=SUPERVISION_TYPE_LOOKBACK_MONTH_LIMIT, days=100),
             termination_date=admission_date
             - relativedelta(months=SUPERVISION_TYPE_LOOKBACK_MONTH_LIMIT, days=10),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
@@ -189,7 +189,7 @@ class UsIdGetPostIncarcerationSupervisionTypeTest(unittest.TestCase):
 class UsIdGetMostRecentSupervisionPeriodSupervisionTypeBeforeUpperBoundDayTest(
     unittest.TestCase
 ):
-    """Unittests for the us_id_get_most_recent_supervision_period_supervision_type_before_upper_bound_day helper."""
+    """Unittests for the us_id_get_most_recent_supervision_type_before_upper_bound_day helper."""
 
     def setUp(self) -> None:
         self.upper_bound_date = date(2018, 10, 10)
@@ -200,18 +200,20 @@ class UsIdGetMostRecentSupervisionPeriodSupervisionTypeBeforeUpperBoundDayTest(
             supervision_period_id=1,
             start_date=self.upper_bound_date - relativedelta(days=100),
             termination_date=self.upper_bound_date - relativedelta(days=10),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
-        supervision_period_supervision_type = us_id_get_most_recent_supervision_period_supervision_type_before_upper_bound_day(
-            upper_bound_exclusive_date=self.upper_bound_date,
-            lower_bound_inclusive_date=None,
-            supervision_periods=[preceding_supervision_period],
+        supervision_type = (
+            us_id_get_most_recent_supervision_type_before_upper_bound_day(
+                upper_bound_exclusive_date=self.upper_bound_date,
+                lower_bound_inclusive_date=None,
+                supervision_periods=[preceding_supervision_period],
+            )
         )
 
         self.assertEqual(
             StateSupervisionPeriodSupervisionType.PAROLE,
-            supervision_period_supervision_type,
+            supervision_type,
         )
 
     def test_most_recent_supervision_type_no_lower_bound_incarceration_sentence(
@@ -222,18 +224,20 @@ class UsIdGetMostRecentSupervisionPeriodSupervisionTypeBeforeUpperBoundDayTest(
             supervision_period_id=1,
             start_date=self.upper_bound_date - relativedelta(days=100),
             termination_date=self.upper_bound_date - relativedelta(days=10),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
-        supervision_period_supervision_type = us_id_get_most_recent_supervision_period_supervision_type_before_upper_bound_day(
-            upper_bound_exclusive_date=self.upper_bound_date,
-            lower_bound_inclusive_date=None,
-            supervision_periods=[preceding_supervision_period],
+        supervision_type = (
+            us_id_get_most_recent_supervision_type_before_upper_bound_day(
+                upper_bound_exclusive_date=self.upper_bound_date,
+                lower_bound_inclusive_date=None,
+                supervision_periods=[preceding_supervision_period],
+            )
         )
 
         self.assertEqual(
             StateSupervisionPeriodSupervisionType.PAROLE,
-            supervision_period_supervision_type,
+            supervision_type,
         )
 
     def test_most_recent_supervision_type_lower_bound(self) -> None:
@@ -242,18 +246,20 @@ class UsIdGetMostRecentSupervisionPeriodSupervisionTypeBeforeUpperBoundDayTest(
             supervision_period_id=1,
             start_date=self.upper_bound_date - relativedelta(days=100),
             termination_date=self.upper_bound_date - relativedelta(days=10),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
-        supervision_period_supervision_type = us_id_get_most_recent_supervision_period_supervision_type_before_upper_bound_day(
-            upper_bound_exclusive_date=self.upper_bound_date,
-            lower_bound_inclusive_date=None,
-            supervision_periods=[preceding_supervision_period],
+        supervision_type = (
+            us_id_get_most_recent_supervision_type_before_upper_bound_day(
+                upper_bound_exclusive_date=self.upper_bound_date,
+                lower_bound_inclusive_date=None,
+                supervision_periods=[preceding_supervision_period],
+            )
         )
 
         self.assertEqual(
             StateSupervisionPeriodSupervisionType.PAROLE,
-            supervision_period_supervision_type,
+            supervision_type,
         )
 
     def test_most_recent_supervision_type_ignore_before_lower_bound(self) -> None:
@@ -262,16 +268,19 @@ class UsIdGetMostRecentSupervisionPeriodSupervisionTypeBeforeUpperBoundDayTest(
             supervision_period_id=1,
             start_date=self.upper_bound_date - relativedelta(days=100),
             termination_date=self.upper_bound_date - relativedelta(days=10),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
-        supervision_period_supervision_type = us_id_get_most_recent_supervision_period_supervision_type_before_upper_bound_day(
-            upper_bound_exclusive_date=self.upper_bound_date,
-            lower_bound_inclusive_date=self.upper_bound_date - relativedelta(days=2),
-            supervision_periods=[preceding_supervision_period],
+        supervision_type = (
+            us_id_get_most_recent_supervision_type_before_upper_bound_day(
+                upper_bound_exclusive_date=self.upper_bound_date,
+                lower_bound_inclusive_date=self.upper_bound_date
+                - relativedelta(days=2),
+                supervision_periods=[preceding_supervision_period],
+            )
         )
 
-        self.assertEqual(None, supervision_period_supervision_type)
+        self.assertEqual(None, supervision_type)
 
     @freeze_time("2000-01-31")
     def test_most_recent_supervision_type_active_supervision(self) -> None:
@@ -280,18 +289,20 @@ class UsIdGetMostRecentSupervisionPeriodSupervisionTypeBeforeUpperBoundDayTest(
             supervision_period_id=1,
             start_date=date.today() - relativedelta(days=100),
             termination_date=None,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
-        supervision_period_supervision_type = us_id_get_most_recent_supervision_period_supervision_type_before_upper_bound_day(
-            upper_bound_exclusive_date=self.upper_bound_date,
-            lower_bound_inclusive_date=None,
-            supervision_periods=[preceding_supervision_period],
+        supervision_type = (
+            us_id_get_most_recent_supervision_type_before_upper_bound_day(
+                upper_bound_exclusive_date=self.upper_bound_date,
+                lower_bound_inclusive_date=None,
+                supervision_periods=[preceding_supervision_period],
+            )
         )
 
         self.assertEqual(
             StateSupervisionPeriodSupervisionType.PROBATION,
-            supervision_period_supervision_type,
+            supervision_type,
         )
 
     def test_most_recent_supervision_type_overlapping_supervision(self) -> None:
@@ -300,18 +311,20 @@ class UsIdGetMostRecentSupervisionPeriodSupervisionTypeBeforeUpperBoundDayTest(
             supervision_period_id=1,
             start_date=self.upper_bound_date - relativedelta(days=100),
             termination_date=self.upper_bound_date + relativedelta(days=100),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
-        supervision_period_supervision_type = us_id_get_most_recent_supervision_period_supervision_type_before_upper_bound_day(
-            upper_bound_exclusive_date=self.upper_bound_date,
-            lower_bound_inclusive_date=None,
-            supervision_periods=[preceding_supervision_period],
+        supervision_type = (
+            us_id_get_most_recent_supervision_type_before_upper_bound_day(
+                upper_bound_exclusive_date=self.upper_bound_date,
+                lower_bound_inclusive_date=None,
+                supervision_periods=[preceding_supervision_period],
+            )
         )
 
         self.assertEqual(
             StateSupervisionPeriodSupervisionType.PROBATION,
-            supervision_period_supervision_type,
+            supervision_type,
         )
 
     def test_most_recent_supervision_type_supervision_terminates_on_bound(self) -> None:
@@ -320,18 +333,20 @@ class UsIdGetMostRecentSupervisionPeriodSupervisionTypeBeforeUpperBoundDayTest(
             supervision_period_id=1,
             start_date=self.upper_bound_date - relativedelta(days=100),
             termination_date=self.upper_bound_date,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
-        supervision_period_supervision_type = us_id_get_most_recent_supervision_period_supervision_type_before_upper_bound_day(
-            upper_bound_exclusive_date=self.upper_bound_date,
-            lower_bound_inclusive_date=None,
-            supervision_periods=[preceding_supervision_period],
+        supervision_type = (
+            us_id_get_most_recent_supervision_type_before_upper_bound_day(
+                upper_bound_exclusive_date=self.upper_bound_date,
+                lower_bound_inclusive_date=None,
+                supervision_periods=[preceding_supervision_period],
+            )
         )
 
         self.assertEqual(
             StateSupervisionPeriodSupervisionType.PAROLE,
-            supervision_period_supervision_type,
+            supervision_type,
         )
 
     def test_most_recent_supervision_type_supervision_starts_on_bound(self) -> None:
@@ -340,31 +355,37 @@ class UsIdGetMostRecentSupervisionPeriodSupervisionTypeBeforeUpperBoundDayTest(
             supervision_period_id=1,
             start_date=self.upper_bound_date,
             termination_date=self.upper_bound_date + relativedelta(years=1),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
-        supervision_period_supervision_type = us_id_get_most_recent_supervision_period_supervision_type_before_upper_bound_day(
-            upper_bound_exclusive_date=self.upper_bound_date,
-            lower_bound_inclusive_date=None,
-            supervision_periods=[preceding_supervision_period],
+        supervision_type = (
+            us_id_get_most_recent_supervision_type_before_upper_bound_day(
+                upper_bound_exclusive_date=self.upper_bound_date,
+                lower_bound_inclusive_date=None,
+                supervision_periods=[preceding_supervision_period],
+            )
         )
 
-        self.assertEqual(supervision_period_supervision_type, None)
+        self.assertEqual(supervision_type, None)
 
     def test_most_recent_supervision_type_no_sentences_no_lower_bound(self) -> None:
-        supervision_period_supervision_type = us_id_get_most_recent_supervision_period_supervision_type_before_upper_bound_day(
-            upper_bound_exclusive_date=self.upper_bound_date,
-            lower_bound_inclusive_date=None,
-            supervision_periods=[],
+        supervision_type = (
+            us_id_get_most_recent_supervision_type_before_upper_bound_day(
+                upper_bound_exclusive_date=self.upper_bound_date,
+                lower_bound_inclusive_date=None,
+                supervision_periods=[],
+            )
         )
 
-        self.assertEqual(supervision_period_supervision_type, None)
+        self.assertEqual(supervision_type, None)
 
     def test_most_recent_supervision_type_no_sentences_same_day_bound(self) -> None:
-        supervision_period_supervision_type = us_id_get_most_recent_supervision_period_supervision_type_before_upper_bound_day(
-            upper_bound_exclusive_date=self.upper_bound_date,
-            lower_bound_inclusive_date=self.upper_bound_date,
-            supervision_periods=[],
+        supervision_type = (
+            us_id_get_most_recent_supervision_type_before_upper_bound_day(
+                upper_bound_exclusive_date=self.upper_bound_date,
+                lower_bound_inclusive_date=self.upper_bound_date,
+                supervision_periods=[],
+            )
         )
 
-        self.assertEqual(supervision_period_supervision_type, None)
+        self.assertEqual(supervision_type, None)

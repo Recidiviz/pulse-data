@@ -2339,12 +2339,12 @@ class _StateSupervisionPeriodSharedColumns(_ReferencesStatePersonSharedColumns):
             object_name="StateSupervisionPeriod"
         ),
     )
-    supervision_period_supervision_type = Column(
+    supervision_type = Column(
         state_supervision_period_supervision_type,
         comment="The type of supervision the person is serving during "
         "this time period.",
     )
-    supervision_period_supervision_type_raw_text = Column(
+    supervision_type_raw_text = Column(
         String(255),
         comment="The raw text value of the supervision period" " supervision type.",
     )

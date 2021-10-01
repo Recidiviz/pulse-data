@@ -996,7 +996,7 @@ class UsIdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         for obj in extracted_objects:
             if isinstance(obj, StateSupervisionPeriod):
                 if supervision_type_override:
-                    obj.supervision_period_supervision_type = supervision_type_override
+                    obj.supervision_type = supervision_type_override
 
     # TODO(#2912): Add custodial authority to incarceration periods
     @staticmethod
