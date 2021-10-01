@@ -183,7 +183,7 @@ class UsIdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
         """Returns whether the standard state guidelines are applicable for the given supervision case. The standard
         guidelines are only applicable for supervision cases of type GENERAL and SEX_OFFENSE, each with corresponding
         expected supervision levels and supervision types."""
-        supervision_type = self.supervision_period.supervision_period_supervision_type
+        supervision_type = self.supervision_period.supervision_type
 
         # Check case type
         if self.case_type not in (
@@ -214,8 +214,7 @@ class UsIdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
         ]
         is_bench_warrant = (
             supervision_type == StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
-            and self.supervision_period.supervision_period_supervision_type_raw_text
-            == "BW"
+            and self.supervision_period.supervision_type_raw_text == "BW"
         )
         # TODO(#9440): Build support for calculating compliance for bench warrant cases
         #  if necessary
@@ -229,7 +228,7 @@ class UsIdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
         `supervision_type`."""
         supervision_type: Optional[
             StateSupervisionPeriodSupervisionType
-        ] = self.supervision_period.supervision_period_supervision_type
+        ] = self.supervision_period.supervision_type
         if self.case_type == StateSupervisionCaseType.GENERAL:
             return NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS
         if self.case_type == StateSupervisionCaseType.SEX_OFFENSE:

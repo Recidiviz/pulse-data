@@ -80,7 +80,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_supervision_per
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_supervision_utils import (
     us_mo_get_month_supervision_type,
-    us_mo_get_most_recent_supervision_period_supervision_type_before_upper_bound_day,
+    us_mo_get_most_recent_supervision_type_before_upper_bound_day,
     us_mo_get_post_incarceration_supervision_type,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_violation_response_preprocessing_delegate import (
@@ -197,8 +197,8 @@ def get_month_supervision_type(
 
     if supervision_period.state_code.upper() in ("US_ID", "US_PA"):
         return (
-            supervision_period.supervision_period_supervision_type
-            if supervision_period.supervision_period_supervision_type
+            supervision_period.supervision_type
+            if supervision_period.supervision_type
             else StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
         )
 
@@ -265,11 +265,13 @@ def terminating_supervision_period_supervision_type(
         )
 
     if supervision_period.state_code.upper() == "US_MO":
-        supervision_type = us_mo_get_most_recent_supervision_period_supervision_type_before_upper_bound_day(
-            upper_bound_exclusive_date=supervision_period.termination_date,
-            lower_bound_inclusive_date=supervision_period.start_date,
-            incarceration_sentences=incarceration_sentences,
-            supervision_sentences=supervision_sentences,
+        supervision_type = (
+            us_mo_get_most_recent_supervision_type_before_upper_bound_day(
+                upper_bound_exclusive_date=supervision_period.termination_date,
+                lower_bound_inclusive_date=supervision_period.start_date,
+                incarceration_sentences=incarceration_sentences,
+                supervision_sentences=supervision_sentences,
+            )
         )
 
         return (
@@ -280,8 +282,8 @@ def terminating_supervision_period_supervision_type(
 
     if supervision_period.state_code.upper() in ("US_ID", "US_PA"):
         return (
-            supervision_period.supervision_period_supervision_type
-            if supervision_period.supervision_period_supervision_type
+            supervision_period.supervision_type
+            if supervision_period.supervision_type
             else StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
         )
 

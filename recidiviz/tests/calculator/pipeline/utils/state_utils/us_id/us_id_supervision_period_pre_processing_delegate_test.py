@@ -47,14 +47,14 @@ class TestUsIdSupervisionPeriodPreProcessingDelegate(unittest.TestCase):
             start_date=self.upper_bound_date - relativedelta(days=100),
             termination_date=self.upper_bound_date - relativedelta(days=10),
             termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,
         )
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code="US_ID",
             supervision_period_id=2,
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
             start_date=supervision_period_previous.termination_date,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
         found_admission_reason = self.delegate.supervision_admission_reason_override(
             supervision_period=supervision_period,
@@ -74,14 +74,14 @@ class TestUsIdSupervisionPeriodPreProcessingDelegate(unittest.TestCase):
             start_date=self.upper_bound_date - relativedelta(days=100),
             termination_date=previous_termination_date,
             termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,
         )
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code="US_ID",
             supervision_period_id=2,
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
             start_date=previous_termination_date + relativedelta(months=1, days=2),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
         found_admission_reason = self.delegate.supervision_admission_reason_override(
             supervision_period=supervision_period,
@@ -98,14 +98,14 @@ class TestUsIdSupervisionPeriodPreProcessingDelegate(unittest.TestCase):
             start_date=self.upper_bound_date - relativedelta(days=100),
             termination_date=self.upper_bound_date - relativedelta(days=10),
             termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code="US_ID",
             supervision_period_id=2,
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
             start_date=supervision_period_previous.termination_date,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
         found_admission_reason = self.delegate.supervision_admission_reason_override(
             supervision_period=supervision_period,
@@ -123,7 +123,7 @@ class TestUsIdSupervisionPeriodPreProcessingDelegate(unittest.TestCase):
             start_date=self.upper_bound_date - relativedelta(days=100),
             termination_date=previous_termination_date,
             termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,
         )
         supervision_period_one_day = StateSupervisionPeriod.new_with_defaults(
             state_code="US_ID",
@@ -137,7 +137,7 @@ class TestUsIdSupervisionPeriodPreProcessingDelegate(unittest.TestCase):
             supervision_period_id=3,
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
             start_date=supervision_period_one_day.termination_date,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         found_admission_reason_for_ongoing = (
@@ -165,7 +165,7 @@ class TestUsIdSupervisionPeriodPreProcessingDelegate(unittest.TestCase):
             start_date=self.upper_bound_date - relativedelta(days=100),
             termination_date=self.upper_bound_date - relativedelta(days=10),
             termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,
         )
         supervision_period_one_day = StateSupervisionPeriod.new_with_defaults(
             state_code="US_ID",
@@ -174,7 +174,7 @@ class TestUsIdSupervisionPeriodPreProcessingDelegate(unittest.TestCase):
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
             start_date=supervision_period_previous.termination_date,
             termination_date=supervision_period_previous.termination_date,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.INFORMAL_PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.INFORMAL_PROBATION,
         )
         supervision_period_ongoing = StateSupervisionPeriod.new_with_defaults(
             state_code="US_ID",
@@ -182,7 +182,7 @@ class TestUsIdSupervisionPeriodPreProcessingDelegate(unittest.TestCase):
             external_id="sp3",
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
             start_date=supervision_period_one_day.termination_date,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         found_admission_reason_for_one_day = (

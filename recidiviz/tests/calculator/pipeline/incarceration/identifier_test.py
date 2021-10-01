@@ -661,7 +661,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             state_code="US_ID",
             start_date=date(2018, 11, 1),
             termination_date=date(2018, 11, 19),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,
         )
 
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
@@ -1062,7 +1062,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             start_date=date(2001, 3, 13),
             termination_date=date(2008, 12, 20),
             supervision_site="X",
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
@@ -1194,7 +1194,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             start_date=date(2008, 3, 5),
             termination_date=date(2009, 12, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_site="X",
         )
 
@@ -1334,7 +1334,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             start_date=date(2008, 3, 5),
             termination_date=date(2009, 12, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_site="X",
         )
 
@@ -1797,7 +1797,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             custodial_authority_raw_text="US_ID_DOC",
             start_date=date(2017, 3, 5),
             termination_date=date(2017, 5, 9),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
             supervision_level_raw_text="MEDIUM",
             supervision_site="X|Y",
@@ -1860,7 +1860,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                     county_of_residence=_COUNTY_OF_RESIDENCE,
                     admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
                     admission_reason_raw_text=revocation_period.admission_reason_raw_text,
-                    supervision_type=supervision_period.supervision_period_supervision_type,
+                    supervision_type=supervision_period.supervision_type,
                     supervision_level=supervision_period.supervision_level,
                     supervision_level_raw_text=supervision_period.supervision_level_raw_text,
                     case_type=StateSupervisionCaseType.GENERAL,
@@ -2021,7 +2021,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             supervision_level=StateSupervisionLevel.MINIMUM,
             supervision_level_raw_text="LOW",
         )
@@ -2138,7 +2138,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                 county_of_residence=_COUNTY_OF_RESIDENCE,
                 admission_reason=StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
                 admission_reason_raw_text=shock_incarceration_period.admission_reason_raw_text,
-                supervision_type=supervision_period.supervision_period_supervision_type,
+                supervision_type=supervision_period.supervision_type,
                 supervision_level=supervision_period.supervision_level,
                 supervision_level_raw_text=supervision_period.supervision_level_raw_text,
                 case_type=StateSupervisionCaseType.GENERAL,
@@ -3397,7 +3397,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             state_code="US_XX",
             start_date=date(2008, 3, 5),
             termination_date=date(2009, 12, 19),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_site="OFFICE_1",
         )
 
@@ -3428,9 +3428,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             )
         )
 
-        supervision_period_supervision_type = (
-            StateSupervisionPeriodSupervisionType.PROBATION
-        )
+        supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
 
         assert incarceration_period.admission_date is not None
         assert incarceration_period.admission_reason is not None
@@ -3438,7 +3436,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             state_code=supervision_period.state_code,
             event_date=incarceration_period.admission_date,
             admission_reason=incarceration_period.admission_reason,
-            supervision_type=supervision_period_supervision_type,
+            supervision_type=supervision_type,
             case_type=StateSupervisionCaseType.GENERAL,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             most_severe_violation_type=StateSupervisionViolationType.FELONY,
@@ -3532,7 +3530,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             state_code="US_XX",
             start_date=date(2008, 3, 5),
             termination_date=date(2009, 12, 19),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_site="OFFICE_1",
         )
 
@@ -3562,9 +3560,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             )
         )
 
-        supervision_period_supervision_type = (
-            StateSupervisionPeriodSupervisionType.PROBATION
-        )
+        supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
 
         assert incarceration_period.admission_date is not None
         assert incarceration_period.admission_reason is not None
@@ -3572,7 +3568,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             state_code=supervision_period.state_code,
             event_date=incarceration_period.admission_date,
             admission_reason=incarceration_period.admission_reason,
-            supervision_type=supervision_period_supervision_type,
+            supervision_type=supervision_type,
             case_type=StateSupervisionCaseType.GENERAL,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             most_severe_violation_type=StateSupervisionViolationType.TECHNICAL,
@@ -3667,7 +3663,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             state_code=state_code,
             start_date=date(2008, 3, 5),
             termination_date=date(2012, 12, 19),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_site="OFFICE_1",
         )
 
@@ -3747,9 +3743,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             )
         )
 
-        supervision_period_supervision_type = (
-            StateSupervisionPeriodSupervisionType.PROBATION
-        )
+        supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
 
         assert incarceration_period.admission_date is not None
         assert incarceration_period.admission_reason is not None
@@ -3757,7 +3751,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             state_code=supervision_period.state_code,
             event_date=incarceration_period.admission_date,
             admission_reason=incarceration_period.admission_reason,
-            supervision_type=supervision_period_supervision_type,
+            supervision_type=supervision_type,
             case_type=StateSupervisionCaseType.GENERAL,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             most_severe_violation_type=StateSupervisionViolationType.FELONY,
@@ -3786,7 +3780,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             state_code="US_ND",
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             supervision_site="X",
         )
 
@@ -4025,7 +4019,7 @@ class TestReleaseEventForPeriod(unittest.TestCase):
             state_code="US_ID",
             supervision_period_id=111,
             start_date=incarceration_period.release_date,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
         incarceration_delegate = UsIdIncarcerationDelegate()
 
@@ -4206,7 +4200,7 @@ class TestGetUniquePeriodsFromSentenceGroupAndAddBackedges(unittest.TestCase):
     def test_get_unique_periods_from_sentence_groups_and_add_backedges(self) -> None:
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=1112,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             state_code="US_XX",
             start_date=date(2008, 11, 20),
             termination_date=date(2010, 12, 4),

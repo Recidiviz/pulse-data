@@ -176,7 +176,7 @@ def _us_nd_normalize_period_if_commitment_from_supervision(
             most_recent_supervision_period
             and most_recent_supervision_period.termination_reason
             == StateSupervisionPeriodTerminationReason.REVOCATION
-            and most_recent_supervision_period.supervision_period_supervision_type
+            and most_recent_supervision_period.supervision_type
             in (
                 StateSupervisionPeriodSupervisionType.PAROLE,
                 StateSupervisionPeriodSupervisionType.PROBATION,
@@ -200,7 +200,7 @@ def _us_nd_normalize_period_if_commitment_from_supervision(
                 incarceration_period,
                 admission_reason=(
                     StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION
-                    if most_recent_supervision_period.supervision_period_supervision_type
+                    if most_recent_supervision_period.supervision_type
                     == StateSupervisionPeriodSupervisionType.PROBATION
                     else StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION
                 ),

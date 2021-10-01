@@ -93,7 +93,7 @@ class TestPreCommitmentSupervisionTypeIdentification(unittest.TestCase):
             state_code="US_PA",
             start_date=date(2008, 3, 5),
             termination_date=date(2008, 12, 16),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -131,7 +131,7 @@ class TestPreCommitmentSupervisionTypeIdentification(unittest.TestCase):
             state_code="US_PA",
             start_date=date(2008, 3, 5),
             termination_date=date(2008, 12, 16),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
+            supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
         )
 
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(

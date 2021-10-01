@@ -551,8 +551,8 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
     )
 
     supervision_period = entities.StateSupervisionPeriod.new_with_defaults(
-        supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-        supervision_period_supervision_type_raw_text="PAROLE",
+        supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+        supervision_type_raw_text="PAROLE",
         start_date=datetime.date(year=2004, month=8, day=1),
         termination_date=None,
         state_code="US_XX",

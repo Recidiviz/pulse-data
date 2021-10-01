@@ -373,8 +373,9 @@ SHARED_OVERRIDES: Dict[Enum, List[str]] = {
     StateSupervisionPeriodTerminationReason.EXTERNAL_UNKNOWN: [
         "14"  # Terminated - Other
     ],
-    # TODO(#2891): Ensure that all of these codes are migrated to to new admission and release reasons
-    # when we migrate these periods to a supervision_period_supervision_type of INVESTIGATION
+    # TODO(#2891): Ensure that all of these codes are migrated to to new admission and
+    #  release reasons when we migrate these periods to
+    #  StateSupervisionPeriodSupervisionType.INVESTIGATION
     StateSupervisionPeriodTerminationReason.INVESTIGATION: [
         "21",  # Guilty
         "22",  # Guilty of Lesser Charge

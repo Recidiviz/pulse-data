@@ -365,7 +365,7 @@ message StateIncarcerationPeriod {
 
 message StateSupervisionPeriod {
     optional string state_supervision_period_id = 1;
-    optional string supervision_period_supervision_type = 4;
+    optional string supervision_type = 4;
     optional string start_date = 5;
     optional string termination_date = 6;
     optional string state_code = 7;

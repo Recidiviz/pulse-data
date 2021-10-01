@@ -241,7 +241,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             termination_date=date(2000, 10, 3),
             admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
             termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,
         )
 
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
@@ -251,7 +251,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             termination_date=date(2000, 10, 11),
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
             termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,
         )
 
         # Transferring from INVESTIGATION to PROBATION is a new official start of supervision
@@ -262,7 +262,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             termination_date=date(2001, 1, 3),
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         supervision_periods = [
@@ -298,7 +298,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             termination_date=date(2000, 10, 3),
             admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
             termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.INFORMAL_PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.INFORMAL_PROBATION,
         )
 
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
@@ -308,7 +308,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             termination_date=date(2000, 10, 11),
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
             termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.INFORMAL_PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.INFORMAL_PROBATION,
         )
 
         # Transferring from INFORMAL_PROBATION to PROBATION is a new official start of supervision
@@ -319,7 +319,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             termination_date=date(2001, 1, 3),
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         supervision_periods = [
@@ -353,7 +353,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             termination_date=date(2000, 10, 3),
             admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
             termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,
         )
 
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
@@ -363,7 +363,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             termination_date=date(2000, 10, 11),
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
             termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.INFORMAL_PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.INFORMAL_PROBATION,
         )
 
         # Transferring from INVESTIGATION to INFORMAL_PROBATION is a new official start of supervision
@@ -374,7 +374,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             termination_date=date(2001, 1, 3),
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.INFORMAL_PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.INFORMAL_PROBATION,
         )
 
         supervision_periods = [
@@ -410,7 +410,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             termination_date=date(2000, 10, 3),
             admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
             termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
+            supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
         )
 
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
@@ -420,7 +420,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             termination_date=date(2000, 10, 11),
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
             termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         # Transferring from INVESTIGATION to INFORMAL_PROBATION is a new official start of supervision
@@ -431,7 +431,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             termination_date=date(2001, 1, 3),
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         supervision_periods = [

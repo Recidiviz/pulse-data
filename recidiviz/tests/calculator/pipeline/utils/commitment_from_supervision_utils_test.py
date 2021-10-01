@@ -149,7 +149,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
             state_code="US_XX",
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_site="DISTRICT 999",
         )
 
@@ -193,7 +193,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
             state_code="US_ND",
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_site="X",
         )
 
@@ -279,7 +279,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
             start_date=date(2017, 12, 5),
             termination_date=date(2018, 5, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             supervision_level=StateSupervisionLevel.MINIMUM,
             supervision_level_raw_text="LOW",
         )
@@ -353,7 +353,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
         pre_commitment_sp = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=_DEFAULT_SUPERVISION_PERIOD_ID,
             state_code="US_XX",
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             start_date=date(2010, 12, 1),
             termination_date=incarceration_period.admission_date,
         )
@@ -361,7 +361,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
         supervision_period_while_in_prison = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=222,
             state_code="US_XX",
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             start_date=incarceration_period.admission_date,
         )
 

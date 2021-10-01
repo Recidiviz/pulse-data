@@ -87,7 +87,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
             state_code="US_ID",
             start_date=date(2017, 3, 5),
             termination_date=date(2017, 5, 9),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         supervision_period_unset = StateSupervisionPeriod.new_with_defaults(
@@ -96,7 +96,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
             state_code="US_ID",
             start_date=date(2017, 3, 5),
             termination_date=date(2017, 5, 9),
-            supervision_period_supervision_type=None,
+            supervision_type=None,
         )
 
         supervision_periods = [supervision_period_set, supervision_period_unset]
@@ -119,7 +119,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
             state_code="US_ID",
             start_date=date(2017, 3, 5),
             termination_date=date(2017, 5, 9),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         supervision_period_unset = StateSupervisionPeriod.new_with_defaults(
@@ -128,7 +128,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
             state_code="US_ID",
             start_date=date(2017, 3, 5),
             termination_date=date(2017, 5, 9),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN,
+            supervision_type=StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN,
         )
 
         supervision_periods = [supervision_period_set, supervision_period_unset]

@@ -1457,14 +1457,12 @@ class StateSupervisionPeriod(IngestObject):
         supervising_officer=None,
         state_supervision_violation_entries=None,
         state_supervision_case_type_entries=None,
-        supervision_period_supervision_type=None,
+        supervision_type=None,
         custodial_authority=None,
         state_supervision_contacts=None,
     ):
         self.state_supervision_period_id: Optional[str] = state_supervision_period_id
-        self.supervision_period_supervision_type: Optional[
-            str
-        ] = supervision_period_supervision_type
+        self.supervision_type: Optional[str] = supervision_type
         self.start_date: Optional[str] = start_date
         self.termination_date: Optional[str] = termination_date
         self.state_code: Optional[str] = state_code

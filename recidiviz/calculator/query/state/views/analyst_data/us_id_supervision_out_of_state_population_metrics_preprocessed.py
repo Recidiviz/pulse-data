@@ -44,7 +44,7 @@ US_ID_SUPERVISION_OUT_OF_STATE_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = 
         termination_date,
         'BENCH_WARRANT' AS supervision_type
     FROM `{project_id}.{state_base_dataset}.state_supervision_period` 
-    WHERE supervision_period_supervision_type_raw_text ='BW'
+    WHERE supervision_type_raw_text ='BW'
         AND state_code = 'US_ID'
     )
     SELECT DISTINCT

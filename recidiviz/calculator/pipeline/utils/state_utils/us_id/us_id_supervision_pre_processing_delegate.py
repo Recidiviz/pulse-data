@@ -64,7 +64,7 @@ class UsIdSupervisionPreProcessingDelegate(
         periods_with_set_supervision_types = [
             period
             for period in supervision_periods
-            if period.supervision_period_supervision_type is not None
+            if period.supervision_type is not None
         ]
 
         most_recent_previous_period = find_last_terminated_period_before_date(
@@ -74,7 +74,7 @@ class UsIdSupervisionPreProcessingDelegate(
         )
 
         previous_supervision_type = (
-            most_recent_previous_period.supervision_period_supervision_type
+            most_recent_previous_period.supervision_type
             if most_recent_previous_period
             else None
         )

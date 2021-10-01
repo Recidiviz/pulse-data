@@ -61,14 +61,12 @@ def copy_fields_to_builder(
     new.conditions = getattr(proto, "conditions")
 
     # enum values
-    new.supervision_period_supervision_type = DefaultingAndNormalizingEnumParser(
-        getattr(proto, "supervision_period_supervision_type"),
+    new.supervision_type = DefaultingAndNormalizingEnumParser(
+        getattr(proto, "supervision_type"),
         StateSupervisionPeriodSupervisionType,
         metadata.enum_overrides,
     )
-    new.supervision_period_supervision_type_raw_text = getattr(
-        proto, "supervision_period_supervision_type"
-    )
+    new.supervision_type_raw_text = getattr(proto, "supervision_type")
     new.admission_reason = DefaultingAndNormalizingEnumParser(
         getattr(proto, "admission_reason"),
         StateSupervisionPeriodAdmissionReason,

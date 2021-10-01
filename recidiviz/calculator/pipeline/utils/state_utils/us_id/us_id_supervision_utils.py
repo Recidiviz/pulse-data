@@ -66,7 +66,7 @@ def us_id_get_post_incarceration_supervision_type(
         incarceration_sentences, supervision_sentences
     )
 
-    return us_id_get_most_recent_supervision_period_supervision_type_before_upper_bound_day(
+    return us_id_get_most_recent_supervision_type_before_upper_bound_day(
         upper_bound_exclusive_date=incarceration_period.release_date
         + relativedelta(months=SUPERVISION_TYPE_LOOKBACK_MONTH_LIMIT),
         lower_bound_inclusive_date=incarceration_period.release_date,
@@ -74,7 +74,7 @@ def us_id_get_post_incarceration_supervision_type(
     )
 
 
-def us_id_get_most_recent_supervision_period_supervision_type_before_upper_bound_day(
+def us_id_get_most_recent_supervision_type_before_upper_bound_day(
     upper_bound_exclusive_date: date,
     lower_bound_inclusive_date: Optional[date],
     supervision_periods: List[StateSupervisionPeriod],
@@ -109,11 +109,9 @@ def us_id_get_most_recent_supervision_period_supervision_type_before_upper_bound
             else date.today()
         )
 
-        supervision_period_supervision_type = (
-            supervision_period.supervision_period_supervision_type
-        )
+        supervision_type = supervision_period.supervision_type
 
-        if not supervision_period_supervision_type:
+        if not supervision_type:
             continue
 
         if not date_spans_overlap_exclusive(
@@ -124,9 +122,7 @@ def us_id_get_most_recent_supervision_period_supervision_type_before_upper_bound
         ):
             continue
 
-        supervision_types_by_end_date[termination_date].add(
-            supervision_period_supervision_type
-        )
+        supervision_types_by_end_date[termination_date].add(supervision_type)
 
     if not supervision_types_by_end_date:
         return None

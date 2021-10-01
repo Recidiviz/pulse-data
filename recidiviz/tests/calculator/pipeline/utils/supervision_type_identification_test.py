@@ -923,7 +923,7 @@ class TestGetCommitmentAdmissionReasonFromPrecedingSupervisionPeriod(unittest.Te
                 supervision_period_id=111,
                 external_id="sp1",
                 state_code="US_XX",
-                supervision_period_supervision_type=supervision_type,
+                supervision_type=supervision_type,
             )
 
             if supervision_type == StateSupervisionPeriodSupervisionType.INVESTIGATION:

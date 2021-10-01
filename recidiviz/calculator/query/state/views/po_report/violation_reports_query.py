@@ -49,6 +49,6 @@ def violation_reports_query(state_dataset: str, reference_views_dataset: str) ->
       LEFT JOIN `{{project_id}}.{reference_views_dataset}.supervision_period_to_agent_association` agent
         ON period.supervision_period_id = agent.supervision_period_id
           AND period.state_code = agent.state_code
-      WHERE period.supervision_period_supervision_type IN ('DUAL', 'PROBATION', 'PAROLE', 'INTERNAL_UNKNOWN')
+      WHERE period.supervision_type IN ('DUAL', 'PROBATION', 'PAROLE', 'INTERNAL_UNKNOWN')
         AND agent.agent_external_id IS NOT NULL
     """

@@ -23,7 +23,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_sentence_classi
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_supervision_utils import (
     us_mo_get_month_supervision_type,
-    us_mo_get_most_recent_supervision_period_supervision_type_before_upper_bound_day,
+    us_mo_get_most_recent_supervision_type_before_upper_bound_day,
     us_mo_get_post_incarceration_supervision_type,
 )
 from recidiviz.common.constants.state.state_incarceration_period import (
@@ -178,7 +178,7 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
         )
 
         # Act
-        supervision_period_supervision_type = us_mo_get_month_supervision_type(
+        supervision_type = us_mo_get_month_supervision_type(
             self.end_of_month_date,
             supervision_sentences=[],
             incarceration_sentences=[],
@@ -187,7 +187,7 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
 
         # Assert
         self.assertEqual(
-            supervision_period_supervision_type,
+            supervision_type,
             StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN,
         )
 
@@ -218,7 +218,7 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
         )
 
         # Act
-        supervision_period_supervision_type = us_mo_get_month_supervision_type(
+        supervision_type = us_mo_get_month_supervision_type(
             self.end_of_month_date,
             supervision_sentences=[supervision_sentence],
             incarceration_sentences=[],
@@ -227,7 +227,7 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
 
         # Assert
         self.assertEqual(
-            supervision_period_supervision_type,
+            supervision_type,
             StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
@@ -264,7 +264,7 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
         )
 
         # Act
-        supervision_period_supervision_type = us_mo_get_month_supervision_type(
+        supervision_type = us_mo_get_month_supervision_type(
             self.end_of_month_date,
             supervision_sentences=[supervision_sentence],
             incarceration_sentences=[],
@@ -273,7 +273,7 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
 
         # Assert
         self.assertEqual(
-            supervision_period_supervision_type,
+            supervision_type,
             StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN,
         )
 
@@ -313,7 +313,7 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
         )
 
         # Act
-        supervision_period_supervision_type = us_mo_get_month_supervision_type(
+        supervision_type = us_mo_get_month_supervision_type(
             self.end_of_month_date,
             supervision_sentences=[supervision_sentence],
             incarceration_sentences=[],
@@ -322,7 +322,7 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
 
         # Assert
         self.assertEqual(
-            supervision_period_supervision_type,
+            supervision_type,
             StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
@@ -379,7 +379,7 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
         )
 
         # Act
-        supervision_period_supervision_type = us_mo_get_month_supervision_type(
+        supervision_type = us_mo_get_month_supervision_type(
             self.end_of_month_date,
             supervision_sentences=[supervision_sentence],
             incarceration_sentences=[incarceration_sentence],
@@ -388,7 +388,7 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
 
         # Assert
         self.assertEqual(
-            supervision_period_supervision_type,
+            supervision_type,
             StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
@@ -447,7 +447,7 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
         )
 
         # Act
-        supervision_period_supervision_type = us_mo_get_month_supervision_type(
+        supervision_type = us_mo_get_month_supervision_type(
             self.end_of_month_date,
             supervision_sentences=[supervision_sentence],
             incarceration_sentences=[incarceration_sentence],
@@ -456,7 +456,7 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
 
         # Assert
         self.assertEqual(
-            supervision_period_supervision_type,
+            supervision_type,
             StateSupervisionPeriodSupervisionType.DUAL,
         )
 
@@ -517,7 +517,7 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
         )
 
         # Act
-        supervision_period_supervision_type = us_mo_get_month_supervision_type(
+        supervision_type = us_mo_get_month_supervision_type(
             self.end_of_month_date,
             supervision_sentences=[supervision_sentence],
             incarceration_sentences=[incarceration_sentence],
@@ -528,7 +528,7 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
 
         # Even though both sentences are terminated before the last day, we still return DUAL
         self.assertEqual(
-            supervision_period_supervision_type,
+            supervision_type,
             StateSupervisionPeriodSupervisionType.DUAL,
         )
 
@@ -590,7 +590,7 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
         )
 
         # Act
-        supervision_period_supervision_type = us_mo_get_month_supervision_type(
+        supervision_type = us_mo_get_month_supervision_type(
             self.end_of_month_date,
             supervision_sentences=[supervision_sentence],
             incarceration_sentences=[incarceration_sentence],
@@ -601,7 +601,7 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
 
         # Since the probation sentence ends before the parole sentence, the last valid supervision type is PAROLE
         self.assertEqual(
-            supervision_period_supervision_type,
+            supervision_type,
             StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
@@ -609,34 +609,38 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
 class UsMoGetMostRecentSupervisionPeriodSupervisionTypeBeforeUpperBoundDayTest(
     unittest.TestCase
 ):
-    """Unittests for the us_mo_get_most_recent_supervision_period_supervision_type_before_upper_bound_day helper."""
+    """Unittests for the us_mo_get_most_recent_supervision_type_before_upper_bound_day helper."""
 
     def setUp(self) -> None:
         self.upper_bound_date = datetime.date(2018, 10, 10)
 
     def test_most_recent_supervision_type_no_sentences_no_bound(self) -> None:
         # Act
-        supervision_period_supervision_type = us_mo_get_most_recent_supervision_period_supervision_type_before_upper_bound_day(
-            upper_bound_exclusive_date=self.upper_bound_date,
-            lower_bound_inclusive_date=None,
-            supervision_sentences=[],
-            incarceration_sentences=[],
+        supervision_type = (
+            us_mo_get_most_recent_supervision_type_before_upper_bound_day(
+                upper_bound_exclusive_date=self.upper_bound_date,
+                lower_bound_inclusive_date=None,
+                supervision_sentences=[],
+                incarceration_sentences=[],
+            )
         )
 
         # Assert
-        self.assertEqual(supervision_period_supervision_type, None)
+        self.assertEqual(supervision_type, None)
 
     def test_most_recent_supervision_type_no_sentences_same_day_bound(self) -> None:
         # Act
-        supervision_period_supervision_type = us_mo_get_most_recent_supervision_period_supervision_type_before_upper_bound_day(
-            upper_bound_exclusive_date=self.upper_bound_date,
-            lower_bound_inclusive_date=self.upper_bound_date,
-            supervision_sentences=[],
-            incarceration_sentences=[],
+        supervision_type = (
+            us_mo_get_most_recent_supervision_type_before_upper_bound_day(
+                upper_bound_exclusive_date=self.upper_bound_date,
+                lower_bound_inclusive_date=self.upper_bound_date,
+                supervision_sentences=[],
+                incarceration_sentences=[],
+            )
         )
 
         # Assert
-        self.assertEqual(supervision_period_supervision_type, None)
+        self.assertEqual(supervision_type, None)
 
     def test_most_recent_supervision_type_two_sentences_same_transition_day_one_different(
         self,
@@ -718,17 +722,19 @@ class UsMoGetMostRecentSupervisionPeriodSupervisionTypeBeforeUpperBoundDayTest(
 
         # Act
 
-        supervision_period_supervision_type = us_mo_get_most_recent_supervision_period_supervision_type_before_upper_bound_day(
-            upper_bound_exclusive_date=self.upper_bound_date,
-            lower_bound_inclusive_date=None,
-            supervision_sentences=[supervision_sentence_1, supervision_sentence_2],
-            incarceration_sentences=[incarceration_sentence],
+        supervision_type = (
+            us_mo_get_most_recent_supervision_type_before_upper_bound_day(
+                upper_bound_exclusive_date=self.upper_bound_date,
+                lower_bound_inclusive_date=None,
+                supervision_sentences=[supervision_sentence_1, supervision_sentence_2],
+                incarceration_sentences=[incarceration_sentence],
+            )
         )
 
         # Assert
 
         # Since the probation sentence ends before the parole sentence, the last valid supervision type is PAROLE
         self.assertEqual(
-            supervision_period_supervision_type,
+            supervision_type,
             StateSupervisionPeriodSupervisionType.PAROLE,
         )
