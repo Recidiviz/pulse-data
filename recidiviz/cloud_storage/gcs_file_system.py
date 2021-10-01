@@ -24,12 +24,13 @@ import uuid
 from contextlib import contextmanager
 from io import TextIOWrapper
 from typing import IO, Any, Callable, Dict, Iterator, List, Optional, TextIO, Union
+from zipfile import ZipExtFile, ZipFile
 
-import pysftp
 from google.api_core import exceptions, retry
 from google.cloud import storage
 from google.cloud.exceptions import NotFound
 from paramiko import SFTPFile
+from paramiko.sftp_client import SFTPClient
 
 from recidiviz.cloud_storage.content_types import (
     FileContentsHandle,
@@ -43,6 +44,8 @@ from recidiviz.cloud_storage.gcsfs_path import (
     GcsfsPath,
 )
 from recidiviz.cloud_storage.verifiable_bytes_reader import VerifiableBytesReader
+
+BYTES_CONTENT_TYPE = "application/octet-stream"
 
 
 class GCSBlobDoesNotExistError(ValueError):
@@ -59,10 +62,7 @@ class GcsfsFileContentsHandle(FileContentsHandle[str, IO]):
     def get_contents_iterator(self) -> Iterator[str]:
         """Lazy function (generator) to read a file line by line."""
         with self.open() as f:
-            while True:
-                line = f.readline()
-                if not line:
-                    break
+            while line := f.readline():
                 yield line
 
     @classmethod
@@ -87,24 +87,35 @@ class GcsfsFileContentsHandle(FileContentsHandle[str, IO]):
 
 
 class SftpFileContentsHandle(FileContentsHandle[bytes, SFTPFile]):
-    def __init__(self, local_file_path: str, sftp_connection: pysftp.Connection):
+    def __init__(self, local_file_path: str, sftp_client: SFTPClient):
         super().__init__(local_file_path=local_file_path)
-        self.sftp_connection = sftp_connection
+        self.sftp_client = sftp_client
 
     def get_contents_iterator(self) -> Iterator[bytes]:
         with self.open() as f:
-            while True:
-                line = f.readline()
-                if not line:
-                    break
+            while line := f.readline():
                 yield line
 
     @contextmanager
     def open(self, mode: str = "r") -> Iterator[SFTPFile]:  # type: ignore
-        with self.sftp_connection.open(
-            remote_file=self.local_file_path, mode=mode
-        ) as f:
+        with self.sftp_client.open(filename=self.local_file_path, mode=mode) as f:
             yield f
+
+
+class ZipFileContentsHandle(FileContentsHandle[bytes, ZipExtFile]):
+    def __init__(self, local_file_path: str, zip_file: ZipFile):
+        super().__init__(local_file_path=local_file_path)
+        self.zip_file = zip_file
+
+    def get_contents_iterator(self) -> Iterator[bytes]:
+        with self.open() as f:
+            while line := f.readline():
+                yield line
+
+    @contextmanager
+    def open(self, _: str = "r") -> Iterator[ZipExtFile]:  # type: ignore
+        with self.zip_file.open(self.local_file_path, mode="r") as f:
+            yield f  # type: ignore
 
 
 class GCSFileSystem:
@@ -171,6 +182,12 @@ class GCSFileSystem:
         """
         Downloads object contents from the given path to a string,
         decoding it from the specified `encoding` (default UTF-8)
+        """
+
+    @abc.abstractmethod
+    def download_as_bytes(self, path: GcsfsFilePath) -> bytes:
+        """
+        Downloads object contents from the given path to bytes.
         """
 
     @abc.abstractmethod
@@ -390,6 +407,11 @@ class GCSFileSystemImpl(GCSFileSystem):
         blob = self._get_blob(path)
 
         return blob.download_as_bytes().decode(encoding)
+
+    @retry.Retry(predicate=retry_predicate)
+    def download_as_bytes(self, path: GcsfsFilePath) -> bytes:
+        blob = self._get_blob(path)
+        return blob.download_as_bytes()
 
     @retry.Retry(predicate=retry_predicate)
     def upload_from_string(

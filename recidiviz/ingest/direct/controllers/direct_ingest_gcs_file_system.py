@@ -263,6 +263,9 @@ class DirectIngestGCSFileSystem(Generic[GCSFileSystemType], GCSFileSystem):
     def download_as_string(self, path: GcsfsFilePath, encoding: str = "utf-8") -> str:
         return self.gcs_file_system.download_as_string(path, encoding)
 
+    def download_as_bytes(self, path: GcsfsFilePath) -> bytes:
+        return self.gcs_file_system.download_as_bytes(path)
+
     def upload_from_string(
         self, path: GcsfsFilePath, contents: str, content_type: str
     ) -> None:
