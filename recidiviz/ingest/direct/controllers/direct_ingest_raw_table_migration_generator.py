@@ -18,15 +18,15 @@
 on a given raw table."""
 
 from collections import defaultdict
-from typing import List, Dict, cast, Tuple, Sequence, Type
+from typing import Dict, List, Sequence, Tuple, Type, cast
 
 from recidiviz.ingest.direct.controllers.direct_ingest_constants import (
     UPDATE_DATETIME_COL_NAME,
 )
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_table_migration import (
+    DeleteFromRawTableMigration,
     RawTableMigration,
     UpdateRawTableMigration,
-    DeleteFromRawTableMigration,
 )
 from recidiviz.utils import metadata
 
@@ -143,7 +143,7 @@ class RawTableMigrationGenerator:
         for m in migrations:
             for filter_values in m.ordered_filter_values:
                 filter_values_str = ", ".join(
-                    [f"'{filter_value}'" for filter_value in filter_values]
+                    [f'"{filter_value}"' for filter_value in filter_values]
                 )
                 filter_structs.append(f"STRUCT({filter_values_str})")
         filter_structs_str = ",\n    ".join(filter_structs)

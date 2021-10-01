@@ -890,7 +890,7 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
                 mock.call(
                     query_str="DELETE FROM `recidiviz-456.us_xx_raw_data.tagC`\n"
                     "WHERE STRUCT(COL1) IN (\n"
-                    "    STRUCT('789')\n"
+                    '    STRUCT("789")\n'
                     ");"
                 ),
             ]
