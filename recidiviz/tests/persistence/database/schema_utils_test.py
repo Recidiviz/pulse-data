@@ -19,8 +19,10 @@ from typing import List
 
 import pytest
 
-import recidiviz.persistence.database.schema.case_triage.schema as case_triage_schema
 from recidiviz.persistence.database.schema.aggregate import schema as aggregate_schema
+from recidiviz.persistence.database.schema.case_triage import (
+    schema as case_triage_schema,
+)
 from recidiviz.persistence.database.schema.county import schema as county_schema
 from recidiviz.persistence.database.schema.operations import schema as operations_schema
 from recidiviz.persistence.database.schema.state import schema as state_schema

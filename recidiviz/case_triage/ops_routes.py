@@ -35,7 +35,9 @@ from recidiviz.common.google_cloud.cloud_task_queue_manager import (
 from recidiviz.metrics.export.export_config import (
     CASE_TRIAGE_VIEWS_OUTPUT_DIRECTORY_URI,
 )
-from recidiviz.persistence.database.schema import case_triage as case_triage_schema
+from recidiviz.persistence.database.schema.case_triage import (
+    schema as case_triage_schema,
+)
 from recidiviz.persistence.database.schema_utils import (
     SchemaType,
     get_database_entity_by_table_name,
