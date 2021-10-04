@@ -82,9 +82,6 @@ from recidiviz.common.str_field_utils import (
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
 )
-from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
-    DirectIngestInstance,
-)
 from recidiviz.ingest.direct.controllers.legacy_ingest_view_processor import (
     IngestAncestorChainOverridesCallable,
     IngestFilePostprocessorCallable,
@@ -102,7 +99,6 @@ from recidiviz.ingest.direct.regions.us_id.us_id_constants import (
     BENCH_WARRANT_LIVING_UNIT,
     CONTACT_LOCATIONS_TO_BECOME_METHODS,
     CONTACT_RESULT_ARREST,
-    CONTACT_TYPES_TO_BECOME_LOCATIONS,
     COURT_PROBATION_LIVING_UNIT,
     CURRENT_FACILITY_CODE,
     CURRENT_FACILITY_NAME,
@@ -169,7 +165,6 @@ from recidiviz.ingest.models.ingest_info import (
     StateSupervisionViolationTypeEntry,
 )
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
-from recidiviz.utils.environment import in_gcp_staging
 from recidiviz.utils.params import str_to_bool
 
 
@@ -184,21 +179,11 @@ class UsIdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
 
     def __init__(self, ingest_bucket_path: GcsfsBucketPath):
         super().__init__(ingest_bucket_path)
-        # TODO(#8999): Replace once rerun is successful for supervision contacts
-        self.enum_overrides = (
-            self.generate_enum_overrides_v2()
-            if in_gcp_staging()
-            or self.ingest_instance == DirectIngestInstance.SECONDARY
-            else self.generate_enum_overrides()
-        )
+        self.enum_overrides = self.generate_enum_overrides()
         early_discharge_deleted_rows_processors = [
             gen_label_single_external_id_hook(US_ID_DOC),
             self._set_generated_ids,
             self._set_invalid_early_discharge_status,
-        ]
-        supervision_contacts_processors = [
-            gen_label_single_external_id_hook(US_ID_DOC),
-            self._add_supervision_contact_fields,
         ]
         self.row_post_processors_by_file: Dict[str, List[IngestRowPosthookCallable]] = {
             "offender_ofndr_dob_address": [
@@ -275,11 +260,12 @@ class UsIdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
                 self._hydrate_violation_types,
                 self._hydrate_violation_report_fields,
             ],
-            "sprvsn_cntc": supervision_contacts_processors,
             "early_discharge_incarceration_sentence_deleted_rows": early_discharge_deleted_rows_processors,
             "early_discharge_supervision_sentence_deleted_rows": early_discharge_deleted_rows_processors,
-            # TODO(#8999): Remove once rerun is successful for supervision contacts
-            "sprvsn_cntc_v2": supervision_contacts_processors,
+            "sprvsn_cntc_v2": [
+                gen_label_single_external_id_hook(US_ID_DOC),
+                self._add_supervision_contact_fields,
+            ],
         }
         self.file_post_processors_by_file: Dict[
             str, List[IngestFilePostprocessorCallable]
@@ -294,13 +280,10 @@ class UsIdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             "movement_facility_location_offstat_supervision_periods": [],
             "ofndr_tst_tst_qstn_rspns_violation_reports": [],
             "ofndr_tst_tst_qstn_rspns_violation_reports_old": [],
-            "sprvsn_cntc": [],
-            # TODO(#8999): Remove once rerun is successful for supervision contacts
             "sprvsn_cntc_v2": [],
         }
 
-    # TODO(#8999): Re-add to ENUM_OVERRIDES once re-run is complete.
-    shared_enum_overrides: Dict[Enum, List[str]] = {
+    ENUM_OVERRIDES: Dict[Enum, List[str]] = {
         Race.ASIAN: ["A"],
         Race.BLACK: ["B"],
         Race.AMERICAN_INDIAN_ALASKAN_NATIVE: ["I"],
@@ -563,66 +546,6 @@ class UsIdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         StateSupervisionCaseType.FAMILY_COURT: [
             "FAMILY COURT",
         ],
-    }
-    # TODO(#8999): Remove once rerun is successful for supervision contacts
-    contact_overrides: Dict[Enum, List[str]] = {
-        StateSupervisionContactLocation.SUPERVISION_OFFICE: [
-            "OFFICE",
-            "ALTERNATE WORK SITE",
-            "INTERSTATE OFFICE",
-        ],
-        StateSupervisionContactLocation.RESIDENCE: [
-            "RESIDENCE",
-            "OTHER RESIDENCE",
-        ],
-        StateSupervisionContactLocation.COURT: [
-            "COURT",
-            "DRUG COURT",
-        ],
-        StateSupervisionContactLocation.TREATMENT_PROVIDER: [
-            "TREATMENT PROVIDER",
-        ],
-        StateSupervisionContactLocation.JAIL: [
-            "JAIL",
-        ],
-        StateSupervisionContactLocation.FIELD: [
-            "FIELD",
-        ],
-        StateSupervisionContactLocation.PLACE_OF_EMPLOYMENT: [
-            "EMPLOYER",
-        ],
-        StateSupervisionContactLocation.LAW_ENFORCEMENT_AGENCY: [
-            "LAW ENFORCEMENT AGENCY",
-        ],
-        StateSupervisionContactLocation.INTERNAL_UNKNOWN: [
-            "COMPACT STATE",  # TODO(#3511): Consider adding as enum
-            "PAROLE COMMISSION",  # TODO(#3511): Consider adding as enum
-            "WBOR",  # Data entry error - WBOR is an online form filled out that isn't a location.
-            # No longer used
-            "OTHER",
-            "COMMUNITY SERVICE SITE",
-            "FAMILY",
-            "ASSOCIATE",
-            "CRIME SCENE",
-            "CONVERSION",
-        ],
-        StateSupervisionContactType.FACE_TO_FACE: [
-            "FACE TO FACE",
-        ],
-        StateSupervisionContactType.TELEPHONE: [
-            "TELEPHONE",
-        ],
-        StateSupervisionContactType.WRITTEN_MESSAGE: [
-            "FAX",
-            "EMAIL",
-            "MAIL",
-        ],
-        StateSupervisionContactType.VIRTUAL: [
-            "VIRTUAL",
-        ],
-    }
-    # TODO(#8999): Add to ENUM_OVERRIDES when rerun is successful
-    contact_overrides_v2: Dict[Enum, List[str]] = {
         StateSupervisionContactLocation.ALTERNATIVE_WORK_SITE: ["ALTERNATE WORK SITE"],
         StateSupervisionContactLocation.SUPERVISION_OFFICE: [
             "OFFICE",
@@ -683,10 +606,6 @@ class UsIdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             "VIRTUAL",
         ],
     }
-    ENUM_OVERRIDES: Dict[Enum, List[str]] = {
-        **shared_enum_overrides,
-        **contact_overrides,
-    }
     ENUM_IGNORES: Dict[Type[Enum], List[str]] = {}
     ENUM_MAPPER_FUNCTIONS: Dict[Type[Enum], EnumMapperFn] = {
         StateIncarcerationPeriodAdmissionReason: incarceration_admission_reason_mapper,
@@ -714,13 +633,8 @@ class UsIdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             "ofndr_tst_tst_qstn_rspns_violation_reports_old",
             "early_discharge_incarceration_sentence_deleted_rows",
             "early_discharge_supervision_sentence_deleted_rows",
+            "sprvsn_cntc_v2",
         ]
-        # TODO(#8999): Remove once rerun is successful for supervision contacts
-        if in_gcp_staging() or self.ingest_instance == DirectIngestInstance.SECONDARY:
-            # Rerun first in secondary staging
-            shared_file_tags += ["sprvsn_cntc_v2"]
-        else:
-            shared_file_tags += ["sprvsn_cntc"]
         return shared_file_tags
 
     @classmethod
@@ -730,19 +644,6 @@ class UsIdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         return update_overrides_from_maps(
             base_overrides,
             cls.ENUM_OVERRIDES,
-            cls.ENUM_IGNORES,
-            cls.ENUM_MAPPER_FUNCTIONS,
-            cls.ENUM_IGNORE_PREDICATES,
-        )
-
-    # TODO(#8999): Remove once rerun is successful for supervision contacts
-    @classmethod
-    def generate_enum_overrides_v2(cls) -> EnumOverrides:
-        """Provides Idaho-specific overrides for enum mappings."""
-        base_overrides = get_standard_enum_overrides()
-        return update_overrides_from_maps(
-            base_overrides,
-            {**cls.shared_enum_overrides, **cls.contact_overrides_v2},
             cls.ENUM_IGNORES,
             cls.ENUM_MAPPER_FUNCTIONS,
             cls.ENUM_IGNORE_PREDICATES,
@@ -1418,7 +1319,7 @@ class UsIdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
 
     @staticmethod
     def _add_supervision_contact_fields(
-        gating_context: IngestGatingContext,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -1439,25 +1340,15 @@ class UsIdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
 
                 obj.resulted_in_arrest = str(obj.status == CONTACT_RESULT_ARREST)
 
-                if gating_context.file_tag == "sprvsn_cntc":
-                    if obj.location in CONTACT_TYPES_TO_BECOME_LOCATIONS:
-                        obj.contact_type = obj.location
-                        obj.location = None
-                elif gating_context.file_tag == "sprvsn_cntc_v2":
-                    # TODO(#8999): Replace once rerun is successful for supervision contacts
-                    if obj.location in CONTACT_LOCATIONS_TO_BECOME_METHODS:
-                        obj.contact_method = obj.location
-                        obj.location = None
-                    if row.get("cntc_typ_desc", "") == "VIRTUAL":
-                        obj.contact_type = StateSupervisionContactType.DIRECT.value
-                        if obj.contact_method is None:
-                            obj.contact_method = (
-                                StateSupervisionContactMethod.VIRTUAL.value
-                            )
-                    if obj.location is not None and obj.contact_method is None:
-                        obj.contact_method = (
-                            StateSupervisionContactMethod.IN_PERSON.value
-                        )
+                if obj.location in CONTACT_LOCATIONS_TO_BECOME_METHODS:
+                    obj.contact_method = obj.location
+                    obj.location = None
+                if row.get("cntc_typ_desc", "") == "VIRTUAL":
+                    obj.contact_type = StateSupervisionContactType.DIRECT.value
+                    if obj.contact_method is None:
+                        obj.contact_method = StateSupervisionContactMethod.VIRTUAL.value
+                if obj.location is not None and obj.contact_method is None:
+                    obj.contact_method = StateSupervisionContactMethod.IN_PERSON.value
 
 
 def _get_bool_from_row(arg: str, row: Dict[str, str]) -> bool:

@@ -60,7 +60,6 @@ WHERE
     AND CAST(cntc_dt AS DATETIME) > CAST('2019-01-01' AS DATETIME) 
 """
 
-# TODO(#8999): Replace sprvsn_cntc once rerun is successful
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     region="us_id",
     ingest_view_name="sprvsn_cntc_v2",
