@@ -138,7 +138,8 @@ class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         # TODO(#8999): Adjust when rerun is successful
         self.enum_overrides = (
             generate_enum_overrides_v2()
-            if self.ingest_instance == DirectIngestInstance.SECONDARY
+            if environment.in_gcp_staging()
+            or self.ingest_instance == DirectIngestInstance.SECONDARY
             else generate_enum_overrides()
         )
 
@@ -285,7 +286,10 @@ class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         ]
 
         # TODO(#8999): Adjust once the rerun is successful for supervision contacts.
-        if self.ingest_instance == DirectIngestInstance.SECONDARY:
+        if (
+            environment.in_gcp_staging()
+            or self.ingest_instance == DirectIngestInstance.SECONDARY
+        ):
             tags += [
                 "docstars_contacts_v2",
             ]
