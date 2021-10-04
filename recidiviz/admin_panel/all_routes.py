@@ -22,7 +22,7 @@ from typing import Dict, Optional, Tuple
 
 from flask import Blueprint, Response, jsonify, request, send_from_directory
 
-from recidiviz.admin_panel.admin_stores import AdminStores
+from recidiviz.admin_panel.admin_stores import AdminStores, fetch_state_codes
 from recidiviz.admin_panel.dataset_metadata_store import (
     DatasetMetadataCountsStore,
     DatasetMetadataResult,
@@ -130,10 +130,34 @@ def fetch_ingest_data_freshness() -> Tuple[str, HTTPStatus]:
 
 
 # Validation status
+@admin_panel.route("/api/validation_metadata/state_codes", methods=["POST"])
+@requires_gae_auth
+def fetch_validation_state_codes() -> Tuple[str, HTTPStatus]:
+    all_state_codes = admin_stores.validation_status_store.state_codes
+    state_code_info = fetch_state_codes(all_state_codes)
+    return jsonify(state_code_info), HTTPStatus.OK
+
+
 @admin_panel.route("api/validation_metadata/status", methods=["POST"])
 @requires_gae_auth
 def fetch_validation_metadata_status() -> Tuple[bytes, HTTPStatus]:
     records = admin_stores.validation_status_store.get_most_recent_validation_results()
+    return (
+        records.SerializeToString(),
+        HTTPStatus.OK,
+    )
+
+
+@admin_panel.route(
+    "api/validation_metadata/status/<validation_name>/<state_code>", methods=["POST"]
+)
+@requires_gae_auth
+def fetch_validation_metadata_status_for_validation(
+    validation_name: str, state_code: str
+) -> Tuple[bytes, HTTPStatus]:
+    records = admin_stores.validation_status_store.get_results_for_validation(
+        validation_name, state_code
+    )
     return (
         records.SerializeToString(),
         HTTPStatus.OK,
