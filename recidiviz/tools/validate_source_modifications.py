@@ -41,6 +41,7 @@ from typing import Dict, FrozenSet, List, Optional, Set, Tuple
 import attr
 from werkzeug.routing import Rule
 
+from recidiviz.admin_panel.models import validation_pb2
 from recidiviz.ingest.models import ingest_info, ingest_info_pb2
 from recidiviz.tools.docs.endpoint_documentation_generator import (
     EndpointDocumentationGenerator,
@@ -48,6 +49,7 @@ from recidiviz.tools.docs.endpoint_documentation_generator import (
 )
 from recidiviz.utils.regions import get_supported_direct_ingest_region_codes
 
+ADMIN_PANEL_DIRECTORY = "frontends/admin-panel/src"
 ENDPOINT_DOCS_DIRECTORY = "docs/endpoints"
 
 
@@ -134,6 +136,7 @@ def _get_modified_endpoints() -> List[RequiredModificationSets]:
 # New sets of file prefixes can be added to this set. This will cause the check
 # to be performed for that new set as well.
 
+ADMIN_PANEL_KEY = "admin_panel"
 INGEST_KEY = "ingest"
 PIPFILE_KEY = "pipfile"
 INGEST_DOCS_KEY = "ingest_docs"
@@ -141,6 +144,33 @@ CASE_TRIAGE_FIXTURES_KEY = "case_triage_fixtures"
 ENDPOINTS_DOCS_KEY = "endpoints_docs"
 
 MODIFIED_FILE_ASSERTIONS: Dict[str, List[RequiredModificationSets]] = {
+    # admin panel files
+    ADMIN_PANEL_KEY: [
+        RequiredModificationSets(
+            if_modified_files=frozenset(
+                {
+                    os.path.relpath(validation_pb2.__file__)[: -len("_pb2.py")]
+                    + ".proto",  # proto
+                }
+            ),
+            then_modified_files=frozenset(
+                {
+                    os.path.relpath(validation_pb2.__file__),  # generated proto source
+                    os.path.relpath(validation_pb2.__file__) + "i",  # proto type hints
+                    os.path.join(
+                        ADMIN_PANEL_DIRECTORY,
+                        os.path.relpath(validation_pb2.__file__)[: -len("2.py")]
+                        + ".js",
+                    ),  # javascript
+                    os.path.join(
+                        ADMIN_PANEL_DIRECTORY,
+                        os.path.relpath(validation_pb2.__file__)[: -len("2.py")]
+                        + ".d.ts",
+                    ),  # typescript
+                }
+            ),
+        )
+    ],
     # ingest info files
     INGEST_KEY: [
         RequiredModificationSets(

@@ -17,11 +17,11 @@
 import { PageHeader, Spin, Table } from "antd";
 import * as React from "react";
 import { fetchDataFreshness } from "../AdminPanelAPI";
-import useFetchedData from "../hooks";
+import { useFetchedDataJSON } from "../hooks";
 
 const DataFreshnessView = (): JSX.Element => {
   const { loading, data } =
-    useFetchedData<DataFreshnessResult[]>(fetchDataFreshness);
+    useFetchedDataJSON<DataFreshnessResult[]>(fetchDataFreshness);
 
   if (loading) {
     return (

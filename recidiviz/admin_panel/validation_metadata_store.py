@@ -16,17 +16,33 @@
 # =============================================================================
 """Stores recent validation results to serve to the admin panel"""
 
-import datetime
 import json
 from enum import Enum
-from typing import Any, Dict, Optional, Type, TypeVar, cast
+from typing import List, Optional, Type, TypeVar, Union, cast
 
 import attr
 import cattr
 from google.cloud.bigquery.table import Row
+from google.protobuf.timestamp_pb2 import Timestamp
 from werkzeug.exceptions import ServiceUnavailable
 
 from recidiviz.admin_panel.admin_panel_store import AdminPanelStore
+from recidiviz.admin_panel.models.validation_pb2 import (
+    ExistenceValidationResultDetails as ExistenceValidationResultDetails_pb2,
+)
+from recidiviz.admin_panel.models.validation_pb2 import ResultRow as ResultRow_pb2
+from recidiviz.admin_panel.models.validation_pb2 import (
+    SamenessPerRowValidationResultDetails as SamenessPerRowValidationResultDetails_pb2,
+)
+from recidiviz.admin_panel.models.validation_pb2 import (
+    SamenessPerViewValidationResultDetails as SamenessPerViewValidationResultDetails_pb2,
+)
+from recidiviz.admin_panel.models.validation_pb2 import (
+    ValidationStatusRecord as ValidationStatusRecord_pb2,
+)
+from recidiviz.admin_panel.models.validation_pb2 import (
+    ValidationStatusRecords as ValidationStatusRecords_pb2,
+)
 from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
 from recidiviz.big_query.big_query_view import BigQueryAddress
 from recidiviz.common import serialization
@@ -35,16 +51,11 @@ from recidiviz.validation.checks.sameness_check import (
     SamenessPerRowValidationResultDetails,
     SamenessPerViewValidationResultDetails,
 )
-from recidiviz.validation.validation_models import (
-    DataValidationJobResultDetails,
-    ValidationResultStatus,
-)
+from recidiviz.validation.validation_models import DataValidationJobResultDetails
 from recidiviz.validation.validation_result_storage import (
     VALIDATION_RESULTS_BIGQUERY_ADDRESS,
 )
 
-# TODO(#7816): These are camel case because they are used in JS in the admin panel, we
-# should probably move to protos.
 # TODO(#8687): Remove the extra case statements with the old result detail class names.
 
 
@@ -74,39 +85,6 @@ class ResultDetailsTypes(Enum):
         raise ValueError(f"type {self} not mapped to class")
 
 
-@attr.s
-class ValidationStatusRecord:
-    didRun: bool = attr.ib()
-    hardFailureAmount: Optional[float] = attr.ib()
-    softFailureAmount: Optional[float] = attr.ib()
-    isPercentage: Optional[bool] = attr.ib()
-    validationResultStatus: Optional[ValidationResultStatus] = attr.ib()
-    failureDescription: Optional[str] = attr.ib()
-    hasData: Optional[bool] = attr.ib()
-    errorAmount: Optional[float] = attr.ib()
-    resultDetailsType: Optional[ResultDetailsTypes] = attr.ib()
-
-
-@attr.s
-class ValidationStatusResult:
-    validationCategory: str = attr.ib()
-    # stateCode -> ValidationStatusRecord
-    resultsByState: Dict[str, ValidationStatusRecord] = attr.ib()
-
-
-@attr.s
-class ValidationStatusResults:
-    runId: str = attr.ib()
-    runDatetime: datetime.datetime = attr.ib()
-    systemVersion: str = attr.ib()
-    # validationName -> ValidationStatusResult
-    results: Dict[str, ValidationStatusResult] = attr.ib()
-
-    def to_serializable(self) -> Dict[str, Any]:
-        converter = serialization.with_datetime_hooks(cattr.Converter())
-        return converter.unstructure(self)
-
-
 def result_query(project_id: str, validation_result_address: BigQueryAddress) -> str:
     return f"""
 SELECT
@@ -134,21 +112,6 @@ WHERE run_id = (
 T = TypeVar("T")
 
 
-def _set_if_new(old_value: Optional[T], new_value: T) -> T:
-    if old_value is not None and old_value != new_value:
-        raise ValueError(
-            f"Expected single value from query but got '{old_value}' and '{new_value}'."
-        )
-    return new_value
-
-
-def _is_percentaqe_type(result_details_type: ResultDetailsTypes) -> bool:
-    return result_details_type in [
-        ResultDetailsTypes.SAMENESS_PER_VIEW_VALIDATION_RESULT_DETAILS,
-        ResultDetailsTypes.SAMENESS_PER_ROW_VALIDATION_RESULT_DETAILS,
-    ]
-
-
 def _cast_result_details_json_to_object(
     result_details_type: ResultDetailsTypes, json_data: str
 ) -> DataValidationJobResultDetails:
@@ -162,6 +125,161 @@ def _cast_result_details_json_to_object(
     return result_details
 
 
+def _convert_result_details(
+    result_details: Optional[DataValidationJobResultDetails],
+) -> Optional[
+    Union[
+        ExistenceValidationResultDetails_pb2,
+        SamenessPerRowValidationResultDetails_pb2,
+        SamenessPerViewValidationResultDetails_pb2,
+    ]
+]:
+    """Converts the result details python object into the appropriate protobuf"""
+    if result_details is None:
+        return None
+
+    result_details_type = ResultDetailsTypes(result_details.__class__.__name__)
+    if result_details_type is ResultDetailsTypes.EXISTENCE_VALIDATION_RESULT_DETAILS:
+        # The existence details doesn't contain any extra information besides what is
+        # already available in the details interface.
+        return ExistenceValidationResultDetails_pb2()
+    if (
+        result_details_type
+        is ResultDetailsTypes.SAMENESS_PER_ROW_VALIDATION_RESULT_DETAILS
+    ):
+        result_details = cast(SamenessPerRowValidationResultDetails, result_details)
+        return SamenessPerRowValidationResultDetails_pb2(
+            failed_rows=[
+                SamenessPerRowValidationResultDetails_pb2.RowWithError(
+                    row=ResultRow_pb2(
+                        label_values=row[0].label_values,
+                        comparison_values=row[0].comparison_values,
+                    ),
+                    error=row[1],
+                )
+                for row in result_details.failed_rows
+            ]
+        )
+    if (
+        result_details_type
+        is ResultDetailsTypes.SAMENESS_PER_VIEW_VALIDATION_RESULT_DETAILS
+    ):
+        result_details = cast(SamenessPerViewValidationResultDetails, result_details)
+        return SamenessPerViewValidationResultDetails_pb2(
+            num_error_rows=result_details.num_error_rows,
+            total_num_rows=result_details.total_num_rows,
+            non_null_counts_per_column_per_partition=[
+                SamenessPerViewValidationResultDetails_pb2.PartitionCounts(
+                    partition_labels=entry[0], column_counts=entry[1]
+                )
+                for entry in result_details.non_null_counts_per_column_per_partition
+            ],
+        )
+
+    raise ValueError(f"Unexpected result details type '{result_details_type}'")
+
+
+@attr.s
+class ResultDetailsOneof:
+
+    details: Optional[
+        Union[
+            ExistenceValidationResultDetails_pb2,
+            SamenessPerRowValidationResultDetails_pb2,
+            SamenessPerViewValidationResultDetails_pb2,
+        ]
+    ] = attr.ib(converter=_convert_result_details)
+
+    @property
+    def existence(self) -> Optional[ExistenceValidationResultDetails_pb2]:
+        if isinstance(self.details, ExistenceValidationResultDetails_pb2):
+            return self.details
+        return None
+
+    @property
+    def sameness_per_row(self) -> Optional[SamenessPerRowValidationResultDetails_pb2]:
+        if isinstance(self.details, SamenessPerRowValidationResultDetails_pb2):
+            return self.details
+        return None
+
+    @property
+    def sameness_per_view(self) -> Optional[SamenessPerViewValidationResultDetails_pb2]:
+        if isinstance(self.details, SamenessPerViewValidationResultDetails_pb2):
+            return self.details
+        return None
+
+
+def _validation_status_record_from_row(row: Row) -> ValidationStatusRecord_pb2:
+    """Takes a BigQuery row from the query template and converts it to a protobuf record"""
+    result_details = _result_details_from_row(row)
+    result_details_oneof = ResultDetailsOneof(result_details)
+
+    result_status: Optional[ValidationStatusRecord_pb2.ValidationResultStatus.V] = None
+    hard_failure_amount: Optional[float] = None
+    soft_failure_amount: Optional[float] = None
+    error_amount: Optional[float] = None
+    has_data: Optional[bool] = None
+
+    if result_details:
+        result_status = ValidationStatusRecord_pb2.ValidationResultStatus.Value(
+            result_details.validation_result_status().value
+        )
+        hard_failure_amount = result_details.hard_failure_amount
+        soft_failure_amount = result_details.soft_failure_amount
+        error_amount = result_details.error_amount
+        has_data = result_details.has_data
+
+    # legacy support for rows before result_status was introduced
+    if result_status is None:
+        was_successful = row.get("was_successful")
+        if was_successful is not None:
+            result_status = (
+                ValidationStatusRecord_pb2.ValidationResultStatus.SUCCESS
+                if was_successful
+                else ValidationStatusRecord_pb2.ValidationResultStatus.FAIL_HARD
+            )
+
+    run_datetime = Timestamp()
+    run_datetime.FromDatetime(row.get("run_datetime"))
+
+    return ValidationStatusRecord_pb2(
+        run_id=row.get("run_id"),
+        run_datetime=run_datetime,
+        system_version=row.get("system_version"),
+        name=row.get("validation_name"),
+        category=ValidationStatusRecord_pb2.ValidationCategory.Value(
+            row.get("validation_category")
+        ),
+        is_percentage=result_details.error_is_percentage if result_details else None,
+        state_code=row.get("region_code"),
+        did_run=row.get("did_run"),
+        has_data=has_data,
+        hard_failure_amount=hard_failure_amount,
+        soft_failure_amount=soft_failure_amount,
+        result_status=result_status,
+        error_amount=error_amount,
+        failure_description=row.get("failure_description"),
+        existence=result_details_oneof.existence,
+        sameness_per_row=result_details_oneof.sameness_per_row,
+        sameness_per_view=result_details_oneof.sameness_per_view,
+    )
+
+
+def _result_details_from_row(row: Row) -> Optional[DataValidationJobResultDetails]:
+    result_details_type = (
+        ResultDetailsTypes.get(row.get("result_details_type"))
+        if row.get("result_details_type")
+        else None
+    )
+    result_details = row.get("result_details")
+    job_result_details = (
+        _cast_result_details_json_to_object(result_details_type, result_details)
+        if result_details and result_details_type
+        else None
+    )
+    return job_result_details
+
+
 class ValidationStatusStore(AdminPanelStore):
     """Stores the status of validations to serve to the admin panel"""
 
@@ -169,7 +287,7 @@ class ValidationStatusStore(AdminPanelStore):
         super().__init__(override_project_id)
         self.bq_client: BigQueryClient = BigQueryClientImpl(project_id=self.project_id)
 
-        self.results: Optional[ValidationStatusResults] = None
+        self.records: Optional[ValidationStatusRecords_pb2] = None
 
     def recalculate_store(self) -> None:
         """Recalculates validation data by querying the validation data store"""
@@ -178,86 +296,26 @@ class ValidationStatusStore(AdminPanelStore):
         )
 
         # Build up new results
-        results: Dict[str, ValidationStatusResult] = {}
-
+        records: List[ValidationStatusRecord_pb2] = []
         run_id: Optional[str] = None
-        run_datetime: Optional[datetime.datetime] = None
-        system_version: Optional[str] = None
 
         row: Row
         for row in query_job:
-            run_id = _set_if_new(run_id, row.get("run_id"))
-            run_datetime = _set_if_new(run_datetime, row.get("run_datetime"))
-            system_version = _set_if_new(system_version, row.get("system_version"))
-            result_details_type = (
-                ResultDetailsTypes.get(row.get("result_details_type"))
-                if row.get("result_details_type")
-                else None
-            )
-            result_details = row.get("result_details")
-            job_result_details = (
-                _cast_result_details_json_to_object(result_details_type, result_details)
-                if result_details and result_details_type
-                else None
-            )
-            validation_result_status: Optional[ValidationResultStatus] = None
-            hard_failure_amount: Optional[float] = None
-            soft_failure_amount: Optional[float] = None
-            error_amount: Optional[float] = None
-            has_data: Optional[bool] = None
-
-            if job_result_details:
-                validation_result_status = job_result_details.validation_result_status()
-                hard_failure_amount = job_result_details.hard_failure_amount
-                soft_failure_amount = job_result_details.soft_failure_amount
-                error_amount = job_result_details.error_amount
-                has_data = job_result_details.has_data
-
-            # legacy support for rows before validation_result_status was introduced
-            if validation_result_status is None:
-                was_successful = row.get("was_successful")
-                if was_successful is not None:
-                    validation_result_status = (
-                        ValidationResultStatus.SUCCESS
-                        if was_successful
-                        else ValidationResultStatus.FAIL_HARD
-                    )
-
-            if row.get("validation_name") not in results:
-                validation_status_result = ValidationStatusResult(
-                    validationCategory=row.get("validation_category"), resultsByState={}
+            if run_id is not None and run_id != row.get("run_id"):
+                raise ValueError(
+                    f"Expected single run id but got '{run_id}' and '{row.get('run_id')}'."
                 )
-                results[row.get("validation_name")] = validation_status_result
-
-            results[row.get("validation_name")].resultsByState[
-                row.get("region_code")
-            ] = ValidationStatusRecord(
-                didRun=row.get("did_run"),
-                hardFailureAmount=hard_failure_amount,
-                softFailureAmount=soft_failure_amount,
-                isPercentage=_is_percentaqe_type(result_details_type)
-                if result_details_type
-                else None,
-                validationResultStatus=validation_result_status,
-                failureDescription=row.get("failure_description"),
-                hasData=has_data,
-                errorAmount=error_amount,
-                resultDetailsType=result_details_type,
-            )
+            run_id = row.get("run_id")
+            records.append(_validation_status_record_from_row(row))
 
         if run_id is None:
             # No validation results exist.
             return
 
         # Swap results
-        self.results = ValidationStatusResults(
-            runId=cast(str, run_id),
-            runDatetime=cast(datetime.datetime, run_datetime),
-            systemVersion=cast(str, system_version),
-            results=dict(results),
-        )
+        self.records = ValidationStatusRecords_pb2(records=records)
 
-    def get_most_recent_validation_results(self) -> ValidationStatusResults:
-        if self.results is None:
+    def get_most_recent_validation_results(self) -> ValidationStatusRecords_pb2:
+        if self.records is None:
             raise ServiceUnavailable("Validation results not yet loaded")
-        return self.results
+        return self.records
