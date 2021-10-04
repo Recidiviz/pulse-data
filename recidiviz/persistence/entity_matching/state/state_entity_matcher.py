@@ -1081,7 +1081,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         # Perform shallow copy
         ent_cls = entity.__class__
         new_entity = ent_cls()
-        for field in self.field_index.get_all_database_entity_fields(
+        for field in self.field_index.get_all_core_entity_fields(
             entity, EntityFieldType.FLAT_FIELD
         ):
             new_entity.set_field(field, entity.get_field(field))
