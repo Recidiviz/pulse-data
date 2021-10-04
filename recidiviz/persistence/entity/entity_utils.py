@@ -304,7 +304,14 @@ class CoreEntityFieldIndex:
         self.county_direction_checker = (
             SchemaEdgeDirectionChecker.county_direction_checker()
         )
+
+        # Cache of fields by field type for DatabaseEntity classes
         self.database_entity_fields_by_field_type: Dict[
+            str, Dict[EntityFieldType, Set[str]]
+        ] = defaultdict(lambda: defaultdict(set))
+
+        # Cache of fields by field type for Entity classes
+        self.entity_fields_by_field_type: Dict[
             str, Dict[EntityFieldType, Set[str]]
         ] = defaultdict(lambda: defaultdict(set))
 
@@ -323,18 +330,18 @@ class CoreEntityFieldIndex:
         Note: This function is relatively slow for Entity type entities and should not
         be called in a tight loop.
         """
-        if isinstance(entity, DatabaseEntity):
-            return self._get_database_entity_fields_with_non_empty_values(
-                entity, entity_field_type
-            )
-        if isinstance(entity, Entity):
-            return self._get_entity_fields_with_non_empty_values_slow(
-                entity, entity_field_type
-            )
-        raise ValueError(f"Unexpected entity type: {type(entity)}")
+        result = set()
+        for field_name in self.get_all_core_entity_fields(entity, entity_field_type):
+            v = entity.get_field(field_name)
+            if isinstance(v, list):
+                if v:
+                    result.add(field_name)
+            elif v is not None:
+                result.add(field_name)
+        return result
 
-    def get_all_database_entity_fields(
-        self, entity: DatabaseEntity, entity_field_type: EntityFieldType
+    def get_all_core_entity_fields(
+        self, entity: CoreEntity, entity_field_type: EntityFieldType
     ) -> Set[str]:
         """Returns a set of field_names that correspond to any fields (non-empty or
         otherwise) on the provided DatabaseEntity |entity| class that match the provided
@@ -345,35 +352,25 @@ class CoreEntityFieldIndex:
         """
         entity_name = entity.get_entity_name()
 
-        if not isinstance(entity, DatabaseEntity):
-            raise ValueError(f"Unexpected entity type: {type(entity)}")
-
-        if not self.database_entity_fields_by_field_type[entity_name][
-            entity_field_type
-        ]:
-            self.database_entity_fields_by_field_type[entity_name][
+        if isinstance(entity, DatabaseEntity):
+            if not self.database_entity_fields_by_field_type[entity_name][
                 entity_field_type
-            ] = self._get_all_database_entity_fields_slow(entity, entity_field_type)
-        return self.database_entity_fields_by_field_type[entity_name][entity_field_type]
+            ]:
+                self.database_entity_fields_by_field_type[entity_name][
+                    entity_field_type
+                ] = self._get_all_database_entity_fields_slow(entity, entity_field_type)
+            return self.database_entity_fields_by_field_type[entity_name][
+                entity_field_type
+            ]
 
-    def _get_database_entity_fields_with_non_empty_values(
-        self, entity: DatabaseEntity, entity_field_type: EntityFieldType
-    ) -> Set[str]:
-        """Returns a set of field_names that correspond to any non-empty (nonnull or
-        non-empty list) fields on the provided DatabaseEntity |entity| that match the
-        provided |entity_field_type|.
-        """
-        result = set()
-        for field_name in self.get_all_database_entity_fields(
-            entity, entity_field_type
-        ):
-            v = entity.get_field(field_name)
-            if isinstance(v, list):
-                if v:
-                    result.add(field_name)
-            elif v is not None:
-                result.add(field_name)
-        return result
+        if isinstance(entity, Entity):
+            if not self.entity_fields_by_field_type[entity_name][entity_field_type]:
+                self.entity_fields_by_field_type[entity_name][
+                    entity_field_type
+                ] = self._get_entity_fields_with_type_slow(entity, entity_field_type)
+            return self.entity_fields_by_field_type[entity_name][entity_field_type]
+
+        raise ValueError(f"Unexpected entity type: {type(entity)}")
 
     def _get_all_database_entity_fields_slow(
         self,
@@ -422,12 +419,15 @@ class CoreEntityFieldIndex:
             f"Unrecognized EntityFieldType [{entity_field_type}] on entity [{entity}]"
         )
 
-    def _get_entity_fields_with_non_empty_values_slow(
+    def _get_entity_fields_with_type_slow(
         self, entity: Entity, entity_field_type: EntityFieldType
     ) -> Set[str]:
-        """Returns a set of field_names that correspond to any non-empty (nonnull or
-        non-empty list) fields on the provided Entity |entity| that match the provided
+        """Returns a set of field_names that correspond to any fields (non-empty or
+        otherwise) on the provided Entity |entity| that match the provided
         |entity_field_type|.
+
+        This function is relatively slow and the results should be cached across
+        repeated calls.
         """
         entity_name = entity.get_entity_name()
         direction_checker = self._direction_checker(entity_name)
@@ -435,24 +435,10 @@ class CoreEntityFieldIndex:
         back_edges = set()
         forward_edges = set()
         flat_fields = set()
-        for field, _ in attr.fields_dict(entity.__class__).items():
-            v = getattr(entity, field)
-
-            if v is None:
-                continue
-
+        for field, attribute in attr.fields_dict(entity.__class__).items():
             # TODO(#1908): Update traversal logic if relationship fields can be
             # different types aside from Entity and List
-            if issubclass(type(v), Entity):
-                is_back_edge = direction_checker.is_back_edge(entity, field)
-                if is_back_edge:
-                    back_edges.add(field)
-                else:
-                    forward_edges.add(field)
-            elif isinstance(v, list):
-                # Disregard empty lists
-                if not v:
-                    continue
+            if is_forward_ref(attribute) or is_list(attribute):
                 is_back_edge = direction_checker.is_back_edge(entity, field)
                 if is_back_edge:
                     back_edges.add(field)
@@ -566,7 +552,7 @@ def _sort_based_on_flat_fields(
     def _get_entity_sort_key(e: CoreEntity) -> str:
         """Generates a sort key for the given entity based on the flat field values
         in this entity."""
-        return f"{e.get_external_id()}#{_get_flat_fields_json_str(e, field_index)}"
+        return f"{e.get_external_id()}#{get_flat_fields_json_str(e, field_index)}"
 
     db_entities = cast(List, db_entities)
     db_entities.sort(key=_get_entity_sort_key)
@@ -578,7 +564,7 @@ def _sort_based_on_flat_fields(
             _sort_based_on_flat_fields(field, field_index)
 
 
-def _get_flat_fields_json_str(entity: CoreEntity, field_index: CoreEntityFieldIndex):
+def get_flat_fields_json_str(entity: CoreEntity, field_index: CoreEntityFieldIndex):
     flat_fields_dict: Dict[str, str] = {}
     for field_name in field_index.get_fields_with_non_empty_values(
         entity, EntityFieldType.FLAT_FIELD
