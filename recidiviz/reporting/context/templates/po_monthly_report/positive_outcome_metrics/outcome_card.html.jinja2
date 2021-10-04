@@ -3,14 +3,19 @@
 {% block children %}
 {{ components.layout_table_start() }}
 <tr>
-  <td valign="middle" class="DecarceralOutcomeCard__outcome" style="
+  <td valign="middle" class="DecarceralOutcomeCard__outcome em_dm_txt_white" style="
     {{brand_styles.fonts.sans_serif}}
     font-weight: 600;
     font-size: 16px;
     color: #006C67;
   ">{{outcome.heading}}</td>
   <td valign="middle" style="width: 40px;" class="DecarceralOutcomeCard__icon">
-    <img src="{{ static_image_path }}/{{outcome.icon}}" alt="" width="40" height="40">
+    <div class="em_light_only">
+      <img src="{{ static_image_path }}/{{outcome.icon}}" alt="" width="40" height="40">
+    </div>
+    <div class="em_dark_only" style="display: none;">
+      <img src="{{ static_image_path }}/dark/{{outcome.icon}}" alt="" width="40" height="40">
+    </div>
   </td>
 </tr>
 {{components.y_padding(8)}}
@@ -27,7 +32,7 @@
   {{components.y_padding(16)}}
   <tr>
     <td 
-      class="DecarceralOutcomeCard__supplemental"
+      class="DecarceralOutcomeCard__supplemental em_dm_txt_white_80"
       style="{{brand_styles.fonts.sans_serif}} color: rgba(53, 83, 98, 0.85); font-weight: 500; font-size: 16px;"
     >
       {{outcome.supplemental_text}}
