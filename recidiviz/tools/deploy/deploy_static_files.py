@@ -61,7 +61,7 @@ def sync_reporting_static_files(project_id: str, dry_run: bool) -> None:
     logging.info("Updating static files for the reporting app in %s ...", project_id)
     logging.info("Dry run: %s", dry_run)
 
-    cmd_args = ["gsutil", "-m", "rsync", "-r"]
+    cmd_args = ["gsutil", "rsync", "-r"]
     if dry_run:
         cmd_args.append("-n")
     cmd_args += [source_path, dest_path]
