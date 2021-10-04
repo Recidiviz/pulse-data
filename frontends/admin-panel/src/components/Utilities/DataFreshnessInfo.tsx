@@ -17,7 +17,7 @@
 
 import * as React from "react";
 import { fetchDataFreshness } from "../../AdminPanelAPI";
-import useFetchedData from "../../hooks";
+import { useFetchedDataJSON } from "../../hooks";
 
 interface DataFreshnessInfoProps {
   state: string;
@@ -27,7 +27,8 @@ const DataFreshnessInfo: React.FC<DataFreshnessInfoProps> = ({ state }) => {
   const isProduction = window.RUNTIME_GCP_ENVIRONMENT === "production";
   const projectId = isProduction ? "recidiviz-123" : "recidiviz-staging";
 
-  const { data } = useFetchedData<DataFreshnessResult[]>(fetchDataFreshness);
+  const { data } =
+    useFetchedDataJSON<DataFreshnessResult[]>(fetchDataFreshness);
 
   function searchForState() {
     if (data !== undefined) {

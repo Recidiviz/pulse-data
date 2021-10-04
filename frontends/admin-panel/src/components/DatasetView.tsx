@@ -18,7 +18,7 @@ import { Breadcrumb, PageHeader, Spin } from "antd";
 import * as React from "react";
 import { useParams } from "react-router-dom";
 import { fetchObjectCountsByTable } from "../AdminPanelAPI";
-import useFetchedData from "../hooks";
+import { useFetchedDataJSON } from "../hooks";
 import MetadataDataset from "../models/MetadataDatasets";
 import * as DatasetMetadata from "../navigation/DatasetMetadata";
 import MetadataTable from "./MetadataTable";
@@ -33,7 +33,7 @@ const DatasetView = (): JSX.Element => {
   const fetchValues = React.useCallback(async (): Promise<Response> => {
     return fetchObjectCountsByTable(metadataDataset);
   }, [metadataDataset]);
-  const { loading, data } = useFetchedData<MetadataAPIResult>(fetchValues);
+  const { loading, data } = useFetchedDataJSON<MetadataAPIResult>(fetchValues);
 
   if (loading) {
     return (

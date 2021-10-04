@@ -117,6 +117,8 @@ def validate_result_status(
 
 
 class DataValidationJobResultDetails(abc.ABC):
+    """Interface for the details about a particular data validation job result."""
+
     @property
     @abc.abstractmethod
     def has_data(self) -> bool:
@@ -137,6 +139,11 @@ class DataValidationJobResultDetails(abc.ABC):
     def soft_failure_amount(self) -> float:
         """Returns the error amount that would be considered either a soft or hard failure if exceeded.
         If not exceeded,it should be considered a success"""
+
+    @property
+    @abc.abstractmethod
+    def error_is_percentage(self) -> bool:
+        """Returns whether or not the error amount should be displayed as a percentage."""
 
     @abc.abstractmethod
     def validation_result_status(self) -> ValidationResultStatus:

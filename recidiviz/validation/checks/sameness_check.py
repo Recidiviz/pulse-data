@@ -220,6 +220,10 @@ class SamenessPerViewValidationResultDetails(DataValidationJobResultDetails):
     def soft_failure_amount(self) -> float:
         return self.soft_max_allowed_error
 
+    @property
+    def error_is_percentage(self) -> bool:
+        return True
+
     def validation_result_status(self) -> ValidationResultStatus:
         return validate_result_status(
             self.error_rate, self.soft_max_allowed_error, self.hard_max_allowed_error
@@ -273,6 +277,10 @@ class SamenessPerRowValidationResultDetails(DataValidationJobResultDetails):
     @property
     def soft_failure_amount(self) -> float:
         return self.soft_max_allowed_error
+
+    @property
+    def error_is_percentage(self) -> bool:
+        return True
 
     @property
     def highest_error(self) -> float:

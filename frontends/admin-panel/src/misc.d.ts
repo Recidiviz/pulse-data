@@ -41,36 +41,6 @@ interface DataFreshnessResult {
   ingestPaused: boolean;
 }
 
-// Validation Status
-interface ValidationStatusResult {
-  validationCategory: string;
-  resultsByState: {
-    [stateCode: string]: ValidationStatus;
-  };
-}
-
-interface ValidationStatusResults {
-  runId: string;
-  runDatetime: string;
-  systemVersion: string;
-
-  results: {
-    [validationName: string]: ValidationStatusResult;
-  };
-}
-
-interface ValidationStatus {
-  didRun: boolean;
-  hardFailureAmount: number;
-  softFailureAmount: number;
-  isPercentage: boolean;
-  validationResultStatus?: ValidationResultStatus;
-  failureDescription?: string;
-  hasData?: boolean;
-  errorAmount?: number;
-  resultDetailsType?: string;
-}
-
 // PO Feedback responses
 interface POFeedbackResponse {
   officerExternalId: string;

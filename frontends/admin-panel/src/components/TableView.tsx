@@ -18,7 +18,7 @@ import { Breadcrumb, PageHeader, Spin } from "antd";
 import * as React from "react";
 import { Link, useHistory, useParams } from "react-router-dom";
 import { fetchTableNonNullCountsByColumn } from "../AdminPanelAPI";
-import useFetchedData from "../hooks";
+import { useFetchedDataJSON } from "../hooks";
 import MetadataDataset from "../models/MetadataDatasets";
 import * as DatasetMetadata from "../navigation/DatasetMetadata";
 import MetadataTable from "./MetadataTable";
@@ -35,7 +35,7 @@ const TableView = (): JSX.Element => {
   const fetchValues = React.useCallback(async (): Promise<Response> => {
     return fetchTableNonNullCountsByColumn(metadataDataset, table);
   }, [table, metadataDataset]);
-  const { loading, data } = useFetchedData<MetadataAPIResult>(fetchValues);
+  const { loading, data } = useFetchedDataJSON<MetadataAPIResult>(fetchValues);
 
   if (loading) {
     return (

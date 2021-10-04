@@ -140,6 +140,10 @@ class FakeValidationResultDetails(DataValidationJobResultDetails):
     def soft_failure_amount(self) -> float:
         return 0.01
 
+    @property
+    def error_is_percentage(self) -> bool:
+        return True
+
     def validation_result_status(self) -> ValidationResultStatus:
         return self.validation_status
 
