@@ -26,18 +26,25 @@ from sqlalchemy.ext.declarative import DeclarativeMeta
 
 from recidiviz.common import fips
 from recidiviz.common.constants.aggregate import enum_canonical_strings as enum_strings
+from recidiviz.common.constants.aggregate.enum_canonical_strings import (
+    community_corrections_wv_facility_type,
+    jail_wv_facility_type,
+    juvenile_center_wv_facility_type,
+    prison_wv_facility_type,
+)
 from recidiviz.persistence.database.schema.aggregate.schema import WvFacilityAggregate
 
 _FACILITY_TYPES = {
-    "Jails": "JAIL",
-    "Jails Central": "JAIL",
-    "Regional Jails": "JAIL",
-    "Prisons": "PRISON",
-    "Correctional Centers (prisons)": "PRISON",
-    "Community Corrections": "COMMUNITY CORRECTIONS",
-    "Community Corrections (work-release)": "COMMUNITY CORRECTIONS",
-    "Juvenile Centers": "JUVENILE CENTER",
-    "Juvenile Services": "JUVENILE CENTER",
+    "Jails": jail_wv_facility_type,
+    "Jails Central": jail_wv_facility_type,
+    "Regional Jails": jail_wv_facility_type,
+    "Regional jails": jail_wv_facility_type,
+    "Prisons": prison_wv_facility_type,
+    "Correctional Centers (prisons)": prison_wv_facility_type,
+    "Community Corrections": community_corrections_wv_facility_type,
+    "Community Corrections (work-release)": community_corrections_wv_facility_type,
+    "Juvenile Centers": juvenile_center_wv_facility_type,
+    "Juvenile Services": juvenile_center_wv_facility_type,
 }
 
 
@@ -54,7 +61,7 @@ def parse(filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
 def _parse_table(filename: str) -> pd.DataFrame:
     """Parse the TSV, remove extra rows and columns, and tag each row with facility type."""
     report_date = datetime.strptime(
-        filename.split("covid19_dcr_")[-1][:10], "%Y_%m-%d"
+        filename.lower().split("covid19_dcr_")[-1][:10], "%Y_%m-%d"
     ).date()
     if date(2020, 5, 20) <= report_date <= date(2020, 10, 29):
         header = 2
@@ -96,7 +103,7 @@ def add_facility_type(df: pd.DataFrame) -> pd.DataFrame:
     """Facility types are listed as sub-headers. This loops through each row, keeping track of the latest encountered
     facility type and adding it to each row."""
     df = df.copy()
-    current_facility_type = None
+    current_facility_type = jail_wv_facility_type
     for i, facility in df["facility_name"].iteritems():
         if pd.isna(facility):
             continue
