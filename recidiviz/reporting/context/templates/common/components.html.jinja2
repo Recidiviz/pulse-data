@@ -1,6 +1,6 @@
 {% macro card_divider() -%}
 <tr>
-    <td bgcolor="#CDD2D0" height="1" colspan="2" style="height: 1px; font-size: 0px; line-height: 0px;">
+    <td colspan="2" class="em_dm_border_30" style="border-top: 1px solid #CDD2D0; height: 0; font-size: 0px; line-height: 0px;">
         &nbsp;
     </td>
 </tr>
@@ -56,74 +56,59 @@
   </td>
 {% endmacro %}
 
-{# based on the CampaignMonitor "bulletproof button", https://buttons.cm/ #}
+{# based on the "conditional padding" button, https://www.goodemailcode.com/email-code/link-button #}
 {% macro button(text, link, size="lg", width=300, kind="primary") %}
   {# default for kind primary #}
-  {% set fill = "#006C67" %}
-  {% set stroke = "#006C67" %}
+  {% set fill = "#014C48" %}
   {% set color = "#FFFFFF" %}
+  {% set border = "" %}
 
   {% if kind == 'secondary' %}
-    {% set fill = "#EFF1F1" %}
-    {% set stroke = "rgba(53,83,98,0.3)" %}
+    {% set fill = "#F2F4F4" %}
+    {% set border = "border: 1px solid #B7C2C6;" %}
     {% set color = "#014C48" %}
   {% endif %}
 
   {# default for size lg #}
-  {% set height = 72 %}
+  {% set xpad = 56 %}
+    {% set ypad = 32 %}
   {% set font_size = 21 %}
 
   {% if size == "md" %}
-    {% set height = 64 %}
+    {% set xpad = 56 %}
+    {% set ypad = 24 %}
     {% set font_size = 16 %}
   {% endif %}
 
   {% if size == "sm" %}
-    {% set height = 48 %}
+    {% set xpad = 24 %}
+    {% set ypad = 16 %}
     {% set font_size = 16 %}
   {% endif %}
 
-  <div><!--[if mso]>
-    <v:roundrect 
-      xmlns:v="urn:schemas-microsoft-com:vml" 
-      xmlns:w="urn:schemas-microsoft-com:office:word" 
-      href="{{link}}" 
-      style="
-        height:{{height}}px;
-        v-text-anchor:middle;
-        width:{{width}}px;
-      "
-      arcsize="50%" 
-      stroke="{{stroke}}" 
-      fillcolor="{{fill}}"
-    >
-      <w:anchorlock/>
-      <center>
-    <![endif]-->
-    <a 
-      href="{{link}}"
-      style="
-        {{brand_styles.fonts.sans_serif}}
-        background-color:{{ fill }};
-        border: 1px solid {{stroke}};
-        border-radius:{{ height / 2 }}px;
-        color: {{color}};
-        display:inline-block;
-        font-weight: 500; 
-        font-size: {{font_size}}px; 
-        line-height:{{height}}px;
-        text-align:center;
-        text-decoration:none;
-        width:{{width}}px;
-        -webkit-text-size-adjust:none;
-      "
-    >
-      {{text}}
-    </a>
-    <!--[if mso]>
-      </center>
-    </v:roundrect>
-  <![endif]--></div>  
+  <a 
+    href="{{link}}"
+    class="Button Button--{{kind}}"
+    style="
+      {{brand_styles.fonts.sans_serif}}
+      {{border}}
+      background-color: {{fill}}; 
+      border-radius:{{ ypad * 2 + font_size }}px;
+      color: {{color}};
+      display: inline-block;
+      font-size: {{font_size}}px; 
+      font-weight: 500; 
+      padding: {{ypad}}px {{xpad}}px; 
+      mso-padding-alt: 0;
+      text-align:center;
+      text-decoration: none; 
+      -webkit-text-size-adjust:none;
+    "
+  >
+    <!--[if mso]><i style="letter-spacing: {{xpad}}px; mso-font-width: -100%; mso-text-raise: {{ypad * 2}}pt;">&nbsp;</i><![endif]-->
+    <span style="mso-text-raise: {{ypad}}pt;">{{text}}</span>
+    <!--[if mso]><i style="letter-spacing: {{xpad}}px; mso-font-width: -100%;">&nbsp;</i><![endif]-->
+  </a> 
 {% endmacro %}
 
 {# nestable layout table helpers #}

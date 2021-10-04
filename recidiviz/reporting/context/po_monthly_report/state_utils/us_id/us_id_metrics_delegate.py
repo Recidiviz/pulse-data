@@ -56,4 +56,4 @@ class UsIdMetricsDelegate(PoMonthlyReportMetricsDelegate):
 
     @property
     def completion_date_label(self) -> str:
-        return "full-term release date"
+        return "FTRD"  # stands for "full-term release date" FYI

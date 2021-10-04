@@ -10,9 +10,14 @@
       {{ components.layout_table_start() }}
         <tr>
           <td class="ComplianceCard__icon" style="width: 40px; padding-right: 16px;" valign="top">
-            <img src="{{ static_image_path }}/{{icon_image}}" alt="" width="40" height="40">
+            <div class="em_light_only">
+              <img src="{{ static_image_path }}/{{icon_image}}" alt="" width="40" height="40">
+            </div>
+            <div class="em_dark_only" style="display: none;">
+              <img src="{{ static_image_path }}/dark/{{icon_image}}" alt="" width="40" height="40">
+            </div>
           </td>
-          {{ components.heading("{:0.0f}% {}s up to date".format(task.pct, task.metric_label|title), size="md", valign="center") }}
+          {{ components.heading("{:0.0f}% {}s up to date".format(task.pct, task.metric_label|title), size="md", valign="middle") }}
         </tr>
       {{ components.layout_table_end() }}
     </td>
@@ -35,7 +40,7 @@
             "
           ></td>
           <td
-            class="ComplianceCard__chart"
+            class="ComplianceCard__chart em_dark"
             style="background-color: #E9EDED; width: {{100 - task.pct}}%; height: 56px;"
           ></td>
         </tr>
@@ -52,6 +57,7 @@
             width="{{ task.pct }}%"
             style="width: {{ task.pct }}%; height: 6px;"></td>
           <td
+            class="em_dm_border_80"
             style="
               width: {{ task.goal_pct - task.pct }}%;
               height: 6px;
@@ -70,7 +76,7 @@
   }}
   <tr>
     <td
-      class="ComplianceCard__goal"
+      class="ComplianceCard__goal em_dm_txt_white_80"
       style="
         {{brand_styles.fonts.sans_serif}}
         font-weight: 500;
