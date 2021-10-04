@@ -11,17 +11,31 @@
         width=180,
         size="sm")}}
     </td>
-    <td valign="middle"
+    <td 
+      valign="middle"
       style="text-align: right;">
         <a href="https://www.recidiviz.org/"
         target="_blank" style="text-decoration: none;">
-          <img
-            src="{{ static_image_path }}/footer_logo_v2.png" 
-            width="80" 
-            height="19" 
-            alt="Recidiviz"
-            border="0"
-          />
+          <div class="em_light_only">
+            <img
+              src="{{ static_image_path }}/footer_logo_v2.png" 
+              {# this one is slightly larger to provide a light background 
+                for clients that don't support CSS dark mode queries #}
+              width="88" 
+              height="28" 
+              alt="Recidiviz"
+              border="0"
+            />
+          </div>
+          <div class="em_dark_only" style="display: none;">
+            <img
+              src="{{ static_image_path }}/dark/footer_logo_v2.png" 
+              width="80" 
+              height="20" 
+              alt="Recidiviz"
+              border="0"
+            />
+          </div>
       </a>
     </td>
   </tr>

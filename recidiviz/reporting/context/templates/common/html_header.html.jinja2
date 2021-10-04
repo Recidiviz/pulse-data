@@ -80,6 +80,10 @@
       color: #00413E !important;
     }
 
+    .em_dark_only {
+      display: none !important;
+    }
+
     @media only screen and (max-width:599px) {
       .em_main_table {
         width: 100% !important;
@@ -709,13 +713,16 @@
         background-color: #000000 !important;
       }
 
-      .body {
-        background-color: #172430 !important;
-        color: #ffffff !important;
-      }
-
       .em_dm_grey {
         background-color: #333333 !important;
+      }
+
+      .em_dm_border_30 {
+        border-color: rgba(255, 255, 255, 0.3) !important;
+      }
+      
+      .em_dm_border_80 {
+        border-color: rgba(255, 255, 255, 0.8) !important;
       }
 
       .em_dm_txt_white {
@@ -725,7 +732,36 @@
       .em_dm_txt_white a {
         color: #FFFFFF !important;
       }
-    }
+      
+      .em_dm_txt_white_80 {
+        color: rgba(255, 255, 255, 0.8) !important;
+      }
 
+      .Card {
+        background-color: #1B1B1B !important;
+      }
+
+      .TableCard {
+        background-color: #2A2A2C !important;
+      }
+
+      .TableCard td {
+        color: #ffffff !important;
+      }
+
+      .Button--secondary {
+        background-color: #000000 !important;
+        border-color: rgba(255, 255, 255, 0.8) !important;
+        color: #FFFFFF !important;
+      }
+
+      .em_dark_only {
+        display: unset !important;
+      }
+      
+      .em_light_only {
+        display: none !important;
+      }
+    }
     /*//Darkmode Media*/
   </style>

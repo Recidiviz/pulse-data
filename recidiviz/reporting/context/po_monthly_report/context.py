@@ -353,8 +353,8 @@ class PoMonthlyReportContext(ReportContext):
         supplemental_text = self._caseload_or_district_outcome_text(POS_DISCHARGES)
 
         action_text = (
-            "These clients are within 30 days of their "
-            f"{self.metrics_delegate.completion_date_label}:"
+            f"Clients who have a {self.metrics_delegate.completion_date_label} "
+            f"in the next 30 days"
         )
 
         action_clients = self.recipient_data["upcoming_release_date_clients"]
@@ -386,14 +386,12 @@ class PoMonthlyReportContext(ReportContext):
     def _get_earned_discharges(self) -> DecarceralMetricContext:
         """Creates context data for the Early Releases card"""
         state_total = int(self.recipient_data[f"{EARNED_DISCHARGES}_state_total"])
-        main_text = (
-            f"{{}} early discharge requests were filed across {self.state_name}."
-        )
+        main_text = f"{{}} early discharge requests filed across {self.state_name}."
 
         supplemental_text = self._caseload_or_district_outcome_text(EARNED_DISCHARGES)
 
         return {
-            "heading": "Early Releases",
+            "heading": "Early Discharges",
             "icon": "ic_early-discharges-v2.png",
             "main_text": main_text,
             "total": state_total,
@@ -412,9 +410,7 @@ class PoMonthlyReportContext(ReportContext):
             SUPERVISION_DOWNGRADES
         )
 
-        action_text = (
-            "These clients may be downgraded based on their latest assessment:"
-        )
+        action_text = "Clients who may be downgraded based on their last assessment"
 
         action_clients = self.recipient_data["mismatches"]
 
