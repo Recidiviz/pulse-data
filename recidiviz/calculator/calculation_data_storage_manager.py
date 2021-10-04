@@ -19,12 +19,12 @@ import datetime
 import logging
 from collections import defaultdict
 from http import HTTPStatus
-from typing import Dict, List, Tuple
+from typing import Dict, Tuple
 
 import flask
 from google.cloud.bigquery import WriteDisposition
 from google.cloud.bigquery.table import TableListItem
-from more_itertools import peekable
+from more_itertools import one, peekable
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.calculator import dataflow_config
@@ -33,9 +33,11 @@ from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
 )
 from recidiviz.calculator.query.state.views.dataflow_metrics_materialized.most_recent_dataflow_metrics import (
-    generate_metric_view_names,
+    make_most_recent_metric_view_builders,
 )
 from recidiviz.utils.auth.gae import requires_gae_auth
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.yaml_dict import YAMLDict
 
 # Datasets must be at least 12 hours old to be deleted
@@ -142,8 +144,10 @@ def _get_month_range_for_metric_and_state() -> Dict[str, Dict[str, int]]:
 
 SOURCE_DATA_JOIN_CLAUSE_STANDARD_TEMPLATE = """LEFT JOIN
             (-- Job_ids that are the most recent for the given metric/state_code
-            SELECT DISTINCT job_id as keep_job_id FROM
-                `{project_id}.{materialized_metrics_dataset}.most_recent_{most_recent_table_name}`
+                WITH most_recent_metrics AS (
+                    {most_recent_metrics_view_query}
+                )    
+                SELECT DISTINCT job_id as keep_job_id FROM most_recent_metrics
             )
         ON job_id = keep_job_id
         LEFT JOIN 
@@ -175,13 +179,14 @@ SOURCE_DATA_JOIN_CLAUSE_WITH_MONTH_LIMIT_TEMPLATE = """LEFT JOIN
                     ordered_months
                 ON month_limit_by_state.state_code = ordered_months.state_code
                  AND ordered_months.month_order <= month_limit_by_state.month_limit
+            ), most_recent_metrics AS (
+                {most_recent_metrics_view_query}
             )
         
             -- Job_ids that are the most recent for the given metric/state_code/year/month and are in the month range
             SELECT DISTINCT job_id as keep_job_id FROM
                 months_in_range
-            LEFT JOIN
-                `{project_id}.{materialized_metrics_dataset}.most_recent_{most_recent_table_name}`
+            LEFT JOIN most_recent_metrics
             USING (state_code, year, month)
             )
         ON job_id = keep_job_id
@@ -193,7 +198,7 @@ SOURCE_DATA_JOIN_CLAUSE_WITH_MONTH_LIMIT_TEMPLATE = """LEFT JOIN
         ON created_on = keep_created_date"""
 
 
-def move_old_dataflow_metrics_to_cold_storage() -> None:
+def move_old_dataflow_metrics_to_cold_storage(dry_run: bool = False) -> None:
     """Moves old output in Dataflow metrics tables to tables in a cold storage dataset.
     We only keep the MAX_DAYS_IN_DATAFLOW_METRICS_TABLE days worth of data in a Dataflow
     metric table at once. All other output is moved to cold storage, unless it is the
@@ -203,6 +208,8 @@ def move_old_dataflow_metrics_to_cold_storage() -> None:
     file for a list of regularly scheduled calculations.
 
     If a metric has been entirely decommissioned, handles the deletion of the corresponding table.
+
+    If dry_run is True, will log queries that would otherwise be run.
     """
     bq_client = BigQueryClientImpl()
     dataflow_metrics_dataset = DATAFLOW_METRICS_DATASET
@@ -216,7 +223,7 @@ def move_old_dataflow_metrics_to_cold_storage() -> None:
 
         if table_id not in dataflow_config.DATAFLOW_TABLES_TO_METRIC_TYPES:
             # This metric has been deprecated. Handle the deletion of the table
-            _decommission_dataflow_metric_table(bq_client, table_ref)
+            _decommission_dataflow_metric_table(bq_client, table_ref, dry_run)
             continue
 
         is_unbounded_date_pipeline = any(
@@ -230,21 +237,27 @@ def move_old_dataflow_metrics_to_cold_storage() -> None:
             table_id
         ].items()
 
-        most_recent_table_names = generate_metric_view_names(table_id)
-        source_data_join_clauses: List[str] = []
+        # we expect make_most_recent_metric_view_builders to only return one view builder
+        # when it is not being split on the included_in_population bool
+        most_recent_metrics_view_query = (
+            one(
+                make_most_recent_metric_view_builders(
+                    metric_name=table_id, split_on_included_in_population=False
+                )
+            )
+            .build()
+            .view_query
+        )
 
         if is_unbounded_date_pipeline or no_active_month_range_pipelines:
-            for most_recent_table_name in most_recent_table_names:
-                source_data_join_clauses.append(
-                    SOURCE_DATA_JOIN_CLAUSE_STANDARD_TEMPLATE.format(
-                        project_id=table_ref.project,
-                        dataflow_metrics_dataset=table_ref.dataset_id,
-                        materialized_metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
-                        dataflow_metric_table_id=table_id,
-                        most_recent_table_name=most_recent_table_name,
-                        day_count_limit=dataflow_config.MAX_DAYS_IN_DATAFLOW_METRICS_TABLE,
-                    )
-                )
+            source_data_join_clause = SOURCE_DATA_JOIN_CLAUSE_STANDARD_TEMPLATE.format(
+                project_id=table_ref.project,
+                dataflow_metrics_dataset=table_ref.dataset_id,
+                materialized_metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
+                dataflow_metric_table_id=table_id,
+                most_recent_metrics_view_query=most_recent_metrics_view_query,
+                day_count_limit=dataflow_config.MAX_DAYS_IN_DATAFLOW_METRICS_TABLE,
+            )
         else:
             month_limit_by_state = "\nUNION ALL\n".join(
                 [
@@ -254,18 +267,17 @@ def move_old_dataflow_metrics_to_cold_storage() -> None:
                     ].items()
                 ]
             )
-            for most_recent_table_name in most_recent_table_names:
-                source_data_join_clauses.append(
-                    SOURCE_DATA_JOIN_CLAUSE_WITH_MONTH_LIMIT_TEMPLATE.format(
-                        project_id=table_ref.project,
-                        dataflow_metrics_dataset=table_ref.dataset_id,
-                        materialized_metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
-                        dataflow_metric_table_id=table_id,
-                        most_recent_table_name=most_recent_table_name,
-                        day_count_limit=dataflow_config.MAX_DAYS_IN_DATAFLOW_METRICS_TABLE,
-                        month_limit_by_state=month_limit_by_state,
-                    )
+            source_data_join_clause = (
+                SOURCE_DATA_JOIN_CLAUSE_WITH_MONTH_LIMIT_TEMPLATE.format(
+                    project_id=table_ref.project,
+                    dataflow_metrics_dataset=table_ref.dataset_id,
+                    materialized_metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
+                    dataflow_metric_table_id=table_id,
+                    most_recent_metrics_view_query=most_recent_metrics_view_query,
+                    day_count_limit=dataflow_config.MAX_DAYS_IN_DATAFLOW_METRICS_TABLE,
+                    month_limit_by_state=month_limit_by_state,
                 )
+            )
 
         # Exclude these columns leftover from the exclusion join from being added to the metric tables in cold storage
         columns_to_exclude_from_transfer = ["keep_job_id", "keep_created_date"]
@@ -273,22 +285,25 @@ def move_old_dataflow_metrics_to_cold_storage() -> None:
         # This filter will return the rows that should be moved to cold storage
         insert_filter_clause = "WHERE keep_job_id IS NULL AND keep_created_date IS NULL"
 
-        for source_data_join_clause in source_data_join_clauses:
-            # Query for rows to be moved to the cold storage table
-            insert_query = """
-                SELECT * EXCEPT({columns_to_exclude}) FROM
-                `{project_id}.{dataflow_metrics_dataset}.{table_id}`
-                {source_data_join_clause}
-                {insert_filter_clause}
-            """.format(
-                columns_to_exclude=", ".join(columns_to_exclude_from_transfer),
-                project_id=table_ref.project,
-                dataflow_metrics_dataset=table_ref.dataset_id,
-                table_id=table_id,
-                source_data_join_clause=source_data_join_clause,
-                insert_filter_clause=insert_filter_clause,
-            )
+        # Query for rows to be moved to the cold storage table
+        insert_query = """
+            SELECT * EXCEPT({columns_to_exclude}) FROM
+            `{project_id}.{dataflow_metrics_dataset}.{table_id}`
+            {source_data_join_clause}
+            {insert_filter_clause}
+        """.format(
+            columns_to_exclude=", ".join(columns_to_exclude_from_transfer),
+            project_id=table_ref.project,
+            dataflow_metrics_dataset=table_ref.dataset_id,
+            table_id=table_id,
+            source_data_join_clause=source_data_join_clause,
+            insert_filter_clause=insert_filter_clause,
+        )
 
+        if dry_run:
+            logging.info("###INSERT QUERY INTO COLD STORAGE TABLE###")
+            logging.info("%s;", insert_query)
+        else:
             # Move data from the Dataflow metrics dataset into the cold storage table, creating the table if necessary
             insert_job = bq_client.insert_into_table_from_query_async(
                 destination_dataset_id=cold_storage_dataset,
@@ -301,20 +316,24 @@ def move_old_dataflow_metrics_to_cold_storage() -> None:
             # Wait for the insert job to complete before running the replace job
             insert_job.result()
 
-            # This will return the rows that were not moved to cold storage and should remain in the table
-            replace_query = """
-                SELECT * EXCEPT({columns_to_exclude}) FROM
-                `{project_id}.{dataflow_metrics_dataset}.{table_id}`
-                {source_data_join_clause}
-                WHERE keep_job_id IS NOT NULL OR keep_created_date IS NOT NULL
-            """.format(
-                columns_to_exclude=", ".join(columns_to_exclude_from_transfer),
-                project_id=table_ref.project,
-                dataflow_metrics_dataset=table_ref.dataset_id,
-                table_id=table_id,
-                source_data_join_clause=source_data_join_clause,
-            )
+        # This will return the rows that were not moved to cold storage and should remain in the table
+        replace_query = """
+            SELECT * EXCEPT({columns_to_exclude}) FROM
+            `{project_id}.{dataflow_metrics_dataset}.{table_id}`
+            {source_data_join_clause}
+            WHERE keep_job_id IS NOT NULL OR keep_created_date IS NOT NULL
+        """.format(
+            columns_to_exclude=", ".join(columns_to_exclude_from_transfer),
+            project_id=table_ref.project,
+            dataflow_metrics_dataset=table_ref.dataset_id,
+            table_id=table_id,
+            source_data_join_clause=source_data_join_clause,
+        )
 
+        if dry_run:
+            logging.info("###REPLACE QUERY INTO METRIC TABLE###")
+            logging.info("%s;", replace_query)
+        else:
             # Replace the Dataflow table with only the rows that should remain
             replace_job = bq_client.create_table_from_query_async(
                 dataflow_metrics_dataset,
@@ -328,7 +347,7 @@ def move_old_dataflow_metrics_to_cold_storage() -> None:
 
 
 def _decommission_dataflow_metric_table(
-    bq_client: BigQueryClientImpl, table_ref: TableListItem
+    bq_client: BigQueryClientImpl, table_ref: TableListItem, dry_run: bool = False
 ) -> None:
     """Decommissions a deprecated Dataflow metric table. Moves all remaining rows
     to cold storage and deletes the table in the DATAFLOW_METRICS_DATASET."""
@@ -347,15 +366,25 @@ def _decommission_dataflow_metric_table(
         )
     )
 
-    insert_job = bq_client.insert_into_table_from_query_async(
-        destination_dataset_id=cold_storage_dataset,
-        destination_table_id=table_id,
-        query=insert_query,
-        allow_field_additions=True,
-        write_disposition=WriteDisposition.WRITE_APPEND,
-    )
+    if dry_run:
+        logging.info("###DECOMMISION INSERT QUERY INTO COLD STORAGE TABLE###")
+        logging.info("%s;", insert_query)
+    else:
+        insert_job = bq_client.insert_into_table_from_query_async(
+            destination_dataset_id=cold_storage_dataset,
+            destination_table_id=table_id,
+            query=insert_query,
+            allow_field_additions=True,
+            write_disposition=WriteDisposition.WRITE_APPEND,
+        )
 
-    # Wait for the insert job to complete before deleting the table
-    insert_job.result()
+        # Wait for the insert job to complete before deleting the table
+        insert_job.result()
 
-    bq_client.delete_table(dataset_id=dataflow_metrics_dataset, table_id=table_id)
+        bq_client.delete_table(dataset_id=dataflow_metrics_dataset, table_id=table_id)
+
+
+if __name__ == "__main__":
+    logging.getLogger().setLevel(logging.INFO)
+    with local_project_id_override(GCP_PROJECT_STAGING):
+        move_old_dataflow_metrics_to_cold_storage(dry_run=True)

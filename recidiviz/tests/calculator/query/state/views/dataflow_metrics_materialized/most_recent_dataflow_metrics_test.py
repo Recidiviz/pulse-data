@@ -24,7 +24,7 @@ from recidiviz.calculator.query.state.views.dataflow_metrics_materialized.most_r
     DEFAULT_JOIN_INDICES,
     METRIC_TABLES_JOIN_OVERRIDES,
     METRICS_VIEWS_TO_MATERIALIZE,
-    _make_most_recent_metric_view_builders,
+    make_most_recent_metric_view_builders,
 )
 
 
@@ -47,7 +47,7 @@ class MostRecentDataflowMetricsTest(unittest.TestCase):
         """Test that special-cased tables use the appropriate JOIN indices"""
         metric_names = METRIC_TABLES_JOIN_OVERRIDES.keys()
         for metric_name in metric_names:
-            builders = _make_most_recent_metric_view_builders(metric_name)
+            builders = make_most_recent_metric_view_builders(metric_name)
             for builder in builders:
                 query = builder.build()
                 using_clause = make_using_clause(
@@ -63,7 +63,7 @@ class MostRecentDataflowMetricsTest(unittest.TestCase):
             for name in METRICS_VIEWS_TO_MATERIALIZE
             if name not in METRIC_TABLES_JOIN_OVERRIDES
         ]:
-            builders = _make_most_recent_metric_view_builders(metric_name)
+            builders = make_most_recent_metric_view_builders(metric_name)
             for builder in builders:
                 query = builder.build()
                 self.assertIn(using_clause, query.__repr__())
