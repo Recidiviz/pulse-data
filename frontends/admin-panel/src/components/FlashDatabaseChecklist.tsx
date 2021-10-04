@@ -35,7 +35,7 @@ import {
   releaseBQExportLock,
   updateIngestQueuesState,
 } from "../AdminPanelAPI";
-import useFetchedData from "../hooks";
+import { useFetchedDataJSON } from "../hooks";
 import {
   DirectIngestInstance,
   QueueState,
@@ -510,7 +510,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
       </Steps>
     );
 
-  const { loading, data } = useFetchedData<StateCodeInfo[]>(
+  const { loading, data } = useFetchedDataJSON<StateCodeInfo[]>(
     fetchIngestStateCodes
   );
 

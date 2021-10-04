@@ -17,7 +17,7 @@
 import { Alert, Button, Form, PageHeader, Result, Select, Spin } from "antd";
 import * as React from "react";
 import { fetchETLViewIds, runCloudSQLImport } from "../AdminPanelAPI";
-import useFetchedData from "../hooks";
+import { useFetchedDataJSON } from "../hooks";
 
 const CloudSQLImportView = (): JSX.Element => {
   const [importStatus, setImportStatus] =
@@ -25,7 +25,7 @@ const CloudSQLImportView = (): JSX.Element => {
       "not-started"
     );
   const [errorText, setErrorText] = React.useState<string>("");
-  const { loading, data } = useFetchedData<string[]>(fetchETLViewIds);
+  const { loading, data } = useFetchedDataJSON<string[]>(fetchETLViewIds);
 
   if (loading) {
     return (

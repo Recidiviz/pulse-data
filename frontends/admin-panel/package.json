@@ -8,12 +8,16 @@
   "dependencies": {
     "@ant-design/icons": "^4.4.0",
     "antd": "^4.6.3",
+    "google-protobuf": "^3.18.0",
+    "history": "^5.0.1",
     "moment": "^2.29.1",
     "prop-types": "^15.7.2",
     "react": "^16.7.0",
     "react-dom": "^16.7.0",
+    "react-router": "^5.2.1",
     "react-router-dom": "^5.2.0",
-    "react-scripts": "4.0.3"
+    "react-scripts": "4.0.3",
+    "ts-protoc-gen": "^0.15.0"
   },
   "scripts": {
     "dev": "PORT=3030 react-scripts start",

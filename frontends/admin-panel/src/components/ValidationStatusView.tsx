@@ -15,62 +15,67 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { Anchor, Empty, List, PageHeader, Spin, Table, Typography } from "antd";
+import { Anchor, List, PageHeader, Spin, Table, Typography } from "antd";
 import { ColumnsType, ColumnType } from "antd/es/table";
 import * as React from "react";
 import { fetchValidationStatus } from "../AdminPanelAPI";
-import useFetchedData from "../hooks";
+import { useFetchedDataProtobuf } from "../hooks";
 import {
-  ValidationFailureMetadataRecord,
-  ValidationResultStatus,
-} from "../models/ValidationModels";
+  ValidationStatusRecord,
+  ValidationStatusRecords,
+} from "../recidiviz/admin_panel/models/validation_pb";
 import uniqueStates from "./Utilities/UniqueStates";
 
 const { Title } = Typography;
-const { Link } = Anchor;
 
 interface MetadataItem {
   key: string;
-  value: string;
+  value?: string;
 }
 
 const ValidationStatusView = (): JSX.Element => {
-  const { loading, data } = useFetchedData<ValidationStatusResults>(
-    fetchValidationStatus
+  const { loading, data } = useFetchedDataProtobuf<ValidationStatusRecords>(
+    fetchValidationStatus,
+    ValidationStatusRecords.deserializeBinary
   );
 
-  if (data === undefined) {
-    return <Empty className="buffer" />;
-  }
+  const records = data?.getRecordsList() || [];
 
-  if (loading) {
-    return (
-      <div className="center">
-        <Spin size="large" />
-      </div>
-    );
-  }
+  const recordsByName = records.reduce((acc, record) => {
+    const name = record.getName() || "";
+    const metadataRecord = acc[name] || { name, resultsByState: {} };
+    metadataRecord.resultsByState[record.getStateCode() || ""] = record;
+    acc[name] = metadataRecord;
+    return acc;
+  }, {} as { [name: string]: MetadataRecord<ValidationStatusRecord> });
 
-  const validationNames = Object.keys(data.results).sort();
+  const validationNames = Object.keys(recordsByName).sort();
 
-  const dictOfCategoriesToRecords = validationNames.reduce((acc, name) => {
-    const result = data.results[name];
-    const metadataRecord: MetadataRecord<ValidationStatus> = {
+  const dictOfCategoryIdsToRecords = validationNames.reduce((acc, name) => {
+    const result = recordsByName[name];
+    const metadataRecord: MetadataRecord<ValidationStatusRecord> = {
       name,
       resultsByState: result.resultsByState,
     };
-    const recordsForCategory = acc[result.validationCategory] || [];
-    acc[result.validationCategory] = [...recordsForCategory, metadataRecord];
+    const category = chooseIdNameForCategory(
+      Object.values(result.resultsByState)[0].getCategory()
+    );
+    const recordsForCategory = acc[category] || [];
+    acc[category] = [...recordsForCategory, metadataRecord];
     return acc;
-  }, {} as { [category: string]: MetadataRecord<ValidationStatus>[] });
+  }, {} as { [category: string]: MetadataRecord<ValidationStatusRecord>[] });
 
-  const failureLabelColumns: ColumnsType<ValidationFailureMetadataRecord> = [
+  const failureLabelColumns: ColumnsType<ValidationStatusRecord> = [
     {
       title: "Category",
       key: "category",
       fixed: "left",
-      render: (_: string, record: ValidationFailureMetadataRecord) => (
-        <div>{record.category}</div>
+      render: (_: string, record: ValidationStatusRecord) => (
+        <div>
+          {readableNameForCategoryId(
+            chooseIdNameForCategory(record.getCategory())
+          )}
+        </div>
       ),
     },
     {
@@ -78,36 +83,35 @@ const ValidationStatusView = (): JSX.Element => {
       key: "validation",
       fixed: "left",
       width: "35%",
-      render: (_: string, record: ValidationFailureMetadataRecord) => (
-        <div>{record.name}</div>
+      render: (_: string, record: ValidationStatusRecord) => (
+        <div>{record.getName()}</div>
       ),
     },
     {
       title: "State",
       key: "state",
       fixed: "left",
-      render: (_: string, record: ValidationFailureMetadataRecord) => (
-        <div>{record.stateCode}</div>
+      render: (_: string, record: ValidationStatusRecord) => (
+        <div>{record.getStateCode()}</div>
       ),
     },
     {
       title: "Status",
       key: "status",
       fixed: "left",
-      render: (_: string, record: ValidationFailureMetadataRecord) => {
-        const status = record.result;
-        return renderRecordStatus(status);
+      render: (_: string, record: ValidationStatusRecord) => {
+        return renderRecordStatus(record);
       },
     },
     {
       title: "Soft Threshold",
       key: "soft-failure-thresholds",
       fixed: "left",
-      render: (_: string, record: ValidationFailureMetadataRecord) => (
+      render: (_: string, record: ValidationStatusRecord) => (
         <div>
           {formatStatusAmount(
-            record.result.softFailureAmount,
-            record.result.isPercentage
+            record.getSoftFailureAmount(),
+            record.getIsPercentage()
           )}
         </div>
       ),
@@ -116,43 +120,45 @@ const ValidationStatusView = (): JSX.Element => {
       title: "Hard Threshold",
       key: "hard-failure-thresholds",
       fixed: "left",
-      render: (_: string, record: ValidationFailureMetadataRecord) => (
+      render: (_: string, record: ValidationStatusRecord) => (
         <div>
           {formatStatusAmount(
-            record.result.hardFailureAmount,
-            record.result.isPercentage
+            record.getHardFailureAmount(),
+            record.getIsPercentage()
           )}
         </div>
       ),
     },
   ];
 
-  const labelColumns: ColumnsType<MetadataRecord<ValidationStatus>> = [
+  const labelColumns: ColumnsType<MetadataRecord<ValidationStatusRecord>> = [
     {
       title: "Validation Name",
       key: "validation",
       fixed: "left",
       width: "55%",
-      render: (_: string, record: MetadataRecord<ValidationStatus>) => (
+      render: (_: string, record: MetadataRecord<ValidationStatusRecord>) => (
         <div>{record.name}</div>
       ),
     },
   ];
-  const allStates = uniqueStates(
-    Object.values(dictOfCategoriesToRecords).flat()
-  );
+  const allStates = uniqueStates(Object.values(recordsByName));
 
   const columns = labelColumns.concat(
     allStates.map((s) => columnTypeForState(s))
   );
 
+  const initialRecord = records.length > 0 ? records[0] : undefined;
   const metadata: MetadataItem[] = [
-    { key: "Run ID", value: data.runId },
-    { key: "Run Datetime", value: data.runDatetime },
-    { key: "System Version", value: data.systemVersion },
+    { key: "Run Id", value: initialRecord?.getRunId() },
+    {
+      key: "Run Datetime",
+      value: initialRecord?.getRunDatetime()?.toDate().toISOString(),
+    },
+    { key: "System Version", value: initialRecord?.getSystemVersion() },
   ];
 
-  const categories = Object.keys(dictOfCategoriesToRecords).sort();
+  const categoryIds = Object.keys(dictOfCategoryIdsToRecords).sort();
 
   return (
     <>
@@ -163,6 +169,7 @@ const ValidationStatusView = (): JSX.Element => {
       <List
         size="small"
         dataSource={metadata}
+        loading={loading}
         renderItem={(item: MetadataItem) => (
           <List.Item>
             {item.key}: {item.value}
@@ -171,20 +178,24 @@ const ValidationStatusView = (): JSX.Element => {
       />
       <Title level={3}>Table of Contents</Title>
       <Anchor affix={false}>
-        <Link href="#failures" title="Failure Summary">
-          <Link href="#hard-failures" title="Hard Failures" />
-          <Link href="#soft-failures" title="Soft Failures" />
-        </Link>
-        <Link href="#full-results" title="Full Results">
-          {categories.map((category) => {
-            return (
-              <Link
-                href={`#${chooseIDNameForCategory(category)}`}
-                title={readableNameForCategory(category)}
-              />
-            );
-          })}
-        </Link>
+        <Anchor.Link href="#failures" title="Failure Summary">
+          <Anchor.Link href="#hard-failures" title="Hard Failures" />
+          <Anchor.Link href="#soft-failures" title="Soft Failures" />
+        </Anchor.Link>
+        <Anchor.Link href="#full-results" title="Full Results">
+          {loading ? (
+            <Spin />
+          ) : (
+            categoryIds.map((categoryId) => {
+              return (
+                <Anchor.Link
+                  href={`#${categoryId}`}
+                  title={readableNameForCategoryId(categoryId)}
+                />
+              );
+            })
+          )}
+        </Anchor.Link>
       </Anchor>
       <Title id="failures" level={1}>
         Failure Summary
@@ -195,11 +206,10 @@ const ValidationStatusView = (): JSX.Element => {
       <Table
         className="metadata-table"
         columns={failureLabelColumns}
+        loading={loading}
         dataSource={getListOfFailureRecords(
-          ValidationResultStatus.FAIL_HARD,
-          allStates,
-          validationNames,
-          data.results
+          ValidationStatusRecord.ValidationResultStatus.FAIL_HARD,
+          records
         )}
         pagination={{
           hideOnSinglePage: true,
@@ -216,11 +226,10 @@ const ValidationStatusView = (): JSX.Element => {
       <Table
         className="metadata-table"
         columns={failureLabelColumns}
+        loading={loading}
         dataSource={getListOfFailureRecords(
-          ValidationResultStatus.FAIL_SOFT,
-          allStates,
-          validationNames,
-          data.results
+          ValidationStatusRecord.ValidationResultStatus.FAIL_SOFT,
+          records
         )}
         pagination={{
           hideOnSinglePage: true,
@@ -234,16 +243,17 @@ const ValidationStatusView = (): JSX.Element => {
       <Title id="full-results" level={1}>
         Full Results
       </Title>
-      {categories.sort().map((category) => {
+      {categoryIds.sort().map((categoryId) => {
         return (
           <>
-            <Title id={chooseIDNameForCategory(category)} level={2}>
-              {readableNameForCategory(category)}
+            <Title id={categoryId} level={2}>
+              {readableNameForCategoryId(categoryId)}
             </Title>
             <Table
               className="metadata-table"
               columns={columns}
-              dataSource={dictOfCategoriesToRecords[category]}
+              loading={loading}
+              dataSource={dictOfCategoryIdsToRecords[categoryId]}
               pagination={{
                 hideOnSinglePage: true,
                 showSizeChanger: true,
@@ -262,10 +272,10 @@ const ValidationStatusView = (): JSX.Element => {
 
 export default ValidationStatusView;
 
-function formatStatusAmount(
+export const formatStatusAmount = (
   amount: number | null | undefined,
-  isPercent: boolean
-) {
+  isPercent: boolean | undefined
+): string => {
   if (amount === null || amount === undefined) {
     return "";
   }
@@ -273,63 +283,80 @@ function formatStatusAmount(
     return `${(amount * 100).toFixed(2)}%`;
   }
   return amount.toString();
-}
+};
 
 const columnTypeForState = (
   state: string
-): ColumnType<MetadataRecord<ValidationStatus>> => {
+): ColumnType<MetadataRecord<ValidationStatusRecord>> => {
   return {
     title: state,
     key: state,
-    render: (_: string, record: MetadataRecord<ValidationStatus>) => {
-      const status = record.resultsByState[state];
-      return renderRecordStatus(status);
+    render: (_: string, record: MetadataRecord<ValidationStatusRecord>) => {
+      return renderRecordStatus(record.resultsByState[state]);
     },
   };
 };
 
-const renderRecordStatus = (status: ValidationStatus) => {
+const renderRecordStatus = (status: ValidationStatusRecord) => {
   if (status === undefined) {
     return <div>No Result</div>;
   }
-  if (status.didRun === false) {
+  if (status.getDidRun() === false) {
     return <div className="broken">Broken</div>;
   }
-  if (status.hasData === false) {
+  if (status.getHasData() === false) {
     return <div>Need Data</div>;
   }
-  const { errorAmount, isPercentage } = status;
 
-  switch (status.validationResultStatus) {
-    case ValidationResultStatus.FAIL_HARD:
+  switch (status.getResultStatus()) {
+    case ValidationStatusRecord.ValidationResultStatus.FAIL_HARD:
       return (
         <div className="failed-hard">
-          Hard Fail ({formatStatusAmount(errorAmount, isPercentage)})
+          Hard Fail (
+          {formatStatusAmount(
+            status.getErrorAmount(),
+            status.getIsPercentage()
+          )}
+          )
         </div>
       );
-    case ValidationResultStatus.FAIL_SOFT:
+    case ValidationStatusRecord.ValidationResultStatus.FAIL_SOFT:
       return (
         <div className="failed-soft">
-          Soft Fail ({formatStatusAmount(errorAmount, isPercentage)})
+          Soft Fail (
+          {formatStatusAmount(
+            status.getErrorAmount(),
+            status.getIsPercentage()
+          )}
+          )
         </div>
       );
-    case ValidationResultStatus.SUCCESS:
+    case ValidationStatusRecord.ValidationResultStatus.SUCCESS:
       return (
         <div className="success">
-          Passed ({formatStatusAmount(errorAmount, isPercentage)})
+          Passed (
+          {formatStatusAmount(
+            status.getErrorAmount(),
+            status.getIsPercentage()
+          )}
+          )
         </div>
       );
     default:
       return (
         <div className="broken">
-          Unknown Status Result &quot;{status.validationResultStatus}&quot; (
-          {formatStatusAmount(errorAmount, isPercentage)})
+          Unknown Status Result &quot;{status.getResultStatus()}&quot; (
+          {formatStatusAmount(
+            status.getErrorAmount(),
+            status.getIsPercentage()
+          )}
+          )
         </div>
       );
   }
 };
 
-const readableNameForCategory = (category: string): string => {
+const readableNameForCategoryId = (category: string): string => {
   switch (category) {
     case "CONSISTENCY":
       return "Consistency";
@@ -341,51 +368,45 @@ const readableNameForCategory = (category: string): string => {
       return "Invariant";
     case "FRESHNESS":
       return "Freshness";
+    case "UNKNOWN":
+      return "Unknown Category";
     default:
       return category;
   }
 };
 
-const chooseIDNameForCategory = (category: string): string => {
+const chooseIdNameForCategory = (
+  category?: ValidationStatusRecord.ValidationCategoryMap[keyof ValidationStatusRecord.ValidationCategoryMap]
+): string => {
   switch (category) {
-    case "CONSISTENCY":
+    case ValidationStatusRecord.ValidationCategory.CONSISTENCY:
       return "CONSISTENCY";
-    case "EXTERNAL_AGGREGATE":
+    case ValidationStatusRecord.ValidationCategory.EXTERNAL_AGGREGATE:
       return "EXTERNAL_AGGREGATE";
-    case "EXTERNAL_INDIVIDUAL":
+    case ValidationStatusRecord.ValidationCategory.EXTERNAL_INDIVIDUAL:
       return "EXTERNAL_INDIVIDUAL";
-    case "INVARIANT":
+    case ValidationStatusRecord.ValidationCategory.INVARIANT:
       return "INVARIANT";
-    case "FRESHNESS":
+    case ValidationStatusRecord.ValidationCategory.FRESHNESS:
       return "FRESHNESS";
     default:
-      return category;
+      return "UNKNOWN";
   }
 };
 
 const getListOfFailureRecords = (
-  failureType: ValidationResultStatus,
-  allStates: string[],
-  validationNames: string[],
-  results: { [validationName: string]: ValidationStatusResult }
-): ValidationFailureMetadataRecord[] => {
-  return validationNames.reduce((acc, name) => {
-    const result = results[name];
-    allStates.forEach((state) => {
-      const resultForState = result.resultsByState[state];
-      if (
-        resultForState &&
-        resultForState.validationResultStatus === failureType
-      ) {
-        acc.push({
-          name,
-          category: result.validationCategory,
-          stateCode: state,
-          result: resultForState,
-        });
+  failureType: ValidationStatusRecord.ValidationResultStatusMap[keyof ValidationStatusRecord.ValidationResultStatusMap],
+  records: ValidationStatusRecord[]
+): ValidationStatusRecord[] => {
+  return records
+    .filter(
+      (record: ValidationStatusRecord) =>
+        record.getResultStatus() === failureType
+    )
+    .sort((a, b) => {
+      if (a.getName() === b.getName()) {
+        return (a.getStateCode() || "") > (b.getStateCode() || "") ? 1 : -1;
       }
+      return (a.getName() || "") > (b.getName() || "") ? 1 : -1;
     });
-
-    return acc;
-  }, [] as ValidationFailureMetadataRecord[]);
 };

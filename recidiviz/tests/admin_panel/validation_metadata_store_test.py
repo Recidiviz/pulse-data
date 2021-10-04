@@ -19,17 +19,16 @@
 import datetime
 import unittest
 
+from google.protobuf.timestamp_pb2 import Timestamp
 from mock import MagicMock, patch
 from werkzeug.exceptions import ServiceUnavailable
 
-from recidiviz.admin_panel.validation_metadata_store import (
-    ResultDetailsTypes,
+from recidiviz.admin_panel.models.validation_pb2 import (
+    SamenessPerViewValidationResultDetails,
     ValidationStatusRecord,
-    ValidationStatusResult,
-    ValidationStatusResults,
-    ValidationStatusStore,
+    ValidationStatusRecords,
 )
-from recidiviz.validation.validation_models import ValidationResultStatus
+from recidiviz.admin_panel.validation_metadata_store import ValidationStatusStore
 
 
 @patch("recidiviz.utils.metadata.project_id", MagicMock(return_value="test-project"))
@@ -60,7 +59,7 @@ class ValidationStatusStoreTest(unittest.TestCase):
                 "validation_name": "test_view",
                 "region_code": "US_XX",
                 "did_run": True,
-                "validation_result_status": ValidationResultStatus.SUCCESS,
+                "validation_result_status": "SUCCESS",
                 "result_details_type": "SamenessPerViewValidationResultDetails",
                 "result_details": '{"num_error_rows": 12, "total_num_rows":1000, "hard_max_allowed_error": 0.02, "soft_max_allowed_error": 0.02, "non_null_counts_per_column_per_partition": []}',
             },
@@ -72,7 +71,7 @@ class ValidationStatusStoreTest(unittest.TestCase):
                 "validation_name": "test_view",
                 "region_code": "US_YY",
                 "did_run": True,
-                "validation_result_status": ValidationResultStatus.FAIL_HARD,
+                "validation_result_status": "FAIL_HARD",
                 "result_details_type": "SamenessPerViewValidationResultDetails",
                 "result_details": '{"num_error_rows": 999, "total_num_rows":1000, "hard_max_allowed_error": 0.02, "soft_max_allowed_error": 0.02, "non_null_counts_per_column_per_partition": []}',
                 "failure_description": "",
@@ -95,56 +94,78 @@ class ValidationStatusStoreTest(unittest.TestCase):
         store.recalculate_store()
         results = store.get_most_recent_validation_results()
 
+        timestamp = Timestamp()
+        timestamp.FromDatetime(datetime.datetime(2000, 1, 1, 0, 0, 0))
+
         self.assertEqual(
-            ValidationStatusResults(
-                runId="abc123",
-                runDatetime=datetime.datetime(2000, 1, 1, 0, 0, 0),
-                systemVersion="v1.0.0",
-                results={
-                    "test_view": ValidationStatusResult(
-                        validationCategory="EXTERNAL_INDIVIDUAL",
-                        resultsByState={
-                            "US_XX": ValidationStatusRecord(
-                                didRun=True,
-                                softFailureAmount=0.02,
-                                hardFailureAmount=0.02,
-                                validationResultStatus=ValidationResultStatus.SUCCESS,
-                                hasData=True,
-                                errorAmount=0.012,
-                                failureDescription=None,
-                                isPercentage=True,
-                                resultDetailsType=ResultDetailsTypes.SAMENESS_PER_VIEW_VALIDATION_RESULT_DETAILS,
-                            ),
-                            "US_YY": ValidationStatusRecord(
-                                didRun=True,
-                                softFailureAmount=0.02,
-                                hardFailureAmount=0.02,
-                                validationResultStatus=ValidationResultStatus.FAIL_HARD,
-                                hasData=True,
-                                errorAmount=0.999,
-                                isPercentage=True,
-                                failureDescription="",
-                                resultDetailsType=ResultDetailsTypes.SAMENESS_PER_VIEW_VALIDATION_RESULT_DETAILS,
-                            ),
-                        },
+            ValidationStatusRecords(
+                records=[
+                    ValidationStatusRecord(
+                        run_id="abc123",
+                        run_datetime=timestamp,
+                        system_version="v1.0.0",
+                        name="test_view",
+                        category=ValidationStatusRecord.ValidationCategory.EXTERNAL_INDIVIDUAL,
+                        is_percentage=True,
+                        state_code="US_XX",
+                        did_run=True,
+                        has_data=True,
+                        hard_failure_amount=0.02,
+                        soft_failure_amount=0.02,
+                        result_status=ValidationStatusRecord.ValidationResultStatus.SUCCESS,
+                        error_amount=0.012,
+                        failure_description=None,
+                        existence=None,
+                        sameness_per_row=None,
+                        sameness_per_view=SamenessPerViewValidationResultDetails(
+                            num_error_rows=12,
+                            total_num_rows=1000,
+                            non_null_counts_per_column_per_partition=[],
+                        ),
                     ),
-                    "other_view": ValidationStatusResult(
-                        validationCategory="CONSISTENCY",
-                        resultsByState={
-                            "US_XX": ValidationStatusRecord(
-                                didRun=False,
-                                softFailureAmount=None,
-                                hardFailureAmount=None,
-                                isPercentage=None,
-                                validationResultStatus=None,
-                                hasData=None,
-                                errorAmount=None,
-                                failureDescription=None,
-                                resultDetailsType=None,
-                            )
-                        },
+                    ValidationStatusRecord(
+                        run_id="abc123",
+                        run_datetime=timestamp,
+                        system_version="v1.0.0",
+                        name="test_view",
+                        category=ValidationStatusRecord.ValidationCategory.EXTERNAL_INDIVIDUAL,
+                        is_percentage=True,
+                        state_code="US_YY",
+                        did_run=True,
+                        has_data=True,
+                        hard_failure_amount=0.02,
+                        soft_failure_amount=0.02,
+                        result_status=ValidationStatusRecord.ValidationResultStatus.FAIL_HARD,
+                        error_amount=0.999,
+                        failure_description="",
+                        existence=None,
+                        sameness_per_row=None,
+                        sameness_per_view=SamenessPerViewValidationResultDetails(
+                            num_error_rows=999,
+                            total_num_rows=1000,
+                            non_null_counts_per_column_per_partition=[],
+                        ),
                     ),
-                },
+                    ValidationStatusRecord(
+                        run_id="abc123",
+                        run_datetime=timestamp,
+                        system_version="v1.0.0",
+                        name="other_view",
+                        category=ValidationStatusRecord.ValidationCategory.CONSISTENCY,
+                        is_percentage=None,
+                        state_code="US_XX",
+                        did_run=False,
+                        has_data=None,
+                        hard_failure_amount=None,
+                        soft_failure_amount=None,
+                        result_status=None,
+                        error_amount=None,
+                        failure_description=None,
+                        existence=None,
+                        sameness_per_row=None,
+                        sameness_per_view=None,
+                    ),
+                ]
             ),
             results,
         )
@@ -175,7 +196,7 @@ class ValidationStatusStoreTest(unittest.TestCase):
                 "validation_name": "test_view",
                 "region_code": "US_YY",
                 "did_run": True,
-                "validation_result_status": ValidationResultStatus.FAIL_HARD,
+                "validation_result_status": "FAIL_HARD",
                 "result_details_type": "SamenessPerViewValidationResultDetails",
                 "result_details": '{"num_error_rows": 99, "total_num_rows":1000, "hard_max_allowed_error": 0.02, "soft_max_allowed_error": 0.02, "non_null_counts_per_column_per_partition": []}',
                 "failure_description": "",
@@ -183,5 +204,5 @@ class ValidationStatusStoreTest(unittest.TestCase):
         ]
 
         store = ValidationStatusStore()
-        with self.assertRaisesRegex(ValueError, "Expected single value"):
+        with self.assertRaisesRegex(ValueError, "Expected single run id"):
             store.recalculate_store()

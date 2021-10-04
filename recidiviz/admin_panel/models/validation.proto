@@ -1,0 +1,130 @@
+// Recidiviz - a data platform for criminal justice reform
+// Copyright (C) 2019 Recidiviz, Inc.
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+// =============================================================================
+
+syntax = "proto2";
+
+package recidiviz.admin_panel.models;
+
+// To regenerate, ensure `mypy-protobuf` is installed:
+// ```bash
+// pipenv install --dev
+// ```
+// and that `protoc-gen-ts` is installed (from `frontends/admin-panel`)
+// ```bash
+// yarn install
+// ```
+//
+// See the README for instructions on installing protoc if you do not yet have
+// it installed.
+//
+// Re-generate the python files including type information:
+// ```bash
+// PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=cpp && \
+// protoc recidiviz/admin_panel/models/validation.proto  \
+//     --python_out . --mypy_out . \
+//     --plugin="protoc-gen-ts=frontends/admin-panel/node_modules/.bin/protoc-gen-ts" \
+//     --js_out="import_style=commonjs,binary:frontends/admin-panel/src" \
+//     --ts_out="frontends/admin-panel/src"
+// ```
+//
+// Note: We currently use `ts-protoc-gen` but we could use `ts-proto` instead. It 
+// creates its own first class typescript output instead of using the default protoc
+// javascript output described in:
+// https://developers.google.com/protocol-buffers/docs/reference/javascript-generated
+
+import "google/protobuf/timestamp.proto";
+
+// These mirror the `DataValidationJobResultDetails` objects but are trimmed to contain
+// any information that is specific to the child class. Information that is common to
+// all classes or in the interface (e.g. `error_amount`) is instead a first class field
+// of `ValidationStatusRecord`.
+
+message ResultRow {
+    repeated string label_values = 1;
+    repeated float comparison_values = 2;
+}
+
+message ExistenceValidationResultDetails {}
+
+message SamenessPerRowValidationResultDetails {
+    message RowWithError {
+        optional ResultRow row = 1;
+        optional float error = 2;
+    }
+    repeated RowWithError failed_rows = 1;
+}
+
+message SamenessPerViewValidationResultDetails {
+    optional int32 num_error_rows = 1;
+    optional int32 total_num_rows = 2;
+
+    message PartitionCounts {
+        repeated string partition_labels = 1;
+        map<string, int32> column_counts = 2;
+    }
+    repeated PartitionCounts non_null_counts_per_column_per_partition = 3;
+}
+
+// These are the top level messages used in the validation admin panel APIs.
+
+message ValidationStatusRecord {
+    // These apply to this entire valdiation run (i.e. whole /validate request)
+    optional string run_id = 1;
+    optional google.protobuf.Timestamp run_datetime = 2;
+    optional string system_version = 3;
+
+    // These describe this valdiation check generally type of check and apply to all
+    // are static over time.
+    optional string name = 4;
+    enum ValidationCategory {
+        EXTERNAL_AGGREGATE = 0;
+        EXTERNAL_INDIVIDUAL = 1;
+        CONSISTENCY = 2;
+        INVARIANT = 3;
+        FRESHNESS = 4;
+    }
+    optional ValidationCategory category = 5;
+    optional bool is_percentage = 6;
+
+    // These describe this run of this check.
+    optional string state_code = 7;
+
+    optional bool did_run = 8;
+    optional bool has_data = 9;
+
+    optional float hard_failure_amount = 10;
+    optional float soft_failure_amount = 11;
+
+    enum ValidationResultStatus {
+        SUCCESS = 0;
+        FAIL_SOFT = 1;
+        FAIL_HARD = 2;
+    }
+    optional ValidationResultStatus result_status = 12;
+    optional float error_amount = 13;
+    optional string failure_description = 14;
+
+    oneof result_details {
+        ExistenceValidationResultDetails existence = 15;
+        SamenessPerRowValidationResultDetails sameness_per_row = 16;
+        SamenessPerViewValidationResultDetails sameness_per_view = 17;
+    }
+}
+
+message ValidationStatusRecords {
+    repeated ValidationStatusRecord records = 1;
+}

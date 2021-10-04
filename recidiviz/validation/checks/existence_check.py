@@ -113,6 +113,10 @@ class ExistenceValidationResultDetails(DataValidationJobResultDetails):
     def soft_failure_amount(self) -> float:
         return self.soft_num_allowed_rows
 
+    @property
+    def error_is_percentage(self) -> bool:
+        return False
+
     def validation_result_status(self) -> ValidationResultStatus:
         return validate_result_status(
             self.num_invalid_rows,

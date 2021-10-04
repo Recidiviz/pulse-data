@@ -17,10 +17,11 @@
 import { PageHeader, Spin, Table } from "antd";
 import * as React from "react";
 import { getPOFeedback } from "../AdminPanelAPI";
-import useFetchedData from "../hooks";
+import { useFetchedDataJSON } from "../hooks";
 
 const POFeedbackView = (): JSX.Element => {
-  const { loading, data } = useFetchedData<POFeedbackResponse[]>(getPOFeedback);
+  const { loading, data } =
+    useFetchedDataJSON<POFeedbackResponse[]>(getPOFeedback);
 
   if (loading || !data) {
     return (

@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import * as React from "react";
 import { message } from "antd";
+import * as React from "react";
 
 interface FetchedDataResponse<T> {
   loading: boolean;
@@ -23,7 +23,8 @@ interface FetchedDataResponse<T> {
 }
 
 function useFetchedData<T>(
-  fetchReq: () => Promise<Response>
+  fetchReq: () => Promise<Response>,
+  responseHandler: (r: Response) => Promise<T>
 ): FetchedDataResponse<T> {
   const [loading, setLoading] = React.useState<boolean>(true);
   const [data, setData] = React.useState<T>();
@@ -37,7 +38,7 @@ function useFetchedData<T>(
         setLoading(false);
         return;
       }
-      setData(await r.json());
+      setData(await responseHandler(r));
       setLoading(false);
     };
     fetchData(fetchReq);
@@ -46,4 +47,17 @@ function useFetchedData<T>(
   return { loading, data };
 }
 
-export default useFetchedData;
+export const useFetchedDataJSON = <T>(
+  fetchReq: () => Promise<Response>
+): FetchedDataResponse<T> => {
+  return useFetchedData(fetchReq, (r) => r.json());
+};
+
+export const useFetchedDataProtobuf = <T>(
+  fetchReq: () => Promise<Response>,
+  parseFunction: (data: Uint8Array) => T
+): FetchedDataResponse<T> => {
+  return useFetchedData(fetchReq, async (r: Response) => {
+    return parseFunction(new Uint8Array(await r.arrayBuffer()));
+  });
+};
