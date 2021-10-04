@@ -54,8 +54,21 @@ export const fetchDataFreshness = async (): Promise<Response> => {
 };
 
 // Fetch validation status
+export const fetchValidationStateCodes = async (): Promise<Response> => {
+  return postWithURLAndBody("/api/validation_metadata/state_codes");
+};
+
 export const fetchValidationStatus = async (): Promise<Response> => {
   return postWithURLAndBody("/api/validation_metadata/status");
+};
+
+export const fetchValidationDetails = async (
+  validationName: string,
+  stateCode: string
+): Promise<Response> => {
+  return postWithURLAndBody(
+    `/api/validation_metadata/status/${validationName}/${stateCode}`
+  );
 };
 
 export {

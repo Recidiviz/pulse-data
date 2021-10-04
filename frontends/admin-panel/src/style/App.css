@@ -19,6 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 @import "~antd/dist/antd.css";
 @import "~antd/dist/antd.dark.css" (prefers-color-scheme: dark);
 @import "DataDiscovery.css";
+@import "Validation.css";
 
 .main-content {
   padding-top: 2vw;

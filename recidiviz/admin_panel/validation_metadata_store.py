@@ -46,6 +46,7 @@ from recidiviz.admin_panel.models.validation_pb2 import (
 from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
 from recidiviz.big_query.big_query_view import BigQueryAddress
 from recidiviz.common import serialization
+from recidiviz.common.constants.states import StateCode
 from recidiviz.validation.checks.existence_check import ExistenceValidationResultDetails
 from recidiviz.validation.checks.sameness_check import (
     SamenessPerRowValidationResultDetails,
@@ -85,7 +86,7 @@ class ResultDetailsTypes(Enum):
         raise ValueError(f"type {self} not mapped to class")
 
 
-def result_query(project_id: str, validation_result_address: BigQueryAddress) -> str:
+def results_query(project_id: str, validation_result_address: BigQueryAddress) -> str:
     return f"""
 SELECT
     run_id,
@@ -101,11 +102,35 @@ SELECT
     result_details_type,
     result_details
 FROM `{project_id}.{validation_result_address.dataset_id}.{validation_result_address.table_id}`
+"""
+
+
+def recent_run_results_query(
+    project_id: str, validation_result_address: BigQueryAddress
+) -> str:
+    return f"""
+{results_query(project_id, validation_result_address)}
 WHERE run_id = (
     SELECT run_id
     FROM `{project_id}.{validation_result_address.dataset_id}.{validation_result_address.table_id}`
     ORDER BY run_datetime desc LIMIT 1
 )
+"""
+
+
+def validation_history_results_query(
+    project_id: str,
+    validation_result_address: BigQueryAddress,
+    validation_name: str,
+    region_code: str,
+    days_to_include: int = 14,
+) -> str:
+    return f"""
+{results_query(project_id, validation_result_address)}
+WHERE validation_name = "{validation_name}"
+    AND region_code = "{region_code}"
+    AND run_datetime >= DATETIME_SUB(current_date(), INTERVAL {days_to_include} DAY)
+ORDER BY run_datetime desc 
 """
 
 
@@ -289,10 +314,22 @@ class ValidationStatusStore(AdminPanelStore):
 
         self.records: Optional[ValidationStatusRecords_pb2] = None
 
+    @property
+    def state_codes(self) -> List[StateCode]:
+        if self.records is None:
+            raise ServiceUnavailable("Validation results not yet loaded")
+        return [
+            StateCode(state_code)
+            for state_code in set(record.state_code for record in self.records.records)
+        ]
+
     def recalculate_store(self) -> None:
         """Recalculates validation data by querying the validation data store"""
         query_job = self.bq_client.run_query_async(
-            result_query(self.project_id, VALIDATION_RESULTS_BIGQUERY_ADDRESS), []
+            recent_run_results_query(
+                self.project_id, VALIDATION_RESULTS_BIGQUERY_ADDRESS
+            ),
+            [],
         )
 
         # Build up new results
@@ -319,3 +356,25 @@ class ValidationStatusStore(AdminPanelStore):
         if self.records is None:
             raise ServiceUnavailable("Validation results not yet loaded")
         return self.records
+
+    def get_results_for_validation(
+        self, validation_name: str, state_code: str
+    ) -> ValidationStatusRecords_pb2:
+        query_job = self.bq_client.run_query_async(
+            validation_history_results_query(
+                self.project_id,
+                VALIDATION_RESULTS_BIGQUERY_ADDRESS,
+                validation_name,
+                state_code,
+            ),
+            [],
+        )
+
+        # Build up new results
+        records: List[ValidationStatusRecord_pb2] = []
+
+        row: Row
+        for row in query_job:
+            records.append(_validation_status_record_from_row(row))
+
+        return ValidationStatusRecords_pb2(records=records)

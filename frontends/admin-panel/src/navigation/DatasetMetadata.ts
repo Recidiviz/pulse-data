@@ -21,6 +21,14 @@ export const DATA_FRESHNESS_ROUTE = "/admin/ingest_metadata/data_freshness";
 export const DATA_DISCOVERY_ROUTE = "/admin/ingest_metadata/data_discovery";
 
 export const VALIDATION_STATUS_ROUTE = `/admin/${MetadataDataset.VALIDATION}/status`;
+export const VALIDATION_DETAIL_ROUTE_TEMPLATE = `${VALIDATION_STATUS_ROUTE}/:validationName`;
+
+export const routeForValidationDetail = (validationName?: string): string => {
+  if (validationName === undefined) {
+    return VALIDATION_STATUS_ROUTE;
+  }
+  return `${VALIDATION_STATUS_ROUTE}/${validationName}`;
+};
 
 export const METADATA_DATASET_ROUTE_TEMPLATE = "/admin/:dataset/dataset";
 export const METADATA_TABLE_ROUTE_TEMPLATE = "/admin/:dataset/dataset/:table";

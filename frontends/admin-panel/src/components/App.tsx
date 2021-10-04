@@ -34,7 +34,8 @@ import POEmailsView from "./POEmailsView";
 import POFeedbackView from "./POFeedbackView";
 import TableView from "./TableView";
 import UploadRostersView from "./UploadRostersView";
-import ValidationStatusView from "./ValidationStatusView";
+import ValidationDetailView from "./Validation/ValidationDetailView";
+import ValidationStatusView from "./Validation/ValidationStatusView";
 
 const App = (): JSX.Element => {
   const location = useLocation();
@@ -153,6 +154,10 @@ const App = (): JSX.Element => {
             exact
             path={DatasetMetadata.DATA_DISCOVERY_ROUTE}
             component={DataDiscoveryView}
+          />
+          <Route
+            path={DatasetMetadata.VALIDATION_DETAIL_ROUTE_TEMPLATE}
+            component={ValidationDetailView}
           />
           <Route
             path={DatasetMetadata.VALIDATION_STATUS_ROUTE}
