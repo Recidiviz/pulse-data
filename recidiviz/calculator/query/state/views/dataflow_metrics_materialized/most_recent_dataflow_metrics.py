@@ -80,11 +80,14 @@ def generate_metric_view_names(metric_name: str) -> List[str]:
     return [metric_name]
 
 
-def _make_most_recent_metric_view_builders(
+def make_most_recent_metric_view_builders(
     metric_name: str,
+    split_on_included_in_population: bool = True,
 ) -> List[SimpleBigQueryViewBuilder]:
-    """Returns view builders for each metric, returning two view builders to account
-    for a person being in state populations for incarceration metrics"""
+    """Returns view builders that determine the most recent metrics for each metric name.
+
+    If split_on_included_in_population, will create two views for metrics that can be split on included_in_state_population.
+    """
     description = f"{metric_name} for the most recent job run"
     view_id = f"most_recent_{metric_name}"
     join_indices = METRIC_TABLES_JOIN_OVERRIDES.get(metric_name, DEFAULT_JOIN_INDICES)
@@ -92,7 +95,10 @@ def _make_most_recent_metric_view_builders(
         metric_name, DEFAULT_JOB_RECENCY_PRIMARY_KEYS
     )
 
-    if metric_name in VIEWS_TO_SPLIT_ON_INCLUDED_IN_STATE_POPULATION:
+    if (
+        metric_name in VIEWS_TO_SPLIT_ON_INCLUDED_IN_STATE_POPULATION
+        and split_on_included_in_population
+    ):
         return [
             SimpleBigQueryViewBuilder(
                 dataset_id=DATAFLOW_METRICS_MATERIALIZED_DATASET,
@@ -146,7 +152,7 @@ def generate_most_recent_metrics_view_builders(
     return [
         view_builder
         for metric_table in metric_tables
-        for view_builder in _make_most_recent_metric_view_builders(metric_table)
+        for view_builder in make_most_recent_metric_view_builders(metric_table)
     ]
 
 
