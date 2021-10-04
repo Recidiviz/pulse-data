@@ -1,4 +1,3 @@
-# TODO(#8999): Replace sprvsn_cntc with this once rerun is successful
 key_mappings:
   ofndr_num: state_person.state_person_id
 
