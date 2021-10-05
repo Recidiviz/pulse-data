@@ -17,9 +17,7 @@ branch_labels = None
 depends_on = None
 
 SELECT_IDS_QUERY = (
-    "SELECT supervision_period_id FROM {table_name}"
-    " WHERE state_code = 'US_ND'"
-    " AND {filter_clause}"
+    "SELECT supervision_period_id FROM {table_name} WHERE {filter_clause}"
 )
 
 UPDATE_QUERY = (
