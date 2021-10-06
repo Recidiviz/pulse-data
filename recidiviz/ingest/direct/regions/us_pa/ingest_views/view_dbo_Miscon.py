@@ -24,7 +24,23 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-SELECT *
+SELECT 
+    control_number,
+    misconduct_number,
+    misconduct_date,
+    institution,
+    report_date,
+    hearing_after_date,
+    place_hvl_code,
+    place_extended,
+    ctgory_of_chrgs_1,
+    ctgory_of_chrgs_2,
+    ctgory_of_chrgs_3,
+    ctgory_of_chrgs_4,
+    ctgory_of_chrgs_5,
+    confinement,
+    confinement_date,
+    drug_related
 FROM {dbo_Miscon}
 JOIN
 -- In 20-ish cases, the control_number in dbo_Miscon does not correspond to any control number in 
