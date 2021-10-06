@@ -113,16 +113,13 @@ const UserComponent = ({ user }: UserProps): JSX.Element => {
               Impersonate User
             </DropdownLinkButton>
           )}
-          <DropdownLinkButton
-            kind="link"
-            onClick={() => {
-              if (userStore.logout) {
-                userStore.logout({ returnTo: window.location.origin });
-              }
-            }}
-          >
-            Sign out of Recidiviz
-          </DropdownLinkButton>
+          <form action="/auth/log_out" method="POST">
+            <input type="hidden" name="csrf_token" value={api.csrfToken} />
+
+            <DropdownLinkButton kind="link" type="submit">
+              Sign out of Recidiviz
+            </DropdownLinkButton>
+          </form>
         </DropdownContainer>
       ) : null}
     </>

@@ -51,7 +51,7 @@ class AuthorizationError(FlaskException):
 class Auth0Config:
     """Data object for wrapping/validating our Auth0 configuration JSON"""
 
-    def __init__(self, config_json: Dict[str, Any]) -> None:
+    def __init__(self, config_json: Dict[str, Any], jwks: PyJWKSet) -> None:
         self.config_json = config_json
 
         # Algorithms to use when encoding / decoding JWTs
@@ -73,8 +73,6 @@ class Auth0Config:
         # If presented with a token that was not issued by this value, we will raise an `AuthorizationError` exception
         self.issuer: str = f"https://{self.domain}/"
 
-        with urlopen(f"https://{self.domain}/.well-known/jwks.json") as json_response:
-            jwks = PyJWKSet.from_json(json_response.read())
         self.jwks: Dict[str, RSAPublicKey] = {jwk.key_id: jwk.key for jwk in jwks.keys}
 
         # Validate `algorithms` input value
@@ -94,6 +92,14 @@ class Auth0Config:
             "clientId": self.client_id,
             "domain": self.domain,
         }
+
+    @staticmethod
+    def from_config_json(config_json: Dict[str, Any]) -> "Auth0Config":
+        jwks_url = f"https://{config_json['domain']}/.well-known/jwks.json"
+        with urlopen(jwks_url) as json_response:
+            jwks = PyJWKSet.from_json(json_response.read())
+
+        return Auth0Config(config_json, jwks)
 
 
 def get_token_auth_header() -> str:
