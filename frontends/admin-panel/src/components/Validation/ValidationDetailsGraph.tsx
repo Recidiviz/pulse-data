@@ -32,7 +32,7 @@ const ValidationDetailsGraph: React.FC<ValidationDetailsGraphProps> = ({
     {
       title: "Error",
       color: palette.data.forest1,
-      coordinates: records.reverse().map((record, index) => ({
+      coordinates: records.map((record, index) => ({
         time: record.getRunDatetime()?.toDate(),
         error: record.getErrorAmount(),
       })),
@@ -40,7 +40,7 @@ const ValidationDetailsGraph: React.FC<ValidationDetailsGraphProps> = ({
     {
       title: "Soft Threshold",
       color: palette.data.gold1,
-      coordinates: records.reverse().map((record, index) => ({
+      coordinates: records.map((record, index) => ({
         time: record.getRunDatetime()?.toDate(),
         error: record.getSoftFailureAmount(),
       })),
@@ -48,7 +48,7 @@ const ValidationDetailsGraph: React.FC<ValidationDetailsGraphProps> = ({
     {
       title: "Hard Threshold",
       color: palette.data.crimson1,
-      coordinates: records.reverse().map((record, index) => ({
+      coordinates: records.map((record, index) => ({
         time: record.getRunDatetime()?.toDate(),
         error: record.getHardFailureAmount(),
       })),

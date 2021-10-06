@@ -139,7 +139,8 @@ const ValidationDetails: React.FC<ValidationDetailsProps> = ({
         {records && (
           <Card>
             <ValidationDetailsGraph
-              records={records}
+              // Use slice() to copy before reversing.
+              records={records.slice().reverse()}
               isPercent={latestRecord?.getIsPercentage()}
             />
           </Card>
