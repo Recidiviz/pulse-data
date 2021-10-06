@@ -75,7 +75,7 @@ class Auth0ModuleTest(unittest.TestCase):
         self.test_app = Flask(__name__)
         self.test_client = self.test_app.test_client()
 
-        self.authorization_config = Auth0Config(
+        self.authorization_config = Auth0Config.from_config_json(
             {
                 "algorithms": ["RS256"],
                 "audience": "test_audience",

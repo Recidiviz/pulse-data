@@ -14,7 +14,13 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { Button, fonts, palette, spacing } from "@recidiviz/design-system";
+import {
+  Button,
+  ButtonProps,
+  fonts,
+  palette,
+  spacing,
+} from "@recidiviz/design-system";
 import { rem } from "polished";
 import styled from "styled-components/macro";
 
@@ -23,23 +29,15 @@ export const UserFlex = styled.div`
   align-items: center;
 
   position: relative;
-`;
 
-const headerStyleBase = `
-  font-weight: 500;
-
-  display: flex;
-  align-items: center;
   text-align: right;
   letter-spacing: -0.01em;
   font-feature-settings: "ss04" on;
   font-family: ${fonts.body};
-
   color: ${palette.text.normal};
 `;
 
 export const UserName = styled.span`
-  ${headerStyleBase}
   font-size: ${rem(15)};
   margin-right: ${rem(spacing.md)};
   cursor: pointer;
@@ -62,8 +60,7 @@ export const UserAvatar = styled.span`
 export const DropdownContainer = styled.div`
   position: absolute;
   top: 40px;
-  right: 0px;
-  width: 200px;
+  right: 0;
   z-index: 1000;
 
   border: 1px solid ${palette.slate20};
@@ -73,9 +70,9 @@ export const DropdownContainer = styled.div`
 `;
 
 const linkStyleBase = `
-  ${headerStyleBase}
   font-size: ${rem(14)};
-
+  display: block;
+  width: 100%;
   padding: ${rem(spacing.sm)};
 `;
 
@@ -83,6 +80,7 @@ export const DropdownLink = styled.a`
   ${linkStyleBase}
 
   color: ${palette.signal.links};
+
   &:active {
     color: ${palette.pine4};
   }
@@ -93,8 +91,9 @@ export const DropdownLink = styled.a`
   }
 `;
 
-export const DropdownLinkButton = styled(Button)`
+export const DropdownLinkButton = styled(Button)<ButtonProps>`
   ${linkStyleBase}
+  text-align: right;
 `;
 
 export const ToolbarButton = styled(Button)`
