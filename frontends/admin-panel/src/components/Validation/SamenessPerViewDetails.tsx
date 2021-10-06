@@ -43,6 +43,11 @@ const SamenessPerViewDetails: React.FC<SamenessPerViewDetailsProps> = ({
       }
       return 0;
     });
+
+  if (!sortedPartitions.length) {
+    return <Empty />;
+  }
+
   const firstPartition = sortedPartitions[0];
   const partitionColumns: ColumnsType<SamenessPerViewValidationResultDetails.PartitionCounts> =
     firstPartition
@@ -94,6 +99,9 @@ const SamenessPerViewDetails: React.FC<SamenessPerViewDetailsProps> = ({
           className="validation-table"
           columns={columns}
           dataSource={sortedPartitions}
+          rowKey={(
+            record: SamenessPerViewValidationResultDetails.PartitionCounts
+          ) => record.getPartitionLabelsList().join("-")}
           pagination={{
             hideOnSinglePage: true,
             showSizeChanger: true,
