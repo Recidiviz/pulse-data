@@ -34,6 +34,7 @@ from recidiviz.case_triage.api_routes import (
     IMPERSONATED_EMAIL_KEY,
     create_api_blueprint,
 )
+from recidiviz.case_triage.auth_routes import create_auth_blueprint
 from recidiviz.case_triage.authorization import AuthorizationStore
 from recidiviz.case_triage.e2e_routes import e2e_blueprint
 from recidiviz.case_triage.error_handlers import register_error_handlers
@@ -153,7 +154,6 @@ def on_successful_authorization(jwt_claims: TokenClaims) -> None:
 
     email = session["user_info"]["email"].lower()
     g.user_context = UserContext(email, authorization_store, jwt_claims=jwt_claims)
-
     if (
         not g.user_context.access_permissions.can_access_case_triage
         and not g.user_context.access_permissions.can_access_leadership_dashboard
@@ -167,7 +167,7 @@ if not auth0_configuration:
     raise ValueError("Missing Case Triage Auth0 configuration secret")
 
 authorization_store = AuthorizationStore()
-authorization_config = Auth0Config(json.loads(auth0_configuration))
+authorization_config = Auth0Config.from_config_json(json.loads(auth0_configuration))
 requires_authorization = build_auth0_authorization_decorator(
     authorization_config, on_successful_authorization
 )
@@ -208,9 +208,11 @@ segment_client = CaseTriageSegmentClient(write_key)
 
 
 # Routes & Blueprints
-api = create_api_blueprint(segment_client, requires_authorization)
+api_blueprint = create_api_blueprint(segment_client, requires_authorization)
+auth_blueprint = create_auth_blueprint(authorization_config)
 
-app.register_blueprint(api, url_prefix="/api")
+app.register_blueprint(api_blueprint, url_prefix="/api")
+app.register_blueprint(auth_blueprint, url_prefix="/auth")
 app.register_blueprint(e2e_blueprint, url_prefix="/e2e")
 
 app.add_url_rule(
