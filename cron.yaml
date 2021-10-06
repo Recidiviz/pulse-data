@@ -242,7 +242,7 @@ cron:
     
   - description: Start Cloud SQL to BigQuery export tasks for case triage tables
     url: /cloud_sql_to_bq/create_refresh_bq_schema_task/case_triage
-    schedule: every day 6:00
+    schedule: every day 11:00
     timezone: America/Los_Angeles
     retry_parameters:
       min_backoff_seconds: 2.5
