@@ -1,0 +1,20 @@
+manifest_language: 1.0.0
+input_columns:
+  - PERSONNAME
+  - RACES
+unused_columns: []
+output:
+  FakePerson:
+    name: PERSONNAME
+    races:
+      - $foreach:
+          $split_json: RACES
+        FakePersonRace:
+          race:
+            $raw_text:
+              $json_extract:
+                $json: $iter
+                $key: race
+            $mappings:
+              FakeRace.ASIAN: A
+              FakeRace.BLACK: B

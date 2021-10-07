@@ -301,8 +301,8 @@ class EntityTreeManifestFactory:
         entity_cls: Type[EntityT],
     ) -> Union[ManifestNode[EntityT], "ExpandableListItemManifest[EntityT]"]:
         """Expands a list item into a list of entities based on the provided manifest."""
-        list_col_name = list_item_manifest_raw.pop_optional(
-            ExpandableListItemManifest.FOREACH_ITERATOR_KEY, str
+        raw_iterable_manifest = pop_raw_flat_field_manifest_optional(
+            ExpandableListItemManifest.FOREACH_ITERATOR_KEY, list_item_manifest_raw
         )
 
         child_entity_manifest = build_manifest_from_raw_typed(
@@ -317,11 +317,13 @@ class EntityTreeManifestFactory:
         # Aside from the special $foreach key, this manifest should be shaped like a
         # normal entity tree manifest, a dictionary with a single class name -> fields
         # manifest mapping.
-        if not list_col_name:
+        if not raw_iterable_manifest:
             return child_entity_manifest
 
         return ExpandableListItemManifest(
-            mapped_column=list_col_name,
+            values_manifest=build_iterable_manifest_from_raw(
+                raw_iterable_manifest=raw_iterable_manifest
+            ),
             child_entity_manifest=child_entity_manifest,
         )
 
@@ -351,6 +353,60 @@ class EntityTreeManifestFactory:
 
 
 @attr.s(kw_only=True)
+class SplitCommaSeparatedListManifest(ManifestNode[List[str]]):
+    """A node that reads the comma-separated string value from a given column and
+    splits it into a list of strings.
+    """
+
+    # Default delimiter used to split list column values.
+    DEFAULT_LIST_VALUE_DELIMITER = ","
+
+    column_name: str = attr.ib()
+
+    @property
+    def result_type(self) -> Type[List[str]]:
+        return List[str]
+
+    def build_from_row(self, row: Dict[str, str]) -> List[str]:
+        column_value = row[self.column_name]
+        if not column_value:
+            return []
+        # TODO(#8908): For now, we always split list column values on the default
+        #  delimiter. Revisit whether the parser language needs be changed to allow the
+        #  delimiter to be configurable.
+        return column_value.split(self.DEFAULT_LIST_VALUE_DELIMITER)
+
+    def columns_referenced(self) -> Set[str]:
+        return {self.column_name}
+
+
+@attr.s(kw_only=True)
+class SplitJSONListManifest(ManifestNode[List[str]]):
+    """A node that reads a JSON list string from a given column and outputs a list of
+    strings containing the inner (still-serialized) JSON values.
+    """
+
+    SPLIT_JSON_LIST_KEY = "$split_json"
+
+    # The name of the column containing the JSON string to split
+    column_name: str = attr.ib()
+
+    @property
+    def result_type(self) -> Type[List[str]]:
+        return List[str]
+
+    def build_from_row(self, row: Dict[str, str]) -> List[str]:
+        column_value = row[self.column_name]
+        if not column_value:
+            return []
+
+        return [json.dumps(item) for item in json.loads(column_value)]
+
+    def columns_referenced(self) -> Set[str]:
+        return {self.column_name}
+
+
+@attr.s(kw_only=True)
 class ExpandableListItemManifest(Generic[EntityT]):
     """A wrapper around an EntityTreeManifest that describes a list item that can be
     expanded into 0 to N entity trees, based on the value of the input column.
@@ -363,24 +419,16 @@ class ExpandableListItemManifest(Generic[EntityT]):
     # within the context of a $foreach loop.
     FOREACH_LOOP_VALUE_NAME = "$iter"
 
-    # Default delimiter used to split list column values.
-    DEFAULT_LIST_VALUE_DELIMITER = ","
-
-    # Name of the column that should be treated as a list of values to expand into list
-    # items.
-    mapped_column: str = attr.ib()
+    # Manifest that will produce the list of values to iterate over.
+    values_manifest: ManifestNode[List[str]] = attr.ib()
 
     child_entity_manifest: ManifestNode[EntityT] = attr.ib()
 
     def expand(self, row: Dict[str, str]) -> List[EntityT]:
-        column_value = row[self.mapped_column]
-        if not column_value:
-            return []
+        values = self.values_manifest.build_from_row(row)
+        if values is None:
+            raise ValueError("Unexpected null list value.")
 
-        # TODO(#8908): For now, we always split list column values on the default
-        #  delimiter. Revisit whether the parser language needs be changed to allow the
-        #  delimiter to be configurable.
-        values = column_value.split(self.DEFAULT_LIST_VALUE_DELIMITER)
         result = []
         if self.FOREACH_LOOP_VALUE_NAME in row:
             raise ValueError(
@@ -397,7 +445,7 @@ class ExpandableListItemManifest(Generic[EntityT]):
 
     def columns_referenced(self) -> Set[str]:
         return {
-            self.mapped_column,
+            *self.values_manifest.columns_referenced(),
             *{
                 c
                 for c in self.child_entity_manifest.columns_referenced()
@@ -829,6 +877,53 @@ class SerializedJSONDictFieldManifest(ManifestNode[str]):
 
 
 @attr.s(kw_only=True)
+class JSONExtractKeyManifest(ManifestNode[str]):
+    """Manifest describing the value for a flat field that will be hydrated with
+    a value that has been extracted from a JSON string.
+    """
+
+    # Function name used to identify raw manifests of this type.
+    JSON_EXTRACT_KEY = "$json_extract"
+
+    JSON_STRING_ARG_KEY = "$json"
+    JSON_KEY_ARG_KEY = "$key"
+
+    json_manifest: ManifestNode[str] = attr.ib()
+    json_key: str = attr.ib()
+
+    @property
+    def result_type(self) -> Type[str]:
+        return str
+
+    def build_from_row(self, row: Dict[str, str]) -> str:
+        json_str = self.json_manifest.build_from_row(row)
+        if json_str is None:
+            raise ValueError(f"Expected nonnull JSON string for row: {row}")
+        json_dict = json.loads(json_str)
+        return json_dict[self.json_key]
+
+    def columns_referenced(self) -> Set[str]:
+        return self.json_manifest.columns_referenced()
+
+    @classmethod
+    def from_raw_manifest(
+        cls,
+        *,
+        raw_function_manifest: YAMLDict,
+        delegate: IngestViewFileParserDelegate,
+    ) -> "JSONExtractKeyManifest":
+        return JSONExtractKeyManifest(
+            json_manifest=build_str_manifest_from_raw(
+                pop_raw_flat_field_manifest(
+                    cls.JSON_STRING_ARG_KEY, raw_function_manifest
+                ),
+                delegate,
+            ),
+            json_key=raw_function_manifest.pop(cls.JSON_KEY_ARG_KEY, str),
+        )
+
+
+@attr.s(kw_only=True)
 class ConcatenatedStringsManifest(ManifestNode[str]):
     """Manifest describing a value that is hydrated by concatenating 0-N values, with
     a separator.
@@ -867,7 +962,7 @@ class ConcatenatedStringsManifest(ManifestNode[str]):
     def result_type(self) -> Type[str]:
         return str
 
-    def build_from_row(self, row: Dict[str, str]) -> Optional[str]:
+    def build_from_row(self, row: Dict[str, str]) -> str:
         unfiltered_values = [
             value_manifest.build_from_row(row)
             for value_manifest in self.value_manifests
@@ -946,7 +1041,7 @@ class PhysicalAddressManifest(ManifestNode[str]):
     def result_type(self) -> Type[str]:
         return str
 
-    def build_from_row(self, row: Dict[str, str]) -> Optional[str]:
+    def build_from_row(self, row: Dict[str, str]) -> str:
         state_and_zip_parts = [
             self.state_manifest.build_from_row(row),
             self.zip_manifest.build_from_row(row),
@@ -1037,7 +1132,7 @@ class PersonNameManifest(ManifestNode[str]):
     def result_type(self) -> Type[str]:
         return str
 
-    def build_from_row(self, row: Dict[str, str]) -> Optional[str]:
+    def build_from_row(self, row: Dict[str, str]) -> str:
         return self.name_json_manifest.build_from_row(row)
 
     @classmethod
@@ -1462,6 +1557,28 @@ def build_str_manifest_from_raw(
     return build_manifest_from_raw_typed(raw_field_manifest, delegate, str)
 
 
+def build_iterable_manifest_from_raw(
+    raw_iterable_manifest: Union[str, YAMLDict]
+) -> ManifestNode[List[str]]:
+    """Builds a ManifestNode[List[str] from the provided raw manifest."""
+
+    if isinstance(raw_iterable_manifest, str):
+        return SplitCommaSeparatedListManifest(column_name=raw_iterable_manifest)
+
+    if isinstance(raw_iterable_manifest, YAMLDict):
+        manifest_node_name = one(raw_iterable_manifest.keys())
+
+        if manifest_node_name == SplitJSONListManifest.SPLIT_JSON_LIST_KEY:
+            return SplitJSONListManifest(
+                column_name=raw_iterable_manifest.pop(manifest_node_name, str)
+            )
+
+    raise ValueError(
+        f"Unexpected raw manifest type: [{type(raw_iterable_manifest)}]: "
+        f"{raw_iterable_manifest}"
+    )
+
+
 def build_manifest_from_raw_typed(
     raw_field_manifest: Union[str, YAMLDict],
     delegate: IngestViewFileParserDelegate,
@@ -1536,6 +1653,11 @@ def build_manifest_from_raw(
                     )
                     for key in function_arguments.keys()
                 }
+            )
+        if manifest_node_name == JSONExtractKeyManifest.JSON_EXTRACT_KEY:
+            return JSONExtractKeyManifest.from_raw_manifest(
+                raw_function_manifest=raw_field_manifest.pop_dict(manifest_node_name),
+                delegate=delegate,
             )
         if manifest_node_name == ConcatenatedStringsManifest.CONCATENATE_KEY:
             return ConcatenatedStringsManifest.from_raw_manifest(
