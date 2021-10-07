@@ -25,7 +25,7 @@ import logging
 
 from recidiviz.big_query.big_query_view import BigQueryAddress
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker, DagKey
-from recidiviz.big_query.view_update_manager import _build_views_to_update
+from recidiviz.big_query.view_update_manager import build_views_to_update
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool
@@ -45,7 +45,7 @@ def build_dag_walker(dataset_id: str, view_id: str) -> BigQueryViewDagWalker:
     if not is_valid_view:
         raise ValueError(f"invalid view {dataset_id}.{view_id}")
     return BigQueryViewDagWalker(
-        _build_views_to_update(
+        build_views_to_update(
             view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
             candidate_view_builders=all_deployed_view_builders(),
             dataset_overrides=None,
