@@ -20,16 +20,19 @@ from typing import Type
 
 from recidiviz.common.constants.person_characteristics import Ethnicity, Gender, Race
 from recidiviz.common.constants.state.external_id_types import US_TN_DOC
+from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
     StateIncarcerationPeriodStatus,
 )
+from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
 )
 from recidiviz.ingest.direct.regions.us_tn.us_tn_controller import UsTnController
 from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.entity.state import entities
 from recidiviz.tests.ingest.direct.regions.base_direct_ingest_controller_tests import (
     BaseDirectIngestControllerTests,
 )
@@ -127,9 +130,31 @@ class TestUsTnController(BaseDirectIngestControllerTests):
         ######################################
         # OffenderMovementIncarcerationPeriod
         ######################################
+
+        placheolder_sentence_group_2 = entities.StateSentenceGroup.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            person=person_2,
+        )
+
+        placeholder_incarceration_sentence_2 = (
+            entities.StateIncarcerationSentence.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                person=person_2,
+                sentence_group=placheolder_sentence_group_2,
+            )
+        )
+        placheolder_sentence_group_2.incarceration_sentences.append(
+            placeholder_incarceration_sentence_2
+        )
+        person_2.sentence_groups.append(placheolder_sentence_group_2)
+
         add_incarceration_period_to_person(
             person=person_2,
             state_code=_STATE_CODE_UPPER,
+            incarceration_sentence=placeholder_incarceration_sentence_2,
             external_id="00000002-2",
             status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             admission_date=datetime.date(year=2021, month=6, day=20),
@@ -141,10 +166,31 @@ class TestUsTnController(BaseDirectIngestControllerTests):
             release_reason_raw_text="NONE-NONE",
         )
 
+        placheolder_sentence_group_3 = entities.StateSentenceGroup.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            person=person_3,
+        )
+
+        placeholder_incarceration_sentence_3 = (
+            entities.StateIncarcerationSentence.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                person=person_3,
+                sentence_group=placheolder_sentence_group_3,
+            )
+        )
+        placheolder_sentence_group_3.incarceration_sentences.append(
+            placeholder_incarceration_sentence_3
+        )
+        person_3.sentence_groups.append(placheolder_sentence_group_3)
+
         # Person 3 moves from parole to facility.
         add_incarceration_period_to_person(
             person=person_3,
             state_code=_STATE_CODE_UPPER,
+            incarceration_sentence=placeholder_incarceration_sentence_3,
             external_id="00000003-1",
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             admission_date=datetime.date(year=2010, month=2, day=5),
@@ -159,6 +205,7 @@ class TestUsTnController(BaseDirectIngestControllerTests):
         add_incarceration_period_to_person(
             person=person_3,
             state_code=_STATE_CODE_UPPER,
+            incarceration_sentence=placeholder_incarceration_sentence_3,
             external_id="00000003-2",
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             admission_date=datetime.date(year=2010, month=2, day=26),
@@ -173,6 +220,7 @@ class TestUsTnController(BaseDirectIngestControllerTests):
         add_incarceration_period_to_person(
             person=person_3,
             state_code=_STATE_CODE_UPPER,
+            incarceration_sentence=placeholder_incarceration_sentence_3,
             external_id="00000003-3",
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             admission_date=datetime.date(year=2010, month=4, day=6),
@@ -190,4 +238,9 @@ class TestUsTnController(BaseDirectIngestControllerTests):
         self._run_ingest_job_for_filename("OffenderMovementIncarcerationPeriod")
 
         # Assert
+        self.assert_expected_db_people(expected_people)
+
+        # Rerun for sanity
+        self._do_ingest_job_rerun_for_tags(self.controller.get_file_tag_rank_list())
+
         self.assert_expected_db_people(expected_people)

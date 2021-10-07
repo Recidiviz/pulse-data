@@ -24,7 +24,6 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodReleaseReason,
     StateIncarcerationPeriodStatus,
 )
-from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
     get_all_entities_from_tree,
@@ -143,6 +142,7 @@ def add_external_id_to_person(
 def add_incarceration_period_to_person(
     person: entities.StatePerson,
     state_code: str,
+    incarceration_sentence: entities.StateIncarcerationSentence,
     external_id: str,
     status: StateIncarcerationPeriodStatus,
     admission_date: datetime.date,
@@ -154,19 +154,6 @@ def add_incarceration_period_to_person(
     release_reason_raw_text: str,
 ) -> None:
     """Append an incarceration period to the person (updates the person entity in place)."""
-    sentence_group = entities.StateSentenceGroup.new_with_defaults(
-        state_code=state_code,
-        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-        person=person,
-    )
-
-    incarceration_sentence = entities.StateIncarcerationSentence.new_with_defaults(
-        state_code=state_code,
-        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-        incarceration_type=StateIncarcerationType.STATE_PRISON,
-        person=person,
-        sentence_group=sentence_group,
-    )
 
     incarceration_period = entities.StateIncarcerationPeriod.new_with_defaults(
         external_id=external_id,
@@ -186,5 +173,3 @@ def add_incarceration_period_to_person(
     )
 
     incarceration_sentence.incarceration_periods.append(incarceration_period)
-    sentence_group.incarceration_sentences.append(incarceration_sentence)
-    person.sentence_groups.append(sentence_group)
