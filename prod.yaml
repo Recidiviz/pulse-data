@@ -27,5 +27,9 @@ env_variables:
   FROM_EMAIL_ADDRESS: reports@recidiviz.org
   FROM_EMAIL_NAME: Recidiviz Reports
 
+# Per zenhub-tasks#358, our app engine needs egress traffic to be issued on a static IP address:
+# Reference doc: https://cloud.google.com/appengine/docs/standard/python/outbound-ip-addresses#static-ip
+# for more details.
 vpc_access_connector:
   name: "projects/recidiviz-123/locations/us-east1/connectors/redis-vpc-connector"
+  egress_setting: all-traffic
