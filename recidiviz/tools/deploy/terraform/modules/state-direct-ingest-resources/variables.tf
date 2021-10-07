@@ -94,7 +94,15 @@ variable "repo_url" {
   type = string
 }
 
+# Object containing info from this state's manifest.yaml
+variable "region_manifest" {
+  type = object({
+    environment = string
+  })
+}
+
 locals {
   lower_state_code            = replace(lower(var.state_code), "_", "-")
   direct_ingest_formatted_str = "direct-ingest-state-${local.lower_state_code}"
+  is_ingest_launched = (!var.is_production || var.region_manifest.environment == "production")
 }

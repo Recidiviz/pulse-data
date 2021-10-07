@@ -16,7 +16,7 @@
 # =============================================================================
 
 module "county_direct_ingest_buckets" {
-  for_each = toset(local.direct_ingest_county_codes)
+  for_each = toset(keys(local.direct_ingest_county_manifests))
   source   = "./modules/county-direct-ingest-resources"
 
   county_code = each.key

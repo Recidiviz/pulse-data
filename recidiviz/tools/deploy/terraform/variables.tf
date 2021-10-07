@@ -96,4 +96,5 @@ EOT
 locals {
   repo_url      = "https://source.developers.google.com/projects/${var.project_id}/repos/github_${var.github_username}_pulse-data/revisions/${var.git_hash}/paths/recidiviz/cloud_functions"
   is_production = var.project_id == "recidiviz-123"
+  recidiviz_root      = "${path.root}/../../.."
 }

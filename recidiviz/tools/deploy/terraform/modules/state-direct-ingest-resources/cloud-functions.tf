@@ -26,7 +26,7 @@ resource "google_cloudfunctions_function" "primary-ingest" {
     resource   = google_storage_bucket.direct-ingest-bucket.name
   }
 
-  entry_point = "handle_state_direct_ingest_file"
+  entry_point = local.is_ingest_launched ? "handle_state_direct_ingest_file" : "normalize_raw_file_path"
   environment_variables = {
     "GCP_PROJECT" = var.project_id
   }
@@ -50,7 +50,7 @@ resource "google_cloudfunctions_function" "secondary-ingest" {
     resource   = module.secondary-direct-ingest-bucket.name
   }
 
-  entry_point = "handle_state_direct_ingest_file"
+  entry_point = local.is_ingest_launched ? "handle_state_direct_ingest_file" : "normalize_raw_file_path"
   environment_variables = {
     "GCP_PROJECT" = var.project_id
   }
