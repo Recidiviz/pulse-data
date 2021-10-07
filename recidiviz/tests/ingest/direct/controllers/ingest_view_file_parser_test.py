@@ -1639,6 +1639,71 @@ class IngestViewFileParserTest(unittest.TestCase):
         # Assert
         self.assertEqual(expected_output, parsed_output)
 
+    def test_json_extract_value(self) -> None:
+        # Arrange
+        expected_output = [
+            FakePerson(
+                fake_state_code="US_XX",
+                name="ELAINE BENES",
+                gender=FakeGender.FEMALE,
+                gender_raw_text="F",
+                races=[
+                    FakePersonRace(
+                        fake_state_code="US_XX", race=FakeRace.ASIAN, race_raw_text="A"
+                    )
+                ],
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                name="JERRY SEINFELD",
+                gender=FakeGender.MALE,
+                gender_raw_text="M",
+                races=[
+                    FakePersonRace(
+                        fake_state_code="US_XX", race=FakeRace.BLACK, race_raw_text="B"
+                    )
+                ],
+            ),
+        ]
+
+        # Act
+        parsed_output = self._run_parse_for_tag("json_extract_value")
+
+        # Assert
+        self.assertEqual(expected_output, parsed_output)
+
+    def test_json_list(self) -> None:
+        # Arrange
+        expected_output = [
+            FakePerson(
+                fake_state_code="US_XX",
+                name="ELAINE BENES",
+                races=[
+                    FakePersonRace(
+                        fake_state_code="US_XX", race=FakeRace.ASIAN, race_raw_text="A"
+                    ),
+                    FakePersonRace(
+                        fake_state_code="US_XX", race=FakeRace.BLACK, race_raw_text="B"
+                    ),
+                ],
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                name="JERRY SEINFELD",
+                races=[
+                    FakePersonRace(
+                        fake_state_code="US_XX", race=FakeRace.BLACK, race_raw_text="B"
+                    )
+                ],
+            ),
+        ]
+
+        # Act
+        parsed_output = self._run_parse_for_tag("json_list")
+
+        # Assert
+        self.assertEqual(expected_output, parsed_output)
+
     def test_nested_foreach(self) -> None:
         with self.assertRaisesRegex(
             ValueError,
