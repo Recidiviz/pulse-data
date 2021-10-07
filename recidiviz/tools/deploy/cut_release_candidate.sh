@@ -4,12 +4,28 @@ BASH_SOURCE_DIR=$(dirname "$BASH_SOURCE")
 source ${BASH_SOURCE_DIR}/../script_base.sh
 source ${BASH_SOURCE_DIR}/deploy_helpers.sh
 
-if [[ x"$1" == x ]]; then
-    echo_error "usage: $0 <base_branch>"
+FORCE_PROMOTE=''
+
+function print_usage {
+    echo_error "usage: $0 [-p] BRANCH"
+    echo_error "  -p: Force the candidate to be promoted."
+    run_cmd exit 1
+}
+
+while getopts "p" flag; do
+  case "${flag}" in
+    p) FORCE_PROMOTE='true';;
+    *) print_usage
+       run_cmd exit 1 ;;
+  esac
+done
+
+if [[ x"${@:$OPTIND:1}" == x ]]; then
+    print_usage
     run_cmd exit 1
 fi
 
-RELEASE_CANDIDATE_BASE_BRANCH=$1
+RELEASE_CANDIDATE_BASE_BRANCH=${@:$OPTIND:1}
 
 if [[ ! ${RELEASE_CANDIDATE_BASE_BRANCH} == "master" && ! ${RELEASE_CANDIDATE_BASE_BRANCH} =~ ^releases\/v[0-9]+\.[0-9]+-rc$ ]]; then
     echo_error "Invalid base branch for release candidate - must be 'master' or a 'releases/*' branch"
@@ -53,6 +69,10 @@ else
     # We do not want to promote traffic to this version since there may be newer versions already pushed to staging and
     # we don't want to regress functionality.
     STAGING_PUSH_PROMOTE_FLAG='-n'
+fi
+
+if [[ ! -z ${FORCE_PROMOTE} ]]; then
+    STAGING_PUSH_PROMOTE_FLAG='-p'
 fi
 
 COMMIT_HASH=$(git rev-parse HEAD) || exit_on_fail
