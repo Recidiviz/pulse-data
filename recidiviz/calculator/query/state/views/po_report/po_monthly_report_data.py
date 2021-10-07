@@ -87,14 +87,32 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = """
         COUNT(DISTINCT person_id) AS caseload_count,
         ARRAY_AGG(
           IF(
-            DATE_DIFF(projected_end_date, LAST_DAY(DATE(year, month, 1), MONTH), DAY) BETWEEN 1 AND 30, 
+            # end date falls within the subsequent month
+            (DATE_TRUNC(projected_end_date, MONTH) = DATE_ADD(DATE(year, month, 1), INTERVAL 1 MONTH)) 
+            AND (successful_completion_next_month IS NULL)
+            # this table is manually updated to enumerate clients whose release dates in our system
+            # are known to deviate from internal US_ID data; we are excluding them manually while
+            # data quality improvements are in progress
+            AND person_external_id NOT IN (
+                SELECT person_external_id from `{project_id}.{static_reference_dataset}.po_monthly_report_manual_exclusions` excl
+                WHERE excl.state_code = state_code AND excl.exclusion_type = "upcoming_release_date"
+            ), 
             STRUCT(person_external_id, full_name, projected_end_date), 
             NULL
           )
           IGNORE NULLS
           ORDER BY projected_end_date
         ) AS upcoming_release_date_clients,
-      FROM `{project_id}.{po_report_dataset}.report_data_by_person_by_month_materialized`
+      FROM (
+        SELECT 
+          *,
+          # look ahead to the following month for successful completions
+          # so we can filter them out of lists of action items
+          LEAD(successful_completion_date) 
+            OVER (PARTITION BY state_code, person_external_id 
+            ORDER BY year, month) as successful_completion_next_month
+        FROM `{project_id}.{po_report_dataset}.report_data_by_person_by_month_materialized`
+      )
       GROUP BY state_code, year, month, officer_external_id
     ),
     goals AS (

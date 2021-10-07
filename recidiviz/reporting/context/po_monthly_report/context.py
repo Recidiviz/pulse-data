@@ -347,15 +347,12 @@ class PoMonthlyReportContext(ReportContext):
         """Creates context data for the Successful Completions card"""
         state_total = int(self.recipient_data[f"{POS_DISCHARGES}_state_total"])
         main_text = (
-            f"{{}} people completed supervision in {self.state_name} this month."
+            f"{{}} people completed supervision in {self.state_name} last month."
         )
 
         supplemental_text = self._caseload_or_district_outcome_text(POS_DISCHARGES)
 
-        action_text = (
-            f"Clients who have a {self.metrics_delegate.completion_date_label} "
-            f"in the next 30 days"
-        )
+        action_text = f"Clients who have their {self.metrics_delegate.completion_date_label} this month"
 
         action_clients = self.recipient_data["upcoming_release_date_clients"]
 
@@ -404,7 +401,7 @@ class PoMonthlyReportContext(ReportContext):
         """Creates context data for the Successful Completions card"""
         state_total = int(self.recipient_data[f"{SUPERVISION_DOWNGRADES}_state_total"])
 
-        main_text = "{} clients had their supervision downgraded this month."
+        main_text = "{} clients had their supervision downgraded last month."
 
         supplemental_text = self._caseload_or_district_outcome_text(
             SUPERVISION_DOWNGRADES
