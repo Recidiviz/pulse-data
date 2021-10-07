@@ -156,6 +156,19 @@ class CoreEntity:
             return value == field_value
         return False
 
+    def limited_pii_repr(self) -> str:
+        """String representation of a Core object that prints DB IDs and external ids
+        for better debugging but does not print other information."""
+        property_strs = sorted(
+            [
+                f"{key}={value}"
+                for key, value in self.__dict__.items()
+                if key in {self.get_primary_key_column_name(), "external_id"}
+            ]
+        )
+        properties_str = ", ".join(property_strs)
+        return f"{self.__class__.__name__}({properties_str})"
+
 
 def primary_key_name_from_cls(schema_cls: Type[CoreEntity]) -> str:
     return schema_cls.get_class_id_name()
