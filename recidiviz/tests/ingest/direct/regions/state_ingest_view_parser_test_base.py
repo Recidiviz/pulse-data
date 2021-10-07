@@ -132,18 +132,7 @@ class StateIngestViewParserTestBase:
         manifest_dir = ingest_view_manifest_dir(region)
 
         for file in os.listdir(manifest_dir):
-            _name, ext = os.path.splitext(file)
-            manifest_path = os.path.join(manifest_dir, file)
-
-            # TODO(#9059): Remove these checks once PA is moved out of top-level region
-            #  dir.
-            if file == "manifest.yaml":
-                continue
-            if ext == ".py":
-                continue
-            if file.startswith("__"):
-                continue
-            if os.path.isdir(manifest_path):
+            if file == "__init__.py":
                 continue
             manifest_path = os.path.join(manifest_dir, file)
             try:
