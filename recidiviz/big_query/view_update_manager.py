@@ -78,7 +78,7 @@ def rematerialize_views_for_view_builders(
         skip_missing_views: If True, ignores any input views that do not exist. If
             False, crashes if tries to materialize a view that does not exist.
     """
-    views_to_update = _build_views_to_update(
+    views_to_update = build_views_to_update(
         view_source_table_datasets=view_source_table_datasets,
         candidate_view_builders=views_to_update_builders,
         dataset_overrides=dataset_overrides,
@@ -129,7 +129,7 @@ def rematerialize_views(
         bq_client = BigQueryClientImpl(region_override=bq_region_override)
 
         all_views_dag_walker = BigQueryViewDagWalker(
-            _build_views_to_update(
+            build_views_to_update(
                 view_source_table_datasets=view_source_table_datasets,
                 candidate_view_builders=all_view_builders,
                 dataset_overrides=dataset_overrides,
@@ -203,7 +203,7 @@ def create_managed_dataset_and_deploy_views_for_view_builders(
             "default table expiration of 24 hours."
         )
     try:
-        views_to_update = _build_views_to_update(
+        views_to_update = build_views_to_update(
             view_source_table_datasets=view_source_table_datasets,
             candidate_view_builders=view_builders_to_update,
             dataset_overrides=dataset_overrides,
@@ -222,7 +222,7 @@ def create_managed_dataset_and_deploy_views_for_view_builders(
         raise e
 
 
-def _build_views_to_update(
+def build_views_to_update(
     view_source_table_datasets: Set[str],
     candidate_view_builders: Sequence[BigQueryViewBuilder],
     dataset_overrides: Optional[Dict[str, str]],

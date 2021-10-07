@@ -37,7 +37,7 @@ from recidiviz.big_query.big_query_view_dag_walker import (
     BigQueryViewDagWalker,
     DagKey,
 )
-from recidiviz.big_query.view_update_manager import _build_views_to_update
+from recidiviz.big_query.view_update_manager import build_views_to_update
 from recidiviz.calculator.dataflow_config import (
     DATAFLOW_METRICS_TO_TABLES,
     DATAFLOW_TABLES_TO_METRIC_TYPES,
@@ -207,7 +207,7 @@ class CalculationDocumentationGenerator:
                 for state in states:
                     self.products_by_state[state][environment].append(product_name)
         self.dag_walker = BigQueryViewDagWalker(
-            _build_views_to_update(
+            build_views_to_update(
                 view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
                 candidate_view_builders=all_deployed_view_builders(),
                 dataset_overrides=None,
