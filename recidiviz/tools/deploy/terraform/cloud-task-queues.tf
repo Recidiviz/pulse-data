@@ -83,11 +83,10 @@ module "case-triage-db-operations-queue" {
 locals {
   # Region Queues
   ingest_scrape_manifest = fileset("${local.recidiviz_root}/ingest/scrape/regions", "*/manifest.yaml")
-  ingest_direct_manifest = fileset("${local.recidiviz_root}/ingest/direct/regions", "*/manifest.yaml")
   region_manifests = merge(
     # Seeing "too many open files" errors? Try running `ulimit -n 1024`
     { for f in local.ingest_scrape_manifest : dirname(f) => yamldecode(file("${local.recidiviz_root}/ingest/scrape/regions/${f}")) },
-    { for f in local.ingest_direct_manifest : dirname(f) => yamldecode(file("${local.recidiviz_root}/ingest/direct/regions/${f}")) }
+    { for region_code_upper, manifest in local.direct_ingest_region_manifests : lower(region_code_upper) => manifest }
   )
   region_queues = { for region, m in local.region_manifests : region => {
     # The below should be able to be try(m.queue.rate_limits.max_dispatches_per_second, null),

@@ -66,7 +66,6 @@ from recidiviz.ingest.direct.direct_ingest_region_utils import (
     get_existing_region_dir_names,
     get_existing_region_dir_paths,
 )
-from recidiviz.tools import deploy
 from recidiviz.utils.environment import GCPEnvironment
 from recidiviz.utils.regions import Region, get_region
 
@@ -384,23 +383,6 @@ class DirectIngestRegionDirStructure(
         """Check that all existing region directories start with a valid state code."""
         for region in self.region_dir_names:
             self.test.assertTrue(StateCode.is_state_code(region[:5]))
-
-    def test_state_codes_match_terraform_config(self) -> None:
-        yaml_path = os.path.join(
-            os.path.dirname(deploy.__file__),
-            "terraform",
-            "direct_ingest_state_codes.yaml",
-        )
-        with open(yaml_path, "r", encoding="utf-8") as ymlfile:
-            region_codes_list = yaml.full_load(ymlfile)
-
-        for region in self.region_dir_names:
-            if not StateCode.is_state_code(region):
-                continue
-            self.assertTrue(
-                region.upper() in region_codes_list,
-                f"State [{region}] must be listed in [{yaml_path}]",
-            )
 
 
 class DirectIngestRegionTemplateDirStructure(

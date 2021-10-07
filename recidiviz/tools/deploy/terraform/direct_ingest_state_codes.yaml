@@ -1,9 +1,0 @@
-# State codes for states with Terraform-deployed direct ingest
-# infrastructure.
-- US_ID
-- US_MI
-- US_MO
-- US_ND
-- US_PA
-- US_TN
-- US_ME

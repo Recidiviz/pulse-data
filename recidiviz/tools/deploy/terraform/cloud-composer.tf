@@ -16,7 +16,6 @@
 # =============================================================================
 
 locals {
-  recidiviz_root      = "${path.root}/../../.."
   temporary_directory = "${dirname(local.recidiviz_root)}/.tfout"
   # Transforms the dag_gcs_prefix output variable from composer into just the gcs bucket name. Output docs:
   # https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/composer_environment#config.0.dag_gcs_prefix
