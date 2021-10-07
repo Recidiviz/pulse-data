@@ -20,7 +20,7 @@ columns:
       - value: CAM
         description: CASE MANAGER
       - value: CCC
-        description: COMMUNITY CORR CASEWORK
+        description: COMMUNITY CORRECTION CASEWORK
       - value: CLR
         description: CLASSIFICATION REPORT
       - value: COU
@@ -36,7 +36,7 @@ columns:
       - value: IPO
         description: INSTITUTIONAL PAROLE OFFICER
       - value: ISC
-        description: TODO(#7424) - Populate with definition.
+        description: ISC (Interstate Compact) FROM OTHER JURISDICTION
       - value: PAO
         description: PAROLE OFFICER
       - value: PDR
@@ -50,7 +50,7 @@ columns:
       - value: PSR
         description: POST SENTENCE REPORT
       - value: PSW
-        description: PSI WRITER
+        description: PSI WRITER TODO(#7424) - clarify this definition.
       - value: RPI
         description: RELEASE PLAN INVESTIGATION
       - value: SDR
@@ -67,13 +67,116 @@ columns:
       The date a vocational or class assignment ends. The date a draw limit ends.  Also, it is used in sentencing for credits and dead, delinquent, street-time, etc.
   - name: CaseType
     description: |-
-      An abbreviation for the type of case for an offender. TODO(#7424): The enums here seem maybe corrupted? Check once CSVs are loaded.
+      An abbreviation for the type of case for an offender.
+    known_values:
+      - value: PPO
+        description: TN PROBATIONER
+      - value: TNP
+        description: TN PAROLEE
+      - value: DIV
+        description: DIVERSION
+      - value: CCO
+        description: TN COMMUNITY CORRECTIONS OFFENDER
+      - value: ISC
+        description: ISC (Interstate Compact) FROM OTHER JURISDICTION
+      - value: DET
+        description: DETERMINED RELEASE
+      - value: MIS
+        description: MISDEMEANOR PROBATIONER
+      - value: INT
+        description: INTENSIVE PROBATIONER
+      - value: SAI
+        description: SPECIAL ALTERNATE INCARCERATION UNIT
+      - value: ABS
+        description: ABSCONDER
+      - value: INA
+        description: INACTIVE PROBATIONER
+      - value: UNP
+        description: UNSUPERVISED PROBATION
+      - value: COM
+        description: COMMUTATION
+      - value: MAN
+        description: MANDATORY PAROLEE
   - name: AssignmentBeginReason
     description: |-
-      An abbreviation for whether an assignment is a new case received from a different office type or a transfer in from the same office type. TODO(#7424): The enums here seem maybe corrupted? Check once CSVs are loaded.
+      An abbreviation for whether an assignment is a new case received from a different office type or a transfer in from the same office type.
+    known_values:
+      - value: RENEO
+        description: REASSIGN TO NEW OFFICER
+      - value: NEWCS
+        description: NEW CASE
+      - value: MULRE
+        description: MULTIPLE REASSIGN
+      - value: TRANS
+        description: TRANSFER CASE
+      - value: RENEC
+        description: REASSIGN TO NEW COUNSELOR
+      - value: TRPRB
+        description: TRANSFER TO PROBATION
+      - value: TRPAR
+        description: TRANSFER TO PAROLE
+      - value: TRINS
+        description: TRANSFER TO ANOTHER INSTITUTION
+      - value: INV
+        description: INVESTIGATION
   - name: AssignmentEndReason
     description: |-
-      An abbreviation for why a staff person is no longer assigned to an offender. TODO(#7424): The enums here seem maybe corrupted? Check once CSVs are loaded.
+      An abbreviation for why a staff person is no longer assigned to an offender.
+    known_values:
+      - value: RNO
+        description: REASSIGNED TO NEW OFFICER
+      - value: CRA
+        description: COUNSELOR REASSIGNMENT
+      - value: MRE
+        description: MULTIPLE REASSIGN
+      - value: DIS
+        description: DISCHARGE
+      - value: EXP
+        description: EXPIRATION
+      - value: TRF
+        description: TRANSFER TO OTHER FACILITY
+      - value: RVC
+        description: REVOCATION, NEW CHARGE
+      - value: RVT
+        description: REVOCATION, TECHNICAL
+      - value: REV
+        description: REVOCATION/RESCINDED
+      - value: TRP
+        description: TRANSFER TO PAROLE
+      - value: CNV
+        description: CONVERSION
+      - value: TRR
+        description: TRANSFER TO PROBATION
+      - value: TRS
+        description: TRANSFER TO NEW OFFICE
+      - value: RVP
+        description: REVOCATION TECHNICAL, PENDING NEW CHARGE
+      - value: DEA
+        description: DEATH
+      - value: ISC
+        description: TRANSFER TO INTERSTATE COMPOACT
+      - value: RVD
+        description: REVOKED, POSITIVE DRUG TEST
+      - value: DEN
+        description: DENIED
+      - value: TSP
+        description: TRANSFER TO SUPERVISION
+      - value: TPR
+        description: TRANSFER TO PRE-RELEASE
+      - value: RBC
+        description: RELEASE BY COURT ORDER
+      - value: TWR
+        description: TRANSFER TO WORK RELEASE
+      - value: RVR
+        description: RESCINDED
+      - value: ICA
+        description: INITIAL COUNSELOR ASSIGNMENT
+      - value: TRE
+        description: TRASNFER TO ESCAPE
+      - value: EIC
+        description: ESCAPE INFORMATION CENTER
+      - value: TER
+        description: TRANSFER EDUCATIONAL RELS TODO(#7424) - clarify this definition.
   - name: AssignmentDueDate
     description: |-
       The date that an assignment such as transfer in investigation is due to be completed.
