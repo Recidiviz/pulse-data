@@ -115,7 +115,7 @@ class CalculationDocumentationGeneratorTest(unittest.TestCase):
             CalculationDocumentationGenerator,
             "_get_all_views_to_document",
         ) as mock_all_views_to_document, patch(
-            "recidiviz.calculator.calculation_documentation_generator._build_views_to_update"
+            "recidiviz.calculator.calculation_documentation_generator.build_views_to_update"
         ) as mock_views:
             mock_views.return_value = [view_1, view_2, view_3, view_4, view_5]
             mock_top_level_view_addresses.return_value = {view_1.address}
