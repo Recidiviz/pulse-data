@@ -151,13 +151,4 @@ class DatabaseEntity(CoreEntity):
         return names_to_properties
 
     def __repr__(self) -> str:
-        """String representation of a DatabaseEntity object that prints DB IDs and external ids for better debugging."""
-        property_strs = sorted(
-            [
-                f"{key}={value}"
-                for key, value in self.__dict__.items()
-                if key in {self.get_primary_key_column_name(), "external_id"}
-            ]
-        )
-        properties_str = ", ".join(property_strs)
-        return f"{self.__class__.__name__}({properties_str})"
+        return self.limited_pii_repr()

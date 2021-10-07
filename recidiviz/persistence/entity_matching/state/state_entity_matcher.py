@@ -57,6 +57,9 @@ from recidiviz.persistence.entity_matching.entity_matching_types import (
 from recidiviz.persistence.entity_matching.state.base_state_matching_delegate import (
     BaseStateMatchingDelegate,
 )
+from recidiviz.persistence.entity_matching.state.state_ingested_tree_merger import (
+    StateIngestedTreeMerger,
+)
 from recidiviz.persistence.entity_matching.state.state_matching_utils import (
     EntityFieldType,
     add_child_to_entity,
@@ -143,6 +146,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         self.session: Optional[Session] = None
 
         self.field_index = CoreEntityFieldIndex()
+        self.tree_merger = StateIngestedTreeMerger(self.field_index)
 
     def set_session(self, session: Session):
         if self.session:
@@ -334,6 +338,9 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         corresponding persons in our database. Returns a MatchedEntities object
         that contains the results of matching.
         """
+
+        ingested_people = self.tree_merger.merge(ingested_people)
+
         self.set_session(session)
         logging.info(
             "[Entity matching] Converting ingested entities to DB entities "
@@ -449,9 +456,9 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         logging.info(
             "[Entity matching] Pre-processing: Merge duplicate ingested people"
         )
-        preprocessed_persons = self.merge_ingested_root_entities(ingested_persons)
-        self.state_matching_delegate.perform_match_preprocessing(preprocessed_persons)
-        return preprocessed_persons
+        self._populate_person_backedges(ingested_persons)
+        self.state_matching_delegate.perform_match_preprocessing(ingested_persons)
+        return ingested_persons
 
     def _perform_match_postprocessing(
         self,
@@ -643,100 +650,6 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
                 )
                 return False
         return True
-
-    @staticmethod
-    def _person_external_id_keys(person: schema.StatePerson) -> Set[str]:
-        """Generates a set of unique string keys for a person's StatePersonExternalIds."""
-        return {f"{e.external_id}|{e.id_type}" for e in person.external_ids}
-
-    @classmethod
-    def bucket_ingested_persons(
-        cls,
-        ingested_persons: List[schema.StatePerson],
-    ) -> List[List[schema.StatePerson]]:
-        """Buckets the list of ingested persons into groups that all should be merged
-        into the same person, based on their external ids. Returns a tuple containing
-        a dictionary with buckets that need to be merged and a list of unique persons
-        that do not need to be merged into any other person.
-        """
-
-        result_buckets: List[List[schema.StatePerson]] = []
-
-        # First bucket all the people that should be merged
-        bucketed_persons_dict: Dict[str, List[schema.StatePerson]] = defaultdict(list)
-        external_id_key_to_primary: Dict[str, str] = {}
-        for person in ingested_persons:
-            external_id_keys = cls._person_external_id_keys(person)
-            if len(external_id_keys) == 0:
-                # We don't merge placeholder people
-                result_buckets.append([person])
-                continue
-
-            # Find all the people who should be related to this person based on their
-            # external_ids and merge them into one bucket.
-            merged_bucket = [person]
-            primary_buckets_to_merge = set()
-            for external_id_key in external_id_keys:
-                if external_id_key in external_id_key_to_primary:
-                    primary_id_for_id = external_id_key_to_primary[external_id_key]
-                    primary_buckets_to_merge.add(primary_id_for_id)
-
-            for external_id_key in primary_buckets_to_merge:
-                if external_id_key in bucketed_persons_dict:
-                    merged_bucket.extend(bucketed_persons_dict.pop(external_id_key))
-
-            # Deterministically pick one of the ids to be the new primary id for this
-            # merged bucket.
-            all_primary_id_candidates = primary_buckets_to_merge.union(external_id_keys)
-            primary_id = min(all_primary_id_candidates)
-
-            for bucket_person in merged_bucket:
-                for external_id_key in cls._person_external_id_keys(bucket_person):
-                    external_id_key_to_primary[external_id_key] = primary_id
-
-            bucketed_persons_dict[primary_id] = merged_bucket
-
-        for bucket in bucketed_persons_dict.values():
-            result_buckets.append(bucket)
-
-        return result_buckets
-
-    def merge_ingested_root_entities(
-        self, ingested_persons: List[schema.StatePerson]
-    ) -> List[schema.StatePerson]:
-        """Merges all ingested StatePeople trees that can be connected via external_id.
-
-        Returns the list of unique StatePeople after this merging.
-        """
-
-        buckets = self.bucket_ingested_persons(ingested_persons)
-
-        unique_persons: List[schema.StatePerson] = []
-
-        # Merge each bucket into one person
-        for people_to_merge in buckets:
-            merged_person: Optional[schema.StatePerson] = None
-            if people_to_merge:
-                merged_person = people_to_merge.pop()
-
-            for person in people_to_merge:
-                if not merged_person:
-                    raise ValueError("Expected a nonnull merged_person.")
-
-                result = self._match_matched_tree(
-                    ingested_entity_tree=EntityTree(entity=person, ancestor_chain=[]),
-                    db_match_tree=EntityTree(entity=merged_person, ancestor_chain=[]),
-                    matched_entities_by_db_ids={},
-                    root_entity_cls=schema.StatePerson,
-                )
-                merged_person = cast(
-                    schema.StatePerson, one(result.merged_entity_trees).entity
-                )
-            if not merged_person:
-                raise ValueError("Expected nonnull merged_person")
-            unique_persons.append(merged_person)
-
-        return unique_persons
 
     def _get_unique_entities(self, d: Dict[str, EntityTree]):
         """Returns all unique entities found in the provided dict |d|."""
