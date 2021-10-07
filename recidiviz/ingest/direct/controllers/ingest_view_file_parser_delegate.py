@@ -73,12 +73,15 @@ class IngestViewFileParserDelegate:
         """
 
 
+_INGEST_VIEW_MANIFESTS_SUBDIR = "ingest_mappings"
+
+
 def ingest_view_manifest_dir(region: Region) -> str:
     """Returns the directory where all ingest view manifests for a given region live."""
-    # TODO(#9059): Move ingest view manifests out of top level region dir
     return os.path.join(
         os.path.dirname(region.region_module.__file__),
         region.region_code.lower(),
+        _INGEST_VIEW_MANIFESTS_SUBDIR,
     )
 
 
