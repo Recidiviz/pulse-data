@@ -191,7 +191,9 @@ WITH inmate_number_with_control_numbers AS (
     ROW_NUMBER() OVER (PARTITION BY CCISMvmt_Id
                         ORDER BY (Program_Id IN ('26', '46', '51')) DESC, 
                                   Program_Id = '46' DESC,
-                                  Program_Id = '26' DESC) AS priority_ranking
+                                  Program_Id = '26' DESC,
+                                  Program_Id
+    ) AS priority_ranking
   FROM {{dbo_vwCCISAllProgDtls}}
 ), program_base AS (
   SELECT
@@ -237,15 +239,6 @@ WITH inmate_number_with_control_numbers AS (
         AND previous_program_id NOT IN ('26', '46', '51'))
     ) AS start_is_new_act_122_admission
   FROM valid_periods
-  -- Program IDs that signify being included in the ACT 122 population -- 
-  WHERE Program_Id IN (
-    -- Parole Violator: Revocation to Parole Violator Center:
-    '26',
-    -- Technical Parole Violator: 6-9-12 Month Revocation
-    '46',
-    -- Detox: Treatment Revocation
-    '51'
-  )
 )
 
 SELECT *

@@ -20,6 +20,7 @@ calculations."""
 import datetime
 from typing import List, Optional, Set
 
+import attr
 from dateutil.relativedelta import relativedelta
 
 from recidiviz.calculator.pipeline.utils.incarceration_period_pre_processing_manager import (
@@ -32,6 +33,7 @@ from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index 
 from recidiviz.calculator.pipeline.utils.violation_response_utils import (
     responses_on_most_recent_response_date,
 )
+from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
@@ -112,11 +114,28 @@ class UsPaIncarcerationPreProcessingDelegate(
         sorted_incarceration_periods: List[StateIncarcerationPeriod],
         supervision_period_index: Optional[PreProcessedSupervisionPeriodIndex],
     ) -> StateIncarcerationPeriod:
-        return self._default_normalize_period_if_commitment_from_supervision(
-            incarceration_period_list_index,
-            sorted_incarceration_periods,
-            supervision_period_index,
-        )
+
+        incarceration_period = sorted_incarceration_periods[
+            incarceration_period_list_index
+        ]
+
+        # TODO(#8961): update the ingest mappings to be conditional on the program id value
+        #  so that all non-transfers are cast as INTERNAL_UNKNOWN for ccis periods with program IDs not in 26,46,51
+        #  so that this logic will no longer be needed
+        if (
+            incarceration_period.custodial_authority
+            == StateCustodialAuthority.SUPERVISION_AUTHORITY
+            and incarceration_period.specialized_purpose_for_incarceration
+            != StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION
+            and incarceration_period.admission_reason
+            != StateIncarcerationPeriodAdmissionReason.TRANSFER
+        ):
+            incarceration_period = attr.evolve(
+                incarceration_period,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
+            )
+
+        return incarceration_period
 
     def period_is_parole_board_hold(
         self,

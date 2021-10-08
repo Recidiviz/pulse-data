@@ -39,6 +39,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_incarceration_p
     SHOCK_INCARCERATION_UNDER_6_MONTHS,
     UsPaIncarcerationPreProcessingDelegate,
 )
+from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
@@ -154,6 +155,41 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             expected_pfi_subtype,
             ip_id_to_pfi_subtype[222],
         )
+
+    # TODO(#8961): remove this test when the ingest mappings are updated and logic that is being tested is removed
+    def test_pre_processed_incarceration_periods_ccc_period_not_included_in_state(
+        self,
+    ) -> None:
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id="ip2",
+            state_code=STATE_CODE,
+            incarceration_type=StateIncarcerationType.COUNTY_JAIL,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=date(2018, 5, 19),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            specialized_purpose_for_incarceration_raw_text="CCIS-60",
+            release_date=date(2019, 3, 3),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+        )
+        incarceration_period.custodial_authority = (
+            StateCustodialAuthority.SUPERVISION_AUTHORITY
+        )
+        updated_period = attr.evolve(
+            incarceration_period,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
+        )
+
+        (
+            validated_incarceration_periods,
+            _,
+        ) = self._pre_processed_incarceration_periods_for_calculations(
+            incarceration_periods=[incarceration_period],
+            violation_responses=[],
+        )
+
+        self.assertEqual([updated_period], validated_incarceration_periods)
 
     def test_pre_processed_incarceration_periods_shock_incarceration_RESCR6(
         self,

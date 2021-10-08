@@ -19,6 +19,7 @@ for state-specific decisions involved in categorizing various attributes of
 incarceration."""
 import abc
 
+from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 
 
@@ -31,6 +32,9 @@ class StateSpecificIncarcerationDelegate(abc.ABC):
     ) -> bool:
         """Determines whether the given incarceration period counts towards the state's incarceration population.
 
-        Default behavior is that it is included in the state population.
+        Default behavior is that it is not included in the state population if the custodial authority is SUPERVISION_AUTHORITY.
         """
-        return True
+        return (
+            incarceration_period.custodial_authority
+            != StateCustodialAuthority.SUPERVISION_AUTHORITY
+        )
