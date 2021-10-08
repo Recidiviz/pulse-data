@@ -501,6 +501,18 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                 specialized_purpose_for_incarceration="CCIS-26",
                 custodial_authority="26",
             ),
+            StateIncarcerationPeriod(
+                state_incarceration_period_id="56789",
+                incarceration_type="CCIS",
+                admission_date="2016-11-23 00:00:00",
+                release_date="2016-11-24 00:00:00",
+                facility="195: LACKAWANNA COUNTY",
+                admission_reason="CCIS-false-PRCH",
+                release_reason="CCIS-PTST",
+                specialized_purpose_for_incarceration="CCIS-60",
+                custodial_authority="60",
+                state_parole_decisions=[],
+            ),
         ]
 
         expected = IngestInfo(
@@ -3112,8 +3124,28 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
             custodial_authority_raw_text="26",
         )
+        p3_is_ip_11 = entities.StateIncarcerationPeriod.new_with_defaults(
+            external_id="56789",
+            state_code=_STATE_CODE_UPPER,
+            person=person_3,
+            incarceration_sentences=[p3_is],
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=datetime.date(year=2016, month=11, day=23),
+            release_date=datetime.date(year=2016, month=11, day=24),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            admission_reason_raw_text="CCIS-FALSE-PRCH",
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+            release_reason_raw_text="CCIS-PTST",
+            facility="195: LACKAWANNA COUNTY",
+            incarceration_type=StateIncarcerationType.COUNTY_JAIL,
+            incarceration_type_raw_text="CCIS",
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.INTERNAL_UNKNOWN,
+            specialized_purpose_for_incarceration_raw_text="CCIS-60",
+            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+            custodial_authority_raw_text="60",
+        )
 
-        p3_is.incarceration_periods.extend([p3_is_ip_9, p3_is_ip_10])
+        p3_is.incarceration_periods.extend([p3_is_ip_9, p3_is_ip_10, p3_is_ip_11])
 
         p4_is_1_ip_25 = entities.StateIncarcerationPeriod.new_with_defaults(
             external_id="12345",

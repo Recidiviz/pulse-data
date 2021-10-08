@@ -449,6 +449,7 @@ def incarceration_period_purpose_mapper(
     """Maps a combination of the incarceration period codes to a formal specialized purpose for incarceration.
 
     Codes from CCIS tables are handled separately from codes from SCI tables. CCIS codes are prefixed with `CCIS`.
+    CCIS codes will either be mapped to a specific purpose for incarceration or INTERNAL_UNKNOWN.
 
     For SCI codes, the two codes are start_parole_status_code and sentence_type. They are concatenated together in that
     order, separated by whitespace, in us_pa_controller. Here, we split them up and select a purpose for incarceration
@@ -468,24 +469,27 @@ def incarceration_period_purpose_mapper(
             return StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION
         if purpose_for_incarceration == "51":
             return StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON
-    else:
-        # Handle incarceration period purpose codes from SCI tables
-        start_parole_status_code, sentence_type = concatenated_codes.split(" ")
+        # TODO(#9421): Need to revisit and update this once there is a solid design plan
+        #  for how to represent community centers
+        return StateSpecializedPurposeForIncarceration.INTERNAL_UNKNOWN
 
-        # TODO(#3312): There are 4 cases (ML0641, HJ9463, HM6768, JH9458) where there is a PVP parole status and a 'P'
-        #  sentence type associated with that inmate number. What does it mean for a parole violator to be in on SIP
-        #  Program? Is this just an error?
-        is_parole_violation_pending = start_parole_status_code == "PVP"
+    # Handle incarceration period purpose codes from SCI tables
+    start_parole_status_code, sentence_type = concatenated_codes.split(" ")
 
-        if is_parole_violation_pending:
-            return StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD
+    # TODO(#3312): There are 4 cases (ML0641, HJ9463, HM6768, JH9458) where there is a PVP parole status and a 'P'
+    #  sentence type associated with that inmate number. What does it mean for a parole violator to be in on SIP
+    #  Program? Is this just an error?
+    is_parole_violation_pending = start_parole_status_code == "PVP"
 
-        is_treatment_program = sentence_type in (
-            "E",  # SIP Evaluation
-            "P",  # SIP Program
-        )
-        if is_treatment_program:
-            return StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON
+    if is_parole_violation_pending:
+        return StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD
+
+    is_treatment_program = sentence_type in (
+        "E",  # SIP Evaluation
+        "P",  # SIP Program
+    )
+    if is_treatment_program:
+        return StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON
 
     return StateSpecializedPurposeForIncarceration.GENERAL
 

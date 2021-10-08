@@ -562,8 +562,8 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             # SUPERVISION CUSTODIAL AUTHORITY CODES
             "09",  # Emergency Release - used for COVID releases
             # INCARCERATION CUSTODIAL AUTHORITY CODES
-            "46",  # Technical parole violator being held in a contracted county facility
-            "51",  # Receiving treatment in a contracted county facility
+            "46",  # Technical Parole Violator: 6-9-12 Month Revocation in a contracted county facility
+            "51",  # Detox: Treatment Revocation in a contracted county facility
         ],
         StateCustodialAuthority.SUPERVISION_AUTHORITY: [
             # SUPERVISION CUSTODIAL AUTHORITY CODES
@@ -589,7 +589,75 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             "07",  # Other States' Probation - Sentenced to Probation by other state and transferred to PA
             "08",  # Other States' Deferred Sentence (deprecated)
             # INCARCERATION CUSTODIAL AUTHORITY CODES
-            "26",  # Parolee in a Parole Violator Center
+            "1",  # AOD  -  Alcohol or Other Drugs
+            "2",  # BCA  -  Boot Camp Aftercare
+            "3",  # CPC  -  Halfway Back Parolee
+            "4",  # CTEP  -  Comprehensive Transitional & Education Program
+            "5",  # DRP  -  Day Reporting Program
+            "6",  # EAL  -  Elderly Assisted Living
+            "7",  # EMI  -  Extreme Mental Illness
+            "8",  # GH  -  Group Home
+            "9",  # HTP  -  Hard To Place
+            "10",  # MH  -  Mental Health
+            "11",  # PEN  -  PENNCAP  Pre - rel Secure Facility
+            "12",  # RSAT  -  Residential Substance Abuse Treatment
+            "13",  # SAVE  -  SAVE
+            "14",  # SIP2  -  State Intermediate Punishment - 2
+            "15",  # SO  -  Sex Offender
+            "16",  # YAO  -  Young Adult Offenders
+            "17",  # BT  -  Back On Track
+            "18",  # DD  -  Dual - diagnosis
+            "19",  # SIP3  -  State Intermediate Punishment - 3
+            "20",  # SIP4  -  State Intermediate Punishment - 4
+            "21",  # SIP3-NR - State Intermediate Punishment 3 Non - Resident
+            "22",  # SIP4-NR - State Intermediate Punishment 4 Non - Resident
+            "23",  # VPB  -  Violence Prevention Booster
+            "24",  # CA  -  County Assessment
+            "25",  # WR  -  Work Release
+            "26",  # PV  -  Parole Violator / Parolee in a Parole Violator Center
+            "27",  # PVC  -  Parole Violator Completion
+            "28",  # RPV  -  Return Parole Violator
+            "29",  # VOC  -  Violent Offender Completion
+            "30",  # RVO  -  Return Violent Offender
+            "31",  # CA / G  -  County Assessment / Grant
+            "32",  # WR / G  -  Work Release / Grant
+            "33",  # TFC  -  Thinking for a Change
+            "34",  # TFC-W  -  Thinking for a Change - Waiting
+            "35",  # TFC-C  -  Thinking for a Change - Completed
+            "36",  # BAT  -  Batterers Intervention
+            "37",  # BAT-W  -  Batterers Intervention - Waiting
+            "38",  # BAT-C  -  Batterers Intervention - Completed
+            "39",  # VPM  -  Violence Prevention Moderate
+            "40",  # VPM-W  -  Violence Prevention Moderate - Waiting
+            "41",  # VPM-C  -  Violence Prevention Moderate - Completed
+            "42",  # VPB-W  -  Violence Prevention Booster - Waiting
+            "43",  # VPB-C  -  Violence Prevention Booster - Completed
+            "44",  # DPW-T  -  TRN to DPW
+            "45",  # DPW-R  -  RTN from DPW
+            "47",  # TPV-C  -  Technical Parole Violator - Completed
+            "48",  # VET  -  Veteran
+            "52",  # DET-C  -  Detox Completion
+            "53",  # SEP-P  -  PREA
+            "54",  # SEP-T  -  Threat
+            "55",  # SEP-E  -  Employee
+            "56",  # JL  -  Juvenile Lifer
+            "57",  # SIP-MA  -  SIP - Medical Assistance
+            "58",  # SS  -  Social Security
+            "59",  # MM  -  Medical / Mental
+            "60",  # CL  -  Commuted Lifers
+            "61",  # ACT  -  ACT 122
+            "62",  # SDTP2  -  State Drug Treatment Program  2
+            "63",  # SDTP3  -  State Drug Treatment Program  3
+            "64",  # SDTP3-NR  -  State Drug Treatment Program  3 Non-Resident
+            "65",  # SDTP4  -  State Drug Treatment Program  4
+            "66",  # SDTP4-NR  -  State Drug Treatment Program  4 Non-Resident
+            "67",  # SDTP-EX  -  State Drug Treatment Program  Extension
+            "68",  # QD  -  Quick Dips
+            "69",  # SDTP-QD  -  State Drug Treatment Program Quick Dips
+            "70",  # COV  -  COVID 19 Furlough
+            "71",  # MA  -  Medical Assistance
+            "72",  # NR  -  Non Resident
+            "73",  # EX  -  Extended
         ],
         StateSupervisionContactStatus.ATTEMPTED: ["Yes"],
         StateSupervisionContactStatus.COMPLETED: ["No"],
