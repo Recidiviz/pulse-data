@@ -18,7 +18,27 @@
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_incarceration_delegate import (
     StateSpecificIncarcerationDelegate,
 )
+from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateSpecializedPurposeForIncarceration,
+)
+from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 
 
 class UsPaIncarcerationDelegate(StateSpecificIncarcerationDelegate):
     """US_PA implementation of the incarceration delegate"""
+
+    def is_period_included_in_state_population(
+        self,
+        incarceration_period: StateIncarcerationPeriod,
+    ) -> bool:
+        """
+        US_PA includes incarceration periods under the supervision custodial authority only if the person
+        is in the facility for shock incarceration. These represent the people who are in PVCs in US_PA.
+        """
+        return (
+            incarceration_period.custodial_authority
+            != StateCustodialAuthority.SUPERVISION_AUTHORITY
+            or incarceration_period.specialized_purpose_for_incarceration
+            == StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION
+        )
