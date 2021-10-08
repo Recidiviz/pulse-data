@@ -35,6 +35,9 @@ from recidiviz.common.constants.state.state_incarceration_incident import (
 )
 from recidiviz.common.constants.state.state_person_alias import StatePersonAliasType
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
+from recidiviz.common.constants.state.state_supervision_violation import (
+    StateSupervisionViolationType,
+)
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationIncident,
@@ -45,6 +48,11 @@ from recidiviz.persistence.entity.state.entities import (
     StatePersonExternalId,
     StatePersonRace,
     StateSentenceGroup,
+    StateSupervisionPeriod,
+    StateSupervisionSentence,
+    StateSupervisionViolatedConditionEntry,
+    StateSupervisionViolation,
+    StateSupervisionViolationTypeEntry,
 )
 from recidiviz.tests.ingest.direct.regions.state_ingest_view_parser_test_base import (
     StateIngestViewParserTestBase,
@@ -570,3 +578,316 @@ class UsPaIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
         ]
 
         self._run_parse_ingest_view_test("dbo_Miscon", expected_output)
+
+    def test_parse_supervision_violation(self) -> None:
+        expected_output = [
+            StatePerson(
+                state_code="US_PA",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_PA", external_id="456B", id_type="US_PA_PBPP"
+                    )
+                ],
+                sentence_groups=[
+                    StateSentenceGroup(
+                        state_code="US_PA",
+                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                        supervision_sentences=[
+                            StateSupervisionSentence(
+                                state_code="US_PA",
+                                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                                supervision_periods=[
+                                    StateSupervisionPeriod(
+                                        state_code="US_PA",
+                                        supervision_violation_entries=[
+                                            StateSupervisionViolation(
+                                                external_id="456B-1-1",
+                                                state_code="US_PA",
+                                                violation_date=datetime.date(
+                                                    2014, 1, 1
+                                                ),
+                                                supervision_violation_types=[
+                                                    StateSupervisionViolationTypeEntry(
+                                                        state_code="US_PA",
+                                                        violation_type=StateSupervisionViolationType.TECHNICAL,
+                                                        violation_type_raw_text="H10",
+                                                    ),
+                                                    StateSupervisionViolationTypeEntry(
+                                                        state_code="US_PA",
+                                                        violation_type=StateSupervisionViolationType.TECHNICAL,
+                                                        violation_type_raw_text="L03",
+                                                    ),
+                                                    StateSupervisionViolationTypeEntry(
+                                                        state_code="US_PA",
+                                                        violation_type=StateSupervisionViolationType.TECHNICAL,
+                                                        violation_type_raw_text="L05",
+                                                    ),
+                                                    StateSupervisionViolationTypeEntry(
+                                                        state_code="US_PA",
+                                                        violation_type=StateSupervisionViolationType.TECHNICAL,
+                                                        violation_type_raw_text="M01",
+                                                    ),
+                                                    StateSupervisionViolationTypeEntry(
+                                                        state_code="US_PA",
+                                                        violation_type=StateSupervisionViolationType.TECHNICAL,
+                                                        violation_type_raw_text="M02",
+                                                    ),
+                                                    StateSupervisionViolationTypeEntry(
+                                                        state_code="US_PA",
+                                                        violation_type=StateSupervisionViolationType.TECHNICAL,
+                                                        violation_type_raw_text="H03",
+                                                    ),
+                                                    StateSupervisionViolationTypeEntry(
+                                                        state_code="US_PA",
+                                                        violation_type=StateSupervisionViolationType.TECHNICAL,
+                                                        violation_type_raw_text="H07",
+                                                    ),
+                                                ],
+                                                supervision_violated_conditions=[
+                                                    StateSupervisionViolatedConditionEntry(
+                                                        state_code="US_PA",
+                                                        condition="5",
+                                                    ),
+                                                    StateSupervisionViolatedConditionEntry(
+                                                        state_code="US_PA",
+                                                        condition="7",
+                                                    ),
+                                                    StateSupervisionViolatedConditionEntry(
+                                                        state_code="US_PA",
+                                                        condition="7",
+                                                    ),
+                                                    StateSupervisionViolatedConditionEntry(
+                                                        state_code="US_PA",
+                                                        condition="3",
+                                                    ),
+                                                    StateSupervisionViolatedConditionEntry(
+                                                        state_code="US_PA",
+                                                        condition="3",
+                                                    ),
+                                                    StateSupervisionViolatedConditionEntry(
+                                                        state_code="US_PA",
+                                                        condition="7",
+                                                    ),
+                                                    StateSupervisionViolatedConditionEntry(
+                                                        state_code="US_PA",
+                                                        condition="7",
+                                                    ),
+                                                ],
+                                            )
+                                        ],
+                                    )
+                                ],
+                            )
+                        ],
+                    )
+                ],
+            ),
+            StatePerson(
+                state_code="US_PA",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_PA", external_id="456B", id_type="US_PA_PBPP"
+                    )
+                ],
+                sentence_groups=[
+                    StateSentenceGroup(
+                        state_code="US_PA",
+                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                        supervision_sentences=[
+                            StateSupervisionSentence(
+                                state_code="US_PA",
+                                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                                supervision_periods=[
+                                    StateSupervisionPeriod(
+                                        state_code="US_PA",
+                                        supervision_violation_entries=[
+                                            StateSupervisionViolation(
+                                                external_id="456B-2-1",
+                                                state_code="US_PA",
+                                                violation_date=datetime.date(
+                                                    2015, 4, 13
+                                                ),
+                                                supervision_violation_types=[
+                                                    StateSupervisionViolationTypeEntry(
+                                                        state_code="US_PA",
+                                                        violation_type=StateSupervisionViolationType.TECHNICAL,
+                                                        violation_type_raw_text="H08",
+                                                    )
+                                                ],
+                                                supervision_violated_conditions=[
+                                                    StateSupervisionViolatedConditionEntry(
+                                                        state_code="US_PA",
+                                                        condition="5",
+                                                    )
+                                                ],
+                                            )
+                                        ],
+                                    )
+                                ],
+                            )
+                        ],
+                    )
+                ],
+            ),
+            StatePerson(
+                state_code="US_PA",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_PA", external_id="789C", id_type="US_PA_PBPP"
+                    )
+                ],
+                sentence_groups=[
+                    StateSentenceGroup(
+                        state_code="US_PA",
+                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                        supervision_sentences=[
+                            StateSupervisionSentence(
+                                state_code="US_PA",
+                                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                                supervision_periods=[
+                                    StateSupervisionPeriod(
+                                        state_code="US_PA",
+                                        supervision_violation_entries=[
+                                            StateSupervisionViolation(
+                                                external_id="789C-3-1",
+                                                state_code="US_PA",
+                                                violation_date=datetime.date(
+                                                    2006, 8, 11
+                                                ),
+                                                supervision_violation_types=[
+                                                    StateSupervisionViolationTypeEntry(
+                                                        state_code="US_PA",
+                                                        violation_type=StateSupervisionViolationType.TECHNICAL,
+                                                        violation_type_raw_text="H12",
+                                                    ),
+                                                    StateSupervisionViolationTypeEntry(
+                                                        state_code="US_PA",
+                                                        violation_type=StateSupervisionViolationType.LAW,
+                                                        violation_type_raw_text="H04",
+                                                    ),
+                                                ],
+                                                supervision_violated_conditions=[
+                                                    StateSupervisionViolatedConditionEntry(
+                                                        state_code="US_PA",
+                                                        condition="5",
+                                                    ),
+                                                    StateSupervisionViolatedConditionEntry(
+                                                        state_code="US_PA",
+                                                        condition="7",
+                                                    ),
+                                                ],
+                                            )
+                                        ],
+                                    )
+                                ],
+                            )
+                        ],
+                    )
+                ],
+            ),
+            StatePerson(
+                state_code="US_PA",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_PA", external_id="345E", id_type="US_PA_PBPP"
+                    )
+                ],
+                sentence_groups=[
+                    StateSentenceGroup(
+                        state_code="US_PA",
+                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                        supervision_sentences=[
+                            StateSupervisionSentence(
+                                state_code="US_PA",
+                                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                                supervision_periods=[
+                                    StateSupervisionPeriod(
+                                        state_code="US_PA",
+                                        supervision_violation_entries=[
+                                            StateSupervisionViolation(
+                                                external_id="345E-1-1",
+                                                state_code="US_PA",
+                                                violation_date=datetime.date(
+                                                    2018, 3, 17
+                                                ),
+                                                supervision_violation_types=[
+                                                    StateSupervisionViolationTypeEntry(
+                                                        state_code="US_PA",
+                                                        violation_type=StateSupervisionViolationType.TECHNICAL,
+                                                        violation_type_raw_text="L08",
+                                                    )
+                                                ],
+                                                supervision_violated_conditions=[
+                                                    StateSupervisionViolatedConditionEntry(
+                                                        state_code="US_PA",
+                                                        condition="5",
+                                                    )
+                                                ],
+                                            )
+                                        ],
+                                    )
+                                ],
+                            )
+                        ],
+                    )
+                ],
+            ),
+            StatePerson(
+                state_code="US_PA",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_PA", external_id="345E", id_type="US_PA_PBPP"
+                    )
+                ],
+                sentence_groups=[
+                    StateSentenceGroup(
+                        state_code="US_PA",
+                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                        supervision_sentences=[
+                            StateSupervisionSentence(
+                                state_code="US_PA",
+                                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                                supervision_periods=[
+                                    StateSupervisionPeriod(
+                                        state_code="US_PA",
+                                        supervision_violation_entries=[
+                                            StateSupervisionViolation(
+                                                external_id="345E-1-2",
+                                                state_code="US_PA",
+                                                violation_date=datetime.date(
+                                                    2018, 5, 12
+                                                ),
+                                                supervision_violation_types=[
+                                                    StateSupervisionViolationTypeEntry(
+                                                        state_code="US_PA",
+                                                        violation_type=StateSupervisionViolationType.LAW,
+                                                        violation_type_raw_text="M13",
+                                                    ),
+                                                    StateSupervisionViolationTypeEntry(
+                                                        state_code="US_PA",
+                                                        violation_type=StateSupervisionViolationType.TECHNICAL,
+                                                        violation_type_raw_text="M14",
+                                                    ),
+                                                ],
+                                                supervision_violated_conditions=[
+                                                    StateSupervisionViolatedConditionEntry(
+                                                        state_code="US_PA",
+                                                        condition="4",
+                                                    ),
+                                                    StateSupervisionViolatedConditionEntry(
+                                                        state_code="US_PA",
+                                                        condition="7",
+                                                    ),
+                                                ],
+                                            )
+                                        ],
+                                    )
+                                ],
+                            )
+                        ],
+                    )
+                ],
+            ),
+        ]
+
+        self._run_parse_ingest_view_test("supervision_violation", expected_output)
