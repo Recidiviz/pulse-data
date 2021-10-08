@@ -32,9 +32,10 @@ function last_version_tag_on_branch {
     echo ${LAST_VERSION_TAG_ON_BRANCH}
 }
 
-# Returns the last deployed production version tag
-function last_deployed_production_version_tag {
-    LAST_DEPLOYED_GIT_VERSION_TAG=$(gcloud app versions list --project=recidiviz-123 --hide-no-traffic --service=default --format=yaml | pipenv run yq .id | tr -d \" | tr '-' '.') || exit_on_fail
+# Returns the last deployed version tag in a given project
+function last_deployed_version_tag {
+    PROJECT_ID=$1
+    LAST_DEPLOYED_GIT_VERSION_TAG=$(gcloud app versions list --project=$PROJECT_ID --hide-no-traffic --service=default --format=yaml | pipenv run yq .id | tr -d \" | tr '-' '.') || exit_on_fail
 
     echo ${LAST_DEPLOYED_GIT_VERSION_TAG}
 }
@@ -68,7 +69,7 @@ function calculation_pipeline_changes_since_last_deploy {
     if [[ ${PROJECT} == 'recidiviz-staging' ]]; then
         LAST_VERSION_TAG=$(last_version_tag_on_branch HEAD) || exit_on_fail
     elif [[ ${PROJECT} == 'recidiviz-123' ]]; then
-        LAST_VERSION_TAG=$(last_deployed_production_version_tag) || exit_on_fail
+        LAST_VERSION_TAG=$(last_deployed_version_tag recidiviz-123) || exit_on_fail
     else
         echo_error "Unexpected project for last version ${PROJECT}"
         exit 1
