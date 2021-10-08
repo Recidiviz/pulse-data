@@ -16,6 +16,10 @@
 # =============================================================================
 """A query template for doing person-level incarceration population validation against an external dataset."""
 
+from typing import Set
+
+from recidiviz.calculator.query.bq_utils import exclude_rows_with_missing_fields
+
 INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_QUERY_TEMPLATE = """
 WITH 
 external_data AS (
@@ -38,20 +42,13 @@ sanitized_internal_metrics AS (
       date_of_stay, 
       person_external_id, 
       person_id,
-      # Idaho provided metrics only have distinct counts for Jefferson and Bonneville jails. All of the rest are grouped
-      # together under "Count Jails". Although internally, we fine grained populations for jails across the state, to
-      # match the Idaho report, group all non Jefferson/Bonneville jails under "County Jails"
-      IF(state_code = 'US_ID' AND
-         (facility LIKE '%SHERIFF%' OR facility LIKE '%JAIL%')
-          AND facility NOT LIKE 'BONNEVILLE%'
-          AND facility NOT LIKE 'JEFFERSON%',
-          'COUNTY JAILS', facility) AS facility, 
+      facility,
    FROM `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_incarceration_population_metrics_included_in_state_population_materialized`
 ),
 internal_metrics_for_valid_regions_and_dates AS (
   SELECT * FROM
   -- Only compare regions and months for which we have external validation data
-  (SELECT DISTINCT region_code, date_of_stay FROM external_data_with_ids)
+  (SELECT DISTINCT region_code, date_of_stay FROM external_data_with_ids {external_data_required_fields_clause})
   LEFT JOIN sanitized_internal_metrics
   USING (region_code, date_of_stay)
 )
@@ -68,24 +65,36 @@ FROM
 FULL OUTER JOIN
     internal_metrics_for_valid_regions_and_dates internal_data
 USING (region_code, date_of_stay, person_id)
+{filter_clause}
 """
 
 
-def incarceration_population_person_level_query(include_unmatched_people: bool) -> str:
+def incarceration_population_person_level_query(
+    include_unmatched_people: bool, external_data_required_fields: Set[str]
+) -> str:
     """
     Returns a query template for doing person-level incarceration population validation against an external dataset.
 
     Args:
-        include_unmatched_people: (bool) Whether to include rows where the internal and external datasets disagree about
-         whether this person was incarcerated at all on a given day.
+        include_unmatched_people: (bool) Whether to include rows where the internal and
+         external datasets disagree about whether this person was incarcerated at all on
+         a given day.
+        external_data_required_fields: (bool) If there is external data for a given date
+         and region but none of the rows have non-null values for these fields it will
+         be excluded. For instance, if we want to run a query that compares facility,
+         this allows us to filter out external data that doesn't have facility
+         information.
     """
-    filter_clause = (
-        ""
+    filter_clause = exclude_rows_with_missing_fields(
+        set()
         if include_unmatched_people
-        else "WHERE external_data.person_external_id IS NOT NULL AND internal_data.person_external_id IS NOT NULL"
+        else {"external_data.person_external_id", "internal_data.person_external_id"}
     )
     return (
         INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_QUERY_TEMPLATE.format(
-            filter_clause=filter_clause
+            filter_clause=filter_clause,
+            external_data_required_fields_clause=exclude_rows_with_missing_fields(
+                external_data_required_fields
+            ),
         )
     )

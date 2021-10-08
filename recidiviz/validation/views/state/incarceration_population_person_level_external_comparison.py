@@ -39,7 +39,7 @@ populations.
 
 INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_QUERY_TEMPLATE = f"""
 /*{{description}}*/
-{incarceration_population_person_level_query(include_unmatched_people=True)}
+{incarceration_population_person_level_query(include_unmatched_people=True, external_data_required_fields=set())}
 """
 
 INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER = SimpleBigQueryViewBuilder(

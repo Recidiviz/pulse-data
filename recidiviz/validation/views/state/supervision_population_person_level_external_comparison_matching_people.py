@@ -28,29 +28,57 @@ from recidiviz.validation.views.state.supervision_population_person_level_templa
     supervision_population_person_level_query,
 )
 
-SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_NAME = (
-    "supervision_population_person_level_external_comparison_matching_people"
+SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_PREFIX = (
+    "supervision_population_person_level_external_comparison_matching_people_"
 )
 
-SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_DESCRIPTION = """
-Comparison of district values between internal and external lists of end of month person-level supervision
-populations among rows where we both agree the person is on supervision.
+SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_DESCRIPTION_PREFIX = """
+Compares internal and external lists of person-level supervision populations among rows where we both agree the person is on supervision.
 """
-
-SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_QUERY_TEMPLATE = f"""
-/*{{description}}*/
-{supervision_population_person_level_query(include_unmatched_people=False)}
-"""
-
-SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_WITH_DISTRICT_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.VIEWS_DATASET,
-    view_id=SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_NAME,
-    view_query_template=SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_QUERY_TEMPLATE,
-    description=SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_DESCRIPTION,
+    view_id=SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_PREFIX
+    + "district",
+    view_query_template=supervision_population_person_level_query(
+        include_unmatched_people=False, external_data_required_fields={"district"}
+    ),
+    description=SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_DESCRIPTION_PREFIX
+    + " Only includes external data with supervision district information.",
+    external_accuracy_dataset=dataset_config.EXTERNAL_ACCURACY_DATASET,
+    materialized_metrics_dataset=state_dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
+)
+
+SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_WITH_LEVEL_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+    dataset_id=dataset_config.VIEWS_DATASET,
+    view_id=SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_PREFIX
+    + "supervision_level",
+    view_query_template=supervision_population_person_level_query(
+        include_unmatched_people=False,
+        external_data_required_fields={"supervision_level"},
+    ),
+    description=SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_DESCRIPTION_PREFIX
+    + " Only includes external sources with supervision level information.",
+    external_accuracy_dataset=dataset_config.EXTERNAL_ACCURACY_DATASET,
+    materialized_metrics_dataset=state_dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
+)
+
+
+SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_WITH_OFFICER_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+    dataset_id=dataset_config.VIEWS_DATASET,
+    view_id=SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_PREFIX
+    + "supervising_officer",
+    view_query_template=supervision_population_person_level_query(
+        include_unmatched_people=False,
+        external_data_required_fields={"supervising_officer"},
+    ),
+    description=SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_DESCRIPTION_PREFIX
+    + " Only includes external sources with supervising officer information.",
     external_accuracy_dataset=dataset_config.EXTERNAL_ACCURACY_DATASET,
     materialized_metrics_dataset=state_dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
 )
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_BUILDER.build_and_print()
+        SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_WITH_DISTRICT_VIEW_BUILDER.build_and_print()
+        SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_WITH_LEVEL_VIEW_BUILDER.build_and_print()
+        SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_WITH_OFFICER_VIEW_BUILDER.build_and_print()
