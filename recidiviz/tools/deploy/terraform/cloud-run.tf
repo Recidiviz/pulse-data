@@ -67,6 +67,11 @@ resource "google_cloud_run_service" "case-triage" {
         }
 
         env {
+          name = "APP_URL"
+          value = var.project_id == "recidiviz-123" ? "https://app.recidiviz.org" : "https://app-staging.recidiviz.org"
+        }
+
+        env {
           name  = "DASHBOARD_URL"
           value = "https://dashboard.recidiviz.org"
         }
