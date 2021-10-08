@@ -20,7 +20,24 @@ columns:
       Time at which the sample was requested
   - name: smpl_typ_cd
     description: |-
-      `U` for urine. `S` for saliva.
+      Type of sample collected
+    known_values:
+      - value: A
+        description: ADMISSION
+      - value: B
+        description: BREATH
+      - value: H
+        description: HAIR
+      - value: L
+        description: BLOOD
+      - value: S
+        description: SALIVA
+      - value: T
+        description: NOT TAKEN
+      - value: U
+        description: URINE
+      - value: W
+        description: SWEAT
   - name: rfsd_sbstnc_tst_dt
   - name: cllct_dt
   - name: cllct_tm
