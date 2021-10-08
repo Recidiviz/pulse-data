@@ -67,7 +67,7 @@ class TestAuthRoutes(unittest.TestCase):
             )
 
             self.assertEqual(
-                "https://auth0.localhost/v2/logout?client_id=test_client_id",
+                "https://auth0.localhost/v2/logout?client_id=test_client_id&returnTo=http%3A%2F%2Flocalhost%3A3000",
                 response.headers["Location"],
             )
             self.assertEqual(0, len(session.keys()))

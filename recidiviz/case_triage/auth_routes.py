@@ -15,11 +15,14 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements the application-level authorization blueprint. """
+import os
 import urllib.parse
 
 from flask import Blueprint, Response, make_response, redirect, session
 
 from recidiviz.utils.auth.auth0 import Auth0Config
+
+os.environ.setdefault("APP_URL", "http://localhost:3000")
 
 
 def create_auth_blueprint(authorization_config: Auth0Config) -> Blueprint:
@@ -31,7 +34,10 @@ def create_auth_blueprint(authorization_config: Auth0Config) -> Blueprint:
         session.clear()
 
         query_parameters = urllib.parse.urlencode(
-            {"client_id": authorization_config.client_id}
+            {
+                "client_id": authorization_config.client_id,
+                "returnTo": os.environ.get("APP_URL"),
+            }
         )
 
         return make_response(
