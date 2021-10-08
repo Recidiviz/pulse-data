@@ -19,6 +19,16 @@
 # pylint: disable=line-too-long
 
 
+from typing import Set
+
+
+def exclude_rows_with_missing_fields(required_columns: Set[str]) -> str:
+    """Returns a WHERE clause to filter out rows that are missing values for any of the
+    given columns"""
+    conditions = [f"{column} IS NOT NULL" for column in required_columns]
+    return f"WHERE {' AND '.join(conditions)}" if conditions else ""
+
+
 def unnest_column(input_column_name: str, output_column_name: str) -> str:
     return f"UNNEST ([{input_column_name}, 'ALL']) AS {output_column_name}"
 

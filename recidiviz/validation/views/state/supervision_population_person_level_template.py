@@ -16,6 +16,10 @@
 # =============================================================================
 """A query template for doing person-level supervision population validation against an external dataset."""
 
+from typing import Set
+
+from recidiviz.calculator.query.bq_utils import exclude_rows_with_missing_fields
+
 SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_QUERY_TEMPLATE = """
 WITH 
 external_data AS (
@@ -65,7 +69,7 @@ sanitized_internal_metrics AS (
 internal_metrics_for_valid_regions_and_dates AS (
   SELECT * FROM
   -- Only compare regions and months for which we have external validation data
-  (SELECT DISTINCT region_code, date_of_supervision FROM external_data)
+  (SELECT DISTINCT region_code, date_of_supervision FROM external_data {external_data_required_fields_clause})
   LEFT JOIN
     sanitized_internal_metrics
   USING (region_code, date_of_supervision)
@@ -88,25 +92,35 @@ FULL OUTER JOIN
   internal_metrics_for_valid_regions_and_dates internal_data
 USING(region_code, date_of_supervision, person_external_id)
 {filter_clause}
-ORDER BY region_code, date_of_supervision, person_external_id;
 """
 
 
-def supervision_population_person_level_query(include_unmatched_people: bool) -> str:
+def supervision_population_person_level_query(
+    include_unmatched_people: bool, external_data_required_fields: Set[str]
+) -> str:
     """
     Returns a query template for doing person-level supervision population validation against an external dataset.
 
     Args:
-        include_unmatched_people: (bool) Whether to include rows where the internal and external datasets disagree about
-         whether this person should be on supervision at all on a given day.
+        include_unmatched_people: (bool) Whether to include rows where the internal and
+         external datasets disagree about whether this person should be on supervision
+         at all on a given day.
+        external_data_required_fields: (bool) If there is external data for a given date
+         and region but none of the rows have non-null values for these fields it will
+         be excluded. For instance, if we want to run a query that compare supervision
+         district, this allows us to filter out external data that doesn't have
+         supervision district information.
     """
-    filter_clause = (
-        ""
+    filter_clause = exclude_rows_with_missing_fields(
+        set()
         if include_unmatched_people
-        else "WHERE external_data.person_external_id IS NOT NULL AND internal_data.person_external_id IS NOT NULL"
+        else {"external_data.person_external_id", "internal_data.person_external_id"}
     )
     return (
         SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_QUERY_TEMPLATE.format(
-            filter_clause=filter_clause
+            filter_clause=filter_clause,
+            external_data_required_fields_clause=exclude_rows_with_missing_fields(
+                external_data_required_fields
+            ),
         )
     )
