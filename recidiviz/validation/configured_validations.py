@@ -105,7 +105,7 @@ from recidiviz.validation.views.state.incarceration_population_person_level_exte
     INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER,
 )
 from recidiviz.validation.views.state.incarceration_population_person_level_external_comparison_matching_people import (
-    INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_BUILDER,
+    INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_WITH_FACILITY_VIEW_BUILDER,
 )
 from recidiviz.validation.views.state.incarceration_release_person_level_external_comparison import (
     INCARCERATION_RELEASE_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER,
@@ -206,7 +206,9 @@ from recidiviz.validation.views.state.supervision_population_person_level_extern
     SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER,
 )
 from recidiviz.validation.views.state.supervision_population_person_level_external_comparison_matching_people import (
-    SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_BUILDER,
+    SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_WITH_DISTRICT_VIEW_BUILDER,
+    SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_WITH_LEVEL_VIEW_BUILDER,
+    SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_WITH_OFFICER_VIEW_BUILDER,
 )
 from recidiviz.validation.views.state.supervision_revocations_by_period_by_type_by_demographics_internal_consistency import (
     SUPERVISION_REVOCATIONS_BY_PERIOD_BY_TYPE_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER,
@@ -683,8 +685,7 @@ def get_all_validations() -> List[DataValidationCheck]:
             validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
         ),
         SamenessDataValidationCheck(
-            view_builder=INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_BUILDER,
-            validation_name_suffix="facility",
+            view_builder=INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_WITH_FACILITY_VIEW_BUILDER,
             sameness_check_type=SamenessDataValidationCheckType.STRINGS,
             comparison_columns=["external_facility", "internal_facility"],
             partition_columns=["region_code", "date_of_stay"],
@@ -714,8 +715,7 @@ def get_all_validations() -> List[DataValidationCheck]:
             validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
         ),
         SamenessDataValidationCheck(
-            view_builder=SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_BUILDER,
-            validation_name_suffix="district",
+            view_builder=SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_WITH_DISTRICT_VIEW_BUILDER,
             sameness_check_type=SamenessDataValidationCheckType.STRINGS,
             comparison_columns=["external_district", "internal_district"],
             partition_columns=["region_code", "date_of_supervision"],
@@ -724,8 +724,7 @@ def get_all_validations() -> List[DataValidationCheck]:
             validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
         ),
         SamenessDataValidationCheck(
-            view_builder=SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_BUILDER,
-            validation_name_suffix="supervision_level",
+            view_builder=SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_WITH_LEVEL_VIEW_BUILDER,
             sameness_check_type=SamenessDataValidationCheckType.STRINGS,
             comparison_columns=[
                 "external_supervision_level",
@@ -736,8 +735,7 @@ def get_all_validations() -> List[DataValidationCheck]:
             validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
         ),
         SamenessDataValidationCheck(
-            view_builder=SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_BUILDER,
-            validation_name_suffix="supervising_officer",
+            view_builder=SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_WITH_OFFICER_VIEW_BUILDER,
             sameness_check_type=SamenessDataValidationCheckType.STRINGS,
             comparison_columns=[
                 "external_supervising_officer",

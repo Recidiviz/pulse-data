@@ -28,25 +28,23 @@ from recidiviz.validation.views.state.incarceration_population_person_level_temp
     incarceration_population_person_level_query,
 )
 
-INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_NAME = (
-    "incarceration_population_person_level_external_comparison_matching_people"
+INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_PREFIX = (
+    "incarceration_population_person_level_external_comparison_matching_people_"
 )
 
-INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_DESCRIPTION = """
-Comparison of values between internal and external lists of end of month person-level incarceration
-populations among rows where we both agree the person was incarcerated on that day.
+INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_DESCRIPTION_PREFIX = """
+Compares internal and external lists of person-level incarceration populations among rows where we both agree the person was incarcerated on that day.
 """
 
-INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_QUERY_TEMPLATE = f"""
-/*{{description}}*/
-{incarceration_population_person_level_query(include_unmatched_people=False)}
-"""
-
-INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_WITH_FACILITY_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.VIEWS_DATASET,
-    view_id=INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_NAME,
-    view_query_template=INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_QUERY_TEMPLATE,
-    description=INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_DESCRIPTION,
+    view_id=INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_PREFIX
+    + "facility",
+    view_query_template=incarceration_population_person_level_query(
+        include_unmatched_people=False, external_data_required_fields={"facility"}
+    ),
+    description=INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_DESCRIPTION_PREFIX
+    + " Only includes external data with facility information.",
     external_accuracy_dataset=dataset_config.EXTERNAL_ACCURACY_DATASET,
     materialized_metrics_dataset=state_dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     state_base_dataset=state_dataset_config.STATE_BASE_DATASET,
@@ -54,4 +52,4 @@ INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_B
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_BUILDER.build_and_print()
+        INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_WITH_FACILITY_VIEW_BUILDER.build_and_print()
