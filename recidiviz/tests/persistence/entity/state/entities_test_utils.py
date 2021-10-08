@@ -383,7 +383,6 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
         state_code="US_XX",
         court_type=StateCourtType.PRESENT_WITHOUT_INFO,
         court_type_raw_text=None,
-        court_fee_dollars=150,
         judge=judge,
     )
 

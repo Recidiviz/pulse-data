@@ -338,7 +338,6 @@ message StateCourtCase {
     optional string state_code = 6;
     optional string county_code = 7;
     optional string judicial_district_code = 8;
-    optional string court_fee_dollars = 9;
 
     optional string judge_id = 10;
 }

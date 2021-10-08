@@ -1352,11 +1352,6 @@ class _StateCourtCaseSharedColumns(_ReferencesStatePersonSharedColumns):
         comment="The code of the judicial district under whose jurisdiction "
         "the case was tried.",
     )
-    # TODO(#9072): DEPRECATED - DO NOT ADD NEW USAGES
-    court_fee_dollars = Column(
-        Integer,
-        comment="The amount of any court fees due for this case, in U.S. Dollars.",
-    )
 
     @declared_attr
     def judge_id(self) -> Column:

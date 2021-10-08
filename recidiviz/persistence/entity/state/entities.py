@@ -360,12 +360,6 @@ class StateCourtCase(ExternalIdEntity, BuildableAttr, DefaultableAttr):
         default=None, validator=attr_validators.is_opt_str
     )
 
-    #   - What
-    # TODO(#9072): DEPRECATED - DO NOT ADD NEW USAGES
-    court_fee_dollars: Optional[int] = attr.ib(
-        default=None, validator=attr_validators.is_opt_int
-    )
-
     #   - Who
     # See |judge| below
 
