@@ -1314,9 +1314,7 @@ class StateSupervisionViolationTypeEntry(EnumEntity, BuildableAttr, DefaultableA
 
 
 @attr.s(eq=False, kw_only=True)
-class StateSupervisionViolatedConditionEntry(
-    EnumEntity, BuildableAttr, DefaultableAttr
-):
+class StateSupervisionViolatedConditionEntry(Entity, BuildableAttr, DefaultableAttr):
     """Models a condition applied to a supervision sentence, whose violation may be
     recorded in a StateSupervisionViolation.
     """

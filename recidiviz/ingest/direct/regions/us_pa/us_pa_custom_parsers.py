@@ -14,18 +14,27 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
+"""Custom enum parsers functions for US_ND. Can be referenced in an ingest view manifest
+like this:
 
-"""A static reference cache for converting violation type codes into other relevant information,
-such as violation conditions. These mappings are taken from PBPP's Violation Sanctioning Grid (VSG)."""
+my_flat_field:
+    $custom:
+        $function: us_nd_custom_parsers.<function name>
+        $args:
+            arg_1: <expression>
+            arg_2: <expression>
+"""
 
-import logging
-from typing import Dict, Optional, List
+
+from typing import Dict, List
 
 from recidiviz.ingest.direct.direct_ingest_controller_utils import (
     invert_str_to_str_mappings,
 )
 
-
+# A static reference cache for converting violation type codes into other relevant
+# information, such as violation conditions. These mappings are taken from PBPP's
+# Violation Sanctioning Grid (VSG).
 _VIOLATION_CONDITIONS: Dict[str, List[str]] = {
     "1": ["H06", "M04"],
     "2": ["H01", "H09"],
@@ -66,20 +75,18 @@ _VIOLATION_CONDITIONS_BY_CODE: Dict[str, str] = invert_str_to_str_mappings(
 )
 
 
-def violated_condition(violation_type: Optional[str]) -> Optional[str]:
-    """Returns one of the canonical PBPP violation conditions, of which there are 7 (numbered 1-7), based on the given
-    violation type.
+def violated_condition_from_violation_code(violation_code: str) -> str:
+    """Returns one of the canonical PBPP violation conditions, of which there are 7
+    (numbered 1-7), based on the given violation type.
 
-    That is, each violation type is mapped to one of 7 conditions, as described in the Violation Sanction Grid.
+    That is, each violation type is mapped to one of 7 conditions, as described in the
+    Violation Sanction Grid.
     """
-    if not violation_type:
-        return None
-
-    condition = _VIOLATION_CONDITIONS_BY_CODE.get(violation_type.upper(), None)
+    condition = _VIOLATION_CONDITIONS_BY_CODE.get(violation_code.upper(), None)
 
     if not condition:
-        logging.warning(
-            "Found new violation type code not in condition reference cache: [%s]",
-            violation_type,
+        raise ValueError(
+            f"Found new violation type code not in condition reference cache: "
+            f"[{violation_code}]",
         )
     return condition

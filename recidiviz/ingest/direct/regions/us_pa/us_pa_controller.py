@@ -64,9 +64,6 @@ from recidiviz.common.constants.state.state_supervision_period import (
 from recidiviz.common.constants.state.state_supervision_sentence import (
     StateSupervisionSentenceSupervisionType,
 )
-from recidiviz.common.constants.state.state_supervision_violation import (
-    StateSupervisionViolationType,
-)
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseDecidingBodyType,
     StateSupervisionViolationResponseDecision,
@@ -106,9 +103,6 @@ from recidiviz.ingest.direct.regions.us_pa.us_pa_legacy_enum_helpers import (
     supervision_contact_location_mapper,
     supervision_period_supervision_type_mapper,
 )
-from recidiviz.ingest.direct.regions.us_pa.us_pa_violation_type_reference import (
-    violated_condition,
-)
 from recidiviz.ingest.direct.state_shared_row_posthooks import (
     IngestGatingContext,
     gen_convert_person_ids_to_external_id_objects,
@@ -125,7 +119,6 @@ from recidiviz.ingest.models.ingest_info import (
     StatePersonExternalId,
     StateSupervisionContact,
     StateSupervisionPeriod,
-    StateSupervisionViolation,
     StateSupervisionViolationResponse,
 )
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
@@ -191,9 +184,6 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
                 self._enrich_pbpp_assessments,
             ],
             "supervision_period_v3": supervision_period_postprocessors,
-            "supervision_violation": [
-                self._append_supervision_violation_entries,
-            ],
             "supervision_violation_response": [
                 self._append_supervision_violation_response_entries,
                 self._set_violation_response_type,
@@ -226,9 +216,6 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             "supervision_period_v3": [
                 gen_convert_person_ids_to_external_id_objects(self._get_id_type),
             ],
-            "supervision_violation": [
-                gen_convert_person_ids_to_external_id_objects(self._get_id_type),
-            ],
             "supervision_violation_response": [
                 gen_convert_person_ids_to_external_id_objects(self._get_id_type),
             ],
@@ -245,7 +232,6 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         ] = {
             "sci_incarceration_period": _generate_sci_incarceration_period_primary_key,
             "supervision_period_v3": _generate_supervision_period_primary_key,
-            "supervision_violation": _generate_supervision_violation_primary_key,
             "supervision_violation_response": _generate_supervision_violation_response_primary_key,
             "board_action": _generate_board_action_supervision_violation_response_primary_key,
             "supervision_contacts": _generate_supervision_contact_primary_key,
@@ -441,52 +427,6 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             "5H",
             "5J",
             "5K",
-        ],
-        StateSupervisionViolationType.ABSCONDED: [
-            "H06",  # Failure to report upon release
-            "H09",  # Absconding
-        ],
-        StateSupervisionViolationType.LAW: [
-            "H04",  # Pending criminal charges (UCV) Detained/Not detained
-            "M20",  # Conviction of Misdemeanor Offense
-            "M13",  # Conviction of a summary offense (a minor criminal, not civil offense)
-        ],
-        StateSupervisionViolationType.TECHNICAL: [
-            "M04",  # Travel violations
-            "H01",  # Changing residence without permission
-            "M02",  # A - Failure to report as instructed
-            "M19",  # B - Failure to notify agent of arrest or citation within 72 hrs
-            "L07",  # C - Failure to notify agent of change in status/employment
-            "M01",  # C - Failure to notify agent of change in status/employment
-            "L08",  # A - Positive urine, drugs
-            "M03",  # A - Positive urine, drugs
-            "H12",  # A - Positive urine, drugs
-            "H10",  # B - Possession of offense weapon
-            "H11",  # B - Possession of firearm
-            "H08",  # C - Assaultive behavior
-            "L06",  # Failure to pay court ordered fees, restitution
-            "L01",  # Failure to participate in community service
-            "L03",  # Failure to pay supervision fees
-            "L04",  # Failure to pay urinalysis fees
-            "L05",  # Failure to support dependents
-            "M05",  # Possession of contraband, cell phones, etc.
-            "M06",  # Failure to take medications as prescribed
-            "M07",  # Failure to maintain employment
-            "M08",  # Failure to participate or maintain treatment
-            "M09",  # Entering prohibited establishments
-            "M10",  # Associating with gang members, co-defendants, etc
-            "M11",  # Failure to abide by written instructions
-            "M12",  # Failure to abide by field imposed special conditions
-            "L02",  # Positive urine, alcohol (Previous History)
-            "M14",  # Positive urine, alcohol (Previous History)
-            "H03",  # Positive urine, alcohol (Previous History)
-            "M15",  # Violating curfew
-            "M16",  # Violating electronic monitoring
-            "M17",  # Failure to provide urine
-            "M18",  # Failure to complete treatment
-            "H02",  # Associating with crime victims
-            "H05",  # Failure to abide by Board Imposed Special Conditions
-            "H07",  # Removal from Treatment/CCC Failure
         ],
         StateSupervisionViolationResponseDecision.COMMUNITY_SERVICE: [
             "COMS",  # Imposition of Community Service
@@ -836,7 +776,6 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
 
         if file_tag in [
             "supervision_period_v3",
-            "supervision_violation",
             "supervision_violation_response",
             "board_action",
             "supervision_contacts",
@@ -1207,47 +1146,6 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
                 obj.custodial_authority = StateCustodialAuthority.STATE_PRISON.value
 
     @staticmethod
-    def _append_supervision_violation_entries(
-        _gating_context: IngestGatingContext,
-        row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        """Appends violation type and violated condition entries to the parent supervision violation."""
-        parole_number = row["parole_number"]
-        parole_count_id = row["parole_count_id"]
-        set_id = row["set_id"]
-
-        raw_violation_types = row.get("violation_types", "[]")
-        violation_types = json.loads(raw_violation_types)
-
-        conditions_violated = []
-        for violation_type in violation_types:
-            sequence_id = violation_type["sequence_id"]
-            violation_code = violation_type["violation_code"]
-            condition_violated = violated_condition(violation_code)
-            if condition_violated not in conditions_violated:
-                conditions_violated.append(condition_violated)
-
-            violation_type_entry_id = (
-                f"{parole_number}-{parole_count_id}-{set_id}-{sequence_id}"
-            )
-
-            for obj in extracted_objects:
-                if isinstance(obj, StateSupervisionViolation):
-                    obj.create_state_supervision_violation_type_entry(
-                        state_supervision_violation_type_entry_id=violation_type_entry_id,
-                        violation_type=violation_code,
-                    )
-
-        for condition_violated in conditions_violated:
-            for obj in extracted_objects:
-                if isinstance(obj, StateSupervisionViolation):
-                    obj.create_state_supervision_violated_condition_entry(
-                        condition=condition_violated,
-                    )
-
-    @staticmethod
     def _append_supervision_violation_response_entries(
         _gating_context: IngestGatingContext,
         row: Dict[str, str],
@@ -1413,29 +1311,6 @@ def _generate_supervision_period_primary_key(
     return IngestFieldCoordinates(
         "state_supervision_period", "state_supervision_period_id", supervision_period_id
     )
-
-
-def _generate_supervision_violation_primary_key(
-    _gating_context: IngestGatingContext, row: Dict[str, str]
-) -> IngestFieldCoordinates:
-    person_id = row["parole_number"]
-    parole_count = row["parole_count_id"]
-    set_id = row["set_id"]
-    violation_id = f"{person_id}-{parole_count}-{set_id}"
-
-    return IngestFieldCoordinates(
-        "state_supervision_violation", "state_supervision_violation_id", violation_id
-    )
-
-
-def _state_supervision_violation_ancestor_chain_overrides(
-    _gating_context: IngestGatingContext, row: Dict[str, str]
-) -> Dict[str, str]:
-    person_id = row["parole_number"]
-    parole_count = row["parole_count_id"]
-    period_id = f"{person_id}-{parole_count}"
-
-    return {"state_supervision_period": period_id}
 
 
 def _generate_supervision_violation_response_primary_key(
