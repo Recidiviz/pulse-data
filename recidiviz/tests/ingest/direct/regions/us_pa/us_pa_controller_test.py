@@ -1192,186 +1192,6 @@ class TestUsPaController(BaseDirectIngestControllerTests):
 
         self.run_legacy_parse_file_test(expected, "supervision_period_v3")
 
-    def test_populate_data_supervision_violation_response(self) -> None:
-        violation_456B_1_1 = StateSupervisionViolation(
-            state_supervision_violation_id="456B-1-1",
-            state_supervision_violation_responses=[
-                StateSupervisionViolationResponse(
-                    state_supervision_violation_response_id="456B-1-1",
-                    response_type="VIOLATION_REPORT",
-                    response_date="2013-01-02",
-                    supervision_violation_response_decisions=[
-                        StateSupervisionViolationResponseDecisionEntry(
-                            state_supervision_violation_response_decision_entry_id="456B-1-1-2",
-                            decision="WTWR",
-                        ),
-                        StateSupervisionViolationResponseDecisionEntry(
-                            state_supervision_violation_response_decision_entry_id="456B-1-1-3",
-                            decision="DJBS",
-                        ),
-                    ],
-                )
-            ],
-        )
-
-        violation_456B_2_1 = StateSupervisionViolation(
-            state_supervision_violation_id="456B-2-1",
-            state_supervision_violation_responses=[
-                StateSupervisionViolationResponse(
-                    state_supervision_violation_response_id="456B-2-1",
-                    response_type="VIOLATION_REPORT",
-                    response_date="2015-04-13",
-                    supervision_violation_response_decisions=[
-                        StateSupervisionViolationResponseDecisionEntry(
-                            state_supervision_violation_response_decision_entry_id="456B-2-1-12",
-                            decision="VCCF",
-                        ),
-                        StateSupervisionViolationResponseDecisionEntry(
-                            state_supervision_violation_response_decision_entry_id="456B-2-1-13",
-                            decision="ARR2",
-                        ),
-                    ],
-                )
-            ],
-        )
-
-        violation_789C_3_1 = StateSupervisionViolation(
-            state_supervision_violation_id="789C-3-1",
-            state_supervision_violation_responses=[
-                StateSupervisionViolationResponse(
-                    state_supervision_violation_response_id="789C-3-1",
-                    response_type="VIOLATION_REPORT",
-                    response_date="2006-08-16",
-                    supervision_violation_response_decisions=[
-                        StateSupervisionViolationResponseDecisionEntry(
-                            state_supervision_violation_response_decision_entry_id="789C-3-1-4",
-                            decision="VCCF",
-                        ),
-                        StateSupervisionViolationResponseDecisionEntry(
-                            state_supervision_violation_response_decision_entry_id="789C-3-1-5",
-                            decision="ARR2",
-                        ),
-                    ],
-                )
-            ],
-        )
-
-        violation_345E_1_1 = StateSupervisionViolation(
-            state_supervision_violation_id="345E-1-1",
-            state_supervision_violation_responses=[
-                StateSupervisionViolationResponse(
-                    state_supervision_violation_response_id="345E-1-1",
-                    response_type="VIOLATION_REPORT",
-                    response_date="2018-03-23",
-                    supervision_violation_response_decisions=[
-                        StateSupervisionViolationResponseDecisionEntry(
-                            state_supervision_violation_response_decision_entry_id="345E-1-1-2",
-                            decision="WTWR",
-                        ),
-                    ],
-                )
-            ],
-        )
-
-        violation_345E_1_2 = StateSupervisionViolation(
-            state_supervision_violation_id="345E-1-2",
-            state_supervision_violation_responses=[
-                StateSupervisionViolationResponse(
-                    state_supervision_violation_response_id="345E-1-2",
-                    response_type="VIOLATION_REPORT",
-                    response_date="2018-05-13",
-                    supervision_violation_response_decisions=[
-                        StateSupervisionViolationResponseDecisionEntry(
-                            state_supervision_violation_response_decision_entry_id="345E-1-2-5",
-                            decision="ARR2",
-                        ),
-                        StateSupervisionViolationResponseDecisionEntry(
-                            state_supervision_violation_response_decision_entry_id="345E-1-2-6",
-                            decision="PV01",
-                        ),
-                    ],
-                )
-            ],
-        )
-
-        expected = IngestInfo(
-            state_people=[
-                StatePerson(
-                    state_person_id="456B",
-                    state_person_external_ids=[
-                        StatePersonExternalId(
-                            state_person_external_id_id="456B", id_type=US_PA_PBPP
-                        ),
-                    ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_supervision_sentences=[
-                                StateSupervisionSentence(
-                                    state_supervision_periods=[
-                                        StateSupervisionPeriod(
-                                            state_supervision_violation_entries=[
-                                                violation_456B_1_1,
-                                                violation_456B_2_1,
-                                            ]
-                                        ),
-                                    ]
-                                ),
-                            ],
-                        ),
-                    ],
-                ),
-                StatePerson(
-                    state_person_id="789C",
-                    state_person_external_ids=[
-                        StatePersonExternalId(
-                            state_person_external_id_id="789C", id_type=US_PA_PBPP
-                        ),
-                    ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_supervision_sentences=[
-                                StateSupervisionSentence(
-                                    state_supervision_periods=[
-                                        StateSupervisionPeriod(
-                                            state_supervision_violation_entries=[
-                                                violation_789C_3_1,
-                                            ]
-                                        ),
-                                    ]
-                                ),
-                            ],
-                        ),
-                    ],
-                ),
-                StatePerson(
-                    state_person_id="345E",
-                    state_person_external_ids=[
-                        StatePersonExternalId(
-                            state_person_external_id_id="345E", id_type=US_PA_PBPP
-                        ),
-                    ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_supervision_sentences=[
-                                StateSupervisionSentence(
-                                    state_supervision_periods=[
-                                        StateSupervisionPeriod(
-                                            state_supervision_violation_entries=[
-                                                violation_345E_1_1,
-                                                violation_345E_1_2,
-                                            ]
-                                        ),
-                                    ]
-                                ),
-                            ],
-                        ),
-                    ],
-                ),
-            ]
-        )
-
-        self.run_legacy_parse_file_test(expected, "supervision_violation_response")
-
     def test_populate_board_action(self) -> None:
         violation_456B_0_04 = StateSupervisionViolation(
             state_supervision_violation_responses=[
@@ -3892,7 +3712,6 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             state_code=_STATE_CODE_UPPER,
             response_date=datetime.date(year=2013, month=1, day=2),
             response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-            response_type_raw_text="VIOLATION_REPORT",
             person=person_2,
             supervision_violation=p2_sv_1,
         )
@@ -3924,7 +3743,6 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             state_code=_STATE_CODE_UPPER,
             response_date=datetime.date(year=2015, month=4, day=13),
             response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-            response_type_raw_text="VIOLATION_REPORT",
             person=person_2,
             supervision_violation=p2_sv_2,
         )
@@ -3956,7 +3774,6 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             state_code=_STATE_CODE_UPPER,
             response_date=datetime.date(year=2006, month=8, day=16),
             response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-            response_type_raw_text="VIOLATION_REPORT",
             person=person_5,
             supervision_violation=p5_sv_3,
         )
@@ -3988,7 +3805,6 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             state_code=_STATE_CODE_UPPER,
             response_date=datetime.date(year=2018, month=3, day=23),
             response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-            response_type_raw_text="VIOLATION_REPORT",
             person=person_4,
             supervision_violation=p4_sv_1,
         )
@@ -4009,7 +3825,6 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             state_code=_STATE_CODE_UPPER,
             response_date=datetime.date(year=2018, month=5, day=13),
             response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-            response_type_raw_text="VIOLATION_REPORT",
             person=person_4,
             supervision_violation=p4_sv_2,
         )
