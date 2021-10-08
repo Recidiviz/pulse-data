@@ -1345,7 +1345,6 @@ class StateCourtCase(IngestObject):
         state_code=None,
         county_code=None,
         judicial_district_code=None,
-        court_fee_dollars=None,
         judge=None,
     ):
         self.state_court_case_id: Optional[str] = state_court_case_id
@@ -1356,7 +1355,6 @@ class StateCourtCase(IngestObject):
         self.state_code: Optional[str] = state_code
         self.county_code: Optional[str] = county_code
         self.judicial_district_code: Optional[str] = judicial_district_code
-        self.court_fee_dollars: Optional[str] = court_fee_dollars
 
         self.judge: Optional[StateAgent] = judge
 

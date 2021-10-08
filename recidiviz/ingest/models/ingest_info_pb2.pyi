@@ -2221,7 +2221,6 @@ class StateCourtCase(google.protobuf.message.Message):
     STATE_CODE_FIELD_NUMBER: builtins.int
     COUNTY_CODE_FIELD_NUMBER: builtins.int
     JUDICIAL_DISTRICT_CODE_FIELD_NUMBER: builtins.int
-    COURT_FEE_DOLLARS_FIELD_NUMBER: builtins.int
     JUDGE_ID_FIELD_NUMBER: builtins.int
     state_court_case_id: typing.Text = ...
     status: typing.Text = ...
@@ -2231,7 +2230,6 @@ class StateCourtCase(google.protobuf.message.Message):
     state_code: typing.Text = ...
     county_code: typing.Text = ...
     judicial_district_code: typing.Text = ...
-    court_fee_dollars: typing.Text = ...
     judge_id: typing.Text = ...
     def __init__(
         self,
@@ -2244,7 +2242,6 @@ class StateCourtCase(google.protobuf.message.Message):
         state_code: typing.Optional[typing.Text] = ...,
         county_code: typing.Optional[typing.Text] = ...,
         judicial_district_code: typing.Optional[typing.Text] = ...,
-        court_fee_dollars: typing.Optional[typing.Text] = ...,
         judge_id: typing.Optional[typing.Text] = ...,
     ) -> None: ...
     def HasField(
@@ -2252,8 +2249,6 @@ class StateCourtCase(google.protobuf.message.Message):
         field_name: typing_extensions.Literal[
             "county_code",
             b"county_code",
-            "court_fee_dollars",
-            b"court_fee_dollars",
             "court_type",
             b"court_type",
             "date_convicted",
@@ -2277,8 +2272,6 @@ class StateCourtCase(google.protobuf.message.Message):
         field_name: typing_extensions.Literal[
             "county_code",
             b"county_code",
-            "court_fee_dollars",
-            b"court_fee_dollars",
             "court_type",
             b"court_type",
             "date_convicted",

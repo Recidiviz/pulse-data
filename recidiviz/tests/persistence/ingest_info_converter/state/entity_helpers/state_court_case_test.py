@@ -49,7 +49,6 @@ class StateCourtCaseConverterTest(unittest.TestCase):
             next_court_date="1/10/2111",
             state_code="us_nd",
             county_code="111",
-            court_fee_dollars="1000",
         )
 
         # Act
@@ -70,7 +69,6 @@ class StateCourtCaseConverterTest(unittest.TestCase):
             next_court_date=date(year=2111, month=1, day=10),
             state_code="US_ND",
             county_code="111",
-            court_fee_dollars=1000,
         )
 
         self.assertEqual(result, expected_result)

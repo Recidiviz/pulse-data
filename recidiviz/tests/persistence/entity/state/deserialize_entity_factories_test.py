@@ -735,7 +735,6 @@ class TestDeserializeEntityFactories(unittest.TestCase):
             next_court_date="1/10/2111",
             state_code="us_xx",
             county_code="111",
-            court_fee_dollars="1000",
         )
 
         # Assert
@@ -749,7 +748,6 @@ class TestDeserializeEntityFactories(unittest.TestCase):
             next_court_date=date(year=2111, month=1, day=10),
             state_code="US_XX",
             county_code="111",
-            court_fee_dollars=1000,
         )
 
         self.assertEqual(expected_result, result)
