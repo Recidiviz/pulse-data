@@ -1,37 +1,29 @@
-key_mappings:
-  DESCRIPTION: state_supervision_sentence.supervision_type
-  PAROLE_FR: state_supervision_sentence.start_date
-  PAROLE_TO: state_supervision_sentence.projected_completion_date
-  TERM_DATE: state_supervision_sentence.completion_date
-
-child_key_mappings:
-  CASE_NUMBER: state_supervision_period.state_supervision_period_id
-  TA_TYPE: state_supervision_period.termination_reason
-  TB_CTY: state_supervision_period.county_code
-  JUDGE: state_agent.full_name
-  REV_DATE: state_supervision_violation_response.response_date
-  RevoDispo: state_supervision_violation_response_decision_entry.decision
-  current_supervision_level: state_supervision_period.supervision_level
-
-ancestor_keys:
-  SID: state_person.state_person_id
-
-primary_key:
-  CASE_NUMBER: state_supervision_sentence.state_supervision_sentence_id
-
-keys_to_ignore:
-  - SENT_TYPE             # Redundant code that maps 1:1 with DESCRIPTION
-  - SENT_YY               # Handled manually within us_nd_controller
-  - SENT_MM               # Handled manually within us_nd_controller
-  - terminating_officer_id # Duplicate of TERMINATING_OFFICER, handled manually within us_nd_controller
-  - terminating_officer_lname # Handled manually within us_nd_controller
-  - terminating_officer_fname # Handled manually within us_nd_controller
-  - terminating_officer_siteid # Handled manually within us_nd_controller
-  - recent_officer_id # Handled manually within us_nd_controller
-  - recent_officer_lname # Handled manually within us_nd_controller
-  - recent_officer_fname # Handled manually within us_nd_controller
-  - recent_officer_siteid # Handled manually within us_nd_controller
-  - TD_PUB_AST            # TODO(#1866) Do we want to track qualitative attrs?
+manifest_language: 1.0.0
+input_columns:
+  - SID
+  - CASE_NUMBER
+  - DESCRIPTION
+  - PAROLE_FR
+  - PAROLE_TO
+  - TERM_DATE
+  - TA_TYPE
+  - TB_CTY
+  - JUDGE
+  - REV_DATE
+  - RevoDispo
+  - current_supervision_level
+  - SENT_TYPE
+  - SENT_YY
+  - SENT_MM
+  - terminating_officer_id
+  - terminating_officer_lname
+  - terminating_officer_fname
+  - terminating_officer_siteid
+  - recent_officer_id
+  - recent_officer_lname
+  - recent_officer_fname
+  - recent_officer_siteid
+  - TD_PUB_AST
   - TE_EMPLOY
   - TF_RESPNSE
   - TG_COMMRES
@@ -40,15 +32,301 @@ keys_to_ignore:
   - TJ_INCOME
   - TK_LAST_GR
   - TL_LIV_ARR
-  - NEW_OFF               # Handled manually within us_nd_controller
-  - NEW_OFF2              # Handled manually within us_nd_controller
-  - NEW_OFF3              # Handled manually within us_nd_controller
-  - REV_NOFF_YN           # Handled manually within us_nd_controller
-  - REV_ABSC_YN           # Handled manually within us_nd_controller
-  - REV_TECH_YN           # Handled manually within us_nd_controller
-  - TERMINATING_OFFICER   # Handled manually within us_nd_controller
-  - LAST_UPDATE           # No apparent use for these at the moment
-  - INACTIVEDATE          # No longer in use within source
-  - RECORDCRDATE          # No apparent use for these at the moment
-  - RecDate               # No apparent use for these at the moment
-  - CHANGE_DATE_REASON    # No apparent use for these at the moment
+  - NEW_OFF
+  - NEW_OFF2
+  - NEW_OFF3
+  - REV_NOFF_YN
+  - REV_ABSC_YN
+  - REV_TECH_YN
+  - TERMINATING_OFFICER
+  - LAST_UPDATE
+  - INACTIVEDATE
+  - RECORDCRDATE
+  - RecDate
+  - CHANGE_DATE_REASON
+unused_columns:
+  - TERMINATING_OFFICER
+  - SENT_TYPE
+  - TD_PUB_AST
+  - TE_EMPLOY
+  - TF_RESPNSE
+  - TG_COMMRES
+  - TH_MARITAL
+  - TI_EMPLOY
+  - TJ_INCOME
+  - TK_LAST_GR
+  - TL_LIV_ARR
+  - LAST_UPDATE
+  - INACTIVEDATE
+  - RECORDCRDATE
+  - RecDate
+  - CHANGE_DATE_REASON
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: SID
+          id_type: $literal("US_ND_SID")
+    sentence_groups:
+      - StateSentenceGroup:
+          supervision_sentences:
+            - StateSupervisionSentence:
+                external_id: CASE_NUMBER
+                status:
+                  $conditional:
+                    $if:
+                      $not_null: TERM_DATE
+                    $then: $literal_enum(StateSentenceStatus.COMPLETED)
+                supervision_type:
+                  $raw_text: DESCRIPTION
+                  $mappings:
+                     StateSupervisionSentenceSupervisionType.HALFWAY_HOUSE: "Community Placement Pgrm"
+                     StateSupervisionSentenceSupervisionType.INTERNAL_UNKNOWN: "CCC"
+                     StateSupervisionSentenceSupervisionType.PAROLE:
+                       - "IC Parole"
+                       - "Parole"
+                       - "SSOP"
+                     StateSupervisionSentenceSupervisionType.PROBATION:
+                       - "Deferred"
+                       - "IC Probation"
+                       - "Suspended"
+                     StateSupervisionSentenceSupervisionType.PRE_CONFINEMENT: "Pre-Trial"
+                start_date: PAROLE_FR
+                projected_completion_date: PAROLE_TO
+                completion_date: TERM_DATE
+                max_length_days:
+                  $custom:
+                    $function: us_nd_custom_parsers.parse_supervision_sentence_max_length
+                    $args:
+                      years: SENT_YY
+                      months: SENT_MM
+                      effective_date: PAROLE_FR
+                charges:
+                  - $conditional:
+                      $if:
+                        $not_null: JUDGE
+                      $then:
+                        StateCharge:
+                            court_case:
+                              StateCourtCase:
+                                judge:
+                                  StateAgent:
+                                    # TODO(#2158): Parse full_name in the same way we do for person
+                                    full_name:
+                                      $json_dict:
+                                        full_name: JUDGE
+                                    agent_type: $literal_enum(StateAgentType.JUDGE)
+                supervision_periods:
+                  - StateSupervisionPeriod:
+                      external_id: CASE_NUMBER
+                      supervision_type:
+                        $raw_text: DESCRIPTION
+                        $mappings:
+                            StateSupervisionPeriodSupervisionType.COMMUNITY_CONFINEMENT:
+                              - "Community Placement Pgrm"
+                            StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN:
+                              - "CCC"
+                            StateSupervisionPeriodSupervisionType.INVESTIGATION:
+                              - "Pre-Trial"
+                            StateSupervisionPeriodSupervisionType.PAROLE:
+                              - "IC Parole"
+                              - "Parole"
+                              - "SSOP"
+                            StateSupervisionPeriodSupervisionType.PROBATION:
+                              - "Deferred"
+                              - "IC Probation"
+                              - "Suspended"
+                      start_date: PAROLE_FR
+                      termination_date: TERM_DATE
+                      termination_reason:
+                        $raw_text: TA_TYPE
+                        $mappings:
+                          StateSupervisionPeriodTerminationReason.ABSCONSION:
+                            - "13"  # Terminated - Absconded (Active Petition To Revoke)
+                          StateSupervisionPeriodTerminationReason.DEATH:
+                            - "11"  # "Terminated - Death
+                          StateSupervisionPeriodTerminationReason.DISCHARGE:
+                            - "1"   # Terminated - Dismissal (Deferred Imp.)
+                            - "2"   # Terminated - Early Dismissal (Deferred Imp.)
+                            - "5"   # Terminated - Termination-Positive (Susp. Sent)"
+                            - "8"   # Terminated - Released from Community Placement
+                            - "12"  # Terminated - Returned to Original State-Voluntary
+                            - "15"  # Terminated - Released from Custody
+                            - "16"  # Terminated - CCC
+                            - "17"  # Terminated - Returned to Original State-Violation
+                          StateSupervisionPeriodTerminationReason.EXPIRATION:
+                            - "4"   # Terminated - Expiration (Susp. Sentence)
+                            - "7"   # Terminated - Expiration (Parole)
+                            - "19"  # Terminated - Expiration (IC Parole)
+                            - "20"  # Terminated - Expiration (IC Probation)
+                          StateSupervisionPeriodTerminationReason.EXTERNAL_UNKNOWN:
+                            - "14"  # Terminated - Other
+                          StateSupervisionPeriodTerminationReason.INVESTIGATION:
+                            # TODO(#3276): Migrate these termination reasons to other values so that we can
+                            #  remove this termination reason
+                            - "21"  # Guilty
+                            - "22"  # Guilty of Lesser Charge
+                            - "23"  # Not Guilty
+                            - "24"  # Dismissed
+                            - "25"  # Mistrial
+                            - "26"  # Deferred Prosecution
+                            - "27"  # Post-Conviction Supervision
+                            - "28"  # Closed with Active FTA
+                            - "29"  # Early Termination
+                            - "30"  # No Conditions Imposed
+                          StateSupervisionPeriodTerminationReason.REVOCATION:
+                            - "9"  # Terminated - Revocation
+                            - "10"  # Terminated - Revocation with Continuation
+                            - "18"  # Terminated - Returned to Custody from CPP
+                          StateSupervisionPeriodTerminationReason.SUSPENSION:
+                            - "3"  # Terminated - Termination (Deferred Imp.)
+                            - "6"  # Terminated - Termination-Negative (Susp. Sent)
+                      supervision_level:
+                        $raw_text: current_supervision_level
+                        $mappings:
+                            # 0 means no calculated level
+                            StateSupervisionLevel.PRESENT_WITHOUT_INFO: "0"
+                            StateSupervisionLevel.MINIMUM: "1"
+                            StateSupervisionLevel.MEDIUM: "2"
+                            StateSupervisionLevel.MAXIMUM:
+                              - "3"
+                              - "6" # 6 is Drug Court which is max with specific rules
+                            StateSupervisionLevel.DIVERSION: "7"
+                            StateSupervisionLevel.INTERSTATE_COMPACT: "9"
+                            # 4 and 8 are no longer used now, 5 means not classified yet
+                            StateSupervisionLevel.EXTERNAL_UNKNOWN:
+                              - "4"  # No longer in use
+                              - "5"  # Not classified yet
+                              - "8"  # No longer in use
+                      county_code:
+                        $custom:
+                          $function: us_nd_custom_parsers.normalize_county_code
+                          $args:
+                            county_code: TB_CTY
+                      supervision_site:
+                        $conditional:
+                          $if:
+                            $not_null: terminating_officer_id
+                          $then: terminating_officer_siteid
+                          $else:
+                            $conditional:
+                              $if:
+                                $is_null: TERM_DATE
+                              $then: recent_officer_siteid
+                      supervising_officer:
+                        $conditional:
+                          $if:
+                            $not_null: terminating_officer_id
+                          $then:
+                            StateAgent:
+                              external_id: terminating_officer_id
+                              full_name:
+                                $person_name:
+                                  $given_names: terminating_officer_fname
+                                  $surname: terminating_officer_lname
+                              agent_type: $literal_enum(StateAgentType.SUPERVISION_OFFICER)
+                          $else:
+                            $conditional:
+                              $if:
+                                $and:
+                                  - $is_null: TERM_DATE
+                                  - $not_null: recent_officer_id
+                              $then:
+                                StateAgent:
+                                  external_id: recent_officer_id
+                                  full_name:
+                                    $person_name:
+                                      $given_names: recent_officer_fname
+                                      $surname: recent_officer_lname
+                                  agent_type: $literal_enum(StateAgentType.SUPERVISION_OFFICER)
+                      supervision_violation_entries:
+                        - $conditional:
+                            $if:
+                              $or:
+                                - $not_null: REV_DATE
+                                - $not_null: RevoDispo
+                            $then:
+                              StateSupervisionViolation:
+                                is_violent:
+                                  $conditional:
+                                    $if:
+                                      $in:
+                                        $value: REV_NOFF_YN
+                                        $options:
+                                          - $literal("-1")
+                                          - $literal("(1)")
+                                    $then:
+                                      $custom:
+                                        $function: us_nd_custom_parsers.are_new_offenses_violent
+                                        $args:
+                                          new_offense_1_ncic: NEW_OFF
+                                          new_offense_2_ncic: NEW_OFF2
+                                          new_offense_3_ncic:  NEW_OFF3
+                                supervision_violation_types:
+                                  # TODO(#9396): Clean this up once we have support for cascading if/elif statements
+                                  - $conditional:
+                                      $if:
+                                        $in:
+                                          $value: REV_NOFF_YN
+                                          $options:
+                                            - $literal("-1")
+                                            - $literal("(1)")
+                                      $then:
+                                        StateSupervisionViolationTypeEntry:
+                                          violation_type: $literal_enum(StateSupervisionViolationType.LAW)
+                                      $else:
+                                        $conditional:
+                                          $if:
+                                            $in:
+                                              $value: REV_ABSC_YN
+                                              $options:
+                                                - $literal("-1")
+                                                - $literal("(1)")
+                                          $then:
+                                            StateSupervisionViolationTypeEntry:
+                                              violation_type: $literal_enum(StateSupervisionViolationType.ABSCONDED)
+                                          $else:
+                                            $conditional:
+                                              $if:
+                                                $in:
+                                                  $value: REV_TECH_YN
+                                                  $options:
+                                                    - $literal("-1")
+                                                    - $literal("(1)")
+                                              $then:
+                                                StateSupervisionViolationTypeEntry:
+                                                  violation_type: $literal_enum(StateSupervisionViolationType.TECHNICAL)
+                                supervision_violation_responses:
+                                  - StateSupervisionViolationResponse:
+                                      response_type: $literal_enum(StateSupervisionViolationResponseType.PERMANENT_DECISION)
+                                      response_date: REV_DATE
+                                      decision_agents:
+                                        - $conditional:
+                                            $if:
+                                              $not_null: terminating_officer_id
+                                            $then:
+                                              StateAgent:
+                                                external_id: terminating_officer_id
+                                                full_name:
+                                                  $person_name:
+                                                    $given_names: terminating_officer_fname
+                                                    $surname: terminating_officer_lname
+                                                agent_type: $literal_enum(StateAgentType.SUPERVISION_OFFICER)
+                                      supervision_violation_response_decisions:
+                                        - StateSupervisionViolationResponseDecisionEntry:
+                                            decision:
+                                              $raw_text: RevoDispo
+                                              $mappings:
+                                                StateSupervisionViolationResponseDecision.CONTINUANCE:
+                                                    - "Placed back on probation/parole"
+                                                StateSupervisionViolationResponseDecision.SERVICE_TERMINATION:
+                                                    - "Supervision Terminated"
+                                                StateSupervisionViolationResponseDecision.REVOCATION:
+                                                    - "County Jail Sentence"
+                                                    - "county jail sentence"
+                                                    - "County Jail Sentence followed by probation"
+                                                    - "County Jail sentence followed by probation"
+                                                    - "DOCR Inmate Sentence"
+                                                    - "DOCR Inmate Sentence followed by Probation"
+                                                    - "DOCR Inmate Sentence followed by probation"
+                                                    - "resentenced to five years more"

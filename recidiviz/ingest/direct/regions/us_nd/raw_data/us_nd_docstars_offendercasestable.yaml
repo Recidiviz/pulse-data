@@ -14,10 +14,10 @@ columns:
       External id for a unique person from the Docstars system.
   - name: SENT_TYPE
     description: |-
-      Type of supervision sentence to be served by this person.
+      Type of supervision sentence to be served by this person. Maps 1:1 with DESCRIPTION.
   - name: DESCRIPTION
     description: |-
-      Type of supervision period to be served by this person.
+      Description of the supervision sentence type. Maps 1:1 with SENT_TYPE.
   - name: SENT_YY
     description: |-
       Years component of the length of the supervision sentence.
@@ -91,19 +91,40 @@ columns:
   - name: REV_NOFF_YN
     description: |-
       Whether the revocation occurred due in part to a new offense, if applicable.
+    known_values:
+      - value: "0"
+        description: "Yes, a  revocation occurred"
+      - value: "-1"
+        description:  "No, a  revocation did not occur (legacy)"
+      - value: "(1)"
+        description:  "No, a  revocation did not occur"
   - name: REV_ABSC_YN
     description: |-
       Whether the revocation occurred due in part to absconsion, if applicable.
+    known_values:
+      - value: "0"
+        description: "Yes, a revocation occurred in part due to absconsion"
+      - value: "-1"
+        description:  "No, a revocation did not occur due to absconsion (legacy)"
+      - value: "(1)"
+        description:  "No, a revocation did not occur due to absconsion"
   - name: REV_TECH_YN
     description: |-
       Whether the revocation occurred due in part to a technical violation, if applicable.
+    known_values:
+      - value: "0"
+        description: "Yes, a revocation occurred in part due to a technical violation"
+      - value: "-1"
+        description:  "No, a revocation did not occur due to a technical violation (legacy)"
+      - value: "(1)"
+        description:  "No, a revocation did not occur due to a technical violation"
   - name: LAST_UPDATE
     description: |-
       When this record was most recently updated.
   - name: INACTIVEDATE
     is_datetime: True
     description: |-
-      When this record became inactive, if applicable.
+      When this record became inactive, if applicable. This field is no longer in use.
   - name: RECORDCRDATE
     is_datetime: True
     description: |-
