@@ -17,8 +17,7 @@
 
 """Direct ingest controller implementation for us_nd."""
 import json
-import re
-from typing import Dict, List, Optional, Pattern, Tuple, cast
+from typing import Dict, List, Optional, Tuple, cast
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
 from recidiviz.common import ncic
@@ -35,19 +34,12 @@ from recidiviz.common.constants.state.state_incarceration import StateIncarcerat
 from recidiviz.common.constants.state.state_incarceration_incident import (
     StateIncarcerationIncidentOutcomeType,
 )
-from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactLocation,
     StateSupervisionContactStatus,
 )
 from recidiviz.common.constants.state.state_supervision_sentence import (
     StateSupervisionSentenceSupervisionType,
-)
-from recidiviz.common.constants.state.state_supervision_violation import (
-    StateSupervisionViolationType,
-)
-from recidiviz.common.constants.state.state_supervision_violation_response import (
-    StateSupervisionViolationResponseType,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.str_field_utils import (
@@ -111,16 +103,10 @@ from recidiviz.ingest.models.ingest_info import (
     StateSentenceGroup,
     StateSupervisionCaseTypeEntry,
     StateSupervisionContact,
-    StateSupervisionPeriod,
     StateSupervisionSentence,
-    StateSupervisionViolation,
-    StateSupervisionViolationResponse,
-    StateSupervisionViolationTypeEntry,
 )
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 from recidiviz.utils import environment
-
-_DOCSTARS_NEGATIVE_PATTERN: Pattern = re.compile(r"^\((?P<value>-?\d+)\)$")
 
 
 # TODO(#8901): Delete LegacyIngestViewProcessorDelegate superclass when we have fully
@@ -198,20 +184,6 @@ class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
                 copy_name_to_alias,
                 self._add_supervising_officer,
                 self._add_case_type_external_id,
-            ],
-            "docstars_offendercasestable_with_officers": [
-                self._concatenate_docstars_length_periods,
-                self._add_officer_to_supervision_periods,
-                self._record_revocation,
-                gen_set_agent_type(StateAgentType.JUDGE),
-                self._hydrate_supervision_period_sentence_shared_date_fields,
-                gen_normalize_county_codes_posthook(
-                    self.region.region_code,
-                    "TB_CTY",
-                    StateSupervisionPeriod,
-                    normalized_county_code,
-                ),
-                self._normalize_completed_sentence_status,
             ],
             "docstars_offensestable": [
                 self._parse_docstars_charge_classification,
@@ -737,182 +709,6 @@ class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
                     extracted_object.discharge_date = status_date
 
     @staticmethod
-    def _add_terminating_officer_to_supervision_periods(
-        _gating_context: IngestGatingContext,
-        row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        """When present, adds supervising officer to the extracted SupervisionPeriods."""
-        terminating_officer_id = row.get("TERMINATING_OFFICER", None)
-        if not terminating_officer_id:
-            return
-
-        agent_to_create = StateAgent(
-            state_agent_id=terminating_officer_id,
-            agent_type=StateAgentType.SUPERVISION_OFFICER.value,
-        )
-
-        for extracted_object in extracted_objects:
-            if isinstance(extracted_object, StateSupervisionPeriod):
-                create_if_not_exists(
-                    agent_to_create, extracted_object, "supervising_officer"
-                )
-
-    @staticmethod
-    def _add_officer_to_supervision_periods(
-        _gating_context: IngestGatingContext,
-        row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        """When present, adds supervising officer to the extracted SupervisionPeriods."""
-        terminating_officer_id = row.get("terminating_officer_id", None)
-        recent_officer_id = row.get("recent_officer_id", None)
-        if not terminating_officer_id and not recent_officer_id:
-            return
-
-        termination_date = row.get("TERM_DATE", None)
-
-        if terminating_officer_id:
-            officer_id: Optional[str] = terminating_officer_id
-            officer_fname = row.get("terminating_officer_fname", None)
-            officer_lname = row.get("terminating_officer_lname", None)
-            officer_siteid = row.get("terminating_officer_siteid", None)
-        elif not termination_date:
-            officer_id = recent_officer_id
-            officer_fname = row.get("recent_officer_fname", None)
-            officer_lname = row.get("recent_officer_lname", None)
-            officer_siteid = row.get("recent_officer_siteid", None)
-        else:
-            return
-
-        agent_to_create = StateAgent(
-            state_agent_id=officer_id,
-            agent_type=StateAgentType.SUPERVISION_OFFICER.value,
-            given_names=officer_fname,
-            surname=officer_lname,
-        )
-
-        for extracted_object in extracted_objects:
-            if isinstance(extracted_object, StateSupervisionPeriod):
-                create_if_not_exists(
-                    agent_to_create, extracted_object, "supervising_officer"
-                )
-                extracted_object.supervision_site = officer_siteid
-
-    @staticmethod
-    def _normalize_completed_sentence_status(
-        _gating_context: IngestGatingContext,
-        _row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        """In ND, completion dates are always in the past, so we can set the status to
-        COMPLETED when we see a completion date, if a status is not yet set.
-        """
-        for obj in extracted_objects:
-            if isinstance(obj, StateSupervisionSentence):
-                if not obj.status and obj.completion_date:
-                    obj.status = StateSentenceStatus.COMPLETED.value
-
-    # TODO(#1882): Specify this mapping in the YAML once a single csv column can
-    # can be mapped to multiple fields.
-    @staticmethod
-    def _hydrate_supervision_period_sentence_shared_date_fields(
-        _gating_context: IngestGatingContext,
-        _row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        """Sets SupervisionPeriod.termination_date/supervision_type from the parent
-        SupervisionSentence.completion_date/supervision_type. This is possible because in ND, we always have a
-        1:1 mapping of SupervisionSentence:SupervisionPeriod.
-        """
-        for extracted_object in extracted_objects:
-            if isinstance(extracted_object, StateSupervisionSentence):
-                completion_date = extracted_object.completion_date
-                supervision_type = extracted_object.supervision_type
-                start_date = extracted_object.start_date
-
-                supervision_periods = extracted_object.state_supervision_periods
-                if len(supervision_periods) > 1:
-                    raise ValueError(
-                        f"SupervisionSentence "
-                        f"{extracted_object.state_supervision_sentence_id} has "
-                        f"{str(len(supervision_periods))} associated "
-                        f"supervision periods, expected a maximum of 1."
-                    )
-                if supervision_periods:
-                    supervision_periods[0].start_date = start_date
-                    supervision_periods[0].termination_date = completion_date
-                    supervision_periods[0].supervision_type = supervision_type
-
-    @staticmethod
-    def _concatenate_docstars_length_periods(
-        _gating_context: IngestGatingContext,
-        row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        """For a sentence row in Docstars that contains distinct SENT_YY and SENT_MM fields, compose these into a
-        single string of days and set it on the appropriate length field."""
-        years = row.get("SENT_YY", None)
-        months = row.get("SENT_MM", None)
-
-        # It appears a recent change to Docstars files started passing negative values inside of parentheses instead
-        # of after a '-' sign
-        match = re.match(_DOCSTARS_NEGATIVE_PATTERN, months)
-        if match is not None:
-            value = match.group("value")
-            months = "-" + value
-
-        if not years and not months:
-            return
-
-        effective_date = row["PAROLE_FR"]
-
-        total_days = parse_days_from_duration_pieces(
-            years_str=years,
-            months_str=months,
-            days_str=None,
-            start_dt_str=effective_date,
-        )
-
-        for extracted_object in extracted_objects:
-            if total_days and isinstance(extracted_object, StateSupervisionSentence):
-                day_string = "{}d".format(total_days)
-                extracted_object.__setattr__("max_length", day_string)
-
-    @staticmethod
-    def _record_revocation(
-        _gating_context: IngestGatingContext,
-        row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        """Captures information in a Docstars cases row that indicates a revocation, and fills out the surrounding data
-        model accordingly."""
-        revocation_occurred = bool(
-            row.get("REV_DATE", None) or row.get("RevoDispo", None)
-        )
-
-        if not revocation_occurred:
-            return
-
-        for extracted_object in extracted_objects:
-            if isinstance(extracted_object, StateSupervisionPeriod):
-                terminating_officer = extracted_object.supervising_officer
-                for violation in extracted_object.state_supervision_violation_entries:
-                    _record_revocation_on_violation(violation, row)
-                    for (
-                        violation_response
-                    ) in violation.state_supervision_violation_responses:
-                        _record_revocation_on_violation_response(
-                            violation_response, terminating_officer
-                        )
-
-    @staticmethod
     def _rationalize_incident_type(
         _gating_context: IngestGatingContext,
         _row: Dict[str, str],
@@ -1335,53 +1131,3 @@ def get_program_referral_fields(
         value = row.get(str_field, None)
         referral_fields[label] = value
     return referral_fields
-
-
-def _record_revocation_on_violation(
-    violation: StateSupervisionViolation, row: Dict[str, str]
-) -> None:
-    """Adds revocation information onto the provided |violation| as necessary."""
-    # These three flags are either '0' (False) or '-1' (True). That -1 may now be (1)
-    # after a recent Docstars change.
-    revocation_for_new_offense = row.get("REV_NOFF_YN", None) in ["-1", "(1)"]
-    revocation_for_absconsion = row.get("REV_ABSC_YN", None) in ["-1", "(1)"]
-    revocation_for_technical = row.get("REV_TECH_YN", None) in ["-1", "(1)"]
-
-    def _get_ncic_codes() -> List[str]:
-        first = row.get("NEW_OFF", None)
-        second = row.get("NEW_OFF2", None)
-        third = row.get("NEW_OFF3", None)
-
-        return [code for code in [first, second, third] if code]
-
-    violation_types = []
-    if revocation_for_new_offense:
-        violation_type = StateSupervisionViolationType.LAW.value
-        violation_types.append(violation_type)
-
-        ncic_codes = _get_ncic_codes()
-        violent_flags = [ncic.get_is_violent(code) for code in ncic_codes]
-        violation.is_violent = str(any(violent_flags))
-    elif revocation_for_absconsion:
-        violation_type = StateSupervisionViolationType.ABSCONDED.value
-        violation_types.append(violation_type)
-    elif revocation_for_technical:
-        violation_type = StateSupervisionViolationType.TECHNICAL.value
-        violation_types.append(violation_type)
-
-    for violation_type in violation_types:
-        vt = StateSupervisionViolationTypeEntry(violation_type=violation_type)
-        create_if_not_exists(vt, violation, "state_supervision_violation_types")
-
-
-def _record_revocation_on_violation_response(
-    violation_response: StateSupervisionViolationResponse,
-    terminating_officer: Optional[StateAgent],
-) -> None:
-    """Adds revocation information onto the provided |violation_response| as necessary."""
-    violation_response.response_type = (
-        StateSupervisionViolationResponseType.PERMANENT_DECISION.value
-    )
-
-    if terminating_officer:
-        create_if_not_exists(terminating_officer, violation_response, "decision_agents")

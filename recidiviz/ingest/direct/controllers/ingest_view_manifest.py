@@ -474,14 +474,10 @@ class ListRelationshipFieldManifest(ManifestNode[List[Entity]]):
         for child_manifest in self.child_manifests:
             if isinstance(child_manifest, ExpandableListItemManifest):
                 child_entities.extend(child_manifest.expand(row))
-            elif isinstance(child_manifest, EntityTreeManifest):
+            else:
                 child_entity = child_manifest.build_from_row(row)
                 if child_entity:
                     child_entities.append(child_entity)
-            else:
-                raise ValueError(
-                    f"Unexpected type for child manifest: {type(child_manifest)}"
-                )
         return child_entities
 
     def columns_referenced(self) -> Set[str]:

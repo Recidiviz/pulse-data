@@ -56,17 +56,6 @@ from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactStatus,
     StateSupervisionContactType,
 )
-from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionLevel,
-    StateSupervisionPeriodSupervisionType,
-    StateSupervisionPeriodTerminationReason,
-)
-from recidiviz.common.constants.state.state_supervision_sentence import (
-    StateSupervisionSentenceSupervisionType,
-)
-from recidiviz.common.constants.state.state_supervision_violation_response import (
-    StateSupervisionViolationResponseDecision,
-)
 from recidiviz.ingest.direct.direct_ingest_controller_utils import (
     update_overrides_from_maps,
 )
@@ -241,39 +230,6 @@ SHARED_OVERRIDES: Dict[Enum, List[str]] = {
         "SUPL",
     ],
     StateIncarcerationPeriodReleaseReason.TRANSFER_TO_OTHER_JURISDICTION: ["TRN"],
-    StateSupervisionPeriodSupervisionType.COMMUNITY_CONFINEMENT: [
-        "COMMUNITY PLACEMENT PGRM"
-    ],
-    StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN: ["CCC"],
-    StateSupervisionPeriodSupervisionType.INVESTIGATION: ["PRE-TRIAL"],
-    StateSupervisionPeriodSupervisionType.PAROLE: ["IC PAROLE", "PAROLE", "SSOP"],
-    StateSupervisionPeriodSupervisionType.PROBATION: [
-        "DEFERRED",
-        "IC PROBATION",
-        "SUSPENDED",
-    ],
-    StateSupervisionSentenceSupervisionType.HALFWAY_HOUSE: ["COMMUNITY PLACEMENT PGRM"],
-    StateSupervisionSentenceSupervisionType.INTERNAL_UNKNOWN: ["CCC"],
-    StateSupervisionSentenceSupervisionType.PAROLE: ["IC PAROLE", "PAROLE", "SSOP"],
-    StateSupervisionSentenceSupervisionType.PROBATION: [
-        "DEFERRED",
-        "IC PROBATION",
-        "SUSPENDED",
-    ],
-    StateSupervisionSentenceSupervisionType.PRE_CONFINEMENT: ["PRE-TRIAL"],
-    StateSupervisionViolationResponseDecision.CONTINUANCE: [
-        "PLACED BACK ON PROBATION/PAROLE",
-    ],
-    StateSupervisionViolationResponseDecision.SERVICE_TERMINATION: [
-        "SUPERVISION TERMINATED",
-    ],
-    StateSupervisionViolationResponseDecision.REVOCATION: [
-        "COUNTY JAIL SENTENCE",
-        "COUNTY JAIL SENTENCE FOLLOWED BY PROBATION",
-        "DOCR INMATE SENTENCE",
-        "DOCR INMATE SENTENCE FOLLOWED BY PROBATION",
-        "RESENTENCED TO FIVE YEARS MORE",
-    ],
     StateIncarcerationIncidentType.DISORDERLY_CONDUCT: [
         "DAMAGE",
         "DISCON",
@@ -342,62 +298,6 @@ SHARED_OVERRIDES: Dict[Enum, List[str]] = {
     StateIncarcerationIncidentOutcomeType.DISCIPLINARY_LABOR: ["EXD"],
     StateIncarcerationIncidentOutcomeType.GOOD_TIME_LOSS: ["LG", "STP"],
     StateIncarcerationIncidentOutcomeType.WARNING: ["WAR", "NS"],
-    # 0 means no calculated level
-    StateSupervisionLevel.PRESENT_WITHOUT_INFO: ["0"],
-    StateSupervisionLevel.MINIMUM: ["1"],
-    StateSupervisionLevel.MEDIUM: ["2"],
-    # 6 is Drug Court which is max with specific rules
-    StateSupervisionLevel.MAXIMUM: ["3", "6"],
-    StateSupervisionLevel.DIVERSION: ["7"],
-    StateSupervisionLevel.INTERSTATE_COMPACT: ["9"],
-    # 4 and 8 are no longer used now, 5 means not classified yet
-    StateSupervisionLevel.EXTERNAL_UNKNOWN: ["4", "5", "8"],
-    StateSupervisionPeriodTerminationReason.ABSCONSION: [
-        "13"  # Terminated - Absconded (Active Petition To Revoke)
-    ],
-    StateSupervisionPeriodTerminationReason.DEATH: ["11"],  # "Terminated - Death
-    StateSupervisionPeriodTerminationReason.DISCHARGE: [
-        "1",  # Terminated - Dismissal (Deferred Imp.)
-        "2",  # Terminated - Early Dismissal (Deferred Imp.)
-        "5",  # Terminated - Termination-Positive (Susp. Sent)"
-        "8",  # Terminated - Released from Community Placement
-        "12",  # Terminated - Returned to Original State-Voluntary
-        "15",  # Terminated - Released from Custody
-        "16",  # Terminated - CCC
-        "17",  # Terminated - Returned to Original State-Violation
-    ],
-    StateSupervisionPeriodTerminationReason.EXPIRATION: [
-        "4",  # Terminated - Expiration (Susp. Sentence)
-        "7",  # Terminated - Expiration (Parole)
-        "19",  # Terminated - Expiration (IC Parole)
-        "20",  # Terminated - Expiration (IC Probation)
-    ],
-    StateSupervisionPeriodTerminationReason.EXTERNAL_UNKNOWN: [
-        "14"  # Terminated - Other
-    ],
-    # TODO(#3276): Migrate these termination reasons to other values so that we can
-    #  remove this termination reason
-    StateSupervisionPeriodTerminationReason.INVESTIGATION: [
-        "21",  # Guilty
-        "22",  # Guilty of Lesser Charge
-        "23",  # Not Guilty
-        "24",  # Dismissed
-        "25",  # Mistrial
-        "26",  # Deferred Prosecution
-        "27",  # Post-Conviction Supervision
-        "28",  # Closed with Active FTA
-        "29",  # Early Termination
-        "30",  # No Conditions Imposed
-    ],
-    StateSupervisionPeriodTerminationReason.REVOCATION: [
-        "9",  # Terminated - Revocation
-        "10",  # Terminated - Revocation with Continuation
-        "18",  # Terminated - Returned to Custody from CPP
-    ],
-    StateSupervisionPeriodTerminationReason.SUSPENSION: [
-        "3",  # Terminated - Termination (Deferred Imp.)
-        "6",  # Terminated - Termination-Negative (Susp. Sent)
-    ],
     StateProgramAssignmentParticipationStatus.PENDING: [
         "Submitted",
         "Pending Coordinator",
