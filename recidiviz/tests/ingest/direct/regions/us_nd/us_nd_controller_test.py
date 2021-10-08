@@ -106,10 +106,6 @@ from recidiviz.ingest.models.ingest_info import (
     StateSupervisionContact,
     StateSupervisionPeriod,
     StateSupervisionSentence,
-    StateSupervisionViolation,
-    StateSupervisionViolationResponse,
-    StateSupervisionViolationResponseDecisionEntry,
-    StateSupervisionViolationTypeEntry,
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.entity.state import entities
@@ -1361,266 +1357,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
         )
 
         self.run_legacy_parse_file_test(expected, "docstars_offenders")
-
-    def test_populate_data_docstars_offendercasestable_with_officers(self) -> None:
-        agent_63 = StateAgent(
-            state_agent_id="63",
-            agent_type="SUPERVISION_OFFICER",
-            given_names="DAVID",
-            surname="BORG",
-        )
-        agent_77 = StateAgent(
-            state_agent_id="77",
-            agent_type="SUPERVISION_OFFICER",
-            given_names="COREY",
-            surname="KOLPIN",
-        )
-        agent_154 = StateAgent(
-            state_agent_id="154",
-            agent_type="SUPERVISION_OFFICER",
-            given_names="JOSEPH",
-            surname="LUND",
-        )
-
-        violation_for_17111 = StateSupervisionViolation(
-            state_supervision_violation_types=[
-                StateSupervisionViolationTypeEntry(violation_type="ABSCONDED")
-            ],
-            state_supervision_violation_responses=[
-                StateSupervisionViolationResponse(
-                    response_type="PERMANENT_DECISION",
-                    response_date="12/8/2014",
-                    decision_agents=[agent_63],
-                    supervision_violation_response_decisions=[
-                        StateSupervisionViolationResponseDecisionEntry(
-                            decision="DOCR Inmate Sentence",
-                        )
-                    ],
-                )
-            ],
-        )
-
-        violation_for_140408 = StateSupervisionViolation(
-            state_supervision_violation_types=[
-                StateSupervisionViolationTypeEntry(violation_type="TECHNICAL")
-            ],
-            state_supervision_violation_responses=[
-                StateSupervisionViolationResponse(
-                    response_type="PERMANENT_DECISION",
-                    response_date="10/27/2018",
-                    decision_agents=[agent_77],
-                    supervision_violation_response_decisions=[
-                        StateSupervisionViolationResponseDecisionEntry(
-                            decision="DOCR Inmate Sentence",
-                        )
-                    ],
-                )
-            ],
-        )
-
-        violation_for_147777 = StateSupervisionViolation(
-            state_supervision_violation_types=[
-                StateSupervisionViolationTypeEntry(violation_type="LAW")
-            ],
-            is_violent="True",
-            state_supervision_violation_responses=[
-                StateSupervisionViolationResponse(
-                    response_type="PERMANENT_DECISION",
-                    response_date="2/27/2016",
-                    decision_agents=[agent_77],
-                    supervision_violation_response_decisions=[
-                        StateSupervisionViolationResponseDecisionEntry(
-                            decision="DOCR Inmate Sentence",
-                        )
-                    ],
-                )
-            ],
-        )
-        supervision_period_117109 = StateSupervisionPeriod(
-            state_supervision_period_id="117109",
-            start_date="1/1/2013",
-            termination_date="2/2/2013",
-            termination_reason="4",
-            supervision_type="Pre-Trial",
-            supervising_officer=agent_63,
-            supervision_site="4",
-            county_code="US_ND_CASS",
-        )
-        supervision_period_117110 = StateSupervisionPeriod(
-            state_supervision_period_id="117110",
-            start_date="7/17/2014",
-            supervision_type="Parole",
-            county_code="US_ND_CASS",
-            supervising_officer=agent_154,
-            supervision_site="4",
-            supervision_level="5",
-        )
-        supervision_period_117111 = StateSupervisionPeriod(
-            state_supervision_period_id="117111",
-            supervision_type="Parole",
-            start_date="7/17/2014",
-            termination_date="12/8/2014",
-            termination_reason="9",
-            supervising_officer=agent_63,
-            supervision_site="4",
-            state_supervision_violation_entries=[violation_for_17111],
-            county_code="INVALID",
-        )
-        supervision_period_140408 = StateSupervisionPeriod(
-            state_supervision_period_id="140408",
-            supervision_type="Suspended",
-            start_date="3/24/2017",
-            termination_date="2/27/2018",
-            termination_reason="9",
-            supervising_officer=agent_77,
-            supervision_site="2",
-            state_supervision_violation_entries=[violation_for_140408],
-            county_code="US_ND_GRIGGS",
-        )
-        supervision_period_147777 = StateSupervisionPeriod(
-            state_supervision_period_id="147777",
-            supervision_type="Suspended",
-            start_date="3/24/2013",
-            termination_date="2/27/2016",
-            termination_reason="9",
-            supervising_officer=agent_77,
-            supervision_site="2",
-            state_supervision_violation_entries=[violation_for_147777],
-            county_code="US_ND_GRIGGS",
-        )
-
-        expected = IngestInfo(
-            state_people=[
-                StatePerson(
-                    state_person_id="92237",
-                    state_person_external_ids=[
-                        StatePersonExternalId(
-                            state_person_external_id_id="92237", id_type=US_ND_SID
-                        )
-                    ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_supervision_sentences=[
-                                StateSupervisionSentence(
-                                    state_supervision_sentence_id="117109",
-                                    status="COMPLETED",
-                                    supervision_type="Pre-Trial",
-                                    start_date="1/1/2013",
-                                    projected_completion_date="3/3/2013",
-                                    completion_date="2/2/2013",
-                                    max_length="59d",
-                                    state_supervision_periods=[
-                                        supervision_period_117109
-                                    ],
-                                ),
-                                StateSupervisionSentence(
-                                    state_supervision_sentence_id="117110",
-                                    supervision_type="Parole",
-                                    start_date="7/17/2014",
-                                    projected_completion_date="10/6/2014",
-                                    max_length="92d",
-                                    state_supervision_periods=[
-                                        supervision_period_117110
-                                    ],
-                                    state_charges=[
-                                        StateCharge(
-                                            state_court_case=StateCourtCase(
-                                                judge=StateAgent(
-                                                    agent_type="JUDGE",
-                                                    full_name="The Judge",
-                                                ),
-                                            )
-                                        )
-                                    ],
-                                ),
-                                StateSupervisionSentence(
-                                    state_supervision_sentence_id="117111",
-                                    status="COMPLETED",
-                                    supervision_type="Parole",
-                                    start_date="7/17/2014",
-                                    projected_completion_date="8/7/2015",
-                                    completion_date="12/8/2014",
-                                    max_length="580d",
-                                    state_supervision_periods=[
-                                        supervision_period_117111
-                                    ],
-                                    state_charges=[
-                                        StateCharge(
-                                            state_court_case=StateCourtCase(
-                                                judge=StateAgent(
-                                                    agent_type="JUDGE",
-                                                    full_name="The Judge",
-                                                ),
-                                            )
-                                        )
-                                    ],
-                                ),
-                            ]
-                        )
-                    ],
-                ),
-                StatePerson(
-                    state_person_id="241896",
-                    state_person_external_ids=[
-                        StatePersonExternalId(
-                            state_person_external_id_id="241896", id_type=US_ND_SID
-                        )
-                    ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_supervision_sentences=[
-                                StateSupervisionSentence(
-                                    state_supervision_sentence_id="140408",
-                                    status="COMPLETED",
-                                    supervision_type="Suspended",
-                                    start_date="3/24/2017",
-                                    projected_completion_date="3/23/2019",
-                                    completion_date="2/27/2018",
-                                    state_supervision_periods=[
-                                        supervision_period_140408
-                                    ],
-                                    state_charges=[
-                                        StateCharge(
-                                            state_court_case=StateCourtCase(
-                                                judge=StateAgent(
-                                                    agent_type="JUDGE",
-                                                    full_name="Judge Person",
-                                                ),
-                                            )
-                                        )
-                                    ],
-                                ),
-                                StateSupervisionSentence(
-                                    state_supervision_sentence_id="147777",
-                                    status="COMPLETED",
-                                    supervision_type="Suspended",
-                                    start_date="3/24/2013",
-                                    projected_completion_date="3/23/2015",
-                                    completion_date="2/27/2016",
-                                    state_supervision_periods=[
-                                        supervision_period_147777
-                                    ],
-                                    state_charges=[
-                                        StateCharge(
-                                            state_court_case=StateCourtCase(
-                                                judge=StateAgent(
-                                                    agent_type="JUDGE",
-                                                    full_name="Judge Person",
-                                                ),
-                                            )
-                                        )
-                                    ],
-                                ),
-                            ]
-                        )
-                    ],
-                ),
-            ]
-        )
-
-        self.run_legacy_parse_file_test(
-            expected, "docstars_offendercasestable_with_officers"
-        )
 
     def test_populate_data_docstars_offensestable(self) -> None:
         expected = IngestInfo(
@@ -3619,22 +3355,19 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             external_id="63",
             state_code=_STATE_CODE,
             agent_type=StateAgentType.SUPERVISION_OFFICER,
-            agent_type_raw_text="SUPERVISION_OFFICER",
-            full_name='{"given_names": "DAVID", "surname": "BORG"}',
+            full_name='{"given_names": "DAVID", "middle_names": "", "name_suffix": "", "surname": "BORG"}',
         )
         agent_77 = entities.StateAgent.new_with_defaults(
             external_id="77",
             state_code=_STATE_CODE,
             agent_type=StateAgentType.SUPERVISION_OFFICER,
-            agent_type_raw_text="SUPERVISION_OFFICER",
-            full_name='{"given_names": "COREY", "surname": "KOLPIN"}',
+            full_name='{"given_names": "COREY", "middle_names": "", "name_suffix": "", "surname": "KOLPIN"}',
         )
         agent_154 = entities.StateAgent.new_with_defaults(
             external_id="154",
             state_code=_STATE_CODE,
             agent_type=StateAgentType.SUPERVISION_OFFICER,
-            agent_type_raw_text="SUPERVISION_OFFICER",
-            full_name='{"given_names": "JOSEPH", "surname": "LUND"}',
+            full_name='{"given_names": "JOSEPH", "middle_names": "", "name_suffix": "", "surname": "LUND"}',
         )
         sentence_group_placeholder_ss = entities.StateSentenceGroup.new_with_defaults(
             state_code=_STATE_CODE,
@@ -3651,7 +3384,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             max_length_days=59,
             state_code=_STATE_CODE,
             status=StateSentenceStatus.COMPLETED,
-            status_raw_text="COMPLETED",
             person=sentence_group_placeholder_ss.person,
             sentence_group=sentence_group_placeholder_ss,
         )
@@ -3712,7 +3444,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
         )
         agent_judge = entities.StateAgent.new_with_defaults(
             agent_type=StateAgentType.JUDGE,
-            agent_type_raw_text="JUDGE",
             full_name='{"full_name": "THE JUDGE"}',
             state_code=_STATE_CODE,
         )
@@ -3744,7 +3475,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                 max_length_days=580,
                 state_code=_STATE_CODE,
                 status=StateSentenceStatus.COMPLETED,
-                status_raw_text="COMPLETED",
                 person=sentence_group_placeholder_ss.person,
                 sentence_group=sentence_group_placeholder_ss,
             )
@@ -3793,7 +3523,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             entities.StateSupervisionViolationTypeEntry(
                 state_code=_STATE_CODE,
                 violation_type=StateSupervisionViolationType.ABSCONDED,
-                violation_type_raw_text="ABSCONDED",
                 person=supervision_period_117111.person,
                 supervision_violation=supervision_violation_117111,
             )
@@ -3801,7 +3530,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
         supervision_violation_response_117111 = (
             entities.StateSupervisionViolationResponse.new_with_defaults(
                 response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
-                response_type_raw_text="PERMANENT_DECISION",
                 response_date=datetime.date(year=2014, month=12, day=8),
                 state_code=_STATE_CODE,
                 decision_agents=[agent_63],
@@ -3860,7 +3588,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                 completion_date=datetime.date(year=2018, month=2, day=27),
                 state_code=_STATE_CODE,
                 status=StateSentenceStatus.COMPLETED,
-                status_raw_text="COMPLETED",
                 person=sentence_group_person_2_placeholder_ss.person,
                 sentence_group=sentence_group_person_2_placeholder_ss,
             )
@@ -3891,7 +3618,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             entities.StateSupervisionViolationTypeEntry(
                 state_code=_STATE_CODE,
                 violation_type=StateSupervisionViolationType.TECHNICAL,
-                violation_type_raw_text="TECHNICAL",
                 person=supervision_period_140408.person,
                 supervision_violation=supervision_violation_140408,
             )
@@ -3899,7 +3625,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
         supervision_violation_response_140408 = (
             entities.StateSupervisionViolationResponse.new_with_defaults(
                 response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
-                response_type_raw_text="PERMANENT_DECISION",
                 response_date=datetime.date(year=2018, month=10, day=27),
                 state_code=_STATE_CODE,
                 decision_agents=[agent_77],
@@ -3932,7 +3657,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
         )
         agent_person = entities.StateAgent.new_with_defaults(
             agent_type=StateAgentType.JUDGE,
-            agent_type_raw_text="JUDGE",
             full_name='{"full_name": "JUDGE PERSON"}',
             state_code=_STATE_CODE,
         )
@@ -3955,7 +3679,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                 completion_date=datetime.date(year=2016, month=2, day=27),
                 state_code=_STATE_CODE,
                 status=StateSentenceStatus.COMPLETED,
-                status_raw_text="COMPLETED",
                 person=sentence_group_person_2_placeholder_ss.person,
                 sentence_group=sentence_group_person_2_placeholder_ss,
             )
@@ -3987,7 +3710,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             entities.StateSupervisionViolationTypeEntry(
                 state_code=_STATE_CODE,
                 violation_type=StateSupervisionViolationType.LAW,
-                violation_type_raw_text="LAW",
                 person=supervision_period_147777.person,
                 supervision_violation=supervision_violation_147777,
             )
@@ -3995,7 +3717,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
         supervision_violation_response_147777 = (
             entities.StateSupervisionViolationResponse.new_with_defaults(
                 response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
-                response_type_raw_text="PERMANENT_DECISION",
                 response_date=datetime.date(year=2016, month=2, day=27),
                 decision_agents=[agent_77],
                 state_code=_STATE_CODE,
@@ -4027,7 +3748,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
         )
         agent_person = entities.StateAgent.new_with_defaults(
             agent_type=StateAgentType.JUDGE,
-            agent_type_raw_text="JUDGE",
             full_name='{"full_name": "JUDGE PERSON"}',
             state_code=_STATE_CODE,
         )

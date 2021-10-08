@@ -45,10 +45,31 @@ columns:
       Current supervising officer for the person.
   - name: SUP_LVL
     description: |-
-      Current supervision level for the person.<br>Values:<br>- 0 - No calculated level<br>- 1 - Minimum<br>- General *only* (Sex offense has a minimum of 2)<br>- 2 - Medium<br>- 3 - Maximum<br>- ~~4~~ (DEPRECATED. NO LONGER USE THIS)<br>- 5 - NC<br>- Not Classified (ex: haven’t done an LSI yet, they are still in jail and haven’t gone on supervision yet, they are about to go in to jail)<br>- 6 - Drug Court<br>- Supervised the same as maximum (if not more)<br>- Drug Court officers work with these people<br>- 7 - Diversion<br>- Monthly report and seen once a year (as close to unsupervised probation)<br>- ~~8~~ - (DEPRECATED. DOESN’T SEEM TO BE USED)<br>- 9 - IC Out<br>- Interstate Compact Out: the person is going elsewhere
+      Current supervision level for the person.
+    known_values:
+      - value: '0'
+        description: No calculated level
+      - value: '1'
+        description: Minimum - General *only* (Sex offense has a minimum of 2)
+      - value: '2'
+        description: Medium
+      - value: '3'
+        description: Maximum
+      - value: '4'
+        description: (DEPRECATED. NO LONGER USE THIS)
+      - value: '5'
+        description: NC - Not Classified (e.g. haven’t done an LSI yet, they are still in jail and haven’t gone on supervision yet, they are about to go in to jail)
+      - value: '6'
+        description: Drug Court - Supervised the same as maximum (if not more) - Drug Court officers work with these people
+      - value: '7'
+        description: Diversion<br>- Monthly report and seen once a year (as close to unsupervised probation)
+      - value: '8'
+        description: (DEPRECATED. DOESN’T SEEM TO BE USED)
+      - value: '9'
+        description: IC Out - Interstate Compact Out - the person is going elsewhere
   - name: SUPER_OVERRIDE
     description: |-
-      Overridden (by an officer) supervision level for the person.<br>Values:<br>- 0 - No calculated level<br>- 1 - Minimum<br>- General *only* (Sex offense has a minimum of 2)<br>- 2 - Medium<br>- 3 - Maximum<br>- ~~4~~ (DEPRECATED. NO LONGER USE THIS)<br>- 5 - NC<br>- Not Classified (ex: haven’t done an LSI yet, they are still in jail and haven’t gone on supervision yet, they are about to go in to jail)<br>- 6 - Drug Court<br>- Supervised the same as maximum (if not more)<br>- Drug Court officers work with these people<br>- 7 - Diversion<br>- Monthly report and seen once a year (as close to unsupervised probation)<br>- ~~8~~ - (DEPRECATED. DOESN’T SEEM TO BE USED)<br>- only used twice (once in 2001 and 2004)<br>- 9 - IC Out<br>- Interstate Compact Out: the person is going elsewhere
+      Overridden (by an officer) supervision level for the person. Has same known_values as SUP_LVL.
   - name: PREVIOUS_AGENT
     description: |-
       The most recent supervising officer for the person.

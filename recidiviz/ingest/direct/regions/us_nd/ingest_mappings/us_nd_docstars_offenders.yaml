@@ -40,7 +40,7 @@ keys_to_ignore:
   - ABSDATE               # No longer in use within source
   - ABSCONDER
   - GOODTIMEDATE
-  - C_MARITAL             # TODO(#1866) Do we want to track qualitative attrs?
+  - C_MARITAL
   - D_DEP
   - E_LIV_ARR
   - F_VETERAN
