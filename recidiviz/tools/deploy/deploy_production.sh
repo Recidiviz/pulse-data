@@ -21,7 +21,7 @@ if [[ ! ${GIT_VERSION_TAG} =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
     run_cmd exit 1
 fi
 
-LAST_DEPLOYED_GIT_VERSION_TAG=$(last_deployed_production_version_tag) || exit_on_fail
+LAST_DEPLOYED_GIT_VERSION_TAG=$(last_deployed_version_tag recidiviz-123) || exit_on_fail
 if ! version_less_than ${LAST_DEPLOYED_GIT_VERSION_TAG} ${GIT_VERSION_TAG}; then
     echo_error "Deploy version [$GIT_VERSION_TAG] must be greater than last deployed tag [$LAST_DEPLOYED_GIT_VERSION_TAG]."
     run_cmd exit 1
