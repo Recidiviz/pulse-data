@@ -67,4 +67,3 @@ def copy_fields_to_builder(
     new.state_code = metadata.region
     new.county_code = getattr(proto, "county_code")
     new.judicial_district_code = getattr(proto, "judicial_district_code")
-    new.court_fee_dollars = getattr(proto, "court_fee_dollars")
