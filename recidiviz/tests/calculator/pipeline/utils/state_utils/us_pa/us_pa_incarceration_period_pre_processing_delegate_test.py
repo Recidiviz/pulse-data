@@ -191,6 +191,70 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         self.assertEqual([updated_period], validated_incarceration_periods)
 
+    # TODO(#9421): This test may need to be removed if once there is a solid plan for for all community facilities
+    #   if that plan says that there should be no CCC period with INTERNAL_UNKNOWN specialized_purpose_for_incarceration
+    def test_pre_processed_incarceration_periods_internal_unknown_type(
+        self,
+    ) -> None:
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id="ip2",
+            state_code=STATE_CODE,
+            incarceration_type=StateIncarcerationType.COUNTY_JAIL,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=date(2018, 5, 19),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.INTERNAL_UNKNOWN,
+            specialized_purpose_for_incarceration_raw_text="CCIS-60",
+            release_date=date(2019, 3, 3),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+        )
+        incarceration_period.custodial_authority = (
+            StateCustodialAuthority.SUPERVISION_AUTHORITY
+        )
+
+        (
+            validated_incarceration_periods,
+            _,
+        ) = self._pre_processed_incarceration_periods_for_calculations(
+            incarceration_periods=[incarceration_period],
+            violation_responses=[],
+        )
+
+        self.assertEqual([incarceration_period], validated_incarceration_periods)
+
+    # TODO(#8961): Remove this test when the ingest mappings are updated to always
+    #  set admission reason to INTERNAL_UNKNOWN.
+    def test_pre_processed_incarceration_periods_ccc_period_transfer_admission_reason(
+        self,
+    ) -> None:
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id="ip2",
+            state_code=STATE_CODE,
+            incarceration_type=StateIncarcerationType.COUNTY_JAIL,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=date(2018, 5, 19),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.INTERNAL_UNKNOWN,
+            specialized_purpose_for_incarceration_raw_text="CCIS-60",
+            release_date=date(2019, 3, 3),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+        )
+        incarceration_period.custodial_authority = (
+            StateCustodialAuthority.SUPERVISION_AUTHORITY
+        )
+
+        (
+            validated_incarceration_periods,
+            _,
+        ) = self._pre_processed_incarceration_periods_for_calculations(
+            incarceration_periods=[incarceration_period],
+            violation_responses=[],
+        )
+
+        self.assertEqual([incarceration_period], validated_incarceration_periods)
+
     def test_pre_processed_incarceration_periods_shock_incarceration_RESCR6(
         self,
     ) -> None:
