@@ -3717,7 +3717,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         p1_placeholder_vr = entities.StateSupervisionViolationResponse.new_with_defaults(
             person=person_1,
             supervision_violation=p1_placeholder_sv,
-            external_id="123A-1-09",
+            external_id="BOARD-123A-1-09",
             state_code=_STATE_CODE_UPPER,
             response_date=datetime.date(year=2004, month=6, day=16),
             response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
@@ -3766,7 +3766,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         p2_placeholder_vr = entities.StateSupervisionViolationResponse.new_with_defaults(
             person=person_2,
             supervision_violation=p2_placeholder_sv,
-            external_id="456B-0-04",
+            external_id="BOARD-456B-0-04",
             state_code=_STATE_CODE_UPPER,
             response_date=datetime.date(year=2014, month=2, day=24),
             response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
@@ -3817,7 +3817,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         p5_placeholder_vr = entities.StateSupervisionViolationResponse.new_with_defaults(
             person=person_5,
             supervision_violation=p5_placeholder_sv,
-            external_id="789C-0-02",
+            external_id="BOARD-789C-0-02",
             state_code=_STATE_CODE_UPPER,
             response_date=datetime.date(year=2014, month=7, day=9),
             response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
@@ -3866,7 +3866,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         p4_placeholder_vr = entities.StateSupervisionViolationResponse.new_with_defaults(
             person=person_4,
             supervision_violation=p4_placeholder_sv,
-            external_id="345E-3-11",
+            external_id="BOARD-345E-3-11",
             state_code=_STATE_CODE_UPPER,
             response_date=datetime.date(year=2006, month=2, day=21),
             response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,

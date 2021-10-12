@@ -1204,7 +1204,7 @@ class UsPaIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                                                 state_code="US_PA",
                                                 supervision_violation_responses=[
                                                     StateSupervisionViolationResponse(
-                                                        external_id="456B-0-04",
+                                                        external_id="BOARD-456B-0-04",
                                                         state_code="US_PA",
                                                         response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
                                                         response_date=datetime.date(
@@ -1254,7 +1254,7 @@ class UsPaIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                                                 state_code="US_PA",
                                                 supervision_violation_responses=[
                                                     StateSupervisionViolationResponse(
-                                                        external_id="789C-0-02",
+                                                        external_id="BOARD-789C-0-02",
                                                         state_code="US_PA",
                                                         response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
                                                         response_date=datetime.date(
@@ -1304,7 +1304,7 @@ class UsPaIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                                                 state_code="US_PA",
                                                 supervision_violation_responses=[
                                                     StateSupervisionViolationResponse(
-                                                        external_id="123A-1-09",
+                                                        external_id="BOARD-123A-1-09",
                                                         state_code="US_PA",
                                                         response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
                                                         response_date=datetime.date(
@@ -1354,7 +1354,7 @@ class UsPaIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                                                 state_code="US_PA",
                                                 supervision_violation_responses=[
                                                     StateSupervisionViolationResponse(
-                                                        external_id="345E-3-11",
+                                                        external_id="BOARD-345E-3-11",
                                                         state_code="US_PA",
                                                         response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
                                                         response_date=datetime.date(

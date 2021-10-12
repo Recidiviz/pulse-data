@@ -22,13 +22,12 @@ output:
                         - StateSupervisionViolation:
                             supervision_violation_responses:
                               - StateSupervisionViolationResponse:
-                                  # TODO(#9558) - This id scheme OVERLAPS with the
-                                  #  StateSupervisionViolationResponse id scheme in the
-                                  #  supervision_violation_response ingest view and must
-                                  #  be revised!
                                   external_id:
                                     $concat:
                                       $values:
+                                        # Prefix added to differentiate against ids
+                                        # generated in supervision_violation_response view
+                                        - $literal("BOARD")
                                         - ParoleNumber
                                         - ParoleCountID
                                         - BdActionID
