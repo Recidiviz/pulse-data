@@ -64,11 +64,6 @@ from recidiviz.common.constants.state.state_supervision_period import (
 from recidiviz.common.constants.state.state_supervision_sentence import (
     StateSupervisionSentenceSupervisionType,
 )
-from recidiviz.common.constants.state.state_supervision_violation_response import (
-    StateSupervisionViolationResponseDecidingBodyType,
-    StateSupervisionViolationResponseDecision,
-    StateSupervisionViolationResponseType,
-)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.str_field_utils import parse_days_from_duration_pieces
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
@@ -119,7 +114,6 @@ from recidiviz.ingest.models.ingest_info import (
     StatePersonExternalId,
     StateSupervisionContact,
     StateSupervisionPeriod,
-    StateSupervisionViolationResponse,
 )
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 from recidiviz.utils import environment
@@ -184,10 +178,6 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
                 self._enrich_pbpp_assessments,
             ],
             "supervision_period_v3": supervision_period_postprocessors,
-            "board_action": [
-                self._set_board_action_violation_response_fields,
-                self._append_board_action_supervision_violation_response_entries,
-            ],
             "supervision_contacts": [
                 self._set_supervision_contact_agent,
                 self._set_supervision_contact_fields,
@@ -212,9 +202,6 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             "supervision_period_v3": [
                 gen_convert_person_ids_to_external_id_objects(self._get_id_type),
             ],
-            "board_action": [
-                gen_convert_person_ids_to_external_id_objects(self._get_id_type)
-            ],
             "supervision_contacts": [
                 gen_convert_person_ids_to_external_id_objects(self._get_id_type)
             ],
@@ -225,7 +212,6 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         ] = {
             "sci_incarceration_period": _generate_sci_incarceration_period_primary_key,
             "supervision_period_v3": _generate_supervision_period_primary_key,
-            "board_action": _generate_board_action_supervision_violation_response_primary_key,
             "supervision_contacts": _generate_supervision_contact_primary_key,
         }
 
@@ -418,12 +404,6 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             "5H",
             "5J",
             "5K",
-        ],
-        StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION: [
-            "RESCR",
-            "RESCR6",
-            "RESCR9",
-            "RESCR12",
         ],
         StateCustodialAuthority.STATE_PRISON: [
             # SUPERVISION CUSTODIAL AUTHORITY CODES
@@ -703,7 +683,6 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
 
         if file_tag in [
             "supervision_period_v3",
-            "board_action",
             "supervision_contacts",
         ]:
             return US_PA_PBPP
@@ -1072,43 +1051,6 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
                 obj.custodial_authority = StateCustodialAuthority.STATE_PRISON.value
 
     @staticmethod
-    def _set_board_action_violation_response_fields(
-        _gating_context: IngestGatingContext,
-        _row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        """Sets relevant fields specific to a board action supervision violation response."""
-        for obj in extracted_objects:
-            if isinstance(obj, StateSupervisionViolationResponse):
-                obj.response_type = (
-                    StateSupervisionViolationResponseType.PERMANENT_DECISION.value
-                )
-                obj.deciding_body_type = (
-                    StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD.value
-                )
-
-    @staticmethod
-    def _append_board_action_supervision_violation_response_entries(
-        _gating_context: IngestGatingContext,
-        row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        """Appends board action violation response decision entries to the parent supervision violation response."""
-        parole_number = row["ParoleNumber"]
-        parole_count_id = row["ParoleCountID"]
-        board_action_id = row["BdActionID"]
-        entry_id = f"{parole_number}-{parole_count_id}-{board_action_id}"
-        condition_code = row["CndConditionCode"]
-        for obj in extracted_objects:
-            if isinstance(obj, StateSupervisionViolationResponse):
-                obj.create_state_supervision_violation_response_decision_entry(
-                    state_supervision_violation_response_decision_entry_id=entry_id,
-                    decision=condition_code,
-                )
-
-    @staticmethod
     def _set_supervision_contact_agent(
         _gating_context: IngestGatingContext,
         row: Dict[str, str],
@@ -1190,21 +1132,6 @@ def _generate_supervision_period_primary_key(
 
     return IngestFieldCoordinates(
         "state_supervision_period", "state_supervision_period_id", supervision_period_id
-    )
-
-
-def _generate_board_action_supervision_violation_response_primary_key(
-    _gating_context: IngestGatingContext, row: Dict[str, str]
-) -> IngestFieldCoordinates:
-    parole_id = row["ParoleNumber"]
-    parole_count_id = row["ParoleCountID"]
-    board_action_id = row["BdActionID"]
-    response_id = f"{parole_id}-{parole_count_id}-{board_action_id}"
-
-    return IngestFieldCoordinates(
-        "state_supervision_violation_response",
-        "state_supervision_violation_response_id",
-        response_id,
     )
 
 

@@ -1,16 +1,47 @@
-key_mappings:
-  ActionDate: state_supervision_violation_response.response_date
-
-ancestor_keys:
-  ParoleNumber: state_person.state_person_id
-
-enforced_ancestor_types:
-  state_sentence: state_supervision_sentence
-
-# Primary key override for Board Action Supervision Violation Response in controller
-# in format of [ParoleNumber]-[ParoleCountID]-[BdActionID]
-
-keys_to_ignore:
-  - CndConditionCode       # Condition Code - handled manually in the controller
-  - ParoleCountID          # Parole Count ID - handled manually in the controller
-  - BdActionID             # Board Action ID - handled manually in the controller
+manifest_language: 1.0.0
+input_columns:
+- ParoleNumber
+- ParoleCountID
+- BdActionID
+- ActionDate
+- CndConditionCode
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: ParoleNumber
+          id_type: $literal("US_PA_PBPP")
+    sentence_groups:
+      - StateSentenceGroup:
+          supervision_sentences:
+            - StateSupervisionSentence:
+                supervision_periods:
+                  - StateSupervisionPeriod:
+                      supervision_violation_entries:
+                        - StateSupervisionViolation:
+                            supervision_violation_responses:
+                              - StateSupervisionViolationResponse:
+                                  # TODO(#9558) - This id scheme OVERLAPS with the
+                                  #  StateSupervisionViolationResponse id scheme in the
+                                  #  supervision_violation_response ingest view and must
+                                  #  be revised!
+                                  external_id:
+                                    $concat:
+                                      $values:
+                                        - ParoleNumber
+                                        - ParoleCountID
+                                        - BdActionID
+                                  response_type: $literal_enum(StateSupervisionViolationResponseType.PERMANENT_DECISION)
+                                  deciding_body_type: $literal_enum(StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD)
+                                  response_date: ActionDate
+                                  supervision_violation_response_decisions:
+                                    - StateSupervisionViolationResponseDecisionEntry:
+                                        decision:
+                                          $raw_text: CndConditionCode
+                                          $mappings:
+                                            StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION:
+                                              - RESCR
+                                              - RESCR6
+                                              - RESCR9
+                                              - RESCR12
