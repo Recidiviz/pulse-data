@@ -90,9 +90,6 @@ from recidiviz.ingest.models.ingest_info import (
     StateSupervisionContact,
     StateSupervisionPeriod,
     StateSupervisionSentence,
-    StateSupervisionViolation,
-    StateSupervisionViolationResponse,
-    StateSupervisionViolationResponseDecisionEntry,
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.entity.state import entities
@@ -1191,174 +1188,6 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         )
 
         self.run_legacy_parse_file_test(expected, "supervision_period_v3")
-
-    def test_populate_board_action(self) -> None:
-        violation_456B_0_04 = StateSupervisionViolation(
-            state_supervision_violation_responses=[
-                StateSupervisionViolationResponse(
-                    state_supervision_violation_response_id="456B-0-04",
-                    response_type="PERMANENT_DECISION",
-                    response_date="20140224",
-                    deciding_body_type="PAROLE_BOARD",
-                    supervision_violation_response_decisions=[
-                        StateSupervisionViolationResponseDecisionEntry(
-                            state_supervision_violation_response_decision_entry_id="456B-0-04",
-                            decision="RESCR9",
-                        )
-                    ],
-                )
-            ]
-        )
-
-        violation_789C_0_02 = StateSupervisionViolation(
-            state_supervision_violation_responses=[
-                StateSupervisionViolationResponse(
-                    state_supervision_violation_response_id="789C-0-02",
-                    response_type="PERMANENT_DECISION",
-                    response_date="20140709",
-                    deciding_body_type="PAROLE_BOARD",
-                    supervision_violation_response_decisions=[
-                        StateSupervisionViolationResponseDecisionEntry(
-                            state_supervision_violation_response_decision_entry_id="789C-0-02",
-                            decision="RESCR9",
-                        )
-                    ],
-                )
-            ]
-        )
-
-        violation_123A_1_09 = StateSupervisionViolation(
-            state_supervision_violation_responses=[
-                StateSupervisionViolationResponse(
-                    state_supervision_violation_response_id="123A-1-09",
-                    response_type="PERMANENT_DECISION",
-                    response_date="20040616",
-                    deciding_body_type="PAROLE_BOARD",
-                    supervision_violation_response_decisions=[
-                        StateSupervisionViolationResponseDecisionEntry(
-                            state_supervision_violation_response_decision_entry_id="123A-1-09",
-                            decision="RESCR",
-                        )
-                    ],
-                )
-            ]
-        )
-
-        violation_345E_3_11 = StateSupervisionViolation(
-            state_supervision_violation_responses=[
-                StateSupervisionViolationResponse(
-                    state_supervision_violation_response_id="345E-3-11",
-                    response_type="PERMANENT_DECISION",
-                    response_date="20060221",
-                    deciding_body_type="PAROLE_BOARD",
-                    supervision_violation_response_decisions=[
-                        StateSupervisionViolationResponseDecisionEntry(
-                            state_supervision_violation_response_decision_entry_id="345E-3-11",
-                            decision="RESCR",
-                        )
-                    ],
-                )
-            ]
-        )
-
-        expected = IngestInfo(
-            state_people=[
-                StatePerson(
-                    state_person_id="456B",
-                    state_person_external_ids=[
-                        StatePersonExternalId(
-                            state_person_external_id_id="456B", id_type=US_PA_PBPP
-                        ),
-                    ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_supervision_sentences=[
-                                StateSupervisionSentence(
-                                    state_supervision_periods=[
-                                        StateSupervisionPeriod(
-                                            state_supervision_violation_entries=[
-                                                violation_456B_0_04,
-                                            ]
-                                        ),
-                                    ]
-                                ),
-                            ],
-                        ),
-                    ],
-                ),
-                StatePerson(
-                    state_person_id="789C",
-                    state_person_external_ids=[
-                        StatePersonExternalId(
-                            state_person_external_id_id="789C", id_type=US_PA_PBPP
-                        ),
-                    ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_supervision_sentences=[
-                                StateSupervisionSentence(
-                                    state_supervision_periods=[
-                                        StateSupervisionPeriod(
-                                            state_supervision_violation_entries=[
-                                                violation_789C_0_02,
-                                            ]
-                                        ),
-                                    ]
-                                ),
-                            ],
-                        ),
-                    ],
-                ),
-                StatePerson(
-                    state_person_id="123A",
-                    state_person_external_ids=[
-                        StatePersonExternalId(
-                            state_person_external_id_id="123A", id_type=US_PA_PBPP
-                        ),
-                    ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_supervision_sentences=[
-                                StateSupervisionSentence(
-                                    state_supervision_periods=[
-                                        StateSupervisionPeriod(
-                                            state_supervision_violation_entries=[
-                                                violation_123A_1_09
-                                            ]
-                                        ),
-                                    ]
-                                ),
-                            ],
-                        ),
-                    ],
-                ),
-                StatePerson(
-                    state_person_id="345E",
-                    state_person_external_ids=[
-                        StatePersonExternalId(
-                            state_person_external_id_id="345E", id_type=US_PA_PBPP
-                        ),
-                    ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_supervision_sentences=[
-                                StateSupervisionSentence(
-                                    state_supervision_periods=[
-                                        StateSupervisionPeriod(
-                                            state_supervision_violation_entries=[
-                                                violation_345E_3_11,
-                                            ]
-                                        ),
-                                    ]
-                                ),
-                            ],
-                        ),
-                    ],
-                ),
-            ]
-        )
-
-        self.run_legacy_parse_file_test(expected, "board_action")
 
     def test_populate_data_supervision_contact(self) -> None:
         expected = IngestInfo(
@@ -3892,9 +3721,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             state_code=_STATE_CODE_UPPER,
             response_date=datetime.date(year=2004, month=6, day=16),
             response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
-            response_type_raw_text="PERMANENT_DECISION",
             deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD,
-            deciding_body_type_raw_text="PAROLE_BOARD",
         )
         p1_placeholder_de = (
             entities.StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
@@ -3943,9 +3770,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             state_code=_STATE_CODE_UPPER,
             response_date=datetime.date(year=2014, month=2, day=24),
             response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
-            response_type_raw_text="PERMANENT_DECISION",
             deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD,
-            deciding_body_type_raw_text="PAROLE_BOARD",
         )
         p2_placeholder_de = (
             entities.StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
@@ -3996,9 +3821,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             state_code=_STATE_CODE_UPPER,
             response_date=datetime.date(year=2014, month=7, day=9),
             response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
-            response_type_raw_text="PERMANENT_DECISION",
             deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD,
-            deciding_body_type_raw_text="PAROLE_BOARD",
         )
         p5_placeholder_de = (
             entities.StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
@@ -4047,9 +3870,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             state_code=_STATE_CODE_UPPER,
             response_date=datetime.date(year=2006, month=2, day=21),
             response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
-            response_type_raw_text="PERMANENT_DECISION",
             deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD,
-            deciding_body_type_raw_text="PAROLE_BOARD",
         )
         p4_placeholder_de = (
             entities.StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
