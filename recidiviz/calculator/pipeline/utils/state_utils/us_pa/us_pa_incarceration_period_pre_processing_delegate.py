@@ -189,8 +189,16 @@ def _us_pa_get_pfi_info_for_incarceration_period(
             "Unexpected StateIncarcerationPeriod without a set admission_date."
         )
 
-    if not is_commitment_from_supervision(
-        incarceration_period.admission_reason, allow_ingest_only_enum_values=True
+    pfi = incarceration_period.specialized_purpose_for_incarceration
+
+    # TODO(#8961): Remove the PFI check once we have updated the ingest mappings to be conditional
+    #  on the program id value so that all non-transfers are cast as INTERNAL_UNKNOWN
+    #  for ccis periods with program IDs not in 26,46,51
+    if (
+        not is_commitment_from_supervision(
+            incarceration_period.admission_reason, allow_ingest_only_enum_values=True
+        )
+        or pfi == StateSpecializedPurposeForIncarceration.INTERNAL_UNKNOWN
     ):
         # This period does not require an updated purpose_for_incarceration value,
         # and does not have a pfi_subtype
@@ -198,8 +206,6 @@ def _us_pa_get_pfi_info_for_incarceration_period(
             purpose_for_incarceration=incarceration_period.specialized_purpose_for_incarceration,
             purpose_for_incarceration_subtype=None,
         )
-
-    pfi = incarceration_period.specialized_purpose_for_incarceration
 
     if pfi not in [
         StateSpecializedPurposeForIncarceration.GENERAL,
