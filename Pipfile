@@ -4,9 +4,7 @@ verify_ssl = true
 name = "pypi"
 
 [dev-packages]
-# TODO(#4287): Unpin once the latest version of google-api-core supports protobuf
-#  version >= 3.18.0 (might be resolved by upgrading other google libraries > 2.0.0).
-mypy-protobuf = "<3.0.0"
+mypy-protobuf = "*"
 "autopep8" = "*"
 mock = "*"
 pytest = "*"
