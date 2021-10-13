@@ -20,7 +20,6 @@ to the person-level values from external metrics provided by the state.
 """
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state import dataset_config as state_dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
@@ -58,7 +57,6 @@ INCARCERATION_RELEASE_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_BUILDER = SimpleBigQ
     view_query_template=INCARCERATION_RELEASE_EXTERNAL_PROD_STAGING_COMPARISON_QUERY_TEMPLATE,
     description=INCARCERATION_RELEASE_EXTERNAL_PROD_STAGING_COMPARISON_DESCRIPTION,
     validation_views_dataset=dataset_config.VIEWS_DATASET,
-    materialized_metrics_dataset=state_dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     prod_project_id=GCP_PROJECT_PRODUCTION,
     staging_project_id=GCP_PROJECT_STAGING,
     projects_to_deploy={GCP_PROJECT_PRODUCTION},
