@@ -479,6 +479,46 @@ class TestDirectIngestControl(unittest.TestCase):
         )
 
     @patch("recidiviz.utils.environment.get_gcp_environment")
+    @patch("recidiviz.ingest.direct.direct_ingest_control.GcsfsFactory.build")
+    def test_normalize_file_path_does_not_change_already_normalized(
+        self, mock_fs_factory: mock.MagicMock, mock_environment: mock.MagicMock
+    ) -> None:
+
+        mock_environment.return_value = "production"
+        mock_fs = FakeGCSFileSystem()
+        mock_fs_factory.return_value = mock_fs
+
+        path = GcsfsFilePath.from_absolute_path("bucket-us-xx/file-tag.csv")
+        fs = DirectIngestGCSFileSystem(mock_fs)
+
+        mock_fs.test_add_path(path, local_path=None)
+        normalized_path = fs.mv_path_to_normalized_path(
+            path, file_type=GcsfsDirectIngestFileType.RAW_DATA
+        )
+
+        request_args = {
+            "bucket": normalized_path.bucket_name,
+            "relative_file_path": normalized_path.blob_name,
+        }
+
+        headers = {"X-Appengine-Cron": "test-cron"}
+        response = self.client.get(
+            "/normalize_raw_file_path", query_string=request_args, headers=headers
+        )
+
+        self.assertEqual(200, response.status_code)
+
+        self.assertEqual(1, len(mock_fs.all_paths))
+        registered_path = mock_fs.all_paths[0]
+        if not isinstance(registered_path, GcsfsFilePath):
+            self.fail(f"Unexpected type for path [{type(registered_path)}]")
+        self.assertTrue(
+            DirectIngestGCSFileSystem.is_normalized_file_path(registered_path)
+        )
+        # No change!
+        self.assertEqual(registered_path, normalized_path)
+
+    @patch("recidiviz.utils.environment.get_gcp_environment")
     @patch("recidiviz.utils.regions.get_region")
     def test_handle_new_files_no_start_ingest_in_production(
         self, mock_region: mock.MagicMock, mock_environment: mock.MagicMock
