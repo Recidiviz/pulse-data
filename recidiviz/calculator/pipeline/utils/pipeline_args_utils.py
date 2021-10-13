@@ -177,6 +177,12 @@ def _get_parsed_full_apache_beam_args(
 ) -> argparse.Namespace:
     """Parses and returns the full set of args to pass through to Apache Beam, in the
     form of an argparse.Namespace object."""
+
+    # The bucket that all files necessary for executing a pipeline should be uploaded
+    # to.
+    template_bucket = (
+        parsed_bucket if parsed_bucket else f"{parsed_project}-dataflow-templates"
+    )
     # The bucket for the temporary files created during the Dataflow job
     scratch_space_bucket = (
         parsed_bucket
@@ -198,7 +204,7 @@ def _get_parsed_full_apache_beam_args(
         help="A Cloud Storage path for Cloud Dataflow to stage"
         " code packages needed by workers executing the"
         " job.",
-        default=f"gs://{scratch_space_bucket}/staging/",
+        default=f"gs://{template_bucket}/staging/",
     )
 
     parser.add_argument(
@@ -211,9 +217,6 @@ def _get_parsed_full_apache_beam_args(
     )
 
     if save_as_template:
-        template_bucket = (
-            parsed_bucket if parsed_bucket else f"{parsed_project}-dataflow-templates"
-        )
         parser.add_argument(
             "--template_location",
             type=str,

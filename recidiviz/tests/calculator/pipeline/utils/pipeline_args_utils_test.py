@@ -43,7 +43,10 @@ class TestPipelineArgsUtils(unittest.TestCase):
         "runner": "DataflowRunner",
         "project": "recidiviz-staging",
         "job_name": "incarceration-args-test",
-        "staging_location": "gs://recidiviz-staging-dataflow-templates-scratch/staging/",
+        # This location holds execution files necessary for running each pipeline and is
+        # only updated when templates are deployed.
+        "staging_location": "gs://recidiviz-staging-dataflow-templates/staging/",
+        # This location holds actual temp files generated during each pipeline run.
         "temp_location": "gs://recidiviz-staging-dataflow-templates-scratch/temp/",
         "region": "us-west1",
         "machine_type": "n1-standard-4",
