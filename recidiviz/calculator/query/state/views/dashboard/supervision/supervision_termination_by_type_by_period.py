@@ -67,7 +67,6 @@ SUPERVISION_TERMINATION_BY_TYPE_BY_PERIOD_VIEW_BUILDER = MetricBigQueryViewBuild
     view_query_template=SUPERVISION_TERMINATION_BY_TYPE_BY_PERIOD_QUERY_TEMPLATE,
     dimensions=("state_code", "metric_period_months", "supervision_type", "district"),
     description=SUPERVISION_TERMINATION_BY_TYPE_BY_PERIOD_DESCRIPTION,
-    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     district_dimension=bq_utils.unnest_district(),
     supervision_type_dimension=bq_utils.unnest_supervision_type(),

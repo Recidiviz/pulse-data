@@ -50,7 +50,7 @@ SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = """
       FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_success_metrics_materialized` success_metrics),
       {gender_dimension},
       {age_dimension},
-      UNNEST ([{grouped_districts}, 'ALL']) AS district,
+      {district_dimension},
       -- We only want a 36-month period for this view --
       UNNEST ([36]) AS metric_period_months
       WHERE {metric_period_condition}
@@ -101,16 +101,17 @@ SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_BUILDER = MetricBigQueryViewB
     ),
     description=SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
-    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
-    grouped_districts=state_specific_query_strings.state_supervision_specific_district_groupings(
-        "supervising_district_external_id", "judicial_district_code"
-    ),
     metric_period_condition=bq_utils.metric_period_condition(month_offset=1),
     unnested_race_or_ethnicity_dimension=bq_utils.unnest_column(
         "race_or_ethnicity", "race_or_ethnicity"
     ),
     gender_dimension=bq_utils.unnest_column("gender", "gender"),
     age_dimension=bq_utils.unnest_column("age_bucket", "age_bucket"),
+    district_dimension=bq_utils.unnest_district(
+        state_specific_query_strings.state_supervision_specific_district_groupings(
+            "supervising_district_external_id", "judicial_district_code"
+        )
+    ),
     state_specific_race_or_ethnicity_groupings=state_specific_query_strings.state_specific_race_or_ethnicity_groupings(
         "prioritized_race_or_ethnicity"
     ),

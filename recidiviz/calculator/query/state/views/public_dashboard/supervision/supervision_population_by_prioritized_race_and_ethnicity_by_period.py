@@ -65,13 +65,10 @@ SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_BUILDER 
     ),
     description=SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_DESCRIPTION,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
-    static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
     metric_period_condition=bq_utils.metric_period_condition(),
     unnested_race_or_ethnicity_dimension=bq_utils.unnest_column(
         "race_or_ethnicity", "race_or_ethnicity"
     ),
-    gender_dimension=bq_utils.unnest_column("gender", "gender"),
-    age_dimension=bq_utils.unnest_column("age_bucket", "age_bucket"),
     state_specific_race_or_ethnicity_groupings=state_specific_query_strings.state_specific_race_or_ethnicity_groupings(),
     state_specific_supervision_type_inclusion_filter=state_specific_query_strings.state_specific_supervision_type_inclusion_filter(),
 )

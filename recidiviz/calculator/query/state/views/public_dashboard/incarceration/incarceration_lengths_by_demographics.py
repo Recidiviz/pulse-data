@@ -108,8 +108,6 @@ INCARCERATION_LENGTHS_BY_DEMOGRAPHICS_VIEW_BUILDER = MetricBigQueryViewBuilder(
     ),
     description=INCARCERATION_LENGTHS_BY_DEMOGRAPHICS_VIEW_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
-    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
-    static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
     metric_period_condition=bq_utils.metric_period_condition(),
     unnested_race_or_ethnicity_dimension=bq_utils.unnest_column(
         "race_or_ethnicity", "race_or_ethnicity"

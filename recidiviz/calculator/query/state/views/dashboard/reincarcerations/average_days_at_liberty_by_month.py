@@ -59,7 +59,6 @@ AVERAGE_DAYS_AT_LIBERTY_BY_MONTH_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dimensions=("state_code", "year", "month"),
     description=AVERAGE_DAYS_AT_LIBERTY_BY_MONTH_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
-    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     thirty_six_month_filter=bq_utils.thirty_six_month_filter(),
 )
 

@@ -42,7 +42,7 @@ SUPERVISION_TERMINATIONS_BY_MONTH_VIEW_QUERY_TEMPLATE = """
         LOGICAL_AND(termination_reason in ('COMMUTED', 'DISCHARGE','DISMISSED','EXPIRATION','PARDONED')) as successful_termination,
         person_id,
       FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_termination_metrics_materialized`,
-      UNNEST ([{grouped_districts}, 'ALL']) AS district
+      {district_dimension}
       WHERE {thirty_six_month_filter} AND termination_reason NOT IN (
         'DEATH',
         'EXTERNAL_UNKNOWN',
@@ -87,11 +87,11 @@ SUPERVISION_TERMINATIONS_BY_MONTH_VIEW_BUILDER = MetricBigQueryViewBuilder(
     ),
     description=SUPERVISION_TERMINATIONS_BY_MONTH_VIEW_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
-    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
-    grouped_districts=state_specific_query_strings.state_supervision_specific_district_groupings(
-        "supervising_district_external_id", "judicial_district_code"
+    district_dimension=bq_utils.unnest_district(
+        state_specific_query_strings.state_supervision_specific_district_groupings(
+            "supervising_district_external_id", "judicial_district_code"
+        )
     ),
-    district_dimension=bq_utils.unnest_district(),
     thirty_six_month_filter=bq_utils.thirty_six_month_filter(),
     state_specific_supervision_type_inclusion_filter=state_specific_query_strings.state_specific_supervision_type_inclusion_filter(),
 )
