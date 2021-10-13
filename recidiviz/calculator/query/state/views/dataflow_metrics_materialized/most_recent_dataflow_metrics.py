@@ -57,7 +57,6 @@ MOST_RECENT_JOBS_TEMPLATE: str = """
         FROM (
              SELECT DISTINCT {job_recency_primary_keys}
             FROM `{project_id}.{metrics_dataset}.{metric_table}`
-            {metrics_filter}
         )
     )    
     SELECT *
@@ -68,6 +67,7 @@ MOST_RECENT_JOBS_TEMPLATE: str = """
         WHERE recency_rank = 1
     )
     USING ({join_indices})
+    {metrics_filter}
     """
 
 
