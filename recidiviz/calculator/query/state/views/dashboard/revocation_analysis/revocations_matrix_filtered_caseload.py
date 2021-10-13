@@ -15,10 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Revocations Matrix Filtered Caseload."""
-from recidiviz.calculator.query.state import (
-    dataset_config,
-    state_specific_query_strings,
-)
+from recidiviz.calculator.query.state import dataset_config
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -147,7 +144,6 @@ REVOCATIONS_MATRIX_FILTERED_CASELOAD_VIEW_BUILDER = MetricBigQueryViewBuilder(
     ),
     description=REVOCATIONS_MATRIX_FILTERED_CASELOAD_DESCRIPTION,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
-    state_specific_supervision_level=state_specific_query_strings.state_specific_supervision_level(),
 )
 
 if __name__ == "__main__":
