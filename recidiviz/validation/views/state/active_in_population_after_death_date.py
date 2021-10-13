@@ -40,12 +40,12 @@ WITH death_periods AS (
     /*Incarceration and supervision periods with end reasons of DEATH and their end dates*/
     SELECT DISTINCT 
     state_code, person_id, MAX(termination_date) AS death_date, 'supervision_period' AS death_date_period_type
-    FROM `{project_id}.state.state_supervision_period`
+    FROM `{project_id}.{state_dataset}.state_supervision_period`
     WHERE termination_reason = 'DEATH'
     GROUP BY state_code, person_id
     UNION ALL 
     SELECT state_code, person_id, MAX(release_date) AS death_date, 'incarceration_period' AS death_date_period_type
-    FROM `{project_id}.state.state_incarceration_period`
+    FROM `{project_id}.{state_dataset}.state_incarceration_period`
     WHERE release_reason = 'DEATH'
     GROUP BY state_code, person_id
 ),
@@ -54,13 +54,13 @@ most_recent_metrics AS (
     SELECT 
     state_code, person_id, MAX(date_of_supervision) AS most_recent_population_date, 
     'supervision_population' as most_recent_population_date_metric
-    FROM `{project_id}.dataflow_metrics_materialized.most_recent_supervision_population_metrics_materialized`
+    FROM `{project_id}.{dataflow_metrics_materialized_dataset}.most_recent_supervision_population_metrics_materialized`
     GROUP BY state_code, person_id
     UNION ALL 
     SELECT
     state_code, person_id, MAX(date_of_stay) AS most_recent_population_date,
     'incarceration_population' as most_recent_population_date_metric
-    FROM `{project_id}.dataflow_metrics_materialized.most_recent_incarceration_population_metrics_included_in_state_population_materialized`
+    FROM `{project_id}.{dataflow_metrics_materialized_dataset}.most_recent_incarceration_population_metrics_included_in_state_population_materialized`
     GROUP BY state_code, person_id
 )
 
@@ -79,6 +79,7 @@ ACTIVE_IN_POPULATION_AFTER_DEATH_DATE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=ACTIVE_IN_POPULATION_AFTER_DEATH_DATE_QUERY_TEMPLATE,
     description=ACTIVE_IN_POPULATION_AFTER_DEATH_DATE_DESCRIPTION,
     state_dataset=state_dataset_config.STATE_BASE_DATASET,
+    dataflow_metrics_materialized_dataset=state_dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
 )
 
 if __name__ == "__main__":

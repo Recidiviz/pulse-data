@@ -35,7 +35,7 @@ INCARCERATION_RELEASE_REASON_NO_RELEASE_DATE_QUERY_TEMPLATE = """
     /*{description}*/
     WITH non_placeholder_unterminated_incarceration_periods AS (
       SELECT state_code, release_date, release_reason, release_reason_raw_text
-      FROM `{project_id}.state.state_incarceration_period`
+      FROM `{project_id}.{state_dataset}.state_incarceration_period`
       WHERE external_id IS NOT NULL AND release_date IS NULL
     )
     SELECT
