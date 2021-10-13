@@ -14,16 +14,19 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-from typing import Optional, Tuple
+from typing import Optional
 
 from pandas import DataFrame
 from numpy import ndarray
 
 class ARIMAResults:
-    def forecast(
-        self, steps: int, exog: Optional[ndarray] = None, alpha: float = 0.05
-    ) -> Tuple[ndarray, ndarray, ndarray]: ...
+    def forecast(self, steps: int) -> ndarray: ...
 
 class ARIMA:
-    def __init__(self, endog: DataFrame, order: Optional[tuple] = None) -> None: ...
-    def fit(self, disp: bool) -> ARIMAResults: ...
+    def __init__(
+        self,
+        endog: DataFrame,
+        order: Optional[tuple] = None,
+        trend: Optional[str] = None,
+    ) -> None: ...
+    def fit(self) -> ARIMAResults: ...

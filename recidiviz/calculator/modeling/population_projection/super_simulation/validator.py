@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2020 Recidiviz, Inc.
+# Copyright (C) 2021 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -23,9 +23,6 @@ import pandas as pd
 
 from recidiviz.calculator.modeling.population_projection.population_simulation.population_simulation import (
     PopulationSimulation,
-)
-from recidiviz.calculator.modeling.population_projection.predicted_admissions import (
-    ProjectionType,
 )
 from recidiviz.calculator.modeling.population_projection.super_simulation.time_converter import (
     TimeConverter,
@@ -60,9 +57,11 @@ class Validator:
             columns=["compartment", "outflow", "subgroup", "year", "error"]
         )
         for compartment, outflow_to in validation_pairs.items():
-            for sub_group in self.pop_simulations["baseline_middle"].sub_simulations:
+            for sub_group in self.pop_simulations[
+                "baseline_projections"
+            ].sub_simulations:
                 error = pd.DataFrame(
-                    self.pop_simulations["baseline_middle"]
+                    self.pop_simulations["baseline_projections"]
                     .sub_simulations[sub_group]
                     .get_error(compartment)[outflow_to]
                 ).reset_index()
@@ -82,7 +81,7 @@ class Validator:
         )
 
         self.output_data["baseline_population_error"] = self.pop_simulations[
-            "baseline_middle"
+            "baseline_projections"
         ].gen_scale_factors_df()
         return self.output_data["baseline_population_error"]
 
@@ -119,25 +118,11 @@ class Validator:
             sub_plot["actuals"].plot(
                 ax=ax, color="tab:cyan", marker="o", label="Actuals"
             )
-            sub_plot[ProjectionType.MIDDLE.value].plot(
+            sub_plot["predictions"].plot(
                 ax=ax, color="tab:red", marker="o", label="Predictions"
             )
 
-            ax.fill_between(
-                sub_plot.index,
-                sub_plot[ProjectionType.LOW.value],
-                sub_plot[ProjectionType.HIGH.value],
-                alpha=0.4,
-                color="orange",
-            )
-
-            plt.ylim(
-                bottom=0,
-                top=max(
-                    [sub_plot[ProjectionType.HIGH.value].max(), sub_plot.actuals.max()]
-                )
-                * 1.1,
-            )
+            plt.ylim(bottom=0, top=sub_plot.actuals.max() * 1.1)
             plt.legend(loc="lower left")
             plt.title("\n".join([": ".join(z) for z in zip(levels_to_plot, i)]))
             axes.append(ax)
@@ -151,7 +136,7 @@ class Validator:
         )
 
         outflows = pd.DataFrame()
-        outflows["model"] = raw_outflows[ProjectionType.MIDDLE.value].sum()
+        outflows["model"] = raw_outflows["predictions"].sum()
         outflows["actual"] = outflows_data.groupby(
             ["compartment", "outflow_to", "time_step"]
         ).total_population.sum()

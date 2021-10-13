@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2020 Recidiviz, Inc.
+# Copyright (C) 2021 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,34 +15,22 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """outflow calculating object for ShellCompartments"""
-import logging
-from enum import Enum, auto
-from typing import Optional, Dict, Tuple
 
-from statsmodels.tsa.arima_model import ARIMA, ARIMAResults
-from numpy.linalg.linalg import LinAlgError
-import pandas as pd
+from enum import Enum, auto
+from typing import Dict, Tuple
+
 import numpy as np
+import pandas as pd
+from numpy.linalg.linalg import LinAlgError
+from statsmodels.tsa.arima.model import ARIMA, ARIMAResults
 
 ORDER = (1, 1, 0)
 MIN_NUM_DATA_POINTS = 4
-MIN_THRESHOLD_PCT = 0.5
-MAX_THRESHOLD_PCT = 0.5
-CONFIDENCE_INTERVAL_SIZE = 0.95
 
 
 class PredictionDirectionType(Enum):
     FORWARD = auto()
     BACKWARD = auto()
-
-
-class ProjectionType(Enum):
-    LOW = "min"
-    MIDDLE = "middle"
-    HIGH = "max"
-
-
-PROJECTION_TYPES = [projection_type.value for projection_type in ProjectionType]
 
 
 class PredictedAdmissions:
@@ -52,7 +40,6 @@ class PredictedAdmissions:
         self,
         historical_data: pd.DataFrame,
         constant_admissions: bool,
-        projection_type: Optional[str] = None,
     ):
         """
         historical_data is a DataFrame with columns for each time step and rows for each outflow_to type (jail, prison).
@@ -83,16 +70,8 @@ class PredictedAdmissions:
         else:
             self.predict_constant_value = True
 
-        if projection_type is None:
-            projection_type = ProjectionType.MIDDLE.value
-
-        if projection_type not in PROJECTION_TYPES:
-            raise ValueError(
-                f"'{projection_type}' projection_type is not supported. "
-                f"Expected {', '.join(PROJECTION_TYPES)}"
-            )
-
-        self.projection_type = projection_type
+        # add warnings attribute that prints at the end of shell_compartment initialization
+        self.warnings: list = []
 
     def get_time_step_estimate(self, time_step: int) -> Dict[str, float]:
         """
@@ -111,20 +90,14 @@ class PredictedAdmissions:
             in self.predictions_df.index.get_level_values("time_step").unique()
         ):
             return (
-                self.predictions_df.unstack(0)
-                .loc[time_step, self.projection_type]
-                .to_dict()
+                self.predictions_df.unstack(0).loc[time_step, "predictions"].to_dict()
             )
 
         last_time_step_to_process = int(
             max(self.historical_data.columns.max(), time_step) + default_steps_forward
         )
         self._gen_predicted_data(time_step, last_time_step_to_process)
-        return (
-            self.predictions_df.unstack(0)
-            .loc[time_step, self.projection_type]
-            .to_dict()
-        )
+        return self.predictions_df.unstack(0).loc[time_step, "predictions"].to_dict()
 
     def gen_arima_output_df(self) -> pd.DataFrame:
         """Return the prediction DataFrame"""
@@ -158,12 +131,9 @@ class PredictedAdmissions:
                     ] = historical_data.loc[outflow, min_data_ts]
                 else:
                     model_backcast = (
-                        ARIMA(row.iloc[::-1].dropna().values, order=ORDER)
-                        .fit(disp=False)
-                        .forecast(
-                            steps=len(missing_data_backward),
-                            alpha=(1 - CONFIDENCE_INTERVAL_SIZE),
-                        )[0]
+                        ARIMA(row.iloc[::-1].dropna().values, order=ORDER, trend="t")
+                        .fit()
+                        .forecast(steps=len(missing_data_backward))
                     )
 
                     # flip the predictions back around so they're ordered correctly for the historical data indexing
@@ -179,12 +149,9 @@ class PredictedAdmissions:
                     ] = historical_data.loc[outflow, max_data_ts]
                 else:
                     model_forecast = (
-                        ARIMA(row.dropna().values, order=ORDER)
-                        .fit(disp=False)
-                        .forecast(
-                            steps=len(missing_data_forward),
-                            alpha=(1 - CONFIDENCE_INTERVAL_SIZE),
-                        )[0]
+                        ARIMA(row.dropna().values, order=ORDER, trend="t")
+                        .fit()
+                        .forecast(steps=len(missing_data_forward))
                     )
 
                     historical_data.loc[outflow, missing_data_forward] = model_forecast
@@ -197,31 +164,39 @@ class PredictedAdmissions:
         """
         trained_model_dict = {}
         for outflow_compartment, row in self.historical_data.iterrows():
-            model_forecast = ARIMA(row.values, order=ORDER)
-            model_backcast = ARIMA(row.iloc[::-1].values, order=ORDER)
+            model_forecast = ARIMA(row.values, order=ORDER, trend="t")
+            model_backcast = ARIMA(row.iloc[::-1].values, order=ORDER, trend="t")
             try:
                 trained_model_dict[
                     (outflow_compartment, PredictionDirectionType.FORWARD)
-                ] = model_forecast.fit(disp=False)
+                ] = model_forecast.fit()
                 trained_model_dict[
                     (outflow_compartment, PredictionDirectionType.BACKWARD)
-                ] = model_backcast.fit(disp=False)
+                ] = model_backcast.fit()
+
             except LinAlgError:
-                logging.warning("singular matrix encountered fitting ARIMA model")
+                # Add warnings
+                warn_text = "Singular matrix encountered fitting ARIMA model."
+                if warn_text not in self.warnings:
+                    self.warnings.append(warn_text)
+
+                # adjust forecast and backcast
                 model_forecast = ARIMA(
                     row.values + np.random.normal(0, 0.001, len(row.values)),
                     order=ORDER,
+                    trend="t",
                 )
                 model_backcast = ARIMA(
                     row.iloc[::-1].values + np.random.normal(0, 0.001, len(row.values)),
                     order=ORDER,
+                    trend="t",
                 )
                 trained_model_dict[
                     (outflow_compartment, PredictionDirectionType.FORWARD)
-                ] = model_forecast.fit(disp=False)
+                ] = model_forecast.fit()
                 trained_model_dict[
                     (outflow_compartment, PredictionDirectionType.BACKWARD)
-                ] = model_backcast.fit(disp=False)
+                ] = model_backcast.fit()
 
         self.trained_model_dict = trained_model_dict
 
@@ -268,15 +243,15 @@ class PredictedAdmissions:
             else:
                 predictions_df_sub = pd.DataFrame(
                     index=range(start_period, end_period + 1),
-                    columns=PROJECTION_TYPES + ["stderr"],
+                    columns=["predictions"],
                 ).sort_index()
                 predictions_df_sub.loc[
                     predictions_df_sub.index < int(self.historical_data.columns.min()),
-                    PROJECTION_TYPES,
+                    "predictions",
                 ] = row.iloc[0]
                 predictions_df_sub.loc[
                     predictions_df_sub.index > int(self.historical_data.columns.max()),
-                    PROJECTION_TYPES,
+                    "predictions",
                 ] = row.iloc[-1]
                 predictions_df_sub = predictions_df_sub[
                     ~predictions_df_sub.index.isin(self.historical_data.columns)
@@ -288,14 +263,21 @@ class PredictedAdmissions:
                 {outflow_compartment: predictions_df_sub}, names=["outflow_to"]
             )
 
-            # Define max and min allowable predictions based on thresholds defined
-            min_col_max_col = [ProjectionType.LOW.value, ProjectionType.HIGH.value]
-            min_val_data, max_val_data = row.describe().loc[min_col_max_col].tolist()
-            max_allowable_pred = max_val_data * MAX_THRESHOLD_PCT + max_val_data
-            min_allowable_pred = min_val_data - min_val_data * MIN_THRESHOLD_PCT
-            predictions_df_sub[PROJECTION_TYPES] = predictions_df_sub[
-                PROJECTION_TYPES
-            ].clip(min_allowable_pred, max_allowable_pred)
+            # Clip negative values at 0, throw warning if lower bound hit
+            predictions_df_sub.loc[
+                predictions_df_sub.predictions < 0, "predictions"
+            ] = 0
+            warn_text = "Warning: lower bound hit when predicting admissions."
+            if any(predictions_df_sub.predictions == 0) and (
+                warn_text not in self.warnings
+            ):
+                self.warnings.append(warn_text)
+
+            # append df_sub to df
+            max_allowable_pred = predictions_df_sub["predictions"].max()
+            predictions_df_sub["predictions"] = predictions_df_sub["predictions"].clip(
+                0, max_allowable_pred
+            )
 
             predictions_df = predictions_df.append(predictions_df_sub)
 
@@ -325,14 +307,9 @@ class PredictedAdmissions:
             pd.DataFrame with columns for the prediction, high/low conf interval, and standard error
         """
         outflow_model = self.trained_model_dict[outflow_compartment, cast_type]
-        predictions_array, std_err, conf = outflow_model.forecast(
-            steps=len(prediction_indexes), alpha=(1 - CONFIDENCE_INTERVAL_SIZE)
-        )
+        predictions_array = outflow_model.forecast(steps=len(prediction_indexes))
         prediction_data = {
-            ProjectionType.MIDDLE.value: predictions_array,
-            ProjectionType.LOW.value: conf[:, 0],
-            ProjectionType.HIGH.value: conf[:, 1],
-            "std_err": std_err,
+            "predictions": predictions_array,
         }
         predictions_df = pd.DataFrame(index=prediction_indexes, data=prediction_data)
         return predictions_df
@@ -349,9 +326,6 @@ class PredictedAdmissions:
             return False
 
         if self.trained_model_dict != other.trained_model_dict:
-            return False
-
-        if self.projection_type != other.projection_type:
             return False
 
         return True

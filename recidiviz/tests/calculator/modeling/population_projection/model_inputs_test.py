@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2020 Recidiviz, Inc.
+# Copyright (C) 2021 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -22,7 +22,7 @@ import unittest
 from unittest import mock
 from unittest.mock import patch
 
-import pandas
+import pandas as pd
 
 
 from recidiviz.calculator.modeling import population_projection
@@ -38,11 +38,11 @@ class TestModelInputs(unittest.TestCase):
 
     @patch(
         "recidiviz.calculator.modeling.population_projection.utils.spark_bq_utils.load_spark_table_from_big_query",
-        mock.MagicMock(return_value=pandas.DataFrame([])),
+        mock.MagicMock(return_value=pd.DataFrame(columns=["compartment"])),
     )
     @patch(
         "recidiviz.calculator.modeling.population_projection.utils.ignite_bq_utils.load_ignite_table_from_big_query",
-        mock.MagicMock(return_value=pandas.DataFrame([])),
+        mock.MagicMock(return_value=pd.DataFrame(columns=["compartment"])),
     )
     def test_existing_model_inputs(self) -> None:
         for dir_path, _, files in os.walk(root_dir_path):

@@ -322,7 +322,7 @@ class TestSuperSimulation(unittest.TestCase):
 
         # get projected prison population from simulation substituting transitions data for remaining sentences
         substitute_outputs = microsim.simulator.pop_simulations[
-            "baseline_middle"
+            "baseline_projections"
         ].population_projections
         substitute_prison_population = (
             substitute_outputs[
@@ -344,7 +344,7 @@ class TestSuperSimulation(unittest.TestCase):
 
         # get projected prison population from regular simulation
         regular_outputs = self.microsim.validator.pop_simulations[
-            "baseline_middle"
+            "baseline_projections"
         ].population_projections
         regular_prison_population = (
             regular_outputs[
@@ -379,7 +379,7 @@ class TestSuperSimulation(unittest.TestCase):
         """
         assert isinstance(self.microsim, SuperSimulation)
         regular_outputs = self.microsim.validator.pop_simulations[
-            "baseline_middle"
+            "baseline_projections"
         ].population_projections.copy()
 
         self.microsim.override_cross_flow_function(
@@ -388,7 +388,7 @@ class TestSuperSimulation(unittest.TestCase):
         self.microsim.simulate_baseline(["PRISON"])
 
         overridden_outputs = self.microsim.validator.pop_simulations[
-            "baseline_middle"
+            "baseline_projections"
         ].population_projections
 
         assert_frame_equal(regular_outputs, overridden_outputs)
