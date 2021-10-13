@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2020 Recidiviz, Inc.
+# Copyright (C) 2021 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -49,18 +49,24 @@ class Exporter:
         total_pop: pd.DataFrame,
     ) -> Dict[str, pd.DataFrame]:
         """Format then upload baseline simulation results to Big Query."""
-        required_keys = ["baseline_middle", "baseline_min", "baseline_max"]
+        required_keys = ["baseline_projections"]
         missing_keys = [key for key in required_keys if key not in output_data.keys()]
         if len(missing_keys) != 0:
             raise ValueError(
                 f"Baseline output data is missing the required columns {missing_keys}"
             )
 
+        # join the output data to itself as a placeholder for prediction intervals to be added later
+        # TODO(#6577) add prediction intervals here instead of placeholder
         join_cols = ["time_step", "compartment", "simulation_group"]
         formatted_data = (
-            output_data["baseline_middle"]
-            .merge(output_data["baseline_min"], on=join_cols, suffixes=["", "_min"])
-            .merge(output_data["baseline_max"], on=join_cols, suffixes=["", "_max"])
+            output_data["baseline_projections"]
+            .merge(
+                output_data["baseline_projections"], on=join_cols, suffixes=["", "_min"]
+            )
+            .merge(
+                output_data["baseline_projections"], on=join_cols, suffixes=["", "_max"]
+            )
         )
 
         formatted_data["year"] = self.time_converter.convert_time_steps_to_year(

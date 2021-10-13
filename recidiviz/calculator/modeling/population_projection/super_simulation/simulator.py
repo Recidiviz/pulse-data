@@ -1,3 +1,6 @@
+# Recidiviz - a data platform for criminal justice reform
+# Copyright (C) 2021 Recidiviz, Inc.
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
@@ -26,8 +29,8 @@ from recidiviz.calculator.modeling.population_projection.population_simulation.p
 from recidiviz.calculator.modeling.population_projection.population_simulation.population_simulation_factory import (
     PopulationSimulationFactory,
 )
-from recidiviz.calculator.modeling.population_projection.predicted_admissions import (
-    ProjectionType,
+from recidiviz.calculator.modeling.population_projection.shell_compartment import (
+    ShellCompartment,
 )
 from recidiviz.calculator.modeling.population_projection.spark_policy import SparkPolicy
 from recidiviz.calculator.modeling.population_projection.super_simulation.time_converter import (
@@ -55,7 +58,6 @@ class Simulator:
         first_relevant_ts: int,
         policy_list: List[SparkPolicy],
         output_compartment: str,
-        projection_type: ProjectionType = ProjectionType.MIDDLE,
     ) -> pd.DataFrame:
         """
         Run one PopulationSimulation with policy implemented and one baseline, returns cumulative and non-cumulative
@@ -66,8 +68,6 @@ class Simulator:
         `cost_multipliers` should be a df with one column per disaggregation axis and a column `multiplier`
         """
         self._reset_pop_simulations()
-
-        user_inputs["projection_type"] = projection_type.value
 
         self.pop_simulations["policy"] = self._build_population_simulation(
             user_inputs, data_inputs, policy_list, first_relevant_ts
@@ -87,6 +87,10 @@ class Simulator:
             i: results[i][results[i]["time_step"] >= user_inputs["start_time_step"]]
             for i in results
         }
+
+        # log warnings from ARIMA model
+        self._log_predicted_admissions_warnings()
+
         self._graph_results(user_inputs, results, output_compartment)
         return self._format_simulation_results(user_inputs, collapse_compartments=False)
 
@@ -113,20 +117,17 @@ class Simulator:
                 f"({user_inputs['start_time_step']})"
             )
 
-        # Run one simulation for the min, max, and middle confidence intervals
-        for projection_type in [
-            ProjectionType.LOW.value,
-            ProjectionType.MIDDLE.value,
-            ProjectionType.HIGH.value,
-        ]:
-            user_inputs["projection_type"] = projection_type
-            self.pop_simulations[
-                f"baseline_{projection_type}"
-            ] = self._build_population_simulation(
-                user_inputs, data_inputs, [], first_relevant_ts
-            )
+        # Run one simulation
+        self.pop_simulations[
+            "baseline_projections"
+        ] = self._build_population_simulation(
+            user_inputs, data_inputs, [], first_relevant_ts
+        )
 
-            self.pop_simulations[f"baseline_{projection_type}"].simulate_policies()
+        self.pop_simulations["baseline_projections"].simulate_policies()
+
+        # log warnings from ARIMA model
+        self._log_predicted_admissions_warnings()
 
         if display_compartments:
             simulation_results = self._format_simulation_results(
@@ -145,7 +146,7 @@ class Simulator:
                         & (user_inputs["start_time_step"] <= simulation_results.year)
                     ]
                     display_results[comp] = relevant_results[
-                        "baseline_middle_total_population"
+                        "baseline_projections_total_population"
                     ]
 
             display_results.plot(
@@ -164,7 +165,6 @@ class Simulator:
         self._reset_pop_simulations()
 
         for start_date, data_inputs in run_date_data_inputs.items():
-            user_inputs["projection_type"] = ProjectionType.MIDDLE.value
             user_inputs["start_time_step"] = run_date_first_relevant_ts[start_date]
             self.pop_simulations[
                 f"baseline_{start_date.date()}"
@@ -173,6 +173,9 @@ class Simulator:
             )
 
             self.pop_simulations[f"baseline_{start_date.date()}"].simulate_policies()
+
+        # log warnings from ARIMA model
+        self._log_predicted_admissions_warnings()
 
     def get_cohort_hydration_simulations(
         self,
@@ -197,6 +200,10 @@ class Simulator:
                 first_relevant_ts=user_inputs["start_time_step"] - ts,
             )
             self.pop_simulations[f"backfill_period_{ts}_time_steps"].simulate_policies()
+
+        # log warnings from ARIMA model
+        self._log_predicted_admissions_warnings()
+
         return self.pop_simulations
 
     def get_sub_group_ids_dict(self) -> Dict[str, Dict[str, Any]]:
@@ -263,6 +270,31 @@ class Simulator:
 
     def _reset_pop_simulations(self) -> None:
         self.pop_simulations = {}
+
+    def _log_predicted_admissions_warnings(self) -> None:
+        """
+        Checks if PredictedAdmissions objects have any warnings. If so, log them.
+        """
+        warnings = []
+
+        # collect all compartments
+        compartments = []
+        for pop_simulation in self.pop_simulations.values():
+            for sub_simulation in pop_simulation.sub_simulations.values():
+                for compartment in sub_simulation.simulation_compartments.values():
+                    compartments.append(compartment)
+        # collect all warnings
+        for compartment in compartments:
+            if isinstance(compartment, ShellCompartment):
+                for admissions_predictor in compartment.admissions_predictors.values():
+                    while admissions_predictor.warnings:
+                        w = admissions_predictor.warnings.pop()
+                        if w not in warnings:
+                            warnings.append(w)
+        # now log unique warnings
+        while warnings:
+            w = warnings.pop()
+            logging.warning(w)
 
     @staticmethod
     def _build_population_simulation(

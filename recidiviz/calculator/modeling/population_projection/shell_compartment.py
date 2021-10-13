@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2020 Recidiviz, Inc.
+# Copyright (C) 2021 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,7 +16,7 @@
 # =============================================================================
 """SparkCompartment instance that doesn't track cohorts"""
 
-from typing import Dict, List, Optional
+from typing import Dict, List
 import pandas as pd
 
 from recidiviz.calculator.modeling.population_projection.predicted_admissions import (
@@ -41,7 +41,6 @@ class ShellCompartment(SparkCompartment):
         tag: str,
         policy_list: List[SparkPolicy],
         constant_admissions: bool,
-        projection_type: Optional[str] = None,
     ) -> None:
 
         super().__init__(outflows_data, starting_ts, tag)
@@ -52,11 +51,9 @@ class ShellCompartment(SparkCompartment):
 
         self.policy_data: Dict[int, pd.DataFrame] = {}
 
-        self._initialize_admissions_predictors(constant_admissions, projection_type)
+        self._initialize_admissions_predictors(constant_admissions)
 
-    def _initialize_admissions_predictors(
-        self, constant_admissions: bool, projection_type: Optional[str]
-    ) -> None:
+    def _initialize_admissions_predictors(self, constant_admissions: bool) -> None:
         """Generate the dictionary of one admission predictor per policy time step that defines outflow behaviors"""
         policy_time_steps = list({policy.policy_ts for policy in self.policy_list})
 
@@ -90,7 +87,7 @@ class ShellCompartment(SparkCompartment):
         # second pass creates admissions predictors from transformed outflows data
         for ts, ts_data in self.policy_data.items():
             self.admissions_predictors[ts] = PredictedAdmissions(
-                ts_data, constant_admissions, projection_type
+                ts_data, constant_admissions
             )
 
     def initialize_edges(self, edges: List[SparkCompartment]) -> None:

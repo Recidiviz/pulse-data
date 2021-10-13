@@ -145,6 +145,7 @@ for offense_code in jail_prison_sentences["crime"].unique():
         ignore_index=True,
     )
 transitions_data = jail_prison_sentences
+transitions_data.total_population = transitions_data.total_population.astype(float)
 
 # OUTFLOWS TABLE
 jail_prison_admissions = (
@@ -175,6 +176,8 @@ jail_prison_admissions = jail_prison_admissions.rename(
     axis=1,
 )
 outflows_data = jail_prison_admissions.drop("offense_group", axis=1)
+outflows_data.time_step = outflows_data.time_step.astype(int)
+outflows_data.total_population = outflows_data.time_step.astype(float)
 
 # this is left over from the last policy we modeled, you'll want to filter differently based on what you're modeling
 affected_crimes = [

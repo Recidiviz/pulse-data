@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2020 Recidiviz, Inc.
+# Copyright (C) 2021 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -33,6 +33,8 @@ from recidiviz.calculator.modeling.population_projection.utils import (
 
 class Initializer:
     """Manage model inputs to SuperSimulation."""
+
+    MISSING_EVENT_THRESHOLD = 0.25
 
     def __init__(
         self,
@@ -93,13 +95,10 @@ class Initializer:
 
         if self.microsim:
             run_date = run_date_override or self.user_inputs["run_date"]
-            outflows = self._fully_connect_outflows(
-                self.data_dict["outflows_data"][
-                    self.data_dict["outflows_data"].run_date == run_date
-                ]
-            )
             return {
-                "outflows_data": outflows,
+                "outflows_data": self.data_dict["outflows_data"][
+                    self.data_dict["outflows_data"].run_date == run_date
+                ],
                 "transitions_data": self.data_dict["remaining_sentence_data"][
                     self.data_dict["remaining_sentence_data"].run_date == run_date
                 ],
@@ -119,9 +118,8 @@ class Initializer:
                 "override_cross_flow_function": self.override_cross_flow_function,
             }
 
-        outflows = self._fully_connect_outflows(self.data_dict["outflows_data"])
         return {
-            "outflows_data": outflows,
+            "outflows_data": self.data_dict["outflows_data"],
             "transitions_data": self.data_dict["transitions_data"],
             "total_population_data": self.data_dict["total_population_data"],
             "compartments_architecture": self.data_dict["compartments_architecture"],
@@ -174,38 +172,64 @@ class Initializer:
     def _fully_connect_outflows(self, outflows_data: pd.DataFrame) -> pd.DataFrame:
         """Helper function for get_data_inputs that ensures outflows_data is fully connected."""
         # Handle sparse outflow events where a disaggregation is missing data for some time steps
+        if self.microsim:
+            if len(outflows_data.run_date.unique()) != 1:
+                raise ValueError(
+                    f"outflows_data must have unique run date. "
+                    f"Given run dates: {outflows_data.run_date.unique()}"
+                )
+            run_date = outflows_data.iloc[0].run_date
+
         fully_connected_columns = self.data_dict["disaggregation_axes"] + [
             "compartment",
             "outflow_to",
             "time_step",
         ]
-        outflows_data = (
-            outflows_data.groupby(fully_connected_columns)["total_population"]
-            .sum()
-            .unstack(level=["time_step"])
-        )
 
-        # Raise a warning if there are any disaggregations without outflow records for more than 25% of the time steps
-        missing_event_threshold = 0.25
-        number_of_missing_events = outflows_data.isnull().sum(axis=1)
-        sparse_disaggregations = number_of_missing_events[
-            number_of_missing_events / len(outflows_data.columns)
-            > missing_event_threshold
-        ]
-        if not sparse_disaggregations.empty:
-            logging.warning(
-                "Outflows data is missing for more than %s%% for some disaggregations:"
-                "\n%s%%",
-                100 * missing_event_threshold,
-                100 * sparse_disaggregations / len(outflows_data.columns),
+        # For each compartment that has outflows data, complete data so that every time step between
+        # MIN(time_step) and MAX(time_step) has data (i.e. fill in 0s)
+        fully_connected_data = pd.DataFrame()
+        for compartment in outflows_data.compartment.unique():
+            # pick out min and max time_step and re-index on everything in between
+            compartment_data = outflows_data[outflows_data.compartment == compartment]
+            connected_time_steps = range(
+                compartment_data.time_step.min(), compartment_data.time_step.max() + 1
+            )
+            connected_compartment_data = (
+                compartment_data.groupby(fully_connected_columns)
+                .total_population.sum()
+                .unstack(level="time_step")
+                .transpose()
+                .reindex(connected_time_steps)
             )
 
-        # Fill the total population with 0 and remove the multiindex for the population simulation
-        return (
-            outflows_data.fillna(0)
-            .stack("time_step")
-            .reset_index(name="total_population")
-        )
+            # Raise a warning if there are disaggregations without outflow records for more than 25% of the time steps
+            number_of_missing_events = connected_compartment_data.isnull().sum()
+            sparse_disaggregations = number_of_missing_events[
+                number_of_missing_events / len(connected_compartment_data)
+                > self.MISSING_EVENT_THRESHOLD
+            ] / len(connected_compartment_data)
+            if not sparse_disaggregations.empty:
+                logging.warning(
+                    "Outflows data is missing for more than %s%% for some disaggregations:"
+                    "\n%s%%",
+                    100 * self.MISSING_EVENT_THRESHOLD,
+                    100 * sparse_disaggregations,
+                )
+
+            # Fill the total population with 0 and remove the multiindex for the population simulation
+            fully_connected_data = fully_connected_data.append(
+                connected_compartment_data.fillna(0)
+                .transpose()
+                .stack("time_step")
+                .reset_index(name="total_population")
+            )
+
+        # add run_date back in after losing it in the groupby
+        if self.microsim:
+            fully_connected_data["run_date"] = run_date
+
+        return fully_connected_data
 
     def _set_user_inputs(self, yaml_user_inputs: Dict[str, Any]) -> None:
         """Populate the simulation user inputs"""
@@ -252,8 +276,19 @@ class Initializer:
         self.data_dict["disaggregation_axes"] = disaggregation_axes
         if self.microsim:
             self._initialize_data_micro(data_inputs_params)
+            sparse_outflows = self.data_dict["outflows_data"]
+            outflows = pd.DataFrame()
+            for run_date in sparse_outflows.run_date.unique():
+                outflows = outflows.append(
+                    self._fully_connect_outflows(
+                        sparse_outflows[sparse_outflows.run_date == run_date]
+                    )
+                )
         else:
             self._initialize_data_macro(data_inputs_params)
+            outflows = self._fully_connect_outflows(self.data_dict["outflows_data"])
+
+        self.data_dict["outflows_data"] = outflows
 
     def _initialize_data_micro(self, data_inputs_params: Dict[str, Any]) -> None:
         """Helper function for _initialize_data()"""

@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2020 Recidiviz, Inc.
+# Copyright (C) 2021 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -102,8 +102,8 @@ class SubSimulationFactory:
                 if compartment_type != "shell":
                     raise ValueError(
                         f"Transition data missing for compartment {compartment}. Data is required for all "
-                        "disaggregtion axes. Even the 'release' compartment needs transition data even if "
-                        "it's just outflow to 'release'"
+                        "disaggregation axes. Even the 'release' compartment needs transition data even if "
+                        "it's just outflow to 'release'."
                     )
             else:
                 if compartment_type == "full":
@@ -196,8 +196,8 @@ class SubSimulationFactory:
         for compartment, compartment_type in simulation_architecture.items():
             outflows_data = (
                 preprocessed_data.loc[compartment]
-                .dropna(axis=0, how="all")
                 .dropna(axis=1, how="all")
+                .dropna(axis=0, how="all")
             )
 
             # if no transition table, initialize as shell compartment
@@ -212,7 +212,6 @@ class SubSimulationFactory:
                     constant_admissions=user_inputs["constant_admissions"],
                     tag=compartment,
                     policy_list=shell_policies[compartment],
-                    projection_type=user_inputs.get("projection_type"),
                 )
             else:
                 simulation_compartments[compartment] = FullCompartment(
