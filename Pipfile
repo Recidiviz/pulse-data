@@ -4,7 +4,9 @@ verify_ssl = true
 name = "pypi"
 
 [dev-packages]
-mypy-protobuf = "*"
+# TODO(#4287): Unpin once the latest version of google-api-core supports protobuf
+#  version >= 3.18.0 (might be resolved by upgrading other google libraries > 2.0.0).
+mypy-protobuf = "<3.0.0"
 "autopep8" = "*"
 mock = "*"
 pytest = "*"
@@ -66,11 +68,13 @@ opencensus-ext-flask = "*"
 opencensus-ext-google-cloud-clientlibs = "*"
 opencensus-ext-grpc = "*"
 opencensus-ext-requests = "*"
-opencensus-ext-sqlalchemy = "*"
+# TODO(#9593): Version 0.1.3 introduced a constraint on sqlalchemy requiring versions
+#  sqlalchemy<1.3.24, however we use features from sqlalchemy>=1.4, so cannot downgrade.
+opencensus-ext-sqlalchemy = "<0.1.3"
 opencensus-ext-stackdriver = "*"
 # TODO(#9157): Unpin alembic -- blocked by sqlalchemy/alembic#900 and sqlalchemy/alembic#903
 alembic = "==1.6.5"
-sqlalchemy = "*"
+sqlalchemy = ">=1.4.25"
 flask = "*"
 Flask-Limiter = "*"
 Flask-SQLAlchemy-Session = "*"
