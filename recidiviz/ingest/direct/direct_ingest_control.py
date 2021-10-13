@@ -132,6 +132,10 @@ def normalize_raw_file_path() -> Tuple[str, HTTPStatus]:
         raise ValueError(f"Incorrect type [{type(path)}] for path: {path.uri()}")
 
     fs = DirectIngestGCSFileSystem(GcsfsFactory.build())
+    if fs.is_normalized_file_path(path):
+        logging.info("Path already normalized: [%s]. Returning.", path.abs_path())
+        return "", HTTPStatus.OK
+
     fs.mv_path_to_normalized_path(path, file_type=GcsfsDirectIngestFileType.RAW_DATA)
 
     return "", HTTPStatus.OK
