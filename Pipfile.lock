@@ -778,7 +778,7 @@
                 "sha256:5b77935f3d9573e27007749a3b522f08d764c5b5930ff1527b2ab2743e9f0c15",
                 "sha256:b1030aadcbb2aeb4ee51475426351af83c1072456b918fb8fdb80666c4bb63b5"
             ],
-            "markers": "python_version == '2.7' and python_version >= '3.6'",
+            "markers": "python_version >= '3.6'",
             "version": "==1.7.2"
         },
         "google-cloud-datastore": {
@@ -4123,7 +4123,7 @@
                 "sha256:5b77935f3d9573e27007749a3b522f08d764c5b5930ff1527b2ab2743e9f0c15",
                 "sha256:b1030aadcbb2aeb4ee51475426351af83c1072456b918fb8fdb80666c4bb63b5"
             ],
-            "markers": "python_version == '2.7' and python_version >= '3.6'",
+            "markers": "python_version >= '3.6'",
             "version": "==1.7.2"
         },
         "google-cloud-datastore": {
