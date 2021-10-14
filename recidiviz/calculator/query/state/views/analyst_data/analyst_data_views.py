@@ -33,8 +33,17 @@ from recidiviz.calculator.query.state.views.analyst_data.assessment_score_sessio
 from recidiviz.calculator.query.state.views.analyst_data.cohort_month_index import (
     COHORT_MONTH_INDEX_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.compartment_level_0_super_sessions import (
+    COMPARTMENT_LEVEL_0_SUPER_SESSIONS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.compartment_level_1_super_sessions import (
+    COMPARTMENT_LEVEL_1_SUPER_SESSIONS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.compartment_level_2_dedup_priority import (
     COMPARTMENT_LEVEL_2_DEDUP_PRIORITY_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.compartment_level_2_super_sessions import (
+    COMPARTMENT_LEVEL_2_SUPER_SESSIONS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.analyst_data.compartment_sentences import (
     COMPARTMENT_SENTENCES_VIEW_BUILDER,
@@ -220,4 +229,7 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_ID_BEHAVIOR_RESPONSES_VIEW_BUILDER,
     US_ID_RAW_SUPERVISION_CONTACTS_VIEW_BUILDER,
     PROJECTED_DISCHARGES_VIEW_BUILDER,
+    COMPARTMENT_LEVEL_1_SUPER_SESSIONS_VIEW_BUILDER,
+    COMPARTMENT_LEVEL_2_SUPER_SESSIONS_VIEW_BUILDER,
+    COMPARTMENT_LEVEL_0_SUPER_SESSIONS_VIEW_BUILDER,
 ]
