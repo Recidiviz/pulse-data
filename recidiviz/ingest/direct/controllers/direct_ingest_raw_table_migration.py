@@ -19,7 +19,7 @@
 import datetime
 import os
 import re
-from typing import List, Tuple, Optional
+from typing import List, Optional, Tuple
 
 from recidiviz.ingest.direct.controllers.direct_ingest_constants import (
     UPDATE_DATETIME_COL_NAME,
@@ -155,7 +155,7 @@ class UpdateRawTableMigration(RawTableMigration):
         self,
         migrations_file: str,
         filters: List[Tuple[str, str]],
-        updates: List[Tuple[str, str]],
+        updates: List[Tuple[str, Optional[str]]],
         update_datetime_filters: Optional[List[datetime.datetime]],
     ):
         super().__init__(migrations_file, filters, update_datetime_filters)

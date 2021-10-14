@@ -221,6 +221,8 @@ class RawTableMigrationGenerator:
                 for update_key in migration.ordered_update_keys:
                     struct_values.append(
                         f"'{migration.updates[update_key]}' AS new__{update_key}"
+                        if migration.updates[update_key]
+                        else f"CAST(NULL AS STRING) AS new__{update_key}"
                     )
                 struct_values_str = ", ".join(struct_values)
                 migration_update_structs.append(f"STRUCT({struct_values_str})")
