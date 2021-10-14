@@ -31,7 +31,7 @@ TOTAL_POPULATION_QUERY_TEMPLATE = """
     (
         SELECT
           state_code,
-          CASE WHEN compartment = 'INCARCERATION - GENERAL' AND previously_incarcerated
+          CASE WHEN compartment = 'INCARCERATION - GENERAL' AND (previously_incarcerated OR inflow_from LIKE '%PAROLE%')
             THEN 'INCARCERATION - RE-INCARCERATION'
             ELSE compartment
           END AS compartment,
@@ -45,7 +45,6 @@ TOTAL_POPULATION_QUERY_TEMPLATE = """
           ON start_date < run_date
         WHERE
           state_code IN ('US_ID', 'US_ND')
-          AND (compartment LIKE '%INCARCERATION%' OR compartment LIKE '%SUPERVISION%')
         GROUP BY state_code, compartment, gender, start_date, end_date, run_date
     )
     SELECT
@@ -53,12 +52,12 @@ TOTAL_POPULATION_QUERY_TEMPLATE = """
       cte.state_code,
       cte.gender,
       cte.run_date,
-      time_step,
+      time_step.run_date AS time_step,
       SUM(cte.total_population) as total_population
-    FROM cte,
-    UNNEST(GENERATE_DATE_ARRAY('2000-01-01', DATE_TRUNC(CURRENT_DATE, MONTH), INTERVAL 1 MONTH)) AS time_step
+    FROM cte
+    JOIN `{project_id}.{population_projection_dataset}.simulation_run_dates` AS time_step
+        ON time_step.run_date BETWEEN cte.start_date AND COALESCE(cte.end_date, '9999-01-01')
     WHERE gender IN ('FEMALE', 'MALE')
-      AND time_step BETWEEN cte.start_date AND COALESCE(cte.end_date, '9999-01-01')
     GROUP BY compartment, state_code, gender, run_date, time_step
     ORDER BY compartment, state_code, gender, run_date, time_step
     """

@@ -38,8 +38,16 @@ REMAINING_SENTENCES_QUERY_TEMPLATE = """
             END AS compartment,
         gender,
         sessions.person_id,
-        transitions.compartment_duration - GREATEST(DATE_DIFF(run_dates.run_date, sessions.start_date, MONTH), 1) AS remaining_compartment_duration,
-    --    sentences.projected_completion_date_max,
+        -- Handle sentences that are really long (4+ years) and are unlikely to end soon
+        -- Otherwise this will predict a large chunk of people will have 0 remaining duration
+        CASE WHEN FLOOR(DATE_DIFF(run_dates.run_date, sessions.start_date, DAY)/30) + 1 >= 120
+                THEN 150 - FLOOR(DATE_DIFF(run_dates.run_date, sessions.start_date, DAY)/30) + 1
+             WHEN FLOOR(DATE_DIFF(run_dates.run_date, sessions.start_date, DAY)/30) + 1 >= 100
+                THEN 120 - FLOOR(DATE_DIFF(run_dates.run_date, sessions.start_date, DAY)/30) + 1
+             WHEN FLOOR(DATE_DIFF(run_dates.run_date, sessions.start_date, DAY)/30) + 1 >= 50
+                THEN 100 - FLOOR(DATE_DIFF(run_dates.run_date, sessions.start_date, DAY)/30) + 1
+             ELSE transitions.compartment_duration - FLOOR(DATE_DIFF(run_dates.run_date, sessions.start_date, DAY)/30)
+         END AS remaining_compartment_duration,
         transitions.outflow_to,
         transitions.total_population
       FROM `{project_id}.{population_projection_dataset}.population_projection_sessions_materialized` sessions
@@ -48,13 +56,11 @@ REMAINING_SENTENCES_QUERY_TEMPLATE = """
         ON run_dates.run_date BETWEEN sessions.start_date AND COALESCE(sessions.end_date, '9999-01-01')
       JOIN  `{project_id}.{population_projection_dataset}.population_transitions_materialized` transitions
         USING (state_code, run_date, compartment, gender)
-    --  LEFT JOIN `{project_id}.{analyst_dataset}.compartment_sentences_materialized` sentences
-    --    ON sentences.person_id = sessions.person_id
-    --    AND sentences.session_id = sessions.session_id
       WHERE sessions.state_code IN ('US_ID', 'US_ND')
-        AND (compartment LIKE 'SUPERVISION%' OR state_code = 'US_ND')
+        -- Only use this logic for incarceration remaining compartment LOS in US_ND
+        AND (compartment NOT LIKE 'INCARCERATION%' OR state_code = 'US_ND')
         AND gender in ('MALE', 'FEMALE')
-        AND GREATEST(DATE_DIFF(run_dates.run_date, sessions.start_date, MONTH), 1) < transitions.compartment_duration
+        AND FLOOR(DATE_DIFF(run_dates.run_date, sessions.start_date, DAY)/30) <= transitions.compartment_duration
     ),
     supervision_normalization_cte AS (
       SELECT
@@ -71,11 +77,6 @@ REMAINING_SENTENCES_QUERY_TEMPLATE = """
       run_date,
       compartment,
       gender,
-    --  CASE
-    --    WHEN (outflow_to = 'RELEASE - RELEASE') AND (CEILING(DATE_DIFF(projected_completion_date_max, run_date, DAY)/30) > 0)
-    --        THEN CEILING(DATE_DIFF(projected_completion_date_max, run_date, DAY)/30)
-    --    ELSE remaining_compartment_duration 
-    --  END AS compartment_duration,
       remaining_compartment_duration as compartment_duration,
       outflow_to,
       SUM(total_population/person_level_normalization_constant) AS total_population

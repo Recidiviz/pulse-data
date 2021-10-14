@@ -30,22 +30,18 @@ US_ID_TOTAL_JAIL_POPULATION_QUERY_TEMPLATE = """
       -- Fetch the total incarceration history for each run date and time step
       SELECT
         sessions.state_code,
-        CASE
-          -- Use the re-incarceration logic because this data is going into the model
-          WHEN sessions.compartment = 'INCARCERATION - GENERAL' 
-            AND sessions.previously_incarcerated THEN 'INCARCERATION - RE-INCARCERATION'
-          ELSE sessions.compartment
-        END AS compartment,
-        run_date,
-        time_step,
-        person_id
+        compartment,
+        rd.run_date,
+        time_step.run_date AS time_step,
+        person_id,
       FROM `{project_id}.{population_projection_dataset}.population_projection_sessions_materialized` sessions
       JOIN `{project_id}.{population_projection_dataset}.simulation_run_dates` rd
-        ON start_date < run_date,
-      UNNEST(GENERATE_DATE_ARRAY('2000-01-01', DATE_TRUNC(CURRENT_DATE, MONTH), INTERVAL 1 MONTH)) AS time_step
+        ON sessions.start_date < rd.run_date
+      JOIN `{project_id}.{population_projection_dataset}.simulation_run_dates` time_step
+        ON time_step.run_date BETWEEN sessions.start_date AND COALESCE(sessions.end_date, '9999-01-01')
       WHERE sessions.state_code = 'US_ID'
-        AND compartment LIKE '%INCARCERATION%'
-        AND time_step BETWEEN start_date AND coalesce(end_date, '9999-01-01')
+        AND compartment IN ('INCARCERATION - GENERAL',
+          'INCARCERATION - PAROLE_BOARD_HOLD', 'INCARCERATION - TREATMENT_IN_PRISON')
     )
     -- Remove all "paid" sessions and count the remaining "unpaid" sessions
     SELECT

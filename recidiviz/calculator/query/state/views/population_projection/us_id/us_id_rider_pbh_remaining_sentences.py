@@ -37,13 +37,13 @@ US_ID_RIDER_PBH_REMAINING_SENTENCES_QUERY_TEMPLATE = """
     WITH historical_transitions AS (
       SELECT
         state_code, run_date, compartment, gender,
-        compartment_duration, outflow_to, total_population
-      FROM `{project_id}.{population_projection_dataset}.us_id_rider_population_transitions`
+        compartment_duration, outflow_to, total_population,
+      FROM `{project_id}.{population_projection_dataset}.us_id_rider_population_transitions_materialized`
       UNION ALL
       SELECT
         state_code, run_date, compartment, gender,
-        compartment_duration, outflow_to, total_population
-      FROM `{project_id}.{population_projection_dataset}.us_id_parole_board_hold_population_transitions`
+        compartment_duration, outflow_to, total_population,
+      FROM `{project_id}.{population_projection_dataset}.us_id_parole_board_hold_population_transitions_materialized`
     ),
     cohorts_per_run_date AS (
       -- Grab all the open treatment/parole_board_hold sessions per run date
@@ -53,11 +53,10 @@ US_ID_RIDER_PBH_REMAINING_SENTENCES_QUERY_TEMPLATE = """
         compartment,
         person_id,
         gender,
-        GREATEST(DATE_DIFF(run_dates.run_date, start_date, MONTH), 1) AS months_served,
-        # TODO(#4987): replace with better date diff function
-        transitions.compartment_duration - GREATEST(DATE_DIFF(run_dates.run_date, start_date, MONTH), 1) AS remaining_compartment_duration,
+        FLOOR(DATE_DIFF(run_dates.run_date, start_date, DAY)/30) AS months_served,
+        transitions.compartment_duration - FLOOR(DATE_DIFF(run_dates.run_date, start_date, DAY)/30) AS remaining_compartment_duration,
         transitions.outflow_to,
-        transitions.total_population
+        transitions.total_population,
       FROM `{project_id}.{population_projection_dataset}.population_projection_sessions_materialized` sessions
       JOIN `{project_id}.{population_projection_dataset}.simulation_run_dates` run_dates
         -- Use sessions that were open on the run date
@@ -68,19 +67,8 @@ US_ID_RIDER_PBH_REMAINING_SENTENCES_QUERY_TEMPLATE = """
         AND compartment IN ('INCARCERATION - TREATMENT_IN_PRISON', 'INCARCERATION - PAROLE_BOARD_HOLD')
         AND gender IN ('MALE', 'FEMALE')
         -- Select the tail of the duration distribution starting from the time served in the compartment on the run date
-        AND GREATEST(DATE_DIFF(run_dates.run_date, start_date, MONTH), 1) < transitions.compartment_duration
-        -- TODO(#4868): filter unwanted transitions
-    ),
-    normalization_cte AS (
-      -- Compute the normalization denominator per person/run date
-      SELECT
-        state_code,
-        run_date,
-        person_id,
-        compartment,
-        SUM(total_population) AS person_level_normalization_constant
-      FROM cohorts_per_run_date
-      GROUP BY state_code, run_date, person_id, compartment
+        AND FLOOR(DATE_DIFF(run_dates.run_date, start_date, DAY)/30) <= transitions.compartment_duration
+        -- TODO(#4868): filter invalid transitions
     )
     SELECT
       state_code,
@@ -90,10 +78,8 @@ US_ID_RIDER_PBH_REMAINING_SENTENCES_QUERY_TEMPLATE = """
       months_served,
       remaining_compartment_duration AS compartment_duration,
       outflow_to,
-      SAFE_DIVIDE(total_population, person_level_normalization_constant) AS total_population
+      total_population,
     FROM cohorts_per_run_date
-    JOIN normalization_cte
-      USING (state_code, run_date, person_id, compartment)
     """
 
 US_ID_RIDER_PBH_REMAINING_SENTENCES_VIEW_BUILDER = SimpleBigQueryViewBuilder(

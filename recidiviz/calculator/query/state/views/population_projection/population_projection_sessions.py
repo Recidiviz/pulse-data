@@ -51,8 +51,15 @@ POPULATION_PROJECTION_SESSIONS_QUERY_TEMPLATE = """
       session_id,
       state_code,
       previously_incarcerated,
-      -- Count DUAL supervision as PAROLE
-      CASE WHEN compartment_level_1 = 'SUPERVISION' AND compartment_level_2 = 'DUAL' THEN 'SUPERVISION - PAROLE'
+      -- Reclassify some compartment values
+      CASE WHEN compartment_level_1 LIKE 'SUPERVISION%' THEN
+           CASE WHEN compartment_level_2 = 'DUAL' THEN CONCAT(compartment_level_1, ' - PAROLE')
+                WHEN compartment_level_2 = 'INTERNAL_UNKNOWN' THEN CONCAT(compartment_level_1, ' - PROBATION')
+                -- TODO(#9554): Reclassify out of state BW to in-state
+                WHEN compartment_level_2 = 'BENCH_WARRANT' THEN 'SUPERVISION - BENCH_WARRANT'
+                ELSE CONCAT(compartment_level_1, ' - ', COALESCE(compartment_level_2, ''))
+           END
+           WHEN compartment_level_1 = 'INCARCERATION_OUT_OF_STATE' THEN 'INCARCERATION_OUT_OF_STATE'
         ELSE CONCAT(compartment_level_1, ' - ', COALESCE(compartment_level_2, ''))
       END AS compartment,
       start_date,
@@ -63,14 +70,29 @@ POPULATION_PROJECTION_SESSIONS_QUERY_TEMPLATE = """
       gender,
       age_bucket_start AS age_bucket,
       prioritized_race_or_ethnicity,
-      -- Count DUAL supervision as PAROLE
-      CASE WHEN inflow_from_level_1 = 'SUPERVISION' AND inflow_from_level_2 = 'DUAL' THEN 'SUPERVISION - PAROLE'
+      -- Reclassify some inflow values
+      CASE WHEN inflow_from_level_1 LIKE 'SUPERVISION%' THEN
+           CASE WHEN inflow_from_level_2 = 'DUAL' THEN CONCAT(inflow_from_level_1, ' - PAROLE')
+                WHEN inflow_from_level_2 = 'INTERNAL_UNKNOWN' THEN CONCAT(inflow_from_level_1, ' - PROBATION')
+                -- TODO(#9554): Reclassify out of state BW to in-state
+                WHEN inflow_from_level_2 = 'BENCH_WARRANT' THEN 'SUPERVISION - BENCH_WARRANT'
+                ELSE CONCAT(inflow_from_level_1, ' - ', COALESCE(inflow_from_level_2, ''))
+           END
         WHEN inflow_from_level_1 IS NULL THEN 'PRETRIAL'
+        WHEN inflow_from_level_1 = 'INCARCERATION_OUT_OF_STATE' THEN 'INCARCERATION_OUT_OF_STATE'
         ELSE CONCAT(inflow_from_level_1, ' - ', COALESCE(inflow_from_level_2, ''))
       END AS inflow_from,
-      -- Count DUAL supervision as PAROLE and CONDITIONAL_RELEASE as outflow to PAROLE
-      CASE WHEN outflow_to_level_1 = 'SUPERVISION' AND outflow_to_level_2 = 'DUAL' THEN 'SUPERVISION - PAROLE'
-        WHEN end_reason = 'CONDITIONAL_RELEASE' AND outflow_to_level_1 = 'RELEASE' THEN 'SUPERVISION - PAROLE'
+      -- Reclassify some outflow values
+      CASE WHEN outflow_to_level_1 LIKE 'SUPERVISION%' THEN
+           CASE WHEN outflow_to_level_2 = 'DUAL' THEN CONCAT(outflow_to_level_1, ' - PAROLE')
+                WHEN outflow_to_level_2 = 'INTERNAL_UNKNOWN' THEN CONCAT(outflow_to_level_1, ' - PROBATION')
+                -- TODO(#9554): Reclassify out of state BW to in-state
+                WHEN outflow_to_level_2 = 'BENCH_WARRANT' THEN 'SUPERVISION - BENCH_WARRANT'
+                ELSE CONCAT(outflow_to_level_1, ' - ', COALESCE(outflow_to_level_2, ''))
+           END
+           WHEN outflow_to_level_1 = 'INCARCERATION_OUT_OF_STATE' THEN 'INCARCERATION_OUT_OF_STATE'
+           -- TODO(#7385): handle incarceration to 0 day supervision period as full release
+           WHEN outflow_to_level_1 = 'PENDING_SUPERVISION' THEN 'RELEASE - RELEASE'
         ELSE CONCAT(outflow_to_level_1, ' - ', COALESCE(outflow_to_level_2, ''))
       END AS outflow_to,
       session_length_days,
@@ -78,10 +100,10 @@ POPULATION_PROJECTION_SESSIONS_QUERY_TEMPLATE = """
     FROM `{project_id}.{analyst_dataset}.compartment_sessions_materialized`
     INNER JOIN previously_incarcerated_cte
       USING (state_code, person_id, session_id)
-    WHERE compartment_level_2 != 'OTHER'
     ),
     dedup_sessions AS (
-        -- Collapse adjacent sessions with the same compartment in order to merge DUAL and PAROLE supervision
+        -- Collapse adjacent sessions with the same compartment to merge some supervision sessions
+        -- DUAL -> PAROLE and INTERNAL_UNKNOWN -> PROBATION
         SELECT
             * EXCEPT(session_length_days),
             session_id = MIN(session_id) OVER(PARTITION BY person_id, temp_session_id) AS first_sub_session_in_session,
@@ -109,6 +131,8 @@ POPULATION_PROJECTION_SESSIONS_QUERY_TEMPLATE = """
         AND first.temp_session_id = last.temp_session_id
         AND last.last_sub_session_in_session
     WHERE first.first_sub_session_in_session
+        -- Drop 0 day sessions
+        AND first.start_date != COALESCE(last.end_date, last.last_day_of_data)
     """
 
 POPULATION_PROJECTION_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(

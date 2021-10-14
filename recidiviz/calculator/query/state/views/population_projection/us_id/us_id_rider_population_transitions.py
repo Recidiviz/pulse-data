@@ -32,10 +32,12 @@ US_ID_RIDER_POPULATION_TRANSITIONS_QUERY_TEMPLATE = """
         state_code,
         run_dates.run_date,
         compartment,
-        outflow_to,
+        CASE WHEN outflow_to = 'INCARCERATION - GENERAL' AND previously_incarcerated THEN 'INCARCERATION - RE-INCARCERATION'
+          ELSE outflow_to 
+        END AS outflow_to,
         person_id,
         gender,
-        GREATEST(DATE_DIFF(end_date, start_date, MONTH), 1) AS compartment_duration
+        FLOOR(DATE_DIFF(end_date, start_date, DAY)/30) AS compartment_duration,
       FROM `{project_id}.{population_projection_dataset}.population_projection_sessions_materialized` sessions
       JOIN `{project_id}.{population_projection_dataset}.simulation_run_dates` run_dates
         -- Use sessions that were completed before the run date
@@ -44,12 +46,17 @@ US_ID_RIDER_POPULATION_TRANSITIONS_QUERY_TEMPLATE = """
       WHERE state_code = 'US_ID'
         AND compartment = 'INCARCERATION - TREATMENT_IN_PRISON'
         AND gender IN ('MALE', 'FEMALE')
-        -- Only include outflows that are supported by the IDOC
-        AND COALESCE(outflow_to, 'SUPERVISION - PROBATION') IN ('SUPERVISION - PROBATION', 'INCARCERATION - GENERAL')
+        -- Only include valid outflows
+        -- TODO(#4868): filter invalid transitions in a scalable way
+        AND COALESCE(outflow_to, 'SUPERVISION - PROBATION') 
+          IN ('SUPERVISION - PROBATION',
+              'INCARCERATION - GENERAL',
+              'PENDING_SUPERVISION - PENDING_SUPERVISION')
         -- Only take data from the 3 years prior to the run date to match short-term behavior better
         AND DATE_DIFF(run_dates.run_date, sessions.start_date, year) <= 3
     ),
     fully_connected_graph AS (
+      -- Create rows for every compartment duration and outflow
       SELECT
         state_code,
         run_date,
@@ -57,26 +64,23 @@ US_ID_RIDER_POPULATION_TRANSITIONS_QUERY_TEMPLATE = """
         compartment,
         outflow_to,
         compartment_duration,
-        compartment_duration_percentiles[offset(99)] AS max_compartment_duration,
         cohort_size
       FROM (
-        -- Compute the compartment duration percentiles per run date
+        -- Get the max duration per compartment/gender/run date
         SELECT
           state_code,
           run_date,
           compartment,
           gender,
-          APPROX_QUANTILES(compartment_duration, 100) compartment_duration_percentiles,
+          MAX(compartment_duration) AS max_duration,
           -- Calculate the cohort size for each run date to use as the transition denominator below
           COUNT(*) AS cohort_size
         FROM rider_cohorts_per_run_date
         GROUP BY state_code, run_date, compartment, gender
       ),
-      -- Create rows for every compartment duration and outflow
-      UNNEST(GENERATE_ARRAY(1, compartment_duration_percentiles[offset(99)])) AS compartment_duration,
-      UNNEST(['SUPERVISION - PROBATION', 'INCARCERATION - GENERAL']) AS outflow_to
-      -- Cap the compartment duration at the 99 percentile value
-      WHERE compartment_duration <= compartment_duration_percentiles[offset(99)]
+      UNNEST(GENERATE_ARRAY(1, max_duration)) AS compartment_duration,
+      UNNEST(['SUPERVISION - PROBATION', 'INCARCERATION - GENERAL',
+        'INCARCERATION - RE-INCARCERATION']) AS outflow_to
     )
     SELECT
       state_code,
@@ -100,7 +104,7 @@ US_ID_RIDER_POPULATION_TRANSITIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=US_ID_RIDER_POPULATION_TRANSITIONS_VIEW_DESCRIPTION,
     analyst_dataset=dataset_config.ANALYST_VIEWS_DATASET,
     population_projection_dataset=dataset_config.POPULATION_PROJECTION_DATASET,
-    should_materialize=False,
+    should_materialize=True,
 )
 
 if __name__ == "__main__":
