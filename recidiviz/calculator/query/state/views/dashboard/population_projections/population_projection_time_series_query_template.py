@@ -40,9 +40,6 @@ def population_projection_query(compartment: str) -> str:
           total_population_max,
         FROM prepared_data
         WHERE compartment = '{compartment}'
-            AND (offset <= 6
-              OR (MOD(offset, 2) = 0 and offset <= 12)
-              OR (MOD(offset, 4) = 0 and offset <= 24)
-              OR (MOD(offset, 10) = 0 and offset <= 60))
+            AND offset <= 60
         ORDER BY year, month
     """
