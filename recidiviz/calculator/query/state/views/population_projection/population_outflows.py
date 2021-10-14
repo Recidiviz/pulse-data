@@ -50,10 +50,6 @@ POPULATION_OUTFLOWS_QUERY_TEMPLATE = """
             AND DATE_DIFF(run_date, start_date, YEAR) < 10
         WHERE state_code IN ('US_ID', 'US_ND')
             AND gender IN ('FEMALE', 'MALE')
-            -- Restrict the values to verified admissions
-            AND (start_reason IN ('NEW_ADMISSION', 'COURT_SENTENCE')
-              -- TODO(#5420): restrict logic once US_ND has supervision start reasons
-              OR state_code = 'US_ND')
         GROUP BY 1,2,3,4,5,6
     )
     SELECT
@@ -61,10 +57,13 @@ POPULATION_OUTFLOWS_QUERY_TEMPLATE = """
     FROM cte
     WHERE CASE
           WHEN compartment = 'PRETRIAL'
-            THEN outflow_to IN ('INCARCERATION - GENERAL', 'SUPERVISION - PROBATION', 'INCARCERATION - TREATMENT_IN_PRISON')
+            THEN outflow_to IN ('INCARCERATION - GENERAL', 'SUPERVISION - PROBATION',
+              'INCARCERATION - TREATMENT_IN_PRISON', 'SUPERVISION_OUT_OF_STATE - PROBATION', 
+              'SUPERVISION - INFORMAL_PROBATION')
           WHEN compartment = 'RELEASE'
-            THEN outflow_to IN ('SUPERVISION - PROBATION', 'INCARCERATION - TREATMENT_IN_PRISON', 'SUPERVISION - PAROLE',
+            THEN outflow_to IN ('SUPERVISION - PROBATION', 'INCARCERATION - TREATMENT_IN_PRISON',
               'INCARCERATION - GENERAL', 'INCARCERATION - RE-INCARCERATION')
+          ELSE FALSE
         END
     """
 

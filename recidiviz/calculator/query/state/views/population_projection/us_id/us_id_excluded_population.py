@@ -30,18 +30,10 @@ US_ID_EXCLUDED_POPULATION_QUERY_TEMPLATE = """
       compartment,
       run_date,
       time_step,
-      total_population
-    FROM `{project_id}.{population_projection_dataset}.total_out_of_state_supervision_population`
-
-    UNION ALL
-
-    SELECT
-      state_code,
-      compartment,
-      run_date,
-      time_step,
-      total_population
-    FROM `{project_id}.{population_projection_dataset}.us_id_total_jail_population`
+      SUM(total_population) AS total_population,
+    FROM `{project_id}.{population_projection_dataset}.us_id_total_jail_population`,
+    UNNEST(['INCARCERATION - ALL', compartment]) AS compartment
+    GROUP BY state_code, compartment, run_date, time_step
     """
 
 US_ID_EXCLUDED_POPULATION_VIEW_BUILDER = SimpleBigQueryViewBuilder(

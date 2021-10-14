@@ -37,7 +37,7 @@ US_ID_PAROLE_BOARD_HOLD_POPULATION_TRANSITIONS_QUERY_TEMPLATE = """
         outflow_to,
         person_id,
         gender,
-        GREATEST(DATE_DIFF(end_date, start_date, MONTH), 1) AS compartment_duration
+        FLOOR(DATE_DIFF(end_date, start_date, DAY)/30) AS compartment_duration
       FROM `{project_id}.{population_projection_dataset}.population_projection_sessions_materialized` sessions
       JOIN `{project_id}.{population_projection_dataset}.simulation_run_dates` run_dates
         -- Use sessions that were completed before the run date
@@ -49,11 +49,9 @@ US_ID_PAROLE_BOARD_HOLD_POPULATION_TRANSITIONS_QUERY_TEMPLATE = """
         AND DATE_DIFF(run_dates.run_date, sessions.start_date, year) <= 3
         -- Only include outflows that are supported by the IDOC
         AND compartment = 'INCARCERATION - PAROLE_BOARD_HOLD'
-        AND inflow_from = 'SUPERVISION - PAROLE'
-        -- Exclude releases that are likely data quality issues
-        AND (end_reason IN ('CONDITIONAL_RELEASE', 'SENTENCED_SERVED') OR outflow_to != 'RELEASE - RELEASE')
     ),
     fully_connected_graph AS (
+      -- Create rows for every compartment duration and outflow
       SELECT
         state_code,
         run_date,
@@ -61,26 +59,23 @@ US_ID_PAROLE_BOARD_HOLD_POPULATION_TRANSITIONS_QUERY_TEMPLATE = """
         compartment,
         outflow_to,
         compartment_duration,
-        compartment_duration_percentiles[offset(99)] AS max_compartment_duration,
         cohort_size
       FROM (
-        -- Compute the compartment duration percentiles per run date
+        -- Get the max duration per compartment/gender/run date
         SELECT
           state_code,
           run_date,
           compartment,
           gender,
-          APPROX_QUANTILES(compartment_duration, 100) compartment_duration_percentiles,
+          MAX(compartment_duration) AS max_duration,
           -- Calculate the cohort size for each run date to use as the transition denominator below
           COUNT(*) AS cohort_size
         FROM cohorts_per_run_date
         GROUP BY state_code, run_date, compartment, gender
       ),
-      -- Create rows for every compartment duration and outflow
-      UNNEST(GENERATE_ARRAY(1, compartment_duration_percentiles[offset(99)])) AS compartment_duration,
-      UNNEST(['SUPERVISION - PAROLE', 'INCARCERATION - GENERAL']) AS outflow_to
-      -- Cap the compartment duration at the 99 percentile value
-      WHERE compartment_duration <= compartment_duration_percentiles[offset(99)]
+      UNNEST(GENERATE_ARRAY(1, max_duration)) AS compartment_duration,
+      UNNEST(['SUPERVISION - PAROLE', 'INCARCERATION - GENERAL',
+        'INCARCERATION - TREATMENT_IN_PRISON', 'SUPERVISION_OUT_OF_STATE - PAROLE']) AS outflow_to
     )
     SELECT
       state_code,
@@ -105,7 +100,7 @@ US_ID_PAROLE_BOARD_HOLD_POPULATION_TRANSITIONS_VIEW_BUILDER = SimpleBigQueryView
     description=US_ID_PAROLE_BOARD_HOLD_POPULATION_TRANSITIONS_VIEW_DESCRIPTION,
     analyst_dataset=dataset_config.ANALYST_VIEWS_DATASET,
     population_projection_dataset=dataset_config.POPULATION_PROJECTION_DATASET,
-    should_materialize=False,
+    should_materialize=True,
 )
 
 if __name__ == "__main__":
