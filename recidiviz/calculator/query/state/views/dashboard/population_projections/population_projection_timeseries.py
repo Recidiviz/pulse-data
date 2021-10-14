@@ -52,10 +52,7 @@ POPULATION_PROJECTION_TIME_SERIES_QUERY_TEMPLATE = """
       total_population_min,
       total_population_max,
     FROM prepared_data
-    WHERE offset <= 6
-      OR (MOD(offset, 2) = 0 and offset <= 12)
-      OR (MOD(offset, 4) = 0 and offset <= 24)
-      OR (MOD(offset, 10) = 0 and offset <= 60)
+    WHERE offset <= 60
     ORDER BY year, month
 """
 
