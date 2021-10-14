@@ -1394,7 +1394,7 @@ class StateSupervisionViolation(ExternalIdEntity, BuildableAttr, DefaultableAttr
 
 @attr.s(eq=False, kw_only=True)
 class StateSupervisionViolationResponseDecisionEntry(
-    Entity, BuildableAttr, DefaultableAttr
+    EnumEntity, BuildableAttr, DefaultableAttr
 ):
     """Models the type of decision resulting from a response to a
     StateSupervisionViolation."""

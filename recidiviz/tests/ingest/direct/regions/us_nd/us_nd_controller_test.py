@@ -3436,6 +3436,26 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             supervision_sentences=[supervision_sentence_117110],
             person=supervision_sentence_117110.person,
         )
+        supervision_violation_117110 = entities.StateSupervisionViolation(
+            state_code=_STATE_CODE,
+            supervision_periods=[supervision_period_117110],
+            person=supervision_sentence_117110.person,
+        )
+        supervision_violation_repsonse_117110 = (
+            entities.StateSupervisionViolationResponse(
+                state_code=_STATE_CODE,
+                response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
+                response_date=datetime.date(2014, 12, 8),
+                supervision_violation=supervision_violation_117110,
+                person=supervision_sentence_117110.person,
+            )
+        )
+        supervision_violation_117110.supervision_violation_responses.append(
+            supervision_violation_repsonse_117110
+        )
+        supervision_period_117110.supervision_violation_entries.append(
+            supervision_violation_117110
+        )
         charge_117110 = entities.StateCharge.new_with_defaults(
             state_code=_STATE_CODE,
             status=ChargeStatus.PRESENT_WITHOUT_INFO,

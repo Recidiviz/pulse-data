@@ -180,6 +180,20 @@ class UsNdIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                                             agent_type=StateAgentType.SUPERVISION_OFFICER,
                                             full_name='{"given_names": "JOSEPH", "middle_names": "", "name_suffix": "", "surname": "LUND"}',
                                         ),
+                                        supervision_violation_entries=[
+                                            StateSupervisionViolation(
+                                                state_code="US_ND",
+                                                supervision_violation_responses=[
+                                                    StateSupervisionViolationResponse(
+                                                        state_code="US_ND",
+                                                        response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
+                                                        response_date=datetime.date(
+                                                            2014, 12, 8
+                                                        ),
+                                                    )
+                                                ],
+                                            )
+                                        ],
                                     )
                                 ],
                             )
