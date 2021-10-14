@@ -47,7 +47,8 @@ REMAINING_SENTENCES_QUERY_TEMPLATE = """
           WHERE compartment LIKE 'INCARCERATION%'
             -- Union the rider transitions at the end
             AND compartment NOT IN ('INCARCERATION - TREATMENT_IN_PRISON', 'INCARCERATION - PAROLE_BOARD_HOLD')
-            AND outflow_to NOT LIKE '%OTHER%'
+            -- Do not include transitions to an unknown compartment (most often indicates dropped data)
+            AND outflow_to != 'INTERNAL_UNKNOWN - INTERNAL_UNKNOWN'
           GROUP BY 1,2,3,4
           )
     ),
@@ -70,9 +71,9 @@ REMAINING_SENTENCES_QUERY_TEMPLATE = """
             run_date_array.run_date,
             CASE
                 WHEN (parole_eligibility_date is null) or (not run_date_array.run_date < parole_eligibility_date)
-                    THEN CEILING(DATE_DIFF(projected_completion_date_max, run_date_array.run_date, DAY)/30)
+                    THEN FLOOR(DATE_DIFF(projected_completion_date_max, run_date_array.run_date, DAY)/30)
                 WHEN (parole_eligibility_date is not null) and (run_date_array.run_date < parole_eligibility_date)
-                    THEN CEILING(DATE_DIFF(parole_eligibility_date, run_date_array.run_date, DAY)/30)
+                    THEN FLOOR(DATE_DIFF(parole_eligibility_date, run_date_array.run_date, DAY)/30)
             END AS compartment_duration
         FROM `{project_id}.{population_projection_dataset}.population_projection_sessions_materialized` sessions
         LEFT JOIN `{project_id}.{analyst_dataset}.compartment_sentences_materialized`  sentences
@@ -91,13 +92,13 @@ REMAINING_SENTENCES_QUERY_TEMPLATE = """
         incarceration_distribution_cte.outflow_to,
         incarceration_cte.compartment_duration,
         incarceration_cte.gender,
-        CAST(ROUND(SUM(incarceration_distribution_cte.pct_outflow)) AS INT64) AS total_population
+        SUM(incarceration_distribution_cte.pct_outflow) AS total_population
     FROM incarceration_cte
     JOIN incarceration_distribution_cte
       USING (state_code, compartment, run_date)
     WHERE state_code = 'US_ID'
         AND incarceration_cte.gender IN ('FEMALE', 'MALE')
-        AND incarceration_cte.compartment_duration > 0
+        AND incarceration_cte.compartment_duration >= 0
     GROUP BY 1,2,3,4,5,6
     ORDER BY 1,2,3,4,5,6
     """

@@ -61,7 +61,7 @@ REMAINING_SENTENCES_QUERY_TEMPLATE = """
         outflow_to,
         compartment_duration,
         gender,
-        CAST(ROUND(SUM(total_population)) AS INT64) AS total_population
+        SUM(total_population) AS total_population
     FROM `{project_id}.{population_projection_dataset}.us_id_rider_pbh_remaining_sentences`
     GROUP BY state_code, run_date, compartment, outflow_to, compartment_duration, gender
     """

@@ -102,6 +102,7 @@ class Initializer:
                 "transitions_data": self.data_dict["remaining_sentence_data"][
                     self.data_dict["remaining_sentence_data"].run_date == run_date
                 ],
+                # Take the most recent total population data
                 "total_population_data": self.data_dict["total_population_data"][
                     self.data_dict["total_population_data"].run_date
                     == self.data_dict["total_population_data"].run_date.max()

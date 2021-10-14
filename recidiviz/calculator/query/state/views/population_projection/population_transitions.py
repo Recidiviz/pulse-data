@@ -49,16 +49,15 @@ POPULATION_TRANSITIONS_QUERY_TEMPLATE = """
       FROM `{project_id}.{population_projection_dataset}.population_projection_sessions_materialized` sessions
       JOIN `{project_id}.{population_projection_dataset}.simulation_run_dates` run_dates
         ON sessions.start_date < run_dates.run_date
-      WHERE (compartment LIKE '%INCARCERATION%' OR compartment LIKE '%SUPERVISION%')
-          -- Only take data from the 15 years prior to the run date to match short-term behavior better
-          AND DATE_DIFF(run_dates.run_date, sessions.start_date, year) <= 15
+      WHERE compartment NOT IN ('RELEASE - RELEASE', 'INTERNAL_UNKNOWN - INTERNAL_UNKNOWN')
+          -- Only take data from the 10 years prior to the run date to match short-term behavior better
+          AND DATE_DIFF(run_dates.run_date, sessions.start_date, year) <= 10
+          -- Drop sessions that are on the cusp of the session-start boundary
+          AND DATE_DIFF(CURRENT_DATE, sessions.start_date, YEAR) < 20
           -- Union the rider transitions at the end
           AND compartment NOT IN ('INCARCERATION - TREATMENT_IN_PRISON', 'INCARCERATION - PAROLE_BOARD_HOLD')
-          AND outflow_to NOT LIKE '%OTHER%'
-          -- Drop rows that represent transitions from supervision to supervision
-          AND (compartment NOT LIKE '%SUPERVISION%' OR outflow_to IS NULL OR end_date > run_dates.run_date
-                OR outflow_to NOT LIKE '%SUPERVISION%')
-          AND (compartment NOT LIKE '%INCARCERATION%' OR end_reason != 'TRANSFER')
+          -- Do not include outflows that actually look like dropped data
+          AND outflow_to NOT LIKE '%INTERNAL_UNKNOWN%'
     ),
     cohort_sizes_cte AS (
       -- Collect total cohort size for the outflow fraction denominator
@@ -87,7 +86,7 @@ POPULATION_TRANSITIONS_QUERY_TEMPLATE = """
         END AS outflow_to,
 
         CASE WHEN (run_date < end_date) OR (end_date IS NULL) THEN NULL
-          ELSE CEILING(DATE_DIFF(end_date, start_date, DAY)/30)
+          ELSE FLOOR(DATE_DIFF(end_date, start_date, DAY)/30)
         END AS compartment_duration,
 
         COUNT(*) AS outflow_population
@@ -110,8 +109,7 @@ POPULATION_TRANSITIONS_QUERY_TEMPLATE = """
       gender,
       state_code,
       outflow_to,
-      -- adding 1 here because I noticed 1 length durations were showing as 0, may still be an off-by-one error
-      compartment_duration + 1 as compartment_duration,
+      compartment_duration,
       run_date,
       -- cte constructed so this only averages over cohorts old enough to have had a chance to see that duration
       SUM(outflow_population/total_population) / cohort_counts.cohort_count as total_population
