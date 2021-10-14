@@ -653,3 +653,31 @@ WHERE original.COL1 = updates.COL1 AND original.update_datetime = updates.update
         ]
 
         self.assertEqual(expected_queries_map, queries_map)
+
+    def test_udpate_set_null(
+        self,
+    ) -> None:
+        migrations_file = self._migration_file_path_for_tag("tagC")
+
+        migrations: List[RawTableMigration] = [
+            UpdateRawTableMigration(
+                migrations_file=migrations_file,
+                update_datetime_filters=[_DATE_1],
+                filters=[("COL2", "123")],
+                updates=[("COL2", None)],
+            )
+        ]
+
+        with local_project_id_override("recidiviz-456"):
+            queries_map = RawTableMigrationGenerator.migration_queries(migrations)
+
+        expected_queries_map = [
+            """UPDATE `recidiviz-456.us_xx_raw_data.tagC` original
+SET COL2 = updates.new__COL2
+FROM (SELECT * FROM UNNEST([
+    STRUCT('123' AS COL2, CAST('2020-04-14T00:31:00' AS DATETIME) AS update_datetime, CAST(NULL AS STRING) AS new__COL2)
+])) updates
+WHERE original.COL2 = updates.COL2 AND original.update_datetime = updates.update_datetime;"""
+        ]
+
+        self.assertEqual(expected_queries_map, queries_map)
