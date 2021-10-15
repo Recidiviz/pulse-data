@@ -115,6 +115,8 @@ class TestIngestInfo(unittest.TestCase):
             "state_incarceration_incidents",
             "state_supervision_violation_ids",
             "state_supervision_violations",
+            "state_supervision_contact_ids",
+            "state_supervision_contacts",
             "supervising_officer_id",
             "supervising_officer",
             "state_sentence_group_ids",
@@ -157,10 +159,6 @@ class TestIngestInfo(unittest.TestCase):
             "state_incarceration_incidents",
             "state_parole_decision_ids",
             "state_parole_decisions",
-            "state_assessment_ids",
-            "state_assessments",
-            "state_program_assignment_ids",
-            "state_program_assignments",
         ]
         incarceration_incident_fields_ignore = [
             "responding_officer_id",
@@ -172,14 +170,8 @@ class TestIngestInfo(unittest.TestCase):
         supervision_period_fields_ignore = [
             "supervising_officer_id",
             "supervising_officer",
-            "state_assessment_ids",
-            "state_assessments",
-            "state_program_assignment_ids",
-            "state_program_assignments",
             "state_supervision_case_type_entry_ids",
             "state_supervision_case_type_entries",
-            "state_supervision_contact_ids",
-            "state_supervision_contacts",
         ]
         supervision_contacts_fields_ignore = ["contacted_agent_id", "contacted_agent"]
         supervision_violation_fields_ignore = [

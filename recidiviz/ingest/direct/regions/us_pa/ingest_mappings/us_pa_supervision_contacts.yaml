@@ -8,9 +8,6 @@ key_mappings:
 ancestor_keys:
   parole_number: state_person.state_person_id
 
-enforced_ancestor_types:
-  state_sentence: state_supervision_sentence
-
 # Primary key override in controller
 
 keys_to_ignore:

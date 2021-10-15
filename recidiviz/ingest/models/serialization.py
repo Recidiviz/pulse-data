@@ -252,28 +252,6 @@ def convert_ingest_info_to_proto(
                     proto_case_type_entry.state_supervision_case_type_entry_id
                 )
 
-            for contact in supervision_period.state_supervision_contacts:
-                proto_contact = _populate_proto(
-                    "state_supervision_contacts",
-                    contact,
-                    "state_supervision_contact_id",
-                    state_supervision_contact_map,
-                )
-                proto_period.state_supervision_contact_ids.append(
-                    proto_contact.state_supervision_contact_id
-                )
-
-                if contact.contacted_agent:
-                    proto_contacted_agent = _populate_proto(
-                        "state_agents",
-                        contact.contacted_agent,
-                        "state_agent_id",
-                        state_agent_map,
-                    )
-                    proto_contact.contacted_agent_id = (
-                        proto_contacted_agent.state_agent_id
-                    )
-
     for person in ingest_info_py.people:
         proto_person = _populate_proto("people", person, "person_id", person_map)
         for booking in person.bookings:
@@ -503,6 +481,26 @@ def convert_ingest_info_to_proto(
                     proto_response.decision_agent_ids.append(
                         proto_decision_agent.state_agent_id
                     )
+
+        for contact in state_person.state_supervision_contacts:
+            proto_contact = _populate_proto(
+                "state_supervision_contacts",
+                contact,
+                "state_supervision_contact_id",
+                state_supervision_contact_map,
+            )
+            proto_state_person.state_supervision_contact_ids.append(
+                proto_contact.state_supervision_contact_id
+            )
+
+            if contact.contacted_agent:
+                proto_contacted_agent = _populate_proto(
+                    "state_agents",
+                    contact.contacted_agent,
+                    "state_agent_id",
+                    state_agent_map,
+                )
+                proto_contact.contacted_agent_id = proto_contacted_agent.state_agent_id
 
         for sentence_group in state_person.state_sentence_groups:
             proto_sentence_group = _populate_proto(
@@ -969,10 +967,6 @@ def convert_proto_to_ingest_info(
             state_supervision_case_type_entry_map[proto_id]
             for proto_id in proto_supervision_period.state_supervision_case_type_entry_ids
         ]
-        supervision_period.state_supervision_contacts = [
-            state_supervision_contact_map[proto_id]
-            for proto_id in proto_supervision_period.state_supervision_contact_ids
-        ]
 
     # Wire child entities to respective incarceration periods
     for proto_incarceration_period in proto.state_incarceration_periods:
@@ -1075,6 +1069,11 @@ def convert_proto_to_ingest_info(
         state_person.state_supervision_violations = [
             state_supervision_violation_map[proto_id]
             for proto_id in proto_state_person.state_supervision_violation_ids
+        ]
+
+        state_person.state_supervision_contacts = [
+            state_supervision_contact_map[proto_id]
+            for proto_id in proto_state_person.state_supervision_contact_ids
         ]
 
         state_person.state_sentence_groups = [

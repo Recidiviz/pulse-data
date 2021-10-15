@@ -170,14 +170,13 @@ def generate_test_supervision_violation(
 
 
 def generate_test_supervision_period(
-    person_id, case_types, supervision_contacts
+    person_id, case_types
 ) -> state_schema.StateSupervisionPeriod:
     instance = state_schema.StateSupervisionPeriod(
         supervision_period_id=4444,
         state_code="US_XX",
         person_id=person_id,
         case_type_entries=case_types,
-        supervision_contacts=supervision_contacts,
     )
 
     return instance
@@ -339,6 +338,7 @@ def generate_test_person(
     agent: Optional[state_schema.StateAgent],
     incarceration_incidents: List[state_schema.StateIncarcerationIncident],
     supervision_violations: List[state_schema.StateSupervisionViolation],
+    supervision_contacts: List[state_schema.StateSupervisionContact],
 ) -> state_schema.StatePerson:
     """Returns a StatePerson to be used for testing."""
     instance = state_schema.StatePerson(
@@ -385,6 +385,7 @@ def generate_test_person(
         sentence_groups=sentence_groups,
         incarceration_incidents=incarceration_incidents,
         supervision_violations=supervision_violations,
+        supervision_contacts=supervision_contacts,
         assessments=[
             state_schema.StateAssessment(
                 assessment_id=456,
@@ -422,11 +423,9 @@ def generate_schema_state_person_obj_tree() -> state_schema.StatePerson:
     test_person_id = 143
 
     test_supervision_case_type = generate_test_supervision_case_type(test_person_id)
-    test_contact = generate_test_supervision_contact(test_person_id)
     test_supervision_period = generate_test_supervision_period(
         test_person_id,
         [test_supervision_case_type],
-        [test_contact],
     )
 
     test_parole_decision = generate_test_parole_decision(test_person_id)
@@ -487,6 +486,8 @@ def generate_schema_state_person_obj_tree() -> state_schema.StatePerson:
         test_person_id, [test_supervision_violation_response]
     )
 
+    test_contact = generate_test_supervision_contact(test_person_id)
+
     test_person = generate_test_person(
         test_person_id,
         test_state_code,
@@ -494,6 +495,7 @@ def generate_schema_state_person_obj_tree() -> state_schema.StatePerson:
         test_agent,
         [test_incarceration_incident],
         [test_supervision_violation],
+        [test_contact],
     )
 
     test_sentence_group.person = test_person

@@ -329,6 +329,31 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
 
     person.supervision_violations = [supervision_violation]
 
+    supervising_officer = entities.StateAgent.new_with_defaults(
+        agent_type=StateAgentType.SUPERVISION_OFFICER,
+        state_code="US_XX",
+        full_name="MS MADAM",
+    )
+
+    supervision_contact = entities.StateSupervisionContact.new_with_defaults(
+        external_id="CONTACT_ID",
+        status=StateSupervisionContactStatus.COMPLETED,
+        status_raw_text="COMPLETED",
+        contact_type=StateSupervisionContactType.FACE_TO_FACE,
+        contact_type_raw_text="FACE_TO_FACE",
+        contact_date=datetime.date(year=1111, month=1, day=2),
+        state_code="US_XX",
+        contact_reason=StateSupervisionContactReason.GENERAL_CONTACT,
+        contact_reason_raw_text="GENERAL_CONTACT",
+        location=StateSupervisionContactLocation.RESIDENCE,
+        location_raw_text="RESIDENCE",
+        verified_employment=True,
+        resulted_in_arrest=False,
+        contacted_agent=supervising_officer,
+    )
+
+    person.supervision_contacts = [supervision_contact]
+
     supervision_officer_agent = entities.StateAgent.new_with_defaults(
         agent_type=StateAgentType.SUPERVISION_OFFICER,
         state_code="US_XX",
@@ -559,35 +584,12 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
 
     incarceration_period.parole_decisions = [parole_decision]
 
-    supervising_officer = entities.StateAgent.new_with_defaults(
-        agent_type=StateAgentType.SUPERVISION_OFFICER,
-        state_code="US_XX",
-        full_name="MS MADAM",
-    )
-
     supervision_case_type_entry = (
         entities.StateSupervisionCaseTypeEntry.new_with_defaults(
             state_code="US_XX",
             case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
             case_type_raw_text="DOMESTIC_VIOLENCE",
         )
-    )
-
-    supervision_contact = entities.StateSupervisionContact.new_with_defaults(
-        external_id="CONTACT_ID",
-        status=StateSupervisionContactStatus.COMPLETED,
-        status_raw_text="COMPLETED",
-        contact_type=StateSupervisionContactType.FACE_TO_FACE,
-        contact_type_raw_text="FACE_TO_FACE",
-        contact_date=datetime.date(year=1111, month=1, day=2),
-        state_code="US_XX",
-        contact_reason=StateSupervisionContactReason.GENERAL_CONTACT,
-        contact_reason_raw_text="GENERAL_CONTACT",
-        location=StateSupervisionContactLocation.RESIDENCE,
-        location_raw_text="RESIDENCE",
-        verified_employment=True,
-        resulted_in_arrest=False,
-        contacted_agent=supervising_officer,
     )
 
     supervision_period = entities.StateSupervisionPeriod.new_with_defaults(
@@ -605,7 +607,6 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
         conditions="10PM CURFEW",
         supervising_officer=supervising_officer,
         case_type_entries=[supervision_case_type_entry],
-        supervision_contacts=[supervision_contact],
     )
 
     incarceration_sentence.supervision_periods = [supervision_period]
@@ -622,6 +623,7 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
             *person.program_assignments,
             *person.incarceration_incidents,
             *person.supervision_violations,
+            *person.supervision_contacts,
         )
         for child in person_children:
             child.person = person  # type: ignore[attr-defined]
@@ -686,7 +688,6 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
 
         supervision_period_children: Sequence[Entity] = (
             *supervision_period.case_type_entries,
-            *supervision_period.supervision_contacts,
         )
         for child in supervision_period_children:
             if hasattr(child, "supervision_periods"):

@@ -1758,22 +1758,10 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                             state_person_external_id_id="40404", id_type=US_ND_SID
                         )
                     ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_supervision_sentences=[
-                                StateSupervisionSentence(
-                                    state_supervision_periods=[
-                                        StateSupervisionPeriod(
-                                            state_supervision_contacts=[
-                                                state_supervision_contact_1,
-                                                state_supervision_contact_2,
-                                                state_supervision_contact_3,
-                                            ]
-                                        )
-                                    ],
-                                )
-                            ]
-                        )
+                    state_supervision_contacts=[
+                        state_supervision_contact_1,
+                        state_supervision_contact_2,
+                        state_supervision_contact_3,
                     ],
                 )
             ]
@@ -3436,26 +3424,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             supervision_sentences=[supervision_sentence_117110],
             person=supervision_sentence_117110.person,
         )
-        supervision_violation_117110 = entities.StateSupervisionViolation(
-            state_code=_STATE_CODE,
-            supervision_periods=[supervision_period_117110],
-            person=supervision_sentence_117110.person,
-        )
-        supervision_violation_repsonse_117110 = (
-            entities.StateSupervisionViolationResponse(
-                state_code=_STATE_CODE,
-                response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
-                response_date=datetime.date(2014, 12, 8),
-                supervision_violation=supervision_violation_117110,
-                person=supervision_sentence_117110.person,
-            )
-        )
-        supervision_violation_117110.supervision_violation_responses.append(
-            supervision_violation_repsonse_117110
-        )
-        supervision_period_117110.supervision_violation_entries.append(
-            supervision_violation_117110
-        )
         charge_117110 = entities.StateCharge.new_with_defaults(
             state_code=_STATE_CODE,
             status=ChargeStatus.PRESENT_WITHOUT_INFO,
@@ -4164,11 +4132,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
         ######################################
 
         # Arrange
-        supervision_period_1231 = entities.StateSupervisionPeriod.new_with_defaults(
-            state_code=_STATE_CODE,
-            person=person_7,
-        )
-
         person_7.supervising_officer.full_name = '{"full_name": "FIRSTNAME LASTNAME"}'
 
         supervision_contact_1231 = entities.StateSupervisionContact.new_with_defaults(
@@ -4185,7 +4148,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             contact_reason=StateSupervisionContactReason.GENERAL_CONTACT,
             contact_reason_raw_text="SUPERVISION",
             person=person_7,
-            supervision_periods=[supervision_period_1231],
             status=StateSupervisionContactStatus.COMPLETED,
             status_raw_text="OO",
         )
@@ -4203,7 +4165,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             contact_reason=StateSupervisionContactReason.GENERAL_CONTACT,
             contact_reason_raw_text="SUPERVISION",
             person=person_7,
-            supervision_periods=[supervision_period_1231],
             status=StateSupervisionContactStatus.COMPLETED,
             status_raw_text="OV-UA-FF",
         )
@@ -4221,34 +4182,16 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             contact_reason=StateSupervisionContactReason.GENERAL_CONTACT,
             contact_reason_raw_text="SUPERVISION",
             person=person_7,
-            supervision_periods=[supervision_period_1231],
             status=StateSupervisionContactStatus.ATTEMPTED,
             status_raw_text="HV-CC-AC-NS",
         )
-
-        sentence_group_1231 = entities.StateSentenceGroup.new_with_defaults(
-            state_code=_STATE_CODE,
-            person=person_7,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+        person_7.supervision_contacts.extend(
+            [
+                supervision_contact_1231,
+                supervision_contact_1232,
+                supervision_contact_1233,
+            ]
         )
-
-        supervision_sentence_1231 = entities.StateSupervisionSentence.new_with_defaults(
-            state_code=_STATE_CODE,
-            person=person_7,
-            supervision_periods=[supervision_period_1231],
-            sentence_group=sentence_group_1231,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            charges=[],
-        )
-
-        supervision_period_1231.supervision_contacts = [
-            supervision_contact_1231,
-            supervision_contact_1232,
-            supervision_contact_1233,
-        ]
-        supervision_period_1231.supervision_sentences = [supervision_sentence_1231]
-        sentence_group_1231.supervision_sentences.append(supervision_sentence_1231)
-        person_7.sentence_groups.append(sentence_group_1231)
 
         # Act
         self._run_ingest_job_for_filename("docstars_contacts_v2.csv")

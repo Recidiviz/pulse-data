@@ -1199,75 +1199,63 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                             state_person_external_id_id="456B", id_type=US_PA_PBPP
                         ),
                     ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_supervision_sentences=[
-                                StateSupervisionSentence(
-                                    state_supervision_periods=[
-                                        StateSupervisionPeriod(
-                                            state_supervision_contacts=[
-                                                StateSupervisionContact(
-                                                    state_supervision_contact_id="456B-2014-09-15-Offender-30",
-                                                    contact_date="2014-09-15",
-                                                    contact_type="Offender",
-                                                    contact_method="Home",
-                                                    location="None-Home",
-                                                    status="Yes",
-                                                    contacted_agent=StateAgent(
-                                                        state_agent_id="321444",
-                                                        agent_type="SUPERVISION_OFFICER",
-                                                        given_names="ELAINE",
-                                                        surname="BENES",
-                                                    ),
-                                                ),
-                                                StateSupervisionContact(
-                                                    state_supervision_contact_id="456B-2016-10-02-Both-50",
-                                                    contact_date="2016-10-01",
-                                                    contact_type="Both",
-                                                    contact_method="Email",
-                                                    location="Employer-Email",
-                                                    status="No",
-                                                    contacted_agent=StateAgent(
-                                                        state_agent_id="321444",
-                                                        agent_type="SUPERVISION_OFFICER",
-                                                        given_names="ELAINE",
-                                                        surname="BENES",
-                                                    ),
-                                                ),
-                                                StateSupervisionContact(
-                                                    state_supervision_contact_id="456B-2016-10-04-Collateral-50",
-                                                    contact_date="2016-10-03",
-                                                    contact_type="Collateral",
-                                                    contact_method="Home",
-                                                    location="None-Home",
-                                                    status="No",
-                                                    contacted_agent=StateAgent(
-                                                        state_agent_id="321444",
-                                                        agent_type="SUPERVISION_OFFICER",
-                                                        given_names="ELAINE",
-                                                        surname="BENES",
-                                                    ),
-                                                ),
-                                                StateSupervisionContact(
-                                                    state_supervision_contact_id="456B-2016-10-05-Collateral-30",
-                                                    contact_date="2016-10-04",
-                                                    contact_type="Collateral",
-                                                    contact_method="Field",
-                                                    location="CourtProbationStaf-Field",
-                                                    status="Yes",
-                                                    contacted_agent=StateAgent(
-                                                        state_agent_id="321444",
-                                                        agent_type="SUPERVISION_OFFICER",
-                                                        given_names="ELAINE",
-                                                        surname="BENES",
-                                                    ),
-                                                ),
-                                            ]
-                                        )
-                                    ]
-                                )
-                            ]
-                        )
+                    state_supervision_contacts=[
+                        StateSupervisionContact(
+                            state_supervision_contact_id="456B-2014-09-15-Offender-30",
+                            contact_date="2014-09-15",
+                            contact_type="Offender",
+                            contact_method="Home",
+                            location="None-Home",
+                            status="Yes",
+                            contacted_agent=StateAgent(
+                                state_agent_id="321444",
+                                agent_type="SUPERVISION_OFFICER",
+                                given_names="ELAINE",
+                                surname="BENES",
+                            ),
+                        ),
+                        StateSupervisionContact(
+                            state_supervision_contact_id="456B-2016-10-02-Both-50",
+                            contact_date="2016-10-01",
+                            contact_type="Both",
+                            contact_method="Email",
+                            location="Employer-Email",
+                            status="No",
+                            contacted_agent=StateAgent(
+                                state_agent_id="321444",
+                                agent_type="SUPERVISION_OFFICER",
+                                given_names="ELAINE",
+                                surname="BENES",
+                            ),
+                        ),
+                        StateSupervisionContact(
+                            state_supervision_contact_id="456B-2016-10-04-Collateral-50",
+                            contact_date="2016-10-03",
+                            contact_type="Collateral",
+                            contact_method="Home",
+                            location="None-Home",
+                            status="No",
+                            contacted_agent=StateAgent(
+                                state_agent_id="321444",
+                                agent_type="SUPERVISION_OFFICER",
+                                given_names="ELAINE",
+                                surname="BENES",
+                            ),
+                        ),
+                        StateSupervisionContact(
+                            state_supervision_contact_id="456B-2016-10-05-Collateral-30",
+                            contact_date="2016-10-04",
+                            contact_type="Collateral",
+                            contact_method="Field",
+                            location="CourtProbationStaf-Field",
+                            status="Yes",
+                            contacted_agent=StateAgent(
+                                state_agent_id="321444",
+                                agent_type="SUPERVISION_OFFICER",
+                                given_names="ELAINE",
+                                surname="BENES",
+                            ),
+                        ),
                     ],
                 ),
             ]
@@ -3742,32 +3730,9 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         ######################################
         # supervision_contacts
         ######################################
-
-        p2_placeholder_sg_for_contacts = entities.StateSentenceGroup.new_with_defaults(
-            person=person_2,
-            state_code=_STATE_CODE_UPPER,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-        )
-        p2_placeholder_ss_for_contacts = (
-            entities.StateSupervisionSentence.new_with_defaults(
-                person=person_2,
-                sentence_group=p2_placeholder_sg_for_contacts,
-                state_code=_STATE_CODE_UPPER,
-                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            )
-        )
-        p2_placeholder_sp_for_contacts = (
-            entities.StateSupervisionPeriod.new_with_defaults(
-                person=person_2,
-                supervision_sentences=[p2_placeholder_ss_for_contacts],
-                state_code=_STATE_CODE_UPPER,
-            )
-        )
-
         p2_sc_2_1 = entities.StateSupervisionContact.new_with_defaults(
             external_id="456B-2014-09-15-OFFENDER-30",
             person=person_2,
-            supervision_periods=[p2_placeholder_sp_for_contacts],
             state_code=_STATE_CODE_UPPER,
             contact_date=datetime.date(year=2014, month=9, day=15),
             contact_type=StateSupervisionContactType.DIRECT,
@@ -3784,7 +3749,6 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         p2_sc_2_2 = entities.StateSupervisionContact.new_with_defaults(
             external_id="456B-2016-10-02-BOTH-50",
             person=person_2,
-            supervision_periods=[p2_placeholder_sp_for_contacts],
             state_code=_STATE_CODE_UPPER,
             contact_date=datetime.date(year=2016, month=10, day=1),
             contact_type=StateSupervisionContactType.BOTH_COLLATERAL_AND_DIRECT,
@@ -3801,7 +3765,6 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         p2_sc_2_3 = entities.StateSupervisionContact.new_with_defaults(
             external_id="456B-2016-10-04-COLLATERAL-50",
             person=person_2,
-            supervision_periods=[p2_placeholder_sp_for_contacts],
             state_code=_STATE_CODE_UPPER,
             contact_date=datetime.date(year=2016, month=10, day=3),
             contact_type=StateSupervisionContactType.COLLATERAL,
@@ -3818,7 +3781,6 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         p2_sc_2_4 = entities.StateSupervisionContact.new_with_defaults(
             external_id="456B-2016-10-05-COLLATERAL-30",
             person=person_2,
-            supervision_periods=[p2_placeholder_sp_for_contacts],
             state_code=_STATE_CODE_UPPER,
             contact_date=datetime.date(year=2016, month=10, day=4),
             contact_type=StateSupervisionContactType.COLLATERAL,
@@ -3831,16 +3793,9 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             status_raw_text="YES",
             contacted_agent=p2_sp_2_1.supervising_officer,
         )
-        p2_placeholder_sp_for_contacts.supervision_contacts.extend(
+        person_2.supervision_contacts.extend(
             [p2_sc_2_4, p2_sc_2_3, p2_sc_2_2, p2_sc_2_1]
         )
-        p2_placeholder_ss_for_contacts.supervision_periods.append(
-            p2_placeholder_sp_for_contacts
-        )
-        p2_placeholder_sg_for_contacts.supervision_sentences.append(
-            p2_placeholder_ss_for_contacts
-        )
-        person_2.sentence_groups.append(p2_placeholder_sg_for_contacts)
 
         populate_person_backedges(expected_people)
 
