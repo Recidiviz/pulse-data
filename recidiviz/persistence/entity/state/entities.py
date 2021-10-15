@@ -313,6 +313,9 @@ class StatePerson(Entity, BuildableAttr, DefaultableAttr):
     supervision_violations: List["StateSupervisionViolation"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
+    supervision_contacts: List["StateSupervisionContact"] = attr.ib(
+        factory=list, validator=attr_validators.is_list
+    )
     sentence_groups: List["StateSentenceGroup"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
@@ -1070,9 +1073,6 @@ class StateSupervisionPeriod(
     case_type_entries: List["StateSupervisionCaseTypeEntry"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
-    supervision_contacts: List["StateSupervisionContact"] = attr.ib(
-        factory=list, validator=attr_validators.is_list
-    )
 
     @property
     def duration(self) -> DateRange:
@@ -1712,6 +1712,3 @@ class StateSupervisionContact(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     # Cross-entity relationships
     person: Optional["StatePerson"] = attr.ib(default=None)
     contacted_agent: Optional["StateAgent"] = attr.ib(default=None)
-    supervision_periods: List["StateSupervisionPeriod"] = attr.ib(
-        factory=list, validator=attr_validators.is_list
-    )

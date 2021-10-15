@@ -811,7 +811,7 @@ class TestExtractEntity(unittest.TestCase):
 
     def testExtractEntity(self):
         person = remove_relationship_properties(
-            database_test_utils.generate_test_person(123, "US_XX", [], None, [], [])
+            database_test_utils.generate_test_person(123, "US_XX", [], None, [], [], [])
         )
 
         person_data = [normalized_database_base_dict(person)]
@@ -855,7 +855,7 @@ class TestExtractEntity(unittest.TestCase):
 
     def testExtractEntity_InvalidUnifyingIdField(self):
         person = remove_relationship_properties(
-            database_test_utils.generate_test_person(123, "US_XX", [], None, [], [])
+            database_test_utils.generate_test_person(123, "US_XX", [], None, [], [], [])
         )
 
         person_data = [normalized_database_base_dict(person)]
@@ -946,7 +946,7 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
         """Tests the ExtractRelationshipPropertyEntities PTransform when there
         are 1-to-many relationships to be hydrated."""
         person = database_test_utils.generate_test_person(
-            123, "US_XX", [], None, [], []
+            123, "US_XX", [], None, [], [], []
         )
 
         assessment = database_test_utils.generate_test_assessment(
@@ -996,6 +996,7 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
                     "incarceration_incidents",
                     "sentence_groups",
                     "supervision_violations",
+                    "supervision_contacts",
                     "supervising_officer",
                 },
             )
@@ -1022,7 +1023,7 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
         )
 
         supervision_period = database_test_utils.generate_test_supervision_period(
-            123, [], []
+            123, []
         )
 
         # Build association table for many-to-many relationship

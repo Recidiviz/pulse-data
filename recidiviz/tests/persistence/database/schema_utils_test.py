@@ -265,7 +265,6 @@ def test_get_all_table_classes() -> None:
         "state_incarceration_sentence_incarceration_period_association",
         "state_incarceration_sentence_supervision_period_association",
         "state_parole_decision_decision_agent_association",
-        "state_supervision_period_supervision_contact_association",
         "state_supervision_sentence_incarceration_period_association",
         "state_supervision_sentence_supervision_period_association",
         "state_supervision_violation_response_decision_agent_association",

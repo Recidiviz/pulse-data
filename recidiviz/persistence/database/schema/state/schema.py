@@ -671,29 +671,6 @@ state_incarceration_sentence_supervision_period_association_table = Table(
     ),
 )
 
-state_supervision_period_supervision_contact_association_table = Table(
-    "state_supervision_period_supervision_contact_association",
-    StateBase.metadata,
-    Column(
-        "supervision_period_id",
-        Integer,
-        ForeignKey("state_supervision_period.supervision_period_id"),
-        index=True,
-        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="supervision period"),
-    ),
-    Column(
-        "supervision_contact_id",
-        Integer,
-        ForeignKey("state_supervision_contact.supervision_contact_id"),
-        index=True,
-        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="supervision contact"),
-    ),
-    comment=ASSOCIATON_TABLE_COMMENT_TEMPLATE.format(
-        first_object_name_plural="supervision periods",
-        second_object_name_plural="supervision contacts",
-    ),
-)
-
 state_charge_incarceration_sentence_association_table = Table(
     "state_charge_incarceration_sentence_association",
     StateBase.metadata,
@@ -1248,6 +1225,9 @@ class StatePerson(StateBase, _StatePersonSharedColumns):
     )
     supervision_violations = relationship(
         "StateSupervisionViolation", backref="person", lazy="selectin"
+    )
+    supervision_contacts = relationship(
+        "StateSupervisionContact", backref="person", lazy="selectin"
     )
     sentence_groups = relationship(
         "StateSentenceGroup", backref="person", lazy="selectin"
@@ -2431,12 +2411,6 @@ class StateSupervisionPeriod(StateBase, _StateSupervisionPeriodSharedColumns):
     supervising_officer = relationship("StateAgent", uselist=False, lazy="selectin")
     case_type_entries = relationship(
         "StateSupervisionCaseTypeEntry", backref="supervision_period", lazy="selectin"
-    )
-    supervision_contacts = relationship(
-        "StateSupervisionContact",
-        secondary=state_supervision_period_supervision_contact_association_table,
-        backref="supervision_periods",
-        lazy="selectin",
     )
 
 
@@ -4022,7 +3996,6 @@ class StateSupervisionContact(StateBase, _StateSupervisionContactSharedColumns):
         comment=PRIMARY_KEY_COMMENT_TEMPLATE.format(object_name="supervision contact"),
     )
 
-    person = relationship("StatePerson", uselist=False)
     contacted_agent = relationship("StateAgent", uselist=False, lazy="selectin")
 
 

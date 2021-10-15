@@ -464,27 +464,19 @@ class TestRecidivismPipeline(unittest.TestCase):
             }
         ]
 
-        data_dict: Dict[str, List[Dict[str, Any]]] = {
+        data_dict = default_data_dict_for_root_schema_classes(
+            ROOT_SCHEMA_CLASSES_FOR_PIPELINE
+        )
+        data_dict_overrides: Dict[str, List[Dict[str, Any]]] = {
             schema.StatePerson.__tablename__: persons_data,
             schema.StateIncarcerationPeriod.__tablename__: incarceration_periods_data,
-            schema.StateSupervisionPeriod.__tablename__: [],
             schema.StateSupervisionViolationResponse.__tablename__: supervision_violation_response_data,
             schema.StateSupervisionViolation.__tablename__: supervision_violation_data,
-            schema.StateAssessment.__tablename__: [],
-            schema.StatePersonExternalId.__tablename__: [],
-            schema.StatePersonAlias.__tablename__: [],
-            schema.StatePersonRace.__tablename__: [],
-            schema.StatePersonEthnicity.__tablename__: [],
-            schema.StateSentenceGroup.__tablename__: [],
-            schema.StateProgramAssignment.__tablename__: [],
-            schema.StateIncarcerationIncident.__tablename__: [],
-            schema.StateParoleDecision.__tablename__: [],
-            schema.StateSupervisionViolationTypeEntry.__tablename__: [],
-            schema.StateSupervisionViolatedConditionEntry.__tablename__: [],
-            schema.StateSupervisionViolationResponseDecisionEntry.__tablename__: [],
             "persons_to_recent_county_of_residence": fake_person_id_to_county_query_result,
             "state_race_ethnicity_population_counts": state_race_ethnicity_population_count_data,
         }
+        data_dict.update(data_dict_overrides)
+
         dataset = "recidiviz-123.state"
 
         self.run_test_pipeline(dataset, data_dict)
