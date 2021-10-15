@@ -87,7 +87,6 @@ OVERDUE_LSIR_BY_PO_BY_DAY_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=OVERDUE_LSIR_BY_PO_BY_DAY_VIEW_NAME,
     view_query_template=OVERDUE_LSIR_BY_PO_BY_DAY_QUERY_TEMPLATE,
     description=OVERDUE_LSIR_BY_PO_BY_DAY_DESCRIPTION,
-    materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     vitals_views_dataset=dataset_config.VITALS_REPORT_DATASET,
     vitals_state_specific_join_with_supervision_population=state_specific_query_strings.vitals_state_specific_join_with_supervision_population(
         "overdue_lsir"

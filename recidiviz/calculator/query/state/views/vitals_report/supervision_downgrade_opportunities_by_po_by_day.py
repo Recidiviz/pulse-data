@@ -89,8 +89,6 @@ SUPERVISION_DOWNGRADE_OPPORTUNITIES_BY_PO_BY_DAY_VIEW_BUILDER = SimpleBigQueryVi
     view_id=SUPERVISION_DOWNGRADE_OPPORTUNITIES_BY_PO_BY_DAY_VIEW_NAME,
     view_query_template=SUPERVISION_DOWNGRADE_OPPORTUNITIES_BY_PO_BY_DAY_QUERY_TEMPLATE,
     description=SUPERVISION_DOWNGRADE_OPPORTUNITIES_BY_PO_BY_DAY_DESCRIPTION,
-    materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
-    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     vitals_views_dataset=dataset_config.VITALS_REPORT_DATASET,
     vitals_state_specific_join_with_supervision_population=state_specific_query_strings.vitals_state_specific_join_with_supervision_population(
         "downgrade_opportunities"
