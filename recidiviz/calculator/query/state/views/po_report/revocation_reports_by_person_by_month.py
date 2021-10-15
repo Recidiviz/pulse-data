@@ -17,10 +17,9 @@
 """Revocation report recommendations by person by month."""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.views.po_report.violation_reports_query import (
-    violation_reports_query,
+    VIOLATION_REPORTS_QUERY,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -34,10 +33,10 @@ Revocation report recommendations by person by month. If multiple violation repo
 month, we filter for the most severe violation type (i.e. "new crime" violation types over "technical") 
 """
 
-REVOCATION_REPORTS_BY_PERSON_BY_MONTH_QUERY_TEMPLATE = """
-    /*{description}*/
+REVOCATION_REPORTS_BY_PERSON_BY_MONTH_QUERY_TEMPLATE = f"""
+    /*{{description}}*/
     WITH violation_reports AS (
-      {violation_reports_query}
+      {VIOLATION_REPORTS_QUERY}
     ),
     revocation_recommendations AS (
     SELECT
@@ -74,14 +73,8 @@ REVOCATION_REPORTS_BY_PERSON_BY_MONTH_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     should_materialize=True,
     view_query_template=REVOCATION_REPORTS_BY_PERSON_BY_MONTH_QUERY_TEMPLATE,
     description=REVOCATION_REPORTS_BY_PERSON_BY_MONTH_DESCRIPTION,
-    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     state_dataset=dataset_config.STATE_BASE_DATASET,
-    district_dimension=bq_utils.unnest_district(district_column="district"),
-    po_report_dataset=dataset_config.PO_REPORT_DATASET,
-    violation_reports_query=violation_reports_query(
-        state_dataset=dataset_config.STATE_BASE_DATASET,
-        reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
-    ),
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
 )
 
 if __name__ == "__main__":
