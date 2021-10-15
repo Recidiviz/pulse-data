@@ -72,7 +72,6 @@ POPULATION_OUTFLOWS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=POPULATION_OUTFLOWS_VIEW_NAME,
     view_query_template=POPULATION_OUTFLOWS_QUERY_TEMPLATE,
     description=POPULATION_OUTFLOWS_VIEW_DESCRIPTION,
-    analyst_dataset=dataset_config.ANALYST_VIEWS_DATASET,
     population_projection_dataset=dataset_config.POPULATION_PROJECTION_DATASET,
     should_materialize=False,
 )
