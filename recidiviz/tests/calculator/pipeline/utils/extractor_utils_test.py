@@ -499,88 +499,6 @@ class TestBuildRootEntity(unittest.TestCase):
 
                 test_pipeline.run()
 
-    def testBuildRootEntity_HydratedRelationships_InvalidUnifyingIdField(self):
-        """Tests the BuildRootEntity PTransform when the the |unifying_id_field|
-        is a valid field on the root_schema_class, but is not a valid field
-        on one of the relationship entities.
-
-        In this case, schema.StateSupervisionViolation has a field
-        'supervision_period_id', but schema.StateSupervisionViolationResponse
-        does not have this field. This means you will not be able to properly
-        connect this related entity.
-
-        We expect that we do not hydrate StateSupervisionViolationResponses in this case.
-        """
-
-        supervision_violation_response = (
-            database_test_utils.generate_test_supervision_violation_response(123)
-        )
-
-        supervision_violation = database_test_utils.generate_test_supervision_violation(
-            123, [supervision_violation_response]
-        )
-
-        supervision_violation.supervision_period_id = 444
-
-        supervision_violation.supervision_violation_responses = [
-            supervision_violation_response
-        ]
-
-        supervision_violation_data = [
-            normalized_database_base_dict(supervision_violation)
-        ]
-
-        supervision_violation_response_data = [
-            normalized_database_base_dict(supervision_violation_response)
-        ]
-
-        data_dict = {
-            supervision_violation.__tablename__: supervision_violation_data,
-            supervision_violation_response.__tablename__: supervision_violation_response_data,
-        }
-
-        with patch("logging.Logger.warning") as mock:
-            dataset = "recidiviz-123.state"
-            with patch(
-                "recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery",
-                self.fake_bq_source_factory.create_fake_bq_source_constructor(
-                    dataset, data_dict
-                ),
-            ):
-                test_pipeline = TestPipeline()
-
-                output = test_pipeline | extractor_utils.BuildRootEntity(
-                    dataset=dataset,
-                    root_entity_class=entities.StateSupervisionViolation,
-                    unifying_id_field="supervision_period_id",
-                    build_related_entities=True,
-                    state_code=supervision_violation.state_code,
-                )
-
-                output_violation_entity = StateSchemaToEntityConverter().convert(
-                    supervision_violation
-                )
-
-                output_violation_entity.supervision_violation_responses = []
-                output_violation_entity.supervision_violation_types = []
-                output_violation_entity.supervision_violated_conditions = []
-
-                assert_that(
-                    output,
-                    equal_to(
-                        [
-                            (
-                                supervision_violation.supervision_period_id,
-                                output_violation_entity,
-                            )
-                        ]
-                    ),
-                )
-
-                test_pipeline.run()
-
-            mock.assert_not_called()
-
     def testBuildRootEntity_HydratedRelationshipProperties_StateCodeFilter_Mismatch(
         self,
     ):
@@ -893,7 +811,7 @@ class TestExtractEntity(unittest.TestCase):
 
     def testExtractEntity(self):
         person = remove_relationship_properties(
-            database_test_utils.generate_test_person(123, "US_XX", [], None, [])
+            database_test_utils.generate_test_person(123, "US_XX", [], None, [], [])
         )
 
         person_data = [normalized_database_base_dict(person)]
@@ -937,7 +855,7 @@ class TestExtractEntity(unittest.TestCase):
 
     def testExtractEntity_InvalidUnifyingIdField(self):
         person = remove_relationship_properties(
-            database_test_utils.generate_test_person(123, "US_XX", [], None, [])
+            database_test_utils.generate_test_person(123, "US_XX", [], None, [], [])
         )
 
         person_data = [normalized_database_base_dict(person)]
@@ -1027,7 +945,9 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
     def testExtractRelationshipPropertyEntities_With1ToMany(self):
         """Tests the ExtractRelationshipPropertyEntities PTransform when there
         are 1-to-many relationships to be hydrated."""
-        person = database_test_utils.generate_test_person(123, "US_XX", [], None, [])
+        person = database_test_utils.generate_test_person(
+            123, "US_XX", [], None, [], []
+        )
 
         assessment = database_test_utils.generate_test_assessment(
             person_id=person.person_id
@@ -1075,6 +995,7 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
                     "program_assignments",
                     "incarceration_incidents",
                     "sentence_groups",
+                    "supervision_violations",
                     "supervising_officer",
                 },
             )
@@ -1101,7 +1022,7 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
         )
 
         supervision_period = database_test_utils.generate_test_supervision_period(
-            123, [], [], []
+            123, [], []
         )
 
         # Build association table for many-to-many relationship

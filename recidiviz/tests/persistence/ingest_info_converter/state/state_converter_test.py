@@ -179,6 +179,7 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             state_assessment_ids=["ASSESSMENT_ID"],
             state_program_assignment_ids=["PROGRAM_ASSIGNMENT_ID"],
             state_incarceration_incident_ids=["INCIDENT_ID"],
+            state_supervision_violation_ids=["VIOLATION_ID"],
             state_sentence_group_ids=["GROUP_ID1", "GROUP_ID2"],
             supervising_officer_id="AGENT_ID_SUPERVISING",
         )
@@ -279,7 +280,6 @@ class TestIngestInfoStateConverter(unittest.TestCase):
         )
         ingest_info.state_supervision_periods.add(
             state_supervision_period_id="S_PERIOD_ID1",
-            state_supervision_violation_entry_ids=["VIOLATION_ID"],
             supervision_type="PAROLE",
             supervision_level="MED",
             state_supervision_contact_ids=["SUPERVISION_CONTACT_ID"],
@@ -646,6 +646,7 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                 assessments=[assessment],
                 program_assignments=[program_assignment],
                 incarceration_incidents=[incident],
+                supervision_violations=[violation],
                 sentence_groups=[
                     StateSentenceGroup.new_with_defaults(
                         external_id="GROUP_ID1",
@@ -665,7 +666,6 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                                         state_code="US_XX",
                                         supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                                         supervision_type_raw_text="PAROLE",
-                                        supervision_violation_entries=[violation],
                                         supervision_contacts=[supervision_contact],
                                     )
                                 ],

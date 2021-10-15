@@ -17,20 +17,7 @@
 """Tests for us_mo_state_matching_utils.py"""
 import datetime
 
-import attr
-
-from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
-from recidiviz.persistence.database.schema.state import schema
-from recidiviz.persistence.entity.state.entities import (
-    StatePerson,
-    StateSentenceGroup,
-    StateSupervisionPeriod,
-    StateSupervisionSentence,
-    StateSupervisionViolation,
-    StateSupervisionViolationResponse,
-)
 from recidiviz.persistence.entity_matching.state.us_mo.us_mo_matching_utils import (
-    remove_suffix_from_violation_ids,
     set_current_supervising_officer_from_supervision_periods,
 )
 from recidiviz.tests.persistence.database.schema.state.schema_test_utils import (
@@ -66,86 +53,6 @@ _STATE_CODE = "US_MO"
 
 class TestUsMoMatchingUtils(BaseStateMatchingUtilsTest):
     """Test class for US_MO specific matching utils."""
-
-    def test_removeSeosFromViolationIds(self) -> None:
-        svr = schema.StateSupervisionViolationResponse(
-            state_code=_STATE_CODE, external_id="DOC-CYC-VSN1-SEO-FSO"
-        )
-        sv = schema.StateSupervisionViolation(
-            state_code=_STATE_CODE,
-            external_id="DOC-CYC-VSN1-SEO-FSO",
-            supervision_violation_responses=[svr],
-        )
-        svr_2 = schema.StateSupervisionViolationResponse(
-            state_code=_STATE_CODE, external_id="DOC-CYC-VSN1-SEO-FSO"
-        )
-        sv_2 = schema.StateSupervisionViolation(
-            state_code=_STATE_CODE,
-            external_id="DOC-CYC-VSN1-SEO-FSO",
-            supervision_violation_responses=[svr_2],
-        )
-        sp = schema.StateSupervisionPeriod(
-            state_code=_STATE_CODE,
-            supervision_violation_entries=[sv, sv_2],
-        )
-        ss = schema.StateSupervisionSentence(
-            state_code=_STATE_CODE,
-            supervision_periods=[sp],
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-        )
-        sg = schema.StateSentenceGroup(
-            state_code=_STATE_CODE,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            supervision_sentences=[ss],
-        )
-        p = schema.StatePerson(state_code=_STATE_CODE, sentence_groups=[sg])
-
-        expected_svr = StateSupervisionViolationResponse.new_with_defaults(
-            state_code=_STATE_CODE, external_id="DOC-CYC-VSN1"
-        )
-        expected_sv = StateSupervisionViolation.new_with_defaults(
-            state_code=_STATE_CODE,
-            external_id="DOC-CYC-VSN1",
-            supervision_violation_responses=[expected_svr],
-        )
-        expected_svr_2 = attr.evolve(expected_svr)
-        expected_sv_2 = attr.evolve(
-            expected_sv, supervision_violation_responses=[expected_svr_2]
-        )
-        expected_sp = StateSupervisionPeriod.new_with_defaults(
-            state_code=_STATE_CODE,
-            supervision_violation_entries=[expected_sv, expected_sv_2],
-        )
-        expected_ss = StateSupervisionSentence.new_with_defaults(
-            state_code=_STATE_CODE,
-            supervision_periods=[expected_sp],
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-        )
-        expected_sg = StateSentenceGroup.new_with_defaults(
-            state_code=_STATE_CODE,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            supervision_sentences=[expected_ss],
-        )
-        expected_p = StatePerson.new_with_defaults(
-            state_code=_STATE_CODE, sentence_groups=[expected_sg]
-        )
-
-        remove_suffix_from_violation_ids([p], field_index=self.field_index)
-        self.assertEqual(expected_p, self.to_entity(p))
-
-    def test_removeSeosFromViolationIds_unexpectedFormat(self) -> None:
-        with self.assertRaisesRegex(
-            ValueError,
-            r"^Unexpected id format \[bad_id\] for \[StateSupervisionViolation\(external_id=bad_id\)\]$",
-        ):
-            sv = schema.StateSupervisionViolation(external_id="bad_id")
-            sp = schema.StateSupervisionPeriod(
-                supervision_violation_entries=[sv],
-            )
-            ss = schema.StateSupervisionSentence(supervision_periods=[sp])
-            sg = schema.StateSentenceGroup(supervision_sentences=[ss])
-            p = schema.StatePerson(sentence_groups=[sg])
-            remove_suffix_from_violation_ids([p], field_index=self.field_index)
 
     def test_setCurrentSupervisingOfficerFromSupervision_periods(self) -> None:
         # Arrange

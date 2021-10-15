@@ -25,10 +25,8 @@ from recidiviz.persistence.entity_matching.state.base_state_matching_delegate im
 )
 from recidiviz.persistence.entity_matching.state.state_date_based_matching_utils import (
     move_periods_onto_sentences_by_date,
-    move_violations_onto_supervision_periods_for_sentence,
 )
 from recidiviz.persistence.entity_matching.state.us_mo.us_mo_matching_utils import (
-    remove_suffix_from_violation_ids,
     set_current_supervising_officer_from_supervision_periods,
 )
 
@@ -38,12 +36,6 @@ class UsMoMatchingDelegate(BaseStateMatchingDelegate):
 
     def __init__(self):
         super().__init__("us_mo")
-
-    def perform_match_preprocessing(self, ingested_persons: List[schema.StatePerson]):
-        logging.info(
-            "[Entity matching] Pre-processing: Remove SEOs from " "violation ids"
-        )
-        remove_suffix_from_violation_ids(ingested_persons, field_index=self.field_index)
 
     def perform_match_postprocessing(self, matched_persons: List[schema.StatePerson]):
         logging.info(
@@ -59,12 +51,5 @@ class UsMoMatchingDelegate(BaseStateMatchingDelegate):
             "[Entity matching] Set current / last supervising officer from supervision periods."
         )
         set_current_supervising_officer_from_supervision_periods(
-            matched_persons, field_index=self.field_index
-        )
-
-        logging.info(
-            "[Entity matching] Post-processing: Move SupervisionViolationResponses onto SupervisionPeriods by date."
-        )
-        move_violations_onto_supervision_periods_for_sentence(
             matched_persons, field_index=self.field_index
         )

@@ -16,7 +16,7 @@
 # =============================================================================
 """Contains util methods for UsMoMatchingDelegate."""
 import datetime
-from typing import List, Union
+from typing import List
 
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.entity_utils import (
@@ -26,45 +26,6 @@ from recidiviz.persistence.entity.entity_utils import (
 from recidiviz.persistence.entity_matching.state.state_matching_utils import (
     get_all_entities_of_cls,
 )
-
-
-# TODO(#1883): Remove this once our proto converter and data extractor can handle the presence of multiple paths to
-#  entities with the same id
-def remove_suffix_from_violation_ids(
-    ingested_persons: List[schema.StatePerson], field_index: CoreEntityFieldIndex
-):
-    """Removes SEO (sentence sequence numbers) and FSO (field sequence numbers) from the end of
-    StateSupervisionViolation external_ids. This allows violations across sentences to be merged correctly by
-    entity matching.
-    """
-    ssvs = get_all_entities_of_cls(
-        ingested_persons, schema.StateSupervisionViolation, field_index=field_index
-    )
-    ssvrs = get_all_entities_of_cls(
-        ingested_persons,
-        schema.StateSupervisionViolationResponse,
-        field_index=field_index,
-    )
-    _remove_suffix_from_violation_entity(ssvs)
-    _remove_suffix_from_violation_entity(ssvrs)
-
-
-def _remove_suffix_from_violation_entity(
-    violation_entities: List[
-        Union[
-            schema.StateSupervisionViolation, schema.StateSupervisionViolationResponse
-        ]
-    ]
-):
-    for entity in violation_entities:
-        if not entity.external_id:
-            continue
-        splits = entity.external_id.rsplit("-", 2)
-        if len(splits) != 3:
-            raise ValueError(
-                f"Unexpected id format [{entity.external_id}] for [{entity}]"
-            )
-        entity.external_id = splits[0]
 
 
 def set_current_supervising_officer_from_supervision_periods(

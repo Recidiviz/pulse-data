@@ -310,6 +310,9 @@ class StatePerson(Entity, BuildableAttr, DefaultableAttr):
     incarceration_incidents: List["StateIncarcerationIncident"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
+    supervision_violations: List["StateSupervisionViolation"] = attr.ib(
+        factory=list, validator=attr_validators.is_list
+    )
     sentence_groups: List["StateSentenceGroup"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
@@ -1064,9 +1067,6 @@ class StateSupervisionPeriod(
     supervision_sentences: List["StateSupervisionSentence"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
-    supervision_violation_entries: List["StateSupervisionViolation"] = attr.ib(
-        factory=list, validator=attr_validators.is_list
-    )
     case_type_entries: List["StateSupervisionCaseTypeEntry"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
@@ -1378,9 +1378,6 @@ class StateSupervisionViolation(ExternalIdEntity, BuildableAttr, DefaultableAttr
 
     # Cross-entity relationships
     person: Optional["StatePerson"] = attr.ib(default=None)
-    supervision_periods: List["StateSupervisionPeriod"] = attr.ib(
-        factory=list, validator=attr_validators.is_list
-    )
     supervision_violation_types: List["StateSupervisionViolationTypeEntry"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )

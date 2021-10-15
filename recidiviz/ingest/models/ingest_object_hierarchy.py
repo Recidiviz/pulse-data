@@ -58,6 +58,20 @@ _HIERARCHY_MAP: Dict[
         "state_person",
         "state_incarceration_incident",
     ),
+    "state_supervision_violation": ("state_person",),
+    "state_supervision_violation_type_entry": (
+        "state_person",
+        "state_supervision_violation",
+    ),
+    "state_supervision_violation_response": (
+        "state_person",
+        "state_supervision_violation",
+    ),
+    "state_supervision_violation_response_decision_entry": (
+        "state_person",
+        "state_supervision_violation",
+        "state_supervision_violation_response",
+    ),
     "state_sentence_group": ("state_person",),
     "state_program_assignment": ("state_person",),
     "state_supervision_sentence": (
@@ -129,58 +143,6 @@ _HIERARCHY_MAP: Dict[
             },
         ),
         "state_charge",
-    ),
-    "state_supervision_violation": (
-        "state_person",
-        "state_sentence_group",
-        AncestorTypeChoices(
-            key="state_sentence",
-            ancestor_choices={
-                "state_incarceration_sentence",
-                "state_supervision_sentence",
-            },
-        ),
-        "state_supervision_period",
-    ),
-    "state_supervision_violation_type_entry": (
-        "state_person",
-        "state_sentence_group",
-        AncestorTypeChoices(
-            key="state_sentence",
-            ancestor_choices={
-                "state_incarceration_sentence",
-                "state_supervision_sentence",
-            },
-        ),
-        "state_supervision_period",
-        "state_supervision_violation",
-    ),
-    "state_supervision_violation_response": (
-        "state_person",
-        "state_sentence_group",
-        AncestorTypeChoices(
-            key="state_sentence",
-            ancestor_choices={
-                "state_incarceration_sentence",
-                "state_supervision_sentence",
-            },
-        ),
-        "state_supervision_period",
-        "state_supervision_violation",
-    ),
-    "state_supervision_violation_response_decision_entry": (
-        "state_person",
-        "state_sentence_group",
-        AncestorTypeChoices(
-            key="state_sentence",
-            ancestor_choices={
-                "state_incarceration_sentence",
-                "state_supervision_sentence",
-            },
-        ),
-        "state_supervision_period",
-        "state_supervision_violation",
-        "state_supervision_violation_response",
     ),
     # TODO(#1883): The entry here for |state_agent| is a hack. StateAgent
     #  can have multiple ancestor paths depending on what type of agent

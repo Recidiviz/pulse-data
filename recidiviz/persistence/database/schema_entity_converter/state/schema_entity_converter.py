@@ -52,19 +52,7 @@ class _StateSchemaEntityConverter(BaseSchemaEntityConverter[SrcBaseType, DstBase
     def _get_entities_module(self) -> ModuleType:
         return entities
 
-    # TODO(#2697): Remove these checks once these columns are removed from
-    #  our schema.
     def _should_skip_field(self, entity_cls: Type, field: FieldNameType) -> bool:
-        if (
-            entity_cls == entities.StateSupervisionPeriod
-            and field == "supervision_violations"
-        ):
-            return True
-        if (
-            entity_cls == entities.StateSupervisionViolation
-            and field == "supervision_period"
-        ):
-            return True
         return False
 
     def _populate_indirect_back_edges(self, dst: DstBaseType) -> None:

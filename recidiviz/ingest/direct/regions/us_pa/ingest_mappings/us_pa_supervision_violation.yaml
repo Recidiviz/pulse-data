@@ -12,83 +12,77 @@ output:
       - StatePersonExternalId:
           external_id: parole_number
           id_type: $literal("US_PA_PBPP")
-    sentence_groups:
-      - StateSentenceGroup:
-          supervision_sentences:
-            - StateSupervisionSentence:
-                supervision_periods:
-                  - StateSupervisionPeriod:
-                      supervision_violation_entries:
-                        - StateSupervisionViolation:
-                            external_id:
-                              $concat:
-                                $values:
-                                  - parole_number
-                                  - parole_count_id
-                                  - set_id
-                            violation_date: violation_date
-                            supervision_violation_types:
-                              - $foreach:
-                                  $split_json: violation_types
-                                StateSupervisionViolationTypeEntry:
-                                  violation_type:
-                                    $raw_text:
-                                      $json_extract:
-                                        $json: $iter
-                                        $key: violation_code
-                                    $mappings:
-                                      StateSupervisionViolationType.ABSCONDED:
-                                         - H06  # Failure to report upon release
-                                         - H09  # Absconding
-                                      StateSupervisionViolationType.LAW:
-                                         - H04  # Pending criminal charges (UCV) Detained/Not detained
-                                         - M20  # Conviction of Misdemeanor Offense
-                                         - M13  # Conviction of a summary offense (a minor criminal, not civil offense)
-                                      StateSupervisionViolationType.TECHNICAL:
-                                         - M04  # Travel violations
-                                         - H01  # Changing residence without permission
-                                         - M02  # A - Failure to report as instructed
-                                         - M19  # B - Failure to notify agent of arrest or citation within 72 hrs
-                                         - L07  # C - Failure to notify agent of change in status/employment
-                                         - M01  # C - Failure to notify agent of change in status/employment
-                                         - L08  # A - Positive urine, drugs
-                                         - M03  # A - Positive urine, drugs
-                                         - H12  # A - Positive urine, drugs
-                                         - H10  # B - Possession of offense weapon
-                                         - H11  # B - Possession of firearm
-                                         - H08  # C - Assaultive behavior
-                                         - L06  # Failure to pay court ordered fees, restitution
-                                         - L01  # Failure to participate in community service
-                                         - L03  # Failure to pay supervision fees
-                                         - L04  # Failure to pay urinalysis fees
-                                         - L05  # Failure to support dependents
-                                         - M05  # Possession of contraband, cell phones, etc.
-                                         - M06  # Failure to take medications as prescribed
-                                         - M07  # Failure to maintain employment
-                                         - M08  # Failure to participate or maintain treatment
-                                         - M09  # Entering prohibited establishments
-                                         - M10  # Associating with gang members, co-defendants, etc
-                                         - M11  # Failure to abide by written instructions
-                                         - M12  # Failure to abide by field imposed special conditions
-                                         - L02  # Positive urine, alcohol (Previous History)
-                                         - M14  # Positive urine, alcohol (Previous History)
-                                         - H03  # Positive urine, alcohol (Previous History)
-                                         - M15  # Violating curfew
-                                         - M16  # Violating electronic monitoring
-                                         - M17  # Failure to provide urine
-                                         - M18  # Failure to complete treatment
-                                         - H02  # Associating with crime victims
-                                         - H05  # Failure to abide by Board Imposed Special Conditions
-                                         - H07  # Removal from Treatment/CCC Failure
-                            supervision_violated_conditions:
-                              - $foreach:
-                                  $split_json: violation_types
-                                StateSupervisionViolatedConditionEntry:
-                                  condition:
-                                    $custom:
-                                      $function: us_pa_custom_parsers.violated_condition_from_violation_code
-                                      $args:
-                                        violation_code:
-                                          $json_extract:
-                                            $json: $iter
-                                            $key: violation_code
+    supervision_violations:
+      - StateSupervisionViolation:
+          external_id:
+            $concat:
+              $values:
+                - parole_number
+                - parole_count_id
+                - set_id
+          violation_date: violation_date
+          supervision_violation_types:
+            - $foreach:
+                $split_json: violation_types
+              StateSupervisionViolationTypeEntry:
+                violation_type:
+                  $raw_text:
+                    $json_extract:
+                      $json: $iter
+                      $key: violation_code
+                  $mappings:
+                    StateSupervisionViolationType.ABSCONDED:
+                      - H06  # Failure to report upon release
+                      - H09  # Absconding
+                    StateSupervisionViolationType.LAW:
+                      - H04  # Pending criminal charges (UCV) Detained/Not detained
+                      - M20  # Conviction of Misdemeanor Offense
+                      - M13  # Conviction of a summary offense (a minor criminal, not civil offense)
+                    StateSupervisionViolationType.TECHNICAL:
+                      - M04  # Travel violations
+                      - H01  # Changing residence without permission
+                      - M02  # A - Failure to report as instructed
+                      - M19  # B - Failure to notify agent of arrest or citation within 72 hrs
+                      - L07  # C - Failure to notify agent of change in status/employment
+                      - M01  # C - Failure to notify agent of change in status/employment
+                      - L08  # A - Positive urine, drugs
+                      - M03  # A - Positive urine, drugs
+                      - H12  # A - Positive urine, drugs
+                      - H10  # B - Possession of offense weapon
+                      - H11  # B - Possession of firearm
+                      - H08  # C - Assaultive behavior
+                      - L06  # Failure to pay court ordered fees, restitution
+                      - L01  # Failure to participate in community service
+                      - L03  # Failure to pay supervision fees
+                      - L04  # Failure to pay urinalysis fees
+                      - L05  # Failure to support dependents
+                      - M05  # Possession of contraband, cell phones, etc.
+                      - M06  # Failure to take medications as prescribed
+                      - M07  # Failure to maintain employment
+                      - M08  # Failure to participate or maintain treatment
+                      - M09  # Entering prohibited establishments
+                      - M10  # Associating with gang members, co-defendants, etc
+                      - M11  # Failure to abide by written instructions
+                      - M12  # Failure to abide by field imposed special conditions
+                      - L02  # Positive urine, alcohol (Previous History)
+                      - M14  # Positive urine, alcohol (Previous History)
+                      - H03  # Positive urine, alcohol (Previous History)
+                      - M15  # Violating curfew
+                      - M16  # Violating electronic monitoring
+                      - M17  # Failure to provide urine
+                      - M18  # Failure to complete treatment
+                      - H02  # Associating with crime victims
+                      - H05  # Failure to abide by Board Imposed Special Conditions
+                      - H07  # Removal from Treatment/CCC Failure
+          supervision_violated_conditions:
+            - $foreach:
+                $split_json: violation_types
+              StateSupervisionViolatedConditionEntry:
+                condition:
+                  $custom:
+                    $function: us_pa_custom_parsers.violated_condition_from_violation_code
+                    $args:
+                      violation_code:
+                        $json_extract:
+                          $json: $iter
+                          $key: violation_code

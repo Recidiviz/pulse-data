@@ -16,7 +16,6 @@
 # =============================================================================
 """Contains logic for US_PA specific entity matching overrides."""
 
-import logging
 from typing import List, Optional
 
 from recidiviz.persistence.database.schema.state import schema
@@ -24,9 +23,6 @@ from recidiviz.persistence.entity_matching import entity_matching_utils
 from recidiviz.persistence.entity_matching.entity_matching_types import EntityTree
 from recidiviz.persistence.entity_matching.state.base_state_matching_delegate import (
     BaseStateMatchingDelegate,
-)
-from recidiviz.persistence.entity_matching.state.state_date_based_matching_utils import (
-    move_violations_onto_supervision_periods_for_person,
 )
 from recidiviz.persistence.entity_matching.state.state_matching_utils import (
     nonnull_fields_entity_match,
@@ -56,16 +52,3 @@ class UsPaMatchingDelegate(BaseStateMatchingDelegate):
                 matcher=nonnull_fields_entity_match,
             )
         return None
-
-    def perform_match_postprocessing(self, matched_persons: List[schema.StatePerson]):
-        """Performs the following PA specific postprocessing on the provided
-        |matched_persons| directly after they have been entity matched:
-            - Move IncarcerationIncidents onto IncarcerationPeriods based on
-              date.
-        """
-        logging.info(
-            "[Entity matching] Move supervision violations onto supervision periods by date."
-        )
-        move_violations_onto_supervision_periods_for_person(
-            matched_persons, self.get_region_code(), field_index=self.field_index
-        )
