@@ -199,6 +199,7 @@ message StatePerson {
     repeated string state_sentence_group_ids = 17;
     repeated string state_program_assignment_ids = 18;
     repeated string state_incarceration_incident_ids = 21;
+    repeated string state_supervision_violation_ids = 22;
     optional string supervising_officer_id = 19;
     optional string state_code = 20;
 }
@@ -377,7 +378,6 @@ message StateSupervisionPeriod {
     optional string custodial_authority = 14;
     optional string conditions = 15;
 
-    repeated string state_supervision_violation_entry_ids = 16;
     repeated string state_supervision_case_type_entry_ids = 19;
     repeated string state_supervision_contact_ids = 20;
 }

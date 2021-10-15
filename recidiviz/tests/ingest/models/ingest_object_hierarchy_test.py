@@ -106,18 +106,3 @@ class TestIngestObjectHierarchy(unittest.TestCase):
             "state_incarceration_sentence",
         )
         self.assertEqual(expected, actual)
-
-    def test_get_sequence_for_class_multiple_parents_further_downstream(self) -> None:
-        actual = get_ancestor_class_sequence(
-            "state_supervision_violation_response",
-            enforced_ancestor_choices={"state_sentence": "state_supervision_sentence"},
-        )
-
-        expected = (
-            "state_person",
-            "state_sentence_group",
-            "state_supervision_sentence",
-            "state_supervision_period",
-            "state_supervision_violation",
-        )
-        self.assertEqual(expected, actual)

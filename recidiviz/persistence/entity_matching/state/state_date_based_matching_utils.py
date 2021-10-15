@@ -235,37 +235,6 @@ def _move_periods_onto_sentences_for_sentence_group(
             _add_period_to_sentence(unmatched_period, placeholder_sentence)
 
 
-def move_violations_onto_supervision_periods_for_sentence(
-    matched_persons: List[schema.StatePerson], field_index: CoreEntityFieldIndex
-) -> None:
-    """Given a list of |matched_persons|, for each sentence (either Incarceration or Supervision) associates all
-    violations in that sentence with the corresponding SupervisionPeriod(s) based on date.
-    """
-    for person in matched_persons:
-        for sentence_group in person.sentence_groups:
-            for sentence in (
-                sentence_group.supervision_sentences
-                + sentence_group.incarceration_sentences
-            ):
-                unmatched_svs = _move_events_onto_supervision_periods(
-                    sentence,
-                    schema.StateSupervisionViolation,
-                    "supervision_violation_entries",
-                    field_index=field_index,
-                )
-                if not unmatched_svs:
-                    continue
-                placeholder_sp = get_or_create_placeholder_child(
-                    sentence,
-                    child_field_name="supervision_periods",
-                    child_class=schema.StateSupervisionPeriod,
-                    person=person,
-                    state_code=sentence.state_code,
-                    field_index=field_index,
-                )
-                placeholder_sp.supervision_violation_entries = unmatched_svs
-
-
 def _move_events_onto_supervision_periods_for_person(
     matched_persons: List[schema.StatePerson],
     event_cls: Type[DatabaseEntity],
@@ -317,20 +286,6 @@ def _move_events_onto_supervision_periods_for_person(
             field_index=field_index,
         )
         placeholder_sp.set_field_from_list(event_field_name, unmatched_events)
-
-
-def move_violations_onto_supervision_periods_for_person(
-    matched_persons: List[schema.StatePerson],
-    state_code: str,
-    field_index: CoreEntityFieldIndex,
-) -> None:
-    return _move_events_onto_supervision_periods_for_person(
-        matched_persons,
-        schema.StateSupervisionViolation,
-        "supervision_violation_entries",
-        state_code,
-        field_index=field_index,
-    )
 
 
 def move_contacts_onto_supervision_periods_for_person(

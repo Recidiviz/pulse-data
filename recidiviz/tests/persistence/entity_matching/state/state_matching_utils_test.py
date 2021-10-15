@@ -380,24 +380,19 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
 
     def test_getRootEntity(self) -> None:
         # Arrange
-        violation = schema.StateSupervisionViolation(external_id=_EXTERNAL_ID)
-        placeholder_supervision_period = schema.StateSupervisionPeriod(
-            supervision_violations=[violation]
+        violation_response = schema.StateSupervisionViolationResponse(
+            external_id=_EXTERNAL_ID
         )
-        placeholder_supervision_sentence = schema.StateSupervisionSentence(
-            supervision_periods=[placeholder_supervision_period]
+        placeholder_violation = schema.StateSupervisionViolation(
+            supervision_violation_responses=[violation_response]
         )
-        placeholder_sentence_group = schema.StateSentenceGroup(
-            sentence_group_id=None,
-            supervision_sentences=[placeholder_supervision_sentence],
-        )
-        person = schema.StatePerson(sentence_groups=[placeholder_sentence_group])
+        person = schema.StatePerson(supervision_violations=[placeholder_violation])
 
         # Act
         root_entity_cls = get_root_entity_cls([person], field_index=self.field_index)
 
         # Assert
-        self.assertEqual(schema.StateSupervisionViolation, root_entity_cls)
+        self.assertEqual(schema.StateSupervisionViolationResponse, root_entity_cls)
 
     def test_getRootEntity_emptyList_raises(self) -> None:
         with self.assertRaises(EntityMatchingError):

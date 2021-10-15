@@ -246,6 +246,14 @@ class StateConverter(BaseConverter[entities.StatePerson]):
         ]
         state_person_builder.incarceration_incidents = converted_incidents
 
+        converted_violations = [
+            self._convert_supervision_violation(
+                self.supervision_violations[violation_id]
+            )
+            for violation_id in ingest_person.state_supervision_violation_ids
+        ]
+        state_person_builder.supervision_violations = converted_violations
+
         converted_external_ids = [
             state_person_external_id.convert(
                 self.person_external_ids[external_id], self.metadata
@@ -454,14 +462,6 @@ class StateConverter(BaseConverter[entities.StatePerson]):
             "supervising_officer_id",
             ingest_supervision_period,
         )
-
-        converted_violations = [
-            self._convert_supervision_violation(
-                self.supervision_violations[violation_id]
-            )
-            for violation_id in ingest_supervision_period.state_supervision_violation_entry_ids
-        ]
-        supervision_period_builder.supervision_violation_entries = converted_violations
 
         converted_case_types = [
             state_supervision_case_type_entry.convert(

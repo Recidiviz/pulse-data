@@ -1395,19 +1395,7 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
     ) -> str:
         violation_seq_num = row[f"{col_prefix}_{violation_key_seq}"]
         group_id = cls._generate_sentence_group_id(xref_prefix, row)
-
-        # TODO(#1883): Remove use of SEO (sentence_seq_id) and FSO (Field Seq No)
-        # once extractor supports multiple paths to entities with the same id.
-        # Until then, we need to keep all ids for SupervisionViolations unique
-        # through the data extractor and proto conversion.
-        #
-        # Currently, the SEO is removed from the violation ids as a
-        # pre-processing hook in entity matching. From there, matching
-        # violations can be properly merged together.
-        sentence_seq_id = row[f"{xref_prefix}_{SENTENCE_KEY_SEQ}"]
-        field_seq_no = row[f"{xref_prefix}_{FIELD_KEY_SEQ}"]
-
-        return f"{group_id}-{violation_id_prefix}{violation_seq_num}-{sentence_seq_id}-{field_seq_no}"
+        return f"{group_id}-{violation_id_prefix}{violation_seq_num}"
 
     @classmethod
     def _generate_supervision_violation_id(

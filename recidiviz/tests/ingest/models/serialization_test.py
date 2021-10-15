@@ -240,6 +240,36 @@ class TestSerialization(unittest.TestCase):
         incident_agent.state_agent_id = "agent2"
         incident_agent.full_name = "Officer Thompson"
 
+        violation = person.create_state_supervision_violation()
+        violation.state_supervision_violation_id = "violation1"
+        violation.is_violent = "false"
+
+        violation_type = violation.create_state_supervision_violation_type_entry()
+        violation_type.state_supervision_violation_type_entry_id = "violation_type_id"
+        violation_type.violation_type = "FELONY"
+
+        violated_condition = (
+            violation.create_state_supervision_violated_condition_entry()
+        )
+        violated_condition.state_supervision_violated_condition_entry_id = (
+            "condition_id"
+        )
+        violated_condition.condition = "CURFEW"
+
+        response = violation.create_state_supervision_violation_response()
+        response.state_supervision_violation_response_id = "response1"
+        response_decision_agent = response.create_state_agent()
+        response_decision_agent.state_agent_id = "agentTERM"
+        response_decision_agent.full_name = "Officer Termy"
+
+        response_decision = (
+            response.create_state_supervision_violation_response_decision_entry()
+        )
+        response_decision.state_supervision_violation_response_decision_entry_id = (
+            "response_decision_id"
+        )
+        response_decision.decision = "REVOCATION"
+
         group = person.create_state_sentence_group()
         group.state_sentence_group_id = "group1"
 
@@ -294,36 +324,6 @@ class TestSerialization(unittest.TestCase):
         supervision_contacted_agent = supervision_contact.create_state_agent()
         supervision_contacted_agent.state_agent_id = "agentPO"
         supervision_contacted_agent.full_name = "Officer Paroley"
-
-        violation = supervision_period.create_state_supervision_violation()
-        violation.state_supervision_violation_id = "violation1"
-        violation.is_violent = "false"
-
-        violation_type = violation.create_state_supervision_violation_type_entry()
-        violation_type.state_supervision_violation_type_entry_id = "violation_type_id"
-        violation_type.violation_type = "FELONY"
-
-        violated_condition = (
-            violation.create_state_supervision_violated_condition_entry()
-        )
-        violated_condition.state_supervision_violated_condition_entry_id = (
-            "condition_id"
-        )
-        violated_condition.condition = "CURFEW"
-
-        response = violation.create_state_supervision_violation_response()
-        response.state_supervision_violation_response_id = "response1"
-        response_decision_agent = response.create_state_agent()
-        response_decision_agent.state_agent_id = "agentTERM"
-        response_decision_agent.full_name = "Officer Termy"
-
-        response_decision = (
-            response.create_state_supervision_violation_response_decision_entry()
-        )
-        response_decision.state_supervision_violation_response_decision_entry_id = (
-            "response_decision_id"
-        )
-        response_decision.decision = "REVOCATION"
 
         court_case = charge2.create_state_court_case()
         court_case.state_court_case_id = "case1"
@@ -392,6 +392,50 @@ class TestSerialization(unittest.TestCase):
         incident_outcome_pb.state_incarceration_incident_outcome_id = "incident1-1"
         incident_outcome_pb.outcome_type = "FINE"
 
+        person_pb.state_supervision_violation_ids.append("violation1")
+        violation_pb = expected_proto.state_supervision_violations.add()
+        violation_pb.state_supervision_violation_id = "violation1"
+        violation_pb.is_violent = "false"
+        violation_pb.state_supervision_violation_type_entry_ids.append(
+            "violation_type_id"
+        )
+        violation_type_pb = (
+            expected_proto.state_supervision_violation_type_entries.add()
+        )
+        violation_type_pb.state_supervision_violation_type_entry_id = (
+            "violation_type_id"
+        )
+        violation_type_pb.violation_type = "FELONY"
+
+        violation_pb.state_supervision_violated_condition_entry_ids.append(
+            "condition_id"
+        )
+        proto_violation_type_pb = (
+            expected_proto.state_supervision_violated_condition_entries.add()
+        )
+        proto_violation_type_pb.state_supervision_violated_condition_entry_id = (
+            "condition_id"
+        )
+        proto_violation_type_pb.condition = "CURFEW"
+
+        violation_pb.state_supervision_violation_response_ids.append("response1")
+        response_pb = expected_proto.state_supervision_violation_responses.add()
+        response_pb.state_supervision_violation_response_id = "response1"
+        response_pb.decision_agent_ids.append("agentTERM")
+        response_decision_agent_pb = expected_proto.state_agents.add()
+        response_decision_agent_pb.state_agent_id = "agentTERM"
+        response_decision_agent_pb.full_name = "Officer Termy"
+        response_decision_pb = (
+            expected_proto.state_supervision_violation_response_decision_entries.add()
+        )
+        response_decision_pb.state_supervision_violation_response_decision_entry_id = (
+            "response_decision_id"
+        )
+        response_decision_pb.decision = "REVOCATION"
+        response_pb.state_supervision_violation_response_decision_entry_ids.append(
+            "response_decision_id"
+        )
+
         person_pb.state_sentence_group_ids.append("group1")
         group_pb = expected_proto.state_sentence_groups.add()
         group_pb.state_sentence_group_id = "group1"
@@ -439,50 +483,6 @@ class TestSerialization(unittest.TestCase):
         supervision_contact_pb.contacted_agent_id = "agentPO"
         supervision_period_pb.state_supervision_contact_ids.append(
             "supervision_contact_id"
-        )
-
-        supervision_period_pb.state_supervision_violation_entry_ids.append("violation1")
-        violation_pb = expected_proto.state_supervision_violations.add()
-        violation_pb.state_supervision_violation_id = "violation1"
-        violation_pb.is_violent = "false"
-        violation_pb.state_supervision_violation_type_entry_ids.append(
-            "violation_type_id"
-        )
-        violation_type_pb = (
-            expected_proto.state_supervision_violation_type_entries.add()
-        )
-        violation_type_pb.state_supervision_violation_type_entry_id = (
-            "violation_type_id"
-        )
-        violation_type_pb.violation_type = "FELONY"
-
-        violation_pb.state_supervision_violated_condition_entry_ids.append(
-            "condition_id"
-        )
-        proto_violation_type_pb = (
-            expected_proto.state_supervision_violated_condition_entries.add()
-        )
-        proto_violation_type_pb.state_supervision_violated_condition_entry_id = (
-            "condition_id"
-        )
-        proto_violation_type_pb.condition = "CURFEW"
-
-        violation_pb.state_supervision_violation_response_ids.append("response1")
-        response_pb = expected_proto.state_supervision_violation_responses.add()
-        response_pb.state_supervision_violation_response_id = "response1"
-        response_pb.decision_agent_ids.append("agentTERM")
-        response_decision_agent_pb = expected_proto.state_agents.add()
-        response_decision_agent_pb.state_agent_id = "agentTERM"
-        response_decision_agent_pb.full_name = "Officer Termy"
-        response_decision_pb = (
-            expected_proto.state_supervision_violation_response_decision_entries.add()
-        )
-        response_decision_pb.state_supervision_violation_response_decision_entry_id = (
-            "response_decision_id"
-        )
-        response_decision_pb.decision = "REVOCATION"
-        response_pb.state_supervision_violation_response_decision_entry_ids.append(
-            "response_decision_id"
         )
 
         group_pb.state_incarceration_sentence_ids.append("is1")

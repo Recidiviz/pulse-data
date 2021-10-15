@@ -113,6 +113,8 @@ class TestIngestInfo(unittest.TestCase):
             "state_program_assignments",
             "state_incarceration_incident_ids",
             "state_incarceration_incidents",
+            "state_supervision_violation_ids",
+            "state_supervision_violations",
             "supervising_officer_id",
             "supervising_officer",
             "state_sentence_group_ids",
@@ -170,8 +172,6 @@ class TestIngestInfo(unittest.TestCase):
         supervision_period_fields_ignore = [
             "supervising_officer_id",
             "supervising_officer",
-            "state_supervision_violation_entry_ids",
-            "state_supervision_violation_entries",
             "state_assessment_ids",
             "state_assessments",
             "state_program_assignment_ids",
