@@ -28,14 +28,20 @@ SESSION_INCARCERATION_ADMISSIONS_TO_DATAFLOW_DISAGGREGATED_VIEW_NAME = (
 )
 
 SESSION_INCARCERATION_ADMISSIONS_TO_DATAFLOW_DISAGGREGATED_DESCRIPTION = """
-A view which provides a person / day level comparison between incarceration session starts and dataflow admissions. 
-For each person / day there are a set of binary variables that indicate whether that record meets a criteria. The 
-first two (session_start, session_with_start_reason) are used to identify sessions that do not have any dataflow 
-start reason associated with them. The second two (dataflow_admission, session_admission) are used to identify 
-dataflow admissions that are not represented in the sessions view. Note that a subset of admission reasons is used in 
-this comparison because of the fact that we would not expect every dataflow metric event to be associated with a
-compartment transition
-"""
+    A view which provides a person / day level comparison between incarceration session starts and dataflow admissions. 
+    For each person / day there are a set of binary variables that indicate whether that record meets a criteria. The
+    key binary indicator columns are the following:
+
+    - session_transition:   indicates a session compartment transition occurring for a given person on given day
+    - dataflow_event:       indicates a valid dataflow event (defined in compartment_session_start_reasons or
+                            compartment_session_end_reasons). This excludes (1) events labeled as transfers within state,
+                            (2) events labeled with unknown reasons, (3) events that are same day admission/releases,
+                            (4) supervision events that occur while a person is incarcerated.
+    - event_in_both:        indicates a person/day is both associated with a session transition and a valid dataflow event
+    - session_transition_inferred_reason:   indicates that the session transition has an inferred start/end reason
+    - session_transition_hydrated:  indicates that the session transition has a start/end reason hydration either from
+                            dataflow or from inference.
+    """
 
 SESSION_INCARCERATION_ADMISSIONS_TO_DATAFLOW_DISAGGREGATED_QUERY_TEMPLATE = """
     /*{description}*/
@@ -43,35 +49,49 @@ SESSION_INCARCERATION_ADMISSIONS_TO_DATAFLOW_DISAGGREGATED_QUERY_TEMPLATE = """
     (
     SELECT 
         *,
-        'INCARCERATION' AS compartment_level_0,
+        CAST(valid_dataflow_event AS INT64) AS dataflow_event,
     FROM `{project_id}.{analyst_dataset}.compartment_session_start_reasons_materialized` 
-    WHERE start_reason NOT IN ('TRANSFER', 'INTERNAL_UNKNOWN', 'EXTERNAL_UNKNOWN')
-        AND compartment_level_1 IN ('INCARCERATION','INCARCERATION_OUT_OF_STATE')
+    WHERE compartment_level_1 IN ('INCARCERATION','INCARCERATION_OUT_OF_STATE')
     )
     ,
     sessions AS
     (
     SELECT 
         *,
-        'INCARCERATION' AS compartment_level_0,
     FROM `{project_id}.{analyst_dataset}.compartment_sessions_materialized` 
     WHERE compartment_level_1 IN ('INCARCERATION','INCARCERATION_OUT_OF_STATE')
     )
+    ,
+    joined_cte AS
+    (
     SELECT
         person_id,
         state_code,
-        start_date,
+        start_date AS date,
         sessions.session_id,
-        dataflow.start_reason,
-        CASE WHEN sessions.person_id IS NOT NULL THEN 1 ELSE 0 END as session_start,
-        CASE when dataflow.start_reason IS NOT NULL AND sessions.person_id IS NOT NULL THEN 1 ELSE 0 END AS session_with_start_reason,
-        CASE WHEN dataflow.start_reason IS NOT NULL THEN 1 ELSE 0 END AS dataflow_admission,
-        CASE WHEN dataflow.start_reason IS NOT NULL AND sessions.person_id IS NOT NULL THEN 1 ELSE 0 END AS session_admission
+        dataflow.start_reason AS dataflow_reason,
+        CASE WHEN sessions.person_id IS NOT NULL THEN 1 ELSE 0 END as session_transition,
+        COALESCE(dataflow.dataflow_event, 0) AS dataflow_event,
+        CASE WHEN dataflow.dataflow_event = 1 AND sessions.person_id IS NOT NULL THEN 1 ELSE 0 END AS event_in_both,
+        COALESCE(sessions.is_inferred_start_reason, 0) AS session_transition_inferred_reason,
+        in_incarceration_population_on_date AS dataflow_event_in_incarceration_population_on_date,
+        in_supervision_population_on_date AS dataflow_event_in_supervision_population_on_date,
+        same_day_start_end AS dataflow_event_same_day_start_end,
+        sessions.compartment_level_1,
+        sessions.compartment_level_2,
+        sessions.inflow_from_level_1 AS transition_level_1,
+        sessions.inflow_from_level_2 AS transition_level_2,
     FROM sessions
     FULL OUTER JOIN dataflow
-        USING(person_id, start_date, state_code, compartment_level_0)
-    WHERE EXTRACT(YEAR FROM start_date) > EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 20 YEAR))
-    ORDER BY state_code, start_date
+        USING(person_id, start_date, state_code)
+    )
+    SELECT 
+        'INCARCERATION_ADMISSIONS' AS metric,
+        *,
+        GREATEST(session_transition_inferred_reason, event_in_both) AS session_transition_hydrated
+    FROM joined_cte
+    WHERE EXTRACT(YEAR FROM date) > EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 20 YEAR))
+    ORDER BY state_code, date
     """
 
 SESSION_INCARCERATION_ADMISSIONS_TO_DATAFLOW_VIEW_BUILDER_DISAGGREGATED = SimpleBigQueryViewBuilder(

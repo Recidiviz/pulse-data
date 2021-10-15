@@ -38,10 +38,11 @@ COMPARTMENT_SESSION_END_REASONS_QUERY_TEMPLATE = """
     Deduplication is not done across metrics and that is instead handled by the join with sessions.
     */
     (
-    SELECT 
+    SELECT
         person_id,
         state_code,
-        release_date AS end_date,
+        release_date AS release_termination_date,
+        DATE_SUB(release_date, INTERVAL 1 DAY) AS end_date,
         COALESCE(release_reason, 'INTERNAL_UNKNOWN') AS end_reason,
         'INCARCERATION' AS compartment_level_1,
         metric_type AS metric_source,
@@ -54,7 +55,8 @@ COMPARTMENT_SESSION_END_REASONS_QUERY_TEMPLATE = """
     SELECT 
         person_id,
         state_code,
-        termination_date AS end_date,
+        termination_date AS release_termination_date,
+        DATE_SUB(termination_date, INTERVAL 1 DAY) AS end_date,
         COALESCE(termination_reason, 'INTERNAL_UNKNOWN') AS end_reason,
         'SUPERVISION' AS compartment_level_1,
         metric_type AS metric_source,
@@ -64,10 +66,62 @@ COMPARTMENT_SESSION_END_REASONS_QUERY_TEMPLATE = """
         ON  d.end_reason = m.termination_reason
         AND d.metric_source = m.metric_type
     )
-    SELECT 
-        * EXCEPT (rn)
-    FROM release_metric_cte
+    ,
+    prep_cte AS
+    (
+    SELECT DISTINCT
+        ends.* EXCEPT (rn),
+        -- TODO(#8131): Pull these boolean flags directly from the dataflow metrics
+        inc_pop.person_id IS NOT NULL AS in_incarceration_population_on_date,
+        COALESCE(sup_pop.person_id,sup_oos_pop.person_id) IS NOT NULL AS in_supervision_population_on_date,
+        COALESCE(admissions.person_id, sup_starts.person_id) IS NOT NULL AS same_day_start_end
+    FROM release_metric_cte ends
+    LEFT JOIN `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_metrics_included_in_state_population_materialized` inc_pop
+        ON ends.person_id = inc_pop.person_id
+        AND ends.end_date = inc_pop.date_of_stay
+    LEFT JOIN `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_metrics_materialized` sup_pop
+        ON ends.person_id = sup_pop.person_id
+        AND ends.end_date = sup_pop.date_of_supervision
+    LEFT JOIN `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_out_of_state_population_metrics_materialized` sup_oos_pop
+        ON ends.person_id = sup_oos_pop.person_id
+        AND ends.end_date = sup_oos_pop.date_of_supervision
+    LEFT JOIN `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_admission_metrics_included_in_state_population_materialized` admissions
+        ON ends.person_id = admissions.person_id
+        AND ends.release_termination_date = admissions.admission_date
+        AND ends.compartment_level_1 = 'INCARCERATION'
+    LEFT JOIN `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_start_metrics_materialized` sup_starts
+        ON ends.person_id = sup_starts.person_id
+        AND ends.release_termination_date = sup_starts.start_date
+        AND ends.compartment_level_1 = 'SUPERVISION'
     WHERE rn = 1
+    )
+    SELECT
+        *,
+        /*
+        Exclude dataflow events if any of the following conditions are met:
+        1.  Event is a same day start/end where the person also does not appear in the population metric on that day.
+            This captures single day periods which don't appear in sessions.
+        2.  Event is a supervision dataflow start/termination that occurs while a person is incarcerated. This addresses
+            events that don't line up because of supervision periods that overlap incarceration periods.
+        3.  Dataflow event is a transfer or of unknown type
+        */
+        IF(
+            (compartment_level_1 = 'INCARCERATION'
+                AND same_day_start_end
+                AND NOT in_incarceration_population_on_date
+            )
+            OR
+            (compartment_level_1 = 'SUPERVISION'
+                AND same_day_start_end
+                AND NOT in_supervision_population_on_date
+            )
+            OR
+            (compartment_level_1 = 'SUPERVISION'
+                AND in_incarceration_population_on_date
+            )
+            OR end_reason IN ('TRANSFER','TRANSFER_WITHIN_STATE','INTERNAL_UNKNOWN','EXTERNAL_UNKNOWN'),
+        FALSE, TRUE) AS valid_dataflow_event
+    FROM prep_cte
     """
 
 COMPARTMENT_SESSION_END_REASONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(

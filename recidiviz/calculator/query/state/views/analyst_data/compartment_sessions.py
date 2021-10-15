@@ -17,7 +17,10 @@
 """Sessionized view of each individual. Session defined as continuous stay within a compartment"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
+from recidiviz.calculator.query.state.dataset_config import (
+    ANALYST_VIEWS_DATASET,
+    STATIC_REFERENCE_TABLES_DATASET,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -49,13 +52,17 @@ Compartment sessions differs from other sessionized views in that the edges shou
 |	start_date	|	Day that a person's session starts. This will correspond with the incarceration admission or supervision start date	|
 |	end_date	|	Last full-day of a person's session. The release or termination date will be the `end_date` + 1 day	|
 |	state_code	|	State	|
-|	compartment_level_1	|	Level 1 Compartment. Possible values are: <br>-`INCARCERATION`<br>-`INCARCERATION_OUT_OF_STATE` (inferred from location)<br>-`SUPERVISION`<br>-`SUPERVISION_OUT_OF_STATE`<br>-`RELEASE` (inferred from gap in data)<br>-`INTERNAL_UNKNOWN` (inferred from gap in data), <br>-`PENDING_CUSTODY` (inferred from gap in data)<br>-`PENDING_SUPERVISION` (inferred from gap in data)<br>-`SUSPENSION`<br>-`ERRONEOUS_RELEASE` (inferred from gap in data)	|
-|	compartment_level_2	|	Level 2 Compartment. Possible values for the incarceration compartments are: <br>-`GENERAL`<br>-`PAROLE_BOARD_HOLD`<br>-`TREATMENT_IN_PRISON` <br>-`SHOCK_INCARCERATION`<br>-`ABSCONSION`<br>-`INTERNAL_UNKNOWN`<br>-`COMMUNITY_PLACEMENT_PROGRAM`<br>-`TEMPORARY_CUSTODY`<br><br>Possible values for the supervision compartments are: <br>-`PROBATION`<br>-`PAROLE`<br>-`ABSCONSION`<br>-`DUAL`<br>-`BENCH_WARRANT`<br>-`INFORMAL_PROBATION`<br>-`INTERNAL_UNKNOWN`<br><br>All other `compartment_level_1` values have the same value for `compartment_level_1` and `compartment_level_2`	|
+|	compartment_level_1	|	Level 1 Compartment. Possible values are: <br>-`INCARCERATION`<br>-`INCARCERATION_OUT_OF_STATE`<br>-`SUPERVISION`<br>-`SUPERVISION_OUT_OF_STATE`<br>-`RELEASE`<br>-`INTERNAL_UNKNOWN`, <br>-`PENDING_CUSTODY`<br>-`PENDING_SUPERVISION`<br>-`SUSPENSION`<br>ERRONEOUS_RELEASE	|
+|	compartment_level_2	|	Level 2 Compartment. Possible values for the incarceration compartments are: <br>-`GENERAL`<br>-`PAROLE_BOARD_HOLD`<br>-`TREATMENT_IN_PRISON` <br>-`SHOCK_INCARCERATION`<br>-`ABSCONSION`<br>-`INTERNAL_UNKNOWN`<br>-`COMMUNITY_PLACEMENT_PROGRAM`<br>-`TEMPORARY_CUSTODY`<br><br>Possible values for the supervision compartments are: <br>-`PROBATION`<br>-`PAROLE`<br>-`ABSCONSION`<br>-`DUAL`<br>-`BENCH_WARRANT`<br>-`INFORMAL_PROBATION`<br>-`INTERNAL_UNKNOWN`<br><br>All other `compartment_level_1` values have the same value for `compartment_level_1` and `comparmtent_level_2`	|
 |	session_length_days	|	Length of session in days. For active sessions this is the number of days between session start and the most recent day of data. The minimum value of this field is `1` in cases where the person has the same `start_date` and `end_date` (they spent one full day in the compartment)	|
-|	session_days_inferred	|	The number of days (out of the total `session_length_days`) that are inferred. This type inference happens when we have a gap between the same compartment with no dataflow start/end events indicating a compartment transition. As an example if someone was serving a `GENERAL` incarceration session for 30 days, then there was a gap in data for 5 days, and then they were in `GENERAL` again for 30 days. If there are no dataflow events at the transition edges, it is inferred that that person was in `GENERAL` for that entire time.	|
+|	session_days_inferred	|	The number of days (out of the total `session_length_days`) that are inferred. This type onference happens when we have a gap between the same compartment with no dataflow start/end events indicating a compartment transition. As an example let's say someone was in GENERAL for 30 days, then we had a gap in population data of 5 days, and then they were in GENERAL again for 30 days. If there are no dataflow events at the transition edges, we infer that that person was in GENERAL for that entire time. They would have a session length of 65 days with a value of `5` for `session_days_inferred`	|
 |	start_reason	|	Reason for the session start. This is pulled from `compartment_session_start_reasons` which is generated from the union of the incarceration admission and supervision start dataflow metrics. Start events are deduplicated to unique person/days within supervision and within incarceration and then joined to sessions generated from the population metric. This field is not fully hydrated.	|
 |	start_sub_reason	|	This field represents the most severe violation associated with an admission and is only populated for incarceration commitments from supervision, which includes both revocation admissions and sanction admissions.	|
 |	end_reason	|	Reason for the session end. This is pulled from `compartment_session_end_reasons` which is generated from the union of the incarceration release and supervision termination dataflow metrics. End events are deduplicated to unique person/days within supervision and within incarceration and then joined to sessions generated from the population metric. If a session is currently active this field will be NULL. This field is not fully hydrated.	|
+|	is_inferred_start_reason	|	Indicator for whether the start reason is inferred based on the transition inflow	|
+|	is_inferred_end_reason	|	Indicator for whether the end reason is inferred based on the transition outflow	|
+|	start_reason_original	|	Original start reason (will bet the same as the start reason unless the original is overwritten because of inference)	|
+|	end_reason_original	|	Original end reason (will bet the same as the end reason unless the original is overwritten because of inference)	|
 |	earliest_start_date	|	The first date, across all sessions, that a person appears in our population data	|
 |	last_day_of_data	|	The last day for which we have data, specific to a state. The is is calculated as the state min of the max day of which we have population data across supervision and population metrics within a state. For example, if in ID the max incarceration population date value is 2021-09-01 and the max supervision population date value is 2021-09-02, we would say that the last day of data for ID is 2021-09-01.	|
 |	inflow_from_level_1	|	Compartment level 1 value of the preceding session	|
@@ -77,7 +84,7 @@ Compartment sessions differs from other sessionized views in that the edges shou
 |	age_bucket_start	|	Age bucket at start of session	|
 |	age_bucket_end	|	Age bucket at end of session	|
 |	assessment_score_bucket_start	|	Assessment score bucket at start of session	|
-|	assessment_score_bucket_end	|	Assessment score bucket at end of session	|
+|	assessment_score_bucket_end	|	Asessment score bucket at end of session	|
 
 ## Methodology
 
@@ -104,6 +111,10 @@ At a high-level, the following steps are taken to generate `compartment_sessions
             5. `ERRONEOUS_RELEASE` - previous end reason or subsequent start reason indicate erroneous release
             6. `INCARCERATION_OUT_OF_STATE` - previous end reason indicates an incarceration transfer out of state
             7. `INTERNAL_UNKNOWN` - the value given to any gap between sessions that does not meet one of the above criteria
+            
+4. Use transitions and corresponding look-up table to infer start/end reasons in cases where there is no dataflow event that joins to the transition
+    1. Transitions that eligible for inferred start/end reasons are maintained in `static_reference_tables.session_inferred_start_reasons_materialized` and `static_reference_tables.session_inferred_end_reasons_materialized`. The non-materialized view version of these tables maintain a live connection with the Google Sheet "Compartment Session Inferred Transition Reasons" which is located in the DADS shared folder. Materialized versions are then created by running the SQL script `update_static_reference_inferred_start_end_reasons.sql`, which is located with the rest of the sessions views.
+    2. The inferred transition look-up tables specify compartment level 1 and level 2 values and corresponding transition compartments (inflows for start reasons and outflows for end reasons). Cases where this transition is observed without the valid specified start/end reason will take on the value specified in this table. The field `original_start_reason` indicates in what cases the original value gets overwritten. This can be specified as "ALL" (any start reason / end reason gets overwritten); a specific start / end reason (only transitions with that value will be overwritten); or left blank (only cases where the start/end reason is missing will it be inferred).
 
 4. Join back to dataflow sessions and other demographic tables to get session characteristics
     
@@ -253,9 +264,7 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         OR (starts.compartment_level_1 = 'SUPERVISION' AND sessions.compartment_level_1 = 'SUPERVISION_OUT_OF_STATE')
         OR (starts.compartment_level_1 = 'INCARCERATION' AND sessions.compartment_level_1 = 'INCARCERATION_OUT_OF_STATE'))
     LEFT JOIN `{project_id}.{analyst_dataset}.compartment_session_end_reasons_materialized` ends
-    -- The release date will be a day after the session end date as the population metrics count a person towards 
-    -- population based on full days within that compartment
-        ON ends.end_date = DATE_ADD(sessions.end_date, INTERVAL 1 DAY)
+        ON ends.end_date = sessions.end_date
         AND ends.person_id = sessions.person_id
         AND (sessions.compartment_level_1 = ends.compartment_level_1
         OR (ends.compartment_level_1 = 'SUPERVISION' AND sessions.compartment_level_1 = 'SUPERVISION_OUT_OF_STATE')
@@ -450,10 +459,50 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         AND s.person_id = assessment_end.person_id
     )
     /*
-    This is the same as the previous CTE but with age and assessment score buckets calculated
+    This cte makes two main updates (1) creates new fields with age and assessment score buckets, (2) infers start and end reasons
+    for sessions that exist in the session_inferred_end_reasons and session_inferred_start_reasons tables. 
     */
     SELECT 
-        *,
+        person_id,
+        session_id,
+        dataflow_session_id_start,
+        dataflow_session_id_end,
+        start_date,
+        end_date,
+        sessions.state_code,
+        sessions.compartment_level_1,
+        sessions.compartment_level_2,
+        session_length_days,
+        session_days_inferred,
+        /*
+        Calculate start and end reasons by taking the one in the look-up table if it exists. Otherwise use the original. 
+        Also calculate boolean flags to identify whether the start/end reason is inferred. 
+        */
+        COALESCE(inferred_start.start_reason, sessions.start_reason) start_reason,
+        sessions.start_sub_reason,
+        COALESCE(inferred_end.end_reason, sessions.end_reason) end_reason,
+        COALESCE(inferred_start.is_inferred_start_reason, 0) AS is_inferred_start_reason,
+        COALESCE(inferred_end.is_inferred_end_reason, 0) AS is_inferred_end_reason,
+        sessions.start_reason AS start_reason_original,
+        sessions.end_reason AS end_reason_original,
+        earliest_start_date,
+        last_day_of_data,
+        sessions.inflow_from_level_1,
+        sessions.inflow_from_level_2,
+        sessions.outflow_to_level_1,
+        sessions.outflow_to_level_2,
+        compartment_location_start,
+        compartment_location_end,
+        correctional_level_start,
+        correctional_level_end,
+        age_start,
+        age_end,     
+        gender,
+        prioritized_race_or_ethnicity,
+        assessment_score_start,
+        assessment_score_end,
+        supervising_officer_external_id_start, 
+        supervising_officer_external_id_end,  
         CASE WHEN age_start <=24 THEN '<25'
             WHEN age_start <=29 THEN '25-29'
             WHEN age_start <=34 THEN '30-34'
@@ -472,8 +521,35 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
             WHEN assessment_score_end<=29 THEN '24-29'
             WHEN assessment_score_end<=38 THEN '30-38'
             WHEN assessment_score_end>=39 THEN '39+' END as assessment_score_bucket_end
-    FROM sessions_additional_attributes
-    WHERE NOT (compartment_level_1 = 'DEATH' AND end_date IS NULL)
+    FROM sessions_additional_attributes sessions
+    -- TODO(#8129): Productionalize start/end reason inference tables
+    LEFT JOIN `{project_id}.{static_reference_tables_dataset}.session_inferred_start_reasons_materialized` inferred_start
+        ON sessions.compartment_level_1 = inferred_start.compartment_level_1 
+        AND sessions.compartment_level_2 = inferred_start.compartment_level_2
+        AND COALESCE(sessions.inflow_from_level_1, 'NONE') = COALESCE(inferred_start.inflow_from_level_1, 'NONE')
+        AND COALESCE(sessions.inflow_from_level_2, 'NONE') = COALESCE(inferred_start.inflow_from_level_2, 'NONE')
+        AND sessions.state_code = inferred_start.state_code
+        AND inferred_start.is_inferred_start_reason = 1
+        -- Don't join or consider inferred if the session transition already has the correct reason
+        AND COALESCE(inferred_start.start_reason, 'NONE') != COALESCE(sessions.start_reason, 'NONE')
+        -- Needs to match the specified reason or can have "ALL" specified to overwrite any reason. If left blank
+        -- only sessions with null start/end reason values will be inferred
+        AND (inferred_start.original_start_reason = 'ALL'
+            OR COALESCE(inferred_start.original_start_reason,'NONE') = COALESCE(sessions.start_reason,'NONE'))
+    LEFT JOIN `{project_id}.{static_reference_tables_dataset}.session_inferred_end_reasons_materialized` inferred_end
+        ON sessions.compartment_level_1 = inferred_end.compartment_level_1 
+        AND sessions.compartment_level_2 = inferred_end.compartment_level_2
+        AND sessions.outflow_to_level_1 = inferred_end.outflow_to_level_1 
+        AND sessions.outflow_to_level_2 = inferred_end.outflow_to_level_2 
+        AND sessions.state_code = inferred_end.state_code
+        AND inferred_end.is_inferred_end_reason = 1 
+        -- Don't join or consider inferred if the session transition already has the correct reason
+        AND COALESCE(inferred_end.end_reason, 'NONE') != COALESCE(sessions.end_reason, 'NONE')
+        -- Needs to match the specified reason or can have "ALL" specified to overwrite any reason. If left blank
+        -- only sessions with null start/end reason values will be inferred
+        AND (inferred_end.original_end_reason = 'ALL'
+            OR COALESCE(inferred_end.original_end_reason,'NONE') = COALESCE(sessions.end_reason,'NONE'))
+    WHERE NOT (sessions.compartment_level_1 = 'DEATH' AND end_date IS NULL)
 """
 COMPARTMENT_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=ANALYST_VIEWS_DATASET,
@@ -481,6 +557,7 @@ COMPARTMENT_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=COMPARTMENT_SESSIONS_QUERY_TEMPLATE,
     description=COMPARTMENT_SESSIONS_VIEW_DESCRIPTION,
     analyst_dataset=ANALYST_VIEWS_DATASET,
+    static_reference_tables_dataset=STATIC_REFERENCE_TABLES_DATASET,
     mo_data_gap_days=MO_DATA_GAP_DAYS,
     should_materialize=True,
 )
