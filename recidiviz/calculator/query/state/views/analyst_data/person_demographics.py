@@ -19,7 +19,6 @@
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
-    REFERENCE_VIEWS_DATASET,
     STATE_BASE_DATASET,
     STATIC_REFERENCE_TABLES_DATASET,
 )
@@ -100,7 +99,6 @@ PERSON_DEMOGRAPHICS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=PERSON_DEMOGRAPHICS_VIEW_DESCRIPTION,
     prioritized_id_types=PERSON_DEMOGRAPHICS_PRIORITIZED_ID_TYPES,
     base_dataset=STATE_BASE_DATASET,
-    reference_views_dataset=REFERENCE_VIEWS_DATASET,
     static_reference_dataset=STATIC_REFERENCE_TABLES_DATASET,
     should_materialize=True,
 )

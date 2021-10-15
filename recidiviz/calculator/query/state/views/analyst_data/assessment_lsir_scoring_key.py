@@ -16,10 +16,7 @@
 # =============================================================================
 """Static table with scoring calculations for LSI-R questions"""
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state.dataset_config import (
-    ANALYST_VIEWS_DATASET,
-    STATE_BASE_DATASET,
-)
+from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -85,7 +82,6 @@ ASSESSMENT_LSIR_SCORING_KEY_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=ASSESSMENT_LSIR_SCORING_KEY_VIEW_NAME,
     view_query_template=ASSESSMENT_LSIR_SCORING_KEY_QUERY_TEMPLATE,
     description=ASSESSMENT_LSIR_SCORING_KEY_VIEW_DESCRIPTION,
-    base_dataset=STATE_BASE_DATASET,
     lsir_protective_question_list=",".join(
         [str(x) for x in ASSESSMENT_LSIR_PROTECTIVE_QUESTION_LIST]
     ),

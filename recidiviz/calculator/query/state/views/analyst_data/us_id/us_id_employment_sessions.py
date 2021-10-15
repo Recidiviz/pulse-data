@@ -77,7 +77,7 @@ US_ID_EMPLOYMENT_SESSIONS_QUERY_TEMPLATE = """
         supervision_super_session_id,
         wage,
       FROM date_array d
-      JOIN `{project_id}.analyst_data.supervision_super_sessions_materialized` s
+      JOIN `{project_id}.{analyst_dataset}.supervision_super_sessions_materialized` s
       ON d.supervision_date BETWEEN s.start_date AND COALESCE(s.end_date, CURRENT_DATE())
       LEFT JOIN employment_clean e
       ON d.supervision_date BETWEEN e.employment_start_date AND COALESCE(e.employment_end_date, CURRENT_DATE())
@@ -178,6 +178,7 @@ US_ID_EMPLOYMENT_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=US_ID_EMPLOYMENT_SESSIONS_VIEW_NAME,
     description=US_ID_EMPLOYMENT_SESSIONS_VIEW_DESCRIPTION,
     view_query_template=US_ID_EMPLOYMENT_SESSIONS_QUERY_TEMPLATE,
+    analyst_dataset=ANALYST_VIEWS_DATASET,
     should_materialize=True,
 )
 
