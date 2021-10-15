@@ -18,10 +18,7 @@
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
-from recidiviz.calculator.query.state.dataset_config import (
-    ANALYST_VIEWS_DATASET,
-    STATE_BASE_DATASET,
-)
+from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -92,7 +89,6 @@ US_ID_PPO_METRICS_EARLY_DISCHARGES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=US_ID_PPO_METRICS_EARLY_DISCHARGES_QUERY_TEMPLATE,
     description=US_ID_PPO_METRICS_EARLY_DISCHARGES_VIEW_DESCRIPTION,
     base_dataset=STATE_BASE_DATASET,
-    analyst_dataset=ANALYST_VIEWS_DATASET,
     should_materialize=False,
 )
 
