@@ -17,12 +17,10 @@
 """Shared violation reports query, used for querying absconsions and revocations by person by month for the PO report.
 """
 
+# Queries for violation reports where the officer_external_id is not null and the associated
+# supervision period is of type 'DUAL', 'PROBATION', 'PAROLE', 'INTERNAL_UNKNOWN'.
 # TODO(#4155): Use the supervision_termination_metrics instead of the raw state_supervision_period table
-def violation_reports_query(state_dataset: str, reference_views_dataset: str) -> str:
-    """Returns a query for violation reports where the officer_external_id is not null and the associated
-    supervision period is of type 'DUAL', 'PROBATION', 'PAROLE', 'INTERNAL_UNKNOWN'.
-    """
-    return f"""
+VIOLATION_REPORTS_QUERY = """
       SELECT
         violation.state_code,
         EXTRACT(YEAR FROM violation.response_date) AS year,
@@ -32,12 +30,12 @@ def violation_reports_query(state_dataset: str, reference_views_dataset: str) ->
         violation.response_date,
         decision.decision AS response_decision,
         agent.agent_external_id AS officer_external_id
-      FROM `{{project_id}}.{state_dataset}.state_supervision_violation_response` violation
-      LEFT JOIN `{{project_id}}.{state_dataset}.state_supervision_violation_response_decision_entry` decision
+      FROM `{project_id}.{state_dataset}.state_supervision_violation_response` violation
+      LEFT JOIN `{project_id}.{state_dataset}.state_supervision_violation_response_decision_entry` decision
         USING (supervision_violation_response_id, person_id, state_code)
-      LEFT JOIN `{{project_id}}.{state_dataset}.state_supervision_violation_type_entry` type
+      LEFT JOIN `{project_id}.{state_dataset}.state_supervision_violation_type_entry` type
         USING (supervision_violation_id, person_id, state_code)
-      LEFT JOIN `{{project_id}}.{state_dataset}.state_supervision_period` period
+      LEFT JOIN `{project_id}.{state_dataset}.state_supervision_period` period
         -- Find the overlapping supervision periods for this violation report
         ON period.person_id = violation.person_id
             AND period.state_code = violation.state_code
@@ -46,7 +44,7 @@ def violation_reports_query(state_dataset: str, reference_views_dataset: str) ->
             -- like when a supervision_period starts and ends on the violation report's response_date.
             AND violation.response_date > period.start_date
             AND violation.response_date <= COALESCE(period.termination_date, '9999-12-31')
-      LEFT JOIN `{{project_id}}.{reference_views_dataset}.supervision_period_to_agent_association` agent
+      LEFT JOIN `{project_id}.{reference_views_dataset}.supervision_period_to_agent_association` agent
         ON period.supervision_period_id = agent.supervision_period_id
           AND period.state_code = agent.state_code
       WHERE period.supervision_type IN ('DUAL', 'PROBATION', 'PAROLE', 'INTERNAL_UNKNOWN')

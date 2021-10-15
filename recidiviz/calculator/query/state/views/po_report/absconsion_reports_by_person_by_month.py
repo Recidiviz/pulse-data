@@ -19,7 +19,7 @@
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.views.po_report.violation_reports_query import (
-    violation_reports_query,
+    VIOLATION_REPORTS_QUERY,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -32,10 +32,10 @@ ABSCONSION_REPORTS_BY_PERSON_BY_MONTH_DESCRIPTION = """
 Absconsion report recommendations by person by month. 
 """
 
-ABSCONSION_REPORTS_BY_PERSON_BY_MONTH_QUERY_TEMPLATE = """
-    /*{description}*/
+ABSCONSION_REPORTS_BY_PERSON_BY_MONTH_QUERY_TEMPLATE = f"""
+    /*{{description}}*/
     WITH violation_reports AS (
-      {violation_reports_query}
+      {VIOLATION_REPORTS_QUERY}
     )
     SELECT DISTINCT
         state_code, year, month, person_id, 
@@ -51,10 +51,8 @@ ABSCONSION_REPORTS_BY_PERSON_BY_MONTH_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     should_materialize=True,
     view_query_template=ABSCONSION_REPORTS_BY_PERSON_BY_MONTH_QUERY_TEMPLATE,
     description=ABSCONSION_REPORTS_BY_PERSON_BY_MONTH_DESCRIPTION,
-    violation_reports_query=violation_reports_query(
-        state_dataset=dataset_config.STATE_BASE_DATASET,
-        reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
-    ),
+    state_dataset=dataset_config.STATE_BASE_DATASET,
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
 )
 
 if __name__ == "__main__":

@@ -328,7 +328,6 @@ PO_MONTHLY_REPORT_DATA_VIEW_BUILDER = MetricBigQueryViewBuilder(
     district_dimension=bq_utils.unnest_district(district_column="district"),
     description=PO_MONTHLY_REPORT_DATA_DESCRIPTION,
     po_report_dataset=PO_REPORT_DATASET,
-    materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
 )
