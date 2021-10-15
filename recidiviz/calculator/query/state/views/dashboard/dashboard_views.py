@@ -20,6 +20,7 @@ from typing import Sequence
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.calculator.query.state.views.dashboard.admissions import admissions_views
+from recidiviz.calculator.query.state.views.dashboard.pathways import pathways_views
 from recidiviz.calculator.query.state.views.dashboard.population_projections import (
     population_projections_views,
 )
@@ -59,6 +60,7 @@ LANTERN_DASHBOARD_VIEW_BUILDERS: Sequence[
 UP_DASHBOARD_VIEW_BUILDERS: Sequence[BigQueryViewBuilder] = (
     population_projections_views.POPULATION_PROJECTION_VIEW_BUILDERS
     + vitals_views.VITALS_VIEW_BUILDERS
+    + pathways_views.PATHWAYS_VIEW_BUILDERS
 )
 
 DASHBOARD_VIEW_BUILDERS: Sequence[BigQueryViewBuilder] = list(
