@@ -42,6 +42,7 @@ Auth0User = TypedDict(
 # The max results the API allows per page is 50, but the lucene query can become too long, so we limit it by 25.
 MAX_RESULTS_PER_PAGE = 25
 MAX_RATE_LIMIT_RETRIES = 10
+REST_REQUEST_TIMEOUT = 15.0
 
 
 class Auth0Client:
@@ -64,7 +65,9 @@ class Auth0Client:
         self._domain = domain
         self._client_id = client_id
         self._client_secret = client_secret
-        self._rest_options = RestClientOptions(retries=MAX_RATE_LIMIT_RETRIES)
+        self._rest_options = RestClientOptions(
+            retries=MAX_RATE_LIMIT_RETRIES, timeout=REST_REQUEST_TIMEOUT
+        )
 
         self.audience = f"https://{self._domain}/api/v2/"
         self.client = Auth0(
