@@ -577,6 +577,7 @@ class StatePerson(IngestObject):
         state_program_assignments=None,
         state_incarceration_incidents=None,
         state_supervision_violations=None,
+        state_supervision_contacts=None,
         supervising_officer=None,
         state_code=None,
     ):
@@ -613,6 +614,9 @@ class StatePerson(IngestObject):
         )
         self.state_supervision_violations: List[StateSupervisionViolation] = (
             state_supervision_violations or []
+        )
+        self.state_supervision_contacts: List[StateSupervisionContact] = (
+            state_supervision_contacts or []
         )
         self.supervising_officer: Optional[StateAgent] = supervising_officer
 
@@ -667,6 +671,11 @@ class StatePerson(IngestObject):
         supervision_violation = StateSupervisionViolation(**kwargs)
         self.state_supervision_violations.append(supervision_violation)
         return supervision_violation
+
+    def create_state_supervision_contact(self, **kwargs) -> "StateSupervisionContact":
+        contact = StateSupervisionContact(**kwargs)
+        self.state_supervision_contacts.append(contact)
+        return contact
 
     def create_state_agent(self, **kwargs) -> "StateAgent":
         self.supervising_officer = StateAgent(**kwargs)
@@ -762,6 +771,18 @@ class StatePerson(IngestObject):
             None,
         )
 
+    def get_state_supervision_contact_by_id(
+        self, state_supervision_contact_id
+    ) -> Optional["StateSupervisionContact"]:
+        return next(
+            (
+                sc
+                for sc in self.state_supervision_contacts
+                if sc.state_supervision_contact_id == state_supervision_contact_id
+            ),
+            None,
+        )
+
     def get_state_sentence_group_by_id(
         self, sentence_group_id
     ) -> Optional["StateSentenceGroup"]:
@@ -788,6 +809,9 @@ class StatePerson(IngestObject):
         self.state_supervision_violations = [
             sv for sv in self.state_supervision_violations if sv
         ]
+        self.state_supervision_contacts = [
+            c.prune() for c in self.state_supervision_contacts if c
+        ]
         if not self.supervising_officer:
             self.supervising_officer = None
         return self
@@ -801,6 +825,7 @@ class StatePerson(IngestObject):
         self.state_program_assignments.sort()
         self.state_incarceration_incidents.sort()
         self.state_supervision_violations.sort()
+        self.state_supervision_contacts.sort()
 
         for sentence_group in self.state_sentence_groups:
             sentence_group.sort()
@@ -1483,7 +1508,6 @@ class StateSupervisionPeriod(IngestObject):
         state_supervision_case_type_entries=None,
         supervision_type=None,
         custodial_authority=None,
-        state_supervision_contacts=None,
     ):
         self.state_supervision_period_id: Optional[str] = state_supervision_period_id
         self.supervision_type: Optional[str] = supervision_type
@@ -1502,12 +1526,9 @@ class StateSupervisionPeriod(IngestObject):
         self.state_supervision_case_type_entries: List[
             StateSupervisionCaseTypeEntry
         ] = (state_supervision_case_type_entries or [])
-        self.state_supervision_contacts: List[StateSupervisionContact] = (
-            state_supervision_contacts or []
-        )
 
     def __setattr__(self, name, value):
-        restricted_setattr(self, "state_supervision_contacts", name, value)
+        restricted_setattr(self, "state_supervision_case_type_entries", name, value)
 
     def create_state_agent(self, **kwargs) -> "StateAgent":
         self.supervising_officer = StateAgent(**kwargs)
@@ -1519,11 +1540,6 @@ class StateSupervisionPeriod(IngestObject):
         case_type = StateSupervisionCaseTypeEntry(**kwargs)
         self.state_supervision_case_type_entries.append(case_type)
         return case_type
-
-    def create_state_supervision_contact(self, **kwargs) -> "StateSupervisionContact":
-        contact = StateSupervisionContact(**kwargs)
-        self.state_supervision_contacts.append(contact)
-        return contact
 
     def get_state_supervision_case_type_entry_by_id(
         self, state_supervision_case_type_entry_id
@@ -1538,18 +1554,6 @@ class StateSupervisionPeriod(IngestObject):
             None,
         )
 
-    def get_state_supervision_contact_by_id(
-        self, state_supervision_contact_id
-    ) -> Optional["StateSupervisionContact"]:
-        return next(
-            (
-                sc
-                for sc in self.state_supervision_contacts
-                if sc.state_supervision_contact_id == state_supervision_contact_id
-            ),
-            None,
-        )
-
     def prune(self) -> "StateSupervisionPeriod":
         if not self.supervising_officer:
             self.supervising_officer = None
@@ -1557,15 +1561,11 @@ class StateSupervisionPeriod(IngestObject):
         self.state_supervision_case_type_entries = [
             c for c in self.state_supervision_case_type_entries if c
         ]
-        self.state_supervision_contacts = [
-            c.prune() for c in self.state_supervision_contacts if c
-        ]
 
         return self
 
     def sort(self):
         self.state_supervision_case_type_entries.sort()
-        self.state_supervision_contacts.sort()
 
 
 class StateSupervisionContact(IngestObject):

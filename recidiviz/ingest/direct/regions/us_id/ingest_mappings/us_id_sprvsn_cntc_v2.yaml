@@ -14,9 +14,6 @@ child_key_mappings:
 primary_key:
   ofndr_num: state_person.state_person_id
 
-enforced_ancestor_types:
-  state_sentence: state_supervision_sentence
-
 keys_to_ignore:
   - name                # Agent name - handled manually in the controller
   - usr_id              # Agent user id - handled manually in the controller

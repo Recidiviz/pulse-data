@@ -72,6 +72,7 @@ _HIERARCHY_MAP: Dict[
         "state_supervision_violation",
         "state_supervision_violation_response",
     ),
+    "state_supervision_contact": ("state_person",),
     "state_sentence_group": ("state_person",),
     "state_program_assignment": ("state_person",),
     "state_supervision_sentence": (
@@ -168,18 +169,6 @@ _HIERARCHY_MAP: Dict[
         "state_person",
         "state_sentence_group",
         "state_supervision_sentence",
-        "state_supervision_period",
-    ),
-    "state_supervision_contact": (
-        "state_person",
-        "state_sentence_group",
-        AncestorTypeChoices(
-            key="state_sentence",
-            ancestor_choices={
-                "state_incarceration_sentence",
-                "state_supervision_sentence",
-            },
-        ),
         "state_supervision_period",
     ),
 }

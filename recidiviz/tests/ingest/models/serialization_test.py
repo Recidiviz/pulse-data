@@ -317,20 +317,20 @@ class TestSerialization(unittest.TestCase):
             "case_type_entry_id"
         )
 
-        supervision_contact = supervision_period.create_state_supervision_contact()
-        supervision_contact.state_supervision_contact_id = "supervision_contact_id"
-        supervision_contact.contact_type = "contact_type"
-        supervision_contact.contact_method = "contact_method"
-        supervision_contacted_agent = supervision_contact.create_state_agent()
-        supervision_contacted_agent.state_agent_id = "agentPO"
-        supervision_contacted_agent.full_name = "Officer Paroley"
-
         court_case = charge2.create_state_court_case()
         court_case.state_court_case_id = "case1"
 
         court_case_agent = court_case.create_state_agent()
         court_case_agent.state_agent_id = "agentJ"
         court_case_agent.full_name = "Judge Agent"
+
+        supervision_contact = person.create_state_supervision_contact()
+        supervision_contact.state_supervision_contact_id = "supervision_contact_id"
+        supervision_contact.contact_type = "contact_type"
+        supervision_contact.contact_method = "contact_method"
+        supervision_contacted_agent = supervision_contact.create_state_agent()
+        supervision_contacted_agent.state_agent_id = "agentPO"
+        supervision_contacted_agent.full_name = "Officer Paroley"
 
         # Arrange Proto ingest info
         expected_proto = ingest_info_pb2.IngestInfo()
@@ -455,15 +455,15 @@ class TestSerialization(unittest.TestCase):
         supervision_period_pb.state_supervision_period_id = "sp1"
 
         # An ordering requirement in the proto equality check at the end of this
-        # test requires that this agent be added after agent1 and before agentPO
-        court_case_agent_pb = expected_proto.state_agents.add()
-        court_case_agent_pb.state_agent_id = "agentJ"
-        court_case_agent_pb.full_name = "Judge Agent"
-
+        # test requires that this agent be added after agent1 and before agentJ
         supervision_period_pb.supervising_officer_id = "agentPO"
         supervision_period_agent_pb = expected_proto.state_agents.add()
         supervision_period_agent_pb.state_agent_id = "agentPO"
         supervision_period_agent_pb.full_name = "Officer Paroley"
+
+        court_case_agent_pb = expected_proto.state_agents.add()
+        court_case_agent_pb.state_agent_id = "agentJ"
+        court_case_agent_pb.full_name = "Judge Agent"
 
         supervision_case_type_entry_pb = (
             expected_proto.state_supervision_case_type_entries.add()
@@ -481,9 +481,7 @@ class TestSerialization(unittest.TestCase):
         supervision_contact_pb.contact_type = "contact_type"
         supervision_contact_pb.contact_method = "contact_method"
         supervision_contact_pb.contacted_agent_id = "agentPO"
-        supervision_period_pb.state_supervision_contact_ids.append(
-            "supervision_contact_id"
-        )
+        person_pb.state_supervision_contact_ids.append("supervision_contact_id")
 
         group_pb.state_incarceration_sentence_ids.append("is1")
         incarceration_sentence_pb = expected_proto.state_incarceration_sentences.add()

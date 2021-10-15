@@ -23,7 +23,6 @@ from recidiviz.persistence.entity_matching.state.base_state_matching_delegate im
     BaseStateMatchingDelegate,
 )
 from recidiviz.persistence.entity_matching.state.state_date_based_matching_utils import (
-    move_contacts_onto_supervision_periods_for_person,
     move_periods_onto_sentences_by_date,
 )
 
@@ -44,11 +43,4 @@ class UsIdMatchingDelegate(BaseStateMatchingDelegate):
         logging.info("[Entity matching] Move periods onto sentences by date.")
         move_periods_onto_sentences_by_date(
             matched_persons, field_index=self.field_index
-        )
-
-        logging.info(
-            "[Entity matching] Move supervision contacts onto supervision periods by date."
-        )
-        move_contacts_onto_supervision_periods_for_person(
-            matched_persons, self.get_region_code(), field_index=self.field_index
         )
