@@ -3535,7 +3535,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
         supervision_violation_117111 = (
             entities.StateSupervisionViolation.new_with_defaults(
                 state_code=_STATE_CODE,
-                supervision_periods=[supervision_period_117111],
                 person=supervision_period_117111.person,
             )
         )
@@ -3579,9 +3578,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
         supervision_violation_117111.supervision_violation_types.append(
             supervision_violation_type_entry_117111
         )
-        supervision_period_117111.supervision_violation_entries.append(
-            supervision_violation_117111
-        )
+        person_1.supervision_violations.append(supervision_violation_117111)
         supervision_sentence_117111.supervision_periods.append(
             supervision_period_117111
         )
@@ -3630,7 +3627,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
         supervision_violation_140408 = (
             entities.StateSupervisionViolation.new_with_defaults(
                 state_code=_STATE_CODE,
-                supervision_periods=[supervision_period_140408],
                 person=supervision_period_140408.person,
             )
         )
@@ -3722,7 +3718,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             entities.StateSupervisionViolation.new_with_defaults(
                 is_violent=True,
                 state_code=_STATE_CODE,
-                supervision_periods=[supervision_period_147777],
                 person=supervision_period_147777.person,
             )
         )
@@ -3788,9 +3783,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
         supervision_violation_140408.supervision_violation_responses.append(
             supervision_violation_response_140408
         )
-        supervision_period_140408.supervision_violation_entries.append(
-            supervision_violation_140408
-        )
+        person_2.supervision_violations.append(supervision_violation_140408)
         supervision_sentence_140408.supervision_periods.append(
             supervision_period_140408
         )
@@ -3806,9 +3799,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
         supervision_violation_147777.supervision_violation_responses.append(
             supervision_violation_response_147777
         )
-        supervision_period_147777.supervision_violation_entries.append(
-            supervision_violation_147777
-        )
+        person_2.supervision_violations.append(supervision_violation_147777)
         supervision_sentence_147777.supervision_periods.append(
             supervision_period_147777
         )

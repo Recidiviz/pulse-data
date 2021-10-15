@@ -308,6 +308,45 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
 
     person.incarceration_incidents = [incarceration_incident]
 
+    supervision_violation = entities.StateSupervisionViolation.new_with_defaults(
+        violation_date=datetime.date(year=2004, month=9, day=1),
+        state_code="US_XX",
+        is_violent=False,
+        supervision_violation_types=[
+            entities.StateSupervisionViolationTypeEntry.new_with_defaults(
+                state_code="US_XX",
+                violation_type=StateSupervisionViolationType.TECHNICAL,
+                violation_type_raw_text="TECHNICAL",
+            ),
+        ],
+        supervision_violated_conditions=[
+            entities.StateSupervisionViolatedConditionEntry.new_with_defaults(
+                state_code="US_XX",
+                condition="MISSED CURFEW",
+            )
+        ],
+    )
+
+    person.supervision_violations = [supervision_violation]
+
+    supervision_officer_agent = entities.StateAgent.new_with_defaults(
+        agent_type=StateAgentType.SUPERVISION_OFFICER,
+        state_code="US_XX",
+        full_name="JOHN SMITH",
+    )
+
+    supervision_violation_response = entities.StateSupervisionViolationResponse.new_with_defaults(
+        response_type=StateSupervisionViolationResponseType.CITATION,
+        response_date=datetime.date(year=2004, month=9, day=2),
+        state_code="US_XX",
+        deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.SUPERVISION_OFFICER,
+        decision_agents=[supervision_officer_agent],
+    )
+
+    supervision_violation.supervision_violation_responses = [
+        supervision_violation_response
+    ]
+
     sentence_group = entities.StateSentenceGroup.new_with_defaults(
         external_id="BOOK_ID1234",
         status=StateSentenceStatus.SERVING,
@@ -572,45 +611,6 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
     incarceration_sentence.supervision_periods = [supervision_period]
     supervision_sentence.supervision_periods = [supervision_period]
 
-    supervision_violation = entities.StateSupervisionViolation.new_with_defaults(
-        violation_date=datetime.date(year=2004, month=9, day=1),
-        state_code="US_XX",
-        is_violent=False,
-        supervision_violation_types=[
-            entities.StateSupervisionViolationTypeEntry.new_with_defaults(
-                state_code="US_XX",
-                violation_type=StateSupervisionViolationType.TECHNICAL,
-                violation_type_raw_text="TECHNICAL",
-            ),
-        ],
-        supervision_violated_conditions=[
-            entities.StateSupervisionViolatedConditionEntry.new_with_defaults(
-                state_code="US_XX",
-                condition="MISSED CURFEW",
-            )
-        ],
-    )
-
-    supervision_period.supervision_violation_entries = [supervision_violation]
-
-    supervision_officer_agent = entities.StateAgent.new_with_defaults(
-        agent_type=StateAgentType.SUPERVISION_OFFICER,
-        state_code="US_XX",
-        full_name="JOHN SMITH",
-    )
-
-    supervision_violation_response = entities.StateSupervisionViolationResponse.new_with_defaults(
-        response_type=StateSupervisionViolationResponseType.CITATION,
-        response_date=datetime.date(year=2004, month=9, day=2),
-        state_code="US_XX",
-        deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.SUPERVISION_OFFICER,
-        decision_agents=[supervision_officer_agent],
-    )
-
-    supervision_violation.supervision_violation_responses = [
-        supervision_violation_response
-    ]
-
     if set_back_edges:
         person_children: Sequence[Entity] = (
             *person.external_ids,
@@ -621,6 +621,7 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
             *person.assessments,
             *person.program_assignments,
             *person.incarceration_incidents,
+            *person.supervision_violations,
         )
         for child in person_children:
             child.person = person  # type: ignore[attr-defined]
@@ -684,7 +685,6 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
             child.person = person
 
         supervision_period_children: Sequence[Entity] = (
-            *supervision_period.supervision_violation_entries,
             *supervision_period.case_type_entries,
             *supervision_period.supervision_contacts,
         )

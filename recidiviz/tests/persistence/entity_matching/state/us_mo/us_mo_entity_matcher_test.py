@@ -21,27 +21,21 @@ import attr
 
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
-
 from recidiviz.persistence.entity.state.entities import (
     StateAgent,
     StatePerson,
-    StatePersonExternalId,
     StateSentenceGroup,
     StateSupervisionPeriod,
     StateSupervisionSentence,
-    StateSupervisionViolation,
-    StateSupervisionViolationResponse,
 )
 from recidiviz.persistence.entity_matching import entity_matching
 from recidiviz.tests.persistence.database.schema.state.schema_test_utils import (
     generate_agent,
     generate_external_id,
-    generate_incarceration_sentence,
     generate_person,
     generate_sentence_group,
     generate_supervision_period,
     generate_supervision_sentence,
-    generate_supervision_violation,
 )
 from recidiviz.tests.persistence.entity_matching.state.base_state_entity_matcher_test_classes import (
     BaseStateEntityMatcherTest,
@@ -62,190 +56,6 @@ _DATE_4 = datetime.date(year=2019, month=4, day=1)
 
 class TestMoEntityMatching(BaseStateEntityMatcherTest):
     """Test class for US_MO specific entity matching logic."""
-
-    def test_supervisionViolationsWithDifferentParents_mergesViolations(self) -> None:
-        db_person = generate_person(full_name=_FULL_NAME, state_code=_US_MO)
-        db_supervision_violation = generate_supervision_violation(
-            person=db_person, state_code=_US_MO, external_id=_EXTERNAL_ID
-        )
-        entity_supervision_violation = self.to_entity(db_supervision_violation)
-        db_placeholder_supervision_period = generate_supervision_period(
-            person=db_person,
-            state_code=_US_MO,
-            supervision_violation_entries=[db_supervision_violation],
-        )
-        entity_placeholder_supervision_period = self.to_entity(
-            db_placeholder_supervision_period
-        )
-        db_incarceration_sentence = generate_incarceration_sentence(
-            person=db_person,
-            state_code=_US_MO,
-            external_id=_EXTERNAL_ID,
-            supervision_periods=[db_placeholder_supervision_period],
-        )
-        entity_incarceration_sentence = self.to_entity(db_incarceration_sentence)
-        db_sentence_group = generate_sentence_group(
-            person=db_person,
-            state_code=_US_MO,
-            external_id=_EXTERNAL_ID,
-            incarceration_sentences=[db_incarceration_sentence],
-        )
-        entity_sentence_group = self.to_entity(db_sentence_group)
-        db_external_id = generate_external_id(
-            person=db_person, state_code=_US_MO, external_id=_EXTERNAL_ID
-        )
-        entity_external_id = self.to_entity(db_external_id)
-        db_person.sentence_groups = [db_sentence_group]
-        db_person.external_ids = [db_external_id]
-        entity_person = self.to_entity(db_person)
-
-        self._commit_to_db(db_person)
-
-        supervision_violation = attr.evolve(
-            entity_supervision_violation,
-            supervision_violation_id=None,
-            external_id=_EXTERNAL_ID_WITH_SUFFIX,
-        )
-        placeholder_supervision_period = attr.evolve(
-            entity_placeholder_supervision_period,
-            supervision_period_id=None,
-            supervision_violation_entries=[supervision_violation],
-        )
-        supervision_sentence = StateSupervisionSentence.new_with_defaults(
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            state_code=_US_MO,
-            external_id=_EXTERNAL_ID,
-            supervision_periods=[placeholder_supervision_period],
-        )
-        sentence_group = attr.evolve(
-            entity_sentence_group,
-            sentence_group_id=None,
-            incarceration_sentences=[],
-            supervision_sentences=[supervision_sentence],
-        )
-        external_id = attr.evolve(entity_external_id, person_external_id_id=None)
-        person = attr.evolve(
-            entity_person,
-            person_id=None,
-            sentence_groups=[sentence_group],
-            external_ids=[external_id],
-        )
-
-        expected_supervision_violation = attr.evolve(entity_supervision_violation)
-        expected_placeholder_supervision_period_is = attr.evolve(
-            placeholder_supervision_period,
-            supervision_violation_entries=[expected_supervision_violation],
-        )
-        expected_placeholder_supervision_period_ss = attr.evolve(
-            entity_placeholder_supervision_period,
-            supervision_violation_entries=[expected_supervision_violation],
-        )
-        expected_supervision_sentence = attr.evolve(
-            supervision_sentence,
-            supervision_periods=[expected_placeholder_supervision_period_ss],
-        )
-        expected_incarceration_sentence = attr.evolve(
-            entity_incarceration_sentence,
-            supervision_periods=[expected_placeholder_supervision_period_is],
-        )
-        expected_sentence_group = attr.evolve(
-            entity_sentence_group,
-            incarceration_sentences=[expected_incarceration_sentence],
-            supervision_sentences=[expected_supervision_sentence],
-        )
-        expected_external_id = attr.evolve(entity_external_id)
-        expected_person = attr.evolve(
-            entity_person,
-            external_ids=[expected_external_id],
-            sentence_groups=[expected_sentence_group],
-        )
-        # Act 1 - Match
-        session = self._session()
-        matched_entities = entity_matching.match(
-            session, _US_MO, ingested_people=[person]
-        )
-
-        self.assert_people_match_pre_and_post_commit(
-            [expected_person], matched_entities.people, session
-        )
-        self.assertEqual(0, matched_entities.error_count)
-        self.assertEqual(1, matched_entities.total_root_entities)
-
-    def test_removeSeosFromSupervisionViolation(self) -> None:
-        supervision_violation_response = (
-            StateSupervisionViolationResponse.new_with_defaults(
-                state_code=_US_MO, external_id=_EXTERNAL_ID_WITH_SUFFIX
-            )
-        )
-        supervision_violation = StateSupervisionViolation.new_with_defaults(
-            state_code=_US_MO,
-            external_id=_EXTERNAL_ID_WITH_SUFFIX,
-            supervision_violation_responses=[supervision_violation_response],
-        )
-        placeholder_supervision_period = StateSupervisionPeriod.new_with_defaults(
-            state_code=_US_MO,
-            supervision_violation_entries=[supervision_violation],
-        )
-        supervision_sentence = StateSupervisionSentence.new_with_defaults(
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            state_code=_US_MO,
-            external_id=_EXTERNAL_ID,
-            supervision_periods=[placeholder_supervision_period],
-        )
-        sentence_group = StateSentenceGroup.new_with_defaults(
-            state_code=_US_MO,
-            external_id=_EXTERNAL_ID_WITH_SUFFIX,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            incarceration_sentences=[],
-            supervision_sentences=[supervision_sentence],
-        )
-        external_id = StatePersonExternalId.new_with_defaults(
-            state_code=_US_MO, id_type=_ID_TYPE, external_id=_EXTERNAL_ID
-        )
-        person = StatePerson.new_with_defaults(
-            sentence_groups=[sentence_group],
-            external_ids=[external_id],
-            state_code=_US_MO,
-        )
-
-        updated_external_id = _EXTERNAL_ID
-        expected_supervision_violation_response = attr.evolve(
-            supervision_violation_response, external_id=updated_external_id
-        )
-        expected_supervision_violation = attr.evolve(
-            supervision_violation,
-            external_id=updated_external_id,
-            supervision_violation_responses=[expected_supervision_violation_response],
-        )
-        expected_placeholder_supervision_period = attr.evolve(
-            placeholder_supervision_period,
-            supervision_violation_entries=[expected_supervision_violation],
-        )
-        expected_supervision_sentence = attr.evolve(
-            supervision_sentence,
-            supervision_periods=[expected_placeholder_supervision_period],
-        )
-        expected_sentence_group = attr.evolve(
-            sentence_group, supervision_sentences=[expected_supervision_sentence]
-        )
-        expected_external_id = attr.evolve(external_id)
-        expected_person = attr.evolve(
-            person,
-            external_ids=[expected_external_id],
-            sentence_groups=[expected_sentence_group],
-        )
-
-        # Act 1 - Match
-        session = self._session()
-        matched_entities = entity_matching.match(
-            session, _US_MO, ingested_people=[person]
-        )
-
-        self.assert_people_match_pre_and_post_commit(
-            [expected_person], matched_entities.people, session
-        )
-        self.assertEqual(0, matched_entities.error_count)
-        self.assertEqual(1, matched_entities.total_root_entities)
 
     def test_runMatch_supervisingOfficerNotMovedFromPersonOntoOpenSupervisionPeriods(
         self,
@@ -434,120 +244,6 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
             expected_updated_supervision_period,
             new_supervision_period,
         ]
-
-        # Act
-        session = self._session()
-        matched_entities = entity_matching.match(
-            session, _US_MO, ingested_people=[person]
-        )
-
-        # Assert
-        self.assert_people_match_pre_and_post_commit(
-            [expected_person], matched_entities.people, session
-        )
-        self.assert_no_errors(matched_entities)
-        self.assertEqual(1, matched_entities.total_root_entities)
-
-    def test_runMatch_supervisionPeriodDateChangesSoItDoesNotMatchSentenceOrViolations(
-        self,
-    ) -> None:
-        # Arrange
-        db_supervising_officer = generate_agent(
-            external_id=_EXTERNAL_ID,
-            state_code=_US_MO,
-            agent_type=StateAgentType.SUPERVISION_OFFICER.value,
-        )
-        db_person = generate_person(
-            supervising_officer=db_supervising_officer, state_code=_US_MO
-        )
-        db_external_id = generate_external_id(
-            external_id=_EXTERNAL_ID, state_code=_US_MO, id_type=_ID_TYPE
-        )
-        entity_external_id = self.to_entity(db_external_id)
-
-        # Violation has been date matched to the open supervision period
-        db_supervision_violation = generate_supervision_violation(
-            person=db_person,
-            state_code=_US_MO,
-            external_id=_EXTERNAL_ID,
-            violation_date=_DATE_4,
-        )
-        entity_supervision_violation = self.to_entity(db_supervision_violation)
-
-        db_supervision_period_open = generate_supervision_period(
-            person=db_person,
-            external_id=_EXTERNAL_ID_2,
-            start_date=_DATE_2,
-            state_code=_US_MO,
-            supervising_officer=db_supervising_officer,
-            supervision_violation_entries=[db_supervision_violation],
-        )
-        entity_supervision_period_open = self.to_entity(db_supervision_period_open)
-        db_supervision_sentence = generate_supervision_sentence(
-            person=db_person,
-            external_id=_EXTERNAL_ID,
-            state_code=_US_MO,
-            start_date=_DATE_1,
-            supervision_periods=[db_supervision_period_open],
-        )
-        db_sentence_group = generate_sentence_group(
-            external_id=_EXTERNAL_ID,
-            state_code=_US_MO,
-            supervision_sentences=[db_supervision_sentence],
-        )
-        entity_sentence_group = self.to_entity(db_sentence_group)
-        db_person.external_ids = [db_external_id]
-        db_person.sentence_groups = [db_sentence_group]
-        entity_person = self.to_entity(db_person)
-        self._commit_to_db(db_person)
-
-        supervsion_period_updated = StateSupervisionPeriod.new_with_defaults(
-            state_code=_US_MO,
-            external_id=entity_supervision_period_open.external_id,
-            start_date=_DATE_2,
-            termination_date=_DATE_3,
-        )
-
-        placeholder_supervision_sentence = StateSupervisionSentence.new_with_defaults(
-            state_code=_US_MO,
-            supervision_periods=[supervsion_period_updated],
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-        )
-        sentence_group = StateSentenceGroup.new_with_defaults(
-            external_id=entity_sentence_group.external_id,
-            state_code=_US_MO,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            supervision_sentences=[placeholder_supervision_sentence],
-        )
-        external_id = StatePersonExternalId.new_with_defaults(
-            external_id=entity_external_id.external_id,
-            state_code=_US_MO,
-            id_type=entity_external_id.id_type,
-        )
-        person = StatePerson.new_with_defaults(
-            external_ids=[external_id],
-            sentence_groups=[sentence_group],
-            state_code=_US_MO,
-        )
-
-        expected_person = attr.evolve(entity_person)
-        expected_sentence = expected_person.sentence_groups[0].supervision_sentences[0]
-        expected_original_supervision_period = expected_sentence.supervision_periods[0]
-
-        # Violation is moved off of the supervision period (it no longer matches) and the termination date is updated
-        expected_original_supervision_period.supervision_violation_entries = []
-        expected_original_supervision_period.termination_date = _DATE_3
-
-        # A placeholder periods is created to hold the existing supervision violation
-        expected_new_placeholder_supervision_period = (
-            StateSupervisionPeriod.new_with_defaults(
-                state_code=_US_MO,
-                supervision_violation_entries=[entity_supervision_violation],
-            )
-        )
-        expected_sentence.supervision_periods.append(
-            expected_new_placeholder_supervision_period
-        )
 
         # Act
         session = self._session()

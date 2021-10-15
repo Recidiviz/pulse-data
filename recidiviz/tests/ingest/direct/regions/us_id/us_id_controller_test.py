@@ -1056,44 +1056,32 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                             state_person_external_id_id="1111", id_type=US_ID_DOC
                         )
                     ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_supervision_sentences=[
-                                StateSupervisionSentence(
-                                    state_supervision_periods=[
-                                        StateSupervisionPeriod(
-                                            state_supervision_violation_entries=[
-                                                StateSupervisionViolation(
-                                                    is_violent="True",
-                                                    is_sex_offense="True",
-                                                    state_supervision_violation_id="5",
-                                                    state_supervision_violation_types=[
-                                                        StateSupervisionViolationTypeEntry(
-                                                            violation_type="New Misdemeanor",
-                                                        ),
-                                                        StateSupervisionViolationTypeEntry(
-                                                            violation_type="Technical (enter details below)",
-                                                        ),
-                                                    ],
-                                                    state_supervision_violation_responses=[
-                                                        StateSupervisionViolationResponse(
-                                                            state_supervision_violation_response_id="5",
-                                                            response_type="VIOLATION_REPORT",
-                                                            response_date="12/01/2018",
-                                                            supervision_violation_response_decisions=[
-                                                                StateSupervisionViolationResponseDecisionEntry(
-                                                                    decision="Imposition of Sentence",
-                                                                )
-                                                            ],
-                                                        )
-                                                    ],
-                                                )
-                                            ]
-                                        ),
-                                    ]
+                    state_supervision_violations=[
+                        StateSupervisionViolation(
+                            is_violent="True",
+                            is_sex_offense="True",
+                            state_supervision_violation_id="5",
+                            state_supervision_violation_types=[
+                                StateSupervisionViolationTypeEntry(
+                                    violation_type="New Misdemeanor",
+                                ),
+                                StateSupervisionViolationTypeEntry(
+                                    violation_type="Technical (enter details below)",
+                                ),
+                            ],
+                            state_supervision_violation_responses=[
+                                StateSupervisionViolationResponse(
+                                    state_supervision_violation_response_id="5",
+                                    response_type="VIOLATION_REPORT",
+                                    response_date="12/01/2018",
+                                    supervision_violation_response_decisions=[
+                                        StateSupervisionViolationResponseDecisionEntry(
+                                            decision="Imposition of Sentence",
+                                        )
+                                    ],
                                 )
                             ],
-                        ),
+                        )
                     ],
                 ),
                 StatePerson(
@@ -1103,39 +1091,27 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                             state_person_external_id_id="2222", id_type=US_ID_DOC
                         )
                     ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_supervision_sentences=[
-                                StateSupervisionSentence(
-                                    state_supervision_periods=[
-                                        StateSupervisionPeriod(
-                                            state_supervision_violation_entries=[
-                                                StateSupervisionViolation(
-                                                    is_violent="False",
-                                                    is_sex_offense="False",
-                                                    state_supervision_violation_id="6",
-                                                    state_supervision_violation_types=[
-                                                        StateSupervisionViolationTypeEntry(
-                                                            violation_type="Absconding",
-                                                        ),
-                                                        StateSupervisionViolationTypeEntry(
-                                                            violation_type="Technical (enter details below)",
-                                                        ),
-                                                    ],
-                                                    state_supervision_violation_responses=[
-                                                        StateSupervisionViolationResponse(
-                                                            state_supervision_violation_response_id="6",
-                                                            response_type="VIOLATION_REPORT",
-                                                            response_date="06/15/2009",
-                                                        )
-                                                    ],
-                                                )
-                                            ]
-                                        ),
-                                    ]
+                    state_supervision_violations=[
+                        StateSupervisionViolation(
+                            is_violent="False",
+                            is_sex_offense="False",
+                            state_supervision_violation_id="6",
+                            state_supervision_violation_types=[
+                                StateSupervisionViolationTypeEntry(
+                                    violation_type="Absconding",
+                                ),
+                                StateSupervisionViolationTypeEntry(
+                                    violation_type="Technical (enter details below)",
+                                ),
+                            ],
+                            state_supervision_violation_responses=[
+                                StateSupervisionViolationResponse(
+                                    state_supervision_violation_response_id="6",
+                                    response_type="VIOLATION_REPORT",
+                                    response_date="06/15/2009",
                                 )
                             ],
-                        ),
+                        )
                     ],
                 ),
                 StatePerson(
@@ -1145,44 +1121,32 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                             state_person_external_id_id="3333", id_type=US_ID_DOC
                         )
                     ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_supervision_sentences=[
-                                StateSupervisionSentence(
-                                    state_supervision_periods=[
-                                        StateSupervisionPeriod(
-                                            state_supervision_violation_entries=[
-                                                StateSupervisionViolation(
-                                                    is_violent="False",
-                                                    is_sex_offense="False",
-                                                    state_supervision_violation_id="7",
-                                                    state_supervision_violation_types=[
-                                                        StateSupervisionViolationTypeEntry(
-                                                            violation_type="Technical (enter details below)",
-                                                        ),
-                                                    ],
-                                                    state_supervision_violation_responses=[
-                                                        StateSupervisionViolationResponse(
-                                                            state_supervision_violation_response_id="7",
-                                                            response_type="VIOLATION_REPORT",
-                                                            response_date="01/01/2016",
-                                                            supervision_violation_response_decisions=[
-                                                                StateSupervisionViolationResponseDecisionEntry(
-                                                                    decision="Reinstatement",
-                                                                ),
-                                                                StateSupervisionViolationResponseDecisionEntry(
-                                                                    decision="Treatment Court",
-                                                                ),
-                                                            ],
-                                                        )
-                                                    ],
-                                                )
-                                            ]
+                    state_supervision_violations=[
+                        StateSupervisionViolation(
+                            is_violent="False",
+                            is_sex_offense="False",
+                            state_supervision_violation_id="7",
+                            state_supervision_violation_types=[
+                                StateSupervisionViolationTypeEntry(
+                                    violation_type="Technical (enter details below)",
+                                ),
+                            ],
+                            state_supervision_violation_responses=[
+                                StateSupervisionViolationResponse(
+                                    state_supervision_violation_response_id="7",
+                                    response_type="VIOLATION_REPORT",
+                                    response_date="01/01/2016",
+                                    supervision_violation_response_decisions=[
+                                        StateSupervisionViolationResponseDecisionEntry(
+                                            decision="Reinstatement",
                                         ),
-                                    ]
+                                        StateSupervisionViolationResponseDecisionEntry(
+                                            decision="Treatment Court",
+                                        ),
+                                    ],
                                 )
                             ],
-                        ),
+                        )
                     ],
                 ),
             ]
@@ -1202,44 +1166,32 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                             state_person_external_id_id="2222", id_type=US_ID_DOC
                         )
                     ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_supervision_sentences=[
-                                StateSupervisionSentence(
-                                    state_supervision_periods=[
-                                        StateSupervisionPeriod(
-                                            state_supervision_violation_entries=[
-                                                StateSupervisionViolation(
-                                                    is_violent="False",
-                                                    is_sex_offense="False",
-                                                    state_supervision_violation_id="8",
-                                                    state_supervision_violation_types=[
-                                                        StateSupervisionViolationTypeEntry(
-                                                            violation_type="New Misdemeanor",
-                                                        ),
-                                                        StateSupervisionViolationTypeEntry(
-                                                            violation_type="Technical",
-                                                        ),
-                                                    ],
-                                                    state_supervision_violation_responses=[
-                                                        StateSupervisionViolationResponse(
-                                                            state_supervision_violation_response_id="8",
-                                                            response_type="VIOLATION_REPORT",
-                                                            response_date="02/01/2009",
-                                                            supervision_violation_response_decisions=[
-                                                                StateSupervisionViolationResponseDecisionEntry(
-                                                                    decision="Referral to Problem Solving Court",
-                                                                )
-                                                            ],
-                                                        )
-                                                    ],
-                                                )
-                                            ]
-                                        ),
-                                    ]
+                    state_supervision_violations=[
+                        StateSupervisionViolation(
+                            is_violent="False",
+                            is_sex_offense="False",
+                            state_supervision_violation_id="8",
+                            state_supervision_violation_types=[
+                                StateSupervisionViolationTypeEntry(
+                                    violation_type="New Misdemeanor",
+                                ),
+                                StateSupervisionViolationTypeEntry(
+                                    violation_type="Technical",
+                                ),
+                            ],
+                            state_supervision_violation_responses=[
+                                StateSupervisionViolationResponse(
+                                    state_supervision_violation_response_id="8",
+                                    response_type="VIOLATION_REPORT",
+                                    response_date="02/01/2009",
+                                    supervision_violation_response_decisions=[
+                                        StateSupervisionViolationResponseDecisionEntry(
+                                            decision="Referral to Problem Solving Court",
+                                        )
+                                    ],
                                 )
                             ],
-                        ),
+                        )
                     ],
                 ),
             ]
@@ -2377,28 +2329,11 @@ class TestUsIdController(BaseDirectIngestControllerTests):
         # TODO(#2492): Remove dangling placeholders from expected graph once functionality is in entity matching.
 
         # Arrange
-        sg_1111_placeholder = entities.StateSentenceGroup.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            person=person_1,
-        )
-        ss_1111_placeholder = entities.StateSupervisionSentence.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            sentence_group=sg_1111_placeholder,
-            person=sg_1111_placeholder.person,
-        )
-        sp_1111_placeholder = entities.StateSupervisionPeriod.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            supervision_sentences=[ss_1111_placeholder],
-            person=ss_1111_placeholder.person,
-        )
         sv_1111_5 = entities.StateSupervisionViolation.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id="5",
             is_violent=True,
             is_sex_offense=True,
-            supervision_periods=[sp_1111_3],
             person=sp_1111_3.person,
         )
         vte_1111_5_m = entities.StateSupervisionViolationTypeEntry.new_with_defaults(
@@ -2433,36 +2368,16 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                 person=svr_1111_5.person,
             )
         )
-        person_1.sentence_groups.append(sg_1111_placeholder)
-        sg_1111_placeholder.supervision_sentences.append(ss_1111_placeholder)
-        ss_1111_placeholder.supervision_periods.append(sp_1111_placeholder)
-        sp_1111_3.supervision_violation_entries.append(sv_1111_5)
+        person_1.supervision_violations.append(sv_1111_5)
         sv_1111_5.supervision_violation_types.extend([vte_1111_5_m, vte_1111_5_t])
         sv_1111_5.supervision_violation_responses.append(svr_1111_5)
         svr_1111_5.supervision_violation_response_decisions.append(svrd_1111_5_r)
 
-        sg_2222_placeholder = entities.StateSentenceGroup.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            person=person_2,
-        )
-        ss_2222_placeholder = entities.StateSupervisionSentence.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            sentence_group=sg_2222_placeholder,
-            person=sg_2222_placeholder.person,
-        )
-        sp_2222_placeholder = entities.StateSupervisionPeriod.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            supervision_sentences=[ss_2222_placeholder],
-            person=ss_2222_placeholder.person,
-        )
         sv_2222_6 = entities.StateSupervisionViolation.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id="6",
             is_violent=False,
             is_sex_offense=False,
-            supervision_periods=[sp_2222_1],
             person=sp_2222_1.person,
         )
         vte_2222_6_a = entities.StateSupervisionViolationTypeEntry.new_with_defaults(
@@ -2488,35 +2403,15 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             supervision_violation=sv_2222_6,
             person=sv_2222_6.person,
         )
-        person_2.sentence_groups.append(sg_2222_placeholder)
-        sg_2222_placeholder.supervision_sentences.append(ss_2222_placeholder)
-        ss_2222_placeholder.supervision_periods.append(sp_2222_placeholder)
-        sp_2222_1.supervision_violation_entries.append(sv_2222_6)
+        person_2.supervision_violations.append(sv_2222_6)
         sv_2222_6.supervision_violation_types.extend([vte_2222_6_a, vte_2222_6_t])
         sv_2222_6.supervision_violation_responses.append(svr_2222_6)
 
-        sg_3333_placeholder = entities.StateSentenceGroup.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            person=person_3,
-        )
-        ss_3333_placeholder = entities.StateSupervisionSentence.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            sentence_group=sg_3333_placeholder,
-            person=sg_3333_placeholder.person,
-        )
-        sp_3333_placeholder = entities.StateSupervisionPeriod.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            supervision_sentences=[ss_3333_placeholder],
-            person=ss_3333_placeholder.person,
-        )
         sv_3333_7 = entities.StateSupervisionViolation.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id="7",
             is_violent=False,
             is_sex_offense=False,
-            supervision_periods=[sp_3333_1],
             person=sp_3333_1.person,
         )
         vte_3333_7_t = entities.StateSupervisionViolationTypeEntry.new_with_defaults(
@@ -2553,10 +2448,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                 person=svr_3333_7.person,
             )
         )
-        person_3.sentence_groups.append(sg_3333_placeholder)
-        sg_3333_placeholder.supervision_sentences.append(ss_3333_placeholder)
-        ss_3333_placeholder.supervision_periods.append(sp_3333_placeholder)
-        sp_3333_1.supervision_violation_entries.append(sv_3333_7)
+        person_3.supervision_violations.append(sv_3333_7)
         sv_3333_7.supervision_violation_types.append(vte_3333_7_t)
         sv_3333_7.supervision_violation_responses.append(svr_3333_7)
         svr_3333_7.supervision_violation_response_decisions.append(svrd_3333_7_r)
@@ -2577,28 +2469,11 @@ class TestUsIdController(BaseDirectIngestControllerTests):
         # TODO(#2492): Remove dangling placeholders from expected graph once functionality is in entity matching.
 
         # Arrange
-        sg_2222_placeholder_2 = entities.StateSentenceGroup.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            person=person_2,
-        )
-        ss_2222_placeholder_2 = entities.StateSupervisionSentence.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            sentence_group=sg_2222_placeholder_2,
-            person=sg_2222_placeholder_2.person,
-        )
-        sp_2222_placeholder_2 = entities.StateSupervisionPeriod.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            supervision_sentences=[ss_2222_placeholder_2],
-            person=ss_2222_placeholder_2.person,
-        )
         sv_2222_8 = entities.StateSupervisionViolation.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id="8",
             is_violent=False,
             is_sex_offense=False,
-            supervision_periods=[sp_2222_1],
             person=sp_2222_1.person,
         )
         vte_2222_8_m = entities.StateSupervisionViolationTypeEntry.new_with_defaults(
@@ -2633,11 +2508,8 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                 person=svr_2222_8.person,
             )
         )
-        person_2.sentence_groups.append(sg_2222_placeholder_2)
-        sg_2222_placeholder_2.supervision_sentences.append(ss_2222_placeholder_2)
-        ss_2222_placeholder_2.supervision_periods.append(sp_2222_placeholder_2)
 
-        sp_2222_1.supervision_violation_entries.append(sv_2222_8)
+        person_2.supervision_violations.append(sv_2222_8)
         sv_2222_8.supervision_violation_types.extend([vte_2222_8_m, vte_2222_8_t])
         sv_2222_8.supervision_violation_responses.append(svr_2222_8)
         svr_2222_8.supervision_violation_response_decisions.append(svrd_2222_8_c)

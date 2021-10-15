@@ -269,7 +269,6 @@ def test_get_all_table_classes() -> None:
         "state_supervision_sentence_incarceration_period_association",
         "state_supervision_sentence_supervision_period_association",
         "state_supervision_violation_response_decision_agent_association",
-        "state_supervision_period_supervision_violation_association",
     ]
     operations_table_names = [
         "direct_ingest_ingest_file_metadata",

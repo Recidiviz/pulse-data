@@ -671,31 +671,6 @@ state_incarceration_sentence_supervision_period_association_table = Table(
     ),
 )
 
-state_supervision_period_supervision_violation_association_table = Table(
-    "state_supervision_period_supervision_violation_association",
-    StateBase.metadata,
-    Column(
-        "supervision_period_id",
-        Integer,
-        ForeignKey("state_supervision_period.supervision_period_id"),
-        index=True,
-        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="supervision period"),
-    ),
-    Column(
-        "supervision_violation_id",
-        Integer,
-        ForeignKey("state_supervision_violation.supervision_violation_id"),
-        index=True,
-        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(
-            object_name="supervision violation"
-        ),
-    ),
-    comment=ASSOCIATON_TABLE_COMMENT_TEMPLATE.format(
-        first_object_name_plural="supervision periods",
-        second_object_name_plural="supervision violations",
-    ),
-)
-
 state_supervision_period_supervision_contact_association_table = Table(
     "state_supervision_period_supervision_contact_association",
     StateBase.metadata,
@@ -1270,6 +1245,9 @@ class StatePerson(StateBase, _StatePersonSharedColumns):
     )
     incarceration_incidents = relationship(
         "StateIncarcerationIncident", backref="person", lazy="selectin"
+    )
+    supervision_violations = relationship(
+        "StateSupervisionViolation", backref="person", lazy="selectin"
     )
     sentence_groups = relationship(
         "StateSentenceGroup", backref="person", lazy="selectin"
@@ -2451,19 +2429,6 @@ class StateSupervisionPeriod(StateBase, _StateSupervisionPeriodSharedColumns):
 
     person = relationship("StatePerson", uselist=False)
     supervising_officer = relationship("StateAgent", uselist=False, lazy="selectin")
-    # TODO(#2668): Deprecated - Delete this column from our schema.
-    supervision_violations = relationship(
-        "StateSupervisionViolation", backref="supervision_period", lazy="selectin"
-    )
-    # TODO(#2697): Rename `supervision_violation_entries` to
-    # `supervision_violations` once the 1:many relationship
-    # `supervision_violations` above has been removed from our db/schema object.
-    supervision_violation_entries = relationship(
-        "StateSupervisionViolation",
-        secondary=state_supervision_period_supervision_violation_association_table,
-        backref="supervision_periods",
-        lazy="selectin",
-    )
     case_type_entries = relationship(
         "StateSupervisionCaseTypeEntry", backref="supervision_period", lazy="selectin"
     )
@@ -3235,19 +3200,6 @@ class _StateSupervisionViolationSharedColumns(_ReferencesStatePersonSharedColumn
         Boolean, comment="Whether or not the violation involved a sex offense."
     )
 
-    # TODO(#2668): Deprecated - remove this column from our schema.
-    @declared_attr
-    def supervision_period_id(self) -> Column:
-        return Column(
-            Integer,
-            ForeignKey("state_supervision_period.supervision_period_id"),
-            index=True,
-            nullable=True,
-            comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(
-                object_name="supervision period"
-            ),
-        )
-
 
 class StateSupervisionViolation(StateBase, _StateSupervisionViolationSharedColumns):
     """Represents a StateSupervisionViolation in the SQL schema"""
@@ -3277,8 +3229,6 @@ class StateSupervisionViolation(StateBase, _StateSupervisionViolationSharedColum
             object_name="supervision violation"
         ),
     )
-
-    person = relationship("StatePerson", uselist=False)
 
     supervision_violation_types = relationship(
         "StateSupervisionViolationTypeEntry",

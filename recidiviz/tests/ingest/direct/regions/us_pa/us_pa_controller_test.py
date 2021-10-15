@@ -3242,7 +3242,6 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             state_code=_STATE_CODE_UPPER,
             violation_date=datetime.date(year=2014, month=1, day=1),
             person=person_2,
-            supervision_periods=[p2_sp_1_2],
         )
         p2_sv_1_te_10 = entities.StateSupervisionViolationTypeEntry.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -3334,7 +3333,6 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             state_code=_STATE_CODE_UPPER,
             violation_date=datetime.date(year=2015, month=4, day=13),
             person=person_2,
-            supervision_periods=[p2_sp_2_1],
         )
         p2_sv_2_te_14 = entities.StateSupervisionViolationTypeEntry.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -3355,36 +3353,14 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         )
         p2_sv_2.supervision_violated_conditions.append(p2_sv_2_c_14)
 
-        p2_sp_1_2.supervision_violation_entries.append(p2_sv_1)
-        p2_sp_2_1.supervision_violation_entries.append(p2_sv_2)
-
-        p2_sg_placeholder = entities.StateSentenceGroup.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            person=person_2,
-        )
-        person_2.sentence_groups.append(p2_sg_placeholder)
-
-        p2_ss_placeholder = entities.StateSupervisionSentence.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            sentence_group=p2_sg_placeholder,
-            person=person_2,
-        )
-        p2_sg_placeholder.supervision_sentences.append(p2_ss_placeholder)
-        p2_sp_placeholder = entities.StateSupervisionPeriod.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            supervision_sentences=[p2_ss_placeholder],
-            person=person_2,
-        )
-        p2_ss_placeholder.supervision_periods.append(p2_sp_placeholder)
+        person_2.supervision_violations.append(p2_sv_1)
+        person_2.supervision_violations.append(p2_sv_2)
 
         p5_sv_3 = entities.StateSupervisionViolation.new_with_defaults(
             external_id="789C-3-1",
             state_code=_STATE_CODE_UPPER,
             violation_date=datetime.date(year=2006, month=8, day=11),
             person=person_5,
-            supervision_periods=[p5_sp_3_1],
         )
         p5_sv_3_te_3 = entities.StateSupervisionViolationTypeEntry.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -3416,35 +3392,13 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         )
         p5_sv_3.supervision_violated_conditions.extend([p5_sv_3_c_3, p5_sv_3_c_7])
 
-        p5_sp_3_1.supervision_violation_entries.append(p5_sv_3)
-
-        p5_sg_placeholder = entities.StateSentenceGroup.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            person=person_5,
-        )
-        person_5.sentence_groups.append(p5_sg_placeholder)
-
-        p5_ss_placeholder = entities.StateSupervisionSentence.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            sentence_group=p5_sg_placeholder,
-            person=person_5,
-        )
-        p5_sg_placeholder.supervision_sentences.append(p5_ss_placeholder)
-        p5_sp_placeholder = entities.StateSupervisionPeriod.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            supervision_sentences=[p5_ss_placeholder],
-            person=person_5,
-        )
-        p5_ss_placeholder.supervision_periods.append(p5_sp_placeholder)
+        person_5.supervision_violations.append(p5_sv_3)
 
         p4_sv_1 = entities.StateSupervisionViolation.new_with_defaults(
             external_id="345E-1-1",
             state_code=_STATE_CODE_UPPER,
             violation_date=datetime.date(year=2018, month=3, day=17),
             person=person_4,
-            supervision_periods=[p4_sp_1_1],
         )
         p4_sv_1_te_3 = entities.StateSupervisionViolationTypeEntry.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -3468,7 +3422,6 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             state_code=_STATE_CODE_UPPER,
             violation_date=datetime.date(year=2018, month=5, day=12),
             person=person_4,
-            supervision_periods=[p4_sp_1_1],
         )
         p4_sv_2_te_7 = entities.StateSupervisionViolationTypeEntry.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -3500,28 +3453,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         )
         p4_sv_2.supervision_violated_conditions.extend([p4_sv_2_c_7, p4_sv_2_c_8])
 
-        p4_sp_1_1.supervision_violation_entries.extend([p4_sv_1, p4_sv_2])
-
-        p4_sg_placeholder = entities.StateSentenceGroup.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            person=person_4,
-        )
-        person_4.sentence_groups.append(p4_sg_placeholder)
-
-        p4_ss_placeholder = entities.StateSupervisionSentence.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            sentence_group=p4_sg_placeholder,
-            person=person_4,
-        )
-        p4_sg_placeholder.supervision_sentences.append(p4_ss_placeholder)
-        p4_sp_placeholder = entities.StateSupervisionPeriod.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            supervision_sentences=[p4_ss_placeholder],
-            person=person_4,
-        )
-        p4_ss_placeholder.supervision_periods.append(p4_sp_placeholder)
+        person_4.supervision_violations.extend([p4_sv_1, p4_sv_2])
 
         populate_person_backedges(expected_people)
 
@@ -3693,28 +3625,11 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         ######################################
 
         # Arrange
-        p1_placeholder_sg = entities.StateSentenceGroup.new_with_defaults(
-            person=person_1,
-            state_code=_STATE_CODE_UPPER,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-        )
-        p1_placeholder_ss = entities.StateSupervisionSentence.new_with_defaults(
-            person=person_1,
-            sentence_group=p1_placeholder_sg,
-            state_code=_STATE_CODE_UPPER,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-        )
-        p1_placeholder_sp = entities.StateSupervisionPeriod.new_with_defaults(
-            person=person_1,
-            supervision_sentences=p1_placeholder_sg.supervision_sentences,
-            state_code=_STATE_CODE_UPPER,
-        )
         p1_placeholder_sv = entities.StateSupervisionViolation.new_with_defaults(
             person=person_1,
-            supervision_periods=p1_placeholder_ss.supervision_periods,
             state_code=_STATE_CODE_UPPER,
         )
-        p1_placeholder_vr = entities.StateSupervisionViolationResponse.new_with_defaults(
+        p1_vr = entities.StateSupervisionViolationResponse.new_with_defaults(
             person=person_1,
             supervision_violation=p1_placeholder_sv,
             external_id="BOARD-123A-1-09",
@@ -3723,47 +3638,25 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
             deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD,
         )
-        p1_placeholder_de = (
+        p1_de = (
             entities.StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
                 person=person_1,
-                supervision_violation_response=p1_placeholder_vr,
+                supervision_violation_response=p1_vr,
                 state_code=_STATE_CODE_UPPER,
                 decision_raw_text="RESCR",
                 decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
             )
         )
 
-        p1_placeholder_sg.supervision_sentences.append(p1_placeholder_ss)
-        p1_placeholder_ss.supervision_periods.append(p1_placeholder_sp)
-        p1_placeholder_sp.supervision_violation_entries.append(p1_placeholder_sv)
-        p1_placeholder_sv.supervision_violation_responses.append(p1_placeholder_vr)
-        p1_placeholder_vr.supervision_violation_response_decisions.append(
-            p1_placeholder_de
-        )
-        person_1.sentence_groups.append(p1_placeholder_sg)
+        person_1.supervision_violations.append(p1_placeholder_sv)
+        p1_placeholder_sv.supervision_violation_responses.append(p1_vr)
+        p1_vr.supervision_violation_response_decisions.append(p1_de)
 
-        p2_placeholder_sg = entities.StateSentenceGroup.new_with_defaults(
-            person=person_2,
-            state_code=_STATE_CODE_UPPER,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-        )
-        p2_placeholder_ss = entities.StateSupervisionSentence.new_with_defaults(
-            person=person_2,
-            sentence_group=p2_placeholder_sg,
-            state_code=_STATE_CODE_UPPER,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-        )
-        p2_placeholder_sp = entities.StateSupervisionPeriod.new_with_defaults(
-            person=person_2,
-            supervision_sentences=p2_placeholder_sg.supervision_sentences,
-            state_code=_STATE_CODE_UPPER,
-        )
         p2_placeholder_sv = entities.StateSupervisionViolation.new_with_defaults(
             person=person_2,
-            supervision_periods=[p2_sp_1_2],
             state_code=_STATE_CODE_UPPER,
         )
-        p2_placeholder_vr = entities.StateSupervisionViolationResponse.new_with_defaults(
+        p2_vr = entities.StateSupervisionViolationResponse.new_with_defaults(
             person=person_2,
             supervision_violation=p2_placeholder_sv,
             external_id="BOARD-456B-0-04",
@@ -3772,49 +3665,25 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
             deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD,
         )
-        p2_placeholder_de = (
+        p2_de = (
             entities.StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
                 person=person_2,
-                supervision_violation_response=p2_placeholder_vr,
+                supervision_violation_response=p2_vr,
                 state_code=_STATE_CODE_UPPER,
                 decision_raw_text="RESCR9",
                 decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
             )
         )
 
-        p2_placeholder_sg.supervision_sentences.append(p2_placeholder_ss)
-        p2_placeholder_ss.supervision_periods.append(p2_placeholder_sp)
-        person_2.sentence_groups[1].supervision_sentences[0].supervision_periods[
-            1
-        ].supervision_violation_entries.append(p2_placeholder_sv)
-        p2_placeholder_sv.supervision_violation_responses.append(p2_placeholder_vr)
-        p2_placeholder_vr.supervision_violation_response_decisions.append(
-            p2_placeholder_de
-        )
-        person_2.sentence_groups.append(p2_placeholder_sg)
+        person_2.supervision_violations.append(p2_placeholder_sv)
+        p2_placeholder_sv.supervision_violation_responses.append(p2_vr)
+        p2_vr.supervision_violation_response_decisions.append(p2_de)
 
-        p5_placeholder_sg = entities.StateSentenceGroup.new_with_defaults(
-            person=person_5,
-            state_code=_STATE_CODE_UPPER,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-        )
-        p5 = entities.StateSupervisionSentence.new_with_defaults(
-            person=person_5,
-            sentence_group=p5_placeholder_sg,
-            state_code=_STATE_CODE_UPPER,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-        )
-        p5_placeholder_sp = entities.StateSupervisionPeriod.new_with_defaults(
-            person=person_5,
-            supervision_sentences=p5_placeholder_sg.supervision_sentences,
-            state_code=_STATE_CODE_UPPER,
-        )
         p5_placeholder_sv = entities.StateSupervisionViolation.new_with_defaults(
             person=person_5,
-            supervision_periods=p5.supervision_periods,
             state_code=_STATE_CODE_UPPER,
         )
-        p5_placeholder_vr = entities.StateSupervisionViolationResponse.new_with_defaults(
+        p5_vr = entities.StateSupervisionViolationResponse.new_with_defaults(
             person=person_5,
             supervision_violation=p5_placeholder_sv,
             external_id="BOARD-789C-0-02",
@@ -3823,47 +3692,25 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
             deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD,
         )
-        p5_placeholder_de = (
+        p5_de = (
             entities.StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
                 person=person_5,
-                supervision_violation_response=p5_placeholder_vr,
+                supervision_violation_response=p5_vr,
                 state_code=_STATE_CODE_UPPER,
                 decision_raw_text="RESCR9",
                 decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
             )
         )
 
-        p5_placeholder_sg.supervision_sentences.append(p5)
-        p5.supervision_periods.append(p5_placeholder_sp)
-        p5_placeholder_sp.supervision_violation_entries.append(p5_placeholder_sv)
-        p5_placeholder_sv.supervision_violation_responses.append(p5_placeholder_vr)
-        p5_placeholder_vr.supervision_violation_response_decisions.append(
-            p5_placeholder_de
-        )
-        person_5.sentence_groups.append(p5_placeholder_sg)
+        person_5.supervision_violations.append(p5_placeholder_sv)
+        p5_placeholder_sv.supervision_violation_responses.append(p5_vr)
+        p5_vr.supervision_violation_response_decisions.append(p5_de)
 
-        p4_placeholder_sg = entities.StateSentenceGroup.new_with_defaults(
-            person=person_4,
-            state_code=_STATE_CODE_UPPER,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-        )
-        p4_placeholder_ss = entities.StateSupervisionSentence.new_with_defaults(
-            person=person_4,
-            sentence_group=p4_placeholder_sg,
-            state_code=_STATE_CODE_UPPER,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-        )
-        p4_placeholder_sp = entities.StateSupervisionPeriod.new_with_defaults(
-            person=person_4,
-            supervision_sentences=p4_placeholder_sg.supervision_sentences,
-            state_code=_STATE_CODE_UPPER,
-        )
         p4_placeholder_sv = entities.StateSupervisionViolation.new_with_defaults(
             person=person_4,
-            supervision_periods=p4_placeholder_ss.supervision_periods,
             state_code=_STATE_CODE_UPPER,
         )
-        p4_placeholder_vr = entities.StateSupervisionViolationResponse.new_with_defaults(
+        p4_vr = entities.StateSupervisionViolationResponse.new_with_defaults(
             person=person_4,
             supervision_violation=p4_placeholder_sv,
             external_id="BOARD-345E-3-11",
@@ -3872,24 +3719,19 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
             deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD,
         )
-        p4_placeholder_de = (
+        p4_de = (
             entities.StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
                 person=person_4,
-                supervision_violation_response=p4_placeholder_vr,
+                supervision_violation_response=p4_vr,
                 state_code=_STATE_CODE_UPPER,
                 decision_raw_text="RESCR",
                 decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
             )
         )
 
-        p4_placeholder_sg.supervision_sentences.append(p4_placeholder_ss)
-        p4_placeholder_ss.supervision_periods.append(p4_placeholder_sp)
-        p4_placeholder_sp.supervision_violation_entries.append(p4_placeholder_sv)
-        p4_placeholder_sv.supervision_violation_responses.append(p4_placeholder_vr)
-        p4_placeholder_vr.supervision_violation_response_decisions.append(
-            p4_placeholder_de
-        )
-        person_4.sentence_groups.append(p4_placeholder_sg)
+        person_4.supervision_violations.append(p4_placeholder_sv)
+        p4_placeholder_sv.supervision_violation_responses.append(p4_vr)
+        p4_vr.supervision_violation_response_decisions.append(p4_de)
 
         # Act
         self._run_ingest_job_for_filename("board_action.csv")
@@ -4014,31 +3856,6 @@ class TestUsPaController(BaseDirectIngestControllerTests):
 
         # Rerun for sanity
         self._do_ingest_job_rerun_for_tags(self.controller.get_file_tag_rank_list())
-        # TODO(#5292): The following changes account for entity matching behavior we're seeing on rerun.
-        new_placeholder_sp = entities.StateSupervisionPeriod.new_with_defaults(
-            person=person_4,
-            supervision_sentences=person_4.sentence_groups[2].supervision_sentences,
-            state_code="US_PA",
-        )
-        p4_placeholder_sv.supervision_periods = [new_placeholder_sp]
-        new_placeholder_sp.supervision_violation_entries.append(p4_placeholder_sv)
-
-        person_4.sentence_groups[2].supervision_sentences[0].supervision_periods.append(
-            new_placeholder_sp
-        )
-        person_4.sentence_groups[4].supervision_sentences[0].supervision_periods[
-            0
-        ].supervision_violation_entries = []
-
-        # These two placeholder sentence groups get merged during rerun, with the periods from one being moved to the
-        # other.
-        person_5.sentence_groups.remove(p5_placeholder_sg)
-        p5_placeholder_sp.supervision_sentences = person_5.sentence_groups[
-            0
-        ].supervision_sentences
-        person_5.sentence_groups[0].supervision_sentences[0].supervision_periods.append(
-            p5_placeholder_sp
-        )
 
         self.assert_expected_db_people(
             expected_people, ignore_dangling_placeholders=True
