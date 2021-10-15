@@ -20,7 +20,6 @@ from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
-    STATE_BASE_DATASET,
     STATIC_REFERENCE_TABLES_DATASET,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -84,7 +83,6 @@ US_ID_INCARCERATION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER = SimpleBigQuer
     view_query_template=US_ID_INCARCERATION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE,
     description=US_ID_INCARCERATION_POPULATION_METRICS_PREPROCESSED_VIEW_DESCRIPTION,
     materialized_metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
-    state_base_dataset=STATE_BASE_DATASET,
     static_reference_dataset=STATIC_REFERENCE_TABLES_DATASET,
     should_materialize=True,
 )

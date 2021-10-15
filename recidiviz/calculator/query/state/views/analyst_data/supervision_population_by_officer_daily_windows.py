@@ -37,7 +37,7 @@ SUPERVISION_POPULATION_BY_OFFICER_DAILY_WINDOWS_QUERY_TEMPLATE = """
             EXTRACT(MONTH from date_of_supervision) month,
             rolling_window_days
         FROM UNNEST(GENERATE_DATE_ARRAY(DATE_SUB(CURRENT_DATE(), INTERVAL 3 YEAR), CURRENT_DATE(), INTERVAL 1 DAY)) date_of_supervision,
-            UNNEST ([1, 15, 30, 90, 180]) AS rolling_window_days
+            {rolling_window_days_dimension}
     )
     SELECT officers.state_code, pop.year, pop.month, pop.date_of_supervision as date, 
         supervising_officer_external_id,
