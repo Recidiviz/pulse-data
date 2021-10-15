@@ -67,7 +67,6 @@ TOTAL_POPULATION_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=TOTAL_POPULATION_VIEW_NAME,
     view_query_template=TOTAL_POPULATION_QUERY_TEMPLATE,
     description=TOTAL_POPULATION_VIEW_DESCRIPTION,
-    analyst_dataset=dataset_config.ANALYST_VIEWS_DATASET,
     population_projection_dataset=dataset_config.POPULATION_PROJECTION_DATASET,
     should_materialize=False,
 )

@@ -87,7 +87,6 @@ US_ID_RIDER_PBH_REMAINING_SENTENCES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=US_ID_RIDER_PBH_REMAINING_SENTENCES_VIEW_NAME,
     view_query_template=US_ID_RIDER_PBH_REMAINING_SENTENCES_QUERY_TEMPLATE,
     description=US_ID_RIDER_PBH_REMAINING_SENTENCES_VIEW_DESCRIPTION,
-    analyst_dataset=dataset_config.ANALYST_VIEWS_DATASET,
     population_projection_dataset=dataset_config.POPULATION_PROJECTION_DATASET,
     should_materialize=False,
 )
