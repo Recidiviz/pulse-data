@@ -43,9 +43,6 @@ from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
     identify_most_severe_case_type,
     supervising_officer_and_location_info,
 )
-from recidiviz.calculator.pipeline.utils.supervision_type_identification import (
-    get_pre_incarceration_supervision_type_from_ip_admission_reason,
-)
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
@@ -225,6 +222,9 @@ def period_is_commitment_from_supervision_admission_from_parole_board_hold(
 
 def _filter_to_matching_supervision_types(
     admission_reason: StateIncarcerationPeriodAdmissionReason,
+    supervision_type_for_admission_reason: Optional[
+        StateSupervisionPeriodSupervisionType
+    ],
     supervision_periods: List[StateSupervisionPeriod],
 ) -> List[StateSupervisionPeriod]:
     """Filters the given |supervision_periods| to ony the ones that have a
@@ -232,12 +232,6 @@ def _filter_to_matching_supervision_types(
     |admission_reason| (for example, filtering to only PAROLE periods if the
     |admission_reason| is a PAROLE_REVOCATION)."""
     supervision_types_to_match: List[StateSupervisionPeriodSupervisionType]
-
-    supervision_type_for_admission_reason = (
-        get_pre_incarceration_supervision_type_from_ip_admission_reason(
-            admission_reason=admission_reason
-        )
-    )
 
     if (
         supervision_type_for_admission_reason
@@ -335,6 +329,7 @@ def _get_commitment_from_supervision_supervision_period(
 
     relevant_periods = _get_relevant_sps_for_pre_commitment_sp_search(
         admission_reason=admission_reason,
+        admission_reason_raw_text=incarceration_period.admission_reason_raw_text,
         supervision_periods=supervision_period_index.supervision_periods,
         commitment_from_supervision_delegate=commitment_from_supervision_delegate,
     )
@@ -423,6 +418,7 @@ def _supervision_periods_overlapping_with_date(
 
 def _get_relevant_sps_for_pre_commitment_sp_search(
     admission_reason: StateIncarcerationPeriodAdmissionReason,
+    admission_reason_raw_text: Optional[str],
     supervision_periods: List[StateSupervisionPeriod],
     commitment_from_supervision_delegate: StateSpecificCommitmentFromSupervisionDelegate,
 ) -> List[StateSupervisionPeriod]:
@@ -439,8 +435,14 @@ def _get_relevant_sps_for_pre_commitment_sp_search(
     if (
         commitment_from_supervision_delegate.should_filter_to_matching_supervision_types_in_pre_commitment_sp_search()
     ):
-        relevant_sps = _filter_to_matching_supervision_types(
-            admission_reason, supervision_periods
+        pre_incarceration_supervision_type = commitment_from_supervision_delegate.get_pre_incarceration_supervision_type_from_ip_admission_reason(
+            admission_reason, admission_reason_raw_text
         )
+        if pre_incarceration_supervision_type:
+            relevant_sps = _filter_to_matching_supervision_types(
+                admission_reason,
+                pre_incarceration_supervision_type,
+                supervision_periods,
+            )
 
     return relevant_sps

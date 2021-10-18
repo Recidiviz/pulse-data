@@ -1142,7 +1142,7 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
                 county_of_residence=_COUNTY_OF_RESIDENCE,
                 admission_reason=incarceration_period_with_death.admission_reason,
                 admission_reason_raw_text=incarceration_period_with_death.admission_reason_raw_text,
-                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+                supervision_type=StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN,
                 specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
                 case_type=StateSupervisionCaseType.GENERAL,
             ),

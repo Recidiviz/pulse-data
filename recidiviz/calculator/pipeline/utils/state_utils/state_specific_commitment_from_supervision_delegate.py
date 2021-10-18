@@ -23,9 +23,6 @@ from typing import List, Optional, Set
 
 from dateutil.relativedelta import relativedelta
 
-from recidiviz.calculator.pipeline.utils.supervision_type_identification import (
-    get_pre_incarceration_supervision_type_from_ip_admission_reason,
-)
 from recidiviz.calculator.pipeline.utils.violation_response_utils import (
     violation_responses_in_window,
 )
@@ -165,13 +162,24 @@ class StateSpecificCommitmentFromSupervisionDelegate(abc.ABC):
         """
         if previous_supervision_period and previous_supervision_period.supervision_type:
             return previous_supervision_period.supervision_type
+        return None
 
-        if not incarceration_period.admission_reason:
-            raise ValueError(
-                "Unexpected incarceration period without an "
-                f"admission_reason: {incarceration_period}"
-            )
+    def get_pre_incarceration_supervision_type_from_ip_admission_reason(
+        self,
+        admission_reason: StateIncarcerationPeriodAdmissionReason,
+        admission_reason_raw_text: Optional[str],
+    ) -> Optional[StateSupervisionPeriodSupervisionType]:
+        """Derives the supervision type the person was serving prior to being
+        admitted to incarceration with the given |admission_reason| and |admission_reason_raw_text|.
 
-        return get_pre_incarceration_supervision_type_from_ip_admission_reason(
-            admission_reason=incarceration_period.admission_reason
+        This method should only be called if should_filter_to_matching_supervision_types_in_pre_commitment_sp_search
+        is True.
+
+        A state specific override must be implemented.
+        """
+
+        raise ValueError(
+            "This method should only be called if "
+            "`should_filter_to_matching_supervision_types_in_pre_commitment_sp_search` returns True. State"
+            "specific override must be implemented."
         )

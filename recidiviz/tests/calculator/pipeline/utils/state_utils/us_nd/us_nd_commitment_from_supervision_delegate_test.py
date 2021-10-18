@@ -31,6 +31,10 @@ from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index 
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_commitment_from_supervision_delegate import (
     UsNdCommitmentFromSupervisionDelegate,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_incarceration_period_pre_processing_delegate import (
+    PAROLE_REVOCATION_PREPROCESSING_PREFIX,
+    PROBATION_REVOCATION_PREPROCESSING_PREFIX,
+)
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
@@ -79,6 +83,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
     def _test_us_nd_pre_commitment_supervision_period(
         admission_date: date,
         admission_reason: StateIncarcerationPeriodAdmissionReason,
+        admission_reason_raw_text: str,
         supervision_periods: List[StateSupervisionPeriod],
     ) -> Optional[StateSupervisionPeriod]:
         ip = StateIncarcerationPeriod.new_with_defaults(
@@ -87,6 +92,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             admission_date=admission_date,
             admission_reason=admission_reason,
+            admission_reason_raw_text=admission_reason_raw_text,
         )
 
         incarceration_periods = [ip]
@@ -112,6 +118,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         the admission reason supervision type."""
         admission_date = date(2019, 5, 25)
         admission_reason = StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION
+        admission_reason_raw_text = "PV"
 
         # Overlapping parole period
         parole_period = StateSupervisionPeriod.new_with_defaults(
@@ -139,6 +146,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
             self._test_us_nd_pre_commitment_supervision_period(
                 admission_date=admission_date,
                 admission_reason=admission_reason,
+                admission_reason_raw_text=admission_reason_raw_text,
                 supervision_periods=[probation_period, parole_period],
             )
         )
@@ -152,6 +160,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         was recently terminated because the admission is a PAROLE_REVOCATION."""
         admission_date = date(2019, 5, 25)
         admission_reason = StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION
+        admission_reason_raw_text = "PV"
 
         # Overlapping parole period
         overlapping_parole_period = StateSupervisionPeriod.new_with_defaults(
@@ -179,6 +188,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
             self._test_us_nd_pre_commitment_supervision_period(
                 admission_date=admission_date,
                 admission_reason=admission_reason,
+                admission_reason_raw_text=admission_reason_raw_text,
                 supervision_periods=[
                     terminated_parole_period,
                     overlapping_parole_period,
@@ -195,6 +205,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         reason of REVOCATION."""
         admission_date = date(2019, 5, 25)
         admission_reason = StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION
+        admission_reason_raw_text = "PV"
 
         # Overlapping revoked parole period
         revoked_parole_period = StateSupervisionPeriod.new_with_defaults(
@@ -222,6 +233,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
             self._test_us_nd_pre_commitment_supervision_period(
                 admission_date=admission_date,
                 admission_reason=admission_reason,
+                admission_reason_raw_text=admission_reason_raw_text,
                 supervision_periods=[expired_parole_period, revoked_parole_period],
             )
         )
@@ -235,6 +247,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         reason of REVOCATION."""
         admission_date = date(2019, 5, 25)
         admission_reason = StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION
+        admission_reason_raw_text = "PV"
 
         # Overlapping revoked parole period, 5 days after admission
         revoked_parole_period = StateSupervisionPeriod.new_with_defaults(
@@ -262,6 +275,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
             self._test_us_nd_pre_commitment_supervision_period(
                 admission_date=admission_date,
                 admission_reason=admission_reason,
+                admission_reason_raw_text=admission_reason_raw_text,
                 supervision_periods=[
                     closer_revoked_parole_period,
                     revoked_parole_period,
@@ -278,6 +292,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         the admission reason supervision type."""
         admission_date = date(2019, 5, 25)
         admission_reason = StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION
+        admission_reason_raw_text = "NPROB"
 
         # Overlapping parole period
         parole_period = StateSupervisionPeriod.new_with_defaults(
@@ -305,6 +320,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
             self._test_us_nd_pre_commitment_supervision_period(
                 admission_date=admission_date,
                 admission_reason=admission_reason,
+                admission_reason_raw_text=admission_reason_raw_text,
                 supervision_periods=[probation_period, parole_period],
             )
         )
@@ -318,6 +334,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         one that is overlapping because the admission is a PROBATION_REVOCATION."""
         admission_date = date(2019, 5, 25)
         admission_reason = StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION
+        admission_reason_raw_text = "NPROB"
 
         # Overlapping probation period
         overlapping_probation_period = StateSupervisionPeriod.new_with_defaults(
@@ -345,6 +362,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
             self._test_us_nd_pre_commitment_supervision_period(
                 admission_date=admission_date,
                 admission_reason=admission_reason,
+                admission_reason_raw_text=admission_reason_raw_text,
                 supervision_periods=[
                     terminated_probation_period,
                     overlapping_probation_period,
@@ -361,6 +379,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         reason of REVOCATION."""
         admission_date = date(2019, 5, 25)
         admission_reason = StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION
+        admission_reason_raw_text = "NPROB"
 
         # Terminated revoked probation period
         revoked_probation_period = StateSupervisionPeriod.new_with_defaults(
@@ -388,6 +407,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
             self._test_us_nd_pre_commitment_supervision_period(
                 admission_date=admission_date,
                 admission_reason=admission_reason,
+                admission_reason_raw_text=admission_reason_raw_text,
                 supervision_periods=[
                     expired_probation_period,
                     revoked_probation_period,
@@ -404,6 +424,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         date that is closer to the admission_date."""
         admission_date = date(2019, 5, 25)
         admission_reason = StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION
+        admission_reason_raw_text = "NPROB"
 
         # Overlapping revoked probation period, 5 days after admission
         revoked_probation_period = StateSupervisionPeriod.new_with_defaults(
@@ -431,6 +452,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
             self._test_us_nd_pre_commitment_supervision_period(
                 admission_date=admission_date,
                 admission_reason=admission_reason,
+                admission_reason_raw_text=admission_reason_raw_text,
                 supervision_periods=[
                     closer_revoked_probation_period,
                     revoked_probation_period,
@@ -448,16 +470,145 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         """Tests the situation where the person has no supervision periods."""
         admission_date = date(2019, 5, 25)
         admission_reason = StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION
+        admission_reason_raw_text = "NPROB"
 
         pre_commitment_supervision_period = (
             self._test_us_nd_pre_commitment_supervision_period(
                 admission_date=admission_date,
                 admission_reason=admission_reason,
+                admission_reason_raw_text=admission_reason_raw_text,
                 supervision_periods=[],
             )
         )
 
         self.assertIsNone(pre_commitment_supervision_period)
+
+
+class TestGetPreIncarcerationSupervisionTypeFromIPAdmissionReason(unittest.TestCase):
+    """Tests the get_pre_incarceration_supervision_type_from_ip_admission_reason function on the
+    UsNdCommitmentFromSupervisionDelegate."""
+
+    def setUp(self) -> None:
+        self.delegate = UsNdCommitmentFromSupervisionDelegate()
+
+    def _test_get_pre_incarceration_supervision_type_from_ip_admission_reason(
+        self,
+        admission_reason: StateIncarcerationPeriodAdmissionReason,
+        admission_reason_raw_text: Optional[str],
+    ) -> Optional[StateSupervisionPeriodSupervisionType]:
+        return self.delegate.get_pre_incarceration_supervision_type_from_ip_admission_reason(
+            admission_reason=admission_reason,
+            admission_reason_raw_text=admission_reason_raw_text,
+        )
+
+    def test_us_nd_get_pre_incarceration_supervision_type_from_ip_admission_reason_not_commitment(
+        self,
+    ) -> None:
+        admission_reason = StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION
+        admission_reason_raw_text = None
+
+        with self.assertRaises(ValueError):
+            _: Optional[
+                StateSupervisionPeriodSupervisionType
+            ] = self._test_get_pre_incarceration_supervision_type_from_ip_admission_reason(
+                admission_reason=admission_reason,
+                admission_reason_raw_text=admission_reason_raw_text,
+            )
+
+    def test_us_nd_get_pre_incarceration_supervision_type_from_ip_admission_reason_parole_revocation(
+        self,
+    ) -> None:
+        admission_reason = StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION
+        admission_reason_raw_text = "PARL"
+
+        supervision_type: Optional[
+            StateSupervisionPeriodSupervisionType
+        ] = self._test_get_pre_incarceration_supervision_type_from_ip_admission_reason(
+            admission_reason=admission_reason,
+            admission_reason_raw_text=admission_reason_raw_text,
+        )
+
+        self.assertEqual(StateSupervisionPeriodSupervisionType.PAROLE, supervision_type)
+
+    def test_us_nd_get_pre_incarceration_supervision_type_from_ip_admission_reason_parole_revocation_with_prefix(
+        self,
+    ) -> None:
+        admission_reason = StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION
+        admission_reason_raw_text = f"{PAROLE_REVOCATION_PREPROCESSING_PREFIX}-ABC"
+
+        supervision_type: Optional[
+            StateSupervisionPeriodSupervisionType
+        ] = self._test_get_pre_incarceration_supervision_type_from_ip_admission_reason(
+            admission_reason=admission_reason,
+            admission_reason_raw_text=admission_reason_raw_text,
+        )
+
+        self.assertEqual(StateSupervisionPeriodSupervisionType.PAROLE, supervision_type)
+
+    def test_us_nd_get_pre_incarceration_supervision_type_from_ip_admission_reason_probation_revocation(
+        self,
+    ) -> None:
+        admission_reason = StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION
+        admission_reason_raw_text = "NPRB"
+
+        supervision_type: Optional[
+            StateSupervisionPeriodSupervisionType
+        ] = self._test_get_pre_incarceration_supervision_type_from_ip_admission_reason(
+            admission_reason=admission_reason,
+            admission_reason_raw_text=admission_reason_raw_text,
+        )
+
+        self.assertEqual(
+            StateSupervisionPeriodSupervisionType.PROBATION, supervision_type
+        )
+
+    def test_us_nd_get_pre_incarceration_supervision_type_from_ip_admission_reason_probation_prb(
+        self,
+    ) -> None:
+        admission_reason = StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION
+        admission_reason_raw_text = "PRB"
+
+        supervision_type: Optional[
+            StateSupervisionPeriodSupervisionType
+        ] = self._test_get_pre_incarceration_supervision_type_from_ip_admission_reason(
+            admission_reason=admission_reason,
+            admission_reason_raw_text=admission_reason_raw_text,
+        )
+
+        self.assertEqual(
+            StateSupervisionPeriodSupervisionType.PROBATION, supervision_type
+        )
+
+    def test_us_nd_get_pre_incarceration_supervision_type_from_ip_admission_reason_probation_revocation_with_prefix(
+        self,
+    ) -> None:
+        admission_reason = StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION
+        admission_reason_raw_text = f"{PROBATION_REVOCATION_PREPROCESSING_PREFIX}-ABC"
+
+        supervision_type: Optional[
+            StateSupervisionPeriodSupervisionType
+        ] = self._test_get_pre_incarceration_supervision_type_from_ip_admission_reason(
+            admission_reason=admission_reason,
+            admission_reason_raw_text=admission_reason_raw_text,
+        )
+
+        self.assertEqual(
+            StateSupervisionPeriodSupervisionType.PROBATION, supervision_type
+        )
+
+    def test_us_nd_get_pre_incarceration_supervision_type_from_ip_admission_reason_not_present_in_list(
+        self,
+    ) -> None:
+        admission_reason = StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION
+        admission_reason_raw_text = "ABC"
+
+        with self.assertRaises(ValueError):
+            _: Optional[
+                StateSupervisionPeriodSupervisionType
+            ] = self._test_get_pre_incarceration_supervision_type_from_ip_admission_reason(
+                admission_reason=admission_reason,
+                admission_reason_raw_text=admission_reason_raw_text,
+            )
 
 
 class TestPreCommitmentSupervisionTypeIdentification(unittest.TestCase):
@@ -489,7 +640,7 @@ class TestPreCommitmentSupervisionTypeIdentification(unittest.TestCase):
             facility="NDSP",
             admission_date=date(2008, 12, 20),
             admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
-            admission_reason_raw_text="ADMN",
+            admission_reason_raw_text="PARL",
             release_date=date(2010, 12, 21),
             release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
         )
@@ -504,102 +655,3 @@ class TestPreCommitmentSupervisionTypeIdentification(unittest.TestCase):
             StateSupervisionPeriodSupervisionType.PAROLE,
             supervision_type_pre_commitment,
         )
-
-    def test_us_nd_get_pre_commitment_supervision_type_new_admission_probation(
-        self,
-    ) -> None:
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=111,
-            external_id="sp1",
-            state_code="US_ND",
-            start_date=date(2008, 3, 5),
-            termination_date=date(2008, 12, 16),
-            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
-            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-        )
-
-        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=1112,
-            external_id="2",
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code="US_ND",
-            facility="NDSP",
-            admission_date=date(2008, 12, 20),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-            admission_reason_raw_text="ADMN",
-            release_date=date(2010, 12, 21),
-            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
-        )
-
-        supervision_type_pre_commitment = (
-            self._test_get_commitment_from_supervision_supervision_type(
-                incarceration_period=incarceration_period,
-                previous_supervision_period=supervision_period,
-            )
-        )
-
-        self.assertEqual(
-            StateSupervisionPeriodSupervisionType.PROBATION,
-            supervision_type_pre_commitment,
-        )
-
-    def test_us_nd_get_pre_commitment_supervision_type_new_admission_parole(
-        self,
-    ) -> None:
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=111,
-            external_id="sp1",
-            state_code="US_ND",
-            start_date=date(2008, 3, 5),
-            termination_date=date(2008, 12, 16),
-            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
-            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-        )
-
-        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=1112,
-            external_id="2",
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code="US_ND",
-            facility="NDSP",
-            admission_date=date(2008, 12, 20),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-            admission_reason_raw_text="ADMN",
-            release_date=date(2010, 12, 21),
-            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
-        )
-
-        supervision_type_pre_commitment = (
-            self._test_get_commitment_from_supervision_supervision_type(
-                incarceration_period=incarceration_period,
-                previous_supervision_period=supervision_period,
-            )
-        )
-        self.assertIsNone(supervision_type_pre_commitment)
-
-    def test_us_nd_get_pre_commitment_supervision_type_new_admission_no_supervision_period(
-        self,
-    ) -> None:
-        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=1112,
-            external_id="2",
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code="US_ND",
-            facility="NDSP",
-            admission_date=date(2008, 12, 20),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-            admission_reason_raw_text="ADMN",
-            release_date=date(2010, 12, 21),
-            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
-        )
-
-        supervision_type_pre_commitment = (
-            self._test_get_commitment_from_supervision_supervision_type(
-                incarceration_period=incarceration_period,
-            )
-        )
-
-        self.assertIsNone(supervision_type_pre_commitment)

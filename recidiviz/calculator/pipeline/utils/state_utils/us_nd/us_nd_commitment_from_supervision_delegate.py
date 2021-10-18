@@ -17,18 +17,20 @@
 """Utils for state-specific logic related to identifying commitments from
 supervision in US_ND."""
 import datetime
-from typing import List, Optional, Set
+from typing import Dict, List, Optional, Set
 
 from dateutil.relativedelta import relativedelta
 
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_commitment_from_supervision_delegate import (
     StateSpecificCommitmentFromSupervisionDelegate,
 )
-from recidiviz.calculator.pipeline.utils.supervision_type_identification import (
-    get_pre_incarceration_supervision_type_from_ip_admission_reason,
+from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_incarceration_period_pre_processing_delegate import (
+    PAROLE_REVOCATION_PREPROCESSING_PREFIX,
+    PROBATION_REVOCATION_PREPROCESSING_PREFIX,
 )
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
+    is_commitment_from_supervision,
 )
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
@@ -41,6 +43,26 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionSentence,
     StateSupervisionViolationResponse,
 )
+
+# Maps commitment from supervision admission reasons to the corresponding supervision
+# type of the period that preceded the admission, as inferred from the admission reason raw text
+PREVIOUS_SUPERVISION_TYPE_TO_INCARCERATION_ADMISSION_REASON_RAW_TEXT: Dict[
+    str, StateSupervisionPeriodSupervisionType
+] = {
+    "PARL": StateSupervisionPeriodSupervisionType.PAROLE,
+    "PV": StateSupervisionPeriodSupervisionType.PAROLE,
+    # TODO(#9633): We are temporarily casting "INT" as parole revocations. There aren't that many of these (<20), and
+    # there's only 1 instance of this being a probation revocation.
+    "INT": StateSupervisionPeriodSupervisionType.PAROLE,
+    "NPRB": StateSupervisionPeriodSupervisionType.PROBATION,
+    "NPROB": StateSupervisionPeriodSupervisionType.PROBATION,
+    "RPRB": StateSupervisionPeriodSupervisionType.PROBATION,
+    "PRB": StateSupervisionPeriodSupervisionType.PROBATION,
+    # The following are prefixes set in pre-processing. The admission reason raw texts may be prefixed with one of the
+    # following.
+    PROBATION_REVOCATION_PREPROCESSING_PREFIX: StateSupervisionPeriodSupervisionType.PROBATION,
+    PAROLE_REVOCATION_PREPROCESSING_PREFIX: StateSupervisionPeriodSupervisionType.PAROLE,
+}
 
 
 class UsNdCommitmentFromSupervisionDelegate(
@@ -112,19 +134,6 @@ class UsNdCommitmentFromSupervisionDelegate(
         """Determines the supervision type for the given supervision period that
         preceded the given incarceration period that represents a commitment from
         supervision.
-
-        As noted in UsNdIncarcerationPreProcessingDelegate one of the ways in which a
-        commitment from supervision can occur in US_ND is when a NEW_ADMISSION
-        incarceration period directly follows a PROBATION supervision period
-        that ended due to a REVOCATION. As such, we handle that case here by specifying
-        a supervision type of PROBATION in this case.
-
-        Note that this refers specifically to PROBATION and does not include PAROLE
-        because 1) we think that PAROLE followed by NEW ADMISSION is not actually
-        reasonably interpretable as a parole revocation based on how probation and
-        parole are administered on the ground, and 2) we don’t have mass examples of
-        NEW_ADMISSION incarceration directly following PAROLE in the data like we do
-        for PROBATION.
         """
         if not incarceration_period.admission_reason:
             raise ValueError(
@@ -133,19 +142,56 @@ class UsNdCommitmentFromSupervisionDelegate(
             )
 
         default_supervision_type = (
-            get_pre_incarceration_supervision_type_from_ip_admission_reason(
-                incarceration_period.admission_reason
+            self.get_pre_incarceration_supervision_type_from_ip_admission_reason(
+                incarceration_period.admission_reason,
+                incarceration_period.admission_reason_raw_text,
             )
         )
 
-        if default_supervision_type:
-            return default_supervision_type
+        return default_supervision_type
 
+    def get_pre_incarceration_supervision_type_from_ip_admission_reason(
+        self,
+        admission_reason: StateIncarcerationPeriodAdmissionReason,
+        admission_reason_raw_text: Optional[str],
+    ) -> Optional[StateSupervisionPeriodSupervisionType]:
         if (
-            previous_supervision_period
-            and previous_supervision_period.supervision_type
-            == StateSupervisionPeriodSupervisionType.PROBATION
+            not is_commitment_from_supervision(admission_reason)
+            or admission_reason_raw_text is None
         ):
-            return StateSupervisionPeriodSupervisionType.PROBATION
+            # All incarceration periods at by this point must be commitments from supervision.
+            raise ValueError(
+                f"Enum case not handled for admission reason raw text: {admission_reason_raw_text} and admission"
+                f" reason {admission_reason}"
+            )
 
-        return None
+        # If a key in PREVIOUS_SUPERVISION_TYPE_TO_INCARCERATION_ADMISSION_REASON_RAW_TEXT is present within the
+        # admission_reason_raw_text.
+        supervision_type_matched_with_raw_text = [
+            val
+            for key, val in PREVIOUS_SUPERVISION_TYPE_TO_INCARCERATION_ADMISSION_REASON_RAW_TEXT.items()
+            if key == admission_reason_raw_text
+            or (
+                key
+                in (
+                    PAROLE_REVOCATION_PREPROCESSING_PREFIX,
+                    PROBATION_REVOCATION_PREPROCESSING_PREFIX,
+                )
+                and admission_reason_raw_text.startswith(key)
+            )
+        ]
+
+        # If there is exactly one match with the admission reason raw text, return the supervision type associated.
+        if len(supervision_type_matched_with_raw_text) == 1:
+            return supervision_type_matched_with_raw_text[0]
+
+        # If there are too many or too few supervision type matches for the admission reason raw text, raise an error.
+        if len(supervision_type_matched_with_raw_text) > 1:
+            raise ValueError(
+                f"Admission reason raw text: {admission_reason_raw_text} matched with multiple"
+                f" supervision types: {str(supervision_type_matched_with_raw_text)}"
+            )
+        raise ValueError(
+            f"Enum case not handled for admission reason raw text: {admission_reason_raw_text} and admission"
+            f" reason {admission_reason}"
+        )
