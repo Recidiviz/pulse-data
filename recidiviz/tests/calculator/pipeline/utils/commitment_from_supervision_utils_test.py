@@ -258,7 +258,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervision_level=None,
                 supervision_level_raw_text=None,
-                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+                supervision_type=StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN,
             ),
             commitment_details,
         )

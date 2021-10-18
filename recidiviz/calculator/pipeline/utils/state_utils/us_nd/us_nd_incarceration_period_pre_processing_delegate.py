@@ -53,6 +53,12 @@ from recidiviz.persistence.entity.state.entities import (
 # may attribute this commitment from supervision
 _NEW_ADMISSION_PROBATION_COMMITMENT_LOOKBACK_MONTHS = 24
 
+# In ND we use incarceration admission reason raw texts to identify an associated prior supervision type. In some
+# instances, we need to update the admission reason raw text to the correct value. To facilitate identifying when a
+# raw prefix was modified, prepend a prefix.
+PROBATION_REVOCATION_PREPROCESSING_PREFIX = "US_ND_PREPROC_PROBATION_REVOCATION"
+PAROLE_REVOCATION_PREPROCESSING_PREFIX = "US_ND_PREPROC_PAROLE_REVOCATION"
+
 
 class UsNdIncarcerationPreProcessingDelegate(
     StateSpecificIncarcerationPreProcessingDelegate
@@ -196,14 +202,28 @@ def _us_nd_normalize_period_if_commitment_from_supervision(
             if was_intermediate_state_prison_admission:
                 return incarceration_period
 
+            # Override the admission reason and raw text, if the previous supervision type is probation or parole.
+            if (
+                most_recent_supervision_period.supervision_type
+                == StateSupervisionPeriodSupervisionType.PROBATION
+            ):
+                admission_reason = (
+                    StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION
+                )
+                admission_reason_prefix = PROBATION_REVOCATION_PREPROCESSING_PREFIX
+            else:
+                admission_reason = (
+                    StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION
+                )
+                admission_reason_prefix = PAROLE_REVOCATION_PREPROCESSING_PREFIX
+
             return attr.evolve(
                 incarceration_period,
-                admission_reason=(
-                    StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION
-                    if most_recent_supervision_period.supervision_type
-                    == StateSupervisionPeriodSupervisionType.PROBATION
-                    else StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION
-                ),
+                admission_reason=admission_reason,
+                # If there is an existing admission reason raw text, prefix it. Otherwise, leave it as empty.
+                admission_reason_raw_text=f"{admission_reason_prefix}-{incarceration_period.admission_reason_raw_text}"
+                if incarceration_period.admission_reason_raw_text
+                else None,
             )
 
     # This period does not require any updated values

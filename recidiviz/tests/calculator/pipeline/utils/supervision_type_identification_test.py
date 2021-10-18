@@ -28,24 +28,17 @@ from recidiviz.calculator.pipeline.utils.supervision_type_identification import 
     _get_sentence_supervision_type_from_sentence,
     _get_sentences_overlapping_with_dates,
     _get_valid_attached_sentences,
-    get_commitment_admission_reason_from_preceding_supervision_period,
-    get_pre_incarceration_supervision_type_from_ip_admission_reason,
-)
-from recidiviz.common.constants.state.state_incarceration_period import (
-    StateIncarcerationPeriodAdmissionReason,
-    StateIncarcerationPeriodStatus,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
-from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.common.constants.state.state_supervision_sentence import (
     StateSupervisionSentenceSupervisionType,
 )
+from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.state.entities import (
-    StateIncarcerationPeriod,
     StateIncarcerationSentence,
     StateSupervisionPeriod,
     StateSupervisionSentence,
@@ -755,52 +748,6 @@ class TestGetMonthSupervisionType(unittest.TestCase):
             StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN, supervision_type
         )
 
-
-class TestGetPreIncarcerationSupervisionType(unittest.TestCase):
-    """Tests get_pre_incarceration_supervision_type_from_ip_admission_reason."""
-
-    def test_getPreIncarcerationSupervisionType_typeBasedOnAdmissionReason(self):
-        for admission_reason in StateIncarcerationPeriodAdmissionReason:
-            incarceration_period = StateIncarcerationPeriod.new_with_defaults(
-                admission_reason=admission_reason,
-                state_code="US_XX",
-                status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
-            )
-            expected_type = None
-            if (
-                admission_reason
-                == StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION
-            ):
-                expected_type = StateSupervisionPeriodSupervisionType.PROBATION
-            elif (
-                admission_reason
-                == StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION
-            ):
-                expected_type = StateSupervisionPeriodSupervisionType.PAROLE
-            elif (
-                admission_reason
-                == StateIncarcerationPeriodAdmissionReason.DUAL_REVOCATION
-            ):
-                expected_type = StateSupervisionPeriodSupervisionType.DUAL
-            elif (
-                admission_reason
-                == StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION
-            ):
-                expected_type = StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
-            elif (
-                admission_reason
-                == StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION
-            ):
-                # Ingest-only value, ignore
-                continue
-
-            self.assertEqual(
-                expected_type,
-                get_pre_incarceration_supervision_type_from_ip_admission_reason(
-                    incarceration_period.admission_reason
-                ),
-            )
-
     def test_getValidAttachedSentences(self):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
@@ -915,28 +862,3 @@ class TestGetSupervisionPeriodSupervisionTypeFromSentence(unittest.TestCase):
         self.assertEqual(
             StateSupervisionSentenceSupervisionType.PAROLE, supervision_type
         )
-
-
-class TestGetCommitmentAdmissionReasonFromPrecedingSupervisionPeriod(unittest.TestCase):
-    """Tests the get_commitment_admission_reason_from_preceding_supervision_period
-    function."""
-
-    def test_get_commitment_admission_reason_from_preceding_supervision_period(self):
-        for supervision_type in StateSupervisionPeriodSupervisionType:
-            supervision_period = StateSupervisionPeriod.new_with_defaults(
-                supervision_period_id=111,
-                external_id="sp1",
-                state_code="US_XX",
-                supervision_type=supervision_type,
-            )
-
-            if supervision_type == StateSupervisionPeriodSupervisionType.INVESTIGATION:
-                with self.assertRaises(ValueError):
-                    _ = get_commitment_admission_reason_from_preceding_supervision_period(
-                        supervision_period
-                    )
-            else:
-                # Assert none of them fail
-                _ = get_commitment_admission_reason_from_preceding_supervision_period(
-                    supervision_period
-                )

@@ -84,43 +84,6 @@ class TestPreCommitmentSupervisionTypeIdentification(unittest.TestCase):
             supervision_type_pre_commitment,
         )
 
-    def test_us_pa_get_pre_commitment_supervision_type_probation_revocation(
-        self,
-    ) -> None:
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=111,
-            external_id="sp1",
-            state_code="US_PA",
-            start_date=date(2008, 3, 5),
-            termination_date=date(2008, 12, 16),
-            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-        )
-
-        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=1112,
-            external_id="2",
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code="US_PA",
-            admission_date=date(2008, 12, 20),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
-            admission_reason_raw_text="ADMN",
-            release_date=date(2010, 12, 21),
-            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
-        )
-
-        supervision_type_pre_commitment = (
-            self._test_get_commitment_from_supervision_supervision_type(
-                incarceration_period=incarceration_period,
-                previous_supervision_period=supervision_period,
-            )
-        )
-
-        self.assertEqual(
-            StateSupervisionPeriodSupervisionType.PROBATION,
-            supervision_type_pre_commitment,
-        )
-
     def test_us_pa_get_pre_commitment_supervision_type_sanction_admission_dual(
         self,
     ) -> None:

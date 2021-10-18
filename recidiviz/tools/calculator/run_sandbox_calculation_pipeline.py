@@ -40,8 +40,7 @@ usage: python -m recidiviz.tools.calculator.run_sandbox_calculation_pipeline \
 
 Examples:
     python -m recidiviz.tools.calculator.run_sandbox_calculation_pipeline --pipeline incarceration \
-     --job_name incarceration-example --sandbox_output_dataset username_dataflow_metrics \
-     --calculation_month_count 36
+     --job_name incarceration-example --sandbox_output_dataset username_dataflow_metrics --state_code US_ND
 
 You must also include any arguments required by the given pipeline.
 """
