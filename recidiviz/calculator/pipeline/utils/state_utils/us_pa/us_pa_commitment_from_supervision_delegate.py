@@ -21,9 +21,6 @@ from typing import List, Optional
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_commitment_from_supervision_delegate import (
     StateSpecificCommitmentFromSupervisionDelegate,
 )
-from recidiviz.calculator.pipeline.utils.supervision_type_identification import (
-    get_pre_incarceration_supervision_type_from_ip_admission_reason,
-)
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
 )
@@ -70,12 +67,10 @@ class UsPaCommitmentFromSupervisionDelegate(
             )
 
         if admission_reason in (
+            # TODO(#8028): For now the only revocations in US_PA are parole revocations.
             StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
-            StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
         ):
-            return get_pre_incarceration_supervision_type_from_ip_admission_reason(
-                admission_reason
-            )
+            return StateSupervisionPeriodSupervisionType.PAROLE
 
         if (
             admission_reason
