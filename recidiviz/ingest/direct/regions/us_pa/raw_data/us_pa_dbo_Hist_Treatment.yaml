@@ -1,24 +1,48 @@
 file_tag: dbo_Hist_Treatment
 file_description: |-
-  A table with information on referred treatments for people under supervision in the past.
+  A table with information on referred treatments for people under supervision in the
+  past. Rows are moved to this table from dbo_Treatment when a person exits supervision.
 primary_key_cols:
   - ParoleNumber
   - TrtHistoryID
 columns:
   - name: ParoleNumber
+    description: |-
+      External ID for a unique person who has been supervised by PADOC.
   - name: TrtHistoryID
+    description: |-
+      External ID for a particular bout of treatment.
   - name: TrtHistType
   - name: TrtHistStartDateYear
+    description: |-
+      The year that treatment started. Corresponds to the `TrtStartDateYear` column in `dbo_Treatment`.
   - name: TrtHistStartDateMonth
+    description: |-
+      The month that treatment started. Corresponds to the `TrtStartDateMonth` column in `dbo_Treatment`.
   - name: TrtHistStartDateDay
+    description: |-
+      The day that treatment started. Corresponds to the `TrtStartDateDay` column in `dbo_Treatment`.
   - name: TrtHistEndDateYear
+    description: |-
+      The year that treatment ended. Corresponds to the `TrtEndDateYear` column in `dbo_Treatment`.
   - name: TrtHistEndDateMonth
+    description: |-
+      The month that treatment ended. Corresponds to the `TrtEndDateMonth` column in `dbo_Treatment`.
   - name: TrtHistEndDateDay
+    description: |-
+      The day that treatment ended. Corresponds to the `TrtEndDateDay` column in `dbo_Treatment`.
   - name: TrtHistProgramCode
+    description: |-
+      The code associated with the given treatment program. Corresponds to the `TrtProgramCode` column in `dbo_Treatment`.
   - name: TrtHistOutcomeStatusCode
   - name: TrtHistTreatmentDescription
   - name: TrtHistDOCO
+    description: |-
+      A concatenation of the TrtDO, TrtCounty, TrtClassCode, and TrtIndProgID columns from dbo_Treatment.
+      For example, for the value "01519302 25", that gives us TrtDO=01, TrtCounty=51, TrtClassCode=9302, and TrtIndProgID=25.
   - name: ParoleCountID
+    description: |-
+      External ID for a particular stint of a particular person under supervision by PADOC.
   - name: OtherState
   - name: OtherStateFac
   - name: LastModifiedBy
