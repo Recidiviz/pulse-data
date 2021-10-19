@@ -34,10 +34,6 @@ from recidiviz.common.constants.state.state_incarceration import StateIncarcerat
 from recidiviz.common.constants.state.state_incarceration_incident import (
     StateIncarcerationIncidentOutcomeType,
 )
-from recidiviz.common.constants.state.state_supervision_contact import (
-    StateSupervisionContactLocation,
-    StateSupervisionContactStatus,
-)
 from recidiviz.common.constants.state.state_supervision_sentence import (
     StateSupervisionSentenceSupervisionType,
 )
@@ -48,9 +44,6 @@ from recidiviz.common.str_field_utils import (
 )
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
-)
-from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
-    DirectIngestInstance,
 )
 from recidiviz.ingest.direct.controllers.legacy_ingest_view_processor import (
     IngestAncestorChainOverridesCallable,
@@ -69,7 +62,6 @@ from recidiviz.ingest.direct.regions.us_nd.us_nd_judicial_district_code_referenc
 )
 from recidiviz.ingest.direct.regions.us_nd.us_nd_legacy_enum_helpers import (
     generate_enum_overrides,
-    generate_enum_overrides_v2,
 )
 from recidiviz.ingest.direct.state_shared_row_posthooks import (
     IngestGatingContext,
@@ -121,13 +113,7 @@ class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
     def __init__(self, ingest_bucket_path: GcsfsBucketPath):
         super().__init__(ingest_bucket_path)
 
-        # TODO(#8999): Adjust when rerun is successful
-        self.enum_overrides = (
-            generate_enum_overrides_v2()
-            if environment.in_gcp_staging()
-            or self.ingest_instance == DirectIngestInstance.SECONDARY
-            else generate_enum_overrides()
-        )
+        self.enum_overrides = generate_enum_overrides()
 
         self.row_pre_processors_by_file: Dict[str, List[IngestRowPrehookCallable]] = {
             "elite_offenderidentifier": [self._normalize_id_fields],
@@ -197,13 +183,6 @@ class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             ],
             "docstars_lsi_chronology": [self._process_lsir_assessments],
             "docstars_ftr_episode": [self._process_ftr_episode],
-            "docstars_contacts": [
-                self._add_supervision_officer_to_contact,
-                gen_set_agent_type(StateAgentType.SUPERVISION_OFFICER),
-                self._add_location_to_contact,
-                self._add_status_to_contact,
-            ],
-            # TODO(#8999): Replace docstars_contacts once rerun is complete
             "docstars_contacts_v2": [
                 self._add_supervision_officer_to_contact,
                 gen_set_agent_type(StateAgentType.SUPERVISION_OFFICER),
@@ -254,21 +233,9 @@ class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             "docstars_offensestable",
             "docstars_ftr_episode",
             "docstars_lsi_chronology",
+            "docstars_contacts_v2",
             # TODO(#1918): Integrate bed assignment / location history
         ]
-
-        # TODO(#8999): Adjust once the rerun is successful for supervision contacts.
-        if (
-            environment.in_gcp_staging()
-            or self.ingest_instance == DirectIngestInstance.SECONDARY
-        ):
-            tags += [
-                "docstars_contacts_v2",
-            ]
-        else:
-            tags += [
-                "docstars_contacts",
-            ]
 
         return tags
 
@@ -373,48 +340,6 @@ class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
                 create_if_not_exists(
                     agent_to_create, extracted_object, "contacted_agent"
                 )
-
-    # TODO(#8999): Deprecate for _add_contact_fields when rerun is successful
-    def _add_location_to_contact(
-        self,
-        _gating_context: IngestGatingContext,
-        row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        """Adds a contact location to the extracted supervision contact."""
-        contact_location_from_code = row.get("CONTACT_CODE")
-        if contact_location_from_code:
-            contact_location = self.get_enum_overrides().parse(
-                contact_location_from_code, StateSupervisionContactLocation
-            )
-            if contact_location is not None:
-                for extracted_object in extracted_objects:
-                    if isinstance(extracted_object, StateSupervisionContact):
-                        extracted_object.location = contact_location.value
-
-    # TODO(#8999): Deprecate for _add_contact_fields when rerun is successful
-    def _add_status_to_contact(
-        self,
-        _gating_context: IngestGatingContext,
-        row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        """Adds a contact status to the extracted supervision contact."""
-        # TODO(#1882): Specify this mapping in the YAML once a single csv column can be mapped to multiple fields.
-        contact_status_from_code = row.get("CONTACT_CODE")
-        if contact_status_from_code:
-            contact_status = self.get_enum_overrides().parse(
-                contact_status_from_code, StateSupervisionContactStatus
-            )
-            if contact_status is None:
-                raise ValueError(
-                    f"Unable to parse [{contact_status_from_code}] into known StateSupervisionContactStatus value"
-                )
-            for extracted_object in extracted_objects:
-                if isinstance(extracted_object, StateSupervisionContact):
-                    extracted_object.status = contact_status.value
 
     def _add_contact_fields(
         self,
