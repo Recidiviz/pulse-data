@@ -16,8 +16,17 @@ columns:
       External ID for a particular bout of treatment.
   - name: TrtType
   - name: TrtDO
+    description: |-
+      The two-digit supervision district the treatment took place in.
   - name: TrtCounty
+    description: |-
+      The two-character county the treatment took place in (can be either two digits or
+      two chars). Values correspond to those found here https://www.revenue.pa.gov/TaxTypes/InheritanceTax/Pages/County%20Codes.aspx.
   - name: TrtClassCode
+    description: |-
+      Four or five-digit classification code. The first two digits describe the broader type of
+      program (e.g. Housing, Mental Health, etc). The latter two digits describe the program
+      subtype (e.g. Inpatient, Outpatient, etc).
   - name: TrtIndProgID
   - name: TrtStartDateYear
     description: |-
