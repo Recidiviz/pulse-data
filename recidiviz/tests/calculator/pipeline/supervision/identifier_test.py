@@ -77,6 +77,7 @@ from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
     supervising_officer_and_location_info,
 )
 from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
+from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentLevel,
     StateAssessmentType,
@@ -112,6 +113,7 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
 )
 from recidiviz.common.date import last_day_of_month
 from recidiviz.persistence.entity.state.entities import (
+    StateAgent,
     StateAssessment,
     StateIncarcerationPeriod,
     StateIncarcerationSentence,
@@ -2815,6 +2817,11 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             start_date=supervision_period_start_date,
             termination_date=supervision_period_termination_date,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervising_officer=StateAgent.new_with_defaults(
+                state_code="US_MO",
+                agent_type=StateAgentType.SUPERVISION_OFFICER,
+                full_name="Ted Jones",
+            ),
         )
 
         supervision_sentence = FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
@@ -2929,6 +2936,105 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         )
 
         self.assertCountEqual(expected_events, supervision_events)
+
+    def test_find_supervision_events_not_in_population_if_no_active_po_us_mo(
+        self,
+    ) -> None:
+        """Tests the find_supervision_events function where a SupervisionPopulationEvent
+        will not be created if there is no supervising officer attached to the period."""
+        self._stop_state_specific_delegate_patchers()
+
+        supervision_period_start_date = date(2018, 3, 5)
+        supervision_period_termination_date = date(2018, 5, 19)
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            case_type_entries=[
+                StateSupervisionCaseTypeEntry.new_with_defaults(
+                    state_code="US_MO",
+                    case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
+                )
+            ],
+            state_code="US_MO",
+            start_date=supervision_period_start_date,
+            termination_date=supervision_period_termination_date,
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+        )
+
+        supervision_sentence = FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
+            StateSupervisionSentence.new_with_defaults(
+                state_code="US_MO",
+                supervision_sentence_id=111,
+                start_date=date(2017, 1, 1),
+                completion_date=date(2018, 5, 19),
+                external_id="ss1",
+                status=StateSentenceStatus.COMPLETED,
+                supervision_periods=[supervision_period],
+                supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
+            ),
+            supervision_type_spans=[
+                SupervisionTypeSpan(
+                    start_date=supervision_period_start_date,
+                    end_date=supervision_period_termination_date,
+                    supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
+                ),
+                SupervisionTypeSpan(
+                    start_date=supervision_period_termination_date,
+                    end_date=None,
+                    supervision_type=None,
+                ),
+            ],
+        )
+
+        incarceration_sentence = FakeUsMoIncarcerationSentence.fake_sentence_from_sentence(
+            StateIncarcerationSentence.new_with_defaults(
+                state_code="US_MO",
+                incarceration_sentence_id=123,
+                external_id="is1",
+                start_date=date(2017, 1, 1),
+                completion_date=date(2018, 5, 19),
+                supervision_periods=[supervision_period],
+                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            ),
+            supervision_type_spans=[
+                SupervisionTypeSpan(
+                    start_date=supervision_period_start_date,
+                    end_date=supervision_period_termination_date,
+                    supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
+                ),
+                SupervisionTypeSpan(
+                    start_date=supervision_period_termination_date,
+                    end_date=None,
+                    supervision_type=None,
+                ),
+            ],
+        )
+
+        supervision_sentences: List[StateSupervisionSentence] = [supervision_sentence]
+        supervision_periods = [supervision_period]
+        incarceration_periods: List[StateIncarcerationPeriod] = []
+        assessments: List[StateAssessment] = []
+        violation_responses: List[StateSupervisionViolationResponse] = []
+        supervision_contacts: List[StateSupervisionContact] = []
+        incarceration_sentences: List[StateIncarcerationSentence] = [
+            incarceration_sentence
+        ]
+
+        supervision_events = self.identifier._find_supervision_events(
+            self.person,
+            supervision_sentences,
+            incarceration_sentences,
+            supervision_periods,
+            incarceration_periods,
+            assessments,
+            violation_responses,
+            supervision_contacts,
+            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
+            DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_LIST,
+        )
+        for event in supervision_events:
+            if isinstance(event, SupervisionPopulationEvent):
+                self.fail("No supervision population event should be generated.")
 
     def test_find_supervision_events_infer_supervision_type_dual_us_id(
         self,
@@ -8519,7 +8625,7 @@ class TestTerminationReasonFunctionCoverageCompleteness(unittest.TestCase):
 def create_start_event_from_period(
     period: StateSupervisionPeriod,
     supervision_delegate: StateSpecificSupervisionDelegate = UsXxSupervisionDelegate(),
-    **kwargs: Any
+    **kwargs: Any,
 ) -> SupervisionStartEvent:
     """Creates the SupervisionStartEvent we expect to be created from the given
     period."""
@@ -8559,7 +8665,7 @@ def create_start_event_from_period(
 def create_termination_event_from_period(
     period: StateSupervisionPeriod,
     supervision_delegate: StateSpecificSupervisionDelegate = UsXxSupervisionDelegate(),
-    **kwargs: Any
+    **kwargs: Any,
 ) -> SupervisionTerminationEvent:
     """Creates the SupervisionTerminationEvent we expect to be created from the given
     period."""
