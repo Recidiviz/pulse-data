@@ -150,165 +150,6 @@ def supervision_contact_location_mapper(
     return StateSupervisionContactLocation.INTERNAL_UNKNOWN
 
 
-SHARED_OVERRIDES: Dict[Enum, List[str]] = {
-    Gender.FEMALE: ["2"],
-    Gender.MALE: ["1"],
-    Race.WHITE: ["1"],
-    Race.BLACK: ["2"],
-    Race.AMERICAN_INDIAN_ALASKAN_NATIVE: ["3", "NAT"],
-    Race.ASIAN: ["4"],
-    Race.NATIVE_HAWAIIAN_PACIFIC_ISLANDER: ["6", "HAW"],
-    Race.OTHER: ["MUL"],
-    StatePersonAliasType.AFFILIATION_NAME: ["GNG"],
-    StatePersonAliasType.ALIAS: ["A", "O"],
-    StatePersonAliasType.GIVEN_NAME: ["G", "CN"],
-    StatePersonAliasType.MAIDEN_NAME: ["M"],
-    StatePersonAliasType.NICKNAME: ["N"],
-    StateSentenceStatus.COMPLETED: ["C"],
-    StateSentenceStatus.SERVING: ["O"],
-    StateChargeClassificationType.FELONY: ["IF"],
-    StateChargeClassificationType.MISDEMEANOR: ["IM"],
-    StateIncarcerationPeriodAdmissionReason.ADMITTED_IN_ERROR: ["ADM ERROR"],
-    StateIncarcerationPeriodAdmissionReason.EXTERNAL_UNKNOWN: ["OTHER", "PREA"],
-    StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION: [
-        "ADMN",
-        "RAB",
-        "DEF",
-    ],
-    StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION: ["PARL", "PV"],
-    StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION: [
-        "NPRB",
-        "NPROB",
-        "PRB",
-        "RPRB",
-    ],
-    StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE: ["REC", "RECA"],
-    StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE: ["READMN"],
-    StateIncarcerationPeriodAdmissionReason.TRANSFER: [
-        "CONF",
-        "CRT",
-        "DETOX",
-        "FED",
-        "HOSP",
-        "HOSPS",
-        "HOSPU",
-        "INT",
-        "JOB",
-        "MED",
-        "PROG",
-        "RB",
-        "SUPL",
-    ],
-    StateIncarcerationPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION: ["OOS"],
-    StateIncarcerationPeriodReleaseReason.ESCAPE: ["ESC", "ESCP", "ABSC"],
-    StateIncarcerationPeriodReleaseReason.RELEASED_IN_ERROR: ["ERR"],
-    StateIncarcerationPeriodReleaseReason.EXTERNAL_UNKNOWN: ["OTHER"],
-    StateIncarcerationPeriodReleaseReason.COMMUTED: ["CMM"],
-    StateIncarcerationPeriodReleaseReason.COMPASSIONATE: ["COM"],
-    StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE: [
-        "PARL",
-        "PRB",
-        "PV",
-        "RPAR",
-        "RPRB",
-    ],
-    StateIncarcerationPeriodReleaseReason.COURT_ORDER: ["CO"],
-    StateIncarcerationPeriodReleaseReason.DEATH: ["DECE"],
-    StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED: ["XSNT"],
-    StateIncarcerationPeriodReleaseReason.TRANSFER: [
-        "CONF",
-        "CRT",
-        "DETOX",
-        "HOSP",
-        "HOSPS",
-        "HOSPU",
-        "INT",
-        "JOB",
-        "MED",
-        "PROG",
-        "RB",
-        "SUPL",
-    ],
-    StateIncarcerationPeriodReleaseReason.TRANSFER_TO_OTHER_JURISDICTION: ["TRN"],
-    StateIncarcerationIncidentType.DISORDERLY_CONDUCT: [
-        "DAMAGE",
-        "DISCON",
-        "ESCAPE_ATT",
-        "INS",
-        "SEXCONTACT",
-        "UNAUTH",
-        "NON",
-    ],
-    StateIncarcerationIncidentType.CONTRABAND: [
-        "CONT",
-        "GANG",
-        "GANGREL",
-        "PROP",
-        "TOB",
-    ],
-    StateIncarcerationIncidentType.MINOR_OFFENSE: ["SWIFT"],
-    StateIncarcerationIncidentType.POSITIVE: ["POSREPORT"],
-    StateIncarcerationIncidentType.REPORT: ["STAFFREP"],
-    StateIncarcerationIncidentType.PRESENT_WITHOUT_INFO: ["CONV"],
-    StateIncarcerationIncidentType.VIOLENCE: [
-        "IIASSAULT",
-        "IIASSAULTINJ",
-        "IIFIGHT",
-        "FGHT",
-        "IISUBNOINJ",
-        "ISASSAULT",
-        "ISASSAULTINJ",
-        "ISSUBNOINJ",
-        "SEXUAL",
-        "THREAT",
-    ],
-    StateIncarcerationIncidentOutcomeType.PRIVILEGE_LOSS: [
-        "LCP",
-        "LOR",
-        "LCO",
-        "LVPVV",
-        "LOP",
-        "LVP",
-        "LPJES",
-        "FREM",
-        "RTQ",
-        "UREST",
-        "LPH",
-        "LSE",
-        "CCF",
-        "SREM",
-    ],
-    StateIncarcerationIncidentOutcomeType.FINANCIAL_PENALTY: [
-        "RES",
-        "PAY",
-        "FIN",
-        "PRO",
-        "LJB",
-    ],
-    StateIncarcerationIncidentOutcomeType.SOLITARY: ["SEG", "DD", "RAS"],
-    StateIncarcerationIncidentOutcomeType.TREATMENT: ["RTX"],
-    StateIncarcerationIncidentOutcomeType.DISMISSED: ["DSM"],
-    StateIncarcerationIncidentOutcomeType.EXTERNAL_PROSECUTION: ["RSA"],
-    StateIncarcerationIncidentOutcomeType.MISCELLANEOUS: [
-        "COMB",
-        "DELETED",
-        "RED",
-        "TRA",
-    ],
-    StateIncarcerationIncidentOutcomeType.DISCIPLINARY_LABOR: ["EXD"],
-    StateIncarcerationIncidentOutcomeType.GOOD_TIME_LOSS: ["LG", "STP"],
-    StateIncarcerationIncidentOutcomeType.WARNING: ["WAR", "NS"],
-    StateProgramAssignmentParticipationStatus.PENDING: [
-        "Submitted",
-        "Pending Coordinator",
-    ],
-    StateProgramAssignmentParticipationStatus.REFUSED: ["Refused"],
-    StateSupervisionCaseType.GENERAL: ["0"],
-    StateSupervisionCaseType.SEX_OFFENSE: ["-1"],
-    StateAssessmentLevel.EXTERNAL_UNKNOWN: ["NOT APPLICABLE", "UNDETERMINED"],
-    StateSupervisionContactReason.GENERAL_CONTACT: ["SUPERVISION"],
-}
-
 IGNORES: Dict[Type[Enum], List[str]] = {
     # TODO(#2305): What are the appropriate court case statuses?
     StateCourtCaseStatus: ["A", "STEP"],
@@ -322,35 +163,6 @@ IGNORES: Dict[Type[Enum], List[str]] = {
     ],
 }
 
-SHARED_OVERRIDE_MAPPERS: Dict[Type[Enum], EnumMapperFn] = {
-    StateIncarcerationPeriodStatus: incarceration_period_status_mapper,
-}
-
-# TODO(#8999): Adjust when rerun is successful
-def generate_enum_overrides_v2() -> EnumOverrides:
-    """Provides North Dakota-specific overrides for enum mappings.
-
-    The keys herein are raw strings directly from the source data, and the values are the enums that they are
-    mapped to within our schema. The values are a list because a particular string may be used in multiple
-    distinct columns in the source data.
-    """
-    overrides: Dict[Enum, List[str]] = SHARED_OVERRIDES
-
-    override_mappers: Dict[Type[Enum], EnumMapperFn] = {
-        **SHARED_OVERRIDE_MAPPERS,
-        StateSupervisionContactStatus: supervision_contact_status_mapper,
-        StateSupervisionContactLocation: supervision_contact_location_mapper,
-        StateSupervisionContactType: supervision_contact_type_mapper,
-        StateSupervisionContactMethod: supervision_contact_method_mapper,
-    }
-
-    ignore_predicates: Dict[Type[Enum], EnumIgnorePredicate] = {}
-
-    base_overrides = get_standard_enum_overrides()
-    return update_overrides_from_maps(
-        base_overrides, overrides, IGNORES, override_mappers, ignore_predicates
-    )
-
 
 def generate_enum_overrides() -> EnumOverrides:
     """Provides North Dakota-specific overrides for enum mappings.
@@ -360,33 +172,175 @@ def generate_enum_overrides() -> EnumOverrides:
     distinct columns in the source data.
     """
     overrides: Dict[Enum, List[str]] = {
-        **SHARED_OVERRIDES,
-        StateSupervisionContactType.FACE_TO_FACE: [
-            "HV",  # Visit at Supervisee's Home
-            "OO",  # Visit at Supervisee's Work or Public Area
-            "OV",  # Visit at Supervision Agent's Office
+        Gender.FEMALE: ["2"],
+        Gender.MALE: ["1"],
+        Race.WHITE: ["1"],
+        Race.BLACK: ["2"],
+        Race.AMERICAN_INDIAN_ALASKAN_NATIVE: ["3", "NAT"],
+        Race.ASIAN: ["4"],
+        Race.NATIVE_HAWAIIAN_PACIFIC_ISLANDER: ["6", "HAW"],
+        Race.OTHER: ["MUL"],
+        StatePersonAliasType.AFFILIATION_NAME: ["GNG"],
+        StatePersonAliasType.ALIAS: ["A", "O"],
+        StatePersonAliasType.GIVEN_NAME: ["G", "CN"],
+        StatePersonAliasType.MAIDEN_NAME: ["M"],
+        StatePersonAliasType.NICKNAME: ["N"],
+        StateSentenceStatus.COMPLETED: ["C"],
+        StateSentenceStatus.SERVING: ["O"],
+        StateChargeClassificationType.FELONY: ["IF"],
+        StateChargeClassificationType.MISDEMEANOR: ["IM"],
+        StateIncarcerationPeriodAdmissionReason.ADMITTED_IN_ERROR: ["ADM ERROR"],
+        StateIncarcerationPeriodAdmissionReason.EXTERNAL_UNKNOWN: ["OTHER", "PREA"],
+        StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION: [
+            "ADMN",
+            "RAB",
+            "DEF",
         ],
-        StateSupervisionContactLocation.SUPERVISION_OFFICE: [
-            "OV"  # Visit at Supervision Agent's Office
+        StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION: ["PARL", "PV"],
+        StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION: [
+            "NPRB",
+            "NPROB",
+            "PRB",
+            "RPRB",
         ],
-        StateSupervisionContactLocation.RESIDENCE: ["HV"],  # Visit at Supervisee's Home
-        StateSupervisionContactLocation.PLACE_OF_EMPLOYMENT: [
-            "OO"  # Visit at Supervisee's Work or Public Area
+        StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE: ["REC", "RECA"],
+        StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE: [
+            "READMN"
         ],
-        StateSupervisionContactStatus.COMPLETED: [
-            # We infer that any contact that constitutes a face to face visit
-            # should have the contact status as completed
-            "HV",  # Visit at Supervisee's Home
-            "OO",  # Visit at Supervisee's Work or Public Area
-            "OV",  # Visit at Supervision Agent's Office
+        StateIncarcerationPeriodAdmissionReason.TRANSFER: [
+            "CONF",
+            "CRT",
+            "DETOX",
+            "FED",
+            "HOSP",
+            "HOSPS",
+            "HOSPU",
+            "INT",
+            "JOB",
+            "MED",
+            "PROG",
+            "RB",
+            "SUPL",
         ],
-        StateSupervisionContactStatus.INTERNAL_UNKNOWN: [
-            "SG",
-            "FR",
+        StateIncarcerationPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION: [
+            "OOS"
         ],
+        StateIncarcerationPeriodReleaseReason.ESCAPE: ["ESC", "ESCP", "ABSC"],
+        StateIncarcerationPeriodReleaseReason.RELEASED_IN_ERROR: ["ERR"],
+        StateIncarcerationPeriodReleaseReason.EXTERNAL_UNKNOWN: ["OTHER"],
+        StateIncarcerationPeriodReleaseReason.COMMUTED: ["CMM"],
+        StateIncarcerationPeriodReleaseReason.COMPASSIONATE: ["COM"],
+        StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE: [
+            "PARL",
+            "PRB",
+            "PV",
+            "RPAR",
+            "RPRB",
+        ],
+        StateIncarcerationPeriodReleaseReason.COURT_ORDER: ["CO"],
+        StateIncarcerationPeriodReleaseReason.DEATH: ["DECE"],
+        StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED: ["XSNT"],
+        StateIncarcerationPeriodReleaseReason.TRANSFER: [
+            "CONF",
+            "CRT",
+            "DETOX",
+            "HOSP",
+            "HOSPS",
+            "HOSPU",
+            "INT",
+            "JOB",
+            "MED",
+            "PROG",
+            "RB",
+            "SUPL",
+        ],
+        StateIncarcerationPeriodReleaseReason.TRANSFER_TO_OTHER_JURISDICTION: ["TRN"],
+        StateIncarcerationIncidentType.DISORDERLY_CONDUCT: [
+            "DAMAGE",
+            "DISCON",
+            "ESCAPE_ATT",
+            "INS",
+            "SEXCONTACT",
+            "UNAUTH",
+            "NON",
+        ],
+        StateIncarcerationIncidentType.CONTRABAND: [
+            "CONT",
+            "GANG",
+            "GANGREL",
+            "PROP",
+            "TOB",
+        ],
+        StateIncarcerationIncidentType.MINOR_OFFENSE: ["SWIFT"],
+        StateIncarcerationIncidentType.POSITIVE: ["POSREPORT"],
+        StateIncarcerationIncidentType.REPORT: ["STAFFREP"],
+        StateIncarcerationIncidentType.PRESENT_WITHOUT_INFO: ["CONV"],
+        StateIncarcerationIncidentType.VIOLENCE: [
+            "IIASSAULT",
+            "IIASSAULTINJ",
+            "IIFIGHT",
+            "FGHT",
+            "IISUBNOINJ",
+            "ISASSAULT",
+            "ISASSAULTINJ",
+            "ISSUBNOINJ",
+            "SEXUAL",
+            "THREAT",
+        ],
+        StateIncarcerationIncidentOutcomeType.PRIVILEGE_LOSS: [
+            "LCP",
+            "LOR",
+            "LCO",
+            "LVPVV",
+            "LOP",
+            "LVP",
+            "LPJES",
+            "FREM",
+            "RTQ",
+            "UREST",
+            "LPH",
+            "LSE",
+            "CCF",
+            "SREM",
+        ],
+        StateIncarcerationIncidentOutcomeType.FINANCIAL_PENALTY: [
+            "RES",
+            "PAY",
+            "FIN",
+            "PRO",
+            "LJB",
+        ],
+        StateIncarcerationIncidentOutcomeType.SOLITARY: ["SEG", "DD", "RAS"],
+        StateIncarcerationIncidentOutcomeType.TREATMENT: ["RTX"],
+        StateIncarcerationIncidentOutcomeType.DISMISSED: ["DSM"],
+        StateIncarcerationIncidentOutcomeType.EXTERNAL_PROSECUTION: ["RSA"],
+        StateIncarcerationIncidentOutcomeType.MISCELLANEOUS: [
+            "COMB",
+            "DELETED",
+            "RED",
+            "TRA",
+        ],
+        StateIncarcerationIncidentOutcomeType.DISCIPLINARY_LABOR: ["EXD"],
+        StateIncarcerationIncidentOutcomeType.GOOD_TIME_LOSS: ["LG", "STP"],
+        StateIncarcerationIncidentOutcomeType.WARNING: ["WAR", "NS"],
+        StateProgramAssignmentParticipationStatus.PENDING: [
+            "Submitted",
+            "Pending Coordinator",
+        ],
+        StateProgramAssignmentParticipationStatus.REFUSED: ["Refused"],
+        StateSupervisionCaseType.GENERAL: ["0"],
+        StateSupervisionCaseType.SEX_OFFENSE: ["-1"],
+        StateAssessmentLevel.EXTERNAL_UNKNOWN: ["NOT APPLICABLE", "UNDETERMINED"],
+        StateSupervisionContactReason.GENERAL_CONTACT: ["SUPERVISION"],
     }
 
-    override_mappers: Dict[Type[Enum], EnumMapperFn] = SHARED_OVERRIDE_MAPPERS
+    override_mappers: Dict[Type[Enum], EnumMapperFn] = {
+        StateIncarcerationPeriodStatus: incarceration_period_status_mapper,
+        StateSupervisionContactStatus: supervision_contact_status_mapper,
+        StateSupervisionContactLocation: supervision_contact_location_mapper,
+        StateSupervisionContactType: supervision_contact_type_mapper,
+        StateSupervisionContactMethod: supervision_contact_method_mapper,
+    }
 
     ignore_predicates: Dict[Type[Enum], EnumIgnorePredicate] = {}
 
