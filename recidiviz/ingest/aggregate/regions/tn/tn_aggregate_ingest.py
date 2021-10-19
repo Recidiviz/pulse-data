@@ -151,9 +151,9 @@ def _parse_table(
             .applymap(lambda s: str(s).split(".", maxsplit=1)[0])
         )
         table_3.columns = table_2.columns
+        formatted_dfs = [table_0, table_1, table_2, table_3]
     else:
         formatted_dfs = [_format_table(df, is_female, report_date) for df in table]
-
     table = pd.concat(formatted_dfs, ignore_index=True)
 
     # Discard 'TOTAL' row.
