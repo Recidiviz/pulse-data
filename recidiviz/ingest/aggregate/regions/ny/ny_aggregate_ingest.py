@@ -28,9 +28,9 @@ import tabula
 import us
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
+from recidiviz.common import fips
 from recidiviz.common.constants.aggregate import enum_canonical_strings as enum_strings
 from recidiviz.ingest.aggregate import aggregate_ingest_utils
-from recidiviz.common import fips
 from recidiviz.persistence.database.schema.aggregate.schema import NyFacilityAggregate
 
 
@@ -58,9 +58,12 @@ def _parse_table(filename: str) -> pd.DataFrame:
         lattice=True,
         pandas_options={"header": 0},
     )
-
+    report_date = _parse_report_date(all_dfs[0].columns[-2])
     # Trim unnecessary tables
-    all_dfs = all_dfs[3:-1]
+    if report_date.year >= 2021:
+        all_dfs = all_dfs[3:]
+    else:
+        all_dfs = all_dfs[3:-1]
 
     dfs_split_by_page = [_split_page(df_for_page) for df_for_page in all_dfs]
     all_split_dfs = list(itertools.chain.from_iterable(dfs_split_by_page))
