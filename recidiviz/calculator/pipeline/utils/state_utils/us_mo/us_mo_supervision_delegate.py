@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """US_MO implementation of the supervision delegate"""
-from typing import List
+from typing import List, Optional
 
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_delegate import (
     StateSpecificSupervisionDelegate,
@@ -45,9 +45,13 @@ class UsMoSupervisionDelegate(StateSpecificSupervisionDelegate):
         supervision_sentences: List[StateSupervisionSentence],
         incarceration_sentences: List[StateIncarcerationSentence],
         supervision_period: StateSupervisionPeriod,
+        supervising_officer_external_id: Optional[str],
     ) -> bool:
         """In US_MO, first finds the overlapping date range between the supervision period
         and the date range given. If no overlap, then it does not count towards the population.
+
+        In addition, a supervision period should have an active PO to also be included to the
+        supervision population.
 
         Otherwise finds the most recent nonnull supervision period, supervision type associated to
         the person with these sentences to indicate that the person should count towards the population.
@@ -57,6 +61,12 @@ class UsMoSupervisionDelegate(StateSpecificSupervisionDelegate):
         ).overlapping_range
 
         if not overlapping_range:
+            return False
+
+        if (
+            supervising_officer_external_id is None
+            and supervision_period.supervising_officer is None
+        ):
             return False
 
         return (
