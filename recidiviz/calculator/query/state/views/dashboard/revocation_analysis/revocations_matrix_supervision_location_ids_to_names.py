@@ -38,7 +38,10 @@ REVOCATIONS_MATRIX_SUPERVISION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = """
       END AS level_2_supervision_location_name,
       names.level_1_supervision_location_external_id,
       CASE WHEN names.state_code = 'US_MO' THEN UPPER(level_1_supervision_location_external_id)
-           WHEN names.state_code = 'US_PA' THEN FORMAT("%s - %s", UPPER(TRIM(SPLIT(level_1_supervision_location_name, '-')[SAFE_OFFSET(1)])), level_2_supervision_location_external_id)
+           WHEN names.state_code = 'US_PA' THEN COALESCE(
+               FORMAT("%s - %s", UPPER(TRIM(SPLIT(level_1_supervision_location_name, '-')[SAFE_OFFSET(1)])), level_2_supervision_location_external_id), 
+               level_1_supervision_location_name
+           )
       END AS level_1_supervision_location_name
     FROM `{project_id}.{reference_views_dataset}.supervision_location_ids_to_names` names
     JOIN (
