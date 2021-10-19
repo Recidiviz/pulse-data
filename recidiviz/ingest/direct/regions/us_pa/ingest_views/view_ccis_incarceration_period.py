@@ -239,6 +239,8 @@ WITH inmate_number_with_control_numbers AS (
         AND previous_program_id NOT IN ('26', '46', '51'))
     ) AS start_is_new_act_122_admission
   FROM valid_periods
+   -- Remove periods with undefined Program IDs -- 
+  WHERE Program_Id IS NOT NULL
 )
 
 SELECT *
