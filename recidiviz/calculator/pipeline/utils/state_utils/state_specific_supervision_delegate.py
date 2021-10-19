@@ -76,6 +76,7 @@ class StateSpecificSupervisionDelegate(abc.ABC):
         supervision_sentences: List[StateSupervisionSentence],
         incarceration_sentences: List[StateIncarcerationSentence],
         supervision_period: StateSupervisionPeriod,
+        supervising_officer_external_id: Optional[str],
     ) -> bool:
         """Returns False if there is state-specific information to indicate that the supervision period should not count
         towards the supervision population in the date range.
