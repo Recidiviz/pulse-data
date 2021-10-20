@@ -38,7 +38,7 @@ resource "google_redis_instance" "case_triage_rate_limiter_cache" {
 
 
 resource "google_redis_instance" "case_triage_sessions_cache" {
-  name           = "rate-limit-cache"
+  name           = "case-triage-sessions-cache"
   region         = var.app_engine_region
   memory_size_gb = 1
   tier           = "BASIC"
