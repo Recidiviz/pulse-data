@@ -17,7 +17,6 @@
 """Backend entry point for Case Triage API server."""
 import json
 import os
-import socket
 from typing import Dict
 
 import sentry_sdk
@@ -39,9 +38,15 @@ from recidiviz.case_triage.authorization import AuthorizationStore
 from recidiviz.case_triage.e2e_routes import e2e_blueprint
 from recidiviz.case_triage.error_handlers import register_error_handlers
 from recidiviz.case_triage.exceptions import CaseTriageAuthorizationError
+from recidiviz.case_triage.redis_sessions import RedisSessionInterface
 from recidiviz.case_triage.scoped_sessions import setup_scoped_sessions
 from recidiviz.case_triage.user_context import UserContext
-from recidiviz.case_triage.util import get_local_secret, get_rate_limit_storage_uri
+from recidiviz.case_triage.util import (
+    get_local_secret,
+    get_rate_limit_storage_uri,
+    get_redis_connection_options,
+    get_sessions_redis,
+)
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
@@ -78,6 +83,12 @@ static_folder = os.path.abspath(
 
 app = Flask(__name__, static_folder=static_folder)
 app.secret_key = get_local_secret("case_triage_secret_key")
+
+sessions_redis = get_sessions_redis()
+
+if sessions_redis:
+    app.session_interface = RedisSessionInterface(sessions_redis)
+
 CSRFProtect(app).exempt(e2e_blueprint)
 register_error_handlers(app)
 
@@ -87,15 +98,7 @@ limiter = Limiter(
     key_func=get_remote_address,
     default_limits=["15 per second"],
     storage_uri=get_rate_limit_storage_uri(),
-    storage_options={
-        "health_check_interval": 30,
-        "socket_keepalive": True,
-        "socket_keepalive_options": {
-            socket.TCP_KEEPIDLE: 10,
-            socket.TCP_KEEPINTVL: 5,
-            socket.TCP_KEEPCNT: 5,
-        },
-    },
+    storage_options=get_redis_connection_options(),
 )
 
 if in_development():
