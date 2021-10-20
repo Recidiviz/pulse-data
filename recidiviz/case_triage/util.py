@@ -17,8 +17,12 @@
 """Utils for Case Triage"""
 import logging
 import os
+import socket
+import sys
 from pathlib import Path
-from typing import Optional
+from typing import Any, Dict, Optional
+
+from redis import Redis
 
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
@@ -72,3 +76,40 @@ def get_rate_limit_storage_uri() -> str:
         return f"redis://{host}:{port}"
 
     return "memory://"
+
+
+def get_redis_connection_options() -> Dict[Any, Any]:
+    """
+    Returns options to keep the Redis connection alive during prolonged periods of inactivity
+    Based off of https://github.com/redis/redis-py/issues/1186#issuecomment-921417396
+    https://man7.org/linux/man-pages/man7/tcp.7.html
+    """
+    if sys.platform == "darwin":
+        socket_keepalive_options = {
+            socket.TCP_KEEPCNT: 5,
+            socket.TCP_KEEPINTVL: 5,
+        }
+    elif sys.platform == "linux":
+        socket_keepalive_options = {
+            socket.TCP_KEEPIDLE: 10,
+            socket.TCP_KEEPINTVL: 5,
+            socket.TCP_KEEPCNT: 5,
+        }
+    else:
+        socket_keepalive_options = {}
+
+    return {
+        "health_check_interval": 30,
+        "socket_keepalive": True,
+        "socket_keepalive_options": socket_keepalive_options,
+    }
+
+
+def get_sessions_redis() -> Optional[Redis]:
+    host = get_local_secret("case_triage_sessions_redis_host")
+    port = get_local_secret("case_triage_sessions_redis_port")
+
+    if host is None or port is None:
+        return None
+
+    return Redis(host=host, port=int(port), **get_redis_connection_options())
