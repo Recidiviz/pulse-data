@@ -20,6 +20,9 @@ from recidiviz.calculator.query.state import (
     dataset_config,
     state_specific_query_strings,
 )
+from recidiviz.calculator.query.state.views.public_dashboard.utils import (
+    spotlight_age_buckets,
+)
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -109,7 +112,7 @@ INCARCERATION_RELEASES_BY_TYPE_BY_PERIOD_VIEW_BUILDER = MetricBigQueryViewBuilde
     state_specific_race_or_ethnicity_groupings=state_specific_query_strings.state_specific_race_or_ethnicity_groupings(
         "prioritized_race_or_ethnicity"
     ),
-    age_bucket=bq_utils.age_bucket_grouping(use_external_unknown_when_null=True),
+    age_bucket=spotlight_age_buckets(),
 )
 
 if __name__ == "__main__":
