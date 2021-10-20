@@ -7,6 +7,25 @@ file_description: |-
 
   ```
   WITH
+  LU_PBPP_Organization_corrected AS (
+      SELECT Org_cd, DO_Orgcode, Org_Name, DistrictOfficeCode,  Region_Code, Region, SO_Identifier, Office
+      FROM `recidiviz-123.us_pa_raw_data_up_to_date_views.dbo_LU_PBPP_Organization_latest`
+      WHERE Org_cd != '5151'
+      UNION ALL
+      # TODO(#9663): Get an updated dump of dbo_LU_PBPP_Organization that includes a corrected FAST
+      #  row and rerun this query with that (and this clause removed)
+      SELECT * FROM UNNEST([STRUCT(
+          # NOTE: We update the information for the FAST organization, who is erroneously included in the Philedelphia DO.
+          '5151' AS Org_cd,
+          '5151' AS DO_Orgcode,
+          'FAST UNIT' AS Org_Name,
+          'FAST' AS DistrictOfficeCode,
+          'FAST' AS Region_Code,
+          'FAST' AS Region,
+          'FAST' AS SO_Identifier,
+          '' AS Office
+      )])
+  ),
   pa_location_names AS (
      WITH district_offices AS (
         SELECT
@@ -15,7 +34,7 @@ file_description: |-
                 WHEN DistrictOfficeCode = 'CO' THEN 'Central Office'
                 ELSE REPLACE(INITCAP(Org_Name), "District Office", "DO")
             END AS district_office_name
-        FROM `recidiviz-123.us_pa_raw_data_up_to_date_views.dbo_LU_PBPP_Organization_latest`
+        FROM LU_PBPP_Organization_corrected
         WHERE DO_Orgcode = Org_cd OR Office = 'CEN'
      ),
      pbpp_organization AS (
@@ -34,13 +53,13 @@ file_description: |-
                      WHEN SO_Identifier = 'PP SPECIALIZED DIVISION' THEN 'Specialized'
                      ELSE INITCAP(REPLACE(REPLACE(SO_Identifier, 'SUB OFFICE', ''), 'PBPP ', ''))
                  END AS sub_office_name
-         FROM `recidiviz-123.us_pa_raw_data_up_to_date_views.dbo_LU_PBPP_Organization_latest`
+         FROM LU_PBPP_Organization_corrected
      ),
      base_locations AS (
          SELECT
              *,
-             CONCAT(district_office_external_id, ' - ',
-                     COALESCE(sub_office_name, district_office_name)) AS sub_office_external_id
+             CASE WHEN district_office_external_id = 'FAST' THEN district_office_external_id
+             ELSE CONCAT(district_office_external_id, ' - ', COALESCE(sub_office_name, district_office_name)) END AS sub_office_external_id
          FROM pbpp_organization
          JOIN district_offices
          ON pbpp_organization.DistrictOfficeCode = district_offices.district_office_external_id
@@ -57,7 +76,7 @@ file_description: |-
      FROM  base_locations
   )
   SELECT * FROM pa_location_names
-  ORDER BY level_1_supervision_location_external_id;
+  ORDER BY level_1_supervision_location_external_id, Org_cd;
   ```
 primary_key_cols:
   - Org_cd
