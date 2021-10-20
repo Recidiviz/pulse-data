@@ -20,6 +20,9 @@ from recidiviz.calculator.query.state import (
     dataset_config,
     state_specific_query_strings,
 )
+from recidiviz.calculator.query.state.views.public_dashboard.utils import (
+    spotlight_age_buckets,
+)
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -42,7 +45,7 @@ SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = """
         IFNULL(district, 'EXTERNAL_UNKNOWN') as district,
         IFNULL(gender, 'EXTERNAL_UNKNOWN') as gender,
         {state_specific_race_or_ethnicity_groupings},
-        IFNULL(age_bucket, 'EXTERNAL_UNKNOWN') as age_bucket,
+        age_bucket,
         supervision_type,
         metric_period_months
       FROM (SELECT *, 
@@ -116,7 +119,7 @@ SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_BUILDER = MetricBigQueryViewB
         "prioritized_race_or_ethnicity"
     ),
     state_specific_supervision_type_inclusion_filter=state_specific_query_strings.state_specific_supervision_type_inclusion_filter(),
-    age_bucket=bq_utils.age_bucket_grouping(),
+    age_bucket=spotlight_age_buckets(),
 )
 
 if __name__ == "__main__":

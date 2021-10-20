@@ -44,7 +44,7 @@ EVENT_BASED_COMMITMENTS_FROM_SUPERVISION_QUERY_TEMPLATE = """
       admission_date,
       prioritized_race_or_ethnicity as race_or_ethnicity,
       gender,
-      {age_bucket}
+      age
     FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_commitment_from_supervision_metrics_included_in_state_population_materialized`,
     {district_dimension},
     {supervision_type_dimension}
@@ -61,7 +61,6 @@ EVENT_BASED_COMMITMENTS_FROM_SUPERVISION_VIEW_BUILDER = SimpleBigQueryViewBuilde
     district_dimension=bq_utils.unnest_district(),
     supervision_type_dimension=bq_utils.unnest_supervision_type(),
     thirty_six_month_filter=bq_utils.thirty_six_month_filter(),
-    age_bucket=bq_utils.age_bucket_grouping(),
     should_materialize=True,
 )
 
