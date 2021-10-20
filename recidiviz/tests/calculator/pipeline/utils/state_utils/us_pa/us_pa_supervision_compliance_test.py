@@ -140,31 +140,31 @@ class TestFaceToFaceContactsInComplianceMonth(unittest.TestCase):
         contact_1 = StateSupervisionContact.new_with_defaults(
             state_code="US_PA",
             contact_date=date(2018, 4, 1),
-            contact_type=StateSupervisionContactType.FACE_TO_FACE,
+            contact_type=StateSupervisionContactType.DIRECT,
             status=StateSupervisionContactStatus.COMPLETED,
         )
         contact_2 = StateSupervisionContact.new_with_defaults(
             state_code="US_PA",
             contact_date=date(2018, 4, 15),
-            contact_type=StateSupervisionContactType.FACE_TO_FACE,
+            contact_type=StateSupervisionContactType.DIRECT,
             status=StateSupervisionContactStatus.COMPLETED,
         )
         contact_3 = StateSupervisionContact.new_with_defaults(
             state_code="US_PA",
             contact_date=date(2018, 4, 30),
-            contact_type=StateSupervisionContactType.FACE_TO_FACE,
+            contact_type=StateSupervisionContactType.DIRECT,
             status=StateSupervisionContactStatus.COMPLETED,
         )
         contact_out_of_range = StateSupervisionContact.new_with_defaults(
             state_code="US_PA",
             contact_date=date(2018, 3, 30),
-            contact_type=StateSupervisionContactType.FACE_TO_FACE,
+            contact_type=StateSupervisionContactType.DIRECT,
             status=StateSupervisionContactStatus.COMPLETED,
         )
         contact_incomplete = StateSupervisionContact.new_with_defaults(
             state_code="US_PA",
             contact_date=date(2018, 4, 30),
-            contact_type=StateSupervisionContactType.FACE_TO_FACE,
+            contact_type=StateSupervisionContactType.DIRECT,
             status=StateSupervisionContactStatus.ATTEMPTED,
         )
         contact_wrong_type = StateSupervisionContact.new_with_defaults(
@@ -237,7 +237,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             StateSupervisionContact.new_with_defaults(
                 state_code="US_PA",
                 contact_date=start_of_supervision,
-                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
             )
         ]
@@ -287,7 +287,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
                 state_code="US_PA",
                 # Only contact happened before supervision started
                 contact_date=start_of_supervision - relativedelta(days=100),
-                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
             )
         ]
@@ -333,7 +333,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             StateSupervisionContact.new_with_defaults(
                 state_code="US_PA",
                 contact_date=start_of_supervision,
-                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                contact_type=StateSupervisionContactType.DIRECT,
                 # Only contact was not completed
                 status=StateSupervisionContactStatus.ATTEMPTED,
             )
@@ -431,7 +431,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             StateSupervisionContact.new_with_defaults(
                 state_code="US_PA",
                 contact_date=start_of_supervision + relativedelta(months=1, days=5),
-                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
             )
         ]
@@ -516,7 +516,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             StateSupervisionContact.new_with_defaults(
                 state_code="US_PA",
                 contact_date=start_of_supervision + relativedelta(months=1, days=5),
-                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
             )
         ]
@@ -562,7 +562,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             StateSupervisionContact.new_with_defaults(
                 state_code="US_PA",
                 contact_date=start_of_supervision + relativedelta(months=1, days=1),
-                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
             )
         ]
@@ -647,7 +647,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             StateSupervisionContact.new_with_defaults(
                 state_code="US_PA",
                 contact_date=start_of_supervision + relativedelta(days=30),
-                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
             )
         ]
@@ -693,7 +693,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             StateSupervisionContact.new_with_defaults(
                 state_code="US_PA",
                 contact_date=start_of_supervision + relativedelta(months=1, days=1),
-                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
             )
         ]
@@ -778,7 +778,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             StateSupervisionContact.new_with_defaults(
                 state_code="US_PA",
                 contact_date=start_of_supervision + relativedelta(days=20),
-                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
             )
         ]
@@ -824,13 +824,13 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             StateSupervisionContact.new_with_defaults(
                 state_code="US_PA",
                 contact_date=start_of_supervision + relativedelta(days=32),
-                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
             ),
             StateSupervisionContact.new_with_defaults(
                 state_code="US_PA",
                 contact_date=start_of_supervision + relativedelta(days=40),
-                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
             ),
         ]
@@ -916,14 +916,14 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             StateSupervisionContact.new_with_defaults(
                 state_code="US_PA",
                 contact_date=start_of_supervision + relativedelta(days=20),
-                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
             ),
             # Only this contact is within time window, but need two so insufficent contact
             StateSupervisionContact.new_with_defaults(
                 state_code="US_PA",
                 contact_date=start_of_supervision + relativedelta(days=40),
-                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
             ),
         ]
@@ -969,25 +969,25 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             StateSupervisionContact.new_with_defaults(
                 state_code="US_PA",
                 contact_date=start_of_supervision + relativedelta(months=1, days=5),
-                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
             ),
             StateSupervisionContact.new_with_defaults(
                 state_code="US_PA",
                 contact_date=start_of_supervision + relativedelta(months=1, days=10),
-                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
             ),
             StateSupervisionContact.new_with_defaults(
                 state_code="US_PA",
                 contact_date=start_of_supervision + relativedelta(months=1, days=15),
-                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
             ),
             StateSupervisionContact.new_with_defaults(
                 state_code="US_PA",
                 contact_date=start_of_supervision + relativedelta(months=1, days=20),
-                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
             ),
         ]
@@ -1073,14 +1073,14 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             StateSupervisionContact.new_with_defaults(
                 state_code="US_PA",
                 contact_date=start_of_supervision + relativedelta(days=20),
-                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
             ),
             # Only this contact is within time window, but need four so insufficent contact
             StateSupervisionContact.new_with_defaults(
                 state_code="US_PA",
                 contact_date=start_of_supervision + relativedelta(months=1, days=10),
-                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
             ),
         ]

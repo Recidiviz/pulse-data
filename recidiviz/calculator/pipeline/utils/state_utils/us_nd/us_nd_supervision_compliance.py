@@ -230,6 +230,12 @@ class UsNdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
             days=1
         )
 
+    def _next_recommended_treatment_collateral_contact_date(
+        self, _compliance_evaluation_date: date
+    ) -> Optional[date]:
+        """US_ND currently has no requirements for treatment collateral contacts."""
+        return None
+
     def _get_supervision_level_policy(
         self, evaluation_date: date
     ) -> Optional[SupervisionLevelPolicy]:
