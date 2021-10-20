@@ -108,8 +108,8 @@ SUPERVISION_CONTACT_FREQUENCY_REQUIREMENTS: Dict[
 ] = {
     StateSupervisionCaseType.GENERAL: {
         StateSupervisionLevel.MINIMUM: (1, 180),
-        StateSupervisionLevel.MEDIUM: (2, 90),
-        StateSupervisionLevel.HIGH: (2, 30),
+        StateSupervisionLevel.MEDIUM: (1, 45),
+        StateSupervisionLevel.HIGH: (1, 15),
     },
     StateSupervisionCaseType.SEX_OFFENSE: {
         StateSupervisionLevel.MINIMUM: (1, 90),
@@ -124,11 +124,20 @@ US_ID_SUPERVISION_HOME_VISIT_FREQUENCY_REQUIREMENTS: Dict[
 ] = {
     StateSupervisionLevel.MINIMUM: (1, 365),
     StateSupervisionLevel.MEDIUM: (1, 365),
-    StateSupervisionLevel.HIGH: (2, 365),
+    StateSupervisionLevel.HIGH: (1, 180),
+}
+
+US_ID_SUPERVISION_TREATMENT_COLLATERAL_CONTACT_FREQUENCY_REQUIREMENTS: Dict[
+    StateSupervisionLevel, Tuple[int, int]
+] = {
+    StateSupervisionLevel.MINIMUM: (1, 90),
+    StateSupervisionLevel.MEDIUM: (1, 30),
+    StateSupervisionLevel.HIGH: (1, 30),
 }
 
 NEW_SUPERVISION_CONTACT_DEADLINE_BUSINESS_DAYS = 3
 NEW_SUPERVISION_HOME_VISIT_DEADLINE_DAYS = 30
+NEW_SUPERVISION_TREATMENT_CONTACT_DEADLINE_DAYS = 14
 
 # This is the date where Idaho switched its method of determining supervision
 # levels, going from 4 levels to 3.
@@ -375,12 +384,58 @@ class UsIdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
 
     def _next_recommended_home_visit_date(
         self,
-        _compliance_evaluation_date: date,
+        compliance_evaluation_date: date,
     ) -> Optional[date]:
         """Returns when the next home visit should be. Returns None if compliance standards are
         unknown or no subsequent home visits are required."""
-        # There are no home visit standards for US_ID
-        return None
+        if self.supervision_period.supervision_level is None:
+            raise ValueError(
+                "Supervision level not provided and so cannot calculate next recommended "
+                "home visit."
+            )
+
+        (
+            required_contacts,
+            period_days,
+        ) = US_ID_SUPERVISION_HOME_VISIT_FREQUENCY_REQUIREMENTS[
+            self.supervision_period.supervision_level
+        ]
+
+        return self._default_next_recommended_contact_date_given_requirements(
+            compliance_evaluation_date,
+            required_contacts,
+            period_days,
+            NEW_SUPERVISION_HOME_VISIT_DEADLINE_DAYS,
+            self._get_applicable_home_visits_between_dates,
+            use_business_days=False,
+        )
+
+    def _next_recommended_treatment_collateral_contact_date(
+        self, compliance_evaluation_date: date
+    ) -> Optional[date]:
+        """Returns when the next treatment collateral contact should be. Returns None if
+        compliance standards are unknown or no subsequent home visits are required."""
+        if self.supervision_period.supervision_level is None:
+            raise ValueError(
+                "Supervision level not provided and so cannot calculate next recommended "
+                "treatment collateral contact."
+            )
+
+        (
+            required_contacts,
+            period_days,
+        ) = US_ID_SUPERVISION_TREATMENT_COLLATERAL_CONTACT_FREQUENCY_REQUIREMENTS[
+            self.supervision_period.supervision_level
+        ]
+
+        return self._default_next_recommended_contact_date_given_requirements(
+            compliance_evaluation_date,
+            required_contacts,
+            period_days,
+            NEW_SUPERVISION_TREATMENT_CONTACT_DEADLINE_DAYS,
+            self._get_applicable_treatment_collateral_contacts_between_dates,
+            use_business_days=False,
+        )
 
     def _get_supervision_level_policy(
         self, evaluation_date: date

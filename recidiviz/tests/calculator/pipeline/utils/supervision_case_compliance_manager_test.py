@@ -390,13 +390,13 @@ class TestCaseCompliance(unittest.TestCase):
             StateSupervisionContact.new_with_defaults(
                 state_code=StateCode.US_ID.value,
                 contact_date=date(2018, 3, 6),
-                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
             ),
             StateSupervisionContact.new_with_defaults(
                 state_code=StateCode.US_ID.value,
                 contact_date=date(2018, 4, 30),
-                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
             ),
         ]
@@ -423,8 +423,10 @@ class TestCaseCompliance(unittest.TestCase):
                 next_recommended_assessment_date=date(2019, 3, 10),
                 face_to_face_count=1,
                 most_recent_face_to_face_date=date(2018, 4, 30),
-                next_recommended_face_to_face_date=date(2018, 6, 4),
+                next_recommended_face_to_face_date=date(2018, 6, 14),
                 home_visit_count=0,
+                next_recommended_home_visit_date=date(2018, 4, 4),
+                next_recommended_treatment_collateral_contact_date=date(2018, 3, 19),
             ),
             compliance,
         )
@@ -468,7 +470,7 @@ class TestCaseCompliance(unittest.TestCase):
             StateSupervisionContact.new_with_defaults(
                 state_code=StateCode.US_ID.value,
                 contact_date=date(2018, 4, 6),
-                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
             ),
         ]
@@ -496,8 +498,10 @@ class TestCaseCompliance(unittest.TestCase):
                 next_recommended_assessment_date=date(2019, 3, 10),
                 face_to_face_count=1,
                 most_recent_face_to_face_date=date(2018, 4, 6),
-                next_recommended_face_to_face_date=date(2018, 6, 4),
+                next_recommended_face_to_face_date=date(2018, 5, 21),
                 home_visit_count=0,
+                next_recommended_home_visit_date=date(2018, 4, 4),
+                next_recommended_treatment_collateral_contact_date=date(2018, 3, 19),
             ),
             compliance,
         )
@@ -542,6 +546,8 @@ class TestCaseCompliance(unittest.TestCase):
                 face_to_face_count=0,
                 next_recommended_face_to_face_date=date(2018, 1, 10),
                 home_visit_count=0,
+                next_recommended_home_visit_date=date(2018, 2, 4),
+                next_recommended_treatment_collateral_contact_date=date(2018, 1, 19),
             ),
             compliance,
         )
@@ -574,7 +580,7 @@ class TestCaseCompliance(unittest.TestCase):
             StateSupervisionContact.new_with_defaults(
                 state_code=StateCode.US_ID.value,
                 contact_date=date(2018, 3, 31),
-                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
             )
         ]
@@ -653,6 +659,8 @@ class TestCaseCompliance(unittest.TestCase):
                 next_recommended_face_to_face_date=date(2018, 3, 8),
                 most_recent_home_visit_date=None,
                 home_visit_count=0,
+                next_recommended_home_visit_date=date(2018, 4, 4),
+                next_recommended_treatment_collateral_contact_date=date(2018, 3, 19),
             ),
             compliance,
         )
@@ -680,14 +688,14 @@ class TestCaseCompliance(unittest.TestCase):
             StateSupervisionContact.new_with_defaults(
                 state_code=StateCode.US_ID.value,
                 contact_date=date(2018, 3, 6),
-                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
                 location=StateSupervisionContactLocation.PLACE_OF_EMPLOYMENT,
             ),
             StateSupervisionContact.new_with_defaults(
                 state_code=StateCode.US_ID.value,
                 contact_date=date(2018, 4, 30),
-                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
                 location=StateSupervisionContactLocation.SUPERVISION_OFFICE,
             ),
@@ -715,9 +723,11 @@ class TestCaseCompliance(unittest.TestCase):
                 next_recommended_assessment_date=date(2018, 4, 19),
                 face_to_face_count=1,
                 most_recent_face_to_face_date=date(2018, 4, 30),
-                next_recommended_face_to_face_date=date(2018, 6, 4),
+                next_recommended_face_to_face_date=date(2018, 6, 14),
                 most_recent_home_visit_date=None,
                 home_visit_count=0,
+                next_recommended_home_visit_date=date(2018, 4, 4),
+                next_recommended_treatment_collateral_contact_date=date(2018, 3, 19),
             ),
             compliance,
         )
@@ -743,14 +753,14 @@ class TestCaseCompliance(unittest.TestCase):
             StateSupervisionContact.new_with_defaults(
                 state_code=StateCode.US_ID.value,
                 contact_date=date(2018, 3, 6),
-                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
                 location=StateSupervisionContactLocation.RESIDENCE,
             ),
             StateSupervisionContact.new_with_defaults(
                 state_code=StateCode.US_ID.value,
                 contact_date=date(2018, 4, 30),
-                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
                 location=StateSupervisionContactLocation.RESIDENCE,
             ),
@@ -769,7 +779,6 @@ class TestCaseCompliance(unittest.TestCase):
         compliance = us_id_supervision_compliance.get_case_compliance_on_date(
             compliance_evaluation_date
         )
-
         self.assertEqual(
             SupervisionCaseCompliance(
                 date_of_evaluation=compliance_evaluation_date,
@@ -778,9 +787,11 @@ class TestCaseCompliance(unittest.TestCase):
                 next_recommended_assessment_date=date(2018, 4, 19),
                 face_to_face_count=1,
                 most_recent_face_to_face_date=date(2018, 4, 30),
-                next_recommended_face_to_face_date=date(2018, 6, 4),
+                next_recommended_face_to_face_date=date(2018, 6, 14),
                 most_recent_home_visit_date=date(2018, 4, 30),
+                next_recommended_home_visit_date=date(2019, 4, 30),
                 home_visit_count=1,
+                next_recommended_treatment_collateral_contact_date=date(2018, 3, 19),
             ),
             compliance,
         )
@@ -806,14 +817,14 @@ class TestCaseCompliance(unittest.TestCase):
             StateSupervisionContact.new_with_defaults(
                 state_code=StateCode.US_ID.value,
                 contact_date=date(2018, 3, 6),
-                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
                 location=StateSupervisionContactLocation.RESIDENCE,
             ),
             StateSupervisionContact.new_with_defaults(
                 state_code=StateCode.US_ID.value,
                 contact_date=date(2018, 4, 30),
-                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
                 location=StateSupervisionContactLocation.PLACE_OF_EMPLOYMENT,
             ),
@@ -841,9 +852,11 @@ class TestCaseCompliance(unittest.TestCase):
                 next_recommended_assessment_date=date(2018, 4, 19),
                 face_to_face_count=1,
                 most_recent_face_to_face_date=date(2018, 4, 30),
-                next_recommended_face_to_face_date=date(2018, 6, 4),
+                next_recommended_face_to_face_date=date(2018, 6, 14),
                 most_recent_home_visit_date=date(2018, 3, 6),
                 home_visit_count=0,
+                next_recommended_home_visit_date=date(2019, 3, 6),
+                next_recommended_treatment_collateral_contact_date=date(2018, 3, 19),
             ),
             compliance,
         )
@@ -885,14 +898,14 @@ class TestCaseCompliance(unittest.TestCase):
             StateSupervisionContact.new_with_defaults(
                 state_code=StateCode.US_ID.value,
                 contact_date=date(2018, 3, 6),
-                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
                 location=StateSupervisionContactLocation.RESIDENCE,
             ),
             StateSupervisionContact.new_with_defaults(
                 state_code=StateCode.US_ID.value,
                 contact_date=date(2018, 4, 30),
-                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
                 location=StateSupervisionContactLocation.RESIDENCE,
             ),
@@ -902,14 +915,14 @@ class TestCaseCompliance(unittest.TestCase):
             StateSupervisionContact.new_with_defaults(
                 state_code=StateCode.US_ID.value,
                 contact_date=date(2019, 3, 6),
-                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
                 location=StateSupervisionContactLocation.RESIDENCE,
             ),
             StateSupervisionContact.new_with_defaults(
                 state_code=StateCode.US_ID.value,
                 contact_date=date(2019, 4, 30),
-                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
                 location=StateSupervisionContactLocation.RESIDENCE,
             ),
@@ -952,9 +965,11 @@ class TestCaseCompliance(unittest.TestCase):
                 next_recommended_assessment_date=date(2018, 4, 19),
                 face_to_face_count=1,
                 most_recent_face_to_face_date=date(2018, 4, 30),
-                next_recommended_face_to_face_date=date(2018, 6, 4),
+                next_recommended_face_to_face_date=date(2018, 6, 14),
                 most_recent_home_visit_date=date(2018, 4, 30),
                 home_visit_count=1,
+                next_recommended_home_visit_date=date(2019, 4, 30),
+                next_recommended_treatment_collateral_contact_date=date(2018, 3, 19),
             ),
             compliance_1,
         )
@@ -967,9 +982,11 @@ class TestCaseCompliance(unittest.TestCase):
                 next_recommended_assessment_date=date(2019, 4, 19),
                 face_to_face_count=1,
                 most_recent_face_to_face_date=date(2019, 4, 30),
-                next_recommended_face_to_face_date=date(2019, 6, 4),
+                next_recommended_face_to_face_date=date(2019, 6, 14),
                 most_recent_home_visit_date=date(2019, 4, 30),
+                next_recommended_home_visit_date=date(2020, 4, 29),
                 home_visit_count=1,
+                next_recommended_treatment_collateral_contact_date=date(2019, 3, 19),
             ),
             compliance_2,
         )
@@ -1012,14 +1029,14 @@ class TestCaseCompliance(unittest.TestCase):
             StateSupervisionContact.new_with_defaults(
                 state_code=StateCode.US_ID.value,
                 contact_date=date(2019, 3, 6),
-                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
                 location=StateSupervisionContactLocation.RESIDENCE,
             ),
             StateSupervisionContact.new_with_defaults(
                 state_code=StateCode.US_ID.value,
                 contact_date=date(2019, 4, 30),
-                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
                 location=StateSupervisionContactLocation.RESIDENCE,
             ),
@@ -1029,14 +1046,14 @@ class TestCaseCompliance(unittest.TestCase):
             StateSupervisionContact.new_with_defaults(
                 state_code=StateCode.US_ID.value,
                 contact_date=date(2018, 3, 6),
-                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
                 location=StateSupervisionContactLocation.RESIDENCE,
             ),
             StateSupervisionContact.new_with_defaults(
                 state_code=StateCode.US_ID.value,
                 contact_date=date(2018, 4, 30),
-                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
                 location=StateSupervisionContactLocation.RESIDENCE,
             ),
@@ -1070,7 +1087,6 @@ class TestCaseCompliance(unittest.TestCase):
         compliance_2 = us_id_supervision_compliance_2.get_case_compliance_on_date(
             compliance_evaluation_date_2
         )
-
         self.assertEqual(
             SupervisionCaseCompliance(
                 date_of_evaluation=compliance_evaluation_date_1,
@@ -1082,10 +1098,11 @@ class TestCaseCompliance(unittest.TestCase):
                 next_recommended_face_to_face_date=date(2018, 3, 8),
                 most_recent_home_visit_date=None,
                 home_visit_count=0,
+                next_recommended_home_visit_date=date(2018, 4, 4),
+                next_recommended_treatment_collateral_contact_date=date(2018, 3, 19),
             ),
             compliance_1,
         )
-
         self.assertEqual(
             SupervisionCaseCompliance(
                 date_of_evaluation=compliance_evaluation_date_2,
@@ -1097,6 +1114,8 @@ class TestCaseCompliance(unittest.TestCase):
                 next_recommended_face_to_face_date=date(2019, 3, 8),
                 most_recent_home_visit_date=None,
                 home_visit_count=0,
+                next_recommended_home_visit_date=date(2019, 4, 4),
+                next_recommended_treatment_collateral_contact_date=date(2019, 3, 19),
             ),
             compliance_2,
         )
