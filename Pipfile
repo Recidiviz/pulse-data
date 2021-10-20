@@ -149,6 +149,7 @@ beautifulsoup4 = "*"
 paramiko = "*"
 tqdm = "*"
 linearmodels = "*"
+types-itsdangerous = "*"
 
 [requires]
 python_version = "3.8"
