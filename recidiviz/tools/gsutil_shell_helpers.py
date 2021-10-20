@@ -34,6 +34,9 @@ def is_empty_response(e: RuntimeError) -> bool:
     ) or "CommandException: No URLs matched" in str(e)
 
 
+GSUTIL_DEFAULT_TIMEOUT_SEC = 60 * 20  # 20 minutes
+
+
 def gsutil_ls(
     gs_path: str, directories_only: bool = False, allow_empty: bool = False
 ) -> List[str]:
@@ -56,7 +59,9 @@ def gsutil_ls(
 
     command = f'gsutil ls {flags} "{gs_path}"'
     try:
-        res = run_command(command, assert_success=True)
+        res = run_command(
+            command, assert_success=True, timeout_sec=GSUTIL_DEFAULT_TIMEOUT_SEC
+        )
     except RuntimeError as e:
         if allow_empty and is_empty_response(e):
             return []
@@ -79,7 +84,9 @@ def gsutil_cp(from_path: str, to_path: str, allow_empty: bool = False) -> None:
     """
     command = f'gsutil {_GSUTIL_PARALLEL_COMMAND_OPTIONS} cp "{from_path}" "{to_path}"'
     try:
-        run_command(command, assert_success=True)
+        run_command(
+            command, assert_success=True, timeout_sec=GSUTIL_DEFAULT_TIMEOUT_SEC
+        )
     except RuntimeError as e:
         if not allow_empty or not is_empty_response(e):
             raise e
@@ -94,7 +101,9 @@ def gsutil_mv(from_path: str, to_path: str, allow_empty: bool = False) -> None:
 
     command = f'gsutil {_GSUTIL_PARALLEL_COMMAND_OPTIONS} mv "{from_path}" "{to_path}"'
     try:
-        run_command(command, assert_success=True)
+        run_command(
+            command, assert_success=True, timeout_sec=GSUTIL_DEFAULT_TIMEOUT_SEC
+        )
     except RuntimeError as e:
         if not allow_empty or not is_empty_response(e):
             raise e
