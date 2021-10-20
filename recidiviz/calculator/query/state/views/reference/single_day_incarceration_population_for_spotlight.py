@@ -16,10 +16,12 @@
 # =============================================================================
 """Event based incarceration population for the most recent date of incarceration."""
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import (
     dataset_config,
     state_specific_query_strings,
+)
+from recidiviz.calculator.query.state.views.public_dashboard.utils import (
+    spotlight_age_buckets,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -56,7 +58,7 @@ SINGLE_DAY_INCARCERATION_POPULATION_FOR_SPOTLIGHT_VIEW_BUILDER = SimpleBigQueryV
     description=SINGLE_DAY_INCARCERATION_POPULATION_FOR_SPOTLIGHT_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     state_specific_facility_exclusion=state_specific_query_strings.state_specific_facility_exclusion(),
-    age_bucket=bq_utils.age_bucket_grouping(use_external_unknown_when_null=True),
+    age_bucket=spotlight_age_buckets(),
 )
 
 if __name__ == "__main__":
