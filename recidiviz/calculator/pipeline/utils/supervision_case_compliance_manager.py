@@ -119,6 +119,7 @@ class StateSupervisionCaseComplianceManager:
         next_recommended_assessment_date = None
         next_recommended_face_to_face_date = None
         next_recommended_home_visit_date = None
+        next_recommended_treatment_collateral_contact_date = None
 
         if self._guidelines_applicable_for_case(compliance_evaluation_date):
             next_recommended_assessment_date = self._next_recommended_assessment_date(
@@ -131,6 +132,12 @@ class StateSupervisionCaseComplianceManager:
 
             next_recommended_home_visit_date = self._next_recommended_home_visit_date(
                 compliance_evaluation_date
+            )
+
+            next_recommended_treatment_collateral_contact_date = (
+                self._next_recommended_treatment_collateral_contact_date(
+                    compliance_evaluation_date
+                )
             )
 
         return SupervisionCaseCompliance(
@@ -148,6 +155,10 @@ class StateSupervisionCaseComplianceManager:
             ),
             next_recommended_home_visit_date=next_recommended_home_visit_date,
             home_visit_count=home_visit_count,
+            most_recent_treatment_collateral_contact_date=self._most_recent_treatment_collateral_contact(
+                compliance_evaluation_date
+            ),
+            next_recommended_treatment_collateral_contact_date=next_recommended_treatment_collateral_contact_date,
             recommended_supervision_downgrade_level=self._get_recommended_supervision_downgrade_level(
                 compliance_evaluation_date
             ),
@@ -180,18 +191,10 @@ class StateSupervisionCaseComplianceManager:
         self, compliance_evaluation_date: date
     ) -> Optional[date]:
         """Gets the most recent face to face contact date. If there is not any, it returns None."""
-        applicable_contacts = self._get_applicable_face_to_face_contacts_between_dates(
-            self.start_of_supervision, compliance_evaluation_date
+        return self._default_most_recent_contact_date(
+            compliance_evaluation_date,
+            self._get_applicable_face_to_face_contacts_between_dates,
         )
-        contact_dates = [
-            contact.contact_date
-            for contact in applicable_contacts
-            if contact.contact_date is not None
-        ]
-        if not contact_dates:
-            return None
-
-        return max(contact_dates)
 
     def _face_to_face_contacts_on_date(self, compliance_evaluation_date: date) -> int:
         """Returns the number of face-to-face contacts that were completed on compliance_evaluation_date."""
@@ -275,18 +278,53 @@ class StateSupervisionCaseComplianceManager:
         self, compliance_evaluation_date: date
     ) -> Optional[date]:
         """Gets the most recent home visit contact date. If there is not any, it returns None."""
-        applicable_contacts = self._get_applicable_home_visits_between_dates(
-            self.start_of_supervision, compliance_evaluation_date
+        return self._default_most_recent_contact_date(
+            compliance_evaluation_date, self._get_applicable_home_visits_between_dates
         )
-        contact_dates = [
-            contact.contact_date
-            for contact in applicable_contacts
-            if contact.contact_date is not None
-        ]
-        if not contact_dates:
-            return None
 
-        return max(contact_dates)
+    def _most_recent_treatment_collateral_contact(
+        self, compliance_evaluation_date: date
+    ) -> Optional[date]:
+        """Gets the most recent face to face contact date. If there is not any, it returns None."""
+        return self._default_most_recent_contact_date(
+            compliance_evaluation_date,
+            self._get_applicable_treatment_collateral_contacts_between_dates,
+        )
+
+    def _treatment_collateral_contacts_on_date(
+        self, compliance_evaluation_date: date
+    ) -> int:
+        """Returns the number of treatment collateral contacts that were completed on compliance_evaluation_date."""
+        applicable_contacts = (
+            self._get_applicable_treatment_collateral_contacts_between_dates(
+                lower_bound_inclusive=compliance_evaluation_date,
+                upper_bound_inclusive=compliance_evaluation_date,
+            )
+        )
+
+        return len(applicable_contacts)
+
+    def _get_applicable_treatment_collateral_contacts_between_dates(
+        self, lower_bound_inclusive: date, upper_bound_inclusive: date
+    ) -> List[StateSupervisionContact]:
+        """Returns the completed contacts that can be counted as treatment provider
+        collateral contacts and occurred between the lower_bound_inclusive date and the
+        upper_bound_inclusive date.
+        """
+        return [
+            contact
+            for contact in self.supervision_contacts
+            if contact.contact_type
+            in (
+                StateSupervisionContactType.COLLATERAL,
+                StateSupervisionContactType.BOTH_COLLATERAL_AND_DIRECT,
+            )
+            and contact.location == StateSupervisionContactLocation.TREATMENT_PROVIDER
+            # Contact must be marked as completed
+            and contact.status == StateSupervisionContactStatus.COMPLETED
+            and contact.contact_date is not None
+            and lower_bound_inclusive <= contact.contact_date <= upper_bound_inclusive
+        ]
 
     def _get_recommended_supervision_downgrade_level(
         self, evaluation_date: date
@@ -325,6 +363,29 @@ class StateSupervisionCaseComplianceManager:
 
         return recommended_level
 
+    def _default_most_recent_contact_date(
+        self,
+        compliance_evaluation_date: date,
+        get_applicable_contacts_function: Callable[
+            [date, date], List[StateSupervisionContact]
+        ],
+    ) -> Optional[date]:
+        """Provides a base implementation, describing when the most recent contact
+        occurred. Returns None if compliance standards are unknown or no contacts
+        have occurred."""
+        applicable_contacts = get_applicable_contacts_function(
+            self.start_of_supervision, compliance_evaluation_date
+        )
+        contact_dates = [
+            contact.contact_date
+            for contact in applicable_contacts
+            if contact.contact_date is not None
+        ]
+        if not contact_dates:
+            return None
+
+        return max(contact_dates)
+
     def _default_next_recommended_contact_date_given_requirements(
         self,
         compliance_evaluation_date: date,
@@ -336,9 +397,9 @@ class StateSupervisionCaseComplianceManager:
         ],
         use_business_days: bool,
     ) -> Optional[date]:
-        """Provides a base implementation, describing when the next face-to-face contact
+        """Provides a base implementation, describing when the next contact
         should be. Returns None if compliance standards are unknown or no subsequent
-        face-to-face contacts are required."""
+        contacts are required."""
 
         if required_contacts_per_period == 0:
             return None
@@ -414,6 +475,14 @@ class StateSupervisionCaseComplianceManager:
     ) -> Optional[date]:
         """Returns when the next home visit should be. Returns None if the compliance standards are unknown or
         no subsequent home visits are required."""
+
+    @abc.abstractmethod
+    def _next_recommended_treatment_collateral_contact_date(
+        self, compliance_evaluation_date: date
+    ) -> Optional[date]:
+        """Returns when the next treatment collateral contact should be. Returns None if
+        compliance standards are unknown or no subsequent treatment collateral contacts
+        are required."""
 
     @abc.abstractmethod
     def _get_supervision_level_policy(

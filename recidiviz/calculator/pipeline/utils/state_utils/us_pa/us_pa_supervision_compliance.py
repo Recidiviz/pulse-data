@@ -253,6 +253,12 @@ class UsPaSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
             use_business_days=False,
         )
 
+    def _next_recommended_treatment_collateral_contact_date(
+        self, _compliance_evaluation_date: date
+    ) -> Optional[date]:
+        """US_PA currently has no treatment collateral contacts requirements."""
+        return None
+
     def _get_required_home_visits_and_period_days(self) -> Tuple[int, int]:
         """Returns the number of home visits that are required within time period (in days) for a supervision case"""
         supervision_level: Optional[
