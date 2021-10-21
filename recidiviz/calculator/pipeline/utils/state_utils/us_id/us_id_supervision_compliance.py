@@ -394,6 +394,12 @@ class UsIdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
                 "home visit."
             )
 
+        if (
+            self.supervision_period.supervision_level
+            not in US_ID_SUPERVISION_HOME_VISIT_FREQUENCY_REQUIREMENTS
+        ):
+            return None
+
         (
             required_contacts,
             period_days,
@@ -420,6 +426,12 @@ class UsIdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
                 "Supervision level not provided and so cannot calculate next recommended "
                 "treatment collateral contact."
             )
+
+        if (
+            self.supervision_period.supervision_level
+            not in US_ID_SUPERVISION_TREATMENT_COLLATERAL_CONTACT_FREQUENCY_REQUIREMENTS
+        ):
+            return None
 
         (
             required_contacts,
