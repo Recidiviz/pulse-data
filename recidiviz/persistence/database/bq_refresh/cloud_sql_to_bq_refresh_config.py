@@ -373,9 +373,7 @@ class CloudSqlToBQConfig:
                 table=table, state_code=state_code
             )
             dataset_key = f"{state_code.value.lower()}_specific_dataset"
-            table_key = f"{state_code.value.lower()}_specific_table_id"
             kwargs[dataset_key] = address.dataset_id
-            kwargs[table_key] = address.table_id
 
             bq_query_builder = BigQuerySchemaTableRegionFilteredQueryBuilder(
                 project_id=metadata.project_id(),

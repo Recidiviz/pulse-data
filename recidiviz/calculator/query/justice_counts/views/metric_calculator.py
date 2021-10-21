@@ -920,7 +920,6 @@ class CompareToPriorYearViewBuilder(SimpleBigQueryViewBuilder):
             view_query_template=COMPARISON_VIEW_TEMPLATE,
             # Query Format Arguments
             description=f"{metric_name} comparison -- {input_view.view_id} compared to a year prior",
-            base_dataset=dataset_config.JUSTICE_COUNTS_BASE_DATASET,
             input_dataset=input_view.dataset_id,
             input_table=input_view.view_id,
             compare_dataset=compare_view.dataset_id,
@@ -979,7 +978,6 @@ class DimensionsToColumnsViewBuilder(SimpleBigQueryViewBuilder):
             view_query_template=DIMENSIONS_TO_COLUMNS_TEMPLATE,
             # Query Format Arguments
             description=f"{metric_name} with dimensions",
-            base_dataset=dataset_config.JUSTICE_COUNTS_BASE_DATASET,
             input_dataset=input_view.table_for_query.dataset_id,
             input_table=input_view.table_for_query.table_id,
             aggregated_dimensions_to_columns_clause=aggregated_dimensions_to_columns_clause,

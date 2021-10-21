@@ -110,7 +110,6 @@ def make_most_recent_metric_view_builders(
                 job_recency_primary_keys=job_recency_primary_keys,
                 metrics_dataset=DATAFLOW_METRICS_DATASET,
                 metric_table=metric_name,
-                materialized_metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
                 should_materialize=True,
                 metrics_filter="WHERE included_in_state_population = TRUE",
             ),
@@ -124,7 +123,6 @@ def make_most_recent_metric_view_builders(
                 job_recency_primary_keys=job_recency_primary_keys,
                 metrics_dataset=DATAFLOW_METRICS_DATASET,
                 metric_table=metric_name,
-                materialized_metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
                 should_materialize=True,
                 metrics_filter="WHERE included_in_state_population = FALSE",
             ),
@@ -139,7 +137,6 @@ def make_most_recent_metric_view_builders(
             job_recency_primary_keys=job_recency_primary_keys,
             metrics_dataset=DATAFLOW_METRICS_DATASET,
             metric_table=metric_name,
-            materialized_metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
             should_materialize=True,
             metrics_filter="",
         )

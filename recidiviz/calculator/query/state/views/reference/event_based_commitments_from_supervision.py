@@ -57,7 +57,6 @@ EVENT_BASED_COMMITMENTS_FROM_SUPERVISION_VIEW_BUILDER = SimpleBigQueryViewBuilde
     view_query_template=EVENT_BASED_COMMITMENTS_FROM_SUPERVISION_QUERY_TEMPLATE,
     description=EVENT_BASED_COMMITMENTS_FROM_SUPERVISION_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
-    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     district_dimension=bq_utils.unnest_district(),
     supervision_type_dimension=bq_utils.unnest_supervision_type(),
     thirty_six_month_filter=bq_utils.thirty_six_month_filter(),

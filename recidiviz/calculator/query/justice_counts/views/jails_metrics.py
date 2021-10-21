@@ -228,7 +228,6 @@ class JailOutputViewBuilder(SimpleBigQueryViewBuilder):
             should_materialize=True,
             # Query Format Arguments
             description=f"{metric_name} dashboard output",
-            base_dataset=dataset_config.JUSTICE_COUNTS_BASE_DATASET,
             input_dataset=input_view.dataset_id,
             input_table=input_view.view_id,
             metric_output_name=metric_name,
