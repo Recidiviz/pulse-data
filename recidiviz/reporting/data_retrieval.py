@@ -260,16 +260,9 @@ def _get_mismatch_data_for_officer(
                 session, user_context, opp.person_external_id
             )
 
-            client_name = json.loads(client.full_name)
-            # TODO(#7957): We shouldn't be converting to title-case because there
-            # are many names whose preferred casing is not that. Once we figure out
-            # how to access the original name casing, we should use that wherever possible.
-            given_names = client_name.get("given_names", "").title()
-            surname = client_name.get("surname", "").title()
-            full_name = " ".join([given_names, surname]).strip()
             mismatches.append(
                 {
-                    "name": full_name,
+                    "full_name": client.full_name,
                     "person_external_id": client.person_external_id,
                     "last_score": opp.opportunity_metadata["assessmentScore"],
                     "last_assessment_date": opp.opportunity_metadata[
