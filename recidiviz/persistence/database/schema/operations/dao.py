@@ -47,9 +47,7 @@ def get_ingest_file_metadata_row(
 def get_ingest_file_metadata_row_for_path(
     session: Session, region_code: str, path: GcsfsFilePath, ingest_database_name: str
 ) -> schema.DirectIngestIngestFileMetadata:
-    """Returns metadata information for the provided path. If the file has not yet been registered in the
-    appropriate metadata table, this function will generate a file_id to return with the metadata.
-    """
+    """Returns metadata information for the provided path, throws if it doesn't exist."""
 
     parts = filename_parts_from_path(path)
 
@@ -80,9 +78,7 @@ def get_raw_file_metadata_row_for_path(
     region_code: str,
     path: GcsfsFilePath,
 ) -> schema.DirectIngestRawFileMetadata:
-    """Returns metadata information for the provided path. If the file has not yet been registered in the
-    appropriate metadata table, this function will generate a file_id to return with the metadata.
-    """
+    """Returns metadata information for the provided path, throws if it doesn't exist."""
 
     parts = filename_parts_from_path(path)
 
@@ -97,6 +93,24 @@ def get_raw_file_metadata_row_for_path(
     if len(results) != 1:
         raise ValueError(
             f"Unexpected number of metadata results for path {path.abs_path()}: [{len(results)}]"
+        )
+
+    return one(results)
+
+
+def get_sftp_file_metadata_row_for_path(
+    session: Session, region_code: str, remote_file_path: str
+) -> schema.DirectIngestSftpFileMetadata:
+    """Returns metadata information for the provided path, throws if it doesn't exist."""
+    results = (
+        session.query(schema.DirectIngestSftpFileMetadata)
+        .filter_by(region_code=region_code.upper(), remote_file_path=remote_file_path)
+        .all()
+    )
+
+    if len(results) != 1:
+        raise ValueError(
+            f"Unexpected number of metadata results for path {remote_file_path}: [{len(results)}]"
         )
 
     return one(results)

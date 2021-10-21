@@ -19,8 +19,6 @@
 The below schema uses only generic SQLAlchemy types, and therefore should be
 portable between database implementations.
 """
-from typing import Any
-
 from sqlalchemy import (
     Boolean,
     CheckConstraint,
@@ -42,36 +40,46 @@ direct_ingest_instance = Enum(
 )
 
 
-class _DirectIngestFileMetadataRowSharedColumns:
-    """A mixin which defines all columns common to each of the direct ingest file metadata columns."""
+class DirectIngestSftpFileMetadata(OperationsBase):
+    """Represents the metadata known about a file that we processed from SFTP."""
 
-    # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_: Any, **__: Any) -> "_DirectIngestFileMetadataRowSharedColumns":
-        if cls is _DirectIngestFileMetadataRowSharedColumns:
-            raise Exception(
-                "_DirectIngestFileMetadataRowSharedColumns cannot be instantiated"
-            )
-        return super().__new__(cls)
+    __tablename__ = "direct_ingest_sftp_file_metadata"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "region_code",
+            "remote_file_path",
+            name="one_remote_sftp_name_per_region",
+        ),
+        CheckConstraint(
+            "discovery_time IS NOT NULL", name="nonnull_sftp_file_discovery_time"
+        ),
+        CheckConstraint(
+            "remote_file_path IS NOT NULL", name="nonnull_sftp_remote_file_name"
+        ),
+        CheckConstraint(
+            "(processed_time IS NULL) OR (discovery_time <= processed_time)",
+            name="discovery_post_processed_time",
+        ),
+    )
 
     file_id = Column(Integer, primary_key=True)
 
     region_code = Column(String(255), nullable=False, index=True)
-    file_tag = Column(String(255), nullable=False, index=True)
 
-    # Unprocessed normalized file name for this file, either set at time of file discovery (raw files) or before export
-    # (ingest view files).
-    normalized_file_name = Column(String(255), index=True)
+    # The remote file path on the SFTP server
+    remote_file_path = Column(String(255), index=True)
 
-    # Time when the file is actually discovered by our controller's handle_new_files endpoint.
+    # Time when the file is actually discovered by the SFTP download controller
     discovery_time = Column(DateTime)
 
-    # Time when we have finished fully processing this file (either uploading to BQ or importing to Postgres).
+    # Time when we have finished fully processing this file by downloading to the SFTP bucket
     processed_time = Column(DateTime)
 
 
-class DirectIngestRawFileMetadata(
-    OperationsBase, _DirectIngestFileMetadataRowSharedColumns
-):
+class DirectIngestRawFileMetadata(OperationsBase):
+    """Represents the metadata known about a raw data file that we processed through direct ingest."""
+
     __tablename__ = "direct_ingest_raw_file_metadata"
 
     __table_args__ = (
@@ -86,12 +94,26 @@ class DirectIngestRawFileMetadata(
         ),
     )
 
+    file_id = Column(Integer, primary_key=True)
+
+    region_code = Column(String(255), nullable=False, index=True)
+
+    # Shortened name for the raw file that corresponds to its YAML schema definition
+    file_tag = Column(String(255), nullable=False, index=True)
+
+    # Unprocessed normalized file name for this file, set at time of file discovery.
+    normalized_file_name = Column(String(255), index=True)
+
+    # Time when the file is actually discovered by our controller's handle_new_files endpoint.
+    discovery_time = Column(DateTime)
+
+    # Time when we have finished fully processing this file by uploading to BQ.
+    processed_time = Column(DateTime)
+
     datetimes_contained_upper_bound_inclusive = Column(DateTime, nullable=False)
 
 
-class DirectIngestIngestFileMetadata(
-    OperationsBase, _DirectIngestFileMetadataRowSharedColumns
-):
+class DirectIngestIngestFileMetadata(OperationsBase):
     """Represents the metadata known about a file that we processed through direct ingest."""
 
     __tablename__ = "direct_ingest_ingest_file_metadata"
@@ -119,6 +141,22 @@ class DirectIngestIngestFileMetadata(
             name="split_files_created_with_file_name",
         ),
     )
+
+    file_id = Column(Integer, primary_key=True)
+
+    region_code = Column(String(255), nullable=False, index=True)
+
+    # Shortened name for the raw file that corresponds to its YAML schema definition
+    file_tag = Column(String(255), nullable=False, index=True)
+
+    # Unprocessed normalized file name for this file before export
+    normalized_file_name = Column(String(255), index=True)
+
+    # Time when the file is actually discovered by our controller's handle_new_files endpoint.
+    discovery_time = Column(DateTime)
+
+    # Time when we have finished fully processing this file importing to Postgres.
+    processed_time = Column(DateTime)
 
     # These fields are first set at export job creation time
     is_invalidated = Column(Boolean, nullable=False)
