@@ -18,14 +18,11 @@
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.county import dataset_config
-from recidiviz.calculator.query.county.views.vera import vera_view_constants
 from recidiviz.calculator.query.county.views.vera.region_fips_map import (
     REGION_FIPS_MAP_VIEW_BUILDER,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
-
-VERA_DATASET = vera_view_constants.VERA_DATASET
 
 SCRAPER_SUCCESS_RATE_VIEW_NAME = "scraper_success_rate"
 
@@ -68,7 +65,6 @@ SCRAPER_SUCCESS_RATE_VIEW_BUILDER: SimpleBigQueryViewBuilder = (
         view_id=SCRAPER_SUCCESS_RATE_VIEW_NAME,
         view_query_template=SCRAPER_SUCCESS_RATE_VIEW_QUERY_TEMPLATE,
         description=SCRAPER_SUCCESS_RATE_VIEW_DESCRIPTION,
-        vera_dataset=VERA_DATASET,
         scraper_success_table="scraper_success",
         single_count_aggregate_table="single_count_aggregate",
         region_fips_map_view=REGION_FIPS_MAP_VIEW_BUILDER.view_id,

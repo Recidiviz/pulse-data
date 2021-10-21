@@ -48,7 +48,6 @@ EVENT_BASED_ADMISSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=EVENT_BASED_ADMISSIONS_QUERY_TEMPLATE,
     description=EVENT_BASED_ADMISSIONS_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
-    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     district_dimension=bq_utils.unnest_district(district_column="county_of_residence"),
     thirty_six_month_filter=bq_utils.thirty_six_month_filter(),
 )

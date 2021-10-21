@@ -17,7 +17,6 @@
 """Current total population by compartment, outflow compartment, and months until transition will be made"""
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
-    ANALYST_VIEWS_DATASET,
     POPULATION_PROJECTION_DATASET,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -92,7 +91,6 @@ SUPERVISION_REMAINING_SENTENCES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=REMAINING_SENTENCES_VIEW_NAME,
     view_query_template=REMAINING_SENTENCES_QUERY_TEMPLATE,
     description=REMAINING_SENTENCES_VIEW_DESCRIPTION,
-    analyst_dataset=ANALYST_VIEWS_DATASET,
     population_projection_dataset=POPULATION_PROJECTION_DATASET,
     should_materialize=False,
 )

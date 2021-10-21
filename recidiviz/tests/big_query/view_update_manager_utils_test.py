@@ -444,15 +444,17 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
         sample_views = [
             {
                 "view_id": "my_fake_view",
-                "view_query": "SELECT NULL LIMIT 0",
+                "view_query_template": "SELECT NULL LIMIT 0",
             },
-            {"view_id": "my_other_fake_view", "view_query": "SELECT NULL LIMIT 0"},
+            {
+                "view_id": "my_other_fake_view",
+                "view_query_template": "SELECT NULL LIMIT 0",
+            },
         ]
         mock_view_builders = [
             SimpleBigQueryViewBuilder(
                 dataset_id="dataset_1",
                 description=f"{view['view_id']} description",
-                view_query_template="a",
                 should_materialize=False,
                 projects_to_deploy=None,
                 materialized_address_override=None,
@@ -630,15 +632,17 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
         sample_views = [
             {
                 "view_id": "my_fake_view",
-                "view_query": "SELECT NULL LIMIT 0",
+                "view_query_template": "SELECT NULL LIMIT 0",
             },
-            {"view_id": "my_other_fake_view", "view_query": "SELECT NULL LIMIT 0"},
+            {
+                "view_id": "my_other_fake_view",
+                "view_query_template": "SELECT NULL LIMIT 0",
+            },
         ]
         mock_view_builders = [
             SimpleBigQueryViewBuilder(
                 dataset_id="dataset_1",
                 description=f"{view['view_id']} description",
-                view_query_template="a",
                 should_materialize=False,
                 projects_to_deploy=None,
                 materialized_address_override=None,
@@ -703,14 +707,13 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
         sample_views = [
             {
                 "view_id": "my_fake_view",
-                "view_query": "SELECT NULL LIMIT 0",
+                "view_query_template": "SELECT NULL LIMIT 0",
             }
         ]
         mock_view_builders = [
             SimpleBigQueryViewBuilder(
                 dataset_id="dataset_1",
                 description=f"{view['view_id']} description",
-                view_query_template="a",
                 should_materialize=False,
                 projects_to_deploy=None,
                 materialized_address_override=None,

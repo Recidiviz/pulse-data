@@ -73,7 +73,6 @@ US_MO_SENTENCE_STATUSES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=US_MO_SENTENCE_STATUSES_QUERY_TEMPLATE,
     description=US_MO_SENTENCE_STATUSES_DESCRIPTION,
     base_dataset=dataset_config.STATE_BASE_DATASET,
-    static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
 )
 
 if __name__ == "__main__":

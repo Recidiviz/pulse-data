@@ -53,7 +53,6 @@ EVENT_BASED_PROGRAM_REFERRALS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=EVENT_BASED_PROGRAM_REFERRALS_QUERY_TEMPLATE,
     description=EVENT_BASED_PROGRAM_REFERRALS_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
-    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     age_bucket=bq_utils.age_bucket_grouping(),
     district_dimension=bq_utils.unnest_district(),
     supervision_type_dimension=bq_utils.unnest_supervision_type(),
