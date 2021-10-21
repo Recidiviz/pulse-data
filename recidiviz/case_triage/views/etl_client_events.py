@@ -78,6 +78,7 @@ contacts AS (
         TO_JSON_STRING(
             STRUCT (
                 state_supervision_contact.contact_type, 
+                state_supervision_contact.contact_method,
                 state_supervision_contact.location
             )
         ) AS event_metadata
