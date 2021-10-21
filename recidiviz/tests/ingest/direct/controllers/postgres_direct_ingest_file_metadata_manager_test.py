@@ -37,6 +37,7 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
 from recidiviz.ingest.direct.controllers.postgres_direct_ingest_file_metadata_manager import (
     PostgresDirectIngestFileMetadataManager,
     PostgresDirectIngestRawFileMetadataManager,
+    PostgresDirectIngestSftpFileMetadataManager,
 )
 from recidiviz.ingest.direct.errors import DirectIngestInstanceError
 from recidiviz.persistence.database.schema.operations import schema
@@ -47,6 +48,7 @@ from recidiviz.persistence.entity.base_entity import Entity, entity_graph_eq
 from recidiviz.persistence.entity.operations.entities import (
     DirectIngestIngestFileMetadata,
     DirectIngestRawFileMetadata,
+    DirectIngestSftpFileMetadata,
 )
 from recidiviz.tests.utils import fakes
 
@@ -73,6 +75,10 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
         )
 
         self.raw_metadata_manager = PostgresDirectIngestRawFileMetadataManager(
+            region_code="us_xx", ingest_database_name="us_xx_ingest_database_name"
+        )
+
+        self.sftp_metadata_manager = PostgresDirectIngestSftpFileMetadataManager(
             region_code="us_xx", ingest_database_name="us_xx_ingest_database_name"
         )
 
@@ -1230,4 +1236,155 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
         # Assert
         self.assertIsNone(
             self.metadata_manager.get_date_of_earliest_unprocessed_ingest_file()
+        )
+
+    def test_get_sftp_file_metadata_when_not_yet_registered(self) -> None:
+        with self.assertRaises(ValueError):
+            self.metadata_manager.get_sftp_file_metadata("nonexistent.csv")
+
+    @freeze_time("2015-01-02T03:04:06")
+    def test_get_sftp_file_metadata(self) -> None:
+        # Arrange
+        sftp_path = "Recidiviz20150102/somefile.csv"
+
+        # Act
+        self.metadata_manager.mark_sftp_file_as_discovered(sftp_path)
+        metadata = self.metadata_manager.get_sftp_file_metadata(sftp_path)
+        metadata_secondary = self.metadata_manager_secondary.get_sftp_file_metadata(
+            sftp_path
+        )
+
+        # Assert
+        expected_metadata = DirectIngestSftpFileMetadata.new_with_defaults(
+            region_code="US_XX",
+            discovery_time=datetime.datetime(2015, 1, 2, 3, 4, 6),
+            remote_file_path=sftp_path,
+            processed_time=None,
+        )
+
+        self.assertIsInstance(metadata, DirectIngestSftpFileMetadata)
+        self.assertIsNotNone(metadata.file_id)
+        self.assertEqual(expected_metadata, metadata)
+
+        # Raw file metadata is not impacted by which ingest database the metadata
+        # manager is associated with.
+        self.assertIsInstance(metadata_secondary, DirectIngestSftpFileMetadata)
+        self.assertIsNotNone(metadata_secondary.file_id)
+        self.assertEqual(expected_metadata, metadata_secondary)
+
+    @freeze_time("2015-01-02T03:04:06")
+    def test_get_sftp_file_metadata_unique_to_state(self) -> None:
+        # Arrange
+        sftp_path = "Recidiviz20150102/somefile.csv"
+
+        self.metadata_manager_other_region.mark_sftp_file_as_discovered(sftp_path)
+
+        # Act
+        self.metadata_manager.mark_sftp_file_as_discovered(sftp_path)
+        metadata = self.metadata_manager.get_sftp_file_metadata(sftp_path)
+
+        # Assert
+        expected_metadata = DirectIngestSftpFileMetadata.new_with_defaults(
+            region_code=self.metadata_manager.region_code,
+            discovery_time=datetime.datetime(2015, 1, 2, 3, 4, 6),
+            remote_file_path=sftp_path,
+            processed_time=None,
+        )
+
+        self.assertIsInstance(metadata, DirectIngestSftpFileMetadata)
+        self.assertIsNotNone(metadata.file_id)
+
+        self.assertEqual(expected_metadata, metadata)
+
+    def test_has_sftp_file_been_discovered(self) -> None:
+        # Arrange
+        sftp_path = "Recidiviz20150102/somefile.csv"
+
+        # Act
+        self.sftp_metadata_manager.mark_sftp_file_as_discovered(sftp_path)
+
+        # Assert
+        self.assertTrue(self.metadata_manager.has_sftp_file_been_discovered(sftp_path))
+        self.assertTrue(
+            self.sftp_metadata_manager.has_sftp_file_been_discovered(sftp_path)
+        )
+        self.assertTrue(
+            self.metadata_manager_secondary.has_sftp_file_been_discovered(sftp_path)
+        )
+
+    def test_has_sftp_file_been_discovered_returns_false_for_no_rows(self) -> None:
+        # Arrange
+        sftp_path = "Recidiviz20150102/somefile.csv"
+
+        # Assert
+        self.assertFalse(self.metadata_manager.has_sftp_file_been_discovered(sftp_path))
+        self.assertFalse(
+            self.sftp_metadata_manager.has_sftp_file_been_discovered(sftp_path)
+        )
+        self.assertFalse(
+            self.metadata_manager_secondary.has_sftp_file_been_discovered(sftp_path)
+        )
+
+    def test_has_sftp_file_been_processed(self) -> None:
+        # Arrange
+        sftp_path = "Recidiviz20150102/somefile.csv"
+
+        # Act
+        self.sftp_metadata_manager.mark_sftp_file_as_discovered(sftp_path)
+        self.sftp_metadata_manager.mark_sftp_file_as_processed(sftp_path)
+
+        # Assert
+        self.assertTrue(self.metadata_manager.has_sftp_file_been_processed(sftp_path))
+        self.assertTrue(
+            self.sftp_metadata_manager.has_sftp_file_been_processed(sftp_path)
+        )
+        self.assertTrue(
+            self.metadata_manager_secondary.has_sftp_file_been_processed(sftp_path)
+        )
+
+    def test_has_sftp_file_been_processed_returns_false_for_no_rows(self) -> None:
+        # Arrange
+        sftp_path = "Recidiviz20150102/somefile.csv"
+
+        # Assert
+        self.assertFalse(self.metadata_manager.has_sftp_file_been_processed(sftp_path))
+        self.assertFalse(
+            self.sftp_metadata_manager.has_sftp_file_been_processed(sftp_path)
+        )
+        self.assertFalse(
+            self.metadata_manager_secondary.has_sftp_file_been_processed(sftp_path)
+        )
+
+    def test_has_sftp_file_been_processed_returns_false_for_no_processed_time(
+        self,
+    ) -> None:
+        # Arrange
+        sftp_path = "Recidiviz20150102/somefile.csv"
+
+        # Act
+        self.sftp_metadata_manager.mark_sftp_file_as_discovered(sftp_path)
+
+        # Assert
+        self.assertFalse(self.metadata_manager.has_sftp_file_been_processed(sftp_path))
+        self.assertFalse(
+            self.sftp_metadata_manager.has_sftp_file_been_processed(sftp_path)
+        )
+        self.assertFalse(
+            self.metadata_manager_secondary.has_sftp_file_been_processed(sftp_path)
+        )
+
+    @freeze_time("2015-01-02T03:05:06.000007")
+    def test_mark_sftp_file_as_processed(self) -> None:
+        # Arrange
+        sftp_path = "Recidiviz20150102/somefile.csv"
+
+        # Act
+        self.metadata_manager.mark_sftp_file_as_discovered(sftp_path)
+        self.metadata_manager.mark_sftp_file_as_processed(sftp_path)
+
+        # Assert
+        metadata = self.metadata_manager.get_sftp_file_metadata(sftp_path)
+
+        self.assertEqual(
+            datetime.datetime(2015, 1, 2, 3, 5, 6, 7), metadata.processed_time
         )

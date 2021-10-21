@@ -27,6 +27,7 @@ from recidiviz.ingest.direct.controllers.direct_ingest_file_metadata_manager imp
     DirectIngestFileMetadataManager,
     DirectIngestIngestFileMetadataManager,
     DirectIngestRawFileMetadataManager,
+    DirectIngestSftpFileMetadataManager,
 )
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
     DIRECT_INGEST_UNPROCESSED_PREFIX,
@@ -47,8 +48,79 @@ from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDat
 from recidiviz.persistence.entity.operations.entities import (
     DirectIngestIngestFileMetadata,
     DirectIngestRawFileMetadata,
+    DirectIngestSftpFileMetadata,
 )
 from recidiviz.utils import environment
+
+
+class PostgresDirectIngestSftpFileMetadataManager(DirectIngestSftpFileMetadataManager):
+    """An implementation for a class that handles writing metadata about each sftp
+    direct ingest file to the operations Postgres table."""
+
+    def __init__(self, region_code: str, ingest_database_name: str) -> None:
+        self.region_code = region_code.upper()
+        self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
+        self.ingest_database_name = ingest_database_name
+
+    def has_sftp_file_been_discovered(self, remote_file_path: str) -> bool:
+        try:
+            _ = self.get_sftp_file_metadata(remote_file_path)
+        except ValueError:
+            return False
+
+        return True
+
+    def mark_sftp_file_as_discovered(self, remote_file_path: str) -> None:
+        with SessionFactory.using_database(self.database_key) as session:
+            session.add(
+                schema.DirectIngestSftpFileMetadata(
+                    region_code=self.region_code,
+                    remote_file_path=remote_file_path,
+                    discovery_time=datetime.datetime.now(tz=pytz.UTC),
+                    processed_time=None,
+                )
+            )
+
+    def get_sftp_file_metadata(
+        self, remote_file_path: str
+    ) -> DirectIngestSftpFileMetadata:
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            metadata = dao.get_sftp_file_metadata_row_for_path(
+                session, self.region_code, remote_file_path
+            )
+            return self._sftp_file_schema_metadata_as_entity(metadata)
+
+    def has_sftp_file_been_processed(self, remote_file_path: str) -> bool:
+        try:
+            metadata = self.get_sftp_file_metadata(remote_file_path)
+        except ValueError:
+            # For sftp data files, if a file's metadata is not present in the database,
+            # then it is assumed to be not processed, as it is seen as not existing.
+            return False
+
+        return metadata.processed_time is not None
+
+    def mark_sftp_file_as_processed(self, remote_file_path: str) -> None:
+        with SessionFactory.using_database(self.database_key) as session:
+            metadata = dao.get_sftp_file_metadata_row_for_path(
+                session, self.region_code, remote_file_path
+            )
+            metadata.processed_time = datetime.datetime.now(tz=pytz.UTC)
+
+    @staticmethod
+    def _sftp_file_schema_metadata_as_entity(
+        schema_metadata: schema.DirectIngestRawFileMetadata,
+    ) -> DirectIngestSftpFileMetadata:
+        entity_metadata = convert_schema_object_to_entity(schema_metadata)
+
+        if not isinstance(entity_metadata, DirectIngestSftpFileMetadata):
+            raise ValueError(
+                f"Unexpected metadata entity type: {type(entity_metadata)}"
+            )
+
+        return entity_metadata
 
 
 class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataManager):
@@ -56,7 +128,7 @@ class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataMana
     direct ingest file to the operations Postgres table.
     """
 
-    def __init__(self, region_code: str, ingest_database_name: str):
+    def __init__(self, region_code: str, ingest_database_name: str) -> None:
         self.region_code = region_code.upper()
         self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
         self.ingest_database_name = ingest_database_name
@@ -65,17 +137,9 @@ class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataMana
         self._check_is_raw_file_path(path)
 
         try:
-            metadata = self.get_raw_file_metadata(path)
+            _ = self.get_raw_file_metadata(path)
         except ValueError:
             return False
-
-        if not metadata:
-            raise ValueError(f"Metadata unexpectedly None for path [{path.abs_path()}]")
-
-        if not isinstance(metadata, DirectIngestRawFileMetadata):
-            raise ValueError(
-                f"Unexpected metadata type [{type(metadata)}] for path [{path.abs_path()}]"
-            )
 
         return True
 
@@ -116,14 +180,6 @@ class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataMana
             # For raw data files, if a file's metadata is not present in the database,
             # then it is assumed to be not processed, as it is seen as not existing.
             return False
-
-        if not metadata:
-            raise ValueError(f"Metadata unexpectedly None for path [{path.abs_path()}]")
-
-        if not isinstance(metadata, DirectIngestRawFileMetadata):
-            raise ValueError(
-                f"Unexpected metadata type [{type(metadata)}] for path [{path.abs_path()}]"
-            )
 
         return metadata.processed_time is not None
 
@@ -493,12 +549,32 @@ class PostgresDirectIngestFileMetadataManager(DirectIngestFileMetadataManager):
 
     def __init__(self, region_code: str, ingest_database_name: str):
         self.region_code = region_code.upper()
+        self.sftp_file_manager = PostgresDirectIngestSftpFileMetadataManager(
+            self.region_code, ingest_database_name
+        )
         self.raw_file_manager = PostgresDirectIngestRawFileMetadataManager(
             self.region_code, ingest_database_name
         )
         self.ingest_file_manager = PostgresDirectIngestIngestFileMetadataManager(
             self.region_code, ingest_database_name
         )
+
+    def has_sftp_file_been_discovered(self, remote_file_path: str) -> bool:
+        return self.sftp_file_manager.has_sftp_file_been_discovered(remote_file_path)
+
+    def mark_sftp_file_as_discovered(self, remote_file_path: str) -> None:
+        return self.sftp_file_manager.mark_sftp_file_as_discovered(remote_file_path)
+
+    def get_sftp_file_metadata(
+        self, remote_file_path: str
+    ) -> DirectIngestSftpFileMetadata:
+        return self.sftp_file_manager.get_sftp_file_metadata(remote_file_path)
+
+    def has_sftp_file_been_processed(self, remote_file_path: str) -> bool:
+        return self.sftp_file_manager.has_sftp_file_been_processed(remote_file_path)
+
+    def mark_sftp_file_as_processed(self, remote_file_path: str) -> None:
+        return self.sftp_file_manager.mark_sftp_file_as_processed(remote_file_path)
 
     def has_raw_file_been_discovered(self, path: GcsfsFilePath) -> bool:
         return self.raw_file_manager.has_raw_file_been_discovered(path)

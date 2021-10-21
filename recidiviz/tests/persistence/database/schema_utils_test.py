@@ -134,6 +134,7 @@ def test_get_all_database_entity_classes() -> None:
     operations_database_entity_names = [
         "DirectIngestIngestFileMetadata",
         "DirectIngestRawFileMetadata",
+        "DirectIngestSftpFileMetadata",
         "DirectIngestInstanceStatus",
     ]
 
@@ -272,6 +273,7 @@ def test_get_all_table_classes() -> None:
     operations_table_names = [
         "direct_ingest_ingest_file_metadata",
         "direct_ingest_raw_file_metadata",
+        "direct_ingest_sftp_file_metadata",
         "direct_ingest_instance_status",
     ]
 
