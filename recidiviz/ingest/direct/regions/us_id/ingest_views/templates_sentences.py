@@ -125,72 +125,7 @@ def _get_relevant_sentence_query_for_type(sentence_type: SentenceType) -> str:
     raise ValueError(f"Unexpected discharge type {sentence_type}")
 
 
-def _create_sentence_query_fragment_args(add_supervision_args: bool = False) -> str:
-    """Helper method that creates query parameters meant for combining sentences rows with their corresponding
-    amendment rows. If |add_supervision_args| is True, adds arguments unique to supervision sentences.
-    """
-    base_sentence_args = [
-        "mitt_srl",
-        "sent_no",
-        "sent_disp",
-    ]
-    supervision_base_sentence_args = ["prob_no"]
-
-    amended_sentence_args = [
-        "off_dtd",
-        "off_cat",
-        "off_cd",
-        "off_deg",
-        "off_cnt",
-        "sent_min_yr",
-        "sent_min_mo",
-        "sent_min_da",
-        "sent_max_yr",
-        "sent_max_mo",
-        "sent_max_da",
-        "law_cd",
-        "vio_doc",
-        "vio_1311",
-        "lifer",
-        "enhanced",
-        "govn_sent",
-        "sent_gtr_dtd",
-        "sent_beg_dtd",
-        "sent_par_dtd",
-        "sent_ind_dtd",
-        "sent_ft_dtd",
-        "sent_sat_dtd",
-        "consec_typ",
-        "consec_sent_no",
-        "am_sent_no",
-        "string_no",
-    ]
-    supervision_amended_sentence_args = [
-        "prob_strt_dtd",
-        "prob_yr",
-        "prob_mo",
-        "prob_da",
-        "prob_end_dtd",
-    ]
-
-    if add_supervision_args:
-        base_sentence_args += supervision_base_sentence_args
-        amended_sentence_args += supervision_amended_sentence_args
-
-    n_spaces = 8 * " "
-    query_fragment = "\n"
-    for arg in base_sentence_args:
-        query_fragment += f"{n_spaces}COALESCE(s.{arg}, a.{arg}) AS {arg},\n"
-    for arg in amended_sentence_args:
-        query_fragment += f"{n_spaces}COALESCE(a.{arg}, s.{arg}) AS {arg},\n"
-    return query_fragment
-
-
 def sentence_view_template(sentence_type: SentenceType) -> str:
-    add_supervision_args = sentence_type == SentenceType.SUPERVISION
     return SENTENCE_QUERY_TEMPLATE.format(
         sentence_query=_get_relevant_sentence_query_for_type(sentence_type),
-        sentence_args=_create_sentence_query_fragment_args(
-            add_supervision_args=add_supervision_args
-        ),
     )

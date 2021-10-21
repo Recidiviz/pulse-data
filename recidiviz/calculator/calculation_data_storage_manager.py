@@ -28,10 +28,7 @@ from more_itertools import one, peekable
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.calculator import dataflow_config
-from recidiviz.calculator.query.state.dataset_config import (
-    DATAFLOW_METRICS_DATASET,
-    DATAFLOW_METRICS_MATERIALIZED_DATASET,
-)
+from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET
 from recidiviz.calculator.query.state.views.dataflow_metrics_materialized.most_recent_dataflow_metrics import (
     make_most_recent_metric_view_builders,
 )
@@ -253,7 +250,6 @@ def move_old_dataflow_metrics_to_cold_storage(dry_run: bool = False) -> None:
             source_data_join_clause = SOURCE_DATA_JOIN_CLAUSE_STANDARD_TEMPLATE.format(
                 project_id=table_ref.project,
                 dataflow_metrics_dataset=table_ref.dataset_id,
-                materialized_metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
                 dataflow_metric_table_id=table_id,
                 most_recent_metrics_view_query=most_recent_metrics_view_query,
                 day_count_limit=dataflow_config.MAX_DAYS_IN_DATAFLOW_METRICS_TABLE,
@@ -271,7 +267,6 @@ def move_old_dataflow_metrics_to_cold_storage(dry_run: bool = False) -> None:
                 SOURCE_DATA_JOIN_CLAUSE_WITH_MONTH_LIMIT_TEMPLATE.format(
                     project_id=table_ref.project,
                     dataflow_metrics_dataset=table_ref.dataset_id,
-                    materialized_metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
                     dataflow_metric_table_id=table_id,
                     most_recent_metrics_view_query=most_recent_metrics_view_query,
                     day_count_limit=dataflow_config.MAX_DAYS_IN_DATAFLOW_METRICS_TABLE,

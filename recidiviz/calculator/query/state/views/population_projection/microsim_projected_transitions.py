@@ -103,7 +103,6 @@ MICROSIM_PROJECTED_TRANSITIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=MICROSIM_PROJECTED_TRANSITIONS_VIEW_NAME,
     view_query_template=MICROSIM_PROJECTION_QUERY_TEMPLATE,
     description=MICROSIM_PROJECTED_TRANSITIONS_VIEW_DESCRIPTION,
-    analyst_dataset=dataset_config.ANALYST_VIEWS_DATASET,
     population_projection_dataset=dataset_config.POPULATION_PROJECTION_DATASET,
     population_projection_output_dataset=dataset_config.POPULATION_PROJECTION_OUTPUT_DATASET,
     transitions_start_date=TRANSITIONS_START_DATE,

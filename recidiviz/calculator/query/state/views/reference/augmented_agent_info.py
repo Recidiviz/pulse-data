@@ -92,7 +92,6 @@ AUGMENTED_AGENT_INFO_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=AUGMENTED_AGENT_INFO_QUERY_TEMPLATE,
     description=AUGMENTED_AGENT_INFO_DESCRIPTION,
     base_dataset=dataset_config.STATE_BASE_DATASET,
-    static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
 )
 
 if __name__ == "__main__":

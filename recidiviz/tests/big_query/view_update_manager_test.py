@@ -87,15 +87,17 @@ class ViewManagerTest(unittest.TestCase):
         sample_views = [
             {
                 "view_id": "my_fake_view",
-                "view_query": "SELECT NULL LIMIT 0",
+                "view_query_template": "SELECT NULL LIMIT 0",
             },
-            {"view_id": "my_other_fake_view", "view_query": "SELECT NULL LIMIT 0"},
+            {
+                "view_id": "my_other_fake_view",
+                "view_query_template": "SELECT NULL LIMIT 0",
+            },
         ]
         mock_view_builders = [
             SimpleBigQueryViewBuilder(
                 dataset_id=_DATASET_NAME,
                 description=f"{view['view_id']} description",
-                view_query_template="a",
                 should_materialize=False,
                 projects_to_deploy=None,
                 materialized_address_override=None,
@@ -479,14 +481,16 @@ class ViewManagerTest(unittest.TestCase):
         sample_views = [
             {
                 "view_id": "my_fake_view",
-                "view_query": "SELECT NULL LIMIT 0",
+                "view_query_template": "SELECT NULL LIMIT 0",
             },
-            {"view_id": "my_other_fake_view", "view_query": "SELECT NULL LIMIT 0"},
+            {
+                "view_id": "my_other_fake_view",
+                "view_query_template": "SELECT NULL LIMIT 0",
+            },
         ]
         mock_view_builders = [
             SimpleBigQueryViewBuilder(
                 dataset_id=_DATASET_NAME,
-                view_query_template="a",
                 description=f"{view['view_id']} description",
                 should_materialize=False,
                 projects_to_deploy=None,
@@ -585,16 +589,20 @@ class ViewManagerTest(unittest.TestCase):
         dataset = bigquery.dataset.DatasetReference(_PROJECT_ID, _DATASET_NAME)
 
         sample_views = [
-            {"view_id": "my_fake_view", "view_query": "SELECT NULL LIMIT 0"},
-            {"view_id": "my_other_fake_view", "view_query": "SELECT NULL LIMIT 0"},
+            {"view_id": "my_fake_view", "view_query_template": "SELECT NULL LIMIT 0"},
+            {
+                "view_id": "my_other_fake_view",
+                "view_query_template": "SELECT NULL LIMIT 0",
+            },
         ]
         mock_views = [
             BigQueryView(
                 dataset_id=_DATASET_NAME,
-                view_id=view["view_id"],
                 description=f"{view['view_id']} description",
-                view_query_template="a",
                 should_materialize=False,
+                materialized_address_override=None,
+                dataset_overrides=None,
+                **view,
             )
             for view in sample_views
         ]

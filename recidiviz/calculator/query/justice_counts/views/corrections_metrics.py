@@ -252,7 +252,6 @@ class AnnualMonthBoundariesViewBuilder(SimpleBigQueryViewBuilder):
             base_dataset=dataset_config.JUSTICE_COUNTS_BASE_DATASET,
             input_dataset=input_view.dataset_id,
             input_table=input_view.view_id,
-            metric_output_name=metric_to_calculate.output_name,
         )
 
 
@@ -295,7 +294,6 @@ class PickAnnualMonthBoundaryViewBuilder(SimpleBigQueryViewBuilder):
             should_materialize=True,
             # Query Format Arguments
             description="picks annual month for each state based on all metrics",
-            base_dataset=dataset_config.JUSTICE_COUNTS_BASE_DATASET,
             input_dataset=input_view.dataset_id,
             input_table=input_view.view_id,
         )
