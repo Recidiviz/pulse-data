@@ -41,11 +41,7 @@ REPORT_DATA_BY_PERSON_BY_MONTH_QUERY_TEMPLATE = """
     SELECT
       person.state_code, year, month, person.person_id,
       person_external_id.external_id AS person_external_id,
-      CONCAT(
-        REPLACE(JSON_EXTRACT(person.full_name, '$.surname'), '"', ''),
-        ', ',
-        REPLACE(JSON_EXTRACT(person.full_name, '$.given_names'), '"', '')
-      ) AS full_name,
+      person.full_name,
       officer_external_id,
       successful_completion_date,
       latest_supervision_downgrade_date,

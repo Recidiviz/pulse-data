@@ -16,11 +16,16 @@
 # =============================================================================
 
 """Tests for context_utils.py."""
+import json
 import textwrap
 from datetime import datetime
 from unittest import TestCase
 
-from recidiviz.reporting.context.context_utils import align_columns, format_date
+from recidiviz.reporting.context.context_utils import (
+    align_columns,
+    format_date,
+    format_full_name,
+)
 
 
 class ContextUtilsTest(TestCase):
@@ -47,3 +52,32 @@ class ContextUtilsTest(TestCase):
         )
 
         self.assertEqual(expected, align_columns(columns))
+
+    def test_format_full_name(self) -> None:
+        name_data = {
+            "given_names": "FAKE",
+            "surname": "PERSON",
+            # these may be present but should be ignored
+            "middle_names": "A",
+            "name_suffix": "JR",
+        }
+
+        self.assertEqual(format_full_name(json.dumps(name_data)), "Fake Person")
+        self.assertEqual(
+            format_full_name(json.dumps(name_data), last_name_first=True),
+            "Person, Fake",
+        )
+
+        # handle missing fields
+        del name_data["surname"]
+        self.assertEqual(format_full_name(json.dumps(name_data)), "Fake")
+        self.assertEqual(
+            format_full_name(json.dumps(name_data), last_name_first=True), "Fake"
+        )
+
+        del name_data["given_names"]
+        name_data["surname"] = "PERSON"
+        self.assertEqual(format_full_name(json.dumps(name_data)), "Person")
+        self.assertEqual(
+            format_full_name(json.dumps(name_data), last_name_first=True), "Person"
+        )

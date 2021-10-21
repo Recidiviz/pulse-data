@@ -351,21 +351,21 @@ class PoMonthlyReportContextTests(TestCase):
             "pos_discharges_clients": [
                 {
                     "person_external_id": 123,
-                    "full_name": "ROSS, BOB",
+                    "full_name": '{"surname": "ROSS", "given_names": "BOB"}',
                     "successful_completion_date": "2020-12-01",
                 }
             ],
             "earned_discharges_clients": [
                 {
                     "person_external_id": 321,
-                    "full_name": "POLLOCK, JACKSON",
+                    "full_name": '{"surname": "POLLOCK", "given_names": "JACKSON"}',
                     "earned_discharge_date": "2020-12-05",
                 }
             ],
             "supervision_downgrades_clients": [
                 {
                     "person_external_id": 246,
-                    "full_name": "GOYA, FRANCISCO",
+                    "full_name": '{"surname": "GOYA", "given_names": "FRANCISCO"}',
                     "latest_supervision_downgrade_date": "2020-12-07",
                     "previous_supervision_level": "MEDIUM",
                     "supervision_level": "MINIMUM",
@@ -374,13 +374,13 @@ class PoMonthlyReportContextTests(TestCase):
             "revocations_clients": [
                 {
                     "person_external_id": 456,
-                    "full_name": "MUNCH, EDVARD",
+                    "full_name": '{"surname": "MUNCH", "given_names": "EDVARD"}',
                     "revocation_violation_type": "NEW_CRIME",
                     "revocation_report_date": "2020-12-06",
                 },
                 {
                     "person_external_id": 111,
-                    "full_name": "MIRO, JOAN",
+                    "full_name": '{"surname": "MIRO", "given_names": "JOAN"}',
                     "revocation_violation_type": "TECHNICAL",
                     "revocation_report_date": "2020-12-10",
                 },
@@ -388,15 +388,21 @@ class PoMonthlyReportContextTests(TestCase):
             "absconsions_clients": [
                 {
                     "person_external_id": 789,
-                    "full_name": "DALI, SALVADOR",
+                    "full_name": '{"surname": "DALI", "given_names": "SALVADOR"}',
                     "absconsion_report_date": "2020-12-11",
                 }
             ],
             "assessments_out_of_date_clients": [
-                {"person_external_id": 987, "full_name": "KAHLO, FRIDA"}
+                {
+                    "person_external_id": 987,
+                    "full_name": '{"surname": "KAHLO", "given_names": "FRIDA"}',
+                }
             ],
             "facetoface_out_of_date_clients": [
-                {"person_external_id": 654, "full_name": "DEGAS, EDGAR"}
+                {
+                    "person_external_id": 654,
+                    "full_name": '{"surname": "DEGAS", "given_names": "EDGAR"}',
+                }
             ],
         }
 
@@ -445,13 +451,13 @@ class PoMonthlyReportContextTests(TestCase):
             "revocations_clients": [
                 {
                     "person_external_id": 456,
-                    "full_name": "MUNCH, EDVARD",
+                    "full_name": '{"surname": "MUNCH", "given_names": "EDVARD"}',
                     "revocation_violation_type": "NEW_CRIME",
                     "revocation_report_date": "2020-12-06",
                 },
                 {
                     "person_external_id": 111,
-                    "full_name": "MIRO, JOAN",
+                    "full_name": '{"surname": "MIRO", "given_names": "JOAN"}',
                     "revocation_violation_type": "TECHNICAL",
                     "revocation_report_date": "2020-12-10",
                 },
@@ -621,7 +627,7 @@ class PoMonthlyReportContextTests(TestCase):
         )
         self.assertEqual(
             happy_path_data["action_table"],
-            [("Hansen, Linet (105)", "June 7"), ("Cortes, Rebekah (142)", "June 18")],
+            [("Linet Hansen (105)", "June 7"), ("Rebekah Cortes (142)", "June 18")],
         )
 
         no_caseload_data = PoMonthlyReportContext(
