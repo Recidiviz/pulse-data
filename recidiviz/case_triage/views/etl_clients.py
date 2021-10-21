@@ -85,7 +85,10 @@ latest_contacts AS (
     MAX(next_recommended_assessment_date) AS next_recommended_assessment_date,
     MAX(most_recent_face_to_face_date) AS most_recent_face_to_face_date,
     MAX(next_recommended_face_to_face_date) AS next_recommended_face_to_face_date,
-    MAX(most_recent_home_visit_date) AS most_recent_home_visit_date
+    MAX(most_recent_home_visit_date) AS most_recent_home_visit_date,
+    MAX(next_recommended_home_visit_date) AS next_recommended_home_visit_date,
+    MAX(most_recent_treatment_collateral_contact_date) AS most_recent_treatment_collateral_contact_date,
+    MAX(next_recommended_treatment_collateral_contact_date) AS next_recommended_treatment_collateral_contact_date
   FROM
     `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_case_compliance_metrics_materialized`
   WHERE
@@ -255,6 +258,9 @@ CLIENT_LIST_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         "most_recent_face_to_face_date",
         "next_recommended_face_to_face_date",
         "most_recent_home_visit_date",
+        "next_recommended_home_visit_date",
+        "most_recent_treatment_collateral_contact_date",
+        "next_recommended_treatment_collateral_contact_date",
         "days_with_current_po",
         "days_on_current_supervision_level",
         "most_recent_violation_date",
