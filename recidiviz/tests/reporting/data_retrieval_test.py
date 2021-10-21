@@ -327,7 +327,7 @@ class EmailGenerationTests(TestCase):
             recipient.data["mismatches"],
             [
                 {
-                    "name": "Test Name",
+                    "full_name": '{"given_names": "TEST", "surname": "NAME"}',
                     "last_score": 1,
                     "last_assessment_date": "2021-01-02",
                     "person_external_id": "client_1",
@@ -335,7 +335,7 @@ class EmailGenerationTests(TestCase):
                     "recommended_level": "Low",
                 },
                 {
-                    "name": "Test Name",
+                    "full_name": '{"given_names": "TEST", "surname": "NAME"}',
                     "last_score": 1,
                     "last_assessment_date": "2021-01-02",
                     "person_external_id": "client_2",
@@ -343,7 +343,7 @@ class EmailGenerationTests(TestCase):
                     "recommended_level": "Low",
                 },
                 {
-                    "name": "Test Name",
+                    "full_name": '{"given_names": "TEST", "surname": "NAME"}',
                     "last_score": 1,
                     "last_assessment_date": "2021-01-02",
                     "person_external_id": "client_3",
@@ -369,7 +369,7 @@ class EmailGenerationTests(TestCase):
             recipient.data["mismatches"],
             [
                 {
-                    "name": "Test Name",
+                    "full_name": '{"given_names": "TEST", "surname": "NAME"}',
                     "last_score": 1,
                     "last_assessment_date": "2021-01-02",
                     "person_external_id": "client_1",
@@ -377,7 +377,7 @@ class EmailGenerationTests(TestCase):
                     "recommended_level": "Low",
                 },
                 {
-                    "name": "Test Name",
+                    "full_name": '{"given_names": "TEST", "surname": "NAME"}',
                     "last_score": 1,
                     "last_assessment_date": "2021-01-02",
                     "person_external_id": "client_2",
@@ -385,7 +385,7 @@ class EmailGenerationTests(TestCase):
                     "recommended_level": "Low",
                 },
                 {
-                    "name": "Test Name",
+                    "full_name": '{"given_names": "TEST", "surname": "NAME"}',
                     "last_score": 1,
                     "last_assessment_date": "2021-01-02",
                     "person_external_id": "client_3",

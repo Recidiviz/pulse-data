@@ -17,6 +17,7 @@
 
 """Utilities for working with report-specific context and data preparation."""
 import calendar
+import json
 from datetime import datetime
 from typing import List, Optional
 
@@ -24,11 +25,27 @@ from typing import List, Optional
 def format_greeting(name: Optional[str]) -> str:
     if not name:
         return "Hey!"
-    return f"Hey, {format_name(name)}!"
+    return f"Hey, {format_given_name(name)}!"
 
 
-def format_name(name: str) -> str:
+def format_given_name(name: str) -> str:
     return name.title()
+
+
+def format_full_name(full_name: str, last_name_first: bool = False) -> str:
+    """Extracts normalized text from a `full_name` JSON blob"""
+    name_parts = json.loads(full_name)
+    # TODO(#7957): We shouldn't be converting to title-case because there
+    # are many names whose preferred casing is not that. Once we figure out
+    # how to access the original name casing, we should use that wherever possible.
+    given_names = name_parts.get("given_names", "").title()
+    surname = name_parts.get("surname", "").title()
+    if last_name_first:
+        # avoid superfluous comma if one part is missing
+        return ", ".join([n for n in (surname, given_names) if n])
+
+    # strip to remove superfluous space if one part is missing
+    return " ".join([given_names, surname]).strip()
 
 
 def format_date(str_date: str, current_format: str = "%Y-%m-%d") -> str:

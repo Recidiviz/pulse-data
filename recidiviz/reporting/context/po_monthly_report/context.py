@@ -26,6 +26,7 @@ To generate a sample output for the PO Monthly Report email template, just run:
 python -m recidiviz.reporting.context.po_monthly_report.context
 """
 import copy
+import json
 import os
 from datetime import date
 from math import isnan
@@ -38,8 +39,9 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.reporting.context.context_utils import (
     align_columns,
     format_date,
+    format_full_name,
+    format_given_name,
     format_greeting,
-    format_name,
     format_violation_type,
     month_number_to_name,
 )
@@ -283,7 +285,7 @@ class PoMonthlyReportContext(ReportContext):
                     f"[{client['person_external_id']}]",
                     # TODO(#7374): Revert to bracket access when current investigation
                     # is figured out.
-                    format_name(client.get("full_name", "")),
+                    client.get("full_name", "{}"),
                 ]
                 additional_columns = []
 
@@ -310,9 +312,11 @@ class PoMonthlyReportContext(ReportContext):
                     ]
 
                 clients_by_type[clients_key].append(base_columns + additional_columns)
-        # sorting clients of each type by the clients' names
+
         for clients in clients_by_type.values():
-            clients.sort(key=lambda x: x[1])
+            clients.sort(key=lambda x: json.loads(x[1]).get("surname", ""))
+            for client in clients:
+                client[1] = format_full_name(client[1], last_name_first=True)
         return clients_by_type
 
     def _prepare_attachment_data(self) -> Dict:
@@ -322,7 +326,7 @@ class PoMonthlyReportContext(ReportContext):
 
         return {
             "prepared_on_date": prepared_on_date,
-            "officer_given_name": format_name(
+            "officer_given_name": format_given_name(
                 self.recipient_data["officer_given_name"]
             ),
             "clients": {
@@ -359,7 +363,7 @@ class PoMonthlyReportContext(ReportContext):
         action_table = (
             [
                 (
-                    f'{client["full_name"]} ({client["person_external_id"]})',
+                    f'{format_full_name(client["full_name"])} ({client["person_external_id"]})',
                     "{d:%B} {d.day}".format(
                         d=date.fromisoformat(client["projected_end_date"])
                     ),
@@ -414,7 +418,7 @@ class PoMonthlyReportContext(ReportContext):
         action_table = (
             [
                 (
-                    f'{client["name"]} ({client["person_external_id"]})',
+                    f'{format_full_name(client["full_name"])} ({client["person_external_id"]})',
                     f"{client['current_supervision_level']} &rarr; {client['recommended_level']}",
                 )
                 for client in action_clients
@@ -674,12 +678,12 @@ if __name__ == "__main__":
                 "revocations_clients": [],
                 "upcoming_release_date_clients": [
                     {
-                        "full_name": "Hansen, Linet",
+                        "full_name": '{"given_names": "LINET", "surname": "HANSEN"}',
                         "person_external_id": "105",
                         "projected_end_date": "2021-05-07",
                     },
                     {
-                        "full_name": "Cortes, Rebekah",
+                        "full_name": '{"given_names": "REBEKAH", "surname": "CORTES"}',
                         "person_external_id": "142",
                         "projected_end_date": "2021-05-18",
                     },
@@ -697,7 +701,7 @@ if __name__ == "__main__":
                 "review_month": 4,
                 "mismatches": [
                     {
-                        "name": "Tonye Thompson",
+                        "full_name": '{"given_names": "TONYE", "surname": "THOMPSON"}',
                         "person_external_id": "189472",
                         "last_score": 14,
                         "last_assessment_date": "10/12/20",
@@ -705,7 +709,7 @@ if __name__ == "__main__":
                         "recommended_level": "Low",
                     },
                     {
-                        "name": "Linet Hansen",
+                        "full_name": '{"given_names": "LINET", "surname": "HANSEN"}',
                         "person_external_id": "47228",
                         "last_assessment_date": "1/12/21",
                         "last_score": 8,
@@ -713,7 +717,7 @@ if __name__ == "__main__":
                         "recommended_level": "Low",
                     },
                     {
-                        "name": "Rebekah Cortes",
+                        "full_name": '{"given_names": "REBEKAH", "surname": "CORTES"}',
                         "person_external_id": "132878",
                         "last_assessment_date": "3/14/20",
                         "last_score": 10,
@@ -721,7 +725,7 @@ if __name__ == "__main__":
                         "recommended_level": "Medium",
                     },
                     {
-                        "name": "Taryn Berry",
+                        "full_name": '{"given_names": "TARYN", "surname": "BERRY"}',
                         "person_external_id": "147872",
                         "last_assessment_date": "3/13/20",
                         "last_score": 4,
