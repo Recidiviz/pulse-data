@@ -18,21 +18,54 @@
 import abc
 import datetime
 from abc import ABC
-from typing import Optional, List
+from typing import List, Optional
 
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsIngestViewExportArgs,
 )
-from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.persistence.entity.operations.entities import (
     DirectIngestIngestFileMetadata,
     DirectIngestRawFileMetadata,
+    DirectIngestSftpFileMetadata,
 )
 
 
+class DirectIngestSftpFileMetadataManager:
+    """An abstract interface for a class that handles writing metadata about SFTP
+    files to disk.
+    """
+
+    @abc.abstractmethod
+    def has_sftp_file_been_discovered(self, remote_file_path: str) -> bool:
+        """Checks whether the file at this path has already been marked as discovered."""
+
+    @abc.abstractmethod
+    def mark_sftp_file_as_discovered(self, remote_file_path: str) -> None:
+        """Writes a new row to the appropriate metadata table for a new, unprocessed sftp
+        file."""
+
+    @abc.abstractmethod
+    def has_sftp_file_been_processed(self, remote_file_path: str) -> bool:
+        """Checks whether the file at this path has already been marked as processed."""
+
+    @abc.abstractmethod
+    def mark_sftp_file_as_processed(self, remote_file_path: str) -> None:
+        """Marks the file represented by the |remote_file_path| as processed in the appropriate
+        metadata table."""
+
+    @abc.abstractmethod
+    def get_sftp_file_metadata(
+        self, remote_file_path: str
+    ) -> DirectIngestSftpFileMetadata:
+        """Returns metadata information for the provided path. If the file has not yet been registered in the
+        appropriate metadata table, this function will generate a file_id to return with the metadata.
+        """
+
+
 class DirectIngestRawFileMetadataManager:
-    """An abstract interface for a class that handles writing metadata about ingest view
-    direct ingest files to disk.
+    """An abstract interface for a class that handles writing metadata about raw data
+    files to disk.
     """
 
     @abc.abstractmethod
@@ -72,7 +105,7 @@ class DirectIngestRawFileMetadataManager:
 
 
 class DirectIngestIngestFileMetadataManager:
-    """An abstract interface for a class that handles writing metadata about raw data
+    """An abstract interface for a class that handles writing metadata about
     direct ingest files to disk.
     """
 
