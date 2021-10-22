@@ -1,11 +1,11 @@
 manifest_language: 1.0.0
 input_columns:
-  - recidiviz_master_person_id
+  - recidiviz_primary_person_id
   - control_numbers
   - inmate_numbers
   - parole_numbers
 unused_columns:
-  - recidiviz_master_person_id  # Internal Recidiviz person ID
+  - recidiviz_primary_person_id  # Internal Recidiviz person ID
 output:
   StatePerson:
     external_ids:

@@ -54,7 +54,7 @@ class ViewPersonExternalIdsTest(BaseViewTest):
         )
 
         self.expected_result_columns = [
-            "recidiviz_master_person_id",
+            "recidiviz_primary_person_id",
             "control_numbers",
             "inmate_numbers",
             "parole_numbers",
@@ -120,7 +120,7 @@ class ViewPersonExternalIdsTest(BaseViewTest):
             recidiviz_reference_linking_ids=[],
             expected_output=[
                 [
-                    "RECIDIVIZ_MASTER_CONTROL_NUMBER_12345678",
+                    "RECIDIVIZ_PRIMARY_CONTROL_NUMBER_12345678",
                     "12345678",  # control_numbers
                     "AB1234",  # inmate_numbers
                     "0420X",  # pa
@@ -145,7 +145,7 @@ class ViewPersonExternalIdsTest(BaseViewTest):
             recidiviz_reference_linking_ids=[],
             expected_output=[
                 [
-                    "RECIDIVIZ_MASTER_CONTROL_NUMBER_12345678",
+                    "RECIDIVIZ_PRIMARY_CONTROL_NUMBER_12345678",
                     "12345678",  # control_numbers
                     "AB1234,CD4567",  # inmate_numbers
                     "0420X",  # parole_numbers
@@ -164,7 +164,7 @@ class ViewPersonExternalIdsTest(BaseViewTest):
             recidiviz_reference_linking_ids=[],
             expected_output=[
                 [
-                    "RECIDIVIZ_MASTER_CONTROL_NUMBER_12345678",
+                    "RECIDIVIZ_PRIMARY_CONTROL_NUMBER_12345678",
                     "12345678",  # control_numbers
                     "AB1234",  # inmate_numbers
                     None,  # parole_numbers
@@ -181,7 +181,7 @@ class ViewPersonExternalIdsTest(BaseViewTest):
             recidiviz_reference_linking_ids=[],
             expected_output=[
                 [
-                    "RECIDIVIZ_MASTER_PAROLE_NUMBER_0420X",
+                    "RECIDIVIZ_PRIMARY_PAROLE_NUMBER_0420X",
                     None,  # control_numbers
                     "AB1234",  # inmate_numbers
                     "0420X",  # parole_numbers
@@ -200,13 +200,13 @@ class ViewPersonExternalIdsTest(BaseViewTest):
             recidiviz_reference_linking_ids=[],
             expected_output=[
                 [
-                    "RECIDIVIZ_MASTER_CONTROL_NUMBER_12345678",
+                    "RECIDIVIZ_PRIMARY_CONTROL_NUMBER_12345678",
                     "12345678",  # control_numbers
                     None,  # inmate_numbers
                     None,  # parole_numbers
                 ],
                 [
-                    "RECIDIVIZ_MASTER_PAROLE_NUMBER_0420X",
+                    "RECIDIVIZ_PRIMARY_PAROLE_NUMBER_0420X",
                     None,  # control_numbers
                     None,  # inmate_numbers
                     "0420X",  # parole_numbers
@@ -229,19 +229,19 @@ class ViewPersonExternalIdsTest(BaseViewTest):
             recidiviz_reference_linking_ids=[],
             expected_output=[
                 [
-                    "RECIDIVIZ_MASTER_PAROLE_NUMBER_0420X",
+                    "RECIDIVIZ_PRIMARY_PAROLE_NUMBER_0420X",
                     None,  # control_numbers
                     "AB1234,FG7899",  # inmate_numbers
                     "0420X",  # parole_numbers
                 ],
                 [
-                    "RECIDIVIZ_MASTER_PAROLE_NUMBER_2171K",
+                    "RECIDIVIZ_PRIMARY_PAROLE_NUMBER_2171K",
                     None,  # control_numbers
                     None,  # inmate_numbers
                     "2171K",  # parole_numbers
                 ],
                 [
-                    "RECIDIVIZ_MASTER_PAROLE_NUMBER_3141Y",
+                    "RECIDIVIZ_PRIMARY_PAROLE_NUMBER_3141Y",
                     None,  # control_numbers
                     "CD4567",  # inmate_numbers
                     "3141Y",  # parole_numbers
@@ -269,7 +269,7 @@ class ViewPersonExternalIdsTest(BaseViewTest):
             recidiviz_reference_linking_ids=[],
             expected_output=[
                 [
-                    "RECIDIVIZ_MASTER_CONTROL_NUMBER_12345678",
+                    "RECIDIVIZ_PRIMARY_CONTROL_NUMBER_12345678",
                     "12345678",  # control_numbers
                     "AB1234,CD4567,FG6789",  # inmate_numbers
                     "0420X",  # parole_numbers
@@ -302,7 +302,7 @@ class ViewPersonExternalIdsTest(BaseViewTest):
             recidiviz_reference_linking_ids=[],
             expected_output=[
                 [
-                    "RECIDIVIZ_MASTER_CONTROL_NUMBER_10000000",
+                    "RECIDIVIZ_PRIMARY_CONTROL_NUMBER_10000000",
                     "10000000,20000000",  # control_numbers
                     "II1111,II2222,II3333,II4444",  # inmate_numbers
                     "1111P,2222P,3333P",  # parole_numbers
@@ -324,7 +324,7 @@ class ViewPersonExternalIdsTest(BaseViewTest):
             recidiviz_reference_linking_ids=[],
             expected_output=[
                 [
-                    "RECIDIVIZ_MASTER_CONTROL_NUMBER_12345678",
+                    "RECIDIVIZ_PRIMARY_CONTROL_NUMBER_12345678",
                     "12345678",  # control_numbers
                     "AB1234,CC4567",  # inmate_numbers
                     "0420X",  # parole_numbers
@@ -345,13 +345,13 @@ class ViewPersonExternalIdsTest(BaseViewTest):
             recidiviz_reference_linking_ids=[],
             expected_output=[
                 [
-                    "RECIDIVIZ_MASTER_CONTROL_NUMBER_280123",
+                    "RECIDIVIZ_PRIMARY_CONTROL_NUMBER_280123",
                     "280123",  # control_numbers
                     "KS0000",  # inmate_numbers
                     "444GS",  # parole_numbers
                 ],
                 [
-                    "RECIDIVIZ_MASTER_PAROLE_NUMBER_1234R",
+                    "RECIDIVIZ_PRIMARY_PAROLE_NUMBER_1234R",
                     None,  # control_numbers
                     None,  # inmate_numbers
                     "1234R",  # parole_numbers
@@ -373,7 +373,7 @@ class ViewPersonExternalIdsTest(BaseViewTest):
             recidiviz_reference_linking_ids=[],
             expected_output=[
                 [
-                    "RECIDIVIZ_MASTER_CONTROL_NUMBER_12345678",
+                    "RECIDIVIZ_PRIMARY_CONTROL_NUMBER_12345678",
                     "12345678",  # control_numbers
                     "AB1234,CC4567",  # inmate_numbers
                     "0420X",  # parole_numbers
@@ -397,7 +397,7 @@ class ViewPersonExternalIdsTest(BaseViewTest):
             recidiviz_reference_linking_ids=[],
             expected_output=[
                 [
-                    "RECIDIVIZ_MASTER_CONTROL_NUMBER_080808",
+                    "RECIDIVIZ_PRIMARY_CONTROL_NUMBER_080808",
                     "080808,090909",  # control_numbers
                     "BB9876,BT7654",  # inmate_numbers
                     "7890S",  # parole_numbers
@@ -424,7 +424,7 @@ class ViewPersonExternalIdsTest(BaseViewTest):
             ],
             expected_output=[
                 [
-                    "RECIDIVIZ_MASTER_CONTROL_NUMBER_080808",
+                    "RECIDIVIZ_PRIMARY_CONTROL_NUMBER_080808",
                     "080808,121212",  # control_numbers
                     "OA3333,OD6666",  # inmate_numbers
                     None,  # parole_numbers
@@ -455,7 +455,7 @@ class ViewPersonExternalIdsTest(BaseViewTest):
             ],
             expected_output=[
                 [
-                    "RECIDIVIZ_MASTER_CONTROL_NUMBER_080808",
+                    "RECIDIVIZ_PRIMARY_CONTROL_NUMBER_080808",
                     "080808,121212",  # control_numbers
                     "OA3333,OD6666",  # inmate_numbers
                     "0420X",  # parole_numbers

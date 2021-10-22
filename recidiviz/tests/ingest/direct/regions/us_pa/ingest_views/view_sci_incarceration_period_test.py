@@ -131,7 +131,7 @@ class ViewPersonExternalIdsTest(BaseViewTest):
         self.run_test(
             external_ids=[
                 PersonExternalIds(
-                    recidiviz_master_person_id="RECIDIVIZ_MASTER_CONTROL_NUMBER_12345678",
+                    recidiviz_primary_person_id="RECIDIVIZ_PRIMARY_CONTROL_NUMBER_12345678",
                     control_numbers=["12345678"],
                     inmate_numbers=["AB1234", "CD4567"],
                     parole_numbers=["0420X"],

@@ -51,7 +51,7 @@ class RecidivizReferenceLinkingIds:
 
 @attr.s(kw_only=True, frozen=True)
 class PersonExternalIds:
-    recidiviz_master_person_id: str = attr.ib()
+    recidiviz_primary_person_id: str = attr.ib()
 
     control_numbers: List[str] = attr.ib()
     inmate_numbers: List[str] = attr.ib()
