@@ -23,6 +23,7 @@ import { useRootStore } from "../../../stores";
 import {
   ACTION_TITLES,
   CaseUpdate,
+  CaseUpdateActionType,
 } from "../../../stores/CaseUpdatesStore/CaseUpdates";
 import { Client } from "../../../stores/ClientsStore";
 import { LONG_DATE_FORMAT } from "../../../utils";
@@ -37,6 +38,7 @@ export const CaseloadRemovalAlert = observer(
     pendingUpdate: CaseUpdate;
   }): JSX.Element => {
     const { caseUpdatesStore } = useRootStore();
+    console.log(pendingUpdate.actionType);
     return (
       <Alert
         bullet={<Icon size={16} kind="Alert" color={palette.data.gold1} />}
@@ -44,8 +46,11 @@ export const CaseloadRemovalAlert = observer(
         body={
           <>
             Submitted on{" "}
-            {moment(pendingUpdate.actionTs).format(LONG_DATE_FORMAT)}. Once
-            processed, this client will be removed from your list.
+            {moment(pendingUpdate.actionTs).format(LONG_DATE_FORMAT)}.{" "}
+            {pendingUpdate.actionType ===
+            CaseUpdateActionType.CURRENTLY_IN_CUSTODY
+              ? `To remove this status, select the three dots and click "Undo"`
+              : "Once processed, this client will be removed from your list."}
           </>
         }
         menuItems={
