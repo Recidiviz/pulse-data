@@ -1,0 +1,103 @@
+file_tag: agnt_case_updt
+file_description: |-
+  Contains notes entered manually by POs about their clients.
+primary_key_cols:
+  - agnt_case_updt_id
+columns:
+  - name: agnt_case_updt_id
+    description: |-
+      Primary key for the case update
+  - name: ofndr_num
+    description: |-
+      External ID for person on supervision
+  - name: create_by_usr_id
+    description: |-
+      The user who created the update
+  - name: case_updt_typ_cd
+    description: |-
+      Update code
+    known_values:
+      - value: 1
+        description: Case Conference
+      - value: 2
+        description: Case Review
+      - value: 3
+        description: Supervisory Approval of Case Action
+      - value: 4
+        description: 30 Day Audit
+      - value: 5
+        description: Case Audit
+      - value: 6
+        description: Direct Observation
+      - value: 7
+        description: Begin GPS/EM Monitoring
+      - value: 8
+        description: Begin Diversion GPS/EM Monitoring
+      - value: 9
+        description: GPS/EM Successful Completion
+      - value: 10
+        description: GPS/EM Unsuccessful Completion
+      - value: 11
+        description: SS Approved Jail Diversion Rec
+      - value: 12
+        description: SS Approved Prison Diversion Rec
+      - value: 13
+        description: SS Approved CRC Diversion Rec
+      - value: 14
+        description: SS Approved PSC Diversion Rec
+      - value: 15
+        description: Standards Extension
+      - value: 16
+        description: PSI File Review Assigned
+      - value: 17
+        description: 60/60 Enrollment
+      - value: 18
+        description: 60/60 Completion - Successful
+      - value: 19
+        description: 60/60 Completion - Unsuccessful
+      - value: 20
+        description: 60/60 Completion - Neutral
+      - value: 21
+        description: Begin GPS Pilot (D1 D4 D6)
+      - value: 22
+        description: End GPS Pilot Successful (D1 D4 D6)
+      - value: 23
+        description: End GPS Pilot Unsuccessful (D1 D4 D6)
+      - value: 24
+        description: GPS Pilot Control (D1 D4 D6)
+      - value: 25
+        description: ISI Dosage Grant
+      - value: 26
+        description: ISI Dosage Progress Review
+      - value: 27
+        description: ISI Dosage Case Plan
+      - value: 28
+        description: Front-Load Case Review
+      - value: 29
+        description: Regular Case Review
+      - value: 30
+        description: Critical Incident Case Review
+  - name: create_dt
+    is_datetime: True
+    description: |-
+      Date when the update was created
+  - name: create_tm
+    description: |-
+      Timestamp when the update was created
+  - name: agnt_note_title
+    description: |-
+      Title of the case update note
+  - name: agnt_note_txt
+    description: |-
+      Body of the case update note
+  - name: updt_usr_id
+    description: |-
+      The user who last updated the note
+  - name: updt_dt
+    is_datetime: True
+    description: |-
+      The date when the note was last updated
+separator: ‡
+custom_line_terminator: †
+ignore_quotes: True
+encoding: WINDOWS-1252
