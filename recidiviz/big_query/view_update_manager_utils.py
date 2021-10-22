@@ -88,7 +88,7 @@ def cleanup_datasets_and_delete_unmanaged_views(
 ) -> None:
     """This function filters through a list of managed dataset ids and a map of managed
     views to their corresponding datasets and checks that the dataset is in the provided
-    master list |datasets_that_have_ever_been_managed|. It then cleans up the
+    primary list |datasets_that_have_ever_been_managed|. It then cleans up the
     datasets by deleting unmanaged datasets and deleting any unmanaged views within
     managed datasets."""
     managed_dataset_ids: List[str] = list(managed_views_map.keys())

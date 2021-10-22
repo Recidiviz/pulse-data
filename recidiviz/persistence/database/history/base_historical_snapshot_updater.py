@@ -50,8 +50,8 @@ class BaseHistoricalSnapshotUpdater(Generic[SchemaPersonType]):
     NOTE: All code in this class makes the following two assumptions:
     1) The table ORM class names are: <ENTITY> and <ENTITY>History (e.g.
         Person and PersonHistory)
-    2) The primary key column of the master table and the foreign key column
-        on the historical table pointing to the master table have the same
+    2) The primary key column of the primary table and the foreign key column
+        on the historical table pointing to the primary table have the same
         name (e.g. table 'person_history' has a foreign key column 'person_id'
         referencing the primary key column 'person_id' on table 'person')
     If either of these assumptions are broken, this module will not behave
@@ -133,7 +133,7 @@ class BaseHistoricalSnapshotUpdater(Generic[SchemaPersonType]):
         )
 
         logging.info(
-            "%s master entities registered for snapshot check",
+            "%s primary entities registered for snapshot check",
             len(context_registry.all_contexts()),
         )
 
@@ -172,7 +172,7 @@ class BaseHistoricalSnapshotUpdater(Generic[SchemaPersonType]):
         all graphs reachable from |root_entities|, if one exists.
         """
 
-        # Consolidate all master entity IDs for each type, so that each
+        # Consolidate all primary entity IDs for each type, so that each
         # historical table only needs to be queried once
         ids_by_entity_type_name: Dict[str, Set[int]] = defaultdict(set)
         self._execute_action_for_all_entities(
@@ -184,10 +184,10 @@ class BaseHistoricalSnapshotUpdater(Generic[SchemaPersonType]):
 
         snapshots: List[DatabaseEntity] = []
         for type_name, ids in ids_by_entity_type_name.items():
-            master_class = getattr(schema, type_name)
+            primary_class = getattr(schema, type_name)
             snapshots.extend(
                 self._fetch_most_recent_snapshots_for_entity_type(
-                    session, master_class, ids, schema
+                    session, primary_class, ids, schema
                 )
             )
         return snapshots
@@ -195,23 +195,23 @@ class BaseHistoricalSnapshotUpdater(Generic[SchemaPersonType]):
     def _fetch_most_recent_snapshots_for_entity_type(
         self,
         session: Session,
-        master_class: Type,
+        primary_class: Type,
         entity_ids: Set[int],
         schema: ModuleType,
     ) -> List[DatabaseEntity]:
         """Returns a list containing the most recent snapshot for each ID in
-        |entity_ids| with type |master_class|
+        |entity_ids| with type |primary_class|
         """
 
         # Get name of historical table in database (as distinct from name of ORM
         # class representing historical table in code)
-        history_table_class = _get_historical_class(master_class, schema)
+        history_table_class = _get_historical_class(primary_class, schema)
         history_table_name = history_table_class.__table__.name
         history_table_primary_key_col_name = (
             history_table_class.get_primary_key_column_name()
         )
         # See module assumption #2
-        master_table_primary_key_col_name = master_class.get_primary_key_column_name()
+        primary_table_primary_key_col_name = primary_class.get_primary_key_column_name()
         ids_list = ", ".join([str(id) for id in entity_ids])
 
         # Get snapshot IDs in a separate query. The subquery logic here is ugly
@@ -223,19 +223,19 @@ class BaseHistoricalSnapshotUpdater(Generic[SchemaPersonType]):
         snapshot_ids_query = f"""
         SELECT
           history.{history_table_primary_key_col_name},
-          history.{master_table_primary_key_col_name},
+          history.{primary_table_primary_key_col_name},
           history.valid_to
         FROM {history_table_name} history
         JOIN (
           SELECT 
-            {master_table_primary_key_col_name}, 
+            {primary_table_primary_key_col_name}, 
             MAX(valid_from) AS valid_from
           FROM {history_table_name}
-          WHERE {master_table_primary_key_col_name} IN ({ids_list})
-          GROUP BY {master_table_primary_key_col_name}
+          WHERE {primary_table_primary_key_col_name} IN ({ids_list})
+          GROUP BY {primary_table_primary_key_col_name}
         ) AS most_recent_valid_from
-        ON history.{master_table_primary_key_col_name} = 
-            most_recent_valid_from.{master_table_primary_key_col_name}
+        ON history.{primary_table_primary_key_col_name} = 
+            most_recent_valid_from.{primary_table_primary_key_col_name}
         WHERE history.valid_from = most_recent_valid_from.valid_from;
         """
 
@@ -245,7 +245,7 @@ class BaseHistoricalSnapshotUpdater(Generic[SchemaPersonType]):
         # non-open snapshots
         snapshot_ids = [
             snapshot_id
-            for snapshot_id, master_id, valid_to in results
+            for snapshot_id, primary_id, valid_to in results
             if valid_to is None
         ]
 
@@ -493,7 +493,7 @@ class BaseHistoricalSnapshotUpdater(Generic[SchemaPersonType]):
         corresponding fields on |historical_snapshot|.
 
         NOTE: This method *only* compares properties which are present on both
-        the master and historical tables. Any property that is only present on
+        the primary and historical tables. Any property that is only present on
         one table will be ignored.
         """
 
@@ -514,9 +514,9 @@ class BaseHistoricalSnapshotUpdater(Generic[SchemaPersonType]):
         Copies all column values present on |entity| to |historical_snapshot|.
 
         NOTE: This method *only* copies values for properties which are present
-        on both the master and historical tables. Any property that is only
-        present on one table will be ignored. The only exception is the master
-        key column, which is copied over regardless of property name (only based
+        on both the primary and historical tables. Any property that is only
+        present on one table will be ignored. The only exception is the primary table
+        primary key column, which is copied over regardless of property name (only based
         on *column* name), following module assumption #2.
         """
         for column_property_name in self._get_shared_column_property_names(
@@ -527,12 +527,12 @@ class BaseHistoricalSnapshotUpdater(Generic[SchemaPersonType]):
 
         # See module assumption #2
         key_column_name = entity.get_primary_key_column_name()  # type: ignore
-        historical_master_key_property_name = type(
+        historical_primary_key_property_name = type(
             historical_snapshot
         ).get_property_name_by_column_name(key_column_name)
         setattr(
             historical_snapshot,
-            historical_master_key_property_name,
+            historical_primary_key_property_name,
             entity.get_primary_key(),
         )  # type: ignore
 
@@ -549,29 +549,29 @@ class BaseHistoricalSnapshotUpdater(Generic[SchemaPersonType]):
 
 
 def _get_historical_class(
-    master_class: Type[DatabaseEntity], schema: ModuleType
+    primary_class: Type[DatabaseEntity], schema: ModuleType
 ) -> Type:
-    """Returns ORM class of historical table associated with the master table of
-    |master_class|
+    """Returns ORM class of historical table associated with the primary table of
+    |primary_class|
     """
     # See module assumption #1
     historical_class_name = "{}{}".format(
-        master_class.__name__, HISTORICAL_TABLE_CLASS_SUFFIX
+        primary_class.__name__, HISTORICAL_TABLE_CLASS_SUFFIX
     )
     return getattr(schema, historical_class_name)
 
 
-def _get_master_class(
+def _get_primary_class(
     historical_class: Type[DatabaseEntity], schema: ModuleType
 ) -> Type:
-    """Returns ORM class of master table associated with the historical table of
+    """Returns ORM class of primary table associated with the historical table of
     |historical_class|
     """
     # See module assumption #1
-    master_class_name = historical_class.__name__.replace(
+    primary_class_name = historical_class.__name__.replace(
         HISTORICAL_TABLE_CLASS_SUFFIX, ""
     )
-    return getattr(schema, master_class_name)
+    return getattr(schema, primary_class_name)
 
 
 @attr.s
@@ -591,7 +591,7 @@ class _SnapshotContextRegistry:
 
     def __init__(self) -> None:
         # Nested map:
-        # (master entity type name string) -> ((primary key) -> (context))
+        # (primary entity type name string) -> ((primary key) -> (context))
         self.snapshot_contexts: Dict[str, Dict[int, _SnapshotContext]] = {}
 
     def snapshot_context(self, entity: DatabaseEntity) -> _SnapshotContext:
@@ -633,34 +633,34 @@ class _SnapshotContextRegistry:
 
     def add_snapshot(self, snapshot: DatabaseEntity, schema: ModuleType) -> None:
         """Registers |snapshot| to the appropriate (_SnapshotContext) of the
-        master entity corresponding to |snapshot|
+        primary entity corresponding to |snapshot|
 
         Raises (ValueError) if a snapshot has already been registered for the
-        corresponding master entity
+        corresponding primary entity
         """
-        master_class = _get_master_class(type(snapshot), schema)
-        master_type_name = master_class.__name__
+        primary_class = _get_primary_class(type(snapshot), schema)
+        primary_type_name = primary_class.__name__
 
-        key_column_name = master_class.get_primary_key_column_name()
+        key_column_name = primary_class.get_primary_key_column_name()
         # See module assumption #2
-        master_key_property_name = type(snapshot).get_property_name_by_column_name(
+        primary_key_property_name = type(snapshot).get_property_name_by_column_name(
             key_column_name
         )
-        master_entity_id = getattr(snapshot, master_key_property_name)
+        primary_entity_id = getattr(snapshot, primary_key_property_name)
 
         if (
-            self.snapshot_contexts[master_type_name][
-                master_entity_id
+            self.snapshot_contexts[primary_type_name][
+                primary_entity_id
             ].most_recent_snapshot
             is not None
         ):
             raise ValueError(
-                "Snapshot already registered for master entity with type "
+                "Snapshot already registered for primary entity with type "
                 "{type} and primary key {primary_key}".format(
-                    type=master_type_name, primary_key=master_entity_id
+                    type=primary_type_name, primary_key=primary_entity_id
                 )
             )
 
-        self.snapshot_contexts[master_type_name][
-            master_entity_id
+        self.snapshot_contexts[primary_type_name][
+            primary_entity_id
         ].most_recent_snapshot = snapshot

@@ -23,12 +23,12 @@ portable between database implementations.
 NOTE: Many of the tables in the below schema are historical tables. The primary
 key of a historical table exists only due to the requirements of SQLAlchemy,
 and should not be referenced by any other table. The key which should be used
-to reference a historical table is the key shared with the master table. For
+to reference a historical table is the key shared with the primary table. For
 the historical table, this key is non-unique. This is necessary to allow the
 desired temporal table behavior. Because of this, any foreign key column on a
-historical table must point to the *master* table (which has a unique key), not
+historical table must point to the *primary* table (which has a unique key), not
 the historical table (which does not). Because the key is shared between the
-master and historical tables, this allows an indirect guarantee of referential
+primary and historical tables, this allows an indirect guarantee of referential
 integrity to the historical tables as well.
 """
 from typing import Any
@@ -49,24 +49,24 @@ from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import relationship, validates
 
+import recidiviz.common.constants.enum_canonical_strings as enum_strings
 from recidiviz.common.constants.county import (
     enum_canonical_strings as county_enum_strings,
 )
-import recidiviz.common.constants.enum_canonical_strings as enum_strings
 from recidiviz.persistence.database.base_schema import JailsBase
 from recidiviz.persistence.database.schema.history_table_shared_columns_mixin import (
     HistoryTableSharedColumns,
 )
 from recidiviz.persistence.database.schema.shared_enums import (
+    charge_status,
+    ethnicity,
     gender,
     race,
-    ethnicity,
     residency_status,
-    charge_status,
 )
 
 # SQLAlchemy enums. Created separately from the tables so they can be shared
-# between the master and historical tables for each entity.
+# between the primary and historical tables for each entity.
 
 # Booking
 
@@ -203,7 +203,7 @@ class _PersonSharedColumns:
         return super().__new__(cls)
 
     # NOTE: PersonHistory does not contain full_name or birthdate columns. This
-    # is to ensure that PII is only stored in a single location (on the master
+    # is to ensure that PII is only stored in a single location (on the primary
     # table) and can be easily deleted when it should no longer be stored for a
     # given individual.
 

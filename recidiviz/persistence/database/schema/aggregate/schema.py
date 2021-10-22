@@ -39,7 +39,7 @@ from recidiviz.persistence.database.base_schema import JailsBase
 from recidiviz.persistence.database.schema.shared_enums import ethnicity, gender, race
 
 # SQLAlchemy enums. Created separately from the tables so they can be shared
-# between the master and historical tables for each entity.
+# between the primary and historical tables for each entity.
 
 time_granularity = Enum(
     enum_strings.daily_granularity,
