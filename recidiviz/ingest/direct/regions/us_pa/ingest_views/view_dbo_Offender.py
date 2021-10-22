@@ -17,7 +17,7 @@
 """Query containing person demographic and identifier information from PBPP."""
 
 from recidiviz.ingest.direct.regions.us_pa.ingest_views.templates_person_external_ids import (
-    MASTER_STATE_IDS_FRAGMENT_V2,
+    PRIMARY_STATE_IDS_FRAGMENT_V2,
 )
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
     DirectIngestPreProcessedIngestViewBuilder,
@@ -26,28 +26,28 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = f"""WITH
-{MASTER_STATE_IDS_FRAGMENT_V2},
+{PRIMARY_STATE_IDS_FRAGMENT_V2},
 base_query AS (
   SELECT 
-    ids.recidiviz_master_person_id, ParoleNumber, OffRaceEthnicGroup, OffSex,
-    ROW_NUMBER() OVER (PARTITION BY recidiviz_master_person_id ORDER BY LastModifiedDate DESC) AS recency_rank
+    ids.recidiviz_primary_person_id, ParoleNumber, OffRaceEthnicGroup, OffSex,
+    ROW_NUMBER() OVER (PARTITION BY recidiviz_primary_person_id ORDER BY LastModifiedDate DESC) AS recency_rank
   FROM {{dbo_Offender}} offender
   JOIN
-  (SELECT DISTINCT recidiviz_master_person_id, parole_number FROM recidiviz_master_person_ids) ids
+  (SELECT DISTINCT recidiviz_primary_person_id, parole_number FROM recidiviz_primary_person_ids) ids
   ON ids.parole_number = offender.ParoleNumber
 ),
 races_ethnicities AS (
   SELECT 
-    recidiviz_master_person_id,
+    recidiviz_primary_person_id,
     STRING_AGG(DISTINCT OffRaceEthnicGroup, ',' ORDER BY OffRaceEthnicGroup) AS races_ethnicities_list
   FROM base_query
-  GROUP BY recidiviz_master_person_id
+  GROUP BY recidiviz_primary_person_id
 )
 SELECT * EXCEPT (recency_rank)
 FROM base_query
 LEFT OUTER JOIN
 races_ethnicities
-USING (recidiviz_master_person_id)
+USING (recidiviz_primary_person_id)
 WHERE recency_rank = 1
 """
 

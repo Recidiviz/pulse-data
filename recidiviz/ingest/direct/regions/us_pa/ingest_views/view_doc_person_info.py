@@ -17,7 +17,7 @@
 """Query containing person demographic and identifier information from the DOC."""
 
 from recidiviz.ingest.direct.regions.us_pa.ingest_views.templates_person_external_ids import (
-    MASTER_STATE_IDS_FRAGMENT_V2,
+    PRIMARY_STATE_IDS_FRAGMENT_V2,
 )
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
     DirectIngestPreProcessedIngestViewBuilder,
@@ -26,15 +26,15 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = f"""WITH
-{MASTER_STATE_IDS_FRAGMENT_V2},
-search_inmate_info_with_master_ids AS (
-    SELECT recidiviz_master_person_id, info.*
+{PRIMARY_STATE_IDS_FRAGMENT_V2},
+search_inmate_info_with_primary_ids AS (
+    SELECT recidiviz_primary_person_id, info.*
     FROM 
       {{dbo_tblSearchInmateInfo}} info
     LEFT OUTER JOIN
-        (SELECT recidiviz_master_person_id, control_number 
-         FROM recidiviz_master_person_ids
-         GROUP BY recidiviz_master_person_id, control_number) ids
+        (SELECT recidiviz_primary_person_id, control_number 
+         FROM recidiviz_primary_person_ids
+         GROUP BY recidiviz_primary_person_id, control_number) ids
     USING (control_number)
 ),
 bad_address_field_values AS (
@@ -48,11 +48,11 @@ bad_address_field_values AS (
 ),
 info_ranked_by_recency AS (
   SELECT
-    recidiviz_master_person_id,
+    recidiviz_primary_person_id,
     info.control_number,
     inmate_number,
     ROW_NUMBER() OVER (
-        PARTITION BY recidiviz_master_person_id 
+        PARTITION BY recidiviz_primary_person_id 
         -- The delete_date column has the format YYYYDDD, where the YYYY term is the year and DDD is the # of
         -- days since the last day of the previous year (i.e. Jan 1 == 001). This column indicates 
         --- recency ordering, and will be set to 9999999 if the inmate number is active.
@@ -81,7 +81,7 @@ info_ranked_by_recency AS (
       )
     ) AS full_address
   FROM
-    search_inmate_info_with_master_ids info
+    search_inmate_info_with_primary_ids info
   LEFT OUTER JOIN
     {{dbo_Perrec}} perrec
   -- NOTE: As of 2020-06-10, there are 588 people returned by this query that didn't match a row in dbo_Perrec,
@@ -95,7 +95,7 @@ most_recent_info AS (
 ),
 people AS (
   SELECT 
-    recidiviz_master_person_id,
+    recidiviz_primary_person_id,
     control_number,
     Frst_Nm,
     Mid_Nm,
@@ -113,11 +113,11 @@ people AS (
   FROM
     most_recent_info
   LEFT OUTER JOIN (
-    SELECT recidiviz_master_person_id, STRING_AGG(DISTINCT inmate_number, ',' ORDER BY inmate_number) AS inmate_numbers
-    FROM search_inmate_info_with_master_ids
-    GROUP BY recidiviz_master_person_id
+    SELECT recidiviz_primary_person_id, STRING_AGG(DISTINCT inmate_number, ',' ORDER BY inmate_number) AS inmate_numbers
+    FROM search_inmate_info_with_primary_ids
+    GROUP BY recidiviz_primary_person_id
   ) AS inmate_numbers_grouping
-  USING (recidiviz_master_person_id)
+  USING (recidiviz_primary_person_id)
 )
 SELECT 
   *
@@ -128,7 +128,7 @@ VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     region="us_pa",
     ingest_view_name="doc_person_info",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="recidiviz_master_person_id",
+    order_by_cols="recidiviz_primary_person_id",
     materialize_raw_data_table_views=True,
 )
 

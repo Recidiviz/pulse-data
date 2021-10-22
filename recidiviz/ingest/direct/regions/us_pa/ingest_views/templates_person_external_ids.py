@@ -15,15 +15,15 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """This query creates a table of associated (control_number, inmate_number,
-parole_number) tuples along with a master_control_number col which tells us which
+parole_number) tuples along with a primary_control_number col which tells us which
 collections of ids correspond to the same real world person. If the
-master_control_number is NULL, then there are no control numbers associated with this
+primary_control_number is NULL, then there are no control numbers associated with this
 person and the nonnull IDs in that row (will be a parole_number and/or inmate number)
 are the only IDs associated with this person.
 
 The query does a sufficient # of iterations of a recursive walk along all control_number
 <-> inmate_number and inmate_number <-> parole_number edges to cluster all groups of
-associated edges around a single master control_number.
+associated edges around a single primary control_number.
 
 Since the inmate_number <-> control_number relationship in `dbo_tblSearchInmateInfo` is
 strictly {0,1} to many, we just have to do a full outer join on that table to connect
@@ -31,7 +31,7 @@ any parole numbers to their single state id.
 
 However, since the parole_number <-> inmate relationship in `dbo_ParoleCount`
 is many to many (though primarly 1:1), we need to do several rounds of self-joins until
-we find no rows with parole numbers with different recidiviz_master_person_ids.
+we find no rows with parole numbers with different recidiviz_primary_person_ids.
 
 Here's the degenerate situation that actually happens in PA that this is solving for:
 C1 - I1 - P1
@@ -42,43 +42,43 @@ C2 - I3 - P3
   \
     I4
 In this example, all rows with control numbers (C1, C2) or parole_numbers (P1, P2, or P3)
-end up with master_control_number C1.
+end up with primary_control_number C1.
 """
 
 EXPLORE_GRAPH_BY_COLUMN_TEMPLATE = """SELECT
         control_number, inmate_number, parole_number, pseudo_linking_id,
-        IF(new_master_control_number_candidate IS NULL OR master_control_number < new_master_control_number_candidate,
-           CAST(master_control_number AS STRING),
+        IF(new_primary_control_number_candidate IS NULL OR primary_control_number < new_primary_control_number_candidate,
+           CAST(primary_control_number AS STRING),
            -- Cast here only necessary for view to play nicely with Postgres tests
-           CAST(new_master_control_number_candidate AS STRING)
-        ) AS master_control_number
+           CAST(new_primary_control_number_candidate AS STRING)
+        ) AS primary_control_number
       FROM (
         SELECT 
-          control_number, inmate_number, parole_number, pseudo_linking_id, master_control_number,
-          MIN(new_row_master_control_number_candidate) OVER (
-            PARTITION BY COALESCE(master_control_number, new_row_master_control_number_candidate)
-          ) AS new_master_control_number_candidate
+          control_number, inmate_number, parole_number, pseudo_linking_id, primary_control_number,
+          MIN(new_row_primary_control_number_candidate) OVER (
+            PARTITION BY COALESCE(primary_control_number, new_row_primary_control_number_candidate)
+          ) AS new_primary_control_number_candidate
         FROM (
           SELECT 
-            primary_table.control_number, primary_table.inmate_number, primary_table.parole_number, primary_table.pseudo_linking_id, primary_table.master_control_number,
-            MIN(control_joins.master_control_number) AS new_row_master_control_number_candidate
+            primary_table.control_number, primary_table.inmate_number, primary_table.parole_number, primary_table.pseudo_linking_id, primary_table.primary_control_number,
+            MIN(control_joins.primary_control_number) AS new_row_primary_control_number_candidate
           FROM 
             {base_table_name} primary_table
           LEFT OUTER JOIN
             {base_table_name} control_joins
           ON primary_table.{join_col_name} = control_joins.{join_col_name} 
             AND (
-                (primary_table.master_control_number IS NULL AND control_joins.master_control_number IS NOT NULL) 
-                OR primary_table.master_control_number > control_joins.master_control_number
+                (primary_table.primary_control_number IS NULL AND control_joins.primary_control_number IS NOT NULL) 
+                OR primary_table.primary_control_number > control_joins.primary_control_number
             )
-          GROUP BY primary_table.control_number, primary_table.inmate_number, primary_table.parole_number, primary_table.pseudo_linking_id, primary_table.master_control_number
+          GROUP BY primary_table.control_number, primary_table.inmate_number, primary_table.parole_number, primary_table.pseudo_linking_id, primary_table.primary_control_number
         ) a
       ) b"""
 
 
 def explore_graph_by_column_query(base_table_name: str, join_col_name: str) -> str:
     """Generates a query that explores one level of graph edges along the provided |join_col_name| column, merging
-    clusters of master_control_number that are linked by that edge.
+    clusters of primary_control_number that are linked by that edge.
     """
     return EXPLORE_GRAPH_BY_COLUMN_TEMPLATE.format(
         base_table_name=base_table_name,
@@ -86,9 +86,9 @@ def explore_graph_by_column_query(base_table_name: str, join_col_name: str) -> s
     )
 
 
-def make_master_person_ids_fragment() -> str:
+def make_primary_person_ids_fragment() -> str:
     return f"""
-recidiviz_master_person_ids AS (
+recidiviz_primary_person_ids AS (
     WITH
     distinct_control_to_inmate AS (
         SELECT
@@ -111,7 +111,7 @@ recidiviz_master_person_ids AS (
         SELECT
             control_number,
             inmate_number, parole_number,
-            control_number AS master_control_number,
+            control_number AS primary_control_number,
             pseudo_linking_id
         FROM 
             distinct_control_to_inmate
@@ -125,7 +125,7 @@ recidiviz_master_person_ids AS (
             control_number,
             inmate_number,
             parole_number,
-            master_control_number,
+            primary_control_number,
             pseudo_linking_id
     ),
     explore_control_number AS (
@@ -144,21 +144,21 @@ recidiviz_master_person_ids AS (
         {explore_graph_by_column_query(base_table_name='explore_parole_number',
                                        join_col_name='pseudo_linking_id')}
     ),
-    master_control_numbers AS (
-        SELECT control_number, inmate_number, parole_number, master_control_number
+    primary_control_numbers AS (
+        SELECT control_number, inmate_number, parole_number, primary_control_number
         FROM explore_pseudo_linking_id
-        GROUP BY control_number, inmate_number, parole_number, master_control_number
+        GROUP BY control_number, inmate_number, parole_number, primary_control_number
     )
     SELECT
         CASE 
-            WHEN master_control_number IS NOT NULL
-                THEN CONCAT('RECIDIVIZ_MASTER_CONTROL_NUMBER_', master_control_number)
+            WHEN primary_control_number IS NOT NULL
+                THEN CONCAT('RECIDIVIZ_PRIMARY_CONTROL_NUMBER_', primary_control_number)
             WHEN parole_number IS NOT NULL
-                THEN CONCAT('RECIDIVIZ_MASTER_PAROLE_NUMBER_', parole_number)
-        END AS recidiviz_master_person_id,
+                THEN CONCAT('RECIDIVIZ_PRIMARY_PAROLE_NUMBER_', parole_number)
+        END AS recidiviz_primary_person_id,
         control_number, inmate_number, parole_number
-    FROM master_control_numbers
+    FROM primary_control_numbers
 )"""
 
 
-MASTER_STATE_IDS_FRAGMENT_V2 = make_master_person_ids_fragment()
+PRIMARY_STATE_IDS_FRAGMENT_V2 = make_primary_person_ids_fragment()
