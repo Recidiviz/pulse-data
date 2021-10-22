@@ -98,6 +98,8 @@ wrapt = "*"
 attrs = "*"
 requests = "*"
 pytz = "*"
+# TODO(#9732): Upgrade to 4.0 introduces dateparsing errors to ingest controller tests
+tzlocal = "<4.0"
 python-dateutil = "*"
 google-api-core = "*"
 # If the protobuf version changes be sure to update the pinned version in setup.py
