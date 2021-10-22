@@ -24,12 +24,12 @@ portable between database implementations.
 NOTE: Many of the tables in the below schema are historical tables. The primary
 key of a historical table exists only due to the requirements of SQLAlchemy,
 and should not be referenced by any other table. The key which should be used
-to reference a historical table is the key shared with the master table. For
+to reference a historical table is the key shared with the primary table. For
 the historical table, this key is non-unique. This is necessary to allow the
 desired temporal table behavior. Because of this, any foreign key column on a
-historical table must point to the *master* table (which has a unique key), not
+historical table must point to the *primary* table (which has a unique key), not
 the historical table (which does not). Because the key is shared between the
-master and historical tables, this allows an indirect guarantee of referential
+primary and historical tables, this allows an indirect guarantee of referential
 integrity to the historical tables as well.
 """
 from typing import Any, TypeVar
@@ -55,7 +55,7 @@ from recidiviz.common.constants.state import (
 )
 
 # SQLAlchemy enums. Created separately from the tables so they can be shared
-# between the master and historical tables for each entity.
+# between the primary and historical tables for each entity.
 from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.database.schema.history_table_shared_columns_mixin import (
     HistoryTableSharedColumns,
