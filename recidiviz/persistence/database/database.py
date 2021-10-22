@@ -17,16 +17,16 @@
 """Contains logic for communicating with a SQL Database."""
 import logging
 from typing import List
-from more_itertools import one
 
+from more_itertools import one
 from sqlalchemy.orm import Session
 
 import recidiviz.persistence.database.history.historical_snapshot_update as update_snapshots
+from recidiviz.common.common_utils import check_all_objs_have_type
 from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
 from recidiviz.persistence.database.database_entity import DatabaseEntity
-from recidiviz.persistence.database.schema.schema_person_type import SchemaPersonType
 from recidiviz.persistence.database.schema.county import schema as county_schema
-from recidiviz.common.common_utils import check_all_objs_have_type
+from recidiviz.persistence.database.schema.schema_person_type import SchemaPersonType
 from recidiviz.persistence.errors import PersistenceError
 from recidiviz.utils import trace
 
@@ -90,9 +90,9 @@ def _save_record_trees(
         _set_dummy_booking_ids(root_people)
 
         # Merge is recursive for all related entities, so this persists all
-        # master entities in all record trees
+        # primary entities in all record trees
         #
-        # Merge and flush is required to ensure all master entities, including
+        # Merge and flush is required to ensure all primary entities, including
         # newly created ones, have primary keys set before performing historical
         # snapshot operations
 

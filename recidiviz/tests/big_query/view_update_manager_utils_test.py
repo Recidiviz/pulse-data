@@ -766,7 +766,7 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
         self.mock_client.list_tables.assert_called()
         self.mock_client.delete_table.assert_not_called()
 
-    def test_cleanup_datasets_and_delete_unmanaged_views_dataset_not_in_master_list(
+    def test_cleanup_datasets_and_delete_unmanaged_views_dataset_not_in_primary_list(
         self,
     ) -> None:
         datasets_that_have_ever_been_managed = {
