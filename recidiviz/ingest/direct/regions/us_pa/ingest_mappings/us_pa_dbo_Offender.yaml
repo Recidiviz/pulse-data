@@ -1,12 +1,12 @@
 manifest_language: 1.0.0
 input_columns:
-  - recidiviz_master_person_id
+  - recidiviz_primary_person_id
   - ParoleNumber
   - OffSex
   - races_ethnicities_list
   - OffRaceEthnicGroup
 unused_columns:
-  - recidiviz_master_person_id  # Internal Recidiviz person ID
+  - recidiviz_primary_person_id  # Internal Recidiviz person ID
   - OffRaceEthnicGroup  # Redundant of races_ethnicities_list
 output:
   StatePerson:

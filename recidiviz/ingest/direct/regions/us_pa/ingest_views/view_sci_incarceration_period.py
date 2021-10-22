@@ -19,7 +19,7 @@
 """
 
 from recidiviz.ingest.direct.regions.us_pa.ingest_views.templates_person_external_ids import (
-    MASTER_STATE_IDS_FRAGMENT_V2,
+    PRIMARY_STATE_IDS_FRAGMENT_V2,
 )
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
     DirectIngestPreProcessedIngestViewBuilder,
@@ -29,10 +29,10 @@ from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = f"""
 WITH 
-{MASTER_STATE_IDS_FRAGMENT_V2},
+{PRIMARY_STATE_IDS_FRAGMENT_V2},
 movements_base AS (
   SELECT
-      recidiviz_master_person_id,
+      recidiviz_primary_person_id,
       m.mov_cnt_num AS control_number,
       m.mov_cur_inmt_num AS inmate_number,
       m.mov_move_date AS move_date,
@@ -41,7 +41,7 @@ movements_base AS (
       m.mov_move_code AS movement_code,
       -- Sort by date, only using PA sequence numbers when the date is the same. Sort death statuses after all other 
       -- entries no matter what. No bringing people back to life.
-      ROW_NUMBER() OVER (PARTITION BY recidiviz_master_person_id 
+      ROW_NUMBER() OVER (PARTITION BY recidiviz_primary_person_id 
                          ORDER BY 
                             m.mov_move_date, 
                             IF(m.mov_sent_stat_cd IN ('DA', 'DN', 'DS', 'DX', 'DZ'), 99999, CAST(mov_seq_num AS INT64)),
@@ -72,28 +72,28 @@ movements_base AS (
       m.parole_stat_cd IN ('TPV', 'CPV', 'TCV') AS is_confirmed_parole_violator_parole_status
   FROM {{dbo_Movrec}} m
   LEFT OUTER JOIN (
-    SELECT DISTINCT recidiviz_master_person_id, control_number 
-    FROM recidiviz_master_person_ids 
+    SELECT DISTINCT recidiviz_primary_person_id, control_number 
+    FROM recidiviz_primary_person_ids 
     WHERE control_number IS NOT NULL
   ) ids
   ON m.mov_cnt_num = ids.control_number
   WHERE
     -- This is the 'Bogus record' flag, if 'Y', indicates if a record should be ignored, 'N' otherwise.
     m.mov_rec_del_flag = 'N'
-    -- In a few old cases, we see a control number with no corresponding row match in recidiviz_master_person_ids or
+    -- In a few old cases, we see a control number with no corresponding row match in recidiviz_primary_person_ids or
     -- control numbers that are null in this table - in these cases, we remove these rows entirely to improve
     -- query determinism and reduce complexity.
-    AND recidiviz_master_person_id IS NOT NULL AND m.mov_cnt_num IS NOT NULL
+    AND recidiviz_primary_person_id IS NOT NULL AND m.mov_cnt_num IS NOT NULL
 ),
 movements AS (
   SELECT 
     *,
     LAST_VALUE(move_location IGNORE NULLS) OVER (
-        PARTITION BY recidiviz_master_person_id
+        PARTITION BY recidiviz_primary_person_id
         ORDER BY sequence_number ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
     ) AS location,
     LAG(is_confirmed_parole_violator_parole_status) OVER (
-        PARTITION BY recidiviz_master_person_id 
+        PARTITION BY recidiviz_primary_person_id 
         ORDER BY sequence_number
     ) AS previous_is_confirmed_parole_violator_parole_status
   FROM movements_base
@@ -108,7 +108,7 @@ movements_with_inflection_indicators AS (
       SELECT 
         *,
         LAG(sequence_number) OVER (
-            PARTITION BY recidiviz_master_person_id, location
+            PARTITION BY recidiviz_primary_person_id, location
             ORDER BY sequence_number
         ) AS previous_sequence_number_within_location,
         LAG(is_delete_movement) OVER person_row_ordering AS prev_is_delete_movement,
@@ -116,7 +116,7 @@ movements_with_inflection_indicators AS (
         LEAD(move_date) OVER person_row_ordering AS next_move_date
       FROM movements 
       WINDOW person_row_ordering AS (
-          PARTITION BY recidiviz_master_person_id ORDER BY sequence_number
+          PARTITION BY recidiviz_primary_person_id ORDER BY sequence_number
       )
     ) windowed_movements
 ),
@@ -124,7 +124,7 @@ critical_movements AS (
   SELECT
     *,
     (is_delete_movement AND next_move_date = move_date) OR (prev_is_delete_movement AND prev_move_date = move_date) AS is_administrative_edge,
-    LAG(sequence_number) OVER (PARTITION BY recidiviz_master_person_id
+    LAG(sequence_number) OVER (PARTITION BY recidiviz_primary_person_id
                                ORDER BY sequence_number) AS prev_critical_movement_sequence_number
   FROM movements_with_inflection_indicators
   WHERE
@@ -150,7 +150,7 @@ periods AS (
   SELECT
     start_movement.control_number,
     start_movement.inmate_number,
-    ROW_NUMBER() OVER (PARTITION BY start_movement.recidiviz_master_person_id
+    ROW_NUMBER() OVER (PARTITION BY start_movement.recidiviz_primary_person_id
                        ORDER BY start_movement.sequence_number) AS sequence_number,
     start_movement.move_date AS start_movement_date,
     end_movement.move_date AS end_movement_date,
@@ -169,7 +169,7 @@ periods AS (
     critical_movements start_movement
   LEFT OUTER JOIN
     critical_movements end_movement
-  ON start_movement.recidiviz_master_person_id = end_movement.recidiviz_master_person_id 
+  ON start_movement.recidiviz_primary_person_id = end_movement.recidiviz_primary_person_id 
     AND end_movement.prev_critical_movement_sequence_number = start_movement.sequence_number
   LEFT OUTER JOIN
     sentence_types
