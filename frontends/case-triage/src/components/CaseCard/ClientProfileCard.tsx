@@ -86,6 +86,12 @@ const DetailsPanelContents: React.FC<CaseCardProps> = ({ client }) => {
             {client.supervisionStartDate.from(moment().startOf("day"))})
           </SummaryItem>
         ) : null}
+        {client.projectedEndDate ? (
+          <SummaryItem>
+            FTRD: {client.projectedEndDate.format(LONG_DATE_FORMAT)} (
+            {client.projectedEndDate.from(moment().startOf("day"))})
+          </SummaryItem>
+        ) : null}
         {canSeeExtendedProfile && client.milestones.violationFree && (
           <SummaryItem>
             Milestone: {client.milestones.violationFree} without a violation
