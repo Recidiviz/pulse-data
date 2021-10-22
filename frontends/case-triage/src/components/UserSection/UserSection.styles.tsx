@@ -14,13 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import {
-  Button,
-  ButtonProps,
-  fonts,
-  palette,
-  spacing,
-} from "@recidiviz/design-system";
+import { Button, fonts, palette, spacing } from "@recidiviz/design-system";
 import { rem } from "polished";
 import styled from "styled-components/macro";
 
@@ -55,45 +49,6 @@ export const UserAvatar = styled.span`
   text-transform: uppercase;
   width: 32px;
   cursor: pointer;
-`;
-
-export const DropdownContainer = styled.div`
-  position: absolute;
-  top: 40px;
-  right: 0;
-  z-index: 1000;
-
-  border: 1px solid ${palette.slate20};
-  border-radius: 8px;
-  padding: ${rem(spacing.sm)};
-  background-color: ${palette.marble2};
-`;
-
-const linkStyleBase = `
-  font-size: ${rem(14)};
-  display: block;
-  width: 100%;
-  padding: ${rem(spacing.sm)};
-`;
-
-export const DropdownLink = styled.a`
-  ${linkStyleBase}
-
-  color: ${palette.signal.links};
-
-  &:active {
-    color: ${palette.pine4};
-  }
-
-  text-decoration: none;
-  &:hover {
-    text-decoration: underline;
-  }
-`;
-
-export const DropdownLinkButton = styled(Button)<ButtonProps>`
-  ${linkStyleBase}
-  text-align: right;
 `;
 
 export const ToolbarButton = styled(Button)`

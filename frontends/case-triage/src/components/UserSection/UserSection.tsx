@@ -17,11 +17,15 @@
 import { User } from "@auth0/auth0-spa-js";
 import { observer } from "mobx-react-lite";
 import * as React from "react";
+import {
+  Dropdown,
+  DropdownMenu,
+  DropdownMenuItem,
+  DropdownToggle,
+} from "@recidiviz/design-system";
+import { useCallback } from "react";
 import { useRootStore } from "../../stores";
 import {
-  DropdownContainer,
-  DropdownLink,
-  DropdownLinkButton,
   ToolbarButton,
   UserAvatar,
   UserFlex,
@@ -52,38 +56,50 @@ interface UserProps {
 
 const UserComponent = ({ user }: UserProps): JSX.Element => {
   const { api, userStore } = useRootStore();
-  const [dropdownOpen, setDropdownOpen] = React.useState(false);
 
-  const toggleDropdown = React.useCallback(() => {
-    setDropdownOpen(!dropdownOpen);
-  }, [dropdownOpen]);
+  const onLogout = useCallback(
+    (e) => {
+      if (userStore.logout) userStore.logout();
+      else {
+        throw new Error(`Unable to logout user ${userStore.user}`);
+      }
+    },
+    [userStore]
+  );
 
   return (
-    <>
-      {!userStore.isImpersonating && (
+    <Dropdown>
+      <DropdownToggle kind="link">
+        {!userStore.isImpersonating && (
+          <>
+            <UserName>{user.name}</UserName>
+            <UserAvatar>{user.name && user.name[0]}</UserAvatar>
+          </>
+        )}
+      </DropdownToggle>
+      <DropdownMenu>
+        <DropdownMenuItem
+          onClick={() =>
+            window.open(
+              "https://drive.google.com/file/d/11e-fmxSlACDzwSm-X6qD1OF7vFi62qOU/view?usp=sharing",
+              "_blank"
+            )
+          }
+        >
+          FAQ
+        </DropdownMenuItem>
         <>
-          <UserName onClick={toggleDropdown}>{user.name}</UserName>
-          <UserAvatar onClick={toggleDropdown}>
-            {user.name && user.name[0]}
-          </UserAvatar>
-        </>
-      )}
-      {dropdownOpen ? (
-        <DropdownContainer>
-          <DropdownLink
-            href="https://drive.google.com/file/d/11e-fmxSlACDzwSm-X6qD1OF7vFi62qOU/view?usp=sharing"
-            target="_blank"
-          >
-            FAQ
-          </DropdownLink>
           {userStore.canAccessLeadershipDashboard && api.dashboardURL && (
-            <DropdownLink href={api.dashboardURL} target="_blank">
+            <DropdownMenuItem
+              onClick={() => window.open(`${api.dashboardURL}`, "_blank")}
+            >
               Go to Dashboard
-            </DropdownLink>
+            </DropdownMenuItem>
           )}
+        </>
+        <>
           {process.env.NODE_ENV === "development" && (
-            <DropdownLinkButton
-              kind="link"
+            <DropdownMenuItem
               onClick={async () => {
                 // eslint-disable-next-line no-alert
                 const email = window.prompt("Enter the officer's email:") || "";
@@ -111,18 +127,14 @@ const UserComponent = ({ user }: UserProps): JSX.Element => {
               }}
             >
               Impersonate User
-            </DropdownLinkButton>
+            </DropdownMenuItem>
           )}
-          <form action="/auth/log_out" method="POST">
-            <input type="hidden" name="csrf_token" value={api.csrfToken} />
-
-            <DropdownLinkButton kind="link" type="submit">
-              Sign out of Recidiviz
-            </DropdownLinkButton>
-          </form>
-        </DropdownContainer>
-      ) : null}
-    </>
+        </>
+        <DropdownMenuItem onClick={onLogout}>
+          Sign out of Recidiviz
+        </DropdownMenuItem>
+      </DropdownMenu>
+    </Dropdown>
   );
 };
 
