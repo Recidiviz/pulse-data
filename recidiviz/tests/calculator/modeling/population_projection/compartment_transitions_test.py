@@ -18,6 +18,7 @@
 
 import unittest
 from functools import partial
+
 import pandas as pd
 from pandas.testing import assert_frame_equal
 
@@ -106,3 +107,67 @@ class TestCompartmentTransitions(unittest.TestCase):
                 transitions.get_per_ts_transition_table(ts),
                 split_transitions.get_per_ts_transition_table(ts),
             )
+
+    def test_retroactive_policy(self) -> None:
+
+        # After 5 years, half of people go to the moon and half go to mars.
+        default_test_data = pd.DataFrame(
+            {
+                "compartment_duration": [5, 5],
+                "total_population": [1, 1],
+                "outflow_to": ["moon", "mars"],
+                "compartment": ["test_compartment"] * 2,
+            }
+        )
+
+        transitions = CompartmentTransitions(default_test_data)
+        transitions.initialize_transition_tables([])
+        tt = transitions.get_per_ts_transition_table(3)
+        self.assertListEqual(list(tt["moon"]), [0, 0, 0, 0, 0.5])
+        self.assertListEqual(list(tt["mars"]), [0, 0, 0, 0, 0.5])
+        tt = transitions.get_per_ts_transition_table(4)
+        self.assertListEqual(list(tt["moon"]), [0, 0, 0, 0, 0.5])
+        self.assertListEqual(list(tt["mars"]), [0, 0, 0, 0, 0.5])
+
+        # Our new policy is that after 2 years, half of people go to the moon
+        # After 5 years, half of people still go to mars.
+        retroactive_test_data = pd.DataFrame(
+            {
+                "compartment_duration": [2, 5],
+                "total_population": [1, 1],
+                "outflow_to": ["moon", "mars"],
+                "compartment": ["test_compartment"] * 2,
+            }
+        )
+
+        retroactive_policy = SparkPolicy(
+            policy_fn=partial(
+                TransitionTable.use_alternate_transitions_data,
+                alternate_historical_transitions=retroactive_test_data,
+                retroactive=True,
+            ),
+            sub_population={"compartment": "test_compartment"},
+            spark_compartment="test_compartment",
+            policy_ts=3,
+            apply_retroactive=True,
+        )
+
+        transitions = CompartmentTransitions(default_test_data)
+        transitions.initialize_transition_tables([retroactive_policy])
+        # Our retroactive policy is applied at timestep 3, so
+        # get_per_ts_transition_table should return a transitory table that makes
+        # half of all people who have been here >=2 years to go to the moon.
+        # The half of people that go to mars still wait 5 years.
+        before = transitions.get_per_ts_transition_table(2)
+        self.assertEqual(list(before["mars"]), [0, 0, 0, 0, 0.5])
+        self.assertEqual(list(before["moon"]), [0, 0, 0, 0, 0.5])
+
+        # Verify the transitory table is sending 50% of those who have been here at
+        # least 2 time steps to the moon, and only those at least 5 time steps to mars
+        tt = transitions.get_per_ts_transition_table(3)
+        self.assertListEqual(list(tt["moon"]), [0, 0.5, 0.5, 0.5, 0.5])
+        self.assertListEqual(list(tt["mars"]), [0, 0, 0, 0, 0.5])
+        # Time step 4 should use the "after" table
+        tt = transitions.get_per_ts_transition_table(4)
+        self.assertListEqual(list(tt["moon"]), [0, 0.5, 0, 0, 0])
+        self.assertListEqual(list(tt["mars"]), [0, 0, 0, 0, 1])
