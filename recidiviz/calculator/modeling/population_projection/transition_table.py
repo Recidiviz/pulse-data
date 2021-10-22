@@ -109,7 +109,11 @@ class TransitionTable:
     def _normalize_table(
         self, state: TransitionTableType, before_table: Optional[pd.DataFrame] = None
     ) -> None:
-        """Convert the per-ts population counts into normalized probabilities"""
+        """Convert the per-ts population counts into normalized probabilities.
+
+        If a `before_table` is provided, use that to modify the transition probabilities
+        to account for the transitory period.
+        """
         # if first table, skip before and transitory states
         if self.previous_table is None and state in [
             TransitionTableType.BEFORE,
@@ -139,7 +143,10 @@ class TransitionTable:
             )
 
         if before_table is None:
-            before_table = after_table
+            before_table = after_table.copy()
+
+        if len(before_table) < len(after_table):
+            before_table = before_table.reindex(after_table.index, fill_value=0)
 
         if "remaining" in before_table:
             raise ValueError(
@@ -148,41 +155,40 @@ class TransitionTable:
 
         normalized_df = deepcopy(after_table)
 
-        before_counted = 0
-        after_counted = 0
+        before_totals = before_table.sum()
+        after_totals = after_table.sum()
 
-        before_total = before_table.sum().sum()
-        after_total = after_table.sum().sum()
+        before_counteds = before_totals * 0
+        after_counteds = after_totals * 0
 
-        outflow_weights = before_table.sum() / before_total
+        outflow_ratios = after_totals / after_totals.sum()
 
         for sentence_len in range(1, self.max_sentence + 1):
+            # want to release number of people X that causes (before_counteds at time t) + X to equal
+            # (after_counteds at time t+1), so we start by stepping forward after_counteds to t+1
+            ts_released = after_table.loc[sentence_len]
+            after_counteds += ts_released
 
-            if (
-                (sentence_len > before_table.index.max())
-                or (before_counted == before_total)
-                or (after_counted == after_total)
-            ):
-                normalized_df.loc[sentence_len] = outflow_weights
-                continue
+            # calculate the fraction of each outflow remaining at this time step
+            after_remaining = np.clip(1 - after_counteds / after_totals, 0, 1)
+            before_remaining = np.clip(1 - before_counteds / before_totals, 0, 1)
 
-            ts_released = after_table.loc[sentence_len].sum()
+            # Calculate X from above for each outflow, then scale by size of 'cohort' for that outflow
+            outflow_scaled_releases = (
+                before_remaining - after_remaining
+            ) * outflow_ratios
 
-            after_counted += ts_released
+            # In order to normalize, we also need to calculate the total remaining, also scaled by outflows
+            outflow_scaled_remaining = (before_remaining * outflow_ratios).sum()
 
-            after_remaining = 1 - after_counted / after_total
-            before_remaining = 1 - before_counted / before_total
+            # combine the above to get the release probabilities for this time step
+            # Note: we allow division by zero above when before_remaining is 0, but in that case no one is left to be
+            # influenced by this row of probabilities, so we can trivially fillna with 0s.
+            normalized_df.loc[sentence_len] = (
+                (outflow_scaled_releases / outflow_scaled_remaining).clip(0).fillna(0)
+            )
 
-            # if more people released by this point after than before, this will be negative but we actually want it to
-            #   be 0
-            ts_release_rate = max(1 - after_remaining / before_remaining, 0)
-
-            if ts_released > 0:
-                normalized_df.loc[sentence_len] *= ts_release_rate / ts_released
-            else:
-                normalized_df.loc[sentence_len] = ts_release_rate * outflow_weights
-
-            before_counted += before_table.loc[sentence_len].sum()
+            before_counteds += before_table.loc[sentence_len]
 
         normalized_df = normalized_df.apply(lambda x: round(x, SIG_FIGS))
 
