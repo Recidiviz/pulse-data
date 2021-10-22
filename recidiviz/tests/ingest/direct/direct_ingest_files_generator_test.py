@@ -22,15 +22,14 @@ from shutil import copytree, rmtree
 from types import ModuleType
 from typing import List
 
-from recidiviz.ingest.direct import (
-    regions as regions_module,
-    templates as ingest_templates_module,
-)
+from recidiviz.ingest.direct import regions as regions_module
+from recidiviz.ingest.direct import templates as ingest_templates_module
 from recidiviz.ingest.direct.direct_ingest_files_generator import (
-    DirectIngestFilesGenerator,
-    REGIONS_DIR_PATH,
     DEFAULT_WORKING_DIR,
-    DOCS_DIRECTORY,
+    DOCS_DIR_NAME,
+    DOCS_DIR_PATH,
+    REGIONS_DIR_PATH,
+    DirectIngestFilesGenerator,
 )
 from recidiviz.ingest.direct.direct_ingest_region_utils import (
     get_existing_region_dir_names,
@@ -72,7 +71,7 @@ class DirectIngestFilesGeneratorTest(
         self.files_generator = DirectIngestFilesGenerator(
             test_region_code,
             curr_directory=self.temp_dir,
-            docs_directory=os.path.join(self.temp_dir, DOCS_DIRECTORY),
+            docs_directory=os.path.join(self.temp_dir, DOCS_DIR_NAME),
         )
         self.files_generator.generate_all_new_dirs_and_files()
 
@@ -106,8 +105,8 @@ class DirectIngestFilesGeneratorTest(
             ),
         )
         copytree(
-            DOCS_DIRECTORY,
-            os.path.join(self.temp_dir, DOCS_DIRECTORY),
+            DOCS_DIR_PATH,
+            os.path.join(self.temp_dir, DOCS_DIR_NAME),
         )
 
     def tearDown(self) -> None:

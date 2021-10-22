@@ -52,7 +52,8 @@ TESTS_DIR_PATH = os.path.dirname(
 TEST_FIXTURES_DIR_PATH = os.path.dirname(
     os.path.relpath(regions_test_fixtures_module.__file__, start=DEFAULT_WORKING_DIR)
 )
-DOCS_DIRECTORY = "docs"
+DOCS_DIR_NAME = "docs"
+DOCS_DIR_PATH = os.path.join(DEFAULT_WORKING_DIR, "..", DOCS_DIR_NAME)
 
 
 class DirectIngestFilesGenerator:
@@ -62,7 +63,7 @@ class DirectIngestFilesGenerator:
         self,
         region_code: str,
         curr_directory: str = DEFAULT_WORKING_DIR,
-        docs_directory: str = DOCS_DIRECTORY,
+        docs_directory: str = DOCS_DIR_PATH,
     ):
         self.region_code: str = region_code
         self.current_year: int = datetime.today().year
@@ -117,7 +118,7 @@ class DirectIngestFilesGenerator:
             os.path.dirname(
                 test_fixtures_templates_module.__file__
             ): new_region_test_fixtures_dir_path,
-            os.path.join(DOCS_DIRECTORY, "templates"): new_region_docs_dir_path,
+            os.path.join(DOCS_DIR_PATH, "templates"): new_region_docs_dir_path,
         }
 
         try:
