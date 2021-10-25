@@ -19,16 +19,8 @@ import { observer } from "mobx-react-lite";
 import * as React from "react";
 import { trackPersonSelected } from "../../analytics";
 import { useRootStore } from "../../stores";
-import {
-  ACTION_TITLES,
-  isErrorReport,
-} from "../../stores/CaseUpdatesStore/CaseUpdates";
-import Tooltip from "../Tooltip";
 import CardPillsLayout from "./CardPillsLayout";
-import {
-  ClientListCardElement,
-  InProgressIndicator,
-} from "./ClientList.styles";
+import { ClientListCardElement } from "./ClientList.styles";
 import { ClientProps } from "./ClientList.types";
 
 const ClientComponent: React.FC<ClientProps> = observer(
@@ -58,11 +50,6 @@ const ClientComponent: React.FC<ClientProps> = observer(
     const active =
       clientsStore.activeClient?.personExternalId === client.personExternalId;
 
-    const tooltipTitle: React.ReactNode = client.inProgressUpdates
-      .filter(isErrorReport)
-      .map((actionType) => `${ACTION_TITLES[actionType]} report pending.`)
-      .join(" ");
-
     return (
       <ClientListCardElement
         className={active ? "client-card--active" : ""}
@@ -73,12 +60,6 @@ const ClientComponent: React.FC<ClientProps> = observer(
         }}
       >
         <CardPillsLayout client={client} />
-
-        {tooltipTitle && (
-          <Tooltip title={tooltipTitle}>
-            <InProgressIndicator />
-          </Tooltip>
-        )}
       </ClientListCardElement>
     );
   }
