@@ -45,7 +45,7 @@ DATE_SCRAPED_2 = datetime.date(year=2019, month=6, day=30)
 
 
 @pytest.mark.skip(
-    "TODO(#4865): This test fails on master for some, possibly due to underlying Java issues related to "
+    "TODO(#4865): This test fails on main for some, possibly due to underlying Java issues related to "
     "Apache Beam and Tabula."
 )
 class TestFlAggregateIngest(TestCase):

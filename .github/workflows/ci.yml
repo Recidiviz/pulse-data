@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Cancel previous runs
-        if: ${{ github.ref != 'refs/heads/master' }}
+        if: ${{ github.ref != 'refs/heads/main' }}
         uses: styfle/cancel-workflow-action@0.6.0
         with:
           access_token: ${{ github.token }}
@@ -41,12 +41,12 @@ jobs:
         run: |
           terraform -chdir=recidiviz/tools/deploy/terraform init -backend=false
           terraform -chdir=recidiviz/tools/deploy/terraform validate
-      - name: Fetch origin/master
-        # Needed for origin/master object lookups to succeed.
-        run: git fetch origin master
+      - name: Fetch origin/main
+        # Needed for origin/main object lookups to succeed.
+        run: git fetch origin main
       - name: Set merge_base
         run: |
-          echo "merge_base=$(git merge-base origin/master HEAD)" >> $GITHUB_ENV
+          echo "merge_base=$(git merge-base origin/main HEAD)" >> $GITHUB_ENV
       - name: Validate source modifications
         run: |
           pipenv run python -m recidiviz.tools.validate_source_modifications \
@@ -57,7 +57,7 @@ jobs:
       #   # If pre-commit proves useful, we can remove redundant checks (e.g. black).
       #   uses: pre-commit/action@v2.0.0
       #   # This can also create a new commit with changes, but it merges in latest
-      #   # master and can't re-trigger CI, so we don't do so at this time.
+      #   # main and can't re-trigger CI, so we don't do so at this time.
       #   with:
       #     # Pass extra_args to only run on changed files. The default is '--all-files'.
       #     # TODO(#6234): Remove once PA files can be generated again.
@@ -105,7 +105,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Cancel previous runs
-        if: ${{ github.ref != 'refs/heads/master' }}
+        if: ${{ github.ref != 'refs/heads/main' }}
         uses: styfle/cancel-workflow-action@0.6.0
         with:
           access_token: ${{ github.token }}
@@ -135,7 +135,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Cancel previous runs
-        if: ${{ github.ref != 'refs/heads/master' }}
+        if: ${{ github.ref != 'refs/heads/main' }}
         uses: styfle/cancel-workflow-action@0.6.0
         with:
           access_token: ${{ github.token }}
@@ -187,7 +187,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Cancel previous runs
-        if: ${{ github.ref != 'refs/heads/master' }}
+        if: ${{ github.ref != 'refs/heads/main' }}
         uses: styfle/cancel-workflow-action@0.6.0
         with:
           access_token: ${{ github.token }}

@@ -55,12 +55,12 @@ script:
 after_success:
   - coveralls
 
-# Reduce the workload on travis by only whitelisting 'push' builds on master (ie. Run a build for every merge into
-# master but not pushes to other branches). Note: If running all pushes on master (ie. PR merges) overloads Travis, we
-# could switch to periodically running builds on master via a Travis cron.
+# Reduce the workload on travis by only whitelisting 'push' builds on main (ie. Run a build for every merge into
+# main but not pushes to other branches). Note: If running all pushes on main (ie. PR merges) overloads Travis, we
+# could switch to periodically running builds on main via a Travis cron.
 branches:
   only:
-    - master
+    - main
     - /^releases\/v[0-9]+\.[0-9]+-rc$/
 
 cache:

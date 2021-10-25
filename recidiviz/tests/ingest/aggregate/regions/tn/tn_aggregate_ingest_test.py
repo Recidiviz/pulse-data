@@ -44,7 +44,7 @@ _NEWER_REPORT_DATE = datetime.date(year=2020, month=3, day=31)
 
 
 @pytest.mark.skip(
-    "TODO(#4865): This test fails on master for some, possibly due to underlying Java issues related to "
+    "TODO(#4865): This test fails on main for some, possibly due to underlying Java issues related to "
     "Apache Beam and Tabula."
 )
 class TestTnAggregateIngest(TestCase):
