@@ -371,7 +371,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--commit-range",
-        default="master...HEAD",
+        default="main...HEAD",
         help="The git commit range to compare against.",
     )
     args = parser.parse_args()

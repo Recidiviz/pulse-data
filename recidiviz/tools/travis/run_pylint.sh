@@ -23,12 +23,12 @@
 BASH_SOURCE_DIR=$(dirname "$BASH_SOURCE")
 source ${BASH_SOURCE_DIR}/../script_base.sh
 
-merge_base_hash=$(git merge-base origin/master HEAD)
+merge_base_hash=$(git merge-base origin/main HEAD)
 current_head_hash=$(git rev-parse HEAD)
 current_head_branch_name=$(git rev-parse --abbrev-ref HEAD)
 
 # Returns all files with updates that are not deletions
-changed_files_cmd="git diff --diff-filter=d --name-only $(git merge-base HEAD origin/master)"
+changed_files_cmd="git diff --diff-filter=d --name-only $(git merge-base HEAD origin/main)"
 changed_files=$(${changed_files_cmd})
 
 # Look for changes in Pipfile.lock and .pylintrc - changes in these files could mean that python files that have not

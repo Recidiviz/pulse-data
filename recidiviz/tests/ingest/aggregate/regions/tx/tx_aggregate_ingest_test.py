@@ -43,7 +43,7 @@ DATE_SCRAPED_CONCAT = datetime.date(year=2003, month=10, day=1)
 
 
 @pytest.mark.skip(
-    "TODO(#4865): This test fails on master for some, possibly due to underlying Java issues related to "
+    "TODO(#4865): This test fails on main for some, possibly due to underlying Java issues related to "
     "Apache Beam and Tabula."
 )
 class TestTxAggregateIngest(TestCase):

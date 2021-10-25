@@ -27,8 +27,8 @@ fi
 
 RELEASE_CANDIDATE_BASE_BRANCH=${@:$OPTIND:1}
 
-if [[ ! ${RELEASE_CANDIDATE_BASE_BRANCH} == "master" && ! ${RELEASE_CANDIDATE_BASE_BRANCH} =~ ^releases\/v[0-9]+\.[0-9]+-rc$ ]]; then
-    echo_error "Invalid base branch for release candidate - must be 'master' or a 'releases/*' branch"
+if [[ ! ${RELEASE_CANDIDATE_BASE_BRANCH} == "main" && ! ${RELEASE_CANDIDATE_BASE_BRANCH} =~ ^releases\/v[0-9]+\.[0-9]+-rc$ ]]; then
+    echo_error "Invalid base branch for release candidate - must be 'main' or a 'releases/*' branch"
     run_cmd exit 1
 fi
 
@@ -48,7 +48,7 @@ MINOR=${LAST_VERSION_PARTS[2]}
 PATCH=${LAST_VERSION_PARTS[3]}
 ALPHA=${LAST_VERSION_PARTS[4]-}  # Optional
 
-if [[ ${RELEASE_CANDIDATE_BASE_BRANCH} != "master" && ! -z ${ALPHA} ]]; then
+if [[ ${RELEASE_CANDIDATE_BASE_BRANCH} != "main" && ! -z ${ALPHA} ]]; then
     echo_error "Found invalid previous tag on  a releases/* branch [$RELEASE_CANDIDATE_BASE_BRANCH]: $LAST_VERSION_TAG_ON_BRANCH"
     echo_error "Expected a version tag matching regex ^v[0-9]+.[0-9]+.[0-9]+$"
     run_cmd exit 1
@@ -58,9 +58,9 @@ if [[ ! -z ${ALPHA} ]]; then
     # If the previous version was an alpha version, merely strip the alpha term.
     RELEASE_VERSION_TAG="v$MAJOR.$MINOR.$PATCH"
     STAGING_PUSH_PROMOTE_FLAG='-p'
-elif [[ ${RELEASE_CANDIDATE_BASE_BRANCH} == "master" ]]; then
+elif [[ ${RELEASE_CANDIDATE_BASE_BRANCH} == "main" ]]; then
     # If the previous version was a release version (i.e. alpha is absent) and we're creating a release candidate off
-    # master, increment the minor version. The patch version will always be 0.
+    # main, increment the minor version. The patch version will always be 0.
     RELEASE_VERSION_TAG="v$MAJOR.$(($MINOR + 1)).0"
     STAGING_PUSH_PROMOTE_FLAG='-p'
 else
@@ -89,7 +89,7 @@ echo "Pushing tags to remote"
 run_cmd git push origin --tags
 
 # Create and push a new releases branch
-if [[ ${RELEASE_CANDIDATE_BASE_BRANCH} == "master" ]]; then
+if [[ ${RELEASE_CANDIDATE_BASE_BRANCH} == "main" ]]; then
     NEW_VERSION_PARTS=($(parse_version ${RELEASE_VERSION_TAG}))
 
     NEW_MAJOR=${NEW_VERSION_PARTS[1]}

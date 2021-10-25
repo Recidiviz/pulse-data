@@ -23,7 +23,7 @@ There are currently three classes of data extractors:
 
 ### The Yaml File
 
-The first step is to create a yaml file which contains all of the keys that you care about, and how they map to the underlying ingestion object fields.  To see a listing of all of the possible fields and their descriptions, see [IngestInfo](https://github.com/Recidiviz/pulse-data/tree/master/recidiviz/ingest/models/README.md).  
+The first step is to create a yaml file which contains all of the keys that you care about, and how they map to the underlying ingestion object fields.  To see a listing of all of the possible fields and their descriptions, see [IngestInfo](https://github.com/Recidiviz/pulse-data/tree/main/recidiviz/ingest/models/README.md).  
 
 #### key_mappings
 

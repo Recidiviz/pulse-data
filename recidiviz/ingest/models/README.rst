@@ -60,7 +60,7 @@ The ingest_info object is just a container that holds a list of Person objects. 
 
                        -  Other
 
-                       `Complete list of valid values <https://github.com/Recidiviz/pulse-data/blob/master/recidiviz/common/constants/person.py#L56>`__
+                       `Complete list of valid values <https://github.com/Recidiviz/pulse-data/blob/main/recidiviz/common/constants/person.py#L56>`__
 **age**                A person’s age. From this age, a “birthdate” is inferred as the 1st of January of the year indicated by the age.
 
                        Use this when age is known but birthdate is not. When a birthdate is reported, use birthdate instead. Age is ignored if birthdate is set.
@@ -80,7 +80,7 @@ The ingest_info object is just a container that holds a list of Person objects. 
 
                        -  Other
 
-                       `Complete list of valid values <https://github.com/Recidiviz/pulse-data/blob/master/recidiviz/common/constants/person.py#L65>`__
+                       `Complete list of valid values <https://github.com/Recidiviz/pulse-data/blob/main/recidiviz/common/constants/person.py#L65>`__
 **ethnicity**          A person’s reported ethnicity.
 
                        Valid values:
@@ -89,7 +89,7 @@ The ingest_info object is just a container that holds a list of Person objects. 
 
                        -  Not Hispanic
 
-                       `Complete list of valid values <https://github.com/Recidiviz/pulse-data/blob/master/recidiviz/common/constants/person.py#L78>`__
+                       `Complete list of valid values <https://github.com/Recidiviz/pulse-data/blob/main/recidiviz/common/constants/person.py#L78>`__
 **place_of_residence** https://github.com/Recidiviz/pulse-data/issues/415
 **bookings**           A list of Booking objects for this person.
 ====================== =============================================================================================================================================================================================================================
@@ -132,7 +132,7 @@ The Booking object represents information about a single “stay” in jail, pri
 
                            -  Transfer
 
-                           `Complete list of valid values <https://github.com/Recidiviz/pulse-data/blob/master/recidiviz/common/constants/booking.py#L82>`__
+                           `Complete list of valid values <https://github.com/Recidiviz/pulse-data/blob/main/recidiviz/common/constants/booking.py#L82>`__
 **custody_status**         The custody status of the person with respect to this booking.
 
                            Valid values:
@@ -145,7 +145,7 @@ The Booking object represents information about a single “stay” in jail, pri
 
                            -  Released
 
-                           `Complete list of valid values <https://github.com/Recidiviz/pulse-data/blob/master/recidiviz/common/constants/booking.py#L73>`__
+                           `Complete list of valid values <https://github.com/Recidiviz/pulse-data/blob/main/recidiviz/common/constants/booking.py#L73>`__
 **facility**               The name of the facility the person is (or was) being held in on this booking.
 **classification**         Security classification of the person with respect to this booking.
 
@@ -163,7 +163,7 @@ The Booking object represents information about a single “stay” in jail, pri
 
                            -  Work Release
 
-                           `Complete list of valid values <https://github.com/Recidiviz/pulse-data/blob/master/recidiviz/common/constants/booking.py#L63>`__
+                           `Complete list of valid values <https://github.com/Recidiviz/pulse-data/blob/main/recidiviz/common/constants/booking.py#L63>`__
 **total_bond_amount**      Sum of all bonds associated with this booking. This accommodates when only total bond is available, instead of bonds for individual charges.
 **arrest**                 Link to the Arrest object, which contains information about the arrest that led to this booking.
 **charges**                A list of Charge objects associated with this
@@ -210,7 +210,7 @@ The Charge object holds information on a single charge. Each booking may have se
 
                      -  Third
 
-                     `Complete list of valid values <https://github.com/Recidiviz/pulse-data/blob/master/recidiviz/common/constants/charge.py#L69>`__
+                     `Complete list of valid values <https://github.com/Recidiviz/pulse-data/blob/main/recidiviz/common/constants/charge.py#L69>`__
 **charge_class**     Charge class.
 
                      Valid values:
@@ -225,7 +225,7 @@ The Charge object holds information on a single charge. Each booking may have se
 
                      -  Probation violation
 
-                     `Complete list of valid values <https://github.com/Recidiviz/pulse-data/blob/master/recidiviz/common/constants/charge.py#L79>`__
+                     `Complete list of valid values <https://github.com/Recidiviz/pulse-data/blob/main/recidiviz/common/constants/charge.py#L79>`__
 **level**            Charge level (e.g. 1, 2, A, B, etc.).
 **fee_dollars**      Fee associated with this charge (e.g., booking fee, court fee).
 
@@ -249,7 +249,7 @@ The Charge object holds information on a single charge. Each booking may have se
 
                      -  Sentenced
 
-                     `Complete list of valid values <https://github.com/Recidiviz/pulse-data/blob/master/recidiviz/common/constants/charge.py#L87>`__
+                     `Complete list of valid values <https://github.com/Recidiviz/pulse-data/blob/main/recidiviz/common/constants/charge.py#L87>`__
 **number_of_counts** The number of counts for this charge.
 **court_type**       The type of court this charge will be / was heard in.
 **case_number**      Court case number for this charge.
@@ -281,7 +281,7 @@ jurisdiction "has a hold on" the individual.
 
                       -  Inactive
 
-                      `Complete list of valid values <https://github.com/Recidiviz/pulse-data/blob/master/recidiviz/common/constants/hold.py>`__
+                      `Complete list of valid values <https://github.com/Recidiviz/pulse-data/blob/main/recidiviz/common/constants/hold.py>`__
 ===================== ==========================================================
 
 Bond
@@ -308,7 +308,7 @@ A Bond object holds information on a bond. A bond can be per charge (each charge
 
                -  Unsecured
 
-               `Complete list of valid values <https://github.com/Recidiviz/pulse-data/blob/master/recidiviz/common/constants/bond.py#L44>`__
+               `Complete list of valid values <https://github.com/Recidiviz/pulse-data/blob/main/recidiviz/common/constants/bond.py#L44>`__
 **status**     The status of this bond.
 
                Valid values:
@@ -317,7 +317,7 @@ A Bond object holds information on a bond. A bond can be per charge (each charge
 
                -  Posted
 
-               `Complete list of valid values <https://github.com/Recidiviz/pulse-data/blob/master/recidiviz/common/constants/bond.py#L52>`__
+               `Complete list of valid values <https://github.com/Recidiviz/pulse-data/blob/main/recidiviz/common/constants/bond.py#L52>`__
 ============== ==================================================================================================================================
 
 Sentence

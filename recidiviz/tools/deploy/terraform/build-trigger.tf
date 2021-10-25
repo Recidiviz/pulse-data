@@ -16,14 +16,14 @@
 # =============================================================================
 resource "google_cloudbuild_trigger" "staging_release_build_trigger" {
   provider    = google-beta
-  description = "Builds a remote Docker image for staging on every push to master."
+  description = "Builds a remote Docker image for staging on every push to main."
   count       = var.project_id == "recidiviz-staging" ? 1 : 0
 
   github {
     owner = "Recidiviz"
     name  = "pulse-data"
     push {
-      branch = "^master$|^releases/v[0-9]+.[0-9]+-rc$"
+      branch = "^main$|^releases/v[0-9]+.[0-9]+-rc$"
     }
   }
 
