@@ -163,29 +163,34 @@ class DirectIngestFilesGenerator:
 
         with open(file_path, "w", encoding="utf-8") as updated_f:
             for line in file_contents:
-                if re.search("US_XX", line):
-                    line = re.sub("US_XX", self.region_code.upper(), line)
-                if re.search("us_xx", line):
-                    line = re.sub("us_xx", self.region_code, line)
-                if re.search("UsXx", line):
-                    line = re.sub(
-                        "UsXx",
-                        # Capitalize the first letter of the region and any clause following an underscore
-                        re.sub(
-                            r"^[a-z]|[_][a-z]",
-                            lambda m: m.group().upper(),
-                            self.region_code.lower(),
-                        ),
-                        line,
-                    ).replace("_", "")
-                if re.search(r"\[STATE\]", line):
-                    line = re.sub(
-                        r"\[STATE\]",
-                        StateCode(self.region_code.upper()).get_state().name,
-                        line,
-                    )
+                # Fix references to the templates directory
+                if re.search(r"from recidiviz\.ingest\.direct import templates", line):
+                    continue
+                line = re.sub(
+                    r"from recidiviz\.ingest\.direct\.templates",
+                    "from recidiviz.ingest.direct.regions",
+                    line,
+                )
+                line = re.sub(r"(, )?region_module_override=templates", "", line)
+
+                # Replace all instances of template state code with real state code
+                line = re.sub("US_XX", self.region_code.upper(), line)
+                line = re.sub("us_xx", self.region_code, line)
+
+                capital_case_state_code = "".join(
+                    s.capitalize() for s in self.region_code.split("_")
+                )
+                line = re.sub("UsXx", capital_case_state_code, line)
+                line = re.sub(
+                    r"\[STATE\]",
+                    StateCode(self.region_code.upper()).get_state().name,
+                    line,
+                )
+
+                # Other clean-up
                 if re.search("unknown", line):
                     line = line.rstrip() + f"  # {PLACEHOLDER_TO_DO_STRING}\n"
                 if re.search(r"Copyright \(C\) 2021 Recidiviz", line):
                     line = re.sub("2021", f"{self.current_year}", line)
+
                 updated_f.write(line)
