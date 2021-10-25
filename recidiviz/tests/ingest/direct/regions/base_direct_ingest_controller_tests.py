@@ -42,7 +42,6 @@ from recidiviz.ingest.direct.controllers.direct_ingest_instance_status_manager i
     DirectIngestInstanceStatusManager,
 )
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
-    GcsfsDirectIngestFileType,
     GcsfsIngestViewExportArgs,
 )
 from recidiviz.ingest.direct.controllers.legacy_ingest_view_processor import (
@@ -77,7 +76,6 @@ from recidiviz.tests.ingest.direct import fixture_util
 from recidiviz.tests.ingest.direct.direct_ingest_util import (
     build_gcsfs_controller_for_tests,
     ingest_args_for_fixture_file,
-    path_for_fixture_file,
     run_task_queues_to_empty,
 )
 from recidiviz.tests.persistence.entity.state.entities_test_utils import (
@@ -87,6 +85,8 @@ from recidiviz.tests.persistence.entity.state.entities_test_utils import (
 from recidiviz.tests.utils.test_utils import print_visible_header_label
 from recidiviz.tools.postgres import local_postgres_helpers
 from recidiviz.utils.environment import in_ci
+
+FULL_INTEGRATION_TEST_NAME = "test_run_full_ingest_all_files_specific_order"
 
 
 @pytest.mark.uses_db
@@ -134,7 +134,7 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
         return SQLAlchemyDatabaseKey.for_schema(cls.schema_type())
 
     def setUp(self) -> None:
-        self.maxDiff = 250000
+        self.maxDiff = None
 
         self.metadata_patcher = patch("recidiviz.utils.metadata.project_id")
         self.mock_project_id_fn = self.metadata_patcher.start()
@@ -178,6 +178,9 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
                 self.region_code(), instance, (instance != self._main_ingest_instance())
             )
 
+        self.file_tags_processed: List[str] = []
+        self.did_rerun_for_idempotence = False
+
     def tearDown(self) -> None:
         local_postgres_helpers.teardown_on_disk_postgresql_database(
             self.operations_database_key
@@ -187,6 +190,48 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
         )
         self.metadata_patcher.stop()
         self.entity_matching_error_threshold_patcher.stop()
+
+        self._validate_integration_test()
+
+    def _validate_integration_test(self) -> None:
+        """If this test is the main integration test, validates that all expected files
+        were processed during this test.
+        """
+        if FULL_INTEGRATION_TEST_NAME not in dir(self):
+            raise ValueError(
+                f"Must define integration test with name "
+                f"[{FULL_INTEGRATION_TEST_NAME}] in this test class."
+            )
+
+        if (
+            self._outcome.errors  # type: ignore
+            or self._testMethodName != FULL_INTEGRATION_TEST_NAME
+        ):
+            # If test fails or this is not the integration test, do not validate
+            return
+
+        expected_tags = self.controller.get_file_tag_rank_list()
+
+        expected_tags_set = set(expected_tags)
+        processed_tags_set = set(self.file_tags_processed)
+
+        if skipped := expected_tags_set.difference(processed_tags_set):
+            self.fail(f"Failed to run test for ingest view files: {skipped}")
+
+        if extra := processed_tags_set.difference(expected_tags_set):
+            self.fail(f"Found test for extra, unexpected ingest view files: {extra}")
+
+        self.assertEqual(
+            expected_tags,
+            self.file_tags_processed,
+            "Expected and processed tags do not match.",
+        )
+
+        self.assertTrue(
+            self.did_rerun_for_idempotence,
+            "No rerun for idempotence. Make sure the integration test calls "
+            "_do_ingest_job_rerun_for_tags().",
+        )
 
     @classmethod
     def tearDownClass(cls) -> None:
@@ -264,12 +309,13 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
                 {operations_schema.DirectIngestIngestFileMetadata.is_invalidated: True}
             )
 
-    def _run_ingest_job_for_filename(self, filename: str) -> None:
-        """Runs ingest for a the ingest view file with the given unnormalized file name."""
+    def _run_ingest_job_for_filename(
+        self, filename: str, is_rerun: bool = False
+    ) -> None:
+        """Runs ingest for the ingest view file with the given unnormalized file name."""
 
         environ_patcher = patch.dict("os.environ", {"PERSIST_LOCALLY": "true"})
         environ_patcher.start()
-        file_type = GcsfsDirectIngestFileType.INGEST_VIEW
 
         if not isinstance(self.controller.fs.gcs_file_system, FakeGCSFileSystem):
             raise ValueError(
@@ -278,27 +324,24 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
                 f"type [{type(self.controller.fs.gcs_file_system)}]"
             )
 
-        if self.controller.region.is_ingest_launched_in_env():
-            now = datetime.datetime.now(tz=pytz.UTC)
-            yesterday = now - datetime.timedelta(days=1)
-            ingest_file_export_job_args = GcsfsIngestViewExportArgs(
-                ingest_view_name=os.path.splitext(filename)[0],
-                upper_bound_datetime_to_export=now,
-                upper_bound_datetime_prev=yesterday,
-                output_bucket_name=self.controller.ingest_bucket_path.bucket_name,
-            )
+        now = datetime.datetime.now(tz=pytz.UTC)
+        yesterday = now - datetime.timedelta(days=1)
+        file_tag, _ext = os.path.splitext(filename)
+        if not is_rerun:
+            self.file_tags_processed.append(file_tag)
+        ingest_file_export_job_args = GcsfsIngestViewExportArgs(
+            ingest_view_name=file_tag,
+            upper_bound_datetime_to_export=now,
+            upper_bound_datetime_prev=yesterday,
+            output_bucket_name=self.controller.ingest_bucket_path.bucket_name,
+        )
 
-            self.controller.file_metadata_manager.register_ingest_file_export_job(
-                ingest_file_export_job_args
-            )
-            self.controller.ingest_view_export_manager.export_view_for_args(
-                ingest_file_export_job_args
-            )
-        else:
-            file_path = path_for_fixture_file(
-                self.controller, filename, file_type=file_type, should_normalize=True
-            )
-            self.controller.fs.gcs_file_system.test_add_path(file_path, filename)
+        self.controller.file_metadata_manager.register_ingest_file_export_job(
+            ingest_file_export_job_args
+        )
+        self.controller.ingest_view_export_manager.export_view_for_args(
+            ingest_file_export_job_args
+        )
 
         run_task_queues_to_empty(self.controller)
 
@@ -307,7 +350,8 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
     def _do_ingest_job_rerun_for_tags(self, file_tags: List[str]) -> None:
         self.invalidate_ingest_view_metadata()
         for file_tag in file_tags:
-            self._run_ingest_job_for_filename(f"{file_tag}.csv")
+            self._run_ingest_job_for_filename(f"{file_tag}.csv", is_rerun=True)
+        self.did_rerun_for_idempotence = True
 
     @staticmethod
     def convert_and_clear_db_ids(db_entities: List[StateBase]) -> List[Entity]:

@@ -1318,7 +1318,6 @@ class TestUsIdController(BaseDirectIngestControllerTests):
         self.run_legacy_parse_file_test(expected, "sprvsn_cntc_v2")
 
     def test_run_full_ingest_all_files_specific_order(self) -> None:
-        self.maxDiff = None
 
         ######################################
         # OFFENDER_OFNDR_DOB
@@ -2487,7 +2486,37 @@ class TestUsIdController(BaseDirectIngestControllerTests):
         self.assert_expected_db_people(expected_people)
 
         #################################################################
-        # sprvsn_cntc
+        # EARLY_DISCHARGE_INCARCERATION_SENTENCE_DELETED_ROWS
+        #################################################################
+        # Arrange
+        ed_2.decision_status = StateEarlyDischargeDecisionStatus.INVALID
+        ed_2.decision_status_raw_text = "INVALID"
+
+        # Act
+        self._run_ingest_job_for_filename(
+            "early_discharge_incarceration_sentence_deleted_rows.csv"
+        )
+
+        # Assert
+        self.assert_expected_db_people(expected_people)
+
+        #################################################################
+        # EARLY_DISCHARGE_SUPERVISION_SENTENCE_DELETED_ROWS
+        #################################################################
+        # Arrange
+        ed_4.decision_status = StateEarlyDischargeDecisionStatus.INVALID
+        ed_4.decision_status_raw_text = "INVALID"
+
+        # Act
+        self._run_ingest_job_for_filename(
+            "early_discharge_supervision_sentence_deleted_rows.csv"
+        )
+
+        # Assert
+        self.assert_expected_db_people(expected_people)
+
+        #################################################################
+        # sprvsn_cntc_v2
         #################################################################
         # Arrange
         sc_1111_1 = entities.StateSupervisionContact.new_with_defaults(
@@ -2611,37 +2640,10 @@ class TestUsIdController(BaseDirectIngestControllerTests):
         # Assert
         self.assert_expected_db_people(expected_people)
 
-        #################################################################
-        # EARLY_DISCHARGE_INCARCERATION_SENTENCE_DELETED_ROWS
-        #################################################################
-        # Arrange
-        ed_2.decision_status = StateEarlyDischargeDecisionStatus.INVALID
-        ed_2.decision_status_raw_text = "INVALID"
+        ######################################
+        # FULL RERUN FOR IDEMPOTENCE
+        ######################################
 
-        # Act
-        self._run_ingest_job_for_filename(
-            "early_discharge_incarceration_sentence_deleted_rows.csv"
-        )
-
-        # Assert
-        self.assert_expected_db_people(expected_people)
-
-        #################################################################
-        # EARLY_DISCHARGE_SUPERVISION_SENTENCE_DELETED_ROWS
-        #################################################################
-        # Arrange
-        ed_4.decision_status = StateEarlyDischargeDecisionStatus.INVALID
-        ed_4.decision_status_raw_text = "INVALID"
-
-        # Act
-        self._run_ingest_job_for_filename(
-            "early_discharge_supervision_sentence_deleted_rows.csv"
-        )
-
-        # Assert
-        self.assert_expected_db_people(expected_people)
-
-        # Rerun for sanity
         self._do_ingest_job_rerun_for_tags(self.controller.get_file_tag_rank_list())
 
         # TODO(#2492): Until we implement proper cleanup of dangling placeholders, reruns of certain files will create

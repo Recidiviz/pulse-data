@@ -1724,7 +1724,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
         self.run_legacy_parse_file_test(expected, "tak291_tak292_tak024_citations")
 
     def test_run_full_ingest_all_files_specific_order(self) -> None:
-        self.maxDiff = None
 
         ######################################
         # TAK001 OFFENDER IDENTIFICATION
@@ -3762,7 +3761,10 @@ class TestUsMoController(BaseDirectIngestControllerTests):
         # Assert
         self.assert_expected_db_people(expected_people)
 
-        # Rerun for sanity
+        ######################################
+        # FULL RERUN FOR IDEMPOTENCE
+        ######################################
+
         self._do_ingest_job_rerun_for_tags(self.controller.get_file_tag_rank_list())
 
         # TODO(#2492): Until we implement proper cleanup of dangling

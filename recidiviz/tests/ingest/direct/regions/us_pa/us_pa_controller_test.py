@@ -1263,7 +1263,6 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         self.run_legacy_parse_file_test(expected, "supervision_contacts")
 
     def test_run_full_ingest_all_files_specific_order(self) -> None:
-        self.maxDiff = None
         ######################################
         # person_external_ids
         ######################################
@@ -2513,123 +2512,6 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         self.assert_expected_db_people(expected_people)
 
         ######################################
-        # ccis_incarceration_period
-        ######################################
-
-        p3_is_ip_9 = entities.StateIncarcerationPeriod.new_with_defaults(
-            external_id="34567",
-            state_code=_STATE_CODE_UPPER,
-            person=person_3,
-            incarceration_sentences=[p3_is],
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            admission_date=datetime.date(year=2014, month=11, day=18),
-            release_date=datetime.date(year=2015, month=1, day=20),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
-            admission_reason_raw_text="CCIS-TRUE-INRS",
-            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
-            release_reason_raw_text="CCIS-DC2P",
-            facility="231: WERNERSVILLE CCC#30",
-            incarceration_type=StateIncarcerationType.COUNTY_JAIL,
-            incarceration_type_raw_text="CCIS",
-            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
-            specialized_purpose_for_incarceration_raw_text="CCIS-51",
-            custodial_authority=StateCustodialAuthority.STATE_PRISON,
-            custodial_authority_raw_text="51",
-        )
-        p3_is_ip_10 = entities.StateIncarcerationPeriod.new_with_defaults(
-            external_id="45678",
-            state_code=_STATE_CODE_UPPER,
-            person=person_3,
-            incarceration_sentences=[p3_is],
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            admission_date=datetime.date(year=2016, month=10, day=3),
-            release_date=datetime.date(year=2016, month=11, day=14),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
-            admission_reason_raw_text="CCIS-TRUE-PRCH",
-            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
-            release_reason_raw_text="CCIS-PTST",
-            facility="195: LACKAWANNA COUNTY",
-            incarceration_type=StateIncarcerationType.COUNTY_JAIL,
-            incarceration_type_raw_text="CCIS",
-            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
-            specialized_purpose_for_incarceration_raw_text="CCIS-26",
-            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
-            custodial_authority_raw_text="26",
-        )
-        p3_is_ip_11 = entities.StateIncarcerationPeriod.new_with_defaults(
-            external_id="56789",
-            state_code=_STATE_CODE_UPPER,
-            person=person_3,
-            incarceration_sentences=[p3_is],
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            admission_date=datetime.date(year=2016, month=11, day=23),
-            release_date=datetime.date(year=2016, month=11, day=24),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
-            admission_reason_raw_text="CCIS-FALSE-PRCH",
-            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
-            release_reason_raw_text="CCIS-PTST",
-            facility="195: LACKAWANNA COUNTY",
-            incarceration_type=StateIncarcerationType.COUNTY_JAIL,
-            incarceration_type_raw_text="CCIS",
-            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.INTERNAL_UNKNOWN,
-            specialized_purpose_for_incarceration_raw_text="CCIS-60",
-            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
-            custodial_authority_raw_text="60",
-        )
-
-        p3_is.incarceration_periods.extend([p3_is_ip_9, p3_is_ip_10, p3_is_ip_11])
-
-        p4_is_1_ip_25 = entities.StateIncarcerationPeriod.new_with_defaults(
-            external_id="12345",
-            state_code=_STATE_CODE_UPPER,
-            person=person_4,
-            incarceration_sentences=[p4_is_1],
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            admission_date=datetime.date(year=2016, month=12, day=21),
-            release_date=datetime.date(year=2017, month=4, day=26),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
-            admission_reason_raw_text="CCIS-TRUE-INRS",
-            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
-            release_reason_raw_text="CCIS-TRGH",
-            facility="136: KINTOCK ERIE",
-            incarceration_type=StateIncarcerationType.COUNTY_JAIL,
-            incarceration_type_raw_text="CCIS",
-            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
-            specialized_purpose_for_incarceration_raw_text="CCIS-26",
-            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
-            custodial_authority_raw_text="26",
-        )
-
-        p4_is_1_ip_26_ccis = entities.StateIncarcerationPeriod.new_with_defaults(
-            external_id="23456",
-            state_code=_STATE_CODE_UPPER,
-            person=person_4,
-            incarceration_sentences=[p4_is_1],
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            admission_date=datetime.date(year=2017, month=7, day=3),
-            release_date=datetime.date(year=2018, month=1, day=3),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
-            admission_reason_raw_text="CCIS-FALSE-TRRC",
-            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
-            release_reason_raw_text="CCIS-DC2P",
-            facility="198: CHESTER COUNTY",
-            incarceration_type=StateIncarcerationType.COUNTY_JAIL,
-            incarceration_type_raw_text="CCIS",
-            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
-            specialized_purpose_for_incarceration_raw_text="CCIS-46",
-            custodial_authority=StateCustodialAuthority.STATE_PRISON,
-            custodial_authority_raw_text="46",
-        )
-
-        p4_is_1.incarceration_periods.extend([p4_is_1_ip_25, p4_is_1_ip_26_ccis])
-
-        # Act
-        self._run_ingest_job_for_filename("ccis_incarceration_period.csv")
-
-        # Assert
-        self.assert_expected_db_people(expected_people)
-
-        ######################################
         # dbo_Miscon
         ######################################
 
@@ -2788,6 +2670,123 @@ class TestUsPaController(BaseDirectIngestControllerTests):
 
         # Act
         self._run_ingest_job_for_filename("dbo_Miscon.csv")
+
+        # Assert
+        self.assert_expected_db_people(expected_people)
+
+        ######################################
+        # ccis_incarceration_period
+        ######################################
+
+        p3_is_ip_9 = entities.StateIncarcerationPeriod.new_with_defaults(
+            external_id="34567",
+            state_code=_STATE_CODE_UPPER,
+            person=person_3,
+            incarceration_sentences=[p3_is],
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=datetime.date(year=2014, month=11, day=18),
+            release_date=datetime.date(year=2015, month=1, day=20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            admission_reason_raw_text="CCIS-TRUE-INRS",
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+            release_reason_raw_text="CCIS-DC2P",
+            facility="231: WERNERSVILLE CCC#30",
+            incarceration_type=StateIncarcerationType.COUNTY_JAIL,
+            incarceration_type_raw_text="CCIS",
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
+            specialized_purpose_for_incarceration_raw_text="CCIS-51",
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+            custodial_authority_raw_text="51",
+        )
+        p3_is_ip_10 = entities.StateIncarcerationPeriod.new_with_defaults(
+            external_id="45678",
+            state_code=_STATE_CODE_UPPER,
+            person=person_3,
+            incarceration_sentences=[p3_is],
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=datetime.date(year=2016, month=10, day=3),
+            release_date=datetime.date(year=2016, month=11, day=14),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            admission_reason_raw_text="CCIS-TRUE-PRCH",
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+            release_reason_raw_text="CCIS-PTST",
+            facility="195: LACKAWANNA COUNTY",
+            incarceration_type=StateIncarcerationType.COUNTY_JAIL,
+            incarceration_type_raw_text="CCIS",
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
+            specialized_purpose_for_incarceration_raw_text="CCIS-26",
+            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+            custodial_authority_raw_text="26",
+        )
+        p3_is_ip_11 = entities.StateIncarcerationPeriod.new_with_defaults(
+            external_id="56789",
+            state_code=_STATE_CODE_UPPER,
+            person=person_3,
+            incarceration_sentences=[p3_is],
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=datetime.date(year=2016, month=11, day=23),
+            release_date=datetime.date(year=2016, month=11, day=24),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            admission_reason_raw_text="CCIS-FALSE-PRCH",
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+            release_reason_raw_text="CCIS-PTST",
+            facility="195: LACKAWANNA COUNTY",
+            incarceration_type=StateIncarcerationType.COUNTY_JAIL,
+            incarceration_type_raw_text="CCIS",
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.INTERNAL_UNKNOWN,
+            specialized_purpose_for_incarceration_raw_text="CCIS-60",
+            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+            custodial_authority_raw_text="60",
+        )
+
+        p3_is.incarceration_periods.extend([p3_is_ip_9, p3_is_ip_10, p3_is_ip_11])
+
+        p4_is_1_ip_25 = entities.StateIncarcerationPeriod.new_with_defaults(
+            external_id="12345",
+            state_code=_STATE_CODE_UPPER,
+            person=person_4,
+            incarceration_sentences=[p4_is_1],
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=datetime.date(year=2016, month=12, day=21),
+            release_date=datetime.date(year=2017, month=4, day=26),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            admission_reason_raw_text="CCIS-TRUE-INRS",
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+            release_reason_raw_text="CCIS-TRGH",
+            facility="136: KINTOCK ERIE",
+            incarceration_type=StateIncarcerationType.COUNTY_JAIL,
+            incarceration_type_raw_text="CCIS",
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
+            specialized_purpose_for_incarceration_raw_text="CCIS-26",
+            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+            custodial_authority_raw_text="26",
+        )
+
+        p4_is_1_ip_26_ccis = entities.StateIncarcerationPeriod.new_with_defaults(
+            external_id="23456",
+            state_code=_STATE_CODE_UPPER,
+            person=person_4,
+            incarceration_sentences=[p4_is_1],
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=datetime.date(year=2017, month=7, day=3),
+            release_date=datetime.date(year=2018, month=1, day=3),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            admission_reason_raw_text="CCIS-FALSE-TRRC",
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+            release_reason_raw_text="CCIS-DC2P",
+            facility="198: CHESTER COUNTY",
+            incarceration_type=StateIncarcerationType.COUNTY_JAIL,
+            incarceration_type_raw_text="CCIS",
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
+            specialized_purpose_for_incarceration_raw_text="CCIS-46",
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+            custodial_authority_raw_text="46",
+        )
+
+        p4_is_1.incarceration_periods.extend([p4_is_1_ip_25, p4_is_1_ip_26_ccis])
+
+        # Act
+        self._run_ingest_job_for_filename("ccis_incarceration_period.csv")
 
         # Assert
         self.assert_expected_db_people(expected_people)
@@ -2972,250 +2971,6 @@ class TestUsPaController(BaseDirectIngestControllerTests):
 
         # Act
         self._run_ingest_job_for_filename("dbo_LSIHistory.csv")
-
-        # Assert
-        self.assert_expected_db_people(expected_people)
-
-        ######################################
-        # supervision_period
-        ######################################
-
-        # Arrange
-        p2_sg_ph = entities.StateSentenceGroup.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            person=person_2,
-        )
-        person_2.sentence_groups.append(p2_sg_ph)
-
-        p2_ss_ph = entities.StateSupervisionSentence.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            person=person_2,
-            sentence_group=p2_sg_ph,
-        )
-        p2_sg_ph.supervision_sentences.append(p2_ss_ph)
-
-        p2_sp_1_1 = entities.StateSupervisionPeriod.new_with_defaults(
-            external_id="456B-1",
-            state_code=_STATE_CODE_UPPER,
-            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-            supervision_type_raw_text="C2",
-            admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
-            admission_reason_raw_text="C2",
-            start_date=datetime.date(year=2012, month=3, day=16),
-            termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
-            termination_reason_raw_text="TRANSFER_WITHIN_STATE",
-            termination_date=datetime.date(year=2013, month=4, day=1),
-            county_code="ALLEGH",
-            supervision_site="02|02 - NORTH SHORE|7124",
-            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
-            custodial_authority_raw_text="C2",
-            supervision_level=StateSupervisionLevel.MAXIMUM,
-            supervision_level_raw_text="MAX",
-            conditions="MEST, ACT35, GPAR, MVICT, REMC, END",
-            supervising_officer=entities.StateAgent.new_with_defaults(
-                external_id="876555",
-                state_code=_STATE_CODE_UPPER,
-                full_name='{"given_names": "COSMO", "surname": "KRAMER"}',
-                agent_type=StateAgentType.SUPERVISION_OFFICER,
-                agent_type_raw_text="SUPERVISION_OFFICER",
-            ),
-            supervision_sentences=[p2_ss_ph],
-        )
-
-        p2_sp_1_2 = entities.StateSupervisionPeriod.new_with_defaults(
-            external_id="456B-2",
-            state_code=_STATE_CODE_UPPER,
-            supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
-            supervision_type_raw_text="04,C2",
-            admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
-            admission_reason_raw_text="TRANSFER_WITHIN_STATE",
-            start_date=datetime.date(year=2013, month=4, day=1),
-            termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
-            termination_reason_raw_text="TRANSFER_WITHIN_STATE",
-            termination_date=datetime.date(year=2014, month=8, day=10),
-            county_code="ALLEGH",
-            supervision_site="02||",
-            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
-            custodial_authority_raw_text="04",
-            supervision_level=StateSupervisionLevel.MAXIMUM,
-            supervision_level_raw_text="MAX",
-            conditions="MEST, ACT35, GPAR, MVICT, REMC, END",
-            supervision_sentences=[p2_ss_ph],
-        )
-
-        p2_sp_2_1 = entities.StateSupervisionPeriod.new_with_defaults(
-            external_id="456B-3",
-            state_code=_STATE_CODE_UPPER,
-            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            supervision_type_raw_text="04",
-            admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
-            admission_reason_raw_text="TRANSFER_WITHIN_STATE",
-            start_date=datetime.date(year=2014, month=8, day=10),
-            termination_reason=StateSupervisionPeriodTerminationReason.EXPIRATION,
-            termination_reason_raw_text="43",
-            termination_date=datetime.date(year=2018, month=1, day=1),
-            county_code="ALLEGH",
-            supervision_site="02|02 - NORTH SHORE|7115",
-            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
-            custodial_authority_raw_text="04",
-            supervision_level=StateSupervisionLevel.MEDIUM,
-            supervision_level_raw_text="MED",
-            conditions="PN, EST, BL, END, SUBD, AANA",
-            supervising_officer=entities.StateAgent.new_with_defaults(
-                external_id="321444",
-                state_code=_STATE_CODE_UPPER,
-                full_name='{"given_names": "ELAINE", "surname": "BENES"}',
-                agent_type=StateAgentType.SUPERVISION_OFFICER,
-                agent_type_raw_text="SUPERVISION_OFFICER",
-            ),
-            supervision_sentences=[p2_ss_ph],
-        )
-
-        p2_ss_ph.supervision_periods.extend([p2_sp_1_1, p2_sp_1_2, p2_sp_2_1])
-
-        p5_sg_ph = entities.StateSentenceGroup.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            person=person_5,
-        )
-        person_5.sentence_groups.append(p5_sg_ph)
-
-        p5_ss_ph = entities.StateSupervisionSentence.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            person=person_5,
-            sentence_group=p5_sg_ph,
-        )
-        p5_sg_ph.supervision_sentences.append(p5_ss_ph)
-
-        p5_sp_1_1 = entities.StateSupervisionPeriod.new_with_defaults(
-            external_id="789C-1",
-            state_code=_STATE_CODE_UPPER,
-            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-            supervision_type_raw_text="05",
-            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
-            admission_reason_raw_text="05",
-            start_date=datetime.date(year=2003, month=10, day=10),
-            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
-            termination_reason_raw_text="42",
-            termination_date=datetime.date(year=2004, month=8, day=10),
-            county_code="MERCER",
-            supervision_site="08|08 - MERCER DO|7307",
-            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
-            custodial_authority_raw_text="05",
-            supervision_level=StateSupervisionLevel.MINIMUM,
-            supervision_level_raw_text="MIN",
-            conditions="START, EST, END, AANA, REL, DAM, PARAB, ACT35, BL, MISC, DDU, URI, GPAR, EMP, ALC, PM, PF, PA",
-            supervising_officer=entities.StateAgent.new_with_defaults(
-                external_id="888888",
-                state_code=_STATE_CODE_UPPER,
-                full_name='{"given_names": "K", "surname": "BANIA"}',
-                agent_type=StateAgentType.SUPERVISION_OFFICER,
-                agent_type_raw_text="SUPERVISION_OFFICER",
-            ),
-            supervision_sentences=[p5_ss_ph],
-        )
-        p5_sp_2_1 = entities.StateSupervisionPeriod.new_with_defaults(
-            external_id="789C-2",
-            state_code=_STATE_CODE_UPPER,
-            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-            supervision_type_raw_text="05",
-            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
-            admission_reason_raw_text="05",
-            start_date=datetime.date(year=2004, month=8, day=10),
-            termination_reason=StateSupervisionPeriodTerminationReason.RETURN_TO_INCARCERATION,
-            termination_reason_raw_text="44",
-            termination_date=datetime.date(year=2005, month=12, day=31),
-            county_code="MERCER",
-            supervision_site="08|08 - MERCER DO|7307",
-            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
-            custodial_authority_raw_text="05",
-            supervision_level=StateSupervisionLevel.MINIMUM,
-            supervision_level_raw_text="MIN",
-            supervising_officer=entities.StateAgent.new_with_defaults(
-                external_id="555",
-                state_code=_STATE_CODE_UPPER,
-                full_name='{"given_names": "JERRY", "surname": "SEINFELD"}',
-                agent_type=StateAgentType.SUPERVISION_OFFICER,
-                agent_type_raw_text="SUPERVISION_OFFICER",
-            ),
-            supervision_sentences=[p5_ss_ph],
-        )
-        p5_sp_3_1 = entities.StateSupervisionPeriod.new_with_defaults(
-            external_id="789C-3",
-            state_code=_STATE_CODE_UPPER,
-            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            supervision_type_raw_text="04",
-            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
-            admission_reason_raw_text="04",
-            start_date=datetime.date(year=2005, month=12, day=31),
-            termination_reason=StateSupervisionPeriodTerminationReason.EXPIRATION,
-            termination_reason_raw_text="43",
-            termination_date=datetime.date(year=2006, month=10, day=10),
-            county_code="MERCER",
-            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
-            custodial_authority_raw_text="04",
-            supervision_level=StateSupervisionLevel.LIMITED,
-            supervision_level_raw_text="ADM",
-            supervising_officer=entities.StateAgent.new_with_defaults(
-                external_id="247",
-                state_code=_STATE_CODE_UPPER,
-                full_name='{"full_name": "NEWMAN"}',
-                agent_type=StateAgentType.SUPERVISION_OFFICER,
-                agent_type_raw_text="SUPERVISION_OFFICER",
-            ),
-            supervision_sentences=[p5_ss_ph],
-        )
-        p5_ss_ph.supervision_periods.extend([p5_sp_1_1, p5_sp_2_1, p5_sp_3_1])
-
-        p4_sg_ph = entities.StateSentenceGroup.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            person=person_4,
-        )
-        person_4.sentence_groups.append(p4_sg_ph)
-
-        p4_ss_ph = entities.StateSupervisionSentence.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            person=person_4,
-            sentence_group=p4_sg_ph,
-        )
-        p4_sg_ph.supervision_sentences.append(p4_ss_ph)
-
-        p4_sp_1_1 = entities.StateSupervisionPeriod.new_with_defaults(
-            external_id="345E-1",
-            state_code=_STATE_CODE_UPPER,
-            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-            supervision_type_raw_text="03",
-            admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
-            admission_reason_raw_text="03",
-            start_date=datetime.date(year=2016, month=1, day=14),
-            county_code="PHILAD",
-            supervision_site="01|01 - NORTHWEST|5112",
-            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
-            custodial_authority_raw_text="03",
-            supervision_level=StateSupervisionLevel.MEDIUM,
-            supervision_level_raw_text="MED",
-            conditions="DOMV, AUTO, DDU, REFR, MNOAM, END, RI, RC, MEMON, MCURF, REFC",
-            supervising_officer=entities.StateAgent.new_with_defaults(
-                external_id="10101",
-                state_code=_STATE_CODE_UPPER,
-                full_name='{"given_names": "CLOSE", "surname": "TALKER"}',
-                agent_type=StateAgentType.SUPERVISION_OFFICER,
-                agent_type_raw_text="SUPERVISION_OFFICER",
-            ),
-            supervision_sentences=[p4_ss_ph],
-        )
-
-        p4_ss_ph.supervision_periods.append(p4_sp_1_1)
-
-        populate_person_backedges(expected_people)
-
-        # Act
-        self._run_ingest_job_for_filename("supervision_period_v3.csv")
 
         # Assert
         self.assert_expected_db_people(expected_people)
@@ -3730,6 +3485,15 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         ######################################
         # supervision_contacts
         ######################################
+
+        supervising_officer_1 = entities.StateAgent.new_with_defaults(
+            external_id="321444",
+            state_code=_STATE_CODE_UPPER,
+            full_name='{"given_names": "ELAINE", "surname": "BENES"}',
+            agent_type=StateAgentType.SUPERVISION_OFFICER,
+            agent_type_raw_text="SUPERVISION_OFFICER",
+        )
+
         p2_sc_2_1 = entities.StateSupervisionContact.new_with_defaults(
             external_id="456B-2014-09-15-OFFENDER-30",
             person=person_2,
@@ -3743,7 +3507,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             location_raw_text="NONE-HOME",
             status=StateSupervisionContactStatus.ATTEMPTED,
             status_raw_text="YES",
-            contacted_agent=p2_sp_2_1.supervising_officer,
+            contacted_agent=supervising_officer_1,
         )
 
         p2_sc_2_2 = entities.StateSupervisionContact.new_with_defaults(
@@ -3759,7 +3523,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             location_raw_text="EMPLOYER-EMAIL",
             status=StateSupervisionContactStatus.COMPLETED,
             status_raw_text="NO",
-            contacted_agent=p2_sp_2_1.supervising_officer,
+            contacted_agent=supervising_officer_1,
         )
 
         p2_sc_2_3 = entities.StateSupervisionContact.new_with_defaults(
@@ -3775,7 +3539,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             location_raw_text="NONE-HOME",
             status=StateSupervisionContactStatus.COMPLETED,
             status_raw_text="NO",
-            contacted_agent=p2_sp_2_1.supervising_officer,
+            contacted_agent=supervising_officer_1,
         )
 
         p2_sc_2_4 = entities.StateSupervisionContact.new_with_defaults(
@@ -3791,7 +3555,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             location_raw_text="COURTPROBATIONSTAF-FIELD",
             status=StateSupervisionContactStatus.ATTEMPTED,
             status_raw_text="YES",
-            contacted_agent=p2_sp_2_1.supervising_officer,
+            contacted_agent=supervising_officer_1,
         )
         person_2.supervision_contacts.extend(
             [p2_sc_2_4, p2_sc_2_3, p2_sc_2_2, p2_sc_2_1]
@@ -3806,10 +3570,247 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         self.assert_expected_db_people(expected_people)
 
         ######################################
-        # Full Rerun for Idempotence
+        # supervision_period
         ######################################
 
-        # Rerun for sanity
+        # Arrange
+        p2_sg_ph = entities.StateSentenceGroup.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            person=person_2,
+        )
+        person_2.sentence_groups.append(p2_sg_ph)
+
+        p2_ss_ph = entities.StateSupervisionSentence.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            person=person_2,
+            sentence_group=p2_sg_ph,
+        )
+        p2_sg_ph.supervision_sentences.append(p2_ss_ph)
+
+        p2_sp_1_1 = entities.StateSupervisionPeriod.new_with_defaults(
+            external_id="456B-1",
+            state_code=_STATE_CODE_UPPER,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type_raw_text="C2",
+            admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
+            admission_reason_raw_text="C2",
+            start_date=datetime.date(year=2012, month=3, day=16),
+            termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
+            termination_reason_raw_text="TRANSFER_WITHIN_STATE",
+            termination_date=datetime.date(year=2013, month=4, day=1),
+            county_code="ALLEGH",
+            supervision_site="02|02 - NORTH SHORE|7124",
+            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+            custodial_authority_raw_text="C2",
+            supervision_level=StateSupervisionLevel.MAXIMUM,
+            supervision_level_raw_text="MAX",
+            conditions="MEST, ACT35, GPAR, MVICT, REMC, END",
+            supervising_officer=entities.StateAgent.new_with_defaults(
+                external_id="876555",
+                state_code=_STATE_CODE_UPPER,
+                full_name='{"given_names": "COSMO", "surname": "KRAMER"}',
+                agent_type=StateAgentType.SUPERVISION_OFFICER,
+                agent_type_raw_text="SUPERVISION_OFFICER",
+            ),
+            supervision_sentences=[p2_ss_ph],
+        )
+
+        p2_sp_1_2 = entities.StateSupervisionPeriod.new_with_defaults(
+            external_id="456B-2",
+            state_code=_STATE_CODE_UPPER,
+            supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
+            supervision_type_raw_text="04,C2",
+            admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
+            admission_reason_raw_text="TRANSFER_WITHIN_STATE",
+            start_date=datetime.date(year=2013, month=4, day=1),
+            termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
+            termination_reason_raw_text="TRANSFER_WITHIN_STATE",
+            termination_date=datetime.date(year=2014, month=8, day=10),
+            county_code="ALLEGH",
+            supervision_site="02||",
+            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+            custodial_authority_raw_text="04",
+            supervision_level=StateSupervisionLevel.MAXIMUM,
+            supervision_level_raw_text="MAX",
+            conditions="MEST, ACT35, GPAR, MVICT, REMC, END",
+            supervision_sentences=[p2_ss_ph],
+        )
+
+        p2_sp_2_1 = entities.StateSupervisionPeriod.new_with_defaults(
+            external_id="456B-3",
+            state_code=_STATE_CODE_UPPER,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type_raw_text="04",
+            admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
+            admission_reason_raw_text="TRANSFER_WITHIN_STATE",
+            start_date=datetime.date(year=2014, month=8, day=10),
+            termination_reason=StateSupervisionPeriodTerminationReason.EXPIRATION,
+            termination_reason_raw_text="43",
+            termination_date=datetime.date(year=2018, month=1, day=1),
+            county_code="ALLEGH",
+            supervision_site="02|02 - NORTH SHORE|7115",
+            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+            custodial_authority_raw_text="04",
+            supervision_level=StateSupervisionLevel.MEDIUM,
+            supervision_level_raw_text="MED",
+            conditions="PN, EST, BL, END, SUBD, AANA",
+            supervising_officer=supervising_officer_1,
+            supervision_sentences=[p2_ss_ph],
+        )
+
+        p2_ss_ph.supervision_periods.extend([p2_sp_1_1, p2_sp_1_2, p2_sp_2_1])
+
+        p5_sg_ph = entities.StateSentenceGroup.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            person=person_5,
+        )
+        person_5.sentence_groups.append(p5_sg_ph)
+
+        p5_ss_ph = entities.StateSupervisionSentence.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            person=person_5,
+            sentence_group=p5_sg_ph,
+        )
+        p5_sg_ph.supervision_sentences.append(p5_ss_ph)
+
+        p5_sp_1_1 = entities.StateSupervisionPeriod.new_with_defaults(
+            external_id="789C-1",
+            state_code=_STATE_CODE_UPPER,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type_raw_text="05",
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            admission_reason_raw_text="05",
+            start_date=datetime.date(year=2003, month=10, day=10),
+            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
+            termination_reason_raw_text="42",
+            termination_date=datetime.date(year=2004, month=8, day=10),
+            county_code="MERCER",
+            supervision_site="08|08 - MERCER DO|7307",
+            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+            custodial_authority_raw_text="05",
+            supervision_level=StateSupervisionLevel.MINIMUM,
+            supervision_level_raw_text="MIN",
+            conditions="START, EST, END, AANA, REL, DAM, PARAB, ACT35, BL, MISC, DDU, URI, GPAR, EMP, ALC, PM, PF, PA",
+            supervising_officer=entities.StateAgent.new_with_defaults(
+                external_id="888888",
+                state_code=_STATE_CODE_UPPER,
+                full_name='{"given_names": "K", "surname": "BANIA"}',
+                agent_type=StateAgentType.SUPERVISION_OFFICER,
+                agent_type_raw_text="SUPERVISION_OFFICER",
+            ),
+            supervision_sentences=[p5_ss_ph],
+        )
+        p5_sp_2_1 = entities.StateSupervisionPeriod.new_with_defaults(
+            external_id="789C-2",
+            state_code=_STATE_CODE_UPPER,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type_raw_text="05",
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            admission_reason_raw_text="05",
+            start_date=datetime.date(year=2004, month=8, day=10),
+            termination_reason=StateSupervisionPeriodTerminationReason.RETURN_TO_INCARCERATION,
+            termination_reason_raw_text="44",
+            termination_date=datetime.date(year=2005, month=12, day=31),
+            county_code="MERCER",
+            supervision_site="08|08 - MERCER DO|7307",
+            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+            custodial_authority_raw_text="05",
+            supervision_level=StateSupervisionLevel.MINIMUM,
+            supervision_level_raw_text="MIN",
+            supervising_officer=entities.StateAgent.new_with_defaults(
+                external_id="555",
+                state_code=_STATE_CODE_UPPER,
+                full_name='{"given_names": "JERRY", "surname": "SEINFELD"}',
+                agent_type=StateAgentType.SUPERVISION_OFFICER,
+                agent_type_raw_text="SUPERVISION_OFFICER",
+            ),
+            supervision_sentences=[p5_ss_ph],
+        )
+        p5_sp_3_1 = entities.StateSupervisionPeriod.new_with_defaults(
+            external_id="789C-3",
+            state_code=_STATE_CODE_UPPER,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type_raw_text="04",
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            admission_reason_raw_text="04",
+            start_date=datetime.date(year=2005, month=12, day=31),
+            termination_reason=StateSupervisionPeriodTerminationReason.EXPIRATION,
+            termination_reason_raw_text="43",
+            termination_date=datetime.date(year=2006, month=10, day=10),
+            county_code="MERCER",
+            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+            custodial_authority_raw_text="04",
+            supervision_level=StateSupervisionLevel.LIMITED,
+            supervision_level_raw_text="ADM",
+            supervising_officer=entities.StateAgent.new_with_defaults(
+                external_id="247",
+                state_code=_STATE_CODE_UPPER,
+                full_name='{"full_name": "NEWMAN"}',
+                agent_type=StateAgentType.SUPERVISION_OFFICER,
+                agent_type_raw_text="SUPERVISION_OFFICER",
+            ),
+            supervision_sentences=[p5_ss_ph],
+        )
+        p5_ss_ph.supervision_periods.extend([p5_sp_1_1, p5_sp_2_1, p5_sp_3_1])
+
+        p4_sg_ph = entities.StateSentenceGroup.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            person=person_4,
+        )
+        person_4.sentence_groups.append(p4_sg_ph)
+
+        p4_ss_ph = entities.StateSupervisionSentence.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            person=person_4,
+            sentence_group=p4_sg_ph,
+        )
+        p4_sg_ph.supervision_sentences.append(p4_ss_ph)
+
+        p4_sp_1_1 = entities.StateSupervisionPeriod.new_with_defaults(
+            external_id="345E-1",
+            state_code=_STATE_CODE_UPPER,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type_raw_text="03",
+            admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
+            admission_reason_raw_text="03",
+            start_date=datetime.date(year=2016, month=1, day=14),
+            county_code="PHILAD",
+            supervision_site="01|01 - NORTHWEST|5112",
+            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+            custodial_authority_raw_text="03",
+            supervision_level=StateSupervisionLevel.MEDIUM,
+            supervision_level_raw_text="MED",
+            conditions="DOMV, AUTO, DDU, REFR, MNOAM, END, RI, RC, MEMON, MCURF, REFC",
+            supervising_officer=entities.StateAgent.new_with_defaults(
+                external_id="10101",
+                state_code=_STATE_CODE_UPPER,
+                full_name='{"given_names": "CLOSE", "surname": "TALKER"}',
+                agent_type=StateAgentType.SUPERVISION_OFFICER,
+                agent_type_raw_text="SUPERVISION_OFFICER",
+            ),
+            supervision_sentences=[p4_ss_ph],
+        )
+
+        p4_ss_ph.supervision_periods.append(p4_sp_1_1)
+
+        populate_person_backedges(expected_people)
+
+        # Act
+        self._run_ingest_job_for_filename("supervision_period_v3.csv")
+
+        # Assert
+        self.assert_expected_db_people(expected_people)
+
+        ######################################
+        # FULL RERUN FOR IDEMPOTENCE
+        ######################################
+
         self._do_ingest_job_rerun_for_tags(self.controller.get_file_tag_rank_list())
 
         self.assert_expected_db_people(

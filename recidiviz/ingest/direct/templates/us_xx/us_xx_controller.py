@@ -25,6 +25,7 @@ from recidiviz.common.constants.enum_overrides import (
     EnumOverrides,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct import templates
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
 )
@@ -53,7 +54,7 @@ class UsXxController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         return StateCode.US_XX.value.lower()
 
     def __init__(self, ingest_bucket_path: GcsfsBucketPath):
-        super().__init__(ingest_bucket_path)
+        super().__init__(ingest_bucket_path, region_module_override=templates)
         self.enum_overrides = self.generate_enum_overrides()
 
         self.row_post_processors_by_file: Dict[str, List[RowPosthookCallable]] = {}

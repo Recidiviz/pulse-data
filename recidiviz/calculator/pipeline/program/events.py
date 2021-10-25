@@ -46,7 +46,7 @@ class ProgramEvent(IdentifierEvent):
 
 @attr.s(frozen=True)
 class ProgramReferralEvent(ProgramEvent, AssessmentEventMixin):
-    """Models a ProgramEvent where a the person was referred to a program."""
+    """Models a ProgramEvent where the person was referred to a program."""
 
     # The type of supervision the person was on
     supervision_type: Optional[StateSupervisionPeriodSupervisionType] = attr.ib(
@@ -82,7 +82,7 @@ class ProgramReferralEvent(ProgramEvent, AssessmentEventMixin):
 
 @attr.s(frozen=True)
 class ProgramParticipationEvent(ProgramEvent):
-    """Models a ProgramEvent where a the person was actively participating in a program."""
+    """Models a ProgramEvent where the person was actively participating in a program."""
 
     # Program location ID
     program_location_id: Optional[str] = attr.ib(default=None)

@@ -60,7 +60,6 @@ class TestUsTnController(BaseDirectIngestControllerTests):
         return SchemaType.STATE
 
     def test_run_full_ingest_all_files_specific_order(self) -> None:
-        self.maxDiff = None
         ######################################
         # OffenderName
         ######################################
@@ -240,7 +239,10 @@ class TestUsTnController(BaseDirectIngestControllerTests):
         # Assert
         self.assert_expected_db_people(expected_people)
 
-        # Rerun for sanity
+        ######################################
+        # FULL RERUN FOR IDEMPOTENCE
+        ######################################
+
         self._do_ingest_job_rerun_for_tags(self.controller.get_file_tag_rank_list())
 
         self.assert_expected_db_people(expected_people)
