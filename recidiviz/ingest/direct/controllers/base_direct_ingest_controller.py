@@ -21,6 +21,7 @@ import abc
 import datetime
 import logging
 import os
+from types import ModuleType
 from typing import List, Optional
 
 import pandas
@@ -142,8 +143,13 @@ class BaseDirectIngestController(Ingestor):
 
     _INGEST_FILE_SPLIT_LINE_LIMIT = 2500
 
-    def __init__(self, ingest_bucket_path: GcsfsBucketPath) -> None:
+    def __init__(
+        self,
+        ingest_bucket_path: GcsfsBucketPath,
+        region_module_override: Optional[ModuleType] = None,
+    ) -> None:
         """Initialize the controller."""
+        self.region_module_override = region_module_override
         self.cloud_task_manager = DirectIngestCloudTaskManagerImpl()
         self.ingest_instance = DirectIngestInstance.for_ingest_bucket(
             ingest_bucket_path
@@ -207,7 +213,11 @@ class BaseDirectIngestController(Ingestor):
 
     @property
     def region(self) -> Region:
-        return regions.get_region(self.region_code().lower(), is_direct_ingest=True)
+        return regions.get_region(
+            self.region_code().lower(),
+            is_direct_ingest=True,
+            region_module_override=self.region_module_override,
+        )
 
     @classmethod
     @abc.abstractmethod
