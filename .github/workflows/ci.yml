@@ -171,7 +171,12 @@ jobs:
           if [[ "$CACHE_HIT" == 'true' ]]; then
             sudo cp --force --recursive ~/postgres/* /
           else
-            sudo apt-get update && sudo apt-get install -yq postgresql-13
+            sudo apt-get update
+            sudo apt-get -y upgrade
+            wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+            echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/postgresql-pgdg.list > /dev/null
+            sudo apt-get update
+            sudo apt-get install postgresql-13
             mkdir -p ~/postgres
             for dep in postgresql-13; do
                 dpkg -L $dep | while IFS= read -r f; do if test -f $f; then echo $f; fi; done | xargs cp --parents --target-directory ~/postgres/
@@ -225,14 +230,15 @@ jobs:
             sudo cp --force --recursive ~/gcp/datastore/* /
             sudo cp --force --recursive ~/gcp/pubsub/* /
           else
-            sudo apt-get update && sudo apt install -y lsb-core && \
-            export CLOUD_SDK_REPO="cloud-sdk-$(lsb_release -c -s)" && \
-            echo "deb http://packages.cloud.google.com/apt $CLOUD_SDK_REPO main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list && \
-            curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add - && \
-            sudo apt update -y && sudo apt-get install google-cloud-sdk -y && \
-            sudo apt install google-cloud-sdk-datastore-emulator -y && \
-            sudo apt install google-cloud-sdk-pubsub-emulator -y
-
+            sudo apt-get update
+            sudo apt-get -y upgrade
+            echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+            sudo apt-get install apt-transport-https ca-certificates gnupg -y
+            curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key --keyring /usr/share/keyrings/cloud.google.gpg add -
+            sudo apt-get update -y
+            sudo apt-get install google-cloud-sdk -y
+            sudo apt-get install google-cloud-sdk-datastore-emulator -y
+            sudo apt-get install google-cloud-sdk-pubsub-emulator -y
             mkdir -p ~/gcp/sdk
             mkdir -p ~/gcp/datastore
             mkdir -p ~/gcp/pubsub
