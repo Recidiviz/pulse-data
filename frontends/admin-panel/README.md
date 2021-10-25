@@ -12,7 +12,7 @@ brew install yarn
 1) Navigate to the root of the repo.
 1) Run `docker-compose up`.
 
-If your local development environment is failing to build properly on master, try 
+If your local development environment is failing to build properly on main, try 
 running `docker build . -t http://us.gcr.io/recidiviz-staging/appengine/default:latest`
 to ensure that you have the latest dependencies in your docker image. If it’s still not 
 working, ping `#eng`.

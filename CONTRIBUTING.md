@@ -117,7 +117,7 @@ Related, include unit and//or integration tests to cover any new code. Update or
 remove existing test cases where appropriate.
 
 When you are passing linting and testing locally and are satisfied with the
-current state of your work, submit a pull request against `master`. However,
+current state of your work, submit a pull request against `main`. However,
 you can also submit Work In Progress ("WIP") pull requests to gather early
 feedback if you believe it would be helpful. If you do so, please format the
 title as "WIP: My title here" and place the PR in a "Draft" state via Github's UI.

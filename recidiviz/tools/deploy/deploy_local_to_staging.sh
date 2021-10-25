@@ -35,14 +35,14 @@ echo "Fetching all tags"
 run_cmd git fetch --all --tags --prune --prune-tags
 
 LAST_VERSION_TAG_ON_CURRENT_BRANCH=$(last_version_tag_on_branch HEAD)
-LAST_VERSION_TAG_ON_MASTER=$(last_version_tag_on_branch master)
+LAST_VERSION_TAG_ON_MAIN=$(last_version_tag_on_branch main)
 
-if [[ ${LAST_VERSION_TAG_ON_CURRENT_BRANCH} != ${LAST_VERSION_TAG_ON_MASTER} ]]; then
-    echo_error "Current branch does not contain latest version tag on master [$LAST_VERSION_TAG_ON_MASTER] - please rebase."
+if [[ ${LAST_VERSION_TAG_ON_CURRENT_BRANCH} != ${LAST_VERSION_TAG_ON_MAIN} ]]; then
+    echo_error "Current branch does not contain latest version tag on main [$LAST_VERSION_TAG_ON_MAIN] - please rebase."
     run_cmd exit 1
 fi
 
-VERSION_TAG=$(next_alpha_version ${LAST_VERSION_TAG_ON_MASTER}) || exit_on_fail
+VERSION_TAG=$(next_alpha_version ${LAST_VERSION_TAG_ON_MAIN}) || exit_on_fail
 
 # Deploys a debug version to staging without promoting traffic to it
 COMMIT_HASH=$(git rev-parse HEAD) || exit_on_fail

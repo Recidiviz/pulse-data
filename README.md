@@ -1,6 +1,6 @@
 # Recidiviz Data Platform
 
-[![Coverage Status](https://coveralls.io/repos/github/Recidiviz/pulse-data/badge.svg?branch=master)](https://coveralls.io/github/Recidiviz/pulse-data?branch=master)
+[![Coverage Status](https://coveralls.io/repos/github/Recidiviz/pulse-data/badge.svg?branch=main)](https://coveralls.io/github/Recidiviz/pulse-data?branch=main)
 
 At the center of Recidiviz is our platform for tracking granular criminal justice metrics in real time. It includes a system
 for the ingest of corrections records from different source data systems, and for calculation of various metrics from the
@@ -373,7 +373,7 @@ The release engineer oncall should go through the following steps:
 
 Typically on Monday morning the release engineer should:
 
-1. Verify that the tests in `master` are all passing in [Travis](https://travis-ci.org/Recidiviz/pulse-data/branches).
+1. Verify that the tests in `main` are all passing in [Travis](https://travis-ci.org/Recidiviz/pulse-data/branches).
 1. Tag a commit with "va.b.c" following [semver](https://semver.org) for numbering. This will trigger a release to staging.
 1. Once the release is complete, run [`https://recidiviz-staging.appspot.com/scraper/start?region=us_fl_martin`](https://recidiviz-staging.appspot.com/scraper/start?region=us_fl_martin) [TODO #623](https://github.com/Recidiviz/pulse-data/issues/623)
    and verify that it is happy by looking at the monitoring page [TODO #59](https://github.com/Recidiviz/pulse-data/issues/59) and also checking the logs for errors.
