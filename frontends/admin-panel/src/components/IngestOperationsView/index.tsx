@@ -40,7 +40,6 @@ import {
   unpauseDirectIngestInstance,
   updateIngestQueuesState,
 } from "../../AdminPanelAPI";
-import { useFetchedDataJSON } from "../../hooks";
 import ActionRegionConfirmationForm from "../Utilities/ActionRegionConfirmationForm";
 import StateSelector from "../Utilities/StateSelector";
 import {
@@ -193,10 +192,6 @@ const IngestOperationsView = (): JSX.Element => {
     setIsConfirmationModalVisible(true);
   };
 
-  const { loading, data } = useFetchedDataJSON<StateCodeInfo[]>(
-    fetchIngestStateCodes
-  );
-
   return (
     <>
       <PageHeader
@@ -210,10 +205,9 @@ const IngestOperationsView = (): JSX.Element => {
             onClick={() => getData()}
           />,
           <StateSelector
+            fetchStateList={fetchIngestStateCodes}
             onChange={stateCodeChange}
             initialValue={initialStateCode}
-            loading={loading}
-            data={data}
           />,
         ]}
       />

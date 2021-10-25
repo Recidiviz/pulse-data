@@ -17,14 +17,25 @@
 import { UploadOutlined } from "@ant-design/icons";
 import { Alert, Button, message, PageHeader, Space, Upload } from "antd";
 import * as React from "react";
+import { fetchRosterStateCodes } from "../../AdminPanelAPI";
+import StateSelector from "../Utilities/StateSelector";
 
 const UploadRostersView = (): JSX.Element => {
+  const [stateCode, setStateCode] = React.useState<string | undefined>();
   const [uploading, setUploading] = React.useState(false);
+  const [errorMessage, setErrorMessage] = React.useState<string | void>();
+
+  const disabled = !stateCode;
 
   return (
     <>
-      <PageHeader title="Upload Idaho Roster" />
+      <PageHeader title="Upload Line Staff Roster" />
       <Space direction="vertical">
+        <StateSelector
+          fetchStateList={fetchRosterStateCodes}
+          onChange={(stateInfo) => setStateCode(stateInfo.code)}
+        />
+
         <Alert
           message="Instructions"
           description={
@@ -63,27 +74,44 @@ const UploadRostersView = (): JSX.Element => {
         />
         <Upload
           accept=".csv"
-          action="/admin/api/line_staff_tools/upload_idaho_roster"
+          action={`/admin/api/line_staff_tools/${stateCode}/upload_roster`}
           maxCount={1}
+          disabled={disabled}
           onChange={(info) => {
             if (info.file.status === "uploading" && !uploading) {
               setUploading(true);
+              setErrorMessage();
               message.info("Uploading roster...");
             } else if (info.file.status === "error") {
               setUploading(false);
-              message.error("Something went wrong with the upload.");
+              setErrorMessage(
+                `Response status: ${info.file.error?.status}. Message: ${info.file.response}`
+              );
+              message.error("An error occurred.");
             } else if (info.file.status === "done") {
               setUploading(false);
+              setErrorMessage();
               message.success("Roster uploaded successfully!");
             }
           }}
           showUploadList={false}
           withCredentials
         >
-          <Button icon={<UploadOutlined />} loading={uploading}>
+          <Button
+            icon={<UploadOutlined />}
+            loading={uploading}
+            disabled={disabled}
+          >
             Upload Roster
           </Button>
         </Upload>
+        {errorMessage && (
+          <Alert
+            message="Upload failed."
+            type="error"
+            description={errorMessage}
+          />
+        )}
       </Space>
     </>
   );

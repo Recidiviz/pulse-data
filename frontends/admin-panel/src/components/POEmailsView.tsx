@@ -17,7 +17,6 @@
 import { Alert, Card, Col, Empty, PageHeader, Row } from "antd";
 import * as React from "react";
 import { fetchEmailStateCodes } from "../AdminPanelAPI/LineStaffTools";
-import { useFetchedDataJSON } from "../hooks";
 import { StateCodeInfo } from "./IngestOperationsView/constants";
 import GenerateEmails from "./POEmails/GenerateEmails";
 import ListBatches from "./POEmails/ListBatches";
@@ -25,8 +24,6 @@ import SendEmails from "./POEmails/SendEmails";
 import StateSelector from "./Utilities/StateSelector";
 
 const POEmailsView = (): JSX.Element => {
-  const { loading, data } =
-    useFetchedDataJSON<StateCodeInfo[]>(fetchEmailStateCodes);
   const [stateCode, setStateCode] =
     React.useState<StateCodeInfo | undefined>(undefined);
 
@@ -50,8 +47,7 @@ const POEmailsView = (): JSX.Element => {
       />
       <br />
       <StateSelector
-        loading={loading}
-        data={data}
+        fetchStateList={fetchEmailStateCodes}
         onChange={(state) => setStateCode(state)}
       />
       <Row gutter={[8, 8]}>

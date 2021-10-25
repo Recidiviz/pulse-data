@@ -95,6 +95,7 @@ export {
 export {
   fetchEmailStateCodes,
   fetchETLViewIds,
+  fetchRosterStateCodes,
   generateNonETLExports,
   getPOFeedback,
   runCloudSQLImport,
