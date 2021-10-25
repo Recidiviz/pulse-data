@@ -294,12 +294,12 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
                 WHEN inferred_death THEN 'DEATH'    
                 WHEN inferred_erroneous THEN 'ERRONEOUS_RELEASE'
                 WHEN inferred_missing_data THEN LAG(compartment_level_1) OVER(PARTITION BY person_id ORDER BY start_date)
-                WHEN inferred_pending_custody THEN 'PENDING_CUSTODY' 
+                WHEN inferred_pending_custody OR inferred_mo_pending_custody THEN 'PENDING_CUSTODY'
                 WHEN inferred_pending_supervision THEN 'PENDING_SUPERVISION'
                 WHEN inferred_oos AND LAG(compartment_level_1) OVER(PARTITION BY person_id ORDER BY start_date) IN ('INCARCERATION','SUPERVISION') THEN CONCAT(LAG(compartment_level_1) OVER(PARTITION BY person_id ORDER BY start_date), '_', 'OUT_OF_STATE')
                 WHEN inferred_oos AND LAG(compartment_level_1) OVER(PARTITION BY person_id ORDER BY start_date) IN ('SUPERVISION_OUT_OF_STATE') THEN 'SUPERVISION_OUT_OF_STATE'
                 WHEN inferred_oos AND LAG(compartment_level_1) OVER(PARTITION BY person_id ORDER BY start_date) IN ('INCARCERATION_OUT_OF_STATE') THEN 'INCARCERATION_OUT_OF_STATE'
-                WHEN inferred_suspension THEN 'SUSPENSION'
+                WHEN inferred_suspension OR inferred_mo_suspension THEN 'SUSPENSION'
                 ELSE compartment_level_1 END, 'INTERNAL_UNKNOWN') AS compartment_level_1,
         COALESCE(
             CASE WHEN inferred_release OR inferred_mo_release THEN 'RELEASE'
@@ -307,10 +307,10 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
                 WHEN inferred_death THEN 'DEATH'
                 WHEN inferred_erroneous THEN 'ERRONEOUS_RELEASE'
                 WHEN inferred_missing_data THEN LAG(compartment_level_2) OVER(PARTITION BY person_id ORDER BY start_date)
-                WHEN inferred_pending_custody THEN 'PENDING_CUSTODY'
+                WHEN inferred_pending_custody OR inferred_mo_pending_custody THEN 'PENDING_CUSTODY'
                 WHEN inferred_pending_supervision THEN 'PENDING_SUPERVISION'
                 WHEN inferred_oos THEN LAG(compartment_level_2) OVER(PARTITION BY person_id ORDER BY start_date)
-                WHEN inferred_suspension THEN 'SUSPENSION'
+                WHEN inferred_suspension OR inferred_mo_suspension THEN 'SUSPENSION'
                 ELSE compartment_level_2 END, 'INTERNAL_UNKNOWN') AS compartment_level_2,
         start_date,
         end_date,
@@ -352,7 +352,15 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
                 AND COALESCE(prev_end_reason,'INTERNAL_UNKNOWN') IN ('INTERNAL_UNKNOWN', 'TRANSFER_WITHIN_STATE', 'TRANSFER')
                 AND COALESCE(next_start_reason,'INTERNAL_UNKNOWN') IN ('INTERNAL_UNKNOWN', 'TRANSFER_WITHIN_STATE', 'TRANSFER')
                 AND state_code = 'US_MO'
-                AND DATE_DIFF(next_start_date, prev_end_date, DAY) > {mo_data_gap_days} AS inferred_mo_release,
+                AND DATE_DIFF(COALESCE(next_start_date, last_day_of_data), prev_end_date, DAY) > {mo_data_gap_days} AS inferred_mo_release,
+            metric_source = 'INFERRED'
+                AND COALESCE(prev_end_reason,'INTERNAL_UNKNOWN') IN ('INTERNAL_UNKNOWN', 'TRANSFER_WITHIN_STATE', 'TRANSFER')
+                AND next_start_reason = 'RETURN_FROM_SUSPENSION'
+                AND state_code = 'US_MO' AS inferred_mo_suspension,
+            metric_source = 'INFERRED'
+                AND COALESCE(prev_end_reason,'INTERNAL_UNKNOWN') IN ('INTERNAL_UNKNOWN', 'TRANSFER_WITHIN_STATE', 'TRANSFER')
+                AND next_start_reason IN ('NEW_ADMISSION', 'TEMPORARY_CUSTODY')
+                AND state_code = 'US_MO' AS inferred_mo_pending_custody,
         FROM sessions_joined_with_dataflow
         )
     )
