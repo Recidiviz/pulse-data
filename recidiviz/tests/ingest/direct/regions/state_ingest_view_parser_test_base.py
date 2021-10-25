@@ -19,7 +19,7 @@ import csv
 import os
 import unittest
 from abc import abstractmethod
-from typing import Sequence
+from typing import Dict, Sequence
 
 from recidiviz.cloud_storage.gcs_file_system import GcsfsFileContentsHandle
 from recidiviz.common.constants.states import StateCode
@@ -97,6 +97,8 @@ class StateIngestViewParserTestBase:
     def _run_parse_ingest_view_test(
         self, file_tag: str, expected_output: Sequence[Entity], debug: bool = False
     ) -> None:
+        self._check_test_matches_file_tag(file_tag)
+
         parser = self._build_parser()
         fixture_path = direct_ingest_fixture_path(
             region_code=self.region_code(),
@@ -121,16 +123,16 @@ class StateIngestViewParserTestBase:
 
         self.test.assertEqual(expected_output, parsed_output)
 
-    def test_all_ingest_view_manifests_parse(self) -> None:
-        if self.region_code() == StateCode.US_XX.value:
-            # Skip template region
-            return
-
-        parser = self._build_parser()
-
+    # TODO(#8905): Change this function to just return manifest paths once all
+    # manifests have been migrated to v2 mappings and have
+    # test_all_ingest_view_manifests_parse do the parsing.
+    def _manifest_path_to_v2_manifest(self) -> Dict[str, EntityTreeManifest]:
         region = self._region()
         manifest_dir = ingest_view_manifest_dir(region)
 
+        parser = self._build_parser()
+
+        result = {}
         for file in os.listdir(manifest_dir):
             if file == "__init__.py":
                 continue
@@ -139,9 +141,66 @@ class StateIngestViewParserTestBase:
                 manifest_ast, _ = parser.parse_manifest(manifest_path)
             except KeyError as e:
                 if "Expected nonnull [manifest_language] in input" in str(e):
-                    # TODO(#8905): Remove this check once all files have been migrated to
-                    #  v2 structure.
+                    # TODO(#8905): Remove this check once all files have been migrated
+                    #  to v2 structure.
                     continue
                 raise e
 
             self.test.assertIsInstance(manifest_ast, EntityTreeManifest)
+            result[manifest_path] = manifest_ast
+        return result
+
+    def test_all_ingest_view_manifests_parse(self) -> None:
+        if self.region_code() == StateCode.US_XX.value:
+            # Skip template region
+            return
+
+        # Make sure building all manifests doesn't crash
+        _ = self._manifest_path_to_v2_manifest()
+
+    def test_all_ingest_view_manifests_are_tested(self) -> None:
+        if self.region_code() == StateCode.US_XX.value:
+            # Skip template region
+            return
+
+        for manifest_path in self._manifest_path_to_v2_manifest():
+            self._check_manifest_has_parser_test(manifest_path)
+
+    def _check_manifest_has_parser_test(self, manifest_path: str) -> None:
+        """Validates that manifest at the given path has an associated test defined in
+        this test class.
+        """
+        file_tag = self._file_tag_for_manifest(manifest_path)
+        expected_test_name = self._expected_test_name_for_tag(file_tag)
+
+        all_tests = [t for t in dir(self) if t.startswith("test_")]
+        if expected_test_name not in all_tests:
+            self.test.fail(
+                f"Missing test for [{file_tag}] - expected test with name "
+                f"[{expected_test_name}]",
+            )
+
+    def _file_tag_for_manifest(self, manifest_path: str) -> str:
+        """Parses the ingest view file tag from the ingest view manifest path."""
+        _, manifest_file = os.path.split(manifest_path)
+        manifest_name, _ = os.path.splitext(manifest_file)
+
+        return manifest_name[len(self.region_code()) + 1 :]
+
+    @staticmethod
+    def _expected_test_name_for_tag(file_tag: str) -> str:
+        """Returns the name we expect for the parser test for this file tag."""
+        return f"test_parse_{file_tag}"
+
+    def _check_test_matches_file_tag(self, file_tag: str) -> None:
+        """Validates that the file tag that is being processed is the expected file tag
+        given the current test name.
+        """
+        expected_test_name = self._expected_test_name_for_tag(file_tag)
+        actual_test_name = self.test._testMethodName  # pylint: disable=protected-access
+
+        if actual_test_name != expected_test_name:
+            self.test.fail(
+                f"Unexpected test name [{actual_test_name}] for file_tag "
+                f"[{file_tag}]. Expected [{expected_test_name}]."
+            )
