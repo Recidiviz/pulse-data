@@ -39,4 +39,6 @@ class UsXxIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
     def test(self) -> unittest.TestCase:
         return self
 
-    # Add parsing tests for new ingest view files here #
+    # ~~ Add parsing tests for new ingest view files here ~~
+    # Parser tests must call self._run_parse_ingest_view_test() and follow the naming
+    # convention `test_parse_<file_tag>`.
