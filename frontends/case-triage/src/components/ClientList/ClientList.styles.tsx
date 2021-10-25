@@ -111,19 +111,6 @@ export const ClientListContainerElement = styled.div`
   width: 100%;
 `;
 
-export const IN_PROGRESS_INDICATOR_SIZE = 8;
-
-export const InProgressIndicator = styled.div`
-  position: absolute;
-  width: ${rem(IN_PROGRESS_INDICATOR_SIZE)};
-  height: ${rem(IN_PROGRESS_INDICATOR_SIZE)};
-  left: -${rem(spacing.xl / 2 + IN_PROGRESS_INDICATOR_SIZE / 2)};
-  top: 42px;
-
-  border-radius: 999px;
-  background-color: ${palette.slate60};
-`;
-
 export const NameCardSection = styled(FlexCardSection)`
   display: flex;
   justify-content: space-between;

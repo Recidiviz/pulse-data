@@ -22,6 +22,7 @@ import {
   CaseUpdateActionType,
   NotInCaseloadActions,
 } from "../../stores/CaseUpdatesStore";
+import { ACTION_TITLES } from "../../stores/CaseUpdatesStore/CaseUpdates";
 import { Client } from "../../stores/ClientsStore";
 import IncorrectDataForm from "./IncorrectDataForm";
 import MoveToProcessingForm from "./MoveToProcessingForm";
@@ -43,17 +44,12 @@ interface FeedbackFormModalProps {
 const titleForActionType = (actionType: CaseUpdateActionType): string => {
   switch (actionType) {
     case CaseUpdateActionType.INCORRECT_ASSESSMENT_DATA:
-      return "Incorrect Assessment Status";
     case CaseUpdateActionType.INCORRECT_EMPLOYMENT_DATA:
-      return "Incorrect Employment Status";
     case CaseUpdateActionType.INCORRECT_CONTACT_DATA:
-      return "Incorrect Contact Status";
     case CaseUpdateActionType.NOT_ON_CASELOAD:
-      return "Not on Caseload";
     case CaseUpdateActionType.CURRENTLY_IN_CUSTODY:
-      return "In Custody";
     case CaseUpdateActionType.INCORRECT_SUPERVISION_LEVEL_DATA:
-      return "Incorrect Supervision Level Data";
+      return `${ACTION_TITLES[actionType]}`;
     default:
       return "Incorrect data";
   }
