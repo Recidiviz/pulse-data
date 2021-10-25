@@ -19,7 +19,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { Form, FormInstance } from "antd";
 import * as React from "react";
 import { fetchIngestStateCodes } from "../../AdminPanelAPI";
-import { useFetchedDataJSON } from "../../hooks";
 import { StateCodeInfo } from "../IngestOperationsView/constants";
 import StateSelector from "../Utilities/StateSelector";
 
@@ -33,17 +32,12 @@ const DataDiscoverySelectStateView: React.FC<DataDiscoverySelectStateViewProps> 
       form.setFieldsValue({ region_code: value.code });
     };
 
-    const { loading, data } = useFetchedDataJSON<StateCodeInfo[]>(
-      fetchIngestStateCodes
-    );
-
     return (
       <Form.Item label="State" name="region_code" rules={[{ required: true }]}>
         <StateSelector
+          fetchStateList={fetchIngestStateCodes}
           onChange={onChange}
           initialValue={null}
-          loading={loading}
-          data={data}
         />
       </Form.Item>
     );

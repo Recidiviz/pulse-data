@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Store used to maintain all admin panel related stores"""
-from typing import Dict, List
+from typing import Dict, Iterable, List
 
 from recidiviz.admin_panel.dataset_metadata_store import DatasetMetadataCountsStore
 from recidiviz.admin_panel.ingest_metadata_store import IngestDataFreshnessStore
@@ -77,7 +77,7 @@ class AdminStores:
                 ).start()
 
 
-def fetch_state_codes(state_codes: List[StateCode]) -> List[Dict[str, str]]:
+def fetch_state_codes(state_codes: Iterable[StateCode]) -> List[Dict[str, str]]:
     return [
         {
             "code": state_code.value,

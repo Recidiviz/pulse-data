@@ -44,6 +44,10 @@ export const fetchEmailStateCodes = async (): Promise<Response> => {
   return postWithURLAndBody("/api/line_staff_tools/fetch_email_state_codes");
 };
 
+export const fetchRosterStateCodes = async (): Promise<Response> => {
+  return postWithURLAndBody("/api/line_staff_tools/fetch_roster_state_codes");
+};
+
 // Generate PO Monthly Report Emails
 export const generateEmails = async (
   stateCode: string,

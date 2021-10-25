@@ -35,7 +35,6 @@ import {
   releaseBQExportLock,
   updateIngestQueuesState,
 } from "../AdminPanelAPI";
-import { useFetchedDataJSON } from "../hooks";
 import {
   DirectIngestInstance,
   QueueState,
@@ -48,7 +47,7 @@ interface StyledStepProps extends StepProps {
   // Title of button that actually performs an action. If not present,
   // only a 'Mark done' button will be present for a given step.
   actionButtonTitle?: string;
-  // Action that will be peformed when the action button is clicked.
+  // Action that will be performed when the action button is clicked.
   onActionButtonClick?: () => Promise<Response>;
 }
 
@@ -510,20 +509,15 @@ const FlashDatabaseChecklist = (): JSX.Element => {
       </Steps>
     );
 
-  const { loading, data } = useFetchedDataJSON<StateCodeInfo[]>(
-    fetchIngestStateCodes
-  );
-
   return (
     <>
       <PageHeader
         title="Flash Primary Database"
         extra={
           <StateSelector
+            fetchStateList={fetchIngestStateCodes}
             onChange={convertStateInfo}
             initialValue={null}
-            loading={loading}
-            data={data}
           />
         }
       />
