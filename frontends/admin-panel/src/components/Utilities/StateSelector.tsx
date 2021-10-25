@@ -16,26 +16,38 @@
 // =============================================================================
 import { Select } from "antd";
 import * as React from "react";
+import { useFetchedDataJSON } from "../../hooks";
 import { StateCodeInfo } from "../IngestOperationsView/constants";
 
 interface StateSelectorProps {
-  /* form component onChange that changes the stateInfo */
+  /** fetch function to initialize the list of states */
+  fetchStateList: () => Promise<Response>;
+  /** callback to receive the list of fetched states */
+  onFetched?: (stateList: StateCodeInfo[]) => void;
+  /** form component onChange that changes the stateInfo */
   onChange: (stateInfo: StateCodeInfo) => void;
-  /* initial state code */
+  /** initial state code */
   initialValue?: string | null;
   value?: string;
-  loading: boolean;
-  /* array of available states */
-  data: StateCodeInfo[] | undefined;
 }
 
 const StateSelector: React.FC<StateSelectorProps> = ({
+  fetchStateList,
+  onFetched,
   onChange,
   initialValue,
-  loading,
-  data,
   value,
 }) => {
+  const { loading, data } = useFetchedDataJSON<StateCodeInfo[]>(fetchStateList);
+
+  // storing this on a ref to avoid infinite effect loops; it's only going to be called once
+  const handleFetched = React.useRef(onFetched);
+  React.useEffect(() => {
+    if (handleFetched.current && data) {
+      handleFetched.current(data);
+    }
+  }, [data]);
+
   const handleOnChange = (selectedValue: string) => {
     data?.forEach((state: StateCodeInfo) => {
       if (selectedValue === state.code) {

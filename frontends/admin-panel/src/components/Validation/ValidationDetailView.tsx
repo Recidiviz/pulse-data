@@ -19,7 +19,6 @@ import { Alert, Breadcrumb, PageHeader } from "antd";
 import * as React from "react";
 import { Link, useHistory, useLocation, useParams } from "react-router-dom";
 import { fetchValidationStateCodes } from "../../AdminPanelAPI";
-import { useFetchedDataJSON } from "../../hooks";
 import { VALIDATION_STATUS_ROUTE } from "../../navigation/DatasetMetadata";
 import { StateCodeInfo } from "../IngestOperationsView/constants";
 import StateSelector from "../Utilities/StateSelector";
@@ -38,21 +37,20 @@ const ValidationDetailView = (): JSX.Element => {
   const queryString = location.search;
   const params = new URLSearchParams(queryString);
 
-  const stateCodesFetched = useFetchedDataJSON<StateCodeInfo[]>(
-    fetchValidationStateCodes
-  );
-  const stateCodesLoading = stateCodesFetched.loading;
-  const stateCodesData = stateCodesFetched.data;
-
   const updateQueryParams = (stateCodeInput: string) => {
     const locationObj = {
       search: `?stateCode=${stateCodeInput}`,
     };
     history.push(locationObj);
   };
+
+  const [stateCodesData, setStateCodesData] =
+    React.useState<StateCodeInfo[] | undefined>();
+
   const state = stateCodesData?.find(
     (value: StateCodeInfo) => value.code === params.get("stateCode")
   );
+
   const updateState = (value: StateCodeInfo) => {
     updateQueryParams(value.code);
   };
@@ -70,10 +68,10 @@ const ValidationDetailView = (): JSX.Element => {
         subTitle="Shows the detailed status for the validation in this state."
         extra={
           <StateSelector
+            fetchStateList={fetchValidationStateCodes}
+            onFetched={(stateList) => setStateCodesData(stateList)}
             onChange={updateState}
             value={state?.code}
-            loading={stateCodesLoading}
-            data={stateCodesData}
           />
         }
       />

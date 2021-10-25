@@ -18,21 +18,22 @@
 import csv
 import logging
 import os
-from datetime import date
 from http import HTTPStatus
 from json import JSONDecodeError
 from typing import Optional, Tuple
 
 from flask import Blueprint, jsonify, request
-from google.cloud import bigquery
 
 from recidiviz.admin_panel.admin_stores import fetch_state_codes
 from recidiviz.admin_panel.case_triage_helpers import (
     columns_for_case_triage_view,
     get_importable_csvs,
 )
-from recidiviz.big_query.big_query_client import BigQueryClientImpl
-from recidiviz.case_triage.user_context import UserContext
+from recidiviz.admin_panel.line_staff_tools.constants import (
+    EMAIL_STATE_CODES,
+    ROSTER_STATE_CODES,
+)
+from recidiviz.admin_panel.line_staff_tools.rosters import RosterManager
 from recidiviz.case_triage.views.view_config import (
     CASE_TRIAGE_EXPORTED_VIEW_BUILDERS,
     ETL_TABLES,
@@ -72,8 +73,6 @@ from recidiviz.utils import metadata
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.environment import GCP_PROJECT_STAGING, in_development
 from recidiviz.utils.metadata import local_project_id_override
-
-EMAIL_STATE_CODES = [StateCode.US_ID, StateCode.US_PA]
 
 
 def add_line_staff_tools_routes(bp: Blueprint) -> None:
@@ -215,6 +214,12 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
     def _fetch_email_state_codes() -> Tuple[str, HTTPStatus]:
         # hard coding Idaho and Pennsylvania for now
         state_code_info = fetch_state_codes(EMAIL_STATE_CODES)
+        return jsonify(state_code_info), HTTPStatus.OK
+
+    @bp.route("/api/line_staff_tools/fetch_roster_state_codes", methods=["POST"])
+    @requires_gae_auth
+    def _fetch_roster_state_codes() -> Tuple[str, HTTPStatus]:
+        state_code_info = fetch_state_codes(ROSTER_STATE_CODES)
         return jsonify(state_code_info), HTTPStatus.OK
 
     # Generate monthly report emails
@@ -427,79 +432,36 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
             HTTPStatus.OK,
         )
 
-    @bp.route("/api/line_staff_tools/upload_idaho_roster", methods=["POST"])
+    @bp.route("/api/line_staff_tools/<state_code_str>/upload_roster", methods=["POST"])
     @requires_gae_auth
-    def _upload_idaho_roster() -> Tuple[str, HTTPStatus]:
-        """This method handles uploading the Idaho roster. It assumes that the
-        caller has manually formatted the CSV appropriately.
+    def _upload_roster(state_code_str: str) -> Tuple[str, HTTPStatus]:
+        """This method handles uploading rosters for line staff tools access.
+        It assumes that the caller has manually formatted the CSV appropriately."""
 
-        Eventually, we hope that this method will be deleted once we start using
-        Idaho's Azure Active Directory to manage rosters."""
+        state_code = StateCode(state_code_str)
+        if state_code not in ROSTER_STATE_CODES:
+            return (
+                f"Rosters are not supported for {state_code.value}",
+                HTTPStatus.BAD_REQUEST,
+            )
+
         dict_reader = csv.DictReader(
             request.files["file"].read().decode("utf-8-sig").splitlines()
         )
         rows = list(dict_reader)
-        if not rows:
-            return "No rows found in CSV file", HTTPStatus.BAD_REQUEST
 
-        IDAHO_ROSTER_KEYS = [
-            "employee_name",
-            "email_address",
-            "job_title",
-            "district",
-            "external_id",
-        ]
-        if len(rows[0]) != len(IDAHO_ROSTER_KEYS):
-            return "Invalid number of columns", HTTPStatus.BAD_REQUEST
-        for key in IDAHO_ROSTER_KEYS:
-            if key not in rows[0]:
-                return f'Missing column "{key}"', HTTPStatus.BAD_REQUEST
+        manager = RosterManager(state_code, rows)
 
-        for row in rows:
-            # Enforce casing for columns where we have a preference.
-            row["email_address"] = row["email_address"].lower()
-            row["external_id"] = row["external_id"].upper()
+        try:
+            manager.validate_roster_upload()
+        except ValueError as e:
+            return str(e), HTTPStatus.BAD_REQUEST
 
-        bq = BigQueryClientImpl()
+        manager.normalize_roster_values()
 
-        # Because all POs in Idaho should have Case Triage access, this additional step
-        # adds anyone missing from the roster to case triage users with the date of roster
-        # access for analytics purposes.
-        dataset_ref = bq.dataset_ref_for_id("static_reference_tables")
-        query_job = bq.run_query_async(
-            f"""
-            SELECT email_address FROM `{metadata.project_id()}.{dataset_ref.dataset_id}.case_triage_users`
-            WHERE state_code = 'US_ID'
-            """
-        )
-        res = query_job.result()
-        email_addresses = [row[0] for row in res]
+        manager.grant_access()
 
-        rows_to_insert = [
-            {
-                "state_code": "US_ID",
-                "officer_external_id": row["external_id"],
-                "email_address": row["email_address"],
-                "segment_id": UserContext.segment_user_id_for_email(
-                    row["email_address"]
-                ),
-                "received_access": date.today().strftime("%Y-%m-%d"),
-            }
-            for row in rows
-            if row["email_address"] not in email_addresses
-        ]
-        insert_job = bq.load_into_table_async(
-            dataset_ref, "case_triage_users", rows_to_insert
-        )
-        insert_job.result()
-
-        # Update Idaho roster when access is fully granted.
-        load_job = bq.load_into_table_async(
-            dataset_ref,
-            "us_id_roster",
-            rows,
-            write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
-        )
-        load_job.result()
+        # Update roster after access is fully granted.
+        manager.store_roster()
 
         return "", HTTPStatus.OK
