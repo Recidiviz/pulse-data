@@ -32,4 +32,3 @@ env_variables:
 # for more details.
 vpc_access_connector:
   name: "projects/recidiviz-123/locations/us-east1/connectors/redis-vpc-connector"
-  egress_setting: all-traffic
