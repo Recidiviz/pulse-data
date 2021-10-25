@@ -104,11 +104,9 @@ export const ACTION_TITLES: Record<CaseUpdateActionType, string> = {
   [CaseUpdateActionType.INCORRECT_SUPERVISION_LEVEL_DATA]:
     "Incorrect supervision level data",
 
-  [CaseUpdateActionType.INCORRECT_ASSESSMENT_DATA]:
-    "Incorrect assessment status",
-  [CaseUpdateActionType.INCORRECT_EMPLOYMENT_DATA]:
-    "Incorrect employment status",
-  [CaseUpdateActionType.INCORRECT_CONTACT_DATA]: "Incorrect contact status",
+  [CaseUpdateActionType.INCORRECT_ASSESSMENT_DATA]: "Assessment not needed",
+  [CaseUpdateActionType.INCORRECT_EMPLOYMENT_DATA]: "Employment not needed",
+  [CaseUpdateActionType.INCORRECT_CONTACT_DATA]: "Contact not needed",
   [CaseUpdateActionType.INCORRECT_NEW_TO_CASELOAD_DATA]:
     "Incorrect time on caseload",
   [CaseUpdateActionType.NOT_ON_CASELOAD]: "Not on Caseload",

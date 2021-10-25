@@ -31,6 +31,7 @@ import { flowResult } from "mobx";
 import { useRootStore } from "../../../stores";
 import {
   ACTION_TITLES,
+  CaseUpdateActionType,
   CASE_UPDATE_OPPORTUNITY_ASSOCIATION,
 } from "../../../stores/CaseUpdatesStore/CaseUpdates";
 import { Client } from "../../../stores/ClientsStore";
@@ -44,6 +45,17 @@ import { PolicyLink } from "../../CaseOpportunities/PolicyLink";
 import { Alert } from "./Alert";
 import { UndoContents } from "./Alert.styles";
 import { NewToCaseloadPolicy } from "./NewToCaseloadPolicy";
+
+const titleForActionType = (actionType: CaseUpdateActionType): string => {
+  switch (actionType) {
+    case CaseUpdateActionType.INCORRECT_ASSESSMENT_DATA:
+    case CaseUpdateActionType.INCORRECT_EMPLOYMENT_DATA:
+    case CaseUpdateActionType.INCORRECT_CONTACT_DATA:
+      return `${ACTION_TITLES[actionType]}`;
+    default:
+      return `Report ${ACTION_TITLES[actionType].toLowerCase()}`;
+  }
+};
 
 const AlertText = ({ client, opportunity }: OpportunityReviewProps) => {
   const { policyStore } = useRootStore();
@@ -148,7 +160,7 @@ const MenuActions = ({ client, opportunity }: OpportunityReviewProps) => {
           setFeedbackModalIsOpen(true);
         }}
       >
-        Report {ACTION_TITLES[incorrectDataActionType].toLowerCase()}
+        {titleForActionType(incorrectDataActionType)}
       </DropdownMenuItem>
       <FeedbackFormModal
         isOpen={feedbackModalIsOpen}
