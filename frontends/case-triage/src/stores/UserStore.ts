@@ -35,6 +35,7 @@ interface UserStoreProps {
 
 export enum KNOWN_EXPERIMENTS {
   ExtendedProfile = "can-see-extended-profile",
+  ClientTimeline = "can-see-client-timeline",
 }
 
 export interface FeatureVariants {
@@ -223,6 +224,10 @@ export default class UserStore {
 
   get canSeeExtendedProfile(): boolean {
     return this.isInExperiment(KNOWN_EXPERIMENTS.ExtendedProfile);
+  }
+
+  get canSeeClientTimeline(): boolean {
+    return this.isInExperiment(KNOWN_EXPERIMENTS.ClientTimeline);
   }
 
   setShouldSeeOnboarding(shouldSeeOnboarding: boolean): void {

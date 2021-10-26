@@ -68,7 +68,7 @@ const SummaryItem: React.FC<SummaryItemProps> = ({ children, icon }) => {
 const DetailsPanelContents: React.FC<CaseCardProps> = ({ client }) => {
   const {
     policyStore,
-    userStore: { canSeeExtendedProfile },
+    userStore: { canSeeExtendedProfile, canSeeClientTimeline },
   } = useRootStore();
 
   const contactText = getContactFrequencyText(
@@ -178,7 +178,7 @@ const DetailsPanelContents: React.FC<CaseCardProps> = ({ client }) => {
           </Caption>
         </DetailsLineItem>
       </DetailsPanelSection>
-      {canSeeExtendedProfile && (
+      {canSeeClientTimeline && (
         <DetailsPanelSection>
           <DetailsPanelHeading>Events</DetailsPanelHeading>
           <ClientTimeline />
