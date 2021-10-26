@@ -14,7 +14,18 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { Button, Card, Form, Input, message, Select, Spin } from "antd";
+import {
+  Alert,
+  AlertProps,
+  Button,
+  Card,
+  Form,
+  Input,
+  message,
+  Select,
+  Spin,
+  Typography,
+} from "antd";
 import * as React from "react";
 import { generateEmails } from "../../AdminPanelAPI/LineStaffTools";
 import ActionRegionConfirmationForm from "../Utilities/ActionRegionConfirmationForm";
@@ -35,10 +46,11 @@ const GenerateEmails: React.FC<POEmailsFormProps> = ({ stateInfo }) => {
 
   const [formData, setFormData] =
     React.useState<GenerateFormData | undefined>(undefined);
-  const [batchId, setBatchId] = React.useState<string | null>(null);
   const [showSpinner, setShowSpinner] = React.useState(false);
   const [isConfirmationModalVisible, setIsConfirmationModalVisible] =
     React.useState(false);
+  const [generationResult, setGenerationResult] =
+    React.useState<AlertProps | void>();
 
   const onFinish = (values?: GenerateFormData | undefined) => {
     setFormData(values);
@@ -46,6 +58,7 @@ const GenerateEmails: React.FC<POEmailsFormProps> = ({ stateInfo }) => {
   };
 
   const onEmailActionConfirmation = async () => {
+    setGenerationResult();
     setIsConfirmationModalVisible(false);
     setShowSpinner(true);
     message.info("Generating emails...");
@@ -56,14 +69,54 @@ const GenerateEmails: React.FC<POEmailsFormProps> = ({ stateInfo }) => {
       formData?.messageBodyOverride,
       formData?.emailAllowlist
     );
-    if (r.status >= 400) {
-      const text = await r.text();
-      message.error(`Generate emails... failed: ${text}`);
-      setBatchId(null);
+    if (r.status === 200) {
+      const { batchId, statusText } = await r.json();
+      setGenerationResult({
+        type: "success",
+        message: "Email generation succeeded",
+        description: (
+          <>
+            <p>{statusText}</p>
+            <p>
+              Bucket link to {projectId}-report-html for {stateInfo.name}, batch
+              <a
+                href={`https://console.cloud.google.com/storage/browser/${projectId}-report-html/${stateInfo.code}/${batchId}`}
+                rel="noreferrer"
+                style={{ margin: 10 }}
+                target="_blank"
+              >
+                {batchId}
+              </a>
+            </p>
+          </>
+        ),
+      });
     } else {
-      const json = await r.json();
-      message.success(`Generate emails... succeeded! ${json.statusText}`);
-      setBatchId(json.batchId);
+      const isPartialFailure = r.status === 207;
+      const text = await r.text();
+      message.error("Error generating emails");
+      setGenerationResult({
+        type: isPartialFailure ? "warning" : "error",
+        message: `Email generation ${
+          isPartialFailure ? "partially" : ""
+        } failed`,
+        description: (
+          <>
+            <p>{text}</p>
+            <p>
+              See{" "}
+              <a
+                href={`https://console.cloud.google.com/logs/query;query=resource.type%3D%22gae_app%22%20resource.labels.module_id%3D%22default%22%20httpRequest.requestUrl%3D%22%2Fadmin%2Fapi%2Fline_staff_tools%2F${stateInfo.code}%2Fgenerate_emails%22%0A?project=${projectId}`}
+                rel="noreferrer"
+                target="_blank"
+              >
+                logs
+              </a>{" "}
+              for more detail
+            </p>
+          </>
+        ),
+      });
     }
     setShowSpinner(false);
   };
@@ -118,23 +171,17 @@ const GenerateEmails: React.FC<POEmailsFormProps> = ({ stateInfo }) => {
             </Select>
           </Form.Item>
           <Form.Item {...tailLayout}>
-            <Button type="primary" htmlType="submit">
+            <Button type="primary" htmlType="submit" disabled={showSpinner}>
               Generate Emails
             </Button>
+            <br />
+            <Typography.Text type="secondary">
+              (May take a few minutes)
+            </Typography.Text>
           </Form.Item>
         </Form>
-        {showSpinner ? <Spin /> : null}
-        {batchId ? (
-          <p>
-            Bucket link to {projectId}-report-html for {stateInfo.name}, batch
-            <a
-              style={{ margin: 10 }}
-              href={`https://console.cloud.google.com/storage/browser/${projectId}-report-html/${stateInfo.code}/${batchId}`}
-            >
-              {batchId}
-            </a>
-          </p>
-        ) : null}
+        {showSpinner && <Spin />}
+        {generationResult && <Alert {...generationResult} />}
       </Card>
 
       {stateInfo ? (
