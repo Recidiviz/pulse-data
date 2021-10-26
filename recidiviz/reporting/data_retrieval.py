@@ -164,9 +164,11 @@ def start(
         try:
             report_context = get_report_context(state_code, report_type, recipient)
             email_generation.generate(report_context)
-        except Exception as e:
+        except Exception:
             failed_email_addresses.append(recipient.email_address)
-            logging.error("Failed to generate report email for %s %s", recipient, e)
+            logging.error(
+                "Failed to generate report email for %s", recipient, exc_info=True
+            )
         else:
             succeeded_email_addresses.append(recipient.email_address)
             if report_type == ReportType.POMonthlyReport and len(metadata) == 0:
