@@ -40,6 +40,8 @@ def treat_empty_as_null(input_str: str) -> Optional[str]:
 
 
 def csv_row_to_etl_client_json(row: List[str]) -> Dict[str, Any]:
+    # TODO(#7236): All indices > 5 need to be shifted down by 1 once
+    #  birthdate_inferred_from_age is no longer a col in the CSVs
     return {
         "person_external_id": row[1],
         "state_code": row[9],
@@ -48,7 +50,6 @@ def csv_row_to_etl_client_json(row: List[str]) -> Dict[str, Any]:
         "gender": treat_empty_as_null(row[13]),
         "current_address": treat_empty_as_null(row[3]),
         "birthdate": parse_nullable_date(row[4]),
-        "birthdate_inferred_from_age": bool(row[5]),
         "supervision_start_date": parse_nullable_date(row[14]),
         "projected_end_date": parse_nullable_date(row[16]),
         "supervision_type": row[6],
