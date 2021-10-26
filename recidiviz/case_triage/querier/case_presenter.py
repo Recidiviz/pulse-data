@@ -59,7 +59,6 @@ class CasePresenter:
             "supervisingOfficerExternalId": self.etl_client.supervising_officer_external_id,
             "currentAddress": self.etl_client.current_address,
             "birthdate": self.etl_client.birthdate,
-            "birthdateInferredFromAge": self.etl_client.birthdate_inferred_from_age,
             "supervisionType": self.etl_client.supervision_type,
             "caseType": self.etl_client.case_type,
             "supervisionStartDate": self.etl_client.supervision_start_date,
