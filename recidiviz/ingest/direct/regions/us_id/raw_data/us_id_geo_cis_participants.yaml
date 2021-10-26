@@ -22,10 +22,18 @@ columns:
       Date of termination of program participation
   - name: lsi_start
     description: |-
-      LSI-R score for person assessed after start of program participation
+      LSI-R score for person assessed after start of program participation (not hydrated).
   - name: lsi_secondary
+    description: |-
+      Second LSI-R score after start of program participation (not hydrated).
   - name: length_of_stay
     description: |-
       Duration of participation in days, for those who terminate participation
+  - name: discharge_reason
+    description: |-
+      Code indicating reason for termination of program participation
+  - name: office
+    description: |-
+      Name of CIS office location
 encoding: UTF-8
 separator: ","
