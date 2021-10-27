@@ -120,7 +120,7 @@ class PoMonthlyReportContextTests(TestCase):
             self._get_prepared_data(recipient_data)["message_body"],
             (
                 "Last month, you had the most successful completions "
-                f"out of any PO in your district. Amazing work! {DEFAULT_MESSAGE_TEXT}"
+                f"out of anyone in your district. Amazing work! {DEFAULT_MESSAGE_TEXT}"
             ),
         )
 
@@ -132,7 +132,7 @@ class PoMonthlyReportContextTests(TestCase):
         self.assertEqual(
             self._get_prepared_data(recipient_data)["message_body"],
             (
-                "Last month, you had the most successful completions out of any PO in Idaho. "
+                "Last month, you had the most successful completions out of anyone in Idaho. "
                 f"Amazing work! {DEFAULT_MESSAGE_TEXT}"
             ),
         )
@@ -188,7 +188,7 @@ class PoMonthlyReportContextTests(TestCase):
             self._get_prepared_data(recipient_data)["message_body"],
             (
                 "You have gone 10 months without having any technical revocations. "
-                f"This is the most out of any PO in your district. Way to go! {DEFAULT_MESSAGE_TEXT}"
+                f"This is the most out of anyone in your district. Way to go! {DEFAULT_MESSAGE_TEXT}"
             ),
         )
 
@@ -201,7 +201,7 @@ class PoMonthlyReportContextTests(TestCase):
             self._get_prepared_data(recipient_data)["message_body"],
             (
                 "You have gone 10 months without having any technical revocations. "
-                f"This is the most out of any PO in Idaho. Way to go! {DEFAULT_MESSAGE_TEXT}"
+                f"This is the most out of anyone in Idaho. Way to go! {DEFAULT_MESSAGE_TEXT}"
             ),
         )
 
@@ -312,7 +312,7 @@ class PoMonthlyReportContextTests(TestCase):
             body,
         )
         self.assertIn(
-            "This is the most out of any PO",
+            "This is the most out of anyone",
             body,
         )
 
@@ -328,7 +328,7 @@ class PoMonthlyReportContextTests(TestCase):
             body,
         )
         self.assertNotIn(
-            "This is the most out of any PO",
+            "This is the most out of anyone",
             body,
         )
 

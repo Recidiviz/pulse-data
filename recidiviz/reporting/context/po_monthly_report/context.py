@@ -503,7 +503,7 @@ class PoMonthlyReportContext(ReportContext):
                 if highlight["type"] == OfficerHighlightType.MOST_DECARCERAL:
                     highlight_text = (
                         f"Last month, you had the most {metrics_text} "
-                        f"out of any PO in {comparison_text}. Amazing work! "
+                        f"out of anyone in {comparison_text}. Amazing work! "
                     )
 
                 if (
@@ -516,7 +516,7 @@ class PoMonthlyReportContext(ReportContext):
                         exhortation = "Keep it up!"
                     else:
                         exhortation = (
-                            f"This is the most out of any PO in {comparison_text}. "
+                            f"This is the most out of anyone in {comparison_text}. "
                             "Way to go!"
                         )
                     highlight_text = (
