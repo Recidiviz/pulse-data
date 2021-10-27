@@ -121,7 +121,7 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
     @classmethod
     def _main_ingest_instance(cls) -> DirectIngestInstance:
         # We assume we're ingesting into the SECONDARY ingest instance, which
-        # should always have the latest ingest updates released to it.
+        # should always have the latest ingest logic updates released to it.
         return DirectIngestInstance.SECONDARY
 
     @classmethod

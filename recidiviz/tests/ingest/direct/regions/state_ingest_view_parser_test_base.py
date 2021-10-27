@@ -23,6 +23,9 @@ from typing import Dict, Sequence
 
 from recidiviz.cloud_storage.gcs_file_system import GcsfsFileContentsHandle
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
+    DirectIngestInstance,
+)
 from recidiviz.ingest.direct.controllers.ingest_view_file_parser import (
     FileFormat,
     IngestViewFileParser,
@@ -69,10 +72,18 @@ class StateIngestViewParserTestBase:
             is_direct_ingest=True,
         )
 
+    @classmethod
+    def _main_ingest_instance(cls) -> DirectIngestInstance:
+        # We assume we're ingesting into the SECONDARY ingest instance, which
+        # should always have the latest ingest logic updates released to it.
+        return DirectIngestInstance.SECONDARY
+
     def _build_parser(self) -> IngestViewFileParser:
         region = self._region()
         return IngestViewFileParser(
-            delegate=IngestViewFileParserDelegateImpl(region, self.schema_type())
+            delegate=IngestViewFileParserDelegateImpl(
+                region, self.schema_type(), self._main_ingest_instance()
+            )
         )
 
     def _parse_manifest(self, file_tag: str) -> EntityTreeManifest:
