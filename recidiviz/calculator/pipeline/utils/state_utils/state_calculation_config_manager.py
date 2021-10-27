@@ -24,6 +24,9 @@ from typing import List, Optional
 from recidiviz.calculator.pipeline.utils.incarceration_period_pre_processing_manager import (
     StateSpecificIncarcerationPreProcessingDelegate,
 )
+from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
+    PreProcessedIncarcerationPeriodIndex,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_commitment_from_supervision_delegate import (
     StateSpecificCommitmentFromSupervisionDelegate,
 )
@@ -304,6 +307,7 @@ def get_state_specific_case_compliance_manager(
     assessments: List[StateAssessment],
     supervision_contacts: List[StateSupervisionContact],
     violation_responses: List[StateSupervisionViolationResponse],
+    incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
 ) -> Optional[StateSupervisionCaseComplianceManager]:
     """Returns a state-specific SupervisionCaseComplianceManager object, containing information about whether the
     given supervision case is in compliance with state-specific standards. If the state of the
@@ -318,6 +322,7 @@ def get_state_specific_case_compliance_manager(
             assessments,
             supervision_contacts,
             violation_responses,
+            incarceration_period_index,
         )
     if state_code == StateCode.US_ND.value:
         return UsNdSupervisionCaseCompliance(
@@ -328,6 +333,7 @@ def get_state_specific_case_compliance_manager(
             assessments,
             supervision_contacts,
             violation_responses,
+            incarceration_period_index,
         )
     if state_code == StateCode.US_PA.value:
         return UsPaSupervisionCaseCompliance(
@@ -338,6 +344,7 @@ def get_state_specific_case_compliance_manager(
             assessments,
             supervision_contacts,
             violation_responses,
+            incarceration_period_index,
         )
 
     return None

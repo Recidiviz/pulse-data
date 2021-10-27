@@ -379,6 +379,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                 assessments,
                 supervision_contacts,
                 violation_responses_for_history,
+                incarceration_period_index,
             )
         )
 
