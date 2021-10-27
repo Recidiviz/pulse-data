@@ -29,9 +29,11 @@ from recidiviz.calculator.pipeline.utils.supervision_level_policy import (
 )
 from recidiviz.common.constants.person_characteristics import Gender
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
+from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
 )
+from recidiviz.common.date import DateRange
 
 NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS = 45
 REASSESSMENT_DEADLINE_DAYS = 365
@@ -95,6 +97,8 @@ MEDIUM_HIGH_SANCTION_DECISION_RAW_TEXT_CODES: List[str] = [
     "HOTR",
     "ARR2",
 ]
+
+DAYS_WITHIN_MAX_DATE = 90
 
 
 class UsPaSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
@@ -179,21 +183,37 @@ class UsPaSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
             > 0
         )
         return (
-            most_recent_score_is_low
-            and supervised_on_minimum_year_plus
-            and not incurred_medium_to_high_sanctions
+            (
+                most_recent_score_is_low
+                and supervised_on_minimum_year_plus
+                and not incurred_medium_to_high_sanctions
+            )
+            or self._can_skip_contact_or_reassessment(compliance_evaluation_date)
+            or self._is_within_max_date_of_supervision(compliance_evaluation_date)
         )
+
+    def _can_skip_contact_or_reassessment(
+        self, compliance_evaluation_date: date
+    ) -> bool:
+        """Determines whether a contact can be skipped."""
+        return self._is_in_jail(
+            compliance_evaluation_date
+        ) or self._is_past_max_date_of_supervision(compliance_evaluation_date)
 
     def _next_recommended_face_to_face_date(
         self, compliance_evaluation_date: date
     ) -> Optional[date]:
-        """Returns when the next face-to-face contact should be. Returns None if compliance standards are
-        unknown or no subsequent face-to-face contacts are required."""
+        """Returns when the next face-to-face contact should be. Returns None if
+        compliance standards are unknown or no subsequent face-to-face contacts are required."""
         # No contacts required for monitored supervision
         # As of June 28, 2021, contacts are no longer needed for administrative supervision.
-        if self.supervision_period.supervision_level in (
-            StateSupervisionLevel.ELECTRONIC_MONITORING_ONLY,
-            StateSupervisionLevel.LIMITED,
+        if (
+            self.supervision_period.supervision_level
+            in (
+                StateSupervisionLevel.ELECTRONIC_MONITORING_ONLY,
+                StateSupervisionLevel.LIMITED,
+            )
+            or self._can_skip_contact_or_reassessment(compliance_evaluation_date)
         ):
             return None
 
@@ -214,8 +234,8 @@ class UsPaSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
     def _get_required_face_to_face_contacts_and_period_days_for_level(
         self,
     ) -> Tuple[int, int]:
-        """Returns the number of face-to-face contacts that are required within time period (in days) for a supervision
-        case with the given supervision level."""
+        """Returns the number of face-to-face contacts that are required within time
+        period (in days) for a supervision case with the given supervision level."""
 
         supervision_level = self.supervision_period.supervision_level
         if supervision_level is None:
@@ -229,13 +249,17 @@ class UsPaSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
     def _next_recommended_home_visit_date(
         self, compliance_evaluation_date: date
     ) -> Optional[date]:
-        """Returns when the next home visit should be. Returns None if compliance standards are
-        unknown or no subsequent home visits are required."""
+        """Returns when the next home visit should be. Returns None if compliance
+        standards are unknown or no subsequent home visits are required."""
         # No home visits are required for these supervision levels
-        if self.supervision_period.supervision_level in (
-            StateSupervisionLevel.ELECTRONIC_MONITORING_ONLY,
-            StateSupervisionLevel.LIMITED,
-            StateSupervisionLevel.MINIMUM,
+        if (
+            self.supervision_period.supervision_level
+            in (
+                StateSupervisionLevel.ELECTRONIC_MONITORING_ONLY,
+                StateSupervisionLevel.LIMITED,
+                StateSupervisionLevel.MINIMUM,
+            )
+            or self._can_skip_contact_or_reassessment(compliance_evaluation_date)
         ):
             return None
 
@@ -260,7 +284,8 @@ class UsPaSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
         return None
 
     def _get_required_home_visits_and_period_days(self) -> Tuple[int, int]:
-        """Returns the number of home visits that are required within time period (in days) for a supervision case"""
+        """Returns the number of home visits that are required within time period
+        (in days) for a supervision case"""
         supervision_level: Optional[
             StateSupervisionLevel
         ] = self.supervision_period.supervision_level
@@ -287,4 +312,54 @@ class UsPaSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
         return SupervisionLevelPolicy(
             level_mapping=CURRENT_US_PA_ASSESSMENT_SCORE_RANGE,
             start_date=RISK_SCORE_TO_SUPERVISION_LEVEL_POLICY_DATE,
+        )
+
+    def _is_in_jail(self, compliance_evaluation_date: date) -> bool:
+        "Returns whether or not the client is currently in jail."
+        current_incarceration_types = {
+            incarceration_period.incarceration_type
+            for incarceration_period in self.incarceration_period_index.incarceration_periods
+            if incarceration_period.duration.contains_day(compliance_evaluation_date)
+        }
+        return StateIncarcerationType.COUNTY_JAIL in current_incarceration_types
+
+    def _max_completion_date_of_supervision(
+        self, compliance_evaluation_date: date
+    ) -> date:
+        completion_dates = [
+            supervision_sentence.projected_completion_date
+            for supervision_sentence in self.supervision_period.supervision_sentences
+            if supervision_sentence.projected_completion_date
+            and supervision_sentence.start_date
+            and DateRange.from_maybe_open_range(
+                supervision_sentence.start_date,
+                supervision_sentence.projected_completion_date,
+            ).contains_day(compliance_evaluation_date)
+        ]
+        if completion_dates:
+            return max(completion_dates)
+        return date.max
+
+    def _is_past_max_date_of_supervision(
+        self, compliance_evaluation_date: date
+    ) -> bool:
+        """Returns whether the current supervision period is past the max date of the latest sentence
+        projected completion date associated with the period."""
+        return (
+            self.supervision_period.duration.upper_bound_exclusive_date
+            > self._max_completion_date_of_supervision(compliance_evaluation_date)
+        )
+
+    def _is_within_max_date_of_supervision(
+        self, compliance_evaluation_date: date
+    ) -> bool:
+        """Returns whether the compliance evaluation date is within 90 days of the latest sentence
+        projected completion date associated with the period."""
+        max_completion_date = self._max_completion_date_of_supervision(
+            compliance_evaluation_date
+        )
+        return (
+            max_completion_date - relativedelta(days=DAYS_WITHIN_MAX_DATE)
+            <= compliance_evaluation_date
+            <= max_completion_date
         )
