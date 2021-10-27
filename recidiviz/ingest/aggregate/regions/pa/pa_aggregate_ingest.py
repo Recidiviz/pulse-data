@@ -34,23 +34,37 @@ from recidiviz.persistence.database.schema.aggregate.schema import (
 
 def parse(filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
     table_1 = _parse_tab_1(filename)
-    table_2 = _parse_tab_2(filename)
+    result = {PaFacilityPopAggregate: table_1}
+    if _report_date_tab_1(filename).year > 2016:
+        table_2 = _parse_tab_2(filename)
+        result[PaCountyPreSentencedAggregate] = table_2
 
-    return {PaFacilityPopAggregate: table_1, PaCountyPreSentencedAggregate: table_2}
+    return result
 
 
 def _parse_tab_1(filename: str) -> pd.DataFrame:
     """Parses the first tab in the PA aggregate report."""
-    column_names = {
-        r"County Name": "facility_name",
-        r"Bed Capacity": "bed_capacity",
-        r".*Community Corrections Beds.*": "work_release_community_corrections_beds",
-        r".*In-House Daily Pop.*": "in_house_adp",
-        r".*Housed Elsewhere Daily Pop.*": "housed_elsewhere_adp",
-        r".*In-House Work Release.*": "work_release_adp",
-        r"Admissions": "admissions",
-        r"Discharge": "discharge",
-    }
+    report_date = _report_date_tab_1(filename)
+    if report_date.year <= 2016:
+        column_names = {
+            r"County Name": "facility_name",
+            r"Bed Capacity": "bed_capacity",
+            r".*In-House Daily Pop.*": "in_house_adp",
+            r".*Housed Elsewhere Daily Pop.*": "housed_elsewhere_adp",
+            r"Admissions": "admissions",
+            r"Discharge": "discharge",
+        }
+    else:
+        column_names = {
+            r"County Name": "facility_name",
+            r"Bed Capacity": "bed_capacity",
+            r".*Community Corrections Beds.*": "work_release_community_corrections_beds",
+            r".*In-House Daily Pop.*": "in_house_adp",
+            r".*Housed Elsewhere Daily Pop.*": "housed_elsewhere_adp",
+            r".*In-House Work Release.*": "work_release_adp",
+            r"Admissions": "admissions",
+            r"Discharge": "discharge",
+        }
 
     # Parse everything directly to allow us to correctly map "N/A" and "N/R"
     keep_default_na = False
@@ -78,7 +92,7 @@ def _parse_tab_1(filename: str) -> pd.DataFrame:
 
     df = df.apply(_to_numeric)
 
-    df["report_date"] = _report_date_tab_1(filename)
+    df["report_date"] = report_date
     df = fips.add_column_to_df(df, df["facility_name"], us.states.PA)
     df["aggregation_window"] = enum_strings.yearly_granularity
     df["report_frequency"] = enum_strings.yearly_granularity
