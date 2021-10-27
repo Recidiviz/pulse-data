@@ -8715,6 +8715,7 @@ def _generate_case_compliances(
     end_date_override: Optional[date] = None,
     next_recommended_assessment_date: Optional[date] = None,
     violation_responses: Optional[List[StateSupervisionViolationResponse]] = None,
+    incarceration_period_index: Optional[PreProcessedIncarcerationPeriodIndex] = None,
 ) -> Dict[date, SupervisionCaseCompliance]:
     """Generates the expected list of supervision case compliances. Because case compliance logic is tested in
     supervision_case_compliance_manager_test and state-specific compliance tests, this function generates expected case
@@ -8746,6 +8747,10 @@ def _generate_case_compliances(
         assessments or [],
         face_to_face_contacts or [],
         violation_responses or [],
+        incarceration_period_index
+        or PreProcessedIncarcerationPeriodIndex(
+            incarceration_periods=[], ip_id_to_pfi_subtype={}
+        ),
     )
     # There will only be case compliance output if there's a case compliance manager implemented for the given state.
     if not state_specific_case_compliance_manager:

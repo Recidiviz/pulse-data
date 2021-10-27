@@ -22,6 +22,9 @@ from typing import List
 from dateutil.relativedelta import relativedelta
 from parameterized import parameterized
 
+from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
+    PreProcessedIncarcerationPeriodIndex,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_supervision_compliance import (
     NEW_SUPERVISION_CONTACT_DEADLINE_BUSINESS_DAYS,
     NEW_SUPERVISION_HOME_VISIT_DEADLINE_DAYS,
@@ -32,6 +35,12 @@ from recidiviz.common.constants.state.state_assessment import StateAssessmentTyp
 
 # pylint: disable=protected-access
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
+from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateIncarcerationPeriodAdmissionReason,
+    StateIncarcerationPeriodStatus,
+)
+from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactLocation,
     StateSupervisionContactStatus,
@@ -49,9 +58,11 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.state.entities import (
     StateAssessment,
+    StateIncarcerationPeriod,
     StatePerson,
     StateSupervisionContact,
     StateSupervisionPeriod,
+    StateSupervisionSentence,
     StateSupervisionViolationResponse,
     StateSupervisionViolationResponseDecisionEntry,
 )
@@ -119,6 +130,9 @@ class TestAssessmentsInComplianceMonth(unittest.TestCase):
             assessments=assessments,
             supervision_contacts=[],
             violation_responses=[],
+            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+                incarceration_periods=[], ip_id_to_pfi_subtype={}
+            ),
         )
 
         self.assertEqual(
@@ -203,6 +217,9 @@ class TestFaceToFaceContactsInComplianceMonth(unittest.TestCase):
             assessments=[],
             supervision_contacts=contacts,
             violation_responses=[],
+            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+                incarceration_periods=[], ip_id_to_pfi_subtype={}
+            ),
         )
         self.assertEqual(
             len(expected_contacts),
@@ -254,6 +271,9 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts,
             violation_responses=[],
+            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+                incarceration_periods=[], ip_id_to_pfi_subtype={}
+            ),
         )
 
         next_face_to_face_date = (
@@ -304,6 +324,9 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts,
             violation_responses=[],
+            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+                incarceration_periods=[], ip_id_to_pfi_subtype={}
+            ),
         )
 
         next_face_to_face = (
@@ -351,6 +374,9 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts,
             violation_responses=[],
+            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+                incarceration_periods=[], ip_id_to_pfi_subtype={}
+            ),
         )
 
         next_face_to_face = (
@@ -400,6 +426,9 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts,
             violation_responses=[],
+            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+                incarceration_periods=[], ip_id_to_pfi_subtype={}
+            ),
         )
 
         next_face_to_face = (
@@ -446,6 +475,9 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts,
             violation_responses=[],
+            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+                incarceration_periods=[], ip_id_to_pfi_subtype={}
+            ),
         )
 
         next_face_to_face = (
@@ -485,6 +517,9 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=[],
             violation_responses=[],
+            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+                incarceration_periods=[], ip_id_to_pfi_subtype={}
+            ),
         )
 
         next_face_to_face = (
@@ -531,6 +566,9 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts,
             violation_responses=[],
+            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+                incarceration_periods=[], ip_id_to_pfi_subtype={}
+            ),
         )
 
         face_to_face_frequency_sufficient = (
@@ -577,6 +615,9 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts,
             violation_responses=[],
+            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+                incarceration_periods=[], ip_id_to_pfi_subtype={}
+            ),
         )
 
         face_to_face_frequency_sufficient = (
@@ -616,6 +657,9 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=[],
             violation_responses=[],
+            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+                incarceration_periods=[], ip_id_to_pfi_subtype={}
+            ),
         )
 
         next_face_to_face = (
@@ -662,6 +706,9 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts,
             violation_responses=[],
+            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+                incarceration_periods=[], ip_id_to_pfi_subtype={}
+            ),
         )
 
         next_face_to_face = (
@@ -708,6 +755,9 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts,
             violation_responses=[],
+            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+                incarceration_periods=[], ip_id_to_pfi_subtype={}
+            ),
         )
 
         face_to_face_frequency_sufficient = (
@@ -747,6 +797,9 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=[],
             violation_responses=[],
+            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+                incarceration_periods=[], ip_id_to_pfi_subtype={}
+            ),
         )
 
         next_face_to_face = (
@@ -793,6 +846,9 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts,
             violation_responses=[],
+            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+                incarceration_periods=[], ip_id_to_pfi_subtype={}
+            ),
         )
 
         next_face_to_face = (
@@ -845,6 +901,9 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts,
             violation_responses=[],
+            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+                incarceration_periods=[], ip_id_to_pfi_subtype={}
+            ),
         )
 
         face_to_face_frequency_sufficient = (
@@ -884,6 +943,9 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=[],
             violation_responses=[],
+            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+                incarceration_periods=[], ip_id_to_pfi_subtype={}
+            ),
         )
 
         next_face_to_face = (
@@ -938,6 +1000,9 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts,
             violation_responses=[],
+            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+                incarceration_periods=[], ip_id_to_pfi_subtype={}
+            ),
         )
 
         next_face_to_face = (
@@ -1002,6 +1067,9 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts,
             violation_responses=[],
+            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+                incarceration_periods=[], ip_id_to_pfi_subtype={}
+            ),
         )
 
         face_to_face_frequency_sufficient = (
@@ -1041,6 +1109,9 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=[],
             violation_responses=[],
+            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+                incarceration_periods=[], ip_id_to_pfi_subtype={}
+            ),
         )
 
         next_face_to_face = (
@@ -1095,6 +1166,9 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts,
             violation_responses=[],
+            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+                incarceration_periods=[], ip_id_to_pfi_subtype={}
+            ),
         )
 
         next_face_to_face = (
@@ -1134,6 +1208,9 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts,
             violation_responses=[],
+            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+                incarceration_periods=[], ip_id_to_pfi_subtype={}
+            ),
         )
 
         face_to_face_frequency_sufficient = (
@@ -1143,6 +1220,95 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
         )
 
         self.assertTrue(face_to_face_frequency_sufficient)
+
+    def test_next_recommended_face_to_face_date_skipped_if_in_jail(self) -> None:
+        start_of_supervision = date(2017, 3, 5)
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            state_code=StateCode.US_PA.value,
+            start_date=start_of_supervision,
+            termination_date=date(2020, 5, 19),
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_type=None,
+            supervision_level=StateSupervisionLevel.MINIMUM,
+        )
+
+        us_pa_supervision_compliance = UsPaSupervisionCaseCompliance(
+            self.person,
+            supervision_period=supervision_period,
+            case_type=StateSupervisionCaseType.GENERAL,
+            start_of_supervision=start_of_supervision,
+            assessments=[],
+            supervision_contacts=[],
+            violation_responses=[],
+            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+                incarceration_periods=[
+                    StateIncarcerationPeriod.new_with_defaults(
+                        incarceration_period_id=1,
+                        state_code=StateCode.US_PA.value,
+                        status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+                        incarceration_type=StateIncarcerationType.COUNTY_JAIL,
+                        admission_date=date(2018, 4, 1),
+                        release_date=date(2018, 4, 30),
+                        admission_reason=StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
+                    )
+                ],
+                ip_id_to_pfi_subtype={},
+            ),
+        )
+
+        next_face_to_face_date = (
+            us_pa_supervision_compliance._next_recommended_face_to_face_date(
+                date(2018, 4, 2)
+            )
+        )
+
+        self.assertEqual(next_face_to_face_date, None)
+
+    def test_next_recommended_face_to_face_date_skipped_if_past_max_date(self) -> None:
+        start_of_supervision = date(2017, 3, 5)
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            state_code=StateCode.US_PA.value,
+            start_date=start_of_supervision,
+            termination_date=date(2018, 4, 2),
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_type=None,
+            supervision_level=StateSupervisionLevel.MINIMUM,
+            supervision_sentences=[
+                StateSupervisionSentence(
+                    state_code=StateCode.US_PA.value,
+                    status=StateSentenceStatus.COMPLETED,
+                    start_date=start_of_supervision,
+                    projected_completion_date=date(2018, 4, 1),
+                )
+            ],
+        )
+
+        us_pa_supervision_compliance = UsPaSupervisionCaseCompliance(
+            self.person,
+            supervision_period=supervision_period,
+            case_type=StateSupervisionCaseType.GENERAL,
+            start_of_supervision=start_of_supervision,
+            assessments=[],
+            supervision_contacts=[],
+            violation_responses=[],
+            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+                incarceration_periods=[], ip_id_to_pfi_subtype={}
+            ),
+        )
+
+        next_face_to_face_date = (
+            us_pa_supervision_compliance._next_recommended_face_to_face_date(
+                date(2018, 3, 20)
+            )
+        )
+
+        self.assertEqual(next_face_to_face_date, None)
 
 
 class TestNextRecommendedHomeVisitDate(unittest.TestCase):
@@ -1185,6 +1351,9 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts,
             violation_responses=[],
+            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+                incarceration_periods=[], ip_id_to_pfi_subtype={}
+            ),
         )
 
         next_recommended_home_visit_date = (
@@ -1231,6 +1400,9 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts,
             violation_responses=[],
+            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+                incarceration_periods=[], ip_id_to_pfi_subtype={}
+            ),
         )
 
         next_recommended_home_visit_date = (
@@ -1274,6 +1446,9 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts,
             violation_responses=[],
+            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+                incarceration_periods=[], ip_id_to_pfi_subtype={}
+            ),
         )
 
         next_recommended_home_visit_date = (
@@ -1320,6 +1495,9 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts,
             violation_responses=[],
+            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+                incarceration_periods=[], ip_id_to_pfi_subtype={}
+            ),
         )
 
         next_recommended_home_visit_date = (
@@ -1363,6 +1541,9 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts,
             violation_responses=[],
+            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+                incarceration_periods=[], ip_id_to_pfi_subtype={}
+            ),
         )
 
         next_recommended_home_visit_date = (
@@ -1408,6 +1589,9 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts,
             violation_responses=[],
+            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+                incarceration_periods=[], ip_id_to_pfi_subtype={}
+            ),
         )
 
         next_recommended_home_visit_date = (
@@ -1451,6 +1635,9 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts,
             violation_responses=[],
+            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+                incarceration_periods=[], ip_id_to_pfi_subtype={}
+            ),
         )
 
         next_recommended_home_visit_date = (
@@ -1496,6 +1683,9 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts,
             violation_responses=[],
+            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+                incarceration_periods=[], ip_id_to_pfi_subtype={}
+            ),
         )
 
         next_recommended_home_visit_date = (
@@ -1505,6 +1695,95 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
         )
 
         self.assertIsNotNone(next_recommended_home_visit_date)
+
+    def test_next_recommended_home_visit_date_skipped_if_in_jail(self) -> None:
+        start_of_supervision = date(2017, 3, 5)
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            state_code=StateCode.US_PA.value,
+            start_date=start_of_supervision,
+            termination_date=date(2020, 5, 19),
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_type=None,
+            supervision_level=StateSupervisionLevel.MINIMUM,
+        )
+
+        us_pa_supervision_compliance = UsPaSupervisionCaseCompliance(
+            self.person,
+            supervision_period=supervision_period,
+            case_type=StateSupervisionCaseType.GENERAL,
+            start_of_supervision=start_of_supervision,
+            assessments=[],
+            supervision_contacts=[],
+            violation_responses=[],
+            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+                incarceration_periods=[
+                    StateIncarcerationPeriod.new_with_defaults(
+                        incarceration_period_id=1,
+                        state_code=StateCode.US_PA.value,
+                        status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+                        incarceration_type=StateIncarcerationType.COUNTY_JAIL,
+                        admission_date=date(2018, 4, 1),
+                        release_date=date(2018, 4, 30),
+                        admission_reason=StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
+                    )
+                ],
+                ip_id_to_pfi_subtype={},
+            ),
+        )
+
+        next_home_visit_date = (
+            us_pa_supervision_compliance._next_recommended_home_visit_date(
+                date(2018, 4, 2)
+            )
+        )
+
+        self.assertEqual(next_home_visit_date, None)
+
+    def test_next_recommended_home_visit_date_skipped_if_past_max_date(self) -> None:
+        start_of_supervision = date(2017, 3, 5)
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            state_code=StateCode.US_PA.value,
+            start_date=start_of_supervision,
+            termination_date=date(2018, 4, 2),
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_type=None,
+            supervision_level=StateSupervisionLevel.MINIMUM,
+            supervision_sentences=[
+                StateSupervisionSentence(
+                    state_code=StateCode.US_PA.value,
+                    status=StateSentenceStatus.COMPLETED,
+                    start_date=start_of_supervision,
+                    projected_completion_date=date(2018, 4, 1),
+                )
+            ],
+        )
+
+        us_pa_supervision_compliance = UsPaSupervisionCaseCompliance(
+            self.person,
+            supervision_period=supervision_period,
+            case_type=StateSupervisionCaseType.GENERAL,
+            start_of_supervision=start_of_supervision,
+            assessments=[],
+            supervision_contacts=[],
+            violation_responses=[],
+            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+                incarceration_periods=[], ip_id_to_pfi_subtype={}
+            ),
+        )
+
+        next_home_visit_date = (
+            us_pa_supervision_compliance._next_recommended_home_visit_date(
+                date(2018, 3, 20)
+            )
+        )
+
+        self.assertEqual(next_home_visit_date, None)
 
 
 class TestGuidelinesApplicableForCase(unittest.TestCase):
@@ -1536,6 +1815,9 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             assessments=[],
             supervision_contacts=[],
             violation_responses=[],
+            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+                incarceration_periods=[], ip_id_to_pfi_subtype={}
+            ),
         )
 
         applicable = us_pa_supervision_compliance._guidelines_applicable_for_case(
@@ -1567,6 +1849,9 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             assessments=[],
             supervision_contacts=[],
             violation_responses=[],
+            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+                incarceration_periods=[], ip_id_to_pfi_subtype={}
+            ),
         )
 
         applicable = us_pa_supervision_compliance._guidelines_applicable_for_case(
@@ -1598,6 +1883,9 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             assessments=[],
             supervision_contacts=[],
             violation_responses=[],
+            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+                incarceration_periods=[], ip_id_to_pfi_subtype={}
+            ),
         )
 
         applicable = us_pa_supervision_compliance._guidelines_applicable_for_case(
@@ -1624,7 +1912,7 @@ class TestNextRecommendedReassessment(unittest.TestCase):
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_type=None,
-            supervision_level=StateSupervisionLevel.MINIMUM,
+            supervision_level=StateSupervisionLevel.MEDIUM,
         )
 
         assessment_date = date(2018, 4, 2)
@@ -1644,6 +1932,9 @@ class TestNextRecommendedReassessment(unittest.TestCase):
             assessments=[assessment],
             supervision_contacts=[],
             violation_responses=[],
+            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+                incarceration_periods=[], ip_id_to_pfi_subtype={}
+            ),
         )
 
         reassessment_date = us_pa_supervision_compliance._next_recommended_reassessment(
@@ -1682,6 +1973,9 @@ class TestNextRecommendedReassessment(unittest.TestCase):
             assessments=[assessment],
             supervision_contacts=[],
             violation_responses=[],
+            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+                incarceration_periods=[], ip_id_to_pfi_subtype={}
+            ),
         )
 
         reassessment_date = us_pa_supervision_compliance._next_recommended_reassessment(
@@ -1721,6 +2015,9 @@ class TestNextRecommendedReassessment(unittest.TestCase):
             assessments=[assessment],
             supervision_contacts=[],
             violation_responses=[],
+            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+                incarceration_periods=[], ip_id_to_pfi_subtype={}
+            ),
         )
 
         reassessment_date = us_pa_supervision_compliance._next_recommended_reassessment(
@@ -1777,6 +2074,9 @@ class TestNextRecommendedReassessment(unittest.TestCase):
                     ],
                 )
             ],
+            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+                incarceration_periods=[], ip_id_to_pfi_subtype={}
+            ),
         )
 
         reassessment_date = us_pa_supervision_compliance._next_recommended_reassessment(
@@ -1818,6 +2118,9 @@ class TestNextRecommendedReassessment(unittest.TestCase):
             assessments=[assessment],
             supervision_contacts=[],
             violation_responses=[],
+            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+                incarceration_periods=[], ip_id_to_pfi_subtype={}
+            ),
         )
 
         reassessment_date = us_pa_supervision_compliance._next_recommended_reassessment(
@@ -1876,6 +2179,9 @@ class TestNextRecommendedReassessment(unittest.TestCase):
                     ],
                 )
             ],
+            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+                incarceration_periods=[], ip_id_to_pfi_subtype={}
+            ),
         )
 
         reassessment_date = us_pa_supervision_compliance._next_recommended_reassessment(
@@ -1934,6 +2240,169 @@ class TestNextRecommendedReassessment(unittest.TestCase):
                     ],
                 )
             ],
+            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+                incarceration_periods=[], ip_id_to_pfi_subtype={}
+            ),
+        )
+
+        reassessment_date = us_pa_supervision_compliance._next_recommended_reassessment(
+            assessment_date, assessment_score, date(2018, 4, 2)
+        )
+
+        self.assertEqual(reassessment_date, None)
+
+    def test_next_recommended_reassessment_can_skip_reassessment_due_to_in_jail(
+        self,
+    ) -> None:
+        start_of_supervision = date(2017, 3, 5)
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            state_code=StateCode.US_PA.value,
+            start_date=start_of_supervision,
+            termination_date=date(2020, 5, 19),
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_type=None,
+            supervision_level=StateSupervisionLevel.MINIMUM,
+        )
+
+        assessment_date = date(2018, 4, 2)
+        assessment_score = 18
+        assessment = StateAssessment.new_with_defaults(
+            state_code=StateCode.US_PA.value,
+            assessment_type=StateAssessmentType.LSIR,
+            assessment_date=assessment_date,
+            assessment_score=assessment_score,
+        )
+
+        us_pa_supervision_compliance = UsPaSupervisionCaseCompliance(
+            self.person,
+            supervision_period=supervision_period,
+            case_type=StateSupervisionCaseType.GENERAL,
+            start_of_supervision=start_of_supervision,
+            assessments=[assessment],
+            supervision_contacts=[],
+            violation_responses=[],
+            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+                incarceration_periods=[
+                    StateIncarcerationPeriod.new_with_defaults(
+                        incarceration_period_id=1,
+                        state_code=StateCode.US_PA.value,
+                        status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+                        incarceration_type=StateIncarcerationType.COUNTY_JAIL,
+                        admission_date=date(2018, 4, 1),
+                        release_date=date(2018, 4, 30),
+                        admission_reason=StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
+                    )
+                ],
+                ip_id_to_pfi_subtype={},
+            ),
+        )
+
+        reassessment_date = us_pa_supervision_compliance._next_recommended_reassessment(
+            assessment_date, assessment_score, date(2018, 4, 2)
+        )
+
+        self.assertEqual(reassessment_date, None)
+
+    def test_next_recommended_reassessment_can_skip_reassessment_due_to_past_max_date(
+        self,
+    ) -> None:
+        start_of_supervision = date(2017, 3, 5)
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            state_code=StateCode.US_PA.value,
+            start_date=start_of_supervision,
+            termination_date=date(2018, 4, 2),
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_type=None,
+            supervision_level=StateSupervisionLevel.MINIMUM,
+            supervision_sentences=[
+                StateSupervisionSentence(
+                    state_code=StateCode.US_PA.value,
+                    status=StateSentenceStatus.COMPLETED,
+                    start_date=start_of_supervision,
+                    projected_completion_date=date(2018, 4, 1),
+                )
+            ],
+        )
+
+        assessment_date = date(2018, 4, 2)
+        assessment_score = 18
+        assessment = StateAssessment.new_with_defaults(
+            state_code=StateCode.US_PA.value,
+            assessment_type=StateAssessmentType.LSIR,
+            assessment_date=assessment_date,
+            assessment_score=assessment_score,
+        )
+
+        us_pa_supervision_compliance = UsPaSupervisionCaseCompliance(
+            self.person,
+            supervision_period=supervision_period,
+            case_type=StateSupervisionCaseType.GENERAL,
+            start_of_supervision=start_of_supervision,
+            assessments=[assessment],
+            supervision_contacts=[],
+            violation_responses=[],
+            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+                incarceration_periods=[], ip_id_to_pfi_subtype={}
+            ),
+        )
+
+        reassessment_date = us_pa_supervision_compliance._next_recommended_reassessment(
+            assessment_date, assessment_score, date(2018, 4, 1)
+        )
+
+        self.assertEqual(reassessment_date, None)
+
+    def test_next_recommended_reassessment_can_skip_reassessment_due_to_within_max_date(
+        self,
+    ) -> None:
+        start_of_supervision = date(2017, 3, 5)
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            state_code=StateCode.US_PA.value,
+            start_date=start_of_supervision,
+            termination_date=date(2018, 6, 30),
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_type=None,
+            supervision_level=StateSupervisionLevel.MINIMUM,
+            supervision_sentences=[
+                # Within 90 days of 4/2/2018
+                StateSupervisionSentence(
+                    state_code=StateCode.US_PA.value,
+                    status=StateSentenceStatus.COMPLETED,
+                    start_date=start_of_supervision,
+                    projected_completion_date=date(2018, 6, 30),
+                )
+            ],
+        )
+
+        assessment_date = date(2018, 4, 2)
+        assessment_score = 18
+        assessment = StateAssessment.new_with_defaults(
+            state_code=StateCode.US_PA.value,
+            assessment_type=StateAssessmentType.LSIR,
+            assessment_date=assessment_date,
+            assessment_score=assessment_score,
+        )
+
+        us_pa_supervision_compliance = UsPaSupervisionCaseCompliance(
+            self.person,
+            supervision_period=supervision_period,
+            case_type=StateSupervisionCaseType.GENERAL,
+            start_of_supervision=start_of_supervision,
+            assessments=[assessment],
+            supervision_contacts=[],
+            violation_responses=[],
+            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+                incarceration_periods=[], ip_id_to_pfi_subtype={}
+            ),
         )
 
         reassessment_date = us_pa_supervision_compliance._next_recommended_reassessment(
@@ -2001,6 +2470,9 @@ class TestSupervisionDowngrades(unittest.TestCase):
             ],  # No downgrade regardless of score
             supervision_contacts=[],
             violation_responses=[],
+            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+                incarceration_periods=[], ip_id_to_pfi_subtype={}
+            ),
         )
         self.assertIsNone(
             us_id_supervision_compliance._get_recommended_supervision_downgrade_level(
@@ -2025,6 +2497,9 @@ class TestSupervisionDowngrades(unittest.TestCase):
             assessments=[self._assessment_with_score(score)],
             supervision_contacts=[],
             violation_responses=[],
+            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+                incarceration_periods=[], ip_id_to_pfi_subtype={}
+            ),
         )
         self.assertIsNone(
             compliance_no_downgrade._get_recommended_supervision_downgrade_level(
@@ -2040,6 +2515,9 @@ class TestSupervisionDowngrades(unittest.TestCase):
             assessments=[self._assessment_with_score(score - 1)],
             supervision_contacts=[],
             violation_responses=[],
+            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+                incarceration_periods=[], ip_id_to_pfi_subtype={}
+            ),
         )
         recommended_level = (
             compliance_downgrade._get_recommended_supervision_downgrade_level(

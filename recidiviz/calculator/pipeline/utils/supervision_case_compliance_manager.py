@@ -31,6 +31,9 @@ from recidiviz.calculator.pipeline.supervision.supervision_case_compliance impor
 from recidiviz.calculator.pipeline.utils.assessment_utils import (
     find_most_recent_applicable_assessment_of_class_for_state,
 )
+from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
+    PreProcessedIncarcerationPeriodIndex,
+)
 from recidiviz.calculator.pipeline.utils.supervision_level_policy import (
     SupervisionLevelPolicy,
 )
@@ -65,6 +68,7 @@ class StateSupervisionCaseComplianceManager:
         assessments: List[StateAssessment],
         supervision_contacts: List[StateSupervisionContact],
         violation_responses: List[StateSupervisionViolationResponse],
+        incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
     ):
         self.person = person
         self.supervision_period = supervision_period
@@ -73,6 +77,7 @@ class StateSupervisionCaseComplianceManager:
         self.assessments = assessments
         self.supervision_contacts = supervision_contacts
         self.violation_responses = violation_responses
+        self.incarceration_period_index = incarceration_period_index
 
     def get_case_compliance_on_date(
         self, compliance_evaluation_date: date
