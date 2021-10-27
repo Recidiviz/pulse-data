@@ -1415,6 +1415,36 @@ class InvertConditionManifest(ManifestNode[bool]):
 
 
 @attr.s(kw_only=True)
+class BooleanLiteralManifest(ManifestNode[bool]):
+    """Manifest that returns a boolean result that is always the same value for a given
+    file, regardless of the contents of the row that is being parsed. Can be used for
+    checking environmental data in mappings logic.
+    """
+
+    ENV_PROPERTY_KEY = "$env"
+
+    value: bool = attr.ib()
+
+    @property
+    def result_type(self) -> Type[bool]:
+        return bool
+
+    def build_from_row(self, row: Dict[str, str]) -> bool:
+        return self.value
+
+    def columns_referenced(self) -> Set[str]:
+        return set()
+
+    @classmethod
+    def for_env_property(
+        cls, raw_property_manifest: str, delegate: IngestViewFileParserDelegate
+    ) -> "BooleanLiteralManifest":
+        return BooleanLiteralManifest(
+            value=delegate.get_env_property(property_name=raw_property_manifest)
+        )
+
+
+@attr.s(kw_only=True)
 class BooleanConditionManifest(ManifestNode[ManifestNodeT]):
     """Manifest node that evaluates one of two child manifest nodes based on the result
     of a boolean condition.
@@ -1732,6 +1762,13 @@ def build_manifest_from_raw(
             return EqualsConditionManifest.from_raw_manifest(
                 raw_value_manifests=pop_raw_manifest_nodes_list(
                     raw_field_manifest, manifest_node_name
+                ),
+                delegate=delegate,
+            )
+        if manifest_node_name == BooleanLiteralManifest.ENV_PROPERTY_KEY:
+            return BooleanLiteralManifest.for_env_property(
+                raw_property_manifest=raw_field_manifest.pop(
+                    BooleanLiteralManifest.ENV_PROPERTY_KEY, str
                 ),
                 delegate=delegate,
             )

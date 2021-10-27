@@ -27,6 +27,9 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.controllers.custom_function_registry import (
     CustomFunctionRegistry,
 )
+from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
+    DirectIngestInstance,
+)
 from recidiviz.ingest.direct.controllers.ingest_view_file_parser import (
     FileFormat,
     IngestViewFileParser,
@@ -122,6 +125,10 @@ class FakeChargeFactory(EntityFactory):
 class FakeSchemaIngestViewFileParserDelegate(IngestViewFileParserDelegate):
     """Fake implementation of IngestViewFileParserDelegate for parser unittests."""
 
+    def __init__(self, ingest_instance: DirectIngestInstance, is_production: bool):
+        self.ingest_instance = ingest_instance
+        self.is_production = is_production
+
     def get_ingest_view_manifest_path(self, file_tag: str) -> str:
         return os.path.join(os.path.dirname(manifests.__file__), f"{file_tag}.yaml")
 
@@ -165,16 +172,29 @@ class FakeSchemaIngestViewFileParserDelegate(IngestViewFileParserDelegate):
     def get_custom_function_registry(self) -> CustomFunctionRegistry:
         return CustomFunctionRegistry(custom_functions_root_module=custom_python)
 
+    def get_env_property(self, property_name: str) -> bool:
+        if property_name == "test_is_production":
+            return self.is_production
+        if property_name == "test_is_primary_instance":
+            return self.ingest_instance == DirectIngestInstance.PRIMARY
+        raise ValueError(f"Unexpected test env property: {property_name}")
+
 
 class IngestViewFileParserTest(unittest.TestCase):
     """Tests for IngestViewFileParser."""
 
     @staticmethod
-    def _run_parse_for_tag(file_tag: str) -> List[Entity]:
+    def _run_parse_for_tag(
+        file_tag: str,
+        ingest_instance: DirectIngestInstance = DirectIngestInstance.SECONDARY,
+        is_production: bool = False,
+    ) -> List[Entity]:
         """Runs a single parsing test for the given fixture file tag, returning the
         parsed entities.
         """
-        parser = IngestViewFileParser(FakeSchemaIngestViewFileParserDelegate())
+        parser = IngestViewFileParser(
+            FakeSchemaIngestViewFileParserDelegate(ingest_instance, is_production)
+        )
         return parser.parse(
             file_tag=file_tag,
             contents_handle=GcsfsFileContentsHandle(
@@ -186,10 +206,16 @@ class IngestViewFileParserTest(unittest.TestCase):
             file_format=FileFormat.CSV,
         )
 
-    def _run_parse_manifest_for_tag(self, file_tag: str) -> EntityTreeManifest:
-        delegate = FakeSchemaIngestViewFileParserDelegate()
-        delegate.get_ingest_view_manifest_path(file_tag)
-        parser = IngestViewFileParser(FakeSchemaIngestViewFileParserDelegate())
+    def _run_parse_manifest_for_tag(
+        self,
+        file_tag: str,
+        ingest_instance: DirectIngestInstance = DirectIngestInstance.SECONDARY,
+        is_production: bool = False,
+    ) -> EntityTreeManifest:
+        delegate = FakeSchemaIngestViewFileParserDelegate(
+            ingest_instance, is_production
+        )
+        parser = IngestViewFileParser(delegate)
         manifest_ast, _ = parser.parse_manifest(
             manifest_path=delegate.get_ingest_view_manifest_path(file_tag),
         )
@@ -1362,6 +1388,94 @@ class IngestViewFileParserTest(unittest.TestCase):
 
         # Act
         parsed_output = self._run_parse_for_tag("boolean_condition")
+
+        # Assert
+        self.assertEqual(expected_output, parsed_output)
+
+    def test_boolean_condition_env_property_production_secondary(self) -> None:
+        # Arrange
+        expected_output = [
+            FakePerson(
+                fake_state_code="US_XX",
+                name="ANNA ROSE",
+                gender=FakeGender.FEMALE,
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                name="HANNAH ROSE",
+                gender=FakeGender.FEMALE,
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                name="JULIA ROSE",
+                gender=FakeGender.FEMALE,
+            ),
+        ]
+
+        # Act
+        parsed_output = self._run_parse_for_tag(
+            "boolean_condition_env_property",
+            ingest_instance=DirectIngestInstance.SECONDARY,
+            is_production=True,
+        )
+
+        # Assert
+        self.assertEqual(expected_output, parsed_output)
+
+    def test_boolean_condition_env_property_staging_primary(self) -> None:
+        # Arrange
+        expected_output = [
+            FakePerson(
+                fake_state_code="US_XX",
+                name="ANNA",
+                gender=FakeGender.FEMALE,
+                birthdate=datetime.date(1962, 1, 29),
+            ),
+            FakePerson(
+                fake_state_code="US_XX", name="HANNAH", gender=FakeGender.FEMALE
+            ),
+            FakePerson(fake_state_code="US_XX", name="JULIA", gender=FakeGender.FEMALE),
+        ]
+
+        # Act
+        parsed_output = self._run_parse_for_tag(
+            "boolean_condition_env_property",
+            ingest_instance=DirectIngestInstance.PRIMARY,
+            is_production=False,
+        )
+
+        # Assert
+        self.assertEqual(expected_output, parsed_output)
+
+    def test_boolean_condition_env_property_production_primary(self) -> None:
+        # Arrange
+        expected_output = [
+            FakePerson(
+                fake_state_code="US_XX",
+                name="ANNA ROSE",
+                birthdate=datetime.date(1962, 1, 29),
+                gender=FakeGender.MALE,
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                name="HANNAH ROSE",
+                birthdate=None,
+                gender=FakeGender.MALE,
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                name="JULIA ROSE",
+                birthdate=None,
+                gender=FakeGender.MALE,
+            ),
+        ]
+
+        # Act
+        parsed_output = self._run_parse_for_tag(
+            "boolean_condition_env_property",
+            ingest_instance=DirectIngestInstance.PRIMARY,
+            is_production=True,
+        )
 
         # Assert
         self.assertEqual(expected_output, parsed_output)

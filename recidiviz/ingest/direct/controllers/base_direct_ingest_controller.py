@@ -607,7 +607,7 @@ class BaseDirectIngestController(Ingestor):
         return IngestViewProcessorImpl(
             ingest_view_file_parser=IngestViewFileParser(
                 delegate=IngestViewFileParserDelegateImpl(
-                    self.region, self.system_level.schema_type()
+                    self.region, self.system_level.schema_type(), self.ingest_instance
                 )
             )
         )

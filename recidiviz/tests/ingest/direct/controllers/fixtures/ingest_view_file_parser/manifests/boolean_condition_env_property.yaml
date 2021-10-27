@@ -1,0 +1,37 @@
+manifest_language: 1.0.0
+input_columns:
+  - PERSONNAME
+  - DOB
+unused_columns: []
+output:
+  FakePerson:
+    name:
+      $conditional:
+        $if:
+          $env: test_is_production
+        $then:
+          $concat:
+            $separator: " "
+            $values:
+              - PERSONNAME
+              - $literal("ROSE")
+        $else: PERSONNAME
+    birthdate:
+      $conditional:
+        $if:
+          $and:
+            - $env: test_is_primary_instance
+            - $not_in:
+                $value: DOB
+                $options:
+                  - $literal("99999999")
+                  - $literal("00000000")
+        $then: DOB
+    gender:
+      $conditional:
+        $if:
+          $and:
+            - $env: test_is_primary_instance
+            - $env: test_is_production
+        $then: $literal_enum(FakeGender.MALE)
+        $else: $literal_enum(FakeGender.FEMALE)
