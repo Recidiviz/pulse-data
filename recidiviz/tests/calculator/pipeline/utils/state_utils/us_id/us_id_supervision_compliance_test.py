@@ -1786,6 +1786,61 @@ class TestNextRecommendedContactDate(unittest.TestCase):
 
         self.assertIsNone(next_home_visit)
 
+    def test_next_recommended_home_visit_contact_type_agnostic(self) -> None:
+        start_of_supervision = date(2018, 3, 5)
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            state_code="US_ID",
+            custodial_authority_raw_text="US_ID_DOC",
+            start_date=start_of_supervision,
+            termination_date=date(2018, 5, 19),
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_level=StateSupervisionLevel.MEDIUM,
+            supervision_level_raw_text="MODERATE",
+        )
+
+        evaluation_date = date(2019, 5, 1)
+
+        # For US_ID, both collateral and direct contacts at location of residence
+        # count as home visits
+        supervision_contacts = [
+            StateSupervisionContact.new_with_defaults(
+                state_code="US_ID",
+                contact_date=date(2018, 4, 1),
+                contact_type=StateSupervisionContactType.DIRECT,
+                status=StateSupervisionContactStatus.COMPLETED,
+                location=StateSupervisionContactLocation.RESIDENCE,
+            ),
+            StateSupervisionContact.new_with_defaults(
+                state_code="US_ID",
+                contact_date=date(2019, 4, 1),
+                contact_type=StateSupervisionContactType.COLLATERAL,
+                status=StateSupervisionContactStatus.COMPLETED,
+                location=StateSupervisionContactLocation.RESIDENCE,
+            ),
+        ]
+
+        us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
+            self.person,
+            supervision_period=supervision_period,
+            case_type=StateSupervisionCaseType.GENERAL,
+            start_of_supervision=start_of_supervision,
+            assessments=[],
+            supervision_contacts=supervision_contacts,
+            violation_responses=[],
+        )
+
+        next_home_visit = (
+            us_id_supervision_compliance._next_recommended_home_visit_date(
+                evaluation_date
+            )
+        )
+
+        self.assertEqual(next_home_visit, date(2020, 3, 31))
+
     @parameterized.expand(
         [
             (
