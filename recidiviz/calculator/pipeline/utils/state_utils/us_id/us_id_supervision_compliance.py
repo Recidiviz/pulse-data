@@ -63,7 +63,7 @@
 import logging
 import sys
 from datetime import date
-from typing import Dict, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from dateutil.relativedelta import relativedelta
 
@@ -75,10 +75,15 @@ from recidiviz.calculator.pipeline.utils.supervision_level_policy import (
 )
 from recidiviz.common.constants.person_characteristics import Gender
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
+from recidiviz.common.constants.state.state_supervision_contact import (
+    StateSupervisionContactLocation,
+    StateSupervisionContactStatus,
+)
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
     StateSupervisionPeriodSupervisionType,
 )
+from recidiviz.persistence.entity.state.entities import StateSupervisionContact
 
 SEX_OFFENSE_NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS_PROBATION = 45
 SEX_OFFENSE_NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS_PAROLE = 90
@@ -381,6 +386,22 @@ class UsIdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
             )
 
         return supervision_level_raw_text in ("LOW", "MODERATE", "HIGH")
+
+    def _get_applicable_home_visits_between_dates(
+        self, lower_bound_inclusive: date, upper_bound_inclusive: date
+    ) -> List[StateSupervisionContact]:
+        """In Idaho, home visits are considered location only and are collateral vs.
+        face-to-face agnostic."""
+        return [
+            contact
+            for contact in self.supervision_contacts
+            # These are the types of contacts that can satisfy the home visit requirement
+            if contact.location == StateSupervisionContactLocation.RESIDENCE
+            # Contact must be marked as completed
+            and contact.status == StateSupervisionContactStatus.COMPLETED
+            and contact.contact_date is not None
+            and lower_bound_inclusive <= contact.contact_date <= upper_bound_inclusive
+        ]
 
     def _next_recommended_home_visit_date(
         self,
