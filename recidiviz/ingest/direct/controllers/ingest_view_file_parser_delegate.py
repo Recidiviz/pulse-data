@@ -28,6 +28,9 @@ from recidiviz.common.module_collector_mixin import ModuleCollectorMixin
 from recidiviz.ingest.direct.controllers.custom_function_registry import (
     CustomFunctionRegistry,
 )
+from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
+    DirectIngestInstance,
+)
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_deserialize import EntityFactory
@@ -38,6 +41,7 @@ from recidiviz.persistence.entity.state import (
     deserialize_entity_factories as state_deserialize_entity_factories,
 )
 from recidiviz.persistence.entity.state import entities as state_entities
+from recidiviz.utils import environment
 from recidiviz.utils.regions import Region
 
 
@@ -72,8 +76,19 @@ class IngestViewFileParserDelegate:
         that can be used for parsing.
         """
 
+    @abc.abstractmethod
+    def get_env_property(self, property_name: str) -> bool:
+        """Returns a boolean value associated with an environment property with the
+        given name. Throws ValueError for all unexpected properties.
+        """
+
 
 _INGEST_VIEW_MANIFESTS_SUBDIR = "ingest_mappings"
+
+# Supported $env properties
+IS_PRODUCTION_PROPERTY_NAME = "is_production"
+IS_PRIMARY_INSTANCE_PROPERTY_NAME = "is_primary_instance"
+IS_SECONDARY_INSTANCE_PROPERTY_NAME = "is_secondary_instance"
 
 
 def ingest_view_manifest_dir(region: Region) -> str:
@@ -99,9 +114,15 @@ class IngestViewFileParserDelegateImpl(
     production code.
     """
 
-    def __init__(self, region: Region, schema_type: SchemaType) -> None:
+    def __init__(
+        self,
+        region: Region,
+        schema_type: SchemaType,
+        ingest_instance: DirectIngestInstance,
+    ) -> None:
         self.region = region
         self.schema_type = schema_type
+        self.ingest_instance = ingest_instance
         self.entity_cls_cache: Dict[str, Type[Entity]] = {}
 
     def get_ingest_view_manifest_path(self, file_tag: str) -> str:
@@ -150,3 +171,13 @@ class IngestViewFileParserDelegateImpl(
                 self.region.region_module, [region_code]
             )
         )
+
+    def get_env_property(self, property_name: str) -> bool:
+        if property_name == IS_PRODUCTION_PROPERTY_NAME:
+            return environment.in_gcp_production()
+        if property_name == IS_PRIMARY_INSTANCE_PROPERTY_NAME:
+            return self.ingest_instance == DirectIngestInstance.PRIMARY
+        if property_name == IS_SECONDARY_INSTANCE_PROPERTY_NAME:
+            return self.ingest_instance == DirectIngestInstance.SECONDARY
+
+        raise ValueError(f"Unexpected environment property: [{property_name}]")
