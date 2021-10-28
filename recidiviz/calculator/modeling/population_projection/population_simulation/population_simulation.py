@@ -37,7 +37,9 @@ class PopulationSimulation:
         projection_time_steps: int,
         first_relevant_ts: int,
         cross_flow_function: Optional[str],
-        override_cross_flow_function: Optional[Callable],
+        override_cross_flow_function: Optional[
+            Callable[[pd.DataFrame, int], pd.DataFrame]
+        ],
         should_scale_populations: bool,
         validation_transitions_data: Optional[pd.DataFrame] = None,
     ) -> None:
@@ -387,7 +389,9 @@ class PopulationSimulation:
 
         return total_population_error.sort_index().dropna()
 
-    def set_cross_flow_function(self, cross_flow_function: Callable) -> None:
+    def set_cross_flow_function(
+        self, cross_flow_function: Callable[[pd.DataFrame, int], pd.DataFrame]
+    ) -> None:
         """Set a custom cross flow function."""
         self.cross_flow_function = cross_flow_function
 

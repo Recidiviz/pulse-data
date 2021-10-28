@@ -21,7 +21,7 @@ three dataframes required to run Spark population projections.
 """
 
 # import dependencies
-from typing import Optional, Sequence
+from typing import Optional, Sequence, Tuple
 from warnings import warn
 
 import matplotlib.pyplot as plt
@@ -147,7 +147,7 @@ def get_lognorm_params(
     weights: Optional[Sequence[float]] = None,
     print_errs: bool = False,
     grid_search_only: bool = False,
-) -> list:
+) -> Tuple[float, float]:
     """
     Uses grid search and scipy.optimize to pick optimal mean and stddev
     parameters for lognorm dist.
@@ -244,7 +244,7 @@ def get_lognorm_params(
         dlst = [x / sum(dlst) for x in dlst]
 
     # define loss function
-    def loss_function(params: list) -> float:
+    def loss_function(params: Tuple[float, float]) -> float:
         """
         Returns weighted squared error.
 
@@ -292,18 +292,20 @@ def get_lognorm_params(
     besterror = 9999.0
     for mean in np.linspace(meanbounds[0], meanbounds[1], splits):
         for sd in np.linspace(sdbounds[0], sdbounds[1], splits):
-            error = loss_function([mean, sd])
+            error = loss_function((mean, sd))
             if error < besterror:
                 bestmean, bestsd, besterror = mean, sd, error
 
     if grid_search_only:
         print(f"Mean: {bestmean}, Std: {bestsd}")
-        return [bestmean, bestsd]
+        return bestmean, bestsd
     # Optimize.minimize finds local minima - be careful!
     x0 = np.array([bestmean, bestsd])  # initial guess
     result = minimize(loss_function, x0)
-    print(f'Mean: {result["x"][0]}, Std: {result["x"][1]}')
-    return result["x"]
+    result_mean: float = result["x"][0]
+    result_std: float = result["x"][1]
+    print(f"Mean: {result_mean}, Std: {result_std}")
+    return result_mean, result_std
 
 
 def transitions_lognorm(
