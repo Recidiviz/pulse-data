@@ -48,7 +48,9 @@ class Initializer:
         self.time_converter = time_converter
         self.microsim = microsim
         self.data_dict: Dict[str, Any] = {}
-        self.override_cross_flow_function: Optional[Callable] = None
+        self.override_cross_flow_function: Optional[
+            Callable[[pd.DataFrame, int], pd.DataFrame]
+        ] = None
 
         self._set_user_inputs(yaml_user_inputs)
         self._initialize_data(
@@ -167,7 +169,9 @@ class Initializer:
             ] = self.time_converter.convert_timestamp_to_time_step(start_date)
         return data_input_dict, first_relevant_ts_dict
 
-    def set_override_cross_flow_function(self, cross_flow_function: Callable) -> None:
+    def set_override_cross_flow_function(
+        self, cross_flow_function: Callable[[pd.DataFrame, int], pd.DataFrame]
+    ) -> None:
         self.override_cross_flow_function = cross_flow_function
 
     def _fully_connect_outflows(self, outflows_data: pd.DataFrame) -> pd.DataFrame:

@@ -24,7 +24,8 @@ class SparkPolicy:
 
     def __init__(
         self,
-        policy_fn: Callable,
+        # policy_fn takes a transition_table.TransitionTable as input.
+        policy_fn: Callable[[Any], None],
         spark_compartment: str,
         sub_population: Dict[str, str],
         policy_ts: int,
@@ -48,7 +49,7 @@ class SparkPolicy:
 
     @staticmethod
     def _get_applicable_policies(
-        policy_list: List, population_type: str, population_key: Any
+        policy_list: List["SparkPolicy"], population_type: str, population_key: Any
     ) -> List["SparkPolicy"]:
         """Return a list of SparkPolicy objects relevant to the specific sub population or compartment.
 
@@ -66,7 +67,7 @@ class SparkPolicy:
 
     @staticmethod
     def get_compartment_policies(
-        policy_list: List, spark_compartment: str
+        policy_list: List["SparkPolicy"], spark_compartment: str
     ) -> List["SparkPolicy"]:
         """Return a list of SparkPolicy objects for the specific compartment."""
         return SparkPolicy._get_applicable_policies(
@@ -75,7 +76,7 @@ class SparkPolicy:
 
     @staticmethod
     def get_sub_population_policies(
-        policy_list: List, sub_population: Dict[str, str]
+        policy_list: List["SparkPolicy"], sub_population: Dict[str, str]
     ) -> List["SparkPolicy"]:
         """Return a list of SparkPolicy objects for the specific sub_population."""
         return SparkPolicy._get_applicable_policies(

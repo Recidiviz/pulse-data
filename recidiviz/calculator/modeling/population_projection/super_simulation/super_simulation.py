@@ -206,7 +206,9 @@ class SuperSimulation:
             unit,
         )
 
-    def override_cross_flow_function(self, cross_flow_function: Callable) -> None:
+    def override_cross_flow_function(
+        self, cross_flow_function: Callable[[pd.DataFrame, int], pd.DataFrame]
+    ) -> None:
         """
         Replace default cross flow function with a custom function. Once called, will replace for all future
         simulations.

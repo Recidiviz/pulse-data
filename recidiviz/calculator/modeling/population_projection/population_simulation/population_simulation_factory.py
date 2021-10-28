@@ -54,7 +54,9 @@ class PopulationSimulationFactory:
         microsim_data: pd.DataFrame,
         should_initialize_compartment_populations: bool,
         should_scale_populations_after_step: bool,
-        override_cross_flow_function: Optional[Callable],
+        override_cross_flow_function: Optional[
+            Callable[[pd.DataFrame, int], pd.DataFrame]
+        ],
     ) -> PopulationSimulation:
         """
         Initializes sub-simulations

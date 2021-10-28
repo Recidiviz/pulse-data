@@ -28,7 +28,7 @@ from recidiviz.calculator.modeling.population_projection.compartment_transitions
     CompartmentTransitions,
 )
 
-from recidiviz.calculator.modeling.population_projection.transition_table import (
+from recidiviz.calculator.modeling.population_projection.utils.transitions_utils import (
     SIG_FIGS,
 )
 

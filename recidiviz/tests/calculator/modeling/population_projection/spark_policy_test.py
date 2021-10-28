@@ -17,6 +17,8 @@
 """Test the SparkPolicy object"""
 
 import unittest
+from typing import Any
+
 from recidiviz.calculator.modeling.population_projection.spark_policy import SparkPolicy
 
 
@@ -24,7 +26,7 @@ class TestSparkPolicy(unittest.TestCase):
     """Test the SparkPolicy class runs correctly"""
 
     @staticmethod
-    def dummy_policy_method() -> None:
+    def dummy_policy_method(arg: Any) -> None:
         """Placeholder method to use for initializing the SparkPolicy test objects"""
 
     def setUp(self) -> None:
