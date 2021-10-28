@@ -16,7 +16,8 @@
 # =============================================================================
 """SparkCompartment instance that doesn't track cohorts"""
 
-from typing import Dict, List
+from typing import Dict, List, Optional
+
 import pandas as pd
 
 from recidiviz.calculator.modeling.population_projection.predicted_admissions import (
@@ -136,7 +137,7 @@ class ShellCompartment(SparkCompartment):
         outflows_data: pd.DataFrame,
         reallocation_fraction: float,
         outflow: str,
-        new_outflow: str = None,
+        new_outflow: Optional[str] = None,
     ) -> pd.DataFrame:
         """
         reallocate `reallocation_fraction` of outflows from `outflow` to `new_outflow` (just scales down
