@@ -53,6 +53,7 @@ SUPERVISION_START_REASON_ORDERED_PRIORITY = [
 ]
 
 INCARCERATION_START_REASON_ORDERED_PRIORITY = [
+    StateIncarcerationPeriodAdmissionReason.REVOCATION,
     StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
     StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
     StateIncarcerationPeriodAdmissionReason.DUAL_REVOCATION,

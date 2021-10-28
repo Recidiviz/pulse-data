@@ -130,6 +130,7 @@ state_incarceration_period_admission_reason_probation_revocation = (
     "PROBATION_REVOCATION"
 )
 state_incarceration_period_admission_reason_dual_revocation = "DUAL_REVOCATION"
+state_incarceration_period_admission_reason_revocation = "REVOCATION"
 state_incarceration_period_admission_reason_return_from_court = "RETURN_FROM_COURT"
 state_incarceration_period_admission_reason_return_from_erroneous_release = (
     "RETURN_FROM_ERRONEOUS_RELEASE"

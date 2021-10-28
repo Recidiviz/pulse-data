@@ -268,6 +268,7 @@ state_incarceration_period_admission_reason = Enum(
     enum_strings.external_unknown,
     enum_strings.internal_unknown,
     state_enum_strings.state_incarceration_period_admission_reason_new_admission,
+    state_enum_strings.state_incarceration_period_admission_reason_revocation,
     state_enum_strings.state_incarceration_period_admission_reason_parole_revocation,
     state_enum_strings.state_incarceration_period_admission_reason_probation_revocation,
     state_enum_strings.state_incarceration_period_admission_reason_dual_revocation,
