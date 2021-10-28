@@ -70,6 +70,9 @@ class StateIncarcerationPeriodAdmissionReason(EntityEnum, metaclass=EntityEnumMe
     NEW_ADMISSION = (
         state_enum_strings.state_incarceration_period_admission_reason_new_admission
     )
+    REVOCATION = (
+        state_enum_strings.state_incarceration_period_admission_reason_revocation
+    )
     PAROLE_REVOCATION = (
         state_enum_strings.state_incarceration_period_admission_reason_parole_revocation
     )
@@ -214,6 +217,7 @@ def is_commitment_from_supervision(
     if not admission_reason:
         return False
     commitment_admissions = [
+        StateIncarcerationPeriodAdmissionReason.REVOCATION,
         StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
         StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
         StateIncarcerationPeriodAdmissionReason.DUAL_REVOCATION,
@@ -277,6 +281,7 @@ def is_official_admission(
         StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
         StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
         StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+        StateIncarcerationPeriodAdmissionReason.REVOCATION,
         StateIncarcerationPeriodAdmissionReason.DUAL_REVOCATION,
         StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
         StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
@@ -448,6 +453,7 @@ _STATE_INCARCERATION_PERIOD_ADMISSION_REASON_MAP = {
     "EXTERNAL UNKNOWN": StateIncarcerationPeriodAdmissionReason.EXTERNAL_UNKNOWN,
     "INTERNAL UNKNOWN": StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
     "NEW ADMISSION": StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+    "REVOCATION": StateIncarcerationPeriodAdmissionReason.REVOCATION,
     "PAROLE REVOCATION": StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
     "PROBATION REVOCATION": StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
     "RETURN FROM ESCAPE": StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE,

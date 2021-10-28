@@ -1344,7 +1344,9 @@ class TestFindValidReincarcerationPeriod(unittest.TestCase):
 
             self.assertIsNone(reincarceration)
 
-    def test_find_valid_reincarceration_period_admission_reason_coverage(self) -> None:
+    def testPersistenceAndSchemaEnumsMatchtest_find_valid_reincarceration_period_admission_reason_coverage(
+        self,
+    ) -> None:
         release_date = date(2009, 4, 21)
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
