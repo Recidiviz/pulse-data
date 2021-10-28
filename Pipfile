@@ -33,6 +33,10 @@ pytablewriter = "*"
 # If we remove the restriction, then add `pre-commit autoupdate` to the Pipenv Github action to keep them in sync.
 black = "==20.8b1"
 pre-commit = "*"
+# TODO(#4287): Unpin/remove explicit dependency once the latest version of
+#  google-api-core supports protobuf version >= 3.18.0 (might be resolved by upgrading
+#  other google libraries > 2.0.0). Version proto-plus==1.19.7 requires protobuf >= 3.19.0.
+proto-plus = "==1.19.6"
 pygtrie = "*"
 types-beautifulsoup4 = "*"
 types-dateparser = "*"
@@ -41,6 +45,7 @@ types-freezegun = "*"
 types-html5lib = "*"
 types-httplib2 = "*"
 types-itsdangerous = "*"
+types-jsonschema = "*"
 types-mock = "*"
 types-paramiko = "*"
 types-protobuf = "*"
@@ -153,6 +158,10 @@ paramiko = "*"
 tqdm = "*"
 linearmodels = "*"
 jsonschema = "*"
+# TODO(#4287): Unpin/remove explicit dependency once the latest version of
+#  google-api-core supports protobuf version >= 3.18.0 (might be resolved by upgrading
+#  other google libraries > 2.0.0). Version proto-plus==1.19.7 requires protobuf >= 3.19.0.
+proto-plus = "==1.19.6"
 
 [requires]
 python_version = "3.8"
