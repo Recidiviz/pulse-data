@@ -278,6 +278,7 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
                 AdmissionReason.NEW_ADMISSION,
                 AdmissionReason.PAROLE_REVOCATION,
                 AdmissionReason.PROBATION_REVOCATION,
+                AdmissionReason.REVOCATION,
                 AdmissionReason.DUAL_REVOCATION,
                 AdmissionReason.SANCTION_ADMISSION,
                 # This should be a rare case, but we are considering this a valid
