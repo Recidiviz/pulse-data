@@ -112,6 +112,7 @@ export const statePolicy: Policy = {
     ASSESSMENT: "http://example.com",
     CONTACT: "http://example.com",
     NEW_TO_CASELOAD: "http://example.com",
+    HOME_VISIT: "http://example.com",
   },
   supervisionContactFrequencies: {
     GENERAL: {

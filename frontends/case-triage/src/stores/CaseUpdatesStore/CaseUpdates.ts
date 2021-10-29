@@ -18,19 +18,14 @@ import { OpportunityType } from "../OpportunityStore/Opportunity";
 
 export enum CaseUpdateActionType {
   // Risk Assessment
-  COMPLETED_ASSESSMENT = "COMPLETED_ASSESSMENT",
   INCORRECT_ASSESSMENT_DATA = "INCORRECT_ASSESSMENT_DATA",
   // Employment
-  FOUND_EMPLOYMENT = "FOUND_EMPLOYMENT",
   INCORRECT_EMPLOYMENT_DATA = "INCORRECT_EMPLOYMENT_DATA",
   // Face to face contact
-  SCHEDULED_FACE_TO_FACE = "SCHEDULED_FACE_TO_FACE",
   INCORRECT_CONTACT_DATA = "INCORRECT_CONTACT_DATA",
-
-  DISCHARGE_INITIATED = "DISCHARGE_INITIATED",
-
+  // Home visit contact
+  INCORRECT_HOME_VISIT_DATA = "INCORRECT_HOME_VISIT_DATA",
   // Supervision Level
-  DOWNGRADE_INITIATED = "DOWNGRADE_INITIATED",
   INCORRECT_SUPERVISION_LEVEL_DATA = "INCORRECT_SUPERVISION_LEVEL_DATA",
 
   NOT_ON_CASELOAD = "NOT_ON_CASELOAD",
@@ -45,6 +40,7 @@ export const isErrorReport = (action: CaseUpdateActionType): boolean => {
     case CaseUpdateActionType.INCORRECT_ASSESSMENT_DATA:
     case CaseUpdateActionType.INCORRECT_EMPLOYMENT_DATA:
     case CaseUpdateActionType.INCORRECT_CONTACT_DATA:
+    case CaseUpdateActionType.INCORRECT_HOME_VISIT_DATA:
     case CaseUpdateActionType.INCORRECT_NEW_TO_CASELOAD_DATA:
     case CaseUpdateActionType.NOT_ON_CASELOAD:
     case CaseUpdateActionType.CURRENTLY_IN_CUSTODY:
@@ -68,45 +64,25 @@ export interface CaseUpdate {
 
 export const CASE_UPDATE_OPPORTUNITY_ASSOCIATION: Record<
   OpportunityType,
-  [CaseUpdateActionType | undefined, CaseUpdateActionType]
+  CaseUpdateActionType
 > = {
-  [OpportunityType.OVERDUE_DOWNGRADE]: [
-    CaseUpdateActionType.DOWNGRADE_INITIATED,
+  [OpportunityType.OVERDUE_DOWNGRADE]:
     CaseUpdateActionType.INCORRECT_SUPERVISION_LEVEL_DATA,
-  ],
-  [OpportunityType.EMPLOYMENT]: [
-    CaseUpdateActionType.FOUND_EMPLOYMENT,
-    CaseUpdateActionType.INCORRECT_EMPLOYMENT_DATA,
-  ],
-  [OpportunityType.ASSESSMENT]: [
-    CaseUpdateActionType.COMPLETED_ASSESSMENT,
-    CaseUpdateActionType.INCORRECT_ASSESSMENT_DATA,
-  ],
-  [OpportunityType.CONTACT]: [
-    CaseUpdateActionType.SCHEDULED_FACE_TO_FACE,
-    CaseUpdateActionType.INCORRECT_CONTACT_DATA,
-  ],
-  [OpportunityType.NEW_TO_CASELOAD]: [
-    undefined,
+  [OpportunityType.EMPLOYMENT]: CaseUpdateActionType.INCORRECT_EMPLOYMENT_DATA,
+  [OpportunityType.ASSESSMENT]: CaseUpdateActionType.INCORRECT_ASSESSMENT_DATA,
+  [OpportunityType.CONTACT]: CaseUpdateActionType.INCORRECT_CONTACT_DATA,
+  [OpportunityType.HOME_VISIT]: CaseUpdateActionType.INCORRECT_HOME_VISIT_DATA,
+  [OpportunityType.NEW_TO_CASELOAD]:
     CaseUpdateActionType.INCORRECT_NEW_TO_CASELOAD_DATA,
-  ],
 };
 
 export const ACTION_TITLES: Record<CaseUpdateActionType, string> = {
-  [CaseUpdateActionType.COMPLETED_ASSESSMENT]:
-    "I completed their risk assessment",
-  [CaseUpdateActionType.FOUND_EMPLOYMENT]: "I helped them find employment",
-  [CaseUpdateActionType.SCHEDULED_FACE_TO_FACE]:
-    "I scheduled our next face-to-face contact",
-  [CaseUpdateActionType.DISCHARGE_INITIATED]: "DISCHARGE_INITIATED",
-  [CaseUpdateActionType.DOWNGRADE_INITIATED]:
-    "I updated their supervision level",
   [CaseUpdateActionType.INCORRECT_SUPERVISION_LEVEL_DATA]:
     "Incorrect supervision level data",
-
   [CaseUpdateActionType.INCORRECT_ASSESSMENT_DATA]: "Assessment not needed",
   [CaseUpdateActionType.INCORRECT_EMPLOYMENT_DATA]: "Employment not needed",
   [CaseUpdateActionType.INCORRECT_CONTACT_DATA]: "Contact not needed",
+  [CaseUpdateActionType.INCORRECT_HOME_VISIT_DATA]: "Home visit not needed",
   [CaseUpdateActionType.INCORRECT_NEW_TO_CASELOAD_DATA]:
     "Incorrect time on caseload",
   [CaseUpdateActionType.NOT_ON_CASELOAD]: "Not on Caseload",

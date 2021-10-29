@@ -447,10 +447,6 @@ export class Client {
   }
 
   get nextContactDate(): moment.Moment | null {
-    // TODO(#7320): Our current `nextHomeVisitDate` determines when the next home visit
-    // should be assuming that home visits must be F2F visits and not collateral visits.
-    // As a result, until we do more investigation into what the appropriate application
-    // of state policy is, we're not showing home visits as the next contact dates.
     return this.nextFaceToFaceDate;
   }
 
@@ -461,18 +457,15 @@ export class Client {
   }
 
   get activeOpportunities(): Opportunity[] {
-    return this.opportunities.filter(
-      (opp) =>
+    return this.opportunities.filter((opp) => {
+      const updateKey =
+        CASE_UPDATE_OPPORTUNITY_ASSOCIATION[opp.opportunityType];
+      // not overridden by a case update
+      return (
         !opp.isDeferred &&
-        // not overridden by a case update
-        CASE_UPDATE_OPPORTUNITY_ASSOCIATION[opp.opportunityType].every(
-          (updateKey) => {
-            return (
-              updateKey === undefined || !this.hasInProgressUpdate(updateKey)
-            );
-          }
-        )
-    );
+        (updateKey === undefined || !this.hasInProgressUpdate(updateKey))
+      );
+    });
   }
 
   /**

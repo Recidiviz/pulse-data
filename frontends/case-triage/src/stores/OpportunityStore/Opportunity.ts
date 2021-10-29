@@ -33,6 +33,7 @@ export enum OpportunityType {
   EMPLOYMENT = "EMPLOYMENT",
   ASSESSMENT = "ASSESSMENT",
   CONTACT = "CONTACT",
+  HOME_VISIT = "HOME_VISIT",
   NEW_TO_CASELOAD = "NEW_TO_CASELOAD",
 }
 
@@ -41,6 +42,7 @@ const OPPORTUNITY_TITLES: Record<OpportunityType, string> = {
   [OpportunityType.EMPLOYMENT]: "Unemployed",
   [OpportunityType.ASSESSMENT]: "Risk assessment",
   [OpportunityType.CONTACT]: "Contact",
+  [OpportunityType.HOME_VISIT]: "Home visit",
   [OpportunityType.NEW_TO_CASELOAD]: "New to caseload",
 };
 
@@ -140,6 +142,7 @@ export class Opportunity {
         return "New";
       case OpportunityType.ASSESSMENT:
       case OpportunityType.CONTACT:
+      case OpportunityType.HOME_VISIT:
         return `${OPPORTUNITY_TITLES[this.opportunityType]} ${
           this.dueDaysFormatted
         }`;
@@ -158,8 +161,10 @@ export class Opportunity {
         return 3;
       case OpportunityType.ASSESSMENT:
         return this.opportunityMetadata.status === "OVERDUE" ? 4 : 5;
-      case OpportunityType.CONTACT:
+      case OpportunityType.HOME_VISIT:
         return this.opportunityMetadata.status === "OVERDUE" ? 6 : 7;
+      case OpportunityType.CONTACT:
+        return this.opportunityMetadata.status === "OVERDUE" ? 8 : 9;
       default:
         assertNever(this.opportunityType);
     }
@@ -182,16 +187,18 @@ export class Opportunity {
   }
 
   /**
-   * Assessments are "due" but contacts are "recommended"
+   * Assessments are "due" but contacts and home visits are "recommended"
    */
   get dueDateModifier(): string {
-    if (this.opportunityType === OpportunityType.CONTACT) {
-      return "recommended";
+    switch (this.opportunityType) {
+      case OpportunityType.CONTACT:
+      case OpportunityType.HOME_VISIT:
+        return "recommended";
+      case OpportunityType.ASSESSMENT:
+        return "due";
+      default:
+        return "";
     }
-    if (this.opportunityType === OpportunityType.ASSESSMENT) {
-      return "due";
-    }
-    return "";
   }
 
   /**
@@ -220,6 +227,7 @@ export class Opportunity {
         return `${titleBase}${this.daysAgo ? `: ${this.daysAgo}` : ""}`;
       case OpportunityType.CONTACT:
       case OpportunityType.ASSESSMENT:
+      case OpportunityType.HOME_VISIT:
         return `${titleBase} ${this.dueDateModifier} ${this.dueDaysFormatted}`;
       default:
         assertNever(this.opportunityType);
@@ -236,6 +244,7 @@ export class Opportunity {
         return undefined;
       case OpportunityType.CONTACT:
       case OpportunityType.ASSESSMENT:
+      case OpportunityType.HOME_VISIT:
         return `${titleBase} ${this.dueDateModifier} ${this.dueDate?.format(
           LONG_DATE_FORMAT
         )}`;
@@ -270,6 +279,7 @@ export class Opportunity {
         break;
       case OpportunityType.ASSESSMENT:
       case OpportunityType.CONTACT:
+      case OpportunityType.HOME_VISIT:
         if (this.opportunityMetadata.status === "OVERDUE") {
           iconColor = palette.signal.error;
           pillKind = "error";

@@ -116,9 +116,10 @@ const SupervisionTypeControl = observer(() => {
 const SORT_ORDER_LABELS: Record<SortOrder, string> = {
   RELEVANCE: "Relevance",
   ASSESSMENT_DATE: "Risk assessment due date",
-  CONTACT_DATE: "Contact due date",
+  CONTACT_DATE: "Contact recommended date",
   DAYS_WITH_PO: "New to caseload",
   START_DATE: "New to supervision",
+  HOME_VISIT_DATE: "Home visit recommended date",
 };
 
 const SORT_ORDER_OPTIONS = SortOrderList.map((id) => ({
@@ -134,6 +135,10 @@ const SortControl = observer(() => {
 
   if (!userStore.canSeeExtendedProfile) {
     options = options.filter(({ id }) => id !== "DAYS_WITH_PO");
+  }
+  // TODO(#9807) remove feature flag when ready to release home visit
+  if (!userStore.canSeeHomeVisit) {
+    options = options.filter(({ id }) => id !== "HOME_VISIT_DATE");
   }
 
   return (

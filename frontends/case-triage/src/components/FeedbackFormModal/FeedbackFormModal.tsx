@@ -46,6 +46,7 @@ const titleForActionType = (actionType: CaseUpdateActionType): string => {
     case CaseUpdateActionType.INCORRECT_ASSESSMENT_DATA:
     case CaseUpdateActionType.INCORRECT_EMPLOYMENT_DATA:
     case CaseUpdateActionType.INCORRECT_CONTACT_DATA:
+    case CaseUpdateActionType.INCORRECT_HOME_VISIT_DATA:
     case CaseUpdateActionType.NOT_ON_CASELOAD:
     case CaseUpdateActionType.CURRENTLY_IN_CUSTODY:
     case CaseUpdateActionType.INCORRECT_SUPERVISION_LEVEL_DATA:

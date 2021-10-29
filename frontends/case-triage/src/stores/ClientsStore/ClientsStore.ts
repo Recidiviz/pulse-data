@@ -34,6 +34,7 @@ import {
   ClientListAssessmentComparator,
   ClientListBuilder,
   ClientListContactComparator,
+  ClientListHomeVisitComparator,
   ClientListDaysWithCurrentPOComparator,
   ClientListPriorityComparator,
   ClientListSupervisionStartComparator,
@@ -49,6 +50,7 @@ interface ClientsStoreProps {
 export const SortOrderList = [
   "RELEVANCE",
   "CONTACT_DATE",
+  "HOME_VISIT_DATE",
   "ASSESSMENT_DATE",
   "DAYS_WITH_PO",
   "START_DATE",
@@ -205,6 +207,9 @@ class ClientsStore {
         break;
       case "CONTACT_DATE":
         sortFn = ClientListContactComparator;
+        break;
+      case "HOME_VISIT_DATE":
+        sortFn = ClientListHomeVisitComparator;
         break;
       case "DAYS_WITH_PO":
         sortFn = ClientListDaysWithCurrentPOComparator;

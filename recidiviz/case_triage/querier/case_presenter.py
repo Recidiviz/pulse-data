@@ -21,7 +21,6 @@ import json
 from datetime import date
 from typing import Any, Dict, List
 
-from recidiviz.case_triage.client_utils.compliance import get_next_home_visit_date
 from recidiviz.case_triage.demo_helpers import unconvert_fake_person_id_for_demo_user
 from recidiviz.case_triage.querier.case_update_presenter import CaseUpdatePresenter
 from recidiviz.case_triage.querier.utils import _json_map_dates_to_strings
@@ -73,6 +72,7 @@ class CasePresenter:
             "mostRecentFaceToFaceDate": self.etl_client.most_recent_face_to_face_date,
             "nextFaceToFaceDate": self.etl_client.next_recommended_face_to_face_date,
             "mostRecentHomeVisitDate": self.etl_client.most_recent_home_visit_date,
+            "nextHomeVisitDate": self.etl_client.next_recommended_home_visit_date,
             "emailAddress": self.etl_client.email_address,
             "phoneNumber": self.etl_client.phone_number,
             "receivingSSIOrDisabilityIncome": self.etl_client.receiving_ssi_or_disability_income,
@@ -86,11 +86,6 @@ class CasePresenter:
             "daysWithCurrentPO": self.etl_client.days_with_current_po,
         }
 
-        # TODO(#5768): Eventually move next home visit date to our calculate pipeline.
-        next_home_visit_date = get_next_home_visit_date(self.etl_client)
-        if next_home_visit_date:
-            base_dict["nextHomeVisitDate"] = next_home_visit_date
-
         today = date.today()
         base_dict["needsMet"] = {
             # Sometimes the employer field has "UNEMP" in it somewher to indicate unemployment
@@ -103,11 +98,8 @@ class CasePresenter:
             or self.etl_client.next_recommended_face_to_face_date > today,
             # If the home visit contact is missing, that means there may be no need for it. Otherwise, if the
             # next due home visit contact is after today, the need is met.
-            # TODO(#7320): This field determines whether compliance is up-to-date assuming
-            # the rules apply to F2F home visits and not collateral home visits. More work is
-            # needed to determine what the correct application of rules should actually be.
-            "homeVisitContact": next_home_visit_date is None
-            or next_home_visit_date > today,
+            "homeVisitContact": self.etl_client.next_recommended_home_visit_date is None
+            or self.etl_client.next_recommended_home_visit_date > today,
             # If the next assessment is due after today, the need is met.
             "assessment": self.etl_client.next_recommended_assessment_date is None
             or self.etl_client.next_recommended_assessment_date > today,
