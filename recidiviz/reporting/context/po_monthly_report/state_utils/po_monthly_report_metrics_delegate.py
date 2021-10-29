@@ -73,6 +73,11 @@ class PoMonthlyReportMetricsDelegate(abc.ABC):
         """Denotes preferred terminology for completion in this state."""
 
     @property
+    @abc.abstractmethod
+    def has_case_triage(self) -> bool:
+        """Denotes whether recipients in this state are presumed to have Case Triage access."""
+
+    @property
     def revocation_metrics(self) -> List[str]:
         """Denotes metrics that measure revocation."""
         return [

@@ -8,9 +8,7 @@
     {{ components.y_padding(24) }}
     <tr>
       <td>
-        {% with task=assessments if assessments.goal_met else facetoface %}
-          {% include "po_monthly_report/compliance/up_to_date.html.jinja2" %}
-        {% endwith %}
+        {% include "po_monthly_report/compliance/up_to_date.html.jinja2" %}
       </td>
     </tr>
   {{ components.layout_table_end()}}
