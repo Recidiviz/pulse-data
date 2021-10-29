@@ -86,9 +86,7 @@ def filter_recipients(
 
 
 def start(
-    state_code: StateCode,
-    report_type: ReportType,
-    batch_id: Optional[str] = None,
+    batch: utils.Batch,
     test_address: Optional[str] = None,
     region_code: Optional[str] = None,
     email_allowlist: Optional[List[str]] = None,
@@ -115,18 +113,16 @@ def start(
     Returns: A MultiRequestResult containing the email addresses for which reports were successfully generated for
             and failed to generate for
     """
-    if batch_id is None:
-        batch_id = utils.generate_batch_id()
 
     logging.info(
         "New batch started for %s (region: %s) and %s. Batch id = %s",
-        state_code,
+        batch.state_code,
         region_code,
-        report_type,
-        batch_id,
+        batch.report_type,
+        batch.batch_id,
     )
 
-    recipients: List[Recipient] = retrieve_data(state_code, report_type, batch_id)
+    recipients: List[Recipient] = retrieve_data(batch)
     recipients = filter_recipients(recipients, region_code, email_allowlist)
 
     if test_address:
@@ -144,7 +140,8 @@ def start(
 
     if message_body_override is not None:
         logging.info(
-            "Overriding default message body in batch emails (batch id = %s)", batch_id
+            "Overriding default message body in batch emails (batch id = %s)",
+            batch.batch_id,
         )
         recipients = [
             recipient.create_derived_recipient(
@@ -162,8 +159,8 @@ def start(
 
     for recipient in recipients:
         try:
-            report_context = get_report_context(state_code, report_type, recipient)
-            email_generation.generate(report_context)
+            report_context = get_report_context(batch, recipient)
+            email_generation.generate(batch, report_context)
         except Exception:
             failed_email_addresses.append(recipient.email_address)
             logging.error(
@@ -171,14 +168,12 @@ def start(
             )
         else:
             succeeded_email_addresses.append(recipient.email_address)
-            if report_type == ReportType.POMonthlyReport and len(metadata) == 0:
+            if batch.report_type == ReportType.POMonthlyReport and len(metadata) == 0:
                 metadata["review_year"] = recipient.data["review_year"]
                 metadata["review_month"] = recipient.data["review_month"]
 
     _write_batch_metadata(
-        batch_id=batch_id,
-        state_code=state_code,
-        report_type=report_type,
+        batch=batch,
         **metadata,
     )
     return MultiRequestResult(
@@ -187,7 +182,7 @@ def start(
 
 
 def retrieve_data(
-    state_code: StateCode, report_type: ReportType, batch_id: str
+    batch: utils.Batch,
 ) -> List[Recipient]:
     """Retrieves the data for email generation of the given report type for the given state.
 
@@ -196,9 +191,7 @@ def retrieve_data(
     later on.
 
     Args:
-        state_code: State identifier used to retrieve appropriate data
-        report_type: The type of report, used to determine the data file name
-        batch_id: The identifier for this batch
+        batch: The identifier for this batch
 
     Returns:
         A list of recipient data dictionaries
@@ -207,10 +200,10 @@ def retrieve_data(
         Non-recoverable errors that should stop execution. Attempts to catch and handle errors that are recoverable.
         Provides logging for debug purposes whenever possible.
     """
-    if report_type == ReportType.POMonthlyReport:
-        return _retrieve_data_for_po_monthly_report(state_code, batch_id)
-    if report_type == ReportType.TopOpportunities:
-        return _retrieve_data_for_top_opportunities(state_code)
+    if batch.report_type == ReportType.POMonthlyReport:
+        return _retrieve_data_for_po_monthly_report(batch)
+    if batch.report_type == ReportType.TopOpportunities:
+        return _retrieve_data_for_top_opportunities(batch)
 
     raise ValueError("unexpected report type for retrieving data")
 
@@ -303,7 +296,7 @@ def _get_mismatch_data_for_officer(
         return mismatches
 
 
-def _retrieve_data_for_top_opportunities(state_code: StateCode) -> List[Recipient]:
+def _retrieve_data_for_top_opportunities(batch: utils.Batch) -> List[Recipient]:
     """Fetches list of recipients from the Case Triage backend where we store information
     about which opportunities are active via the OpportunityPresenter."""
     recipients = []
@@ -319,7 +312,7 @@ def _retrieve_data_for_top_opportunities(state_code: StateCode) -> List[Recipien
                     Recipient.from_report_json(
                         {
                             utils.KEY_EMAIL_ADDRESS: officer_email,
-                            utils.KEY_STATE_CODE: state_code.value,
+                            utils.KEY_STATE_CODE: batch.state_code.value,
                             utils.KEY_DISTRICT: None,
                             OFFICER_GIVEN_NAME: officer.given_names,
                             "mismatches": mismatches,
@@ -331,14 +324,14 @@ def _retrieve_data_for_top_opportunities(state_code: StateCode) -> List[Recipien
 
 
 def _retrieve_data_for_po_monthly_report(
-    state_code: StateCode, batch_id: str
+    batch: utils.Batch,
 ) -> List[Recipient]:
     """Retrieves the data if the report type is POMonthlyReport."""
     data_bucket = utils.get_data_storage_bucket_name()
     data_filename = ""
     gcs_file_system = GcsfsFactory.build()
     try:
-        data_filename = utils.get_data_filename(state_code, ReportType.POMonthlyReport)
+        data_filename = utils.get_data_filename(batch)
         path = GcsfsFilePath.from_absolute_path(f"gs://{data_bucket}/{data_filename}")
         file_contents = gcs_file_system.download_as_string(path)
     except BaseException:
@@ -348,7 +341,7 @@ def _retrieve_data_for_po_monthly_report(
     archive_bucket = utils.get_data_archive_bucket_name()
     archive_filename = ""
     try:
-        archive_filename = utils.get_data_archive_filename(batch_id, state_code)
+        archive_filename = utils.get_data_archive_filename(batch)
         archive_path = GcsfsFilePath.from_absolute_path(
             f"gs://{archive_bucket}/{archive_filename}"
         )
@@ -389,7 +382,7 @@ def _retrieve_data_for_po_monthly_report(
         Recipient.from_report_json(
             {
                 **recipient,
-                utils.KEY_BATCH_ID: batch_id,
+                utils.KEY_BATCH_ID: batch.batch_id,
             }
         )
         for recipient in recipient_data
@@ -398,14 +391,14 @@ def _retrieve_data_for_po_monthly_report(
 
 def _write_batch_metadata(
     *,
-    batch_id: str,
-    state_code: StateCode,
-    report_type: ReportType,
+    batch: utils.Batch,
     **metadata_fields: str,
 ) -> None:
     gcsfs = GcsfsFactory.build()
     gcsfs.upload_from_string(
-        path=gcsfs_path_for_batch_metadata(batch_id, state_code),
-        contents=json.dumps({**metadata_fields, "report_type": report_type.value}),
+        path=gcsfs_path_for_batch_metadata(batch),
+        contents=json.dumps(
+            {**metadata_fields, "report_type": batch.report_type.value}
+        ),
         content_type="text/json",
     )

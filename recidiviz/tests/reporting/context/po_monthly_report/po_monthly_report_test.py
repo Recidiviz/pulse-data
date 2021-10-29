@@ -35,6 +35,7 @@ from recidiviz.reporting.context.po_monthly_report.constants import (
     ReportType,
 )
 from recidiviz.reporting.context.po_monthly_report.context import PoMonthlyReportContext
+from recidiviz.reporting.email_reporting_utils import Batch
 from recidiviz.reporting.recipient import Recipient
 
 FIXTURE_FILE = "po_monthly_report_data_fixture.json"
@@ -56,6 +57,12 @@ class PoMonthlyReportContextTests(TestCase):
             self.recipient = Recipient.from_report_json(json.loads(fixture_file.read()))
             self.recipient.data["batch_id"] = "20201105123033"
 
+        self.batch = Batch(
+            state_code=StateCode.US_ID,
+            batch_id="20201105123033",
+            report_type=ReportType.POMonthlyReport,
+        )
+
     def _get_prepared_data(
         self,
         recipient_data: Optional[dict] = None,
@@ -63,11 +70,11 @@ class PoMonthlyReportContextTests(TestCase):
         if recipient_data is None:
             recipient_data = {}
         recipient = self.recipient.create_derived_recipient(recipient_data)
-        context = PoMonthlyReportContext(recipient.state_code, recipient)
+        context = PoMonthlyReportContext(self.batch, recipient)
         return context.get_prepared_data()
 
     def test_get_report_type(self) -> None:
-        context = PoMonthlyReportContext(StateCode.US_ID, self.recipient)
+        context = PoMonthlyReportContext(self.batch, self.recipient)
         self.assertEqual(ReportType.POMonthlyReport, context.get_report_type())
 
     def test_required_generation_fields(self) -> None:
@@ -408,7 +415,7 @@ class PoMonthlyReportContextTests(TestCase):
 
         recipient = self.recipient.create_derived_recipient(recipient_data)
 
-        context = PoMonthlyReportContext(StateCode.US_ID, recipient)
+        context = PoMonthlyReportContext(self.batch, recipient)
         actual = context.get_prepared_data()
         expected = textwrap.dedent(
             """\
@@ -464,7 +471,7 @@ class PoMonthlyReportContextTests(TestCase):
             ]
         }
         recipient = self.recipient.create_derived_recipient(recipient_data)
-        context = PoMonthlyReportContext(StateCode.US_ID, recipient)
+        context = PoMonthlyReportContext(self.batch, recipient)
         actual = context.get_prepared_data()
         expected = textwrap.dedent(
             """\
@@ -482,7 +489,7 @@ class PoMonthlyReportContextTests(TestCase):
         self.assertEqual(expected, actual["attachment_content"])
 
     def test_faq(self) -> None:
-        context = PoMonthlyReportContext(StateCode.US_ID, self.recipient)
+        context = PoMonthlyReportContext(self.batch, self.recipient)
         self.assertEqual(context.get_prepared_data()["faq"], context.properties["faq"])
 
     def test_static_path(self) -> None:
@@ -615,7 +622,7 @@ class PoMonthlyReportContextTests(TestCase):
         """Test that completions context is populated according to input data."""
 
         happy_path_data = PoMonthlyReportContext(
-            StateCode.US_ID, self.recipient
+            self.batch, self.recipient
         ).get_prepared_data()[POS_DISCHARGES]
 
         self.assertIn(
@@ -631,7 +638,7 @@ class PoMonthlyReportContextTests(TestCase):
         )
 
         no_caseload_data = PoMonthlyReportContext(
-            StateCode.US_ID,
+            self.batch,
             self.recipient.create_derived_recipient({POS_DISCHARGES: "0"}),
         ).get_prepared_data()[POS_DISCHARGES]
         self.assertEqual(
@@ -640,7 +647,7 @@ class PoMonthlyReportContextTests(TestCase):
         )
 
         no_local_data = PoMonthlyReportContext(
-            StateCode.US_ID,
+            self.batch,
             self.recipient.create_derived_recipient(
                 {POS_DISCHARGES: "0", f"{POS_DISCHARGES}_district_total": 0}
             ),
@@ -648,7 +655,7 @@ class PoMonthlyReportContextTests(TestCase):
         self.assertIsNone(no_local_data["supplemental_text"])
 
         no_action_items_data = no_local_data = PoMonthlyReportContext(
-            StateCode.US_ID,
+            self.batch,
             self.recipient.create_derived_recipient(
                 {"upcoming_release_date_clients": []}
             ),
@@ -659,7 +666,7 @@ class PoMonthlyReportContextTests(TestCase):
         """Test that downgrades context is populated according to input data."""
 
         happy_path_data = PoMonthlyReportContext(
-            StateCode.US_ID, self.recipient
+            self.batch, self.recipient
         ).get_prepared_data()[SUPERVISION_DOWNGRADES]
 
         self.assertIn(
@@ -680,7 +687,7 @@ class PoMonthlyReportContextTests(TestCase):
         )
 
         no_caseload_data = PoMonthlyReportContext(
-            StateCode.US_ID,
+            self.batch,
             self.recipient.create_derived_recipient({SUPERVISION_DOWNGRADES: "0"}),
         ).get_prepared_data()[SUPERVISION_DOWNGRADES]
         self.assertEqual(
@@ -689,7 +696,7 @@ class PoMonthlyReportContextTests(TestCase):
         )
 
         no_local_data = PoMonthlyReportContext(
-            StateCode.US_ID,
+            self.batch,
             self.recipient.create_derived_recipient(
                 {
                     SUPERVISION_DOWNGRADES: "0",
@@ -700,7 +707,7 @@ class PoMonthlyReportContextTests(TestCase):
         self.assertIsNone(no_local_data["supplemental_text"])
 
         no_action_items_data = no_local_data = PoMonthlyReportContext(
-            StateCode.US_ID,
+            self.batch,
             self.recipient.create_derived_recipient({"mismatches": []}),
         ).get_prepared_data()[SUPERVISION_DOWNGRADES]
         self.assertIsNone(no_action_items_data["action_table"])
@@ -709,7 +716,7 @@ class PoMonthlyReportContextTests(TestCase):
         """Test that early discharge context is populated according to input data."""
 
         happy_path_data = PoMonthlyReportContext(
-            StateCode.US_ID, self.recipient
+            self.batch, self.recipient
         ).get_prepared_data()[EARNED_DISCHARGES]
 
         self.assertIn(
@@ -722,7 +729,7 @@ class PoMonthlyReportContextTests(TestCase):
         self.assertIsNone(happy_path_data["action_table"])
 
         no_caseload_data = PoMonthlyReportContext(
-            StateCode.US_ID,
+            self.batch,
             self.recipient.create_derived_recipient({EARNED_DISCHARGES: "0"}),
         ).get_prepared_data()[EARNED_DISCHARGES]
         self.assertEqual(
@@ -731,7 +738,7 @@ class PoMonthlyReportContextTests(TestCase):
         )
 
         no_local_data = PoMonthlyReportContext(
-            StateCode.US_ID,
+            self.batch,
             self.recipient.create_derived_recipient(
                 {EARNED_DISCHARGES: "0", f"{EARNED_DISCHARGES}_district_total": 0}
             ),
@@ -749,7 +756,7 @@ class PoMonthlyReportContextTests(TestCase):
         label = labels[context_key]
 
         below_alert_threshold = PoMonthlyReportContext(
-            StateCode.US_ID,
+            self.batch,
             self.recipient.create_derived_recipient(
                 {
                     context_key: 2,
@@ -761,7 +768,7 @@ class PoMonthlyReportContextTests(TestCase):
         self.assertEqual(below_alert_threshold, {"label": label, "count": 2})
 
         below_average = PoMonthlyReportContext(
-            StateCode.US_ID,
+            self.batch,
             self.recipient.create_derived_recipient(
                 {
                     context_key: 1,
@@ -773,7 +780,7 @@ class PoMonthlyReportContextTests(TestCase):
         self.assertEqual(below_average, {"label": label, "count": 1})
 
         short_streak = PoMonthlyReportContext(
-            StateCode.US_ID,
+            self.batch,
             self.recipient.create_derived_recipient(
                 {
                     context_key: 0,
@@ -784,7 +791,7 @@ class PoMonthlyReportContextTests(TestCase):
         self.assertEqual(short_streak, {"label": label, "count": 0})
 
         above_average = PoMonthlyReportContext(
-            StateCode.US_ID,
+            self.batch,
             self.recipient.create_derived_recipient(
                 {
                     context_key: 3,
@@ -798,7 +805,7 @@ class PoMonthlyReportContextTests(TestCase):
         )
 
         long_streak = PoMonthlyReportContext(
-            StateCode.US_ID,
+            self.batch,
             self.recipient.create_derived_recipient(
                 {
                     context_key: 0,

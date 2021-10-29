@@ -17,30 +17,27 @@
 
 """Utilities for selecting from available report contexts."""
 
-from recidiviz.common.constants.states import StateCode
 from recidiviz.reporting.context.po_monthly_report.constants import ReportType
 from recidiviz.reporting.context.po_monthly_report.context import PoMonthlyReportContext
 from recidiviz.reporting.context.report_context import ReportContext
 from recidiviz.reporting.context.top_opportunities.context import (
     TopOpportunitiesReportContext,
 )
+from recidiviz.reporting.email_reporting_utils import Batch
 from recidiviz.reporting.recipient import Recipient
 
 
-def get_report_context(
-    state_code: StateCode, report_type: ReportType, recipient: Recipient
-) -> ReportContext:
+def get_report_context(batch: Batch, recipient: Recipient) -> ReportContext:
     """Returns the appropriate report context for the given parameters, choosing the correct ReportContext
     implementation.
 
     Args:
-        state_code: State identifier for the recipient
-        report_type: The type of report to be sent to the recipient
+        batch: The Batch of emails we're generating a report context for
         recipient: The retrieved data for this recipient
     """
-    if report_type == ReportType.POMonthlyReport:
-        return PoMonthlyReportContext(state_code, recipient)
-    if report_type == ReportType.TopOpportunities:
-        return TopOpportunitiesReportContext(state_code, recipient)
+    if batch.report_type == ReportType.POMonthlyReport:
+        return PoMonthlyReportContext(batch, recipient)
+    if batch.report_type == ReportType.TopOpportunities:
+        return TopOpportunitiesReportContext(batch, recipient)
 
-    raise KeyError(f"Unrecognized report type: {report_type}")
+    raise KeyError(f"Unrecognized report type: {batch.report_type}")

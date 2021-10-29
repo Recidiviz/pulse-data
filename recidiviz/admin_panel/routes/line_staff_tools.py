@@ -65,6 +65,7 @@ from recidiviz.reporting.email_reporting_handler import (
     InvalidReportTypeError,
 )
 from recidiviz.reporting.email_reporting_utils import (
+    Batch,
     generate_batch_id,
     validate_email_address,
 )
@@ -265,12 +266,16 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
 
         try:
             batch_id = generate_batch_id()
+            batch = Batch(
+                state_code=state_code,
+                batch_id=batch_id,
+                report_type=report_type,
+            )
+
             if in_development():
                 with local_project_id_override(GCP_PROJECT_STAGING):
                     result: MultiRequestResult[str, str] = data_retrieval.start(
-                        state_code=state_code,
-                        report_type=report_type,
-                        batch_id=batch_id,
+                        batch=batch,
                         test_address=test_address,
                         region_code=region_code,
                         email_allowlist=email_allowlist,
@@ -278,9 +283,7 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
                     )
             else:
                 result = data_retrieval.start(
-                    state_code=state_code,
-                    report_type=report_type,
-                    batch_id=batch_id,
+                    batch=batch,
                     test_address=test_address,
                     region_code=region_code,
                     email_allowlist=email_allowlist,
@@ -330,6 +333,7 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
             cc_addresses = data.get("ccAddresses")
             subject_override = data.get("subjectOverride")
             email_allowlist = data.get("emailAllowlist")
+            report_type = ReportType(data.get("reportType"))
 
             if not subject_override:
                 subject_override = None
@@ -360,9 +364,15 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
             logging.error(msg)
             return msg, HTTPStatus.BAD_REQUEST
 
+        if not report_type:
+            msg = "Query parameter 'report_type' not received"
+            logging.error(msg)
+            return msg, HTTPStatus.BAD_REQUEST
+
+        batch = Batch(state_code=state_code, batch_id=batch_id, report_type=report_type)
+
         # TODO(#7790): Support more email types.
         try:
-            report_type = email_handler.get_report_type(batch_id, state_code)
             if report_type != ReportType.POMonthlyReport:
                 raise InvalidReportTypeError(
                     f"Invalid report type: Sending emails with {report_type} is not implemented yet."
@@ -372,14 +382,13 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
             return str(error), HTTPStatus.NOT_IMPLEMENTED
 
         try:
-            report_date = email_handler.generate_report_date(batch_id, state_code)
+            report_date = email_handler.generate_report_date(batch)
         except EmailMetadataReportDateError as error:
             logging.error(error)
             return str(error), HTTPStatus.BAD_REQUEST
 
         result = email_delivery.deliver(
-            batch_id=batch_id,
-            state_code=state_code,
+            batch=batch,
             redirect_address=redirect_address,
             cc_addresses=cc_addresses,
             subject_override=subject_override,

@@ -22,8 +22,10 @@ from typing import Any, Dict, List, Optional
 import attr
 
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
-from recidiviz.common.constants.states import StateCode
-from recidiviz.reporting.email_reporting_utils import gcsfs_path_for_batch_metadata
+from recidiviz.reporting.email_reporting_utils import (
+    Batch,
+    gcsfs_path_for_batch_metadata,
+)
 
 
 @attr.s
@@ -102,21 +104,17 @@ class EmailSentMetadata:
         )
 
     @classmethod
-    def build_from_gcs(
-        cls, state_code: StateCode, batch_id: str, gcs_fs: GCSFileSystem
-    ) -> "EmailSentMetadata":
-        gcs_path = gcsfs_path_for_batch_metadata(batch_id, state_code)
+    def build_from_gcs(cls, batch: Batch, gcs_fs: GCSFileSystem) -> "EmailSentMetadata":
+        gcs_path = gcsfs_path_for_batch_metadata(batch)
         email_metadata = gcs_fs.get_metadata(gcs_path)
         send_results: List[EmailSentResult] = []
         if email_metadata and "sendResults" in email_metadata:
             return cls.from_json(email_metadata)
-        return EmailSentMetadata(batch_id=batch_id, send_results=send_results)
+        return EmailSentMetadata(batch_id=batch.batch_id, send_results=send_results)
 
-    def write_to_gcs(
-        self, state_code: StateCode, batch_id: str, gcs_fs: GCSFileSystem
-    ) -> None:
+    def write_to_gcs(self, batch: Batch, gcs_fs: GCSFileSystem) -> None:
         payload = self.to_json()
         dumped_payload = {k: json.dumps(v) for k, v in payload.items()}
-        gcs_path = gcsfs_path_for_batch_metadata(batch_id, state_code)
+        gcs_path = gcsfs_path_for_batch_metadata(batch)
         gcs_fs.clear_metadata(gcs_path)
         gcs_fs.update_metadata(gcs_path, dumped_payload)

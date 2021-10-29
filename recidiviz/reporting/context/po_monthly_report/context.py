@@ -93,18 +93,18 @@ _METRIC_DISPLAY_TEXT = {
 class PoMonthlyReportContext(ReportContext):
     """Report context for the PO Monthly Report."""
 
-    def __init__(self, state_code: StateCode, recipient: Recipient):
+    def __init__(self, batch: utils.Batch, recipient: Recipient):
         self.metrics_delegate = PoMonthlyReportMetricsDelegateFactory.build(
-            state_code=state_code
+            state_code=batch.state_code
         )
-        super().__init__(state_code, recipient)
+        super().__init__(batch, recipient)
         self.recipient_data = self._prepare_recipient_data(recipient.data)
 
         self.jinja_env = Environment(
             loader=FileSystemLoader(self._get_context_templates_folder())
         )
 
-        self.state_name = state_code.get_state().name
+        self.state_name = self.state_code.get_state().name
 
     @property
     def attachment_template(self) -> Template:
@@ -618,7 +618,11 @@ class PoMonthlyReportContext(ReportContext):
 
 if __name__ == "__main__":
     context = PoMonthlyReportContext(
-        StateCode.US_ID,
+        utils.Batch(
+            state_code=StateCode.US_ID,
+            batch_id="test",
+            report_type=ReportType.POMonthlyReport,
+        ),
         Recipient.from_report_json(
             {
                 utils.KEY_EMAIL_ADDRESS: "test@recidiviz.org",
