@@ -170,7 +170,7 @@ export const FilterControlMenu = styled(ToggleMenu)`
   width: ${rem(FILTER_CONTROL_WIDTH)};
 ` as typeof ToggleMenu;
 
-const SORT_CONTROL_WIDTH = 280;
+const SORT_CONTROL_WIDTH = 300;
 export const SortControlToggle = styled(ControlToggle).attrs({ shape: "pill" })`
   border-radius: ${rem(16)};
   padding: ${rem(spacing.xs)} ${rem(spacing.md)};

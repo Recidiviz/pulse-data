@@ -40,7 +40,11 @@ from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDat
 from recidiviz.utils.environment import in_gcp
 from recidiviz.utils.metadata import project_id
 
-KNOWN_EXPERIMENTS: List[str] = ["can-see-extended-profile", "can-see-client-timeline"]
+KNOWN_EXPERIMENTS: List[str] = [
+    "can-see-extended-profile",
+    "can-see-client-timeline",
+    "can-see-home-visit",
+]
 
 
 @attr.s(auto_attribs=True)

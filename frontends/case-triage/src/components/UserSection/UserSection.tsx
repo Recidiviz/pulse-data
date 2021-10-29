@@ -61,7 +61,7 @@ const UserComponent = ({ user }: UserProps): JSX.Element => {
     (e) => {
       if (userStore.logout) userStore.logout();
       else {
-        throw new Error(`Unable to logout user ${userStore.user}`);
+        throw new Error(`Unable to logout user`);
       }
     },
     [userStore]

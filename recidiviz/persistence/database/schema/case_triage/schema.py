@@ -221,6 +221,9 @@ class ETLClient(CaseTriageBase, ETLDerivedEntity):
             "most_recent_home_visit_date": _get_json_field_as_date(
                 json_client, "most_recent_home_visit_date"
             ),
+            "next_recommended_home_visit_date": _get_json_field_as_date(
+                json_client, "next_recommended_home_visit_date"
+            ),
             "most_recent_violation_date": _get_json_field_as_date(
                 json_client, "most_recent_violation_date"
             ),

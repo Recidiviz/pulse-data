@@ -22,6 +22,7 @@ import attr
 from recidiviz.case_triage.client_utils.compliance import (
     get_assessment_due_details,
     get_contact_due_details,
+    get_home_visit_due_details,
 )
 from recidiviz.case_triage.opportunities.types import Opportunity, OpportunityType
 from recidiviz.persistence.database.schema.case_triage.schema import ETLClient
@@ -78,6 +79,18 @@ class ComputedOpportunity(Opportunity):
             status, days_until_due = contact_due
             opps[OpportunityType.CONTACT] = ComputedOpportunity(
                 opportunity_type=OpportunityType.CONTACT.value,
+                opportunity_metadata={
+                    "status": status,
+                    "daysUntilDue": days_until_due,
+                },
+                **client_args
+            )
+
+        home_visit_due = get_home_visit_due_details(client)
+        if home_visit_due:
+            status, days_until_due = home_visit_due
+            opps[OpportunityType.HOME_VISIT] = ComputedOpportunity(
+                opportunity_type=OpportunityType.HOME_VISIT.value,
                 opportunity_metadata={
                     "status": status,
                     "daysUntilDue": days_until_due,

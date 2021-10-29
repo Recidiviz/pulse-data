@@ -61,6 +61,13 @@ export const ClientListContactComparator = getDateComparator(
 );
 
 /**
+ * Sorts chronologically by next home visit date.
+ */
+export const ClientListHomeVisitComparator = getDateComparator(
+  (c) => c.nextHomeVisitDate
+);
+
+/**
  * Sorts chronologically by next risk assessment date.
  */
 export const ClientListAssessmentComparator = getDateComparator(
