@@ -23,6 +23,8 @@ from unittest.mock import MagicMock, Mock, call, patch
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.reporting import email_delivery
+from recidiviz.reporting.context.po_monthly_report.constants import ReportType
+from recidiviz.reporting.email_reporting_utils import Batch
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 
 
@@ -38,6 +40,11 @@ class EmailDeliveryTest(TestCase):
         self.state_code = StateCode.US_XX
         self.report_date = datetime.date(year=2021, month=5, day=31)
         self.attachment_title = "2021-05 Recidiviz Monthly Report - Client Details.txt"
+        self.batch = Batch(
+            state_code=self.state_code,
+            batch_id=self.batch_id,
+            report_type=ReportType.POMonthlyReport,
+        )
 
         self.sendgrid_client_patcher = patch(
             "recidiviz.reporting.email_delivery.SendGridClientWrapper"
@@ -90,8 +97,7 @@ class EmailDeliveryTest(TestCase):
         self.mock_sendgrid_client.send_message.return_value = True
         with self.assertLogs(level="INFO"):
             result = email_delivery.deliver(
-                self.batch_id,
-                self.state_code,
+                self.batch,
                 self.report_date,
             )
 
@@ -106,8 +112,7 @@ class EmailDeliveryTest(TestCase):
         mock_load_files_from_storage.return_value = self.mock_files
         self.mock_sendgrid_client.send_message.return_value = False
         result = email_delivery.deliver(
-            self.batch_id,
-            self.state_code,
+            self.batch,
             self.report_date,
         )
 
@@ -126,8 +131,7 @@ class EmailDeliveryTest(TestCase):
 
         with self.assertRaises(IndexError):
             email_delivery.deliver(
-                self.batch_id,
-                self.state_code,
+                self.batch,
                 self.report_date,
             )
 
@@ -147,8 +151,7 @@ class EmailDeliveryTest(TestCase):
 
         with self.assertLogs(level="INFO"):
             email_delivery.deliver(
-                self.batch_id,
-                self.state_code,
+                self.batch,
                 self.report_date,
             )
 
@@ -174,8 +177,7 @@ class EmailDeliveryTest(TestCase):
         mock_load_files_from_storage.return_value = self.mock_files
         with self.assertLogs(level="INFO"):
             email_delivery.deliver(
-                self.batch_id,
-                self.state_code,
+                self.batch,
                 self.report_date,
             )
 
@@ -201,8 +203,7 @@ class EmailDeliveryTest(TestCase):
 
         with self.assertLogs(level="INFO"):
             email_delivery.deliver(
-                batch_id=self.batch_id,
-                state_code=self.state_code,
+                batch=self.batch,
                 redirect_address=self.redirect_address,
                 report_date=self.report_date,
             )
@@ -234,8 +235,7 @@ class EmailDeliveryTest(TestCase):
         mock_load_files_from_storage.return_value = self.mock_files
         self.mock_sendgrid_client.send_message.return_value = False
         result = email_delivery.deliver(
-            self.batch_id,
-            self.state_code,
+            self.batch,
             self.report_date,
             self.redirect_address,
         )
@@ -251,8 +251,7 @@ class EmailDeliveryTest(TestCase):
         self.mock_utils.get_env_var.side_effect = KeyError
         with self.assertRaises(KeyError), self.assertLogs(level="ERROR"):
             email_delivery.deliver(
-                self.batch_id,
-                self.state_code,
+                self.batch,
                 self.report_date,
             )
 
@@ -270,8 +269,7 @@ class EmailDeliveryTest(TestCase):
         self.mock_sendgrid_client.send_message.return_value = True
         with self.assertLogs(level="INFO"):
             result = email_delivery.deliver(
-                batch_id=self.batch_id,
-                state_code=self.state_code,
+                batch=self.batch,
                 report_date=self.report_date,
                 email_allowlist=[self.to_address],
             )

@@ -38,6 +38,11 @@ class EmailReportingUtilsTests(TestCase):
         self.eru = utils
         self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
         self.project_id_patcher.start().return_value = "fake-project"
+        self.batch = utils.Batch(
+            state_code=StateCode.US_XX,
+            batch_id="batch-1",
+            report_type=ReportType.POMonthlyReport,
+        )
 
     def tearDown(self) -> None:
         self.project_id_patcher.stop()
@@ -101,27 +106,23 @@ class EmailReportingUtilsTests(TestCase):
 
     def test_get_data_filename(self) -> None:
         expected = "po_monthly_report/US_XX/po_monthly_report_data.json"
-        actual = self.eru.get_data_filename(StateCode.US_XX, ReportType.POMonthlyReport)
+        actual = self.eru.get_data_filename(self.batch)
         self.assertEqual(expected, actual)
 
     def test_get_data_archive_filename(self) -> None:
         expected = "US_XX/batch-1.json"
-        actual = self.eru.get_data_archive_filename("batch-1", StateCode.US_XX)
+        actual = self.eru.get_data_archive_filename(self.batch)
         self.assertEqual(expected, actual)
 
     def test_get_email_html_filename(self) -> None:
         expected = "US_XX/batch-1/html/boards@canada.ca.html"
 
-        actual = self.eru.get_html_filename(
-            "batch-1", "boards@canada.ca", StateCode.US_XX
-        )
+        actual = self.eru.get_html_filename(self.batch, "boards@canada.ca")
         self.assertEqual(expected, actual)
 
     def test_get_email_attachment_filename(self) -> None:
         expected = "US_XX/batch-1/attachments/boards@canada.ca.txt"
-        actual = self.eru.get_attachment_filename(
-            "batch-1", "boards@canada.ca", StateCode.US_XX
-        )
+        actual = self.eru.get_attachment_filename(self.batch, "boards@canada.ca")
         self.assertEqual(expected, actual)
 
     def test_format_test_address_valid(self) -> None:
@@ -260,7 +261,7 @@ class TestGCSEmails(TestCase):
         # get batch ids to be able to add custom metadata
         self._upload_fake_email_buckets()
         batch_info = self.email_handler.get_batch_info(
-            state_code=StateCode(self.STATE_CODE_STR)
+            state_code=StateCode(self.STATE_CODE_STR),
         )
 
         first_sent_timestamp = datetime.datetime.now()
@@ -268,17 +269,18 @@ class TestGCSEmails(TestCase):
             batch_id = metadata["batchId"]
             # initializing email_sent_metadata here since it is called like this when calling
             # add_new_email_send_result()
-            email_sent_metadata = EmailSentMetadata.build_from_gcs(
-                StateCode(self.STATE_CODE_STR), batch_id, self.fs
+            batch = utils.Batch(
+                state_code=StateCode(self.STATE_CODE_STR),
+                batch_id=batch_id,
+                report_type=ReportType.POMonthlyReport,
             )
+            email_sent_metadata = EmailSentMetadata.build_from_gcs(batch, self.fs)
             email_sent_metadata.add_new_email_send_result(
                 total_delivered=4,
                 redirect_address="letter@kenny.ca",
                 sent_date=first_sent_timestamp,
             )
-            email_sent_metadata.write_to_gcs(
-                StateCode(self.STATE_CODE_STR), batch_id, self.fs
-            )
+            email_sent_metadata.write_to_gcs(batch, self.fs)
 
         # get batch_info again to test
         batch_info = self.email_handler.get_batch_info(
@@ -320,11 +322,16 @@ class TestGCSEmails(TestCase):
             batch_info,
         )
 
+        batch = utils.Batch(
+            state_code=StateCode(self.STATE_CODE_STR),
+            batch_id="20210701202022",
+            report_type=ReportType.POMonthlyReport,
+        )
+
         # sending a batch for the second time
         second_sent_timestamp = datetime.datetime.now()
         email_sent_metadata = EmailSentMetadata.build_from_gcs(
-            state_code=StateCode(self.STATE_CODE_STR),
-            batch_id="20210701202022",
+            batch=batch,
             gcs_fs=self.fs,
         )
         email_sent_metadata.add_new_email_send_result(
@@ -333,8 +340,7 @@ class TestGCSEmails(TestCase):
             sent_date=second_sent_timestamp,
         )
         email_sent_metadata.write_to_gcs(
-            state_code=StateCode(self.STATE_CODE_STR),
-            batch_id="20210701202022",
+            batch=batch,
             gcs_fs=self.fs,
         )
         # get batch_info again to test

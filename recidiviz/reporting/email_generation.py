@@ -31,7 +31,7 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.reporting.context.report_context import ReportContext
 
 
-def generate(report_context: ReportContext) -> None:
+def generate(batch: utils.Batch, report_context: ReportContext) -> None:
     """Generates and uploads the HTML file and the file attachment for the identified recipient's email.
 
     Receives the full user data, applies it to the HTML template and stores the result in Cloud Storage.
@@ -48,9 +48,8 @@ def generate(report_context: ReportContext) -> None:
     attachment_content = prepared_data.get("attachment_content")
 
     html_path = utils.get_html_filepath(
-        prepared_data[utils.KEY_BATCH_ID],
+        batch,
         prepared_data[utils.KEY_EMAIL_ADDRESS],
-        prepared_data[utils.KEY_STATE_CODE],
     )
     upload_file_contents_to_gcs(
         file_path=html_path, file_contents=html_content, content_type="text/html"
@@ -58,9 +57,8 @@ def generate(report_context: ReportContext) -> None:
 
     if attachment_content:
         attachment_path = utils.get_attachment_filepath(
-            prepared_data[utils.KEY_BATCH_ID],
+            batch,
             prepared_data[utils.KEY_EMAIL_ADDRESS],
-            prepared_data[utils.KEY_STATE_CODE],
         )
 
         upload_file_contents_to_gcs(

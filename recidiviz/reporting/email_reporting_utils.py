@@ -22,6 +22,8 @@ import os
 import re
 from typing import Optional
 
+import attr
+
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.reporting.context.po_monthly_report.constants import ReportType
@@ -54,6 +56,13 @@ KEY_DISTRICT = "district"
 KEY_REPORT_TYPE = "report_type"
 KEY_EMAIL_ADDRESS = "email_address"
 KEY_STATE_CODE = "state_code"
+
+
+@attr.s(auto_attribs=True)
+class Batch:
+    state_code: StateCode
+    batch_id: str
+    report_type: ReportType
 
 
 def format_test_address(test_address: str, recipient_email_address: str) -> str:
@@ -114,52 +123,46 @@ def get_static_image_path(report_type: ReportType) -> str:
     return f"http://{get_cdn_static_ip()}/{report_type.value}/static"
 
 
-def get_data_filename(state_code: StateCode, report_type: ReportType) -> str:
-    return f"{report_type.value}/{state_code.value}/{report_type.value}_data.json"
+def get_data_filename(batch: Batch) -> str:
+    return f"{batch.report_type.value}/{batch.state_code.value}/{batch.report_type.value}_data.json"
 
 
-def get_data_archive_filename(batch_id: str, state_code: StateCode) -> str:
-    return f"{state_code.value}/{batch_id}.json"
+def get_data_archive_filename(batch: Batch) -> str:
+    return f"{batch.state_code.value}/{batch.batch_id}.json"
 
 
-def get_html_folder(batch_id: str, state_code: StateCode) -> str:
-    return f"{state_code.value}/{batch_id}/html"
+def get_html_folder(batch: Batch) -> str:
+    return f"{batch.state_code.value}/{batch.batch_id}/html"
 
 
-def get_html_filename(batch_id: str, email_address: str, state_code: StateCode) -> str:
-    file_path = get_html_filepath(batch_id, email_address, state_code)
+def get_html_filename(batch: Batch, email_address: str) -> str:
+    file_path = get_html_filepath(batch, email_address)
     return file_path.blob_name
 
 
-def get_html_filepath(
-    batch_id: str, email_address: str, state_code: StateCode
-) -> GcsfsFilePath:
+def get_html_filepath(batch: Batch, email_address: str) -> GcsfsFilePath:
     bucket = get_email_content_bucket_name()
-    folder = get_html_folder(batch_id, state_code)
+    folder = get_html_folder(batch)
     return GcsfsFilePath.from_absolute_path(
         f"gs://{bucket}/{folder}/{email_address}.html"
     )
 
 
-def get_attachment_filename(
-    batch_id: str, email_address: str, state_code: StateCode
-) -> str:
-    file_path = get_attachment_filepath(batch_id, email_address, state_code)
+def get_attachment_filename(batch: Batch, email_address: str) -> str:
+    file_path = get_attachment_filepath(batch, email_address)
     return file_path.blob_name
 
 
-def get_attachment_filepath(
-    batch_id: str, email_address: str, state_code: StateCode
-) -> GcsfsFilePath:
+def get_attachment_filepath(batch: Batch, email_address: str) -> GcsfsFilePath:
     bucket = get_email_content_bucket_name()
-    folder = get_attachments_folder(batch_id, state_code)
+    folder = get_attachments_folder(batch)
     return GcsfsFilePath.from_absolute_path(
         f"gs://{bucket}/{folder}/{email_address}.txt"
     )
 
 
-def get_attachments_folder(batch_id: str, state_code: StateCode) -> str:
-    return f"{state_code.value}/{batch_id}/attachments"
+def get_attachments_folder(batch: Batch) -> str:
+    return f"{batch.state_code.value}/{batch.batch_id}/attachments"
 
 
 # TODO(#3260): Make this general-purpose to work for any report type's chart
@@ -183,8 +186,8 @@ def generate_batch_id() -> str:
 
 
 def gcsfs_path_for_batch_metadata(
-    batch_id: str, state_code: StateCode
+    batch: Batch,
 ) -> GcsfsFilePath:
     return GcsfsFilePath.from_absolute_path(
-        f"gs://{get_email_content_bucket_name()}/{state_code.value}/{batch_id}/metadata.json"
+        f"gs://{get_email_content_bucket_name()}/{batch.state_code.value}/{batch.batch_id}/metadata.json"
     )

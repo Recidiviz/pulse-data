@@ -42,6 +42,7 @@ from recidiviz.reporting.data_retrieval import (
     retrieve_data,
     start,
 )
+from recidiviz.reporting.email_reporting_utils import Batch
 from recidiviz.reporting.recipient import Recipient
 from recidiviz.reporting.region_codes import REGION_CODES, InvalidRegionCodeException
 from recidiviz.tests.case_triage.case_triage_helpers import (
@@ -66,8 +67,8 @@ def build_report_json_fixture(email_address: str) -> str:
 
 
 @pytest.mark.uses_db
-class EmailGenerationTests(TestCase):
-    """Tests for reporting/email_generation.py."""
+class DataRetrievalTests(TestCase):
+    """Tests for reporting/data_retrieval.py."""
 
     # Stores the location of the postgres DB for this test run
     temp_db_dir: Optional[str]
@@ -164,6 +165,18 @@ class EmailGenerationTests(TestCase):
             self.officer.email_address
         ]
 
+        self.po_report_batch = Batch(
+            state_code=self.state_code,
+            batch_id="test-po-batch",
+            report_type=ReportType.POMonthlyReport,
+        )
+
+        self.top_opp_report_batch = Batch(
+            state_code=self.state_code,
+            batch_id="test-top-opp-batch",
+            report_type=ReportType.TopOpportunities,
+        )
+
     def _write_test_data(self, test_data: str) -> None:
         self.fake_gcs.upload_from_string(
             GcsfsFilePath.from_absolute_path(
@@ -205,8 +218,7 @@ class EmailGenerationTests(TestCase):
         )
 
         result = start(
-            state_code=StateCode.US_ID,
-            report_type=ReportType.POMonthlyReport,
+            batch=self.po_report_batch,
             region_code="US_ID_D3",
             test_address="dan@recidiviz.org",
         )
@@ -220,8 +232,7 @@ class EmailGenerationTests(TestCase):
         self.mock_email_generation.reset_mock()
 
         start(
-            state_code=StateCode.US_ID,
-            report_type=ReportType.POMonthlyReport,
+            batch=self.po_report_batch,
             email_allowlist=["excluded@recidiviz.org"],
         )
 
@@ -240,9 +251,7 @@ class EmailGenerationTests(TestCase):
             self._write_test_data(json.dumps(json.loads(fixture_file.read())))
 
         result = start(
-            batch_id="fake-batch-id",
-            state_code=StateCode.US_ID,
-            report_type=ReportType.POMonthlyReport,
+            batch=self.po_report_batch,
             region_code="US_ID_D3",
         )
         self.assertEqual(len(result.successes), 1)
@@ -250,7 +259,7 @@ class EmailGenerationTests(TestCase):
         # Test that metadata file is created correctly
         metadata_file = self.fake_gcs.download_as_string(
             GcsfsFilePath.from_absolute_path(
-                "gs://recidiviz-test-report-html/US_ID/fake-batch-id/metadata.json"
+                f"gs://recidiviz-test-report-html/US_ID/{self.po_report_batch.batch_id}/metadata.json"
             )
         )
         self.assertEqual(
@@ -264,15 +273,13 @@ class EmailGenerationTests(TestCase):
 
         # Try again for Top Opps email
         result = start(
-            batch_id="fake-batch-id-2",
-            state_code=StateCode.US_ID,
-            report_type=ReportType.TopOpportunities,
+            batch=self.top_opp_report_batch,
             region_code="US_ID_D3",
         )
 
         metadata_file = self.fake_gcs.download_as_string(
             GcsfsFilePath.from_absolute_path(
-                "gs://recidiviz-test-report-html/US_ID/fake-batch-id-2/metadata.json"
+                f"gs://recidiviz-test-report-html/US_ID/{self.top_opp_report_batch.batch_id}/metadata.json"
             )
         )
         self.assertEqual(
@@ -281,7 +288,6 @@ class EmailGenerationTests(TestCase):
         )
 
     def test_retrieve_data_po_monthly_report(self) -> None:
-        batch_id = "123"
         test_data = "\n".join(
             [
                 build_report_json_fixture("first@recidiviz.org"),
@@ -291,11 +297,7 @@ class EmailGenerationTests(TestCase):
         )
         self._write_test_data(test_data)
 
-        recipients = retrieve_data(
-            state_code=self.state_code,
-            report_type=ReportType.POMonthlyReport,
-            batch_id=batch_id,
-        )
+        recipients = retrieve_data(batch=self.po_report_batch)
 
         # Invalid JSON lines are ignored; warnings are logged
         self.assertEqual(len(recipients), 2)
@@ -306,19 +308,14 @@ class EmailGenerationTests(TestCase):
         self.assertEqual(
             self.fake_gcs.download_as_string(
                 GcsfsFilePath.from_absolute_path(
-                    f"gs://recidiviz-test-report-data-archive/{self.state_code.value}/123.json"
+                    f"gs://recidiviz-test-report-data-archive/{self.state_code.value}/{self.po_report_batch.batch_id}.json"
                 )
             ),
             test_data,
         )
 
     def test_retrieve_data_top_opps(self) -> None:
-        batch_id = "123"
-        recipients = retrieve_data(
-            state_code=self.state_code,
-            report_type=ReportType.TopOpportunities,
-            batch_id=batch_id,
-        )
+        recipients = retrieve_data(batch=self.top_opp_report_batch)
 
         self.assertEqual(len(recipients), 1)
         recipient = recipients[0]
@@ -354,14 +351,9 @@ class EmailGenerationTests(TestCase):
         )
 
     def test_retrieve_po_report_mismatch(self) -> None:
-        batch_id = "123"
         self._write_test_data(build_report_json_fixture(self.officer.email_address))
 
-        recipients = retrieve_data(
-            state_code=self.state_code,
-            report_type=ReportType.POMonthlyReport,
-            batch_id=batch_id,
-        )
+        recipients = retrieve_data(batch=self.po_report_batch)
         self.assertEqual(len(recipients), 1)
         recipient = recipients[0]
 

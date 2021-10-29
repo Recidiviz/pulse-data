@@ -30,6 +30,7 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.results import MultiRequestResult
 from recidiviz.reporting.context.po_monthly_report.constants import ReportType
+from recidiviz.reporting.email_reporting_utils import Batch
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 
 FIXTURE_FILE = "po_monthly_report_data_fixture.json"
@@ -152,9 +153,11 @@ class ReportingEndpointTests(TestCase):
             timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
 
             mock_start.assert_called_with(
-                state_code=self.state_code,
-                report_type=ReportType.POMonthlyReport,
-                batch_id=timestamp,
+                batch=Batch(
+                    state_code=self.state_code,
+                    batch_id=timestamp,
+                    report_type=ReportType.POMonthlyReport,
+                ),
                 test_address=None,
                 region_code=None,
                 email_allowlist=["dev@recidiviz.org", "other@recidiviz.org"],
@@ -188,9 +191,11 @@ class ReportingEndpointTests(TestCase):
             timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
 
             mock_start.assert_called_with(
-                state_code=self.state_code,
-                report_type=ReportType.POMonthlyReport,
-                batch_id=timestamp,
+                batch=Batch(
+                    state_code=self.state_code,
+                    batch_id=timestamp,
+                    report_type=ReportType.POMonthlyReport,
+                ),
                 test_address=None,
                 region_code=None,
                 email_allowlist=None,
@@ -289,6 +294,7 @@ class ReportingEndpointTests(TestCase):
                 json={
                     "batchId": "test_batch_id",
                     "state_code": self.state_code.value,
+                    "reportType": ReportType.POMonthlyReport.value,
                 },
             )
 
@@ -306,6 +312,7 @@ class ReportingEndpointTests(TestCase):
                 json={
                     "batchId": "test_batch_id",
                     "state_code": self.state_code.value,
+                    "reportType": ReportType.POMonthlyReport.value,
                 },
             )
             self.assertEqual(
@@ -323,6 +330,7 @@ class ReportingEndpointTests(TestCase):
                 json={
                     "batchId": "test_batch_id",
                     "state_code": self.state_code.value,
+                    "reportType": ReportType.POMonthlyReport.value,
                 },
             )
 
@@ -341,6 +349,7 @@ class ReportingEndpointTests(TestCase):
                 json={
                     "batchId": "test_batch_id",
                     "state_code": self.state_code.value,
+                    "reportType": ReportType.TopOpportunities.value,
                 },
             )
             self.assertEqual(
@@ -366,6 +375,7 @@ class ReportingEndpointTests(TestCase):
                 json={
                     "batchId": "test_batch_id",
                     "state_code": self.state_code.value,
+                    "reportType": ReportType.POMonthlyReport.value,
                 },
             )
             self.assertEqual(HTTPStatus.OK, response.status_code, msg=response.data)
@@ -378,6 +388,7 @@ class ReportingEndpointTests(TestCase):
                 json={
                     "batchId": "test_batch_id",
                     "state_code": self.state_code.value,
+                    "reportType": ReportType.POMonthlyReport.value,
                 },
             )
             self.assertEqual(
@@ -392,6 +403,7 @@ class ReportingEndpointTests(TestCase):
                 json={
                     "batchId": "test_batch_id",
                     "state_code": self.state_code.value,
+                    "reportType": ReportType.POMonthlyReport.value,
                 },
             )
             self.assertEqual(
