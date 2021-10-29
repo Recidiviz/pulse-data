@@ -38,7 +38,6 @@ export const CaseloadRemovalAlert = observer(
     pendingUpdate: CaseUpdate;
   }): JSX.Element => {
     const { caseUpdatesStore } = useRootStore();
-    console.log(pendingUpdate.actionType);
     return (
       <Alert
         bullet={<Icon size={16} kind="Alert" color={palette.data.gold1} />}

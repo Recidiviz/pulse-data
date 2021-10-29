@@ -68,7 +68,7 @@ const SummaryItem: React.FC<SummaryItemProps> = ({ children, icon }) => {
 const DetailsPanelContents: React.FC<CaseCardProps> = ({ client }) => {
   const {
     policyStore,
-    userStore: { canSeeExtendedProfile, canSeeClientTimeline },
+    userStore: { canSeeExtendedProfile, canSeeClientTimeline, canSeeHomeVisit },
   } = useRootStore();
 
   const contactText = getContactFrequencyText(
@@ -141,7 +141,7 @@ const DetailsPanelContents: React.FC<CaseCardProps> = ({ client }) => {
       <DetailsPanelSection>
         <DetailsPanelHeading>Upcoming</DetailsPanelHeading>
         <DetailsLineItem>
-          Next Contact
+          Next contact
           {client.nextFaceToFaceDate
             ? ` recommended on ${client.nextFaceToFaceDate.format(
                 LONG_DATE_FORMAT
@@ -153,8 +153,24 @@ const DetailsPanelContents: React.FC<CaseCardProps> = ({ client }) => {
               "Never"}
           </Caption>
         </DetailsLineItem>
+        {/* // TODO(#9807) remove feature flag when ready to release home visit */}
+        {canSeeHomeVisit && (
+          <DetailsLineItem>
+            Next home visit
+            {client.nextHomeVisitDate
+              ? ` recommended on ${client.nextHomeVisitDate.format(
+                  LONG_DATE_FORMAT
+                )}`
+              : ": Never"}
+            <Caption style={{ marginLeft: spacing.sm }}>
+              Previous:{" "}
+              {client.mostRecentHomeVisitDate?.format(LONG_DATE_FORMAT) ||
+                "Never"}
+            </Caption>
+          </DetailsLineItem>
+        )}
         <DetailsLineItem>
-          Next Assessment
+          Next assessment
           {client.nextAssessmentDate
             ? ` due on ${client.nextAssessmentDate.format(LONG_DATE_FORMAT)}`
             : ": Not needed unless prompted by an event"}

@@ -24,9 +24,14 @@ import { StatusList } from "./ClientList.styles";
 import AlertPreview from "../AlertPreview";
 import { LONG_DATE_FORMAT } from "../../utils";
 import { OpportunityType } from "../../stores/OpportunityStore/Opportunity";
+import { useRootStore } from "../../stores";
 
 export const ClientStatusList: React.FC<ClientProps> = observer(
   ({ client }: ClientProps): JSX.Element => {
+    const {
+      userStore: { canSeeHomeVisit },
+    } = useRootStore();
+
     const statusPills = [] as JSX.Element[];
 
     const { pendingCaseloadRemoval } = client;
@@ -47,6 +52,13 @@ export const ClientStatusList: React.FC<ClientProps> = observer(
       client.activeOpportunities.forEach((opportunity) => {
         // no pill for this opportunity
         if (opportunity.opportunityType === OpportunityType.NEW_TO_CASELOAD) {
+          return;
+        }
+        // TODO(#9807) remove feature flag when ready to release home visit
+        if (
+          !canSeeHomeVisit &&
+          opportunity.opportunityType === OpportunityType.HOME_VISIT
+        ) {
           return;
         }
 

@@ -51,6 +51,7 @@ const titleForActionType = (actionType: CaseUpdateActionType): string => {
     case CaseUpdateActionType.INCORRECT_ASSESSMENT_DATA:
     case CaseUpdateActionType.INCORRECT_EMPLOYMENT_DATA:
     case CaseUpdateActionType.INCORRECT_CONTACT_DATA:
+    case CaseUpdateActionType.INCORRECT_HOME_VISIT_DATA:
       return `${ACTION_TITLES[actionType]}`;
     default:
       return `Report ${ACTION_TITLES[actionType].toLowerCase()}`;
@@ -134,6 +135,39 @@ const AlertText = ({ client, opportunity }: OpportunityReviewProps) => {
         </>
       );
     }
+    case OpportunityType.HOME_VISIT: {
+      let homeVisitPolicyText;
+      const homeVisitFrequency =
+        policyStore.findHomeVisitFrequencyForClient(client);
+      if (homeVisitFrequency) {
+        const [homeVisits, days] = parseContactFrequency(
+          homeVisitFrequency,
+          "home visit"
+        );
+        homeVisitPolicyText = (
+          <>
+            {homeVisits} needed every {days} (view{" "}
+            <PolicyLink opportunity={opportunity} />)
+          </>
+        );
+      }
+      return (
+        <>
+          {client.currentAddress || "No address on file"} <br />
+          {client.mostRecentHomeVisitDate
+            ? `Last home visit on ${client.mostRecentHomeVisitDate.format(
+                LONG_DATE_FORMAT
+              )}`
+            : "No home visit on file."}
+          {homeVisitPolicyText && (
+            <>
+              <br />
+              {homeVisitPolicyText}
+            </>
+          )}
+        </>
+      );
+    }
     default:
       assertNever(opportunity.opportunityType);
   }
@@ -141,7 +175,7 @@ const AlertText = ({ client, opportunity }: OpportunityReviewProps) => {
 
 const MenuActions = ({ client, opportunity }: OpportunityReviewProps) => {
   const incorrectDataActionType =
-    CASE_UPDATE_OPPORTUNITY_ASSOCIATION[opportunity.opportunityType][1];
+    CASE_UPDATE_OPPORTUNITY_ASSOCIATION[opportunity.opportunityType];
   const [feedbackModalIsOpen, setFeedbackModalIsOpen] = React.useState(false);
 
   return (
