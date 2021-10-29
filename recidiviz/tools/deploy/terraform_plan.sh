@@ -4,6 +4,14 @@ BASH_SOURCE_DIR=$(dirname "$BASH_SOURCE")
 source ${BASH_SOURCE_DIR}/../script_base.sh
 source ${BASH_SOURCE_DIR}/deploy_helpers.sh
 
+# Check that a project_id parameter was passed in
+# -z checks that the length of the string is 0
+# "${1:+x} is parameter expansion, if param is null or unset it returns nothing
+if [[ -z "${1:+x}" ]]; then
+    echo_error "usage: $0 <project_id>"
+    run_cmd exit 1
+fi
+
 PROJECT_ID=$1
 
 echo "##### Running for project $PROJECT_ID ########"
