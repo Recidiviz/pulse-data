@@ -25,7 +25,6 @@ from bs4 import BeautifulSoup
 from jinja2 import Template
 
 import recidiviz.reporting.email_reporting_utils as utils
-from recidiviz.common.constants.states import StateCode
 from recidiviz.reporting.context.po_monthly_report.constants import (
     BRAND_STYLES,
     ReportType,
@@ -37,8 +36,9 @@ class ReportContext(ABC):
     """Defines the context for generation and delivery of a single email report to a single recipient,
     for a particular report type."""
 
-    def __init__(self, state_code: StateCode, recipient: Recipient):
-        self.state_code = state_code
+    def __init__(self, batch: utils.Batch, recipient: Recipient):
+        self.batch = batch
+        self.state_code = batch.state_code
         self.recipient = recipient
         self.prepared_data: dict = {}
 
@@ -78,7 +78,7 @@ class ReportContext(ABC):
 
     def get_batch_id(self) -> str:
         """Returns the batch_id for the report context"""
-        return self.recipient.data[utils.KEY_BATCH_ID]
+        return self.batch.batch_id
 
     def get_email_address(self) -> str:
         """Returns the email_address to use to generate the filenames for email delivery."""

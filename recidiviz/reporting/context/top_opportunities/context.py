@@ -44,13 +44,13 @@ from recidiviz.utils.metadata import local_project_id_override
 class TopOpportunitiesReportContext(ReportContext):
     """Report context for the Top Opportunities email."""
 
-    def __init__(self, state_code: StateCode, recipient: Recipient):
-        super().__init__(state_code, recipient)
+    def __init__(self, batch: utils.Batch, recipient: Recipient):
         self.recipient_data = recipient.data
 
         self.jinja_env = Environment(
             loader=FileSystemLoader(self._get_context_templates_folder())
         )
+        super().__init__(batch, recipient)
 
     def get_required_recipient_data_fields(self) -> List[str]:
         return [OFFICER_GIVEN_NAME, "mismatches"]
@@ -89,7 +89,11 @@ class TopOpportunitiesReportContext(ReportContext):
 
 if __name__ == "__main__":
     context = TopOpportunitiesReportContext(
-        StateCode.US_ID,
+        utils.Batch(
+            state_code=StateCode.US_ID,
+            batch_id="test",
+            report_type=ReportType.TopOpportunities,
+        ),
         Recipient.from_report_json(
             {
                 utils.KEY_EMAIL_ADDRESS: "test@recidiviz.org",

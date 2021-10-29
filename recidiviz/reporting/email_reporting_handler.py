@@ -24,7 +24,10 @@ from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.reporting.context.po_monthly_report.constants import ReportType
-from recidiviz.reporting.email_reporting_utils import gcsfs_path_for_batch_metadata
+from recidiviz.reporting.email_reporting_utils import (
+    Batch,
+    gcsfs_path_for_batch_metadata,
+)
 from recidiviz.reporting.email_sent_metadata import EmailSentMetadata
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import GCP_PROJECT_STAGING, in_gcp
@@ -58,26 +61,22 @@ class EmailReportingHandler:
     def read_batch_metadata(
         self,
         *,
-        batch_id: str,
-        state_code: StateCode,
+        batch: Batch,
     ) -> Dict[str, str]:
         return json.loads(
             self.monthly_reports_gcsfs.download_as_string(
-                path=gcsfs_path_for_batch_metadata(batch_id, state_code)
+                path=gcsfs_path_for_batch_metadata(batch)
             )
         )
 
-    def get_report_type(self, batch_id: str, state_code: StateCode) -> ReportType:
+    def get_report_type(self, batch: Batch) -> ReportType:
         """Get the report type of generated emails.
         Args:
-            batch_id: string of the batch id of the generated emails
-            state_code: state code of the generated emails
+            batch: the batch identifier
         Returns:
             ReportType that is in the ReportType enum class in /po_monthly_report/constants.py
         """
-        email_metadata = self.read_batch_metadata(
-            batch_id=batch_id, state_code=state_code
-        )
+        email_metadata = self.read_batch_metadata(batch=batch)
         report_type = ReportType(email_metadata.get("report_type"))
         if report_type not in ReportType:
             raise InvalidReportTypeError(
@@ -86,20 +85,18 @@ class EmailReportingHandler:
         return report_type
 
     def generate_report_date(
-        self, batch_id: str, state_code: StateCode
+        self,
+        batch: Batch,
     ) -> datetime.date:
         """Generate a report date from the json that is created when emails are generated.
 
         Args:
-            batch_id: string of the batch id of the generated emails
-            state_code: state code of the generated emails
+            batch: the batch of emails
 
         Returns:
             Date type that contains the year, month, and day.
         """
-        email_metadata = self.read_batch_metadata(
-            batch_id=batch_id, state_code=state_code
-        )
+        email_metadata = self.read_batch_metadata(batch=batch)
 
         if (metadata_year := email_metadata.get("review_year")) is None:
             raise EmailMetadataReportDateError("review_year not found in metadata")
@@ -115,7 +112,11 @@ class EmailReportingHandler:
         )
         return report_date
 
-    def get_batch_info(self, state_code: StateCode) -> List[Dict[str, Any]]:
+    def get_batch_info(
+        self,
+        state_code: StateCode,
+        report_type: ReportType = ReportType.POMonthlyReport,
+    ) -> List[Dict[str, Any]]:
         """Returns a sorted list of batch id numbers from the a specific state bucket from GCS"""
         buckets = self.monthly_reports_gcsfs.ls_with_blob_prefix(
             bucket_name=f"{self.project_id}-report-html",
@@ -124,16 +125,18 @@ class EmailReportingHandler:
         files = [file for file in buckets if isinstance(file, GcsfsFilePath)]
         batch_ids = list({batch_id.blob_name.split("/")[1] for batch_id in files})
         batch_ids.sort(reverse=True)
-        return self._get_email_batch_info(state_code=state_code, batch_ids=batch_ids)
+        return self._get_email_batch_info(
+            [
+                Batch(batch_id=batch_id, state_code=state_code, report_type=report_type)
+                for batch_id in batch_ids
+            ]
+        )
 
-    def _get_email_batch_info(
-        self, state_code: StateCode, batch_ids: List[str]
-    ) -> List[Dict[str, Any]]:
+    def _get_email_batch_info(self, batches: List[Batch]) -> List[Dict[str, Any]]:
         batch_info = []
-        for batch in batch_ids:
+        for batch in batches:
             email_sent_metadata = EmailSentMetadata.build_from_gcs(
-                state_code=state_code,
-                batch_id=batch,
+                batch=batch,
                 gcs_fs=self.monthly_reports_gcsfs,
             )
             batch_info.append(email_sent_metadata.to_json())

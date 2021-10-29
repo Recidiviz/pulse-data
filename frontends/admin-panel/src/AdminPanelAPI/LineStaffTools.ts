@@ -80,6 +80,7 @@ export const sendEmails = async (
   return postWithURLAndBody(`/api/line_staff_tools/${stateCode}/send_emails`, {
     batchId,
     redirectAddress,
+    reportType: "po_monthly_report",
     ccAddresses,
     subjectOverride,
     emailAllowlist,

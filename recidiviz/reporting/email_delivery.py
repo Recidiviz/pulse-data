@@ -33,7 +33,6 @@ from typing import Dict, List, Optional
 import recidiviz.reporting.email_reporting_utils as utils
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.common.constants.states import StateCode
 from recidiviz.common.results import MultiRequestResult
 from recidiviz.reporting.context.po_monthly_report.constants import (
     DEFAULT_EMAIL_SUBJECT,
@@ -43,8 +42,7 @@ from recidiviz.reporting.sendgrid_client_wrapper import SendGridClientWrapper
 
 
 def deliver(
-    batch_id: str,
-    state_code: StateCode,
+    batch: utils.Batch,
     report_date: date,
     redirect_address: Optional[str] = None,
     cc_addresses: Optional[List[str]] = None,
@@ -59,8 +57,7 @@ def deliver(
     address's name (without the domain) is appended to the name (i.e. dev+recipient_name@recidiviz.org).
 
     Args:
-        batch_id: The identifier for the batch
-        state_code: (required) A valid state code for which reporting is enabled (ex. "US_ID")
+        batch: The batch of emails we're sending for
         report_date: The date of the report (ex. 2021, 5, 31)
         redirect_address: (optional) An email address to which all emails will be sent
         cc_addresses: (optional) A list of email addressed to include on the cc line
@@ -75,12 +72,12 @@ def deliver(
         Raises errors related to external services like Google Storage but continues attempting to send subsequent
         emails if it receives an exception while attempting to send.  In that case the error is logged.
     """
-    logging.info("Delivering emails for batch %s", batch_id)
+    logging.info("Delivering emails for batch %s", batch)
 
     if redirect_address:
         logging.info(
             "Redirecting all emails for batch %s to be sent to %s",
-            batch_id,
+            batch.batch_id,
             redirect_address,
         )
 
@@ -101,15 +98,13 @@ def deliver(
         raise
 
     content_bucket = utils.get_email_content_bucket_name()
-    html_files = load_files_from_storage(
-        content_bucket, utils.get_html_folder(batch_id, state_code)
-    )
+    html_files = load_files_from_storage(content_bucket, utils.get_html_folder(batch))
     attachment_files = load_files_from_storage(
-        content_bucket, utils.get_attachments_folder(batch_id, state_code)
+        content_bucket, utils.get_attachments_folder(batch)
     )
 
     if len(html_files.items()) == 0:
-        msg = f"No files found for batch {batch_id} for state {state_code} in the bucket {content_bucket}"
+        msg = f"No files found for batch {batch} in the bucket {content_bucket}"
         logging.error(msg)
         raise IndexError(msg)
 
@@ -153,15 +148,13 @@ def deliver(
         # object, and then finally write that object back to gcs
         sent_date = datetime.now()
         gcsfs = GcsfsFactory.build()
-        email_sent_metadata = EmailSentMetadata.build_from_gcs(
-            state_code, batch_id, gcsfs
-        )
+        email_sent_metadata = EmailSentMetadata.build_from_gcs(batch, gcsfs)
         email_sent_metadata.add_new_email_send_result(
             sent_date=sent_date,
             total_delivered=len(succeeded_email_sends),
             redirect_address=redirect_address,
         )
-        email_sent_metadata.write_to_gcs(state_code, batch_id, gcsfs)
+        email_sent_metadata.write_to_gcs(batch, gcsfs)
 
     logging.info(
         "Sent %s emails. %s emails failed to send",

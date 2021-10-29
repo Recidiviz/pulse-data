@@ -25,12 +25,14 @@ from unittest.mock import patch
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
+from recidiviz.reporting.context.po_monthly_report.constants import ReportType
 from recidiviz.reporting.context.po_monthly_report.context import PoMonthlyReportContext
 from recidiviz.reporting.context.report_context import ReportContext
 from recidiviz.reporting.context.top_opportunities.context import (
     TopOpportunitiesReportContext,
 )
 from recidiviz.reporting.email_generation import generate
+from recidiviz.reporting.email_reporting_utils import Batch
 from recidiviz.reporting.recipient import Recipient
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 
@@ -62,7 +64,12 @@ class EmailGenerationTests(TestCase):
         self.state_code = StateCode.US_ID
         self.mock_batch_id = "1"
         self.recipient.data["batch_id"] = self.mock_batch_id
-        self.report_context = self.report_context_type(self.state_code, self.recipient)
+        self.batch = Batch(
+            state_code=self.state_code,
+            batch_id=self.mock_batch_id,
+            report_type=self.report_type,
+        )
+        self.report_context = self.report_context_type(self.batch, self.recipient)
 
     def tearDown(self) -> None:
         self.get_secret_patcher.stop()
@@ -74,6 +81,11 @@ class EmailGenerationTests(TestCase):
     def report_context_type(self) -> Type[ReportContext]:
         raise NotImplementedError
 
+    @property
+    @abstractmethod
+    def report_type(self) -> ReportType:
+        raise NotImplementedError
+
     @abstractmethod
     def fixture_file_path(self) -> str:
         raise NotImplementedError
@@ -82,7 +94,7 @@ class EmailGenerationTests(TestCase):
         """Test that the prepared html is added to Google Cloud Storage with the correct bucket name, filepath,
         and prepared html template for the report context."""
         prepared_html = self.report_context.render_html()
-        generate(self.report_context)
+        generate(self.batch, self.report_context)
 
         bucket_name = "recidiviz-test-report-html"
         bucket_filepath = f"{self.state_code.value}/{self.mock_batch_id}/html/{self.recipient.email_address}.html"
@@ -102,8 +114,8 @@ class EmailGenerationTests(TestCase):
                 }
             )
 
-            report_context = self.report_context_type(self.state_code, recipient)
-            generate(report_context)
+            report_context = self.report_context_type(self.batch, recipient)
+            generate(self.batch, report_context)
 
         self.assertEqual(self.gcs_file_system.all_paths, [])
 
@@ -116,6 +128,10 @@ class POMonthlyReportGenerationTest(EmailGenerationTests):
     @property
     def report_context_type(self) -> Type[ReportContext]:
         return PoMonthlyReportContext
+
+    @property
+    def report_type(self) -> ReportType:
+        return ReportType.POMonthlyReport
 
     def fixture_file_path(self) -> str:
         return os.path.join(
@@ -131,6 +147,10 @@ class TopOpportunityGenerationTest(EmailGenerationTests):
     @property
     def report_context_type(self) -> Type[ReportContext]:
         return TopOpportunitiesReportContext
+
+    @property
+    def report_type(self) -> ReportType:
+        return ReportType.TopOpportunities
 
     def fixture_file_path(self) -> str:
         return os.path.join(
