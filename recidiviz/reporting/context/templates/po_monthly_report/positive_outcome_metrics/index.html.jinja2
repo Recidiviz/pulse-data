@@ -1,22 +1,23 @@
-
-{{ components.layout_table_start() }}
-{% for outcome in [pos_discharges, supervision_downgrades, earned_discharges] %}
-  <tr>
-    <td>
-      {% include "po_monthly_report/positive_outcome_metrics/outcome_card.html.jinja2" %}
-    </td>
-  </tr>
-  {% if outcome.action_table %}
-  {{components.y_padding(2)}}
-  <tr>
-    <td>
-      {% include "po_monthly_report/positive_outcome_metrics/table_card.html.jinja2" %}
-    </td>
-  </tr>
-  {% endif %}
-  {% if not loop.last %}
-    {{components.y_padding(8)}}
-  {% endif %}
-{% endfor %}
-{{components.y_padding(40)}}
-{{ components.layout_table_end() }}
+{% if decarceral_outcomes %}
+  {{ components.layout_table_start() }}
+  {% for outcome in decarceral_outcomes.values() %}
+    <tr>
+      <td>
+        {% include "po_monthly_report/positive_outcome_metrics/outcome_card.html.jinja2" %}
+      </td>
+    </tr>
+    {% if outcome.action_table %}
+    {{components.y_padding(2)}}
+    <tr>
+      <td>
+        {% include "po_monthly_report/positive_outcome_metrics/table_card.html.jinja2" %}
+      </td>
+    </tr>
+    {% endif %}
+    {% if not loop.last %}
+      {{components.y_padding(8)}}
+    {% endif %}
+  {% endfor %}
+  {{components.y_padding(40)}}
+  {{ components.layout_table_end() }}
+{% endif %}

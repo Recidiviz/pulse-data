@@ -56,3 +56,7 @@ class UsPaMetricsDelegate(PoMonthlyReportMetricsDelegate):
     @property
     def completion_date_label(self) -> str:
         return "max date"
+
+    @property
+    def has_case_triage(self) -> bool:
+        return False

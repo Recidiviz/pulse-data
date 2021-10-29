@@ -1,13 +1,15 @@
-{{components.layout_table_start()}}
-{% for outcome in [technical_revocations, crime_revocations, absconsions] %}
-    <tr>
-        <td>
-        {% include "po_monthly_report/adverse_outcome_metrics/outcome_card.html.jinja2" %}
-        </td>
-    </tr>
-    {% if not loop.last %}
-    {{components.y_padding(2)}}
-    {% endif %}
-{% endfor %}
-{{components.y_padding(40)}}
-{{components.layout_table_end()}}
+{% if adverse_outcomes %}
+    {{components.layout_table_start()}}
+    {% for outcome in adverse_outcomes.values() %}
+        <tr>
+            <td>
+            {% include "po_monthly_report/adverse_outcome_metrics/outcome_card.html.jinja2" %}
+            </td>
+        </tr>
+        {% if not loop.last %}
+        {{components.y_padding(2)}}
+        {% endif %}
+    {% endfor %}
+    {{components.y_padding(40)}}
+    {{components.layout_table_end()}}
+{% endif %}

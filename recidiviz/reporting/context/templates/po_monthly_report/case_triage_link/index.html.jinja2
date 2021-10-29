@@ -1,0 +1,10 @@
+{% if show_case_triage_link %}
+  {{components.layout_table_start()}}
+    <tr>
+      <td>
+        {% include "po_monthly_report/case_triage_link/link_card.html.jinja2" %}
+      </td>
+    </tr>
+    {{ components.y_padding(40)}}
+  {{components.layout_table_end()}}
+{% endif %}
