@@ -61,34 +61,8 @@ function next_alpha_version {
     echo ${NEW_VERSION}
 }
 
-# If there have been migrations since the last deploy, returns 1.
-# Otherwise, if there have been no migrations, returns 0.
-function migration_changes_since_last_deploy {
-    PROJECT=$1
-
-    if [[ ${PROJECT} == 'recidiviz-staging' ]]; then
-        LAST_VERSION_TAG=$(last_version_tag_on_branch HEAD) || exit_on_fail
-    elif [[ ${PROJECT} == 'recidiviz-123' ]]; then
-        LAST_VERSION_TAG=$(last_deployed_version_tag recidiviz-123) || exit_on_fail
-    else
-        echo_error "Unexpected project for last version ${PROJECT}"
-        exit 1
-    fi
-
-    MIGRATION_CHANGES=$(git diff tags/${LAST_VERSION_TAG} -- ${BASH_SOURCE_DIR}/../../../recidiviz/persistence/database/migrations)
-
-    if [[ ! -z $MIGRATION_CHANGES ]]; then
-      MIGRATION_CHANGES_SINCE_LAST_DEPLOY=1
-    else
-      MIGRATION_CHANGES_SINCE_LAST_DEPLOY=0
-    fi
-
-    echo $MIGRATION_CHANGES_SINCE_LAST_DEPLOY
-}
-
-# If there have been changes since the last deploy that indicate pipeline results may
-# have changed, returns 1. Otherwise, if there have been no changes impacting
-# pipelines, returns 0.
+# If there have been changes since the last deploy that indicate pipeline results may have changed, returns a non-empty
+# string. Otherwise, if there have been no changes impacting pipelines, returns an empty result.
 function calculation_pipeline_changes_since_last_deploy {
     PROJECT=$1
 
@@ -101,21 +75,18 @@ function calculation_pipeline_changes_since_last_deploy {
         exit 1
     fi
 
-    MIGRATION_CHANGES_SINCE_LAST_DEPLOY=$(migration_changes_since_last_deploy $PROJECT)
+    MIGRATION_CHANGES=$(git diff tags/${LAST_VERSION_TAG} -- ${BASH_SOURCE_DIR}/../../../recidiviz/persistence/database/migrations)
+    CALCULATOR_CHANGES=$(git diff tags/${LAST_VERSION_TAG} -- ${BASH_SOURCE_DIR}/../../../recidiviz/calculator)
 
-    if [[ MIGRATION_CHANGES_SINCE_LAST_DEPLOY -eq 1 ]]; then
-        trigger_historical_data_refresh $PROJECT
+    CHANGES="${MIGRATION_CHANGES}${CALCULATOR_CHANGES}"
+
+    if [[ ! -z $CHANGES ]]; then
+      CALC_CHANGES_SINCE_LAST_DEPLOY=1
     else
-        CALCULATOR_CHANGES=$(git diff tags/${LAST_VERSION_TAG} -- ${BASH_SOURCE_DIR}/../../../recidiviz/calculator)
-
-        if [[ ! -z $CALCULATOR_CHANGES ]]; then
-          CALC_CHANGES_SINCE_LAST_DEPLOY=1
-        else
-          CALC_CHANGES_SINCE_LAST_DEPLOY=0
-        fi
-
-        echo $CALC_CHANGES_SINCE_LAST_DEPLOY
+      CALC_CHANGES_SINCE_LAST_DEPLOY=0
     fi
+
+    echo $CALC_CHANGES_SINCE_LAST_DEPLOY
 }
 
 # Helper for deploying any infrastructure changes before we deploy a new version of the application. Requires that we
@@ -135,15 +106,6 @@ function pre_deploy_configure_infrastructure {
     echo "Deploying cron.yaml"
     verify_hash $COMMIT_HASH
     run_cmd gcloud -q app deploy cron.yaml --project=${PROJECT}
-
-    MIGRATION_CHANGES_SINCE_LAST_DEPLOY=$(migration_changes_since_last_deploy $PROJECT)
-
-    if [[ MIGRATION_CHANGES_SINCE_LAST_DEPLOY -eq 1 ]]; then
-        # Update the table schemas in BigQuery
-        echo "Updating the BigQuery table schemas to match the versions being deployed"
-        verify_hash $COMMIT_HASH
-        run_cmd pipenv run python -m recidiviz.persistence.database.bq_refresh.big_query_table_manager --project_id ${PROJECT}
-    fi
 
     # Update the Dataflow metric table schemas and update all BigQuery views.
     echo "Updating the BigQuery Dataflow metric table schemas to match the metric classes"
