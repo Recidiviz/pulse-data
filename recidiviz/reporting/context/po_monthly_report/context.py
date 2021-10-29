@@ -23,11 +23,13 @@ decrease the usage of measures such as revocations.
 
 To generate a sample output for the PO Monthly Report email template, just run:
 
-python -m recidiviz.reporting.context.po_monthly_report.context
+python -m recidiviz.reporting.context.po_monthly_report.context --state_code US_XX
 """
+import argparse
 import copy
 import json
 import os
+import sys
 from datetime import date
 from math import isnan
 from typing import Dict, List, Literal, Optional
@@ -163,18 +165,28 @@ class PoMonthlyReportContext(ReportContext):
 
         self.prepared_data["headline"] = f"Your {self._get_month_name()} Report"
 
-        for metric in self.metrics_delegate.decarceral_actions_metrics:
-            self.prepared_data[metric] = getattr(self, f"_get_{metric}")()
+        self.prepared_data["decarceral_outcomes"] = {
+            metric: getattr(self, f"_get_{metric}")()
+            for metric in self.metrics_delegate.decarceral_actions_metrics
+        }
 
-        for metric in self.metrics_delegate.client_outcome_metrics:
-            self.prepared_data[metric] = self._get_adverse_outcome(metric)
+        self.prepared_data["adverse_outcomes"] = {
+            metric: self._get_adverse_outcome(metric)
+            for metric in self.metrics_delegate.client_outcome_metrics
+        }
 
-        for metric in self.metrics_delegate.compliance_action_metrics:
-            self.prepared_data[metric] = self._get_compliance_context(metric)
+        self.prepared_data["compliance_tasks"] = {
+            metric: self._get_compliance_context(metric)
+            for metric in self.metrics_delegate.compliance_action_metrics
+        }
 
         self.prepared_data["faq"] = self._get_faq()
 
         self.prepared_data["attachment_content"] = self._prepare_attachment_content()
+
+        self.prepared_data[
+            "show_case_triage_link"
+        ] = self.metrics_delegate.has_case_triage
 
         return self.prepared_data
 
@@ -617,17 +629,31 @@ class PoMonthlyReportContext(ReportContext):
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--state_code", dest="state_code", type=StateCode, required=True
+    )
+    known_args, _ = parser.parse_known_args(sys.argv)
+
+    demo_state_code = known_args.state_code
+
+    if demo_state_code is None:
+        raise ValueError("You must supply a valid state code.")
+
     context = PoMonthlyReportContext(
         utils.Batch(
-            state_code=StateCode.US_ID,
+            state_code=demo_state_code,
             batch_id="test",
             report_type=ReportType.POMonthlyReport,
         ),
         Recipient.from_report_json(
             {
                 utils.KEY_EMAIL_ADDRESS: "test@recidiviz.org",
-                utils.KEY_STATE_CODE: "US_ID",
-                utils.KEY_DISTRICT: "US_ID_D3",
+                utils.KEY_STATE_CODE: demo_state_code.value,
+                utils.KEY_DISTRICT: None,
+                # the data source may provide values for fields we don't intend to use
+                # for a given state; this fixture emulates that, including all fields
+                # defined on the view. States should ignore them as needed
                 "pos_discharges": 0,
                 "earned_discharges": 0,
                 "supervision_downgrades": 2,

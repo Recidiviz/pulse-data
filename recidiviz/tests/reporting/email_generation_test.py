@@ -19,7 +19,7 @@
 import json
 import os
 from abc import abstractmethod
-from typing import Type
+from typing import List, Type
 from unittest import TestCase
 from unittest.mock import patch
 
@@ -57,19 +57,7 @@ class EmailGenerationTests(TestCase):
         self.gcs_file_system = FakeGCSFileSystem()
         self.mock_gcs_file_system = self.gcs_file_system_patcher.start()
         self.mock_gcs_file_system.return_value = self.gcs_file_system
-
-        with open(self.fixture_file_path(), encoding="utf-8") as fixture_file:
-            self.recipient = Recipient.from_report_json(json.loads(fixture_file.read()))
-
-        self.state_code = StateCode.US_ID
         self.mock_batch_id = "1"
-        self.recipient.data["batch_id"] = self.mock_batch_id
-        self.batch = Batch(
-            state_code=self.state_code,
-            batch_id=self.mock_batch_id,
-            report_type=self.report_type,
-        )
-        self.report_context = self.report_context_type(self.batch, self.recipient)
 
     def tearDown(self) -> None:
         self.get_secret_patcher.stop()
@@ -90,34 +78,70 @@ class EmailGenerationTests(TestCase):
     def fixture_file_path(self) -> str:
         raise NotImplementedError
 
+    @property
+    @abstractmethod
+    def supported_states(self) -> List[StateCode]:
+        raise NotImplementedError
+
     def test_generate(self) -> None:
         """Test that the prepared html is added to Google Cloud Storage with the correct bucket name, filepath,
         and prepared html template for the report context."""
-        prepared_html = self.report_context.render_html()
-        generate(self.batch, self.report_context)
 
-        bucket_name = "recidiviz-test-report-html"
-        bucket_filepath = f"{self.state_code.value}/{self.mock_batch_id}/html/{self.recipient.email_address}.html"
-        path = GcsfsFilePath.from_absolute_path(f"gs://{bucket_name}/{bucket_filepath}")
-        self.assertEqual(self.gcs_file_system.download_as_string(path), prepared_html)
+        with open(self.fixture_file_path(), encoding="utf-8") as fixture_file:
+            fixture_data = json.loads(fixture_file.read())
+
+        for state_code in self.supported_states:
+            recipient = Recipient.from_report_json(
+                {
+                    **fixture_data,
+                    **{"state_code": state_code.value, "batch_id": self.mock_batch_id},
+                }
+            )
+
+            batch = Batch(
+                state_code=state_code,
+                batch_id=self.mock_batch_id,
+                report_type=self.report_type,
+            )
+
+            report_context = self.report_context_type(batch, recipient)
+
+            prepared_html = report_context.render_html()
+            generate(batch, report_context)
+
+            bucket_name = "recidiviz-test-report-html"
+            bucket_filepath = f"{state_code.value}/{self.mock_batch_id}/html/{recipient.email_address}.html"
+            path = GcsfsFilePath.from_absolute_path(
+                f"gs://{bucket_name}/{bucket_filepath}"
+            )
+            self.assertEqual(
+                self.gcs_file_system.download_as_string(path), prepared_html
+            )
 
     def test_generate_incomplete_data(self) -> None:
         """Test that no files are added to Google Cloud Storage and a KeyError is raised
         if the recipient data is missing a key needed for the HTML template."""
 
-        with self.assertRaises(KeyError):
-            recipient = Recipient.from_report_json(
-                {
-                    "email_address": "letter@kenny.ca",
-                    "state_code": "US_ID",
-                    "district": "DISTRICT OFFICE 3",
-                }
-            )
+        for state_code in self.supported_states:
+            with self.assertRaises(KeyError):
+                recipient = Recipient.from_report_json(
+                    {
+                        "email_address": "letter@kenny.ca",
+                        "state_code": state_code.value,
+                        "district": "DISTRICT OFFICE 3",
+                    }
+                )
 
-            report_context = self.report_context_type(self.batch, recipient)
-            generate(self.batch, report_context)
+                batch = Batch(
+                    state_code=state_code,
+                    batch_id=self.mock_batch_id,
+                    report_type=self.report_type,
+                )
 
-        self.assertEqual(self.gcs_file_system.all_paths, [])
+                report_context = self.report_context_type(batch, recipient)
+                generate(batch, report_context)
+
+            self.assertEqual(self.gcs_file_system.all_paths, [])
 
 
 class POMonthlyReportGenerationTest(EmailGenerationTests):
@@ -128,6 +152,10 @@ class POMonthlyReportGenerationTest(EmailGenerationTests):
     @property
     def report_context_type(self) -> Type[ReportContext]:
         return PoMonthlyReportContext
+
+    @property
+    def supported_states(self) -> List[StateCode]:
+        return [StateCode.US_ID, StateCode.US_PA]
 
     @property
     def report_type(self) -> ReportType:
@@ -147,6 +175,10 @@ class TopOpportunityGenerationTest(EmailGenerationTests):
     @property
     def report_context_type(self) -> Type[ReportContext]:
         return TopOpportunitiesReportContext
+
+    @property
+    def supported_states(self) -> List[StateCode]:
+        return [StateCode.US_ID]
 
     @property
     def report_type(self) -> ReportType:

@@ -24,11 +24,15 @@ from typing import Optional
 from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
+from parameterized import parameterized
+
 from recidiviz.common.constants.states import StateCode
 from recidiviz.reporting.context.po_monthly_report.constants import (
     ABSCONSIONS,
+    ASSESSMENTS,
     CRIME_REVOCATIONS,
     EARNED_DISCHARGES,
+    FACE_TO_FACE,
     POS_DISCHARGES,
     SUPERVISION_DOWNGRADES,
     TECHNICAL_REVOCATIONS,
@@ -513,7 +517,7 @@ class PoMonthlyReportContextTests(TestCase):
         actual = self._get_prepared_data()
 
         self.assertEqual(
-            actual["assessments"],
+            actual["compliance_tasks"][ASSESSMENTS],
             {
                 "pct": 73.3,
                 "num_completed": 15,
@@ -527,7 +531,7 @@ class PoMonthlyReportContextTests(TestCase):
         )
 
         self.assertEqual(
-            actual["facetoface"],
+            actual["compliance_tasks"][FACE_TO_FACE],
             {
                 "pct": 89.17543,
                 "num_completed": 77,
@@ -551,7 +555,7 @@ class PoMonthlyReportContextTests(TestCase):
         )
 
         self.assertEqual(
-            actual["assessments"],
+            actual["compliance_tasks"][ASSESSMENTS],
             {
                 "pct": 95.0,
                 "num_completed": 15,
@@ -565,7 +569,7 @@ class PoMonthlyReportContextTests(TestCase):
         )
 
         self.assertEqual(
-            actual["facetoface"],
+            actual["compliance_tasks"][FACE_TO_FACE],
             {
                 "pct": 90,
                 "num_completed": 77,
@@ -591,7 +595,7 @@ class PoMonthlyReportContextTests(TestCase):
         )
 
         self.assertEqual(
-            actual["assessments"],
+            actual["compliance_tasks"][ASSESSMENTS],
             {
                 "pct": None,
                 "num_completed": 15,
@@ -605,7 +609,7 @@ class PoMonthlyReportContextTests(TestCase):
         )
 
         self.assertEqual(
-            actual["facetoface"],
+            actual["compliance_tasks"][FACE_TO_FACE],
             {
                 "pct": None,
                 "num_completed": 77,
@@ -623,7 +627,7 @@ class PoMonthlyReportContextTests(TestCase):
 
         happy_path_data = PoMonthlyReportContext(
             self.batch, self.recipient
-        ).get_prepared_data()[POS_DISCHARGES]
+        ).get_prepared_data()["decarceral_outcomes"][POS_DISCHARGES]
 
         self.assertIn(
             "273", happy_path_data["main_text"].format(happy_path_data["total"])
@@ -640,7 +644,7 @@ class PoMonthlyReportContextTests(TestCase):
         no_caseload_data = PoMonthlyReportContext(
             self.batch,
             self.recipient.create_derived_recipient({POS_DISCHARGES: "0"}),
-        ).get_prepared_data()[POS_DISCHARGES]
+        ).get_prepared_data()["decarceral_outcomes"][POS_DISCHARGES]
         self.assertEqual(
             no_caseload_data["supplemental_text"],
             "38 from your district",
@@ -651,7 +655,7 @@ class PoMonthlyReportContextTests(TestCase):
             self.recipient.create_derived_recipient(
                 {POS_DISCHARGES: "0", f"{POS_DISCHARGES}_district_total": 0}
             ),
-        ).get_prepared_data()[POS_DISCHARGES]
+        ).get_prepared_data()["decarceral_outcomes"][POS_DISCHARGES]
         self.assertIsNone(no_local_data["supplemental_text"])
 
         no_action_items_data = no_local_data = PoMonthlyReportContext(
@@ -659,7 +663,7 @@ class PoMonthlyReportContextTests(TestCase):
             self.recipient.create_derived_recipient(
                 {"upcoming_release_date_clients": []}
             ),
-        ).get_prepared_data()[POS_DISCHARGES]
+        ).get_prepared_data()["decarceral_outcomes"][POS_DISCHARGES]
         self.assertIsNone(no_action_items_data["action_table"])
 
     def test_downgrades(self) -> None:
@@ -667,7 +671,7 @@ class PoMonthlyReportContextTests(TestCase):
 
         happy_path_data = PoMonthlyReportContext(
             self.batch, self.recipient
-        ).get_prepared_data()[SUPERVISION_DOWNGRADES]
+        ).get_prepared_data()["decarceral_outcomes"][SUPERVISION_DOWNGRADES]
 
         self.assertIn(
             "314", happy_path_data["main_text"].format(happy_path_data["total"])
@@ -689,7 +693,7 @@ class PoMonthlyReportContextTests(TestCase):
         no_caseload_data = PoMonthlyReportContext(
             self.batch,
             self.recipient.create_derived_recipient({SUPERVISION_DOWNGRADES: "0"}),
-        ).get_prepared_data()[SUPERVISION_DOWNGRADES]
+        ).get_prepared_data()["decarceral_outcomes"][SUPERVISION_DOWNGRADES]
         self.assertEqual(
             no_caseload_data["supplemental_text"],
             "51 from your district",
@@ -703,13 +707,13 @@ class PoMonthlyReportContextTests(TestCase):
                     f"{SUPERVISION_DOWNGRADES}_district_total": 0,
                 }
             ),
-        ).get_prepared_data()[SUPERVISION_DOWNGRADES]
+        ).get_prepared_data()["decarceral_outcomes"][SUPERVISION_DOWNGRADES]
         self.assertIsNone(no_local_data["supplemental_text"])
 
         no_action_items_data = no_local_data = PoMonthlyReportContext(
             self.batch,
             self.recipient.create_derived_recipient({"mismatches": []}),
-        ).get_prepared_data()[SUPERVISION_DOWNGRADES]
+        ).get_prepared_data()["decarceral_outcomes"][SUPERVISION_DOWNGRADES]
         self.assertIsNone(no_action_items_data["action_table"])
 
     def test_early_discharges(self) -> None:
@@ -717,7 +721,7 @@ class PoMonthlyReportContextTests(TestCase):
 
         happy_path_data = PoMonthlyReportContext(
             self.batch, self.recipient
-        ).get_prepared_data()[EARNED_DISCHARGES]
+        ).get_prepared_data()["decarceral_outcomes"][EARNED_DISCHARGES]
 
         self.assertIn(
             "106", happy_path_data["main_text"].format(happy_path_data["total"])
@@ -731,7 +735,7 @@ class PoMonthlyReportContextTests(TestCase):
         no_caseload_data = PoMonthlyReportContext(
             self.batch,
             self.recipient.create_derived_recipient({EARNED_DISCHARGES: "0"}),
-        ).get_prepared_data()[EARNED_DISCHARGES]
+        ).get_prepared_data()["decarceral_outcomes"][EARNED_DISCHARGES]
         self.assertEqual(
             no_caseload_data["supplemental_text"],
             "18 from your district",
@@ -742,7 +746,7 @@ class PoMonthlyReportContextTests(TestCase):
             self.recipient.create_derived_recipient(
                 {EARNED_DISCHARGES: "0", f"{EARNED_DISCHARGES}_district_total": 0}
             ),
-        ).get_prepared_data()[EARNED_DISCHARGES]
+        ).get_prepared_data()["decarceral_outcomes"][EARNED_DISCHARGES]
         self.assertIsNone(no_local_data["supplemental_text"])
 
     def _adverse_outcome_test(self, context_key: str) -> None:
@@ -764,7 +768,7 @@ class PoMonthlyReportContextTests(TestCase):
                     f"{context_key}_zero_streak": 0,
                 }
             ),
-        ).get_prepared_data()[context_key]
+        ).get_prepared_data()["adverse_outcomes"][context_key]
         self.assertEqual(below_alert_threshold, {"label": label, "count": 2})
 
         below_average = PoMonthlyReportContext(
@@ -776,7 +780,7 @@ class PoMonthlyReportContextTests(TestCase):
                     f"{context_key}_zero_streak": 0,
                 }
             ),
-        ).get_prepared_data()[context_key]
+        ).get_prepared_data()["adverse_outcomes"][context_key]
         self.assertEqual(below_average, {"label": label, "count": 1})
 
         short_streak = PoMonthlyReportContext(
@@ -787,7 +791,7 @@ class PoMonthlyReportContextTests(TestCase):
                     f"{context_key}_zero_streak": 1,
                 }
             ),
-        ).get_prepared_data()[context_key]
+        ).get_prepared_data()["adverse_outcomes"][context_key]
         self.assertEqual(short_streak, {"label": label, "count": 0})
 
         above_average = PoMonthlyReportContext(
@@ -799,7 +803,7 @@ class PoMonthlyReportContextTests(TestCase):
                     f"{context_key}_zero_streak": 0,
                 }
             ),
-        ).get_prepared_data()[context_key]
+        ).get_prepared_data()["adverse_outcomes"][context_key]
         self.assertEqual(
             above_average, {"label": label, "count": 3, "amount_above_average": 1.64}
         )
@@ -812,7 +816,7 @@ class PoMonthlyReportContextTests(TestCase):
                     f"{context_key}_zero_streak": 2,
                 }
             ),
-        ).get_prepared_data()[context_key]
+        ).get_prepared_data()["adverse_outcomes"][context_key]
         self.assertEqual(long_streak, {"label": label, "count": 0, "zero_streak": 2})
 
     def test_technical_revocations(self) -> None:
@@ -826,3 +830,17 @@ class PoMonthlyReportContextTests(TestCase):
     def test_absconsions(self) -> None:
         """Test that absconsions context is populated according to input data."""
         self._adverse_outcome_test(ABSCONSIONS)
+
+    @parameterized.expand(
+        [
+            [StateCode.US_ID.value, StateCode.US_ID, True],
+            [StateCode.US_PA.value, StateCode.US_PA, False],
+        ]
+    )
+    def test_case_triage_link(
+        self, _: str, state_code: StateCode, expect_link: bool
+    ) -> None:
+        """Test that link to Case Triage is appropriately enabled/disabled per state."""
+        self.batch.state_code = state_code
+        context = self._get_prepared_data({"state_code": state_code})
+        self.assertEqual(context["show_case_triage_link"], expect_link)
