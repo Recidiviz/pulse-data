@@ -16,18 +16,19 @@
 # =============================================================================
 """Query containing citation information."""
 
+from recidiviz.ingest.direct.regions.us_mo.ingest_views.us_mo_view_query_fragments import (
+    NON_INVESTIGATION_SUPERVISION_SENTENCES_FRAGMENT,
+    TAK142_FINALLY_FORMED_DOCUMENT_FRAGMENT,
+)
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
     DirectIngestPreProcessedIngestViewBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
-from recidiviz.ingest.direct.regions.us_mo.ingest_views.us_mo_view_query_fragments import (
-    NON_INVESTIGATION_SUPERVISION_SENTENCES_FRAGMENT,
-    TAK142_FINALLY_FORMED_DOCUMENT_FRAGMENT,
-)
+from recidiviz.utils.string import StrictStringFormatter
 
-FINALLY_FORMED_CITATIONS_E6 = TAK142_FINALLY_FORMED_DOCUMENT_FRAGMENT.format(
-    document_type_code="XIT"
+FINALLY_FORMED_CITATIONS_E6 = StrictStringFormatter().format(
+    TAK142_FINALLY_FORMED_DOCUMENT_FRAGMENT, document_type_code="XIT"
 )
 
 VIEW_QUERY_TEMPLATE = f"""

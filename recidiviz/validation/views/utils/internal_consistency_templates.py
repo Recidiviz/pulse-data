@@ -19,9 +19,9 @@ metric total rows.
 """
 from typing import List, Optional
 
-
 # TODO(#3839): Simplify this via metric_big_query_view.dimensions
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
+from recidiviz.utils.string import StrictStringFormatter
 
 
 def _metric_totals_table_query(
@@ -191,7 +191,8 @@ def internal_consistency_query(
         ]
     )
 
-    return INTERNAL_CONSISTENCY_QUERY_TEMPLATE.format(
+    return StrictStringFormatter().format(
+        INTERNAL_CONSISTENCY_QUERY_TEMPLATE,
         partition_columns_str_renamed_state_code=partition_columns_str_renamed_state_code,
         metric_totals_table_query_str=metric_totals_table_query_str,
         breakdown_sums_table_queries_str=breakdown_sums_table_queries_str,

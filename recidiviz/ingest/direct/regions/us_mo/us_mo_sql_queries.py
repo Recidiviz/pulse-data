@@ -17,6 +17,7 @@
 
 """The queries below can be used to generate the tables of Missouri Department
 of Corrections data that we export as CSV files for ingest.
+from recidiviz.utils.string import StrictStringFormatter
 Most of the queries below will include WHERE clauses that filter against columns
 usually, but not always, named `XX$DLU` and `XX$DCR`--these stand for "date last
 updated" and "date created," respectively. By updating the
@@ -26,13 +27,13 @@ a certain date. Those dates are in the "JDE Julian format" which is documented
 offline.
 """
 
-from typing import List, Tuple, Optional
+from typing import List, Optional, Tuple
 
 from recidiviz.calculator.query.state.dataset_config import (
     STATIC_REFERENCE_TABLES_DATASET,
 )
 from recidiviz.ingest.direct.query_utils import output_sql_queries
-
+from recidiviz.utils.string import StrictStringFormatter
 
 US_MO_TAK025_SENTENCE_STATUS_XREF_QUERY = f"""
 /* DO NOT DROP THE RESULT OF THIS QUERY IN THE INGEST BUCKET. INSTEAD, UPLOAD IT TO THE `{STATIC_REFERENCE_TABLES_DATASET}`
@@ -1493,11 +1494,11 @@ TAK142_FINALLY_FORMED_DOCUMENT_FRAGMENT = """
             finally_formed_documents_e6.E6$CYC,
             finally_formed_documents_e6.E6$DOS"""
 
-FINALLY_FORMED_CITATIONS_E6 = TAK142_FINALLY_FORMED_DOCUMENT_FRAGMENT.format(
-    document_type_code="XIT"
+FINALLY_FORMED_CITATIONS_E6 = StrictStringFormatter().format(
+    TAK142_FINALLY_FORMED_DOCUMENT_FRAGMENT, document_type_code="XIT"
 )
-FINALLY_FORMED_VIOLATIONS_E6 = TAK142_FINALLY_FORMED_DOCUMENT_FRAGMENT.format(
-    document_type_code="XIF"
+FINALLY_FORMED_VIOLATIONS_E6 = StrictStringFormatter().format(
+    TAK142_FINALLY_FORMED_DOCUMENT_FRAGMENT, document_type_code="XIF"
 )
 
 # TODO(#2805): Update to do a date-based join on OFFICER_ROLE_SPANS_FRAGMENT

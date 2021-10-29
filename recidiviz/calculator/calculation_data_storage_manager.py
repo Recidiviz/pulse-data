@@ -35,6 +35,7 @@ from recidiviz.calculator.query.state.views.dataflow_metrics_materialized.most_r
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.utils.string import StrictStringFormatter
 from recidiviz.utils.yaml_dict import YAMLDict
 
 # Datasets must be at least 12 hours old to be deleted
@@ -247,7 +248,8 @@ def move_old_dataflow_metrics_to_cold_storage(dry_run: bool = False) -> None:
         )
 
         if is_unbounded_date_pipeline or no_active_month_range_pipelines:
-            source_data_join_clause = SOURCE_DATA_JOIN_CLAUSE_STANDARD_TEMPLATE.format(
+            source_data_join_clause = StrictStringFormatter().format(
+                SOURCE_DATA_JOIN_CLAUSE_STANDARD_TEMPLATE,
                 project_id=table_ref.project,
                 dataflow_metrics_dataset=table_ref.dataset_id,
                 dataflow_metric_table_id=table_id,
@@ -263,15 +265,14 @@ def move_old_dataflow_metrics_to_cold_storage(dry_run: bool = False) -> None:
                     ].items()
                 ]
             )
-            source_data_join_clause = (
-                SOURCE_DATA_JOIN_CLAUSE_WITH_MONTH_LIMIT_TEMPLATE.format(
-                    project_id=table_ref.project,
-                    dataflow_metrics_dataset=table_ref.dataset_id,
-                    dataflow_metric_table_id=table_id,
-                    most_recent_metrics_view_query=most_recent_metrics_view_query,
-                    day_count_limit=dataflow_config.MAX_DAYS_IN_DATAFLOW_METRICS_TABLE,
-                    month_limit_by_state=month_limit_by_state,
-                )
+            source_data_join_clause = StrictStringFormatter().format(
+                SOURCE_DATA_JOIN_CLAUSE_WITH_MONTH_LIMIT_TEMPLATE,
+                project_id=table_ref.project,
+                dataflow_metrics_dataset=table_ref.dataset_id,
+                dataflow_metric_table_id=table_id,
+                most_recent_metrics_view_query=most_recent_metrics_view_query,
+                day_count_limit=dataflow_config.MAX_DAYS_IN_DATAFLOW_METRICS_TABLE,
+                month_limit_by_state=month_limit_by_state,
             )
 
         # Exclude these columns leftover from the exclusion join from being added to the metric tables in cold storage
@@ -281,19 +282,13 @@ def move_old_dataflow_metrics_to_cold_storage(dry_run: bool = False) -> None:
         insert_filter_clause = "WHERE keep_job_id IS NULL AND keep_created_date IS NULL"
 
         # Query for rows to be moved to the cold storage table
-        insert_query = """
+        columns_to_exclude = ", ".join(columns_to_exclude_from_transfer)
+        insert_query = f"""
             SELECT * EXCEPT({columns_to_exclude}) FROM
-            `{project_id}.{dataflow_metrics_dataset}.{table_id}`
+            `{table_ref.project}.{table_ref.dataset_id}.{table_id}`
             {source_data_join_clause}
             {insert_filter_clause}
-        """.format(
-            columns_to_exclude=", ".join(columns_to_exclude_from_transfer),
-            project_id=table_ref.project,
-            dataflow_metrics_dataset=table_ref.dataset_id,
-            table_id=table_id,
-            source_data_join_clause=source_data_join_clause,
-            insert_filter_clause=insert_filter_clause,
-        )
+            """
 
         if dry_run:
             logging.info("###INSERT QUERY INTO COLD STORAGE TABLE###")
@@ -354,11 +349,7 @@ def _decommission_dataflow_metric_table(
 
     # Move all rows in the table to cold storage
     insert_query = (
-        """SELECT * FROM `{project_id}.{dataflow_metrics_dataset}.{table_id}`""".format(
-            project_id=table_ref.project,
-            dataflow_metrics_dataset=dataflow_metrics_dataset,
-            table_id=table_id,
-        )
+        f"""SELECT * FROM `{table_ref.project}.{dataflow_metrics_dataset}.{table_id}`"""
     )
 
     if dry_run:

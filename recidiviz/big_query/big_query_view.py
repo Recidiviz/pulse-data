@@ -24,6 +24,7 @@ from google.cloud import bigquery
 from recidiviz.common import attr_validators
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import GCP_PROJECTS
+from recidiviz.utils.string import StrictStringFormatter
 
 PROJECT_ID_KEY = "project_id"
 _DEFAULT_MATERIALIZED_SUFFIX = "_materialized"
@@ -43,6 +44,14 @@ class BigQueryAddress:
 
 class BigQueryView(bigquery.TableReference):
     """An implementation of bigquery.TableReference with extra functionality related to views."""
+
+    # Description and project_id are required arguments to BigQueryView itself and may
+    # also, but not always, be used in the query text. The BigQueryView class does not
+    # know whether they will be used so it always makes them available to the query. If
+    # the query does not use them this is not indicative of a bug.
+    QUERY_FORMATTER = StrictStringFormatter(
+        allowed_unused_keywords=frozenset({"description", "project_id"})
+    )
 
     def __init__(
         self,
@@ -155,7 +164,7 @@ class BigQueryView(bigquery.TableReference):
             **query_format_kwargs,
         }
 
-        return view_query_template.format(**query_format_args)
+        return cls.QUERY_FORMATTER.format(view_query_template, **query_format_args)
 
     def _format_view_query(
         self,
@@ -167,16 +176,22 @@ class BigQueryView(bigquery.TableReference):
         the PROJECT_ID_KEY value in the template to the current project. Else, returns the formatted view_query with the
         PROJECT_ID_KEY as {PROJECT_ID_KEY}."""
 
-        view_query_no_project_id = self._format_view_query_without_project_id(
-            view_query_template, **query_format_kwargs
-        )
+        try:
 
-        if not inject_project_id:
-            return view_query_no_project_id
+            view_query_no_project_id = self._format_view_query_without_project_id(
+                view_query_template, **query_format_kwargs
+            )
 
-        project_id_format_args = {PROJECT_ID_KEY: self.project}
+            if not inject_project_id:
+                return view_query_no_project_id
 
-        return view_query_no_project_id.format(**project_id_format_args)
+            project_id_format_args = {PROJECT_ID_KEY: self.project}
+
+            return self.QUERY_FORMATTER.format(
+                view_query_no_project_id, **project_id_format_args
+            )
+        except ValueError as e:
+            raise ValueError(f"Unable to format view query for {self.address}") from e
 
     def _query_format_args_with_project_id(
         self, **query_format_kwargs: Any

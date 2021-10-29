@@ -20,7 +20,6 @@ any metrics.
 
 Existence of any rows indicates a bug in IP pre-processing logic.
 """
-
 import attr
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
@@ -35,6 +34,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.utils.string import StrictStringFormatter
 from recidiviz.validation.views import dataset_config
 
 INVALID_ADMITTED_FROM_SUPERVISION_ADMISSION_REASON_VIEW_NAME = (
@@ -54,7 +54,9 @@ SELECT_FROM_METRICS_TEMPLATE = (
 
 def _invalid_admitted_from_supervision_admissions_view_builder() -> str:
     applicable_tables = [
-        SELECT_FROM_METRICS_TEMPLATE.format(metric_view_name=metric_view_name)
+        StrictStringFormatter().format(
+            SELECT_FROM_METRICS_TEMPLATE, metric_view_name=metric_view_name
+        )
         for metric, table in DATAFLOW_METRICS_TO_TABLES.items()
         if (field := attr.fields_dict(metric).get("admission_reason")) is not None
         and get_enum_cls(field) == StateIncarcerationPeriodAdmissionReason

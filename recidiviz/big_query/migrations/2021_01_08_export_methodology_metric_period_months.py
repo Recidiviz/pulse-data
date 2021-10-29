@@ -65,16 +65,11 @@ def main(dry_run: bool) -> None:
             filter_clause += " OR metric_period_months != 1"
 
         # Query for rows to be moved to the cold storage table
-        insert_query = """
+        insert_query = f"""
             SELECT * FROM
-            `{project_id}.{dataflow_metrics_dataset}.{table_id}`
+            `{table_ref.project}.{table_ref.dataset_id}.{table_id}`
             {filter_clause}
-        """.format(
-            project_id=table_ref.project,
-            dataflow_metrics_dataset=table_ref.dataset_id,
-            table_id=table_id,
-            filter_clause=filter_clause,
-        )
+            """
 
         if dry_run:
             logging.info(

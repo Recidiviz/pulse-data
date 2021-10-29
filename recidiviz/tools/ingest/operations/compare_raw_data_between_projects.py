@@ -41,6 +41,7 @@ from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager i
     DirectIngestRegionRawFileConfig,
 )
 from recidiviz.utils import environment
+from recidiviz.utils.string import StrictStringFormatter
 
 COMPARISON_TEMPLATE = """
 WITH compared AS (
@@ -90,7 +91,8 @@ def compare_raw_data_between_projects(
         columns = ", ".join([column.name for column in file_config.available_columns])
 
         query_job = bq_client.run_query_async(
-            query_str=COMPARISON_TEMPLATE.format(
+            query_str=StrictStringFormatter().format(
+                COMPARISON_TEMPLATE,
                 source_project_id=source_project_id,
                 comparison_project_id=comparison_project_id,
                 raw_data_dataset_id=dataset_id,

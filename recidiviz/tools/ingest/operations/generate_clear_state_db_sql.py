@@ -20,7 +20,6 @@ DB.
 Usage:
     python -m recidiviz.tools.ingest.operations.generate_clear_state_db_sql --project-id recidiviz-staging --state-code US_MO --ingest-instance PRIMARY
 """
-
 import argparse
 import logging
 from typing import List
@@ -35,6 +34,7 @@ from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.database.schema_utils import get_foreign_key_constraints
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.utils.string import StrictStringFormatter
 
 ASSOCIATION_TABLE_NAME_SUFFIX = "_association"
 
@@ -73,7 +73,8 @@ def _commands_for_table(
     table_commands = []
     for c in foreign_key_constraints:
         constraint: sqlalchemy.ForeignKeyConstraint = c
-        filter_statement = ASSOCIATION_TABLE_DELETION_FILTER_CLAUSE_TEMPLATE.format(
+        filter_statement = StrictStringFormatter().format(
+            ASSOCIATION_TABLE_DELETION_FILTER_CLAUSE_TEMPLATE,
             foreign_key_table=constraint.referred_table,
             foreign_key_col=constraint.column_keys[0],
             state_code=state_code.value,

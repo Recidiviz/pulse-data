@@ -106,6 +106,7 @@ from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric
 from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.utils.string import StrictStringFormatter
 from recidiviz.utils.yaml_dict import YAMLDict
 
 OUTPUT_COMPARISON_TEMPLATE = """
@@ -311,7 +312,8 @@ def _query_for_metric_comparison(
             columns_to_compare.extend(applicable_columns)
             output_col_exclusion = f"EXCEPT ({', '.join(dimensions)})"
 
-    return OUTPUT_COMPARISON_TEMPLATE.format(
+    return StrictStringFormatter().format(
+        OUTPUT_COMPARISON_TEMPLATE,
         project_id=bq_client.project_id,
         base_dataset_id=DATAFLOW_METRICS_DATASET,
         sandbox_dataset_id=sandbox_dataflow_dataset_id,
