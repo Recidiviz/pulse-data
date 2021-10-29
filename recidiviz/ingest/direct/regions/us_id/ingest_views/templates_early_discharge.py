@@ -15,7 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Helper templates for the US_ID early discharge queries."""
-from enum import auto, Enum
+from enum import Enum, auto
+
+from recidiviz.utils.string import StrictStringFormatter
 
 
 class EarlyDischargeType(Enum):
@@ -144,7 +146,8 @@ def early_discharge_view_template(
     discharge_type: EarlyDischargeType,
     ids_only: bool = False,
 ) -> str:
-    return EARLY_DISCHARGE_QUERY_TEMPLATE.format(
+    return StrictStringFormatter().format(
+        EARLY_DISCHARGE_QUERY_TEMPLATE,
         relevant_sentence_query=_get_relevant_sentence_query_for_type(discharge_type),
         relevant_select_args=_get_relevant_select_args(ids_only),
     )

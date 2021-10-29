@@ -1011,11 +1011,7 @@ class BigQueryClientImpl(BigQueryClient):
 
         new_view_ref = destination_dataset_ref.table(view.view_id)
         new_view = bigquery.Table(new_view_ref)
-        new_view.view_query = view.view_query.format(
-            destination_client.project_id,
-            destination_dataset_ref.dataset_id,
-            view.view_id,
-        )
+        new_view.view_query = view.view_query
         table = destination_client.create_table(new_view)
         logging.info("Created %s", new_view_ref)
         return table
@@ -1082,16 +1078,9 @@ class BigQueryClientImpl(BigQueryClient):
                     f"CAST(NULL AS {missing_column.field_type}) AS {missing_column.name}"
                     for missing_column in schema_fields_missing_from_source
                 ]
-                select_columns += ", {null_columns}".format(
-                    null_columns=", ".join(missing_columns)
-                )
+                select_columns += f", {', '.join(missing_columns)}"
 
-        query = "SELECT {columns} FROM `{project_id}.{source_dataset_id}.{source_table_id}`".format(
-            columns=select_columns,
-            project_id=self.project_id,
-            source_dataset_id=source_dataset_id,
-            source_table_id=source_table_id,
-        )
+        query = f"SELECT {select_columns} FROM `{self.project_id}.{source_dataset_id}.{source_table_id}`"
 
         if source_data_filter_clause:
             self.validate_source_data_filter_clause(source_data_filter_clause)

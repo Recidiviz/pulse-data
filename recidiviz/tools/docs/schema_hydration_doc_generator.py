@@ -32,12 +32,12 @@ from typing import List, Tuple
 
 from pytablewriter import MarkdownTableWriter
 
-from recidiviz.big_query.big_query_client import BigQueryClientImpl, BigQueryClient
+from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
 from recidiviz.persistence.database.schema_utils import (
     get_non_history_state_database_entities,
     get_state_database_entity_with_name,
 )
-
+from recidiviz.utils.string import StrictStringFormatter
 
 _ANY_ROWS_QUERY = """
 SELECT COUNT(*) as count FROM `{project_id}.state.{table_name}` WHERE state_code = '{state_code}';
@@ -75,8 +75,11 @@ def _get_all_columns_for_table(table_name: str) -> List[str]:
 def _get_all_null_columns(
     bq_client: BigQueryClient, project_id: str, table_name: str, state_code: str
 ) -> List[str]:
-    formatted_query = _SEARCH_QUERY.format(
-        project_id=project_id, state_code=state_code, table_name=table_name
+    formatted_query = StrictStringFormatter().format(
+        _SEARCH_QUERY,
+        project_id=project_id,
+        state_code=state_code,
+        table_name=table_name,
     )
     query_job = bq_client.run_query_async(formatted_query)
     return sorted([row["null_column"] for row in query_job])
@@ -85,8 +88,11 @@ def _get_all_null_columns(
 def _has_any_rows(
     bq_client: BigQueryClient, project_id: str, table_name: str, state_code: str
 ) -> bool:
-    formatted_query = _ANY_ROWS_QUERY.format(
-        project_id=project_id, state_code=state_code, table_name=table_name
+    formatted_query = StrictStringFormatter().format(
+        _ANY_ROWS_QUERY,
+        project_id=project_id,
+        state_code=state_code,
+        table_name=table_name,
     )
     query_job = bq_client.run_query_async(formatted_query)
     for row in query_job:

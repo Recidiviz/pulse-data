@@ -16,12 +16,13 @@
 # =============================================================================
 """A query template for a validation to check for overlapping incarceration or supervision periods."""
 
-from typing import Union, Type
+from typing import Type, Union
 
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
     StateSupervisionPeriod,
 )
+from recidiviz.utils.string import StrictStringFormatter
 
 OVERLAPPING_PERIODS_TEMPLATE = """
   SELECT 
@@ -53,7 +54,8 @@ def overlapping_periods_query(
     else:
         raise ValueError(f"Unexpected period_type [{period_type}]")
 
-    return OVERLAPPING_PERIODS_TEMPLATE.format(
+    return StrictStringFormatter().format(
+        OVERLAPPING_PERIODS_TEMPLATE,
         primary_key_field=period_type.get_primary_key_column_name(),
         start_date_field=start_date_field,
         end_date_field=end_date_field,

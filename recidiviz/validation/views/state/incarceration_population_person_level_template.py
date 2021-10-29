@@ -19,6 +19,7 @@
 from typing import Set
 
 from recidiviz.calculator.query.bq_utils import exclude_rows_with_missing_fields
+from recidiviz.utils.string import StrictStringFormatter
 
 INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_QUERY_TEMPLATE = """
 WITH 
@@ -90,11 +91,10 @@ def incarceration_population_person_level_query(
         if include_unmatched_people
         else {"external_data.person_external_id", "internal_data.person_external_id"}
     )
-    return (
-        INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_QUERY_TEMPLATE.format(
-            filter_clause=filter_clause,
-            external_data_required_fields_clause=exclude_rows_with_missing_fields(
-                external_data_required_fields
-            ),
-        )
+    return StrictStringFormatter().format(
+        INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_QUERY_TEMPLATE,
+        filter_clause=filter_clause,
+        external_data_required_fields_clause=exclude_rows_with_missing_fields(
+            external_data_required_fields
+        ),
     )
