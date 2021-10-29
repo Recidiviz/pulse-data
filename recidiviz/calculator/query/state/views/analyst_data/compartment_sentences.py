@@ -85,6 +85,8 @@ COMPARTMENT_SENTENCES_QUERY_TEMPLATE = """
         start_date,
         projected_completion_date AS projected_completion_date_min,
         projected_completion_date AS projected_completion_date_max,
+        min_length_days,
+        max_length_days,
         completion_date,
         DATE(NULL) AS parole_eligibility_date,
         is_violent,
@@ -111,6 +113,8 @@ COMPARTMENT_SENTENCES_QUERY_TEMPLATE = """
       start_date,
       projected_min_release_date AS projected_completion_date_min,
       projected_max_release_date AS projected_completion_date_max,
+      min_length_days,
+      max_length_days,
       completion_date,
       parole_eligibility_date,
       is_violent,
@@ -187,6 +191,8 @@ COMPARTMENT_SENTENCES_QUERY_TEMPLATE = """
     WHERE start_date IS NOT NULL
         AND (projected_completion_date_max IS NOT NULL 
             OR projected_completion_date_min IS NOT NULL
+            OR min_length_days IS NOT NULL
+            OR max_length_days IS NOT NULL
             OR completion_date IS NOT NULL 
             OR life_sentence)
     GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12
