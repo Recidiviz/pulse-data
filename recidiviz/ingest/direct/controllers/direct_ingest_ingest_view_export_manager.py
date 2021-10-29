@@ -58,6 +58,7 @@ from recidiviz.utils import regions
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.regions import Region
+from recidiviz.utils.string import StrictStringFormatter
 
 UPDATE_TIMESTAMP_PARAM_NAME = "update_timestamp"
 UPPER_BOUND_TIMESTAMP_PARAM_NAME = "update_timestamp_upper_bound_inclusive"
@@ -289,7 +290,8 @@ class DirectIngestIngestViewExportManager:
         _load_individual_date_queries_into_intermediate_tables function.
         """
         ingest_view = self.ingest_views_by_tag[ingest_view_export_args.ingest_view_name]
-        export_query = SELECT_SUBQUERY.format(
+        export_query = StrictStringFormatter().format(
+            SELECT_SUBQUERY,
             project_id=self.big_query_client.project_id,
             dataset_id=ingest_view.dataset_id,
             table_name=self._get_upper_bound_intermediate_table_name(
@@ -299,7 +301,8 @@ class DirectIngestIngestViewExportManager:
 
         if ingest_view_export_args.upper_bound_datetime_prev:
 
-            upper_bound_prev_query = SELECT_SUBQUERY.format(
+            upper_bound_prev_query = StrictStringFormatter().format(
+                SELECT_SUBQUERY,
                 project_id=self.big_query_client.project_id,
                 dataset_id=ingest_view.dataset_id,
                 table_name=self._get_lower_bound_intermediate_table_name(

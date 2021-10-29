@@ -68,6 +68,7 @@ from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.persistence.database.bq_refresh.bq_refresh import wait_for_table_load
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
+from recidiviz.utils.string import StrictStringFormatter
 
 BUCKET_SUFFIX = "-sendgrid-data"
 DATASET_ID = "sendgrid_email_data"
@@ -224,7 +225,8 @@ def load_from_temp_to_permanent_table(
     insert_job = bq_client.insert_into_table_from_query_async(
         destination_dataset_id=DATASET_ID,
         destination_table_id=FINAL_DESTINATION_TABLE,
-        query=INSERT_QUERY_TEMPLATE.format(
+        query=StrictStringFormatter().format(
+            INSERT_QUERY_TEMPLATE,
             project_id=project_id,
             dataset_id=DATASET_ID,
             temp_table=TEMP_DESTINATION_TABLE,

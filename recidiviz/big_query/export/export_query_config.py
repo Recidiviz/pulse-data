@@ -18,16 +18,15 @@
 """Defines configuration for a BigQuery query whose results should be exported somewhere."""
 import os
 from enum import Enum
-from typing import List, TypeVar, Generic, Optional
+from typing import Generic, List, Optional, TypeVar
 
 import attr
 from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_view import BigQueryView
-from recidiviz.view_registry.namespaces import BigQueryViewNamespace
-from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath, GcsfsDirectoryPath
+from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryView
-
+from recidiviz.view_registry.namespaces import BigQueryViewNamespace
 
 STAGING_DIRECTORY = "staging/"
 
@@ -70,9 +69,7 @@ class ExportQueryConfig:
         output_uri: str,
         output_format: bigquery.DestinationFormat,
     ) -> "ExportQueryConfig":
-        query = "{select_query} {filter_clause}".format(
-            select_query=view.select_query, filter_clause=view_filter_clause
-        )
+        query = f"{view.select_query} {view_filter_clause}"
         return ExportQueryConfig(
             query=query,
             query_parameters=[],
@@ -126,9 +123,7 @@ class ExportBigQueryViewConfig(Generic[BigQueryViewType]):
 
     @property
     def query(self) -> str:
-        return "{select_query} {filter_clause}".format(
-            select_query=self.view.select_query, filter_clause=self.view_filter_clause
-        )
+        return f"{self.view.select_query} {self.view_filter_clause}"
 
     def as_export_query_config(
         self, output_format: bigquery.DestinationFormat

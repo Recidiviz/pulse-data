@@ -29,6 +29,7 @@ from recidiviz.ingest.direct.controllers.direct_ingest_raw_table_migration impor
     UpdateRawTableMigration,
 )
 from recidiviz.utils import metadata
+from recidiviz.utils.string import StrictStringFormatter
 
 DELETE_FROM_MIGRATION_TEMPLATE = """DELETE FROM `{raw_table}`
 WHERE {filter_clause};"""
@@ -151,7 +152,8 @@ class RawTableMigrationGenerator:
         filter_clause = f"STRUCT({filter_names_str}) IN (\n    {filter_structs_str}\n)"
 
         return [
-            DELETE_FROM_MIGRATION_TEMPLATE.format(
+            StrictStringFormatter().format(
+                DELETE_FROM_MIGRATION_TEMPLATE,
                 raw_table=raw_table,
                 filter_clause=filter_clause,
             )
@@ -232,7 +234,8 @@ class RawTableMigrationGenerator:
             f"SELECT * FROM UNNEST([\n    {migration_update_structs_str}\n])"
         )
 
-        return UPDATE_MIGRATION_TEMPLATE.format(
+        return StrictStringFormatter().format(
+            UPDATE_MIGRATION_TEMPLATE,
             raw_table=raw_table,
             update_clause=update_clause,
             update_table_clause=update_table_clause,

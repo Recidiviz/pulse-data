@@ -30,6 +30,7 @@ from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager i
     DirectIngestRegionRawFileConfig,
 )
 from recidiviz.ingest.direct.query_utils import get_region_raw_file_config
+from recidiviz.utils.string import StrictStringFormatter
 
 UPDATE_DATETIME_PARAM_NAME = "update_timestamp"
 
@@ -272,7 +273,9 @@ class DirectIngestRawDataTableBigQueryView(BigQueryView):
         return f"{non_datetime_col_str}, update_datetime, " + (
             ", ".join(
                 [
-                    DATETIME_COL_NORMALIZATION_TEMPLATE.format(col_name=col_name)
+                    StrictStringFormatter().format(
+                        DATETIME_COL_NORMALIZATION_TEMPLATE, col_name=col_name
+                    )
                     for col_name in raw_file_config.datetime_cols
                 ]
             )
@@ -592,7 +595,9 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
             materialize_raw_data_table_views=self._materialize_raw_data_table_views,
             config=config,
         )
-        return query.format(**self._query_format_args_with_project_id())
+        return self.QUERY_FORMATTER.format(
+            query, **self._query_format_args_with_project_id()
+        )
 
     @staticmethod
     def _table_subbquery_name(
@@ -739,14 +744,16 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
         )
 
         if config.destination_table_type == DestinationTableType.PERMANENT_EXPIRING:
-            return DESTINATION_TABLE_QUERY_FORMAT.format(
+            return StrictStringFormatter().format(
+                DESTINATION_TABLE_QUERY_FORMAT,
                 raw_materialized_tables_clause=raw_materialized_tables_clause,
                 dataset_id=config.destination_dataset_id,
                 table_id=config.destination_table_id,
                 select_query_clause=select_query_clause,
             )
         if config.destination_table_type == DestinationTableType.TEMPORARY:
-            return DESTINATION_TEMP_TABLE_QUERY_FORMAT.format(
+            return StrictStringFormatter().format(
+                DESTINATION_TEMP_TABLE_QUERY_FORMAT,
                 raw_materialized_tables_clause=raw_materialized_tables_clause,
                 table_id=config.destination_table_id,
                 select_query_clause=select_query_clause,

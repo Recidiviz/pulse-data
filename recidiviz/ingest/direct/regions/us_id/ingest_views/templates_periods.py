@@ -17,6 +17,8 @@
 """Helper templates for the US_ID period queries."""
 from enum import Enum, auto
 
+from recidiviz.utils.string import StrictStringFormatter
+
 
 class PeriodType(Enum):
     INCARCERATION = auto()
@@ -468,29 +470,29 @@ ALL_PERIODS_FRAGMENT = f"""
 
     # All facility period start/end dates
     facility_dates AS (
-        {PERIOD_TO_DATES_FRAGMENT_TEMPLATE.format(periods='facility_periods')}
+        {StrictStringFormatter().format(PERIOD_TO_DATES_FRAGMENT_TEMPLATE,periods='facility_periods')}
     ),
     # All PO period start/end dates
     po_dates AS (
-        {PERIOD_TO_DATES_FRAGMENT_TEMPLATE.format(periods='po_periods')}
+        {StrictStringFormatter().format(PERIOD_TO_DATES_FRAGMENT_TEMPLATE, periods='po_periods')}
     ),
     # All offstat period start/end dates
     offstat_dates AS (
-        {PERIOD_TO_DATES_FRAGMENT_TEMPLATE.format(periods='offstat_periods')}
+        {StrictStringFormatter().format(PERIOD_TO_DATES_FRAGMENT_TEMPLATE, periods='offstat_periods')}
     ),
     # All wrkld period start/end dates
     wrkld_dates AS (
-        {PERIOD_TO_DATES_NO_INCRNO_FRAGMENT.format(periods='wrkld_periods')}
+        {StrictStringFormatter().format(PERIOD_TO_DATES_NO_INCRNO_FRAGMENT, periods='wrkld_periods')}
     ),
     # PO dates occasionally have information going into the future which is unreliable. Filter offstat dates to
     # only those that are within the bounds of real facility dates.
-    filtered_po_dates AS ({FILTERED_DATES_BY_FACILITY_DATES.format(dates_to_filter='po_dates')}),
+    filtered_po_dates AS ({StrictStringFormatter().format(FILTERED_DATES_BY_FACILITY_DATES, dates_to_filter='po_dates')}),
     # Wrkld dates occasionally have information going into the future which is unreliable. Filter offstat dates to
     # only those that are within the bounds of real facility dates.
-    filtered_wrkld_dates AS ({FILTERED_DATES_BY_FACILITY_DATES.format(dates_to_filter='wrkld_dates')}),
+    filtered_wrkld_dates AS ({StrictStringFormatter().format(FILTERED_DATES_BY_FACILITY_DATES, dates_to_filter='wrkld_dates')}),
     # Offstat dates occasionally have information going into the future which is unreliable. Filter offstat dates to
     # only those that are within the bounds of real facility dates.
-    filtered_offstat_dates AS ({FILTERED_DATES_BY_FACILITY_DATES.format(dates_to_filter='offstat_dates')}),
+    filtered_offstat_dates AS ({StrictStringFormatter().format(FILTERED_DATES_BY_FACILITY_DATES, dates_to_filter='offstat_dates')}),
     # All dates where something we care about changed.
     all_dates AS (
         {{important_date_union}}
@@ -622,7 +624,8 @@ ALL_PERIODS_FRAGMENT = f"""
 
 
 def get_all_periods_query_fragment(period_type: PeriodType) -> str:
-    return ALL_PERIODS_FRAGMENT.format(
+    return StrictStringFormatter().format(
+        ALL_PERIODS_FRAGMENT,
         period_split_criteria=create_period_split_criteria(period_type),
         period_status_code=get_status_code(period_type),
         important_date_union=create_important_date_union(period_type),

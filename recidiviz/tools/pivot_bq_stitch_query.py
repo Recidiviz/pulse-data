@@ -16,6 +16,8 @@
 # =============================================================================
 """Script to create query logic for pivoting tables"""
 
+from recidiviz.utils.string import StrictStringFormatter
+
 UNPIVOT_TEMPLATE = """
 {column_name} AS (
   SELECT
@@ -54,14 +56,18 @@ def main() -> None:
     """Script to create query logic for pivoting tables"""
     for gender in GENDERS:
         print(
-            PIVOT_TEMPLATE_JUST_GENDER.format(
-                gender=_to_db_gender(gender), column_name=gender.lower()
+            StrictStringFormatter().format(
+                PIVOT_TEMPLATE_JUST_GENDER,
+                gender=_to_db_gender(gender),
+                column_name=gender.lower(),
             )
         )
     for race in RACES:
         print(
-            PIVOT_TEMPLATE_JUST_RACE.format(
-                race=_to_db_race(race), column_name=race.lower()
+            StrictStringFormatter().format(
+                PIVOT_TEMPLATE_JUST_RACE,
+                race=_to_db_race(race),
+                column_name=race.lower(),
             )
         )
 
@@ -83,7 +89,8 @@ def main() -> None:
 
 def print_pivot_query(gender: str, race: str) -> None:
     print(
-        PIVOT_TEMPLATE.format(
+        StrictStringFormatter().format(
+            PIVOT_TEMPLATE,
             gender=_to_db_gender(gender),
             race=_to_db_race(race),
             column_name=_to_column_name(gender, race),
@@ -93,7 +100,11 @@ def print_pivot_query(gender: str, race: str) -> None:
 
 def print_unpivot_query(gender: str, race: str) -> None:
     column_name = gender.lower() + "_" + race.lower()
-    print(UNPIVOT_TEMPLATE.format(column_name=column_name, gender=gender, race=race))
+    print(
+        StrictStringFormatter().format(
+            UNPIVOT_TEMPLATE, column_name=column_name, gender=gender, race=race
+        )
+    )
 
 
 def _to_db_race(race: str) -> str:

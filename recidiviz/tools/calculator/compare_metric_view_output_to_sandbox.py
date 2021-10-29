@@ -93,6 +93,7 @@ from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.tools.load_views_to_sandbox import load_views_to_sandbox
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override, project_id
+from recidiviz.utils.string import StrictStringFormatter
 from recidiviz.view_registry.deployed_views import deployed_view_builders
 
 OUTPUT_COMPARISON_TEMPLATE = """
@@ -391,7 +392,8 @@ def _view_output_comparison_job(
         sandbox_dataset_id if check_determinism else view_builder.dataset_id
     )
 
-    diff_query = OUTPUT_COMPARISON_TEMPLATE.format(
+    diff_query = StrictStringFormatter().format(
+        OUTPUT_COMPARISON_TEMPLATE,
         project_id=bq_client.project_id,
         base_dataset_id=base_dataset_id_for_query,
         sandbox_dataset_id=sandbox_dataset_id,

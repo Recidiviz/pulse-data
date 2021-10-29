@@ -45,6 +45,8 @@ In this example, all rows with control numbers (C1, C2) or parole_numbers (P1, P
 end up with primary_control_number C1.
 """
 
+from recidiviz.utils.string import StrictStringFormatter
+
 EXPLORE_GRAPH_BY_COLUMN_TEMPLATE = """SELECT
         control_number, inmate_number, parole_number, pseudo_linking_id,
         IF(new_primary_control_number_candidate IS NULL OR primary_control_number < new_primary_control_number_candidate,
@@ -80,7 +82,8 @@ def explore_graph_by_column_query(base_table_name: str, join_col_name: str) -> s
     """Generates a query that explores one level of graph edges along the provided |join_col_name| column, merging
     clusters of primary_control_number that are linked by that edge.
     """
-    return EXPLORE_GRAPH_BY_COLUMN_TEMPLATE.format(
+    return StrictStringFormatter().format(
+        EXPLORE_GRAPH_BY_COLUMN_TEMPLATE,
         base_table_name=base_table_name,
         join_col_name=join_col_name,
     )

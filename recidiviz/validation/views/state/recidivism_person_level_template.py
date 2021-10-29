@@ -16,6 +16,8 @@
 # =============================================================================
 """A query template for doing person-level recidivism validation against an external dataset."""
 
+from recidiviz.utils.string import StrictStringFormatter
+
 RECIDIVISM_PERSON_LEVEL_EXTERNAL_COMPARISON_QUERY_TEMPLATE = """
     WITH external_data AS (
       -- NOTE: You can replace this part of the query with your own query to test the SELECT query you will use to generate
@@ -81,6 +83,7 @@ def recidivism_person_level_query(include_unmatched_people: bool) -> str:
         if include_unmatched_people
         else "WHERE external_data.person_external_id IS NOT NULL AND internal_data.person_external_id IS NOT NULL"
     )
-    return RECIDIVISM_PERSON_LEVEL_EXTERNAL_COMPARISON_QUERY_TEMPLATE.format(
-        filter_clause=filter_clause
+    return StrictStringFormatter().format(
+        RECIDIVISM_PERSON_LEVEL_EXTERNAL_COMPARISON_QUERY_TEMPLATE,
+        filter_clause=filter_clause,
     )
