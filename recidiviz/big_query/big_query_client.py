@@ -1381,9 +1381,9 @@ class BigQueryClientImpl(BigQueryClient):
 
                 if field.field_type != existing_field_with_name.field_type:
                     raise ValueError(
-                        "Trying to change the field type of an existing field. Existing field "
-                        f"{existing_field_with_name.name} has type {existing_field_with_name.field_type}. "
-                        f"Cannot change this type to {field.field_type}."
+                        f"Trying to change the field type of an existing field in {dataset_id}.{table_id}."
+                        f"Existing field {existing_field_with_name.name} has type "
+                        f"{existing_field_with_name.field_type}. Cannot change this type to {field.field_type}."
                     )
 
                 if field.mode != existing_field_with_name.mode:
@@ -1472,9 +1472,9 @@ class BigQueryClientImpl(BigQueryClient):
                 desired_field = desired_schema_map[field.name]
                 if field.field_type != desired_field.field_type:
                     raise ValueError(
-                        "Trying to change the field type of an existing field. Existing field "
-                        f"{desired_field.name} has type {desired_field.field_type}. "
-                        f"Cannot change this type to {field.field_type}."
+                        f"Trying to change the field type of an existing field in {dataset_id}.{table_id}. Existing "
+                        f"field {desired_field.name} has type {desired_field.field_type}. Cannot change this type to "
+                        f"{field.field_type}."
                     )
 
                 if field.mode != desired_field.mode:
