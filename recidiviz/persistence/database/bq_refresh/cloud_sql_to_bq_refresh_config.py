@@ -32,13 +32,10 @@ county_columns_to_exclude:
   <map with tables as keys>:
     - <list of columns for those tables to exclude>
 """
-import datetime
 from typing import Dict, List, Optional, Tuple
 
 import yaml
-from google.cloud import bigquery
-from sqlalchemy import Column, Table
-from sqlalchemy.dialects import postgresql
+from sqlalchemy import Table
 
 from recidiviz.big_query.big_query_view import BigQueryAddress
 from recidiviz.calculator.query.county.dataset_config import (
@@ -477,45 +474,3 @@ class CloudSqlToBQConfig:
             return CloudSqlToBQConfig(schema_type=SchemaType.CASE_TRIAGE)
 
         raise ValueError(f"Unexpected schema type value [{schema_type}]")
-
-    @staticmethod
-    def bq_schema_for_table(table: Table) -> List[bigquery.SchemaField]:
-        """Returns the necessary BigQuery schema for the table, which is a list of
-        SchemaField objects containing the column name and value type for each column in
-        the table."""
-
-        def schema_type_for_column(column: Column) -> str:
-            if isinstance(column.type, postgresql.UUID):
-                # UUID types don't have a python_type implemented, but we cast to string
-                # when we migrate to BQ
-                return bigquery.enums.SqlTypeNames.STRING.value
-
-            col_python_type = column.type.python_type
-
-            if col_python_type == str:
-                return bigquery.enums.SqlTypeNames.STRING.value
-            if col_python_type == int:
-                return bigquery.enums.SqlTypeNames.INTEGER.value
-            if col_python_type == float:
-                return bigquery.enums.SqlTypeNames.FLOAT.value
-            if col_python_type == datetime.date:
-                return bigquery.enums.SqlTypeNames.DATE.value
-            if col_python_type == datetime.datetime:
-                return bigquery.enums.SqlTypeNames.DATETIME.value
-            if col_python_type == bool:
-                return bigquery.enums.SqlTypeNames.BOOLEAN.value
-            if col_python_type == dict and isinstance(
-                column.type, (postgresql.JSON, postgresql.JSONB)
-            ):
-                return bigquery.enums.SqlTypeNames.STRING.value
-            # TODO(#7285): Add support for ARRAY types when we turn on the regular
-            #  CloudSQL to BQ refresh for the JUSTICE_COUNTS schema
-            raise ValueError(
-                f"Unhandled column type for column: {column} "
-                f"with python type: {col_python_type}"
-            )
-
-        return [
-            bigquery.SchemaField(col.name, schema_type_for_column(col), mode="NULLABLE")
-            for col in table.columns
-        ]
