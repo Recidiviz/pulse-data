@@ -10,6 +10,6 @@ output:
       - FakePersonRace:
           race:
             $conditional:
-              $if:
-                $not_null: RACE
-              $then: $literal_enum(FakeRace.ASIAN)
+              - $if:
+                  $not_null: RACE
+                $then: $literal_enum(FakeRace.ASIAN)

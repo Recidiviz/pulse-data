@@ -36,12 +36,12 @@ output:
                 $include_nulls: False
             incident_type:
               $conditional:
-                $if:
-                  $equal:
-                    - drug_related
-                    - $literal("Y")
-                $then: $literal_enum(StateIncarcerationIncidentType.CONTRABAND)
-                $else: $literal_enum(StateIncarcerationIncidentType.REPORT)
+                - $if:
+                    $equal:
+                      - drug_related
+                      - $literal("Y")
+                  $then: $literal_enum(StateIncarcerationIncidentType.CONTRABAND)
+                - $else: $literal_enum(StateIncarcerationIncidentType.REPORT)
             incident_details:
               $json_dict:
                 category_1: ctgory_of_chrgs_1
@@ -65,10 +65,10 @@ output:
                         - N  # No Confinement
                   date_effective:
                     $conditional:
-                      $if:
-                        $in:
-                          $value: confinement
-                          $options:
-                            - $literal("Y")
-                            - $literal("C")
-                      $then: confinement_date
+                      - $if:
+                          $in:
+                            $value: confinement
+                            $options:
+                              - $literal("Y")
+                              - $literal("C")
+                        $then: confinement_date

@@ -9,9 +9,9 @@ output:
     name: PERSONNAME
     current_officer:
       $conditional:
-        $if:
-          $not_null: AGENTID
-        $then:
-          FakeAgent:
-            external_id: AGENTID
-            name: AGENTNAME
+        - $if:
+            $not_null: AGENTID
+          $then:
+            FakeAgent:
+              external_id: AGENTID
+              name: AGENTNAME
