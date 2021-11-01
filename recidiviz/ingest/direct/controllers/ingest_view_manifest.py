@@ -186,7 +186,7 @@ class EntityTreeManifestFactory:
 
             if field_type is BuildableAttrFieldType.LIST:
                 child_manifests: List[
-                    Union[ExpandableListItemManifest[Entity], ManifestNode[Entity]]
+                    Union[ExpandableListItemManifest, ManifestNode[Entity]]
                 ] = []
                 child_entity_cls_name = get_non_flat_attribute_class(attribute)
                 if not child_entity_cls_name:
@@ -195,13 +195,19 @@ class EntityTreeManifestFactory:
                         f"on [{entity_cls.__name__}]."
                     )
                 for raw_child_manifest in raw_fields_manifest.pop_dicts(field_name):
-                    child_manifests.append(
-                        cls._build_list_item_manifest(
-                            list_item_manifest_raw=raw_child_manifest,
-                            delegate=delegate,
-                            entity_cls=delegate.get_entity_cls(child_entity_cls_name),
-                        )
+                    child_manifest = build_manifest_from_raw(
+                        raw_field_manifest=raw_child_manifest,
+                        delegate=delegate,
+                        result_type=delegate.get_entity_cls(child_entity_cls_name),
                     )
+                    if isinstance(child_manifest, ExpandableListItemManifest):
+                        child_manifests.append(child_manifest)
+                    elif issubclass(child_manifest.result_type, Entity):
+                        child_manifests.append(child_manifest)
+                    else:
+                        raise ValueError(
+                            f"Unexpected child_manifest type: [{type(child_manifest)}]"
+                        )
                 field_manifests[field_name] = ListRelationshipFieldManifest(
                     child_manifests=child_manifests
                 )
@@ -293,40 +299,6 @@ class EntityTreeManifestFactory:
             filter_predicate=cls._get_filter_predicate(entity_cls, field_manifests),
         )
 
-    @classmethod
-    def _build_list_item_manifest(
-        cls,
-        list_item_manifest_raw: YAMLDict,
-        delegate: IngestViewFileParserDelegate,
-        entity_cls: Type[EntityT],
-    ) -> Union[ManifestNode[EntityT], "ExpandableListItemManifest[EntityT]"]:
-        """Expands a list item into a list of entities based on the provided manifest."""
-        raw_iterable_manifest = pop_raw_flat_field_manifest_optional(
-            ExpandableListItemManifest.FOREACH_ITERATOR_KEY, list_item_manifest_raw
-        )
-
-        child_entity_manifest = build_manifest_from_raw_typed(
-            raw_field_manifest=list_item_manifest_raw,
-            delegate=delegate,
-            result_type=entity_cls,
-        )
-
-        # Check for special $foreach keyword arg which tells us that we should expand
-        # this list item into N entities.
-        #
-        # Aside from the special $foreach key, this manifest should be shaped like a
-        # normal entity tree manifest, a dictionary with a single class name -> fields
-        # manifest mapping.
-        if not raw_iterable_manifest:
-            return child_entity_manifest
-
-        return ExpandableListItemManifest(
-            values_manifest=build_iterable_manifest_from_raw(
-                raw_iterable_manifest=raw_iterable_manifest
-            ),
-            child_entity_manifest=child_entity_manifest,
-        )
-
     # TODO(##9099): Make sure to add documentation about what gets filtered out.
     # TODO(#8905): Consider using more general logic to build a filter predicate, like
     #  building a @required field annotation for fields that must be hydrated, otherwise
@@ -407,24 +379,34 @@ class SplitJSONListManifest(ManifestNode[List[str]]):
 
 
 @attr.s(kw_only=True)
-class ExpandableListItemManifest(Generic[EntityT]):
-    """A wrapper around an EntityTreeManifest that describes a list item that can be
-    expanded into 0 to N entity trees, based on the value of the input column.
+class ExpandableListItemManifest(ManifestNode[List[Entity]]):
+    """A manifest node that describes a list item that can be expanded into 0 to N
+    entity trees, based on the value of the input column.
     """
 
-    # Key that denotes that a list item should be treated as an expandable list item.
-    FOREACH_ITERATOR_KEY = "$foreach"
+    # Key for a function that produces 0-N items based on the values in an iterable.
+    FOREACH_KEY = "$foreach"
+
+    # Key for the argument that produces the iterable.
+    FOREACH_ITERABLE_ARG_KEY = "$iterable"
+
+    # Key for the manifest that will be used to produce one item in the result list.
+    FOREACH_ITEM_RESULT_ARG_KEY = "$result"
 
     # Variable "column name" hydrated with a single list item value. Can only be used
     # within the context of a $foreach loop.
-    FOREACH_LOOP_VALUE_NAME = "$iter"
+    FOREACH_LOOP_VALUE_NAME = "$iter_item"
 
     # Manifest that will produce the list of values to iterate over.
     values_manifest: ManifestNode[List[str]] = attr.ib()
 
-    child_entity_manifest: ManifestNode[EntityT] = attr.ib()
+    child_entity_manifest: ManifestNode[Entity] = attr.ib()
 
-    def expand(self, row: Dict[str, str]) -> List[EntityT]:
+    @property
+    def result_type(self) -> Type[List[Entity]]:
+        return List[Entity]
+
+    def build_from_row(self, row: Dict[str, str]) -> List[Entity]:
         values = self.values_manifest.build_from_row(row)
         if values is None:
             raise ValueError("Unexpected null list value.")
@@ -453,6 +435,30 @@ class ExpandableListItemManifest(Generic[EntityT]):
             },
         }
 
+    @classmethod
+    def from_raw_manifest(
+        cls,
+        *,
+        raw_function_manifest: YAMLDict,
+        delegate: IngestViewFileParserDelegate,
+    ) -> "ExpandableListItemManifest":
+        return ExpandableListItemManifest(
+            values_manifest=build_iterable_manifest_from_raw(
+                raw_iterable_manifest=pop_raw_flat_field_manifest(
+                    ExpandableListItemManifest.FOREACH_ITERABLE_ARG_KEY,
+                    raw_function_manifest,
+                )
+            ),
+            child_entity_manifest=build_manifest_from_raw_typed(
+                raw_field_manifest=pop_raw_flat_field_manifest(
+                    ExpandableListItemManifest.FOREACH_ITEM_RESULT_ARG_KEY,
+                    raw_function_manifest,
+                ),
+                delegate=delegate,
+                result_type=Entity,
+            ),
+        )
+
 
 @attr.s(kw_only=True)
 class ListRelationshipFieldManifest(ManifestNode[List[Entity]]):
@@ -462,7 +468,7 @@ class ListRelationshipFieldManifest(ManifestNode[List[Entity]]):
     """
 
     child_manifests: List[
-        Union[ExpandableListItemManifest[Entity], ManifestNode[Entity]]
+        Union[ExpandableListItemManifest, ManifestNode[Entity]]
     ] = attr.ib()
 
     @property
@@ -473,7 +479,7 @@ class ListRelationshipFieldManifest(ManifestNode[List[Entity]]):
         child_entities = []
         for child_manifest in self.child_manifests:
             if isinstance(child_manifest, ExpandableListItemManifest):
-                child_entities.extend(child_manifest.expand(row))
+                child_entities.extend(child_manifest.build_from_row(row))
             else:
                 child_entity = child_manifest.build_from_row(row)
                 if child_entity:
@@ -1796,6 +1802,11 @@ def build_manifest_from_raw(
                 raw_property_manifest=raw_field_manifest.pop(
                     BooleanLiteralManifest.ENV_PROPERTY_KEY, str
                 ),
+                delegate=delegate,
+            )
+        if manifest_node_name == ExpandableListItemManifest.FOREACH_KEY:
+            return ExpandableListItemManifest.from_raw_manifest(
+                raw_function_manifest=raw_field_manifest.pop_dict(manifest_node_name),
                 delegate=delegate,
             )
         if issubclass(result_type, Entity):

@@ -9,11 +9,15 @@ output:
   FakePerson:
     name: PERSONNAME
     sentences:
-      - $foreach: SENTENCES
-        FakeSentence:
-          external_id: $iter
-          charges:
-            - $foreach: CHARGES
-              FakeCharge:
-               external_id: $iter
-               statute: STATUTE
+      - $foreach:
+          $iterable: SENTENCES
+          $result:
+            FakeSentence:
+              external_id: $iter_item
+              charges:
+                - $foreach:
+                    $iterable: CHARGES
+                    $result:
+                      FakeCharge:
+                       external_id: $iter_item
+                       statute: STATUTE

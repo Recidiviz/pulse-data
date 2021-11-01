@@ -36,66 +36,68 @@ output:
                 response_date: sanction_date
                 supervision_violation_response_decisions:
                   - $foreach:
-                      $split_json: sanction_types
-                    StateSupervisionViolationResponseDecisionEntry:
-                      decision:
-                        $raw_text:
-                          $json_extract:
-                            $json: $iter
-                            $key: sanction_code
-                        $mappings:
-                          StateSupervisionViolationResponseDecision.COMMUNITY_SERVICE:
-                            - COMS  # Imposition of Community Service
-                          StateSupervisionViolationResponseDecision.DELAYED_ACTION:
-                            - ACCG  # Refer to ASCRA groups
-                          StateSupervisionViolationResponseDecision.INTERNAL_UNKNOWN:
-                            - IAOD
-                            - GCON
-                            - GARR
-                            - SAVE  # Placement in SAVE
-                            # TODO(#3312): Ask what this new sanction code value means.
-                            - SPB3  # Unknown, new as of 2021-05-10
-                            - ARRT  # Arrest
-                            - H03
-                            - CON1  # Administrative Conference 1
-                            - PV01
-                            - PV02
-                            - PV03
-                            - PV04
-                            - PV05
-                            - PV06
-                          StateSupervisionViolationResponseDecision.NEW_CONDITIONS:
-                            - IRPT  # Increased Reporting Requirements
-                            - CURF  # Imposition of Curfew
-                            - ICRF  # Imposition of Increased Curfew
-                            - URIN  # Imposition of Increased Urinalysis Testing
-                            - EMOS  # Imposition of Electronic Monitoring
-                            - AGPS  # Imposition of Global Positioning
-                            - WTVR  # Written Travel Restriction
-                            - DJBS  # Documented Job Search
-                            - DRPT  # Day Reporting Center
-                            - DFSE  # Deadline for Securing Employment
-                            - RECT  # Refer to Re-Entry Program
-                            - SCCC  # Secure CCC
-                            - IMAT  # Imposition of Mandatory Antabuse Use
-                            - PGPS  # Imposition of Passive Global Positioning
-                          StateSupervisionViolationResponseDecision.OTHER:
-                            - LOTR  # Low Sanction Range - Other
-                            - MOTR  # Medium Sanction Range - Other
-                            - HOTR  # High Sanction Range - Other
-                          StateSupervisionViolationResponseDecision.REVOCATION:
-                            - ARR2  # Incarceration
-                            - CPCB  # Placement in CCC Half Way Back
-                            - VCCF  # Placement in PV Center
-                            - IDOX  # Placement in D&A Detox Facility
-                            - IPMH  # Placement in Mental Health Facility
-                            - VCCP  # Placement in Violation Center County Prison
-                            - CPCO  # Community Parole Corrections Half Way Out
-                          StateSupervisionViolationResponseDecision.TREATMENT_IN_FIELD:
-                            - OPAT  # Placement in Out-Patient D&A Treatment
-                            - TXEV  # Obtain treatment evaluation
-                            - GVPB  # Refer to Violence Prevention Booster
-                          StateSupervisionViolationResponseDecision.TREATMENT_IN_PRISON:
-                            - IPAT  # Placement in In-Patient D&A Treatment
-                          StateSupervisionViolationResponseDecision.WARNING:
-                            - WTWR  # Written Warning
+                      $iterable:
+                        $split_json: sanction_types
+                      $result:
+                        StateSupervisionViolationResponseDecisionEntry:
+                          decision:
+                            $raw_text:
+                              $json_extract:
+                                $json: $iter_item
+                                $key: sanction_code
+                            $mappings:
+                              StateSupervisionViolationResponseDecision.COMMUNITY_SERVICE:
+                                - COMS  # Imposition of Community Service
+                              StateSupervisionViolationResponseDecision.DELAYED_ACTION:
+                                - ACCG  # Refer to ASCRA groups
+                              StateSupervisionViolationResponseDecision.INTERNAL_UNKNOWN:
+                                - IAOD
+                                - GCON
+                                - GARR
+                                - SAVE  # Placement in SAVE
+                                # TODO(#3312): Ask what this new sanction code value means.
+                                - SPB3  # Unknown, new as of 2021-05-10
+                                - ARRT  # Arrest
+                                - H03
+                                - CON1  # Administrative Conference 1
+                                - PV01
+                                - PV02
+                                - PV03
+                                - PV04
+                                - PV05
+                                - PV06
+                              StateSupervisionViolationResponseDecision.NEW_CONDITIONS:
+                                - IRPT  # Increased Reporting Requirements
+                                - CURF  # Imposition of Curfew
+                                - ICRF  # Imposition of Increased Curfew
+                                - URIN  # Imposition of Increased Urinalysis Testing
+                                - EMOS  # Imposition of Electronic Monitoring
+                                - AGPS  # Imposition of Global Positioning
+                                - WTVR  # Written Travel Restriction
+                                - DJBS  # Documented Job Search
+                                - DRPT  # Day Reporting Center
+                                - DFSE  # Deadline for Securing Employment
+                                - RECT  # Refer to Re-Entry Program
+                                - SCCC  # Secure CCC
+                                - IMAT  # Imposition of Mandatory Antabuse Use
+                                - PGPS  # Imposition of Passive Global Positioning
+                              StateSupervisionViolationResponseDecision.OTHER:
+                                - LOTR  # Low Sanction Range - Other
+                                - MOTR  # Medium Sanction Range - Other
+                                - HOTR  # High Sanction Range - Other
+                              StateSupervisionViolationResponseDecision.REVOCATION:
+                                - ARR2  # Incarceration
+                                - CPCB  # Placement in CCC Half Way Back
+                                - VCCF  # Placement in PV Center
+                                - IDOX  # Placement in D&A Detox Facility
+                                - IPMH  # Placement in Mental Health Facility
+                                - VCCP  # Placement in Violation Center County Prison
+                                - CPCO  # Community Parole Corrections Half Way Out
+                              StateSupervisionViolationResponseDecision.TREATMENT_IN_FIELD:
+                                - OPAT  # Placement in Out-Patient D&A Treatment
+                                - TXEV  # Obtain treatment evaluation
+                                - GVPB  # Refer to Violence Prevention Booster
+                              StateSupervisionViolationResponseDecision.TREATMENT_IN_PRISON:
+                                - IPAT  # Placement in In-Patient D&A Treatment
+                              StateSupervisionViolationResponseDecision.WARNING:
+                                - WTWR  # Written Warning

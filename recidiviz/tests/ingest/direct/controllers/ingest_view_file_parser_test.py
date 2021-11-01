@@ -1862,7 +1862,7 @@ class IngestViewFileParserTest(unittest.TestCase):
     def test_nested_foreach(self) -> None:
         with self.assertRaisesRegex(
             ValueError,
-            r"^Unexpected \$iter key value in row: \{.*\}. Nested loops not supported.$",
+            r"^Unexpected \$iter_item key value in row: \{.*\}. Nested loops not supported.$",
         ):
             _ = self._run_parse_for_tag("nested_foreach")
 
