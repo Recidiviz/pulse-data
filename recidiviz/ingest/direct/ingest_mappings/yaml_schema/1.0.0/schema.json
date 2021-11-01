@@ -1,0 +1,35 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "https://recidiviz.org/ingest_mappings/yaml_schema/1.0.0/schema.json",
+  "title": "Recidiviz Ingest Mappings Manifest 1.0.0",
+  "description": "Ingest mapping YAML syntax schema.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "manifest_language": {
+      "description": "Tracks the version of the manifest language that the file is targeting. Used to gate any breaking changes in the file syntax.",
+      "type": "string"
+    },
+    "input_columns": {
+      "description": "The columns that appear in the input file.",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "uniqueItems": true
+      }
+    },
+    "unused_columns": {
+      "description": "The columns that appear in the input file but are not used to populate the entity tree. This should be a subset of `input_columns`.",
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
+    "output": {
+      "description": "The entity tree to generate for each row in the input file.",
+      "type": "object"
+    }
+  },
+  "required": ["manifest_language", "input_columns", "unused_columns", "output"]
+}

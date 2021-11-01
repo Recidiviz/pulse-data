@@ -21,6 +21,8 @@ import os
 import unittest
 from typing import Dict, List, Optional, Type, Union
 
+import jsonschema
+
 from recidiviz.cloud_storage.gcs_file_system import GcsfsFileContentsHandle
 from recidiviz.common.constants.enum_parser import EnumParser, EnumParsingError
 from recidiviz.common.constants.states import StateCode
@@ -1895,8 +1897,8 @@ class IngestViewFileParserTest(unittest.TestCase):
 
     def test_duplicate_unused_col(self) -> None:
         with self.assertRaisesRegex(
-            ValueError,
-            r"Found item listed multiple times in |unused_columns|: \[DOB\]",
+            jsonschema.exceptions.ValidationError,
+            r"Failed validating 'uniqueItems' in schema\['properties'\]\['unused_columns'\]",
         ):
             _ = self._run_parse_manifest_for_tag("duplicate_unused_column")
 

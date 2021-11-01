@@ -16,8 +16,10 @@
 # =============================================================================
 """Functionality for working with objects parsed from YAML."""
 import copy
+import json
 from typing import Any, Dict, List, Optional, Type, TypeVar, Union
 
+import jsonschema
 import yaml
 
 # Represents a dictionary parsed from YAML, where values in the dictionary can only contain strings, numbers, or nested
@@ -55,6 +57,13 @@ class YAMLDict:
                 f"{type(value)}"
             )
         return value
+
+    def validate(self, json_schema_path: str) -> None:
+        """Validates that the YAML dict matches the JSON schema at the provided path. If
+        validation fails, raises jsonschema.exceptions.ValidationError."""
+        with open(json_schema_path, encoding="utf-8") as f:
+            schema = json.load(f)
+        jsonschema.validate(instance=self.get(), schema=schema)
 
     def pop_optional(self, field: str, value_type: Type[T]) -> Optional[T]:
         """Returns the object at the given key |field| without popping it from the
