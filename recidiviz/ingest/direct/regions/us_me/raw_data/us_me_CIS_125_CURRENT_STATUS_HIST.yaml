@@ -1,15 +1,125 @@
 file_tag: CIS_125_CURRENT_STATUS_HIST
 file_description: |-
-  TODO(#9296): Add raw data descriptions
-primary_key_cols: []
+  This table contains all of the statuses from incarceration and supervision that any client has ever had.
+  It is an append-only table that is updated when new records are created in the CIS_314_TRANSFER table.
+primary_key_cols:
+  - Current_Status_Hist_Id
 columns:
   - name : Cis_100_Client_Id
+    description: |-
+      The unique identifier for all clients in the offender management system.
   - name : Cis_1000_Current_Status_Cd
+    description: |-
+      This is a client's status in the system between the Effct_Date and the End_Date.
+    known_values:
+      - value: 1
+        description: "Probation (The client is on probation)"
+      - value: 2
+        description: "Incarcerated (The client is being held in a DOC facility)"
+      - value: 3
+        description: "Committed - In Custody (Juvenile Populations Only)"
+      - value: 4
+        description: "Parole (The client is on Parole)"
+      - value: 5
+        description: "SCCP (Supervised Community Confinement Program. The client is released to a supervision officer to serve the remaining incarceration sentence in the community)"
+      - value: 6
+        description: "Interstate Compact Out (The client has been transferred to another jurisdiction, either out of state or federal)"
+      - value: 7
+        description: "Interstate Active Detainer (The client is being held by another jurisdiction for out of state or federal charges and eventually needs to return to complete their sentence in Maine)"
+      - value: 8
+        description: "County Jail (The client is not sentenced to a DOC Facility but is being held in one for resourcing needs. This could include 'Safekeepers', 'Boarders', and overflow populations from the county jail)"
+      - value: 9
+        description: "Warrant Absconded (The client has absconded while on probation and has an active warrant)"
+      - value: 10
+        description: "Pending Violation (The client has a probation violation that is being processed)"
+      - value: 11
+        description: "Partial Revocation - incarcerated (The client is serving 9 months and a day or more in a DOC facility because of a probation violation)"
+      - value: 12
+        description: "Escape"
+      - value: 13
+        description: "Inactive (This status is auto-generated when a client is discharged from the system and is neither incarcerated nor under supervision. This status is also generated if the client is deceased)"
+      - value: 14
+        description: "Community Reintegration (Juvenile Populations Only)"
+      - value: 15
+        description: "Interstate Compact (Juvenile Populations Only)"
+      - value: 16
+        description: "Partial Revocation - probation to continue (This is a probation violation outcome status which means the client must continue probation after the revocation)"
+      - value: 17
+        description: "Partial Revocation - probation to terminate (This is a probation violation outcome status which means the client will complete their probation time in a DOC facility)"
+      - value: 18
+        description: "Informal Adjustment (Juvenile Populations Only)"
+      - value: 19
+        description: "Sole Sanction (Juvenile Populations Only)"
+      - value: 20
+        description: "Petition Authorized (Juvenile Populations Only)"
+      - value: 21
+        description: "Detention (Juvenile Populations Only)"
+      - value: 22
+        description: "Shock Sentence (Juvenile Populations Only)"
+      - value: 23
+        description: "Referral (Juvenile Populations Only)"
+      - value: 24
+        description: "Drug Court Sanction (Juvenile Populations Only)"
+      - value: 25
+        description: "Drug Court Participant (Juvenile Populations Only)"
+      - value: 26
+        description: "Conditional Release (Juvenile Populations Only)"
+      - value: 27
+        description: "Federal Hold (Never been used)"
+      - value: 28
+        description: "Interstate Compact In (The client has been transferred to a DOC facility but the jurisdiction responsible for the client is out of state or federal)"
+      - value: 31
+        description: "Active (Status for new client, can always be ignored)"
+      - value: 29
+        description: "Pending Violation - Incarcerated (The client's probation violation is still in progress and the client has not been admitted to a facility yet. This usually means a client is incarcerated at a county jail to await the sentencing outcome)"
+      - value: 32
+        description: "No Further Action (Juvenile Populations Only)"
+      - value: 33
+        description: "Partial Revocation - County Jail (The client is in a county jail for 9 months and a day or less because of a probation violation)"
   - name : Cis_3091_Mvmt_Reason_Cd
+    description : |-
+      Describes why someone was moved. Not all movements are transfers, but all transfers/transports are movements when they
+      occur to/from a DOC Facility. Movements also include escapes and furloughs from DOC facilities.
+      Movements are only related to incarcerated clients, not supervised clients. If a client is moved from
+      incarceration to probation, there would be a record in both the movements and transfers tables.
+    known_values :
+      - value: 1
+        description: "Furlough -- Medical"
+      - value: 2
+        description: "Furlough -- All Other"
+      - value: 3
+        description: "Transport -- Hospital"
+      - value: 4
+        description: "Transport -- All Other"
+      - value: 5
+        description: "Transport -- Court"
+      - value: 6
+        description: "Escape"
+      - value: 7
+        description: "Transfer -- County Jail"
+      - value: 8
+        description: "Transfer -- All Other"
+      - value: 9
+        description: "Transfer -- SCCP"
+      - value: 10
+        description: "Transfer -- ISC"
+      - value: 11
+        description: "Transfer -- IAD"
+      - value: 12
+        description: "Community Reintegration"
   - name : Cis_314_Transfer_Id
+    description : |-
+      Foreign-key ID for the CIS_314_TRANSFER table
   - name : Cis_908_Ccs_Location_2_Id
+    description: |-
+      Foreign-key ID for the CIS_908_CCS_LOCATION table, this is the client's physical location.
   - name : Cis_908_Ccs_Location_Id
+    description: |-
+      Foreign-key ID for the CIS_908_CCS_LOCATION table, this is the client's responsible jurisdiction location.
   - name : Cis_912_Unit_Id
+    description: |-
+      The unit within a DOC facility that is housing the client. For logistical reasons, Southern Maine Women's Reentry Center
+      is considered a unit of Maine Correctional Center.
   - name : Cis_913_Pod_Id
   - name : Cis_914_Cell_Id
   - name : Cis_915_Bed_Id
@@ -17,12 +127,21 @@ columns:
   - name : Created_By_Tx
   - name : Created_On_Date
   - name : Current_Status_Hist_Id
+    description: |-
+      Primary key of the table
   - name : Effct_Date
+    description: |-
+      The date that the status starts.
   - name : End_Date
+    description: |-
+      The date that the status ends. If this date is in the future, then the status is still active.
   - name : End_Datetime
   - name : Furlough_Ind
   - name : Hospital_Ind
   - name : Ineffct_Date
+    description: |-
+      The date that the status ends. If this date is 12/31/9999 then the status is still active and the End_Date shows
+      the anticipated end date or in some cases the End_Date is NULL.
   - name : Locking_Tsp
   - name : Modified_By_Tx
   - name : Modified_On_Date

@@ -1,7 +1,11 @@
 file_tag: CIS_401_CRT_ORDER_HDR
 file_description: |-
-  TODO(#9296): Add raw data descriptions
-primary_key_cols: []
+  This table includes information related to the client's sentence and is related to the CIS_319_TERM table.
+  A term can have many sentences. The CIS_401_CRT_ORDER_HDR table is updated to include days earned or lost
+  by time spent at the county jail awaiting sentencing, which then affects the early and current expected release dates
+  on the term.
+primary_key_cols:
+  - Cis_401_Court_Order_Id
 columns:
   - name : Adj_Days_Earned_Num
   - name : Adj_Days_Lost_Num
@@ -14,12 +18,77 @@ columns:
   - name : Cis_400_Cis_100_Client_Id
   - name : Cis_4003_Offence_Type_Cd
   - name : Cis_4009_Comm_Override_Rsn_Cd
+    description: |-
+      This is a Community Override Reason code that describes why a probation was ended early.
+    known_values:
+      - value: '78'
+        description: "Interstate Compact"
+      - value: '79'
+        description: "Vacated Sentence"
+      - value: '80'
+        description: "Parole Board Decision"
+      - value: '81'
+        description: "Pre 1983 Code"
+      - value: '82'
+        description: "Commutation/Pardon"
+      - value: '83'
+        description: "Deceased"
+      - value: '118'
+        description: "Full Revocation"
+      - value: '119'
+        description: "Early Termination"
+      - value: '120'
+        description: "Partial Revocation - Terminate"
+      - value: '131'
+        description: "Migration"
   - name : Cis_4009_Cons_Conc_Cd
   - name : Cis_4009_Cust_Override_Rsn_Cd
+    description: |-
+      This is a Custody Override Reason code that describes why an incarceration sentence was ended early. The values
+      chosen for this field seem to be unreliable, and most of the time "Other" is chosen and a note is added to the
+      "Cust_Override_Notes_Tx" field.
+    known_values:
+      - value: '74'
+        description: "InterState Compact (IN)"
+      - value: '75'
+        description: "Early Termination"
+      - value: '76'
+        description: "Parole"
+      - value: '77'
+        description: "Deceased"
+      - value: '109'
+        description: "Vacated"
+      - value: '117'
+        description: "Pre 1983 Code"
+      - value: '121'
+        description: "County Jail"
+      - value: '130'
+        description: "Migration"
+      - value: '132'
+        description: "Holiday Release"
+      - value: '133'
+        description: "Other"
   - name : Cis_4009_Sex_Offense_Cd
   - name : Cis_4009_Trial_Type_Cd
   - name : Cis_401_Court_Order_Id
+    description: |-
+      Primary key field
   - name : Cis_4010_Crt_Order_Status_Cd
+    description: |-
+      Current status of the court order
+    known_values:
+      - value: '1'
+        description: Pending - The court order is still in progress
+      - value: '2'
+        description: Committed - The incarceration sentence has started
+      - value: '3'
+        description: Complete - The sentence as ended
+      - value: '4'
+        description: Probation - The probation sentence has started
+      - value: '7'
+        description: Tolled - The client is in a violation period and awaiting an outcome decision
+      - value: '11'
+        description: Court Sanction - Client does not have a term to serve but has restitution fines due
   - name : Cis_4012_Crt_Order_Type_Cd
   - name : Cis_4020_Offns_Class_Cd
   - name : Cis_404_Docket_Id
@@ -30,6 +99,8 @@ columns:
   - name : Cis_9910_Def_Att_Id
   - name : Cis_9910_Pros_Att_Id
   - name : Comm_Override_Notes_Tx
+    description: |-
+      Additional information about the community override code
   - name : Comm_Override_Rel_Date
   - name : Comm_Override_Rel_Ind
   - name : Comm_Rel_Date
@@ -48,6 +119,8 @@ columns:
   - name : Csw_Total_Hours_Num
   - name : Curr_Cust_Rel_Date
   - name : Cust_Override_Notes_Tx
+    description: |-
+      Additional information about the community override code
   - name : Cust_Override_Rel_Date
   - name : Cust_Override_Rel_Ind
   - name : Days_Earned_Num

@@ -1,14 +1,47 @@
 file_tag: CIS_908_CCS_LOCATION
 file_description: |-
-  TODO(#9296): Add raw data descriptions
-primary_key_cols: []
+  This table maps a location ID (Ccs_Location_Id) to details about that location. The location types include
+  DOC Facilities, county jails, juvenile centers, supervision offices, group homes, courts, Maine government offices,
+  Maine counties, US States, and Department of Corrections offices. It also includes the value of "Deceased".
+primary_key_cols:
+  - Ccs_Location_Id
 columns:
   - name : Capacity_Num
   - name : Ccs_Location_Id
+    description: |-
+      The unique location ID that is used by other tables to identify the location.
   - name : Cis_900_Employee_Id
   - name : Cis_9009_Region_Cd
   - name : Cis_908_Canteen_Location_Id
   - name : Cis_9080_Ccs_Location_Type_Cd
+    description: A code that describes the type of location it is.
+    known_values :
+      - value: 1
+        description: Central Office, Administration location or Non-DOC Location type
+      - value: 2
+        description: DOC Correctional Facilities
+      - value: 3
+        description: Juvenile Detention Centers
+      - value: 4
+        description: Adult supervision offices
+      - value: 7
+        description: Pre-release centers
+      - value: 8
+        description: US and Canadian States and territories
+      - value: 9
+        desription: County jails
+      - value: 11
+        description: Location types including Federal, Puerto Rico, and Other County
+      - value: 13
+        description: Maine Counties
+      - value: 14
+        description: Values include "Locked" and "Deceased"
+      - value: 15
+        description: Group homes, juvenile supervision offices
+      - value: 16
+        description: Re-entry centers
+      - value: 21
+        description: Courts or government offices
   - name : Cis_9083_9085_Area_Cd
   - name : Cis_9083_9086_Fund_Cd
   - name : Cis_9083_9087_Oper_Cd
@@ -18,6 +51,8 @@ columns:
   - name : Loc_Cd_3Char_Tx
   - name : Loc_Cd_Tx
   - name : Location_Name
+    description: |-
+      The plain text name of the location
   - name : Locking_Tsp
   - name : Logical_Delete_Ind
   - name : Lss_Export_Location
