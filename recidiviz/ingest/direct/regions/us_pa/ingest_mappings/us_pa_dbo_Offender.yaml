@@ -20,27 +20,31 @@ output:
         Gender.MALE: M
         Gender.FEMALE: F
     races:
-      - $foreach: races_ethnicities_list
-        StatePersonRace:
-          race:
-            $raw_text: $iter
-            $mappings:
-              Race.ASIAN: A
-              Race.BLACK: B
-              Race.AMERICAN_INDIAN_ALASKAN_NATIVE: I
-              Race.OTHER: N
-              Race.WHITE: W
-            $ignore:
-              # This is an ethnicity value - ignore when mapping to race.
-              - H
-              # This is an erroneous value - ignore it.
-              - M
+      - $foreach:
+          $iterable: races_ethnicities_list
+          $result:
+            StatePersonRace:
+              race:
+                $raw_text: $iter_item
+                $mappings:
+                  Race.ASIAN: A
+                  Race.BLACK: B
+                  Race.AMERICAN_INDIAN_ALASKAN_NATIVE: I
+                  Race.OTHER: N
+                  Race.WHITE: W
+                $ignore:
+                  # This is an ethnicity value - ignore when mapping to race.
+                  - H
+                  # This is an erroneous value - ignore it.
+                  - M
     ethnicities:
-      - $foreach: races_ethnicities_list
-        StatePersonEthnicity:
-          ethnicity:
-            $raw_text: $iter
-            $mappings:
-              Ethnicity.HISPANIC: H
-            # These are race values - ignore when mapping to ethnicity.
-            $ignore: [A, B, I, N, W, M]
+      - $foreach:
+          $iterable: races_ethnicities_list
+          $result:
+            StatePersonEthnicity:
+              ethnicity:
+                $raw_text: $iter_item
+                $mappings:
+                  Ethnicity.HISPANIC: H
+                # These are race values - ignore when mapping to ethnicity.
+                $ignore: [A, B, I, N, W, M]

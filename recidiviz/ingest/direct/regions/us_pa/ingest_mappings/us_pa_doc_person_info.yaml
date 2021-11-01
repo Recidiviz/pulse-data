@@ -81,6 +81,8 @@ output:
             # These are race values - ignore when mapping to ethnicity.
             $ignore: [ASIAN, BLACK, "AMERICAN INDIAN", OTHER, WHITE]
     sentence_groups:
-      - $foreach: inmate_numbers
-        StateSentenceGroup:
-          external_id: $iter
+      - $foreach:
+          $iterable: inmate_numbers
+          $result:
+            StateSentenceGroup:
+              external_id: $iter_item

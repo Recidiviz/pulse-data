@@ -6,11 +6,15 @@ unused_columns: []
 output:
   FakePerson:
     external_ids:
-      - $foreach: PERSONIDS
-        FakePersonExternalId:
-          external_id: $iter
-          id_type: $literal("US_XX_ID_TYPE")
-      - $foreach: DOCIDS
-        FakePersonExternalId:
-          external_id: $iter
-          id_type: $literal("US_XX_DOC_ID")
+      - $foreach:
+          $iterable: PERSONIDS
+          $result:
+            FakePersonExternalId:
+              external_id: $iter_item
+              id_type: $literal("US_XX_ID_TYPE")
+      - $foreach:
+          $iterable: DOCIDS
+          $result:
+            FakePersonExternalId:
+              external_id: $iter_item
+              id_type: $literal("US_XX_DOC_ID")

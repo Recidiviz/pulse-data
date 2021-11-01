@@ -7,21 +7,23 @@ output:
   FakePerson:
     name: PERSONNAME
     races:
-      - $foreach: RACES
-        $conditional:
-          - $if:
-              $equal:
-                - $iter
-                - $literal("A")
-            $then:
-              FakePersonRace:
-                race: $literal_enum(FakeRace.ASIAN)
-          - $else:
-              FakePersonRace:
-                race:
-                  $raw_text: $iter
-                  $mappings:
-                    FakeRace.BLACK: B
-                    FakeRace.WHITE: W
-                  $ignore:
-                    - X
+      - $foreach:
+          $iterable: RACES
+          $result:
+            $conditional:
+              - $if:
+                  $equal:
+                    - $iter_item
+                    - $literal("A")
+                $then:
+                  FakePersonRace:
+                    race: $literal_enum(FakeRace.ASIAN)
+              - $else:
+                  FakePersonRace:
+                    race:
+                      $raw_text: $iter_item
+                      $mappings:
+                        FakeRace.BLACK: B
+                        FakeRace.WHITE: W
+                      $ignore:
+                        - X

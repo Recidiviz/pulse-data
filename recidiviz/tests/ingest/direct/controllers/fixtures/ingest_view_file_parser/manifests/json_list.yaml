@@ -8,13 +8,15 @@ output:
     name: PERSONNAME
     races:
       - $foreach:
-          $split_json: RACES
-        FakePersonRace:
-          race:
-            $raw_text:
-              $json_extract:
-                $json: $iter
-                $key: race
-            $mappings:
-              FakeRace.ASIAN: A
-              FakeRace.BLACK: B
+          $iterable:
+            $split_json: RACES
+          $result:
+            FakePersonRace:
+              race:
+                $raw_text:
+                  $json_extract:
+                    $json: $iter_item
+                    $key: race
+                $mappings:
+                  FakeRace.ASIAN: A
+                  FakeRace.BLACK: B
