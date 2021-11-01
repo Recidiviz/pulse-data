@@ -1,12 +1,15 @@
 file_tag: CIS_1000_CURRENT_STATUS
 file_description: |-
-  TODO(#9296): Add raw data descriptions
-primary_key_cols: []
+  This is a code table with one row per status code and description. The status code is used in the
+  CIS_1000_CURRENT_STATUS_CD field on the CIS_125_CURRENT_STATUS_HIST table.
+primary_key_cols:
+  - Current_Status_Cd
 columns:
   - name : Adult_Ind
   - name : Created_By_Tx
   - name : Created_On_Date
   - name : E_Current_Status_Desc
+    description : The plain text value associated with the Current_Status_Cd number.
   - name : Juvenile_Ind
   - name : Locking_Tsp
   - name : Logical_Delete_Ind
@@ -15,3 +18,4 @@ columns:
   - name : System_Ref_Comments_Tx
   - name : System_Ref_Tx
   - name : Current_Status_Cd
+    description : Primary key field and status code used in CIS_125_CURRENT_STATUS_HIST table

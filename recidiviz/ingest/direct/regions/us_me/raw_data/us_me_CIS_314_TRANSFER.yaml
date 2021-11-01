@@ -1,13 +1,139 @@
 file_tag: CIS_314_TRANSFER
 file_description: |-
-  TODO(#9296): Add raw data descriptions
-primary_key_cols: []
+  This table records transfers in and out of of DOC facilities and supervision locations. Transfers related to DOC Facilities
+  will also have a corresponding record in the CIS_309_MOVEMENT table.
+
+primary_key_cols:
+  - Transfer_Id
 columns:
   - name : Cancelled_Ind
+    description : |-
+      Whether the transfer was cancelled
+    known_values:
+      - value: 'Y'
+        description: "Yes"
+      - value: 'N'
+        description: "No"
   - name : Cancelled_Reason_Tx
   - name : Cis_100_Client_Id
+    description: |-
+      The unique identifier for all clients in the offender management system.
   - name : Cis_3140_Transfer_Type_Cd
+    description : |-
+      The type of transer and whether it was in our outside of DOC jurisdiction. "Society In" is used for supervision and
+      incarceration starts. "Society Out" is used for supervision and incarceration ends. Transfer types that begin
+      with "Non-DOC" refer to people who are being transferred to a DOC Facility but have not been sentenced. This
+      population includes people (referred to as "Safekeepers" or "Safe Keepers") who are entering the DOC Facility from the community or
+      the state psychiatric facility due to the mental health resource needs. It also includes overflow population from
+      county jails (referred to as "Boarders") who are awaiting court. Transfer types of "DOC County Jail Out" and
+      "DOC County Jail Return From" refer to people who have served time in a County Jail, and are being transferred
+      to DOC for probation time. This transfer type is primarily used by Probation Officers to keep track of people
+      who will be added to their caseloads. The transfer type of "Society In" means the person is entering a DOC
+      facility either as a new admission from society or from a county jail. The "Society Out" transfer type means the
+      person is being transferred out of the DOC system entirely and into the community.
+    known_values:
+      - value: 1
+        description: "DOC Transfer"
+      - value: 2
+        description: "Non-DOC In"
+      - value: 3
+        description: "DOC Interstate Compact Return From/In"
+      - value: 4
+        description: "Non-DOC Out"
+      - value: 5
+        description: "DOC Interstate Compact Out"
+      - value: 6
+        description: "DOC Interstate Active Detainer Return"
+      - value: 7
+        description: "DOC Interstate Active Detainer Out"
+      - value: 8
+        description: "Non-DOC County Jail In"
+      - value: 9
+        description: "Non-DOC County Jail Out"
+      - value: 10
+        description: "DOC County Jail Return From"
+      - value: 11
+        description: "DOC County Jail Out"
+      - value: 12
+        description: "Society In"
+      - value: 13
+        description: "Society Out"
   - name : Cis_3141_Transfer_Reason_Cd
+    description : |-
+      A reason associated with the type of transfer, provides more details about what kind of transfer it was.
+    known_values:
+      - value: 1
+        description : "Bind Over (Juvenile Populations Only)"
+      - value: 2
+        description : "Case Management Plan"
+      - value: 3
+        description : "Change of Custody Level"
+      - value: 4
+        description : "Individual Client Request"
+      - value: 5
+        description : "Other Jurisdiction (This could refer to transfers In or Out of other jurisdictions.)"
+      - value: 6
+        description : "Pending Adult Charges (Juvenile Populations Only)"
+      - value: 7
+        description : "Population Distribution"
+      - value: 8
+        description : "Release to Community Reintegration (Juvenile Populations Only)"
+      - value: 9
+        description : "Release to Parole"
+      - value: 10
+        description : "Release to Probation/JCCO (Juvenile Community Corrections Officer)"
+      - value: 11
+        description : "Safety"
+      - value: 12
+        description : "SCCP Placement (Supervised Community Confinement Program)"
+      - value: 13
+        description : "Security"
+      - value: 14
+        description: "Violation of Community Reintegration (Juvenile Populations Only)"
+      - value: 15
+        description: "Violation of Parole"
+      - value: 16
+        description: "Violation of Probation"
+      - value: 17
+        description: "Violation of SCCP (Supervised Community Confinement Program)"
+      - value: 18
+        description: "Writ / Court Order"
+      - value: 19
+        description: "Sentence/Disposition"
+      - value: 20
+        description: "Detention (Juvenile Populations Only)"
+      - value: 21
+        description: "Shock Sentence (Juvenile Populations Only)"
+      - value: 22
+        description: "Drug Court Sanction (Juvenile Populations Only)"
+      - value: 23
+        description: "Police Referral"
+      - value: 24
+        description: "Supervision Accepted"
+      - value: 25
+        description: "Closed Interest"
+      - value: 26
+        description: "Informal Resolution (Juvenile Populations Only)"
+      - value: 27
+        description: "Violation of Probation - Prob. to Terminate(J) (Juvenile Populations Only)"
+      - value: 28
+        description: "Interstate Active Detainer"
+      - value: 29
+        description: "Discharge (Discharge from incarceration or supervision to society)"
+      - value: 30
+        description: "Interstate Compact (This could refer to transfers In or Out of out of state or federal jurisdictions.)"
+      - value: 31
+        description: "Safe Keepers"
+      - value: 32
+        description: "Federal Hold"
+      - value: 33
+        description: "Federal BOP (Federal Board of Parole)"
+      - value: 34
+        description: "Medical"
+      - value: 36
+        description: "Higher Security"
+      - value: 35
+        description: "Weekly Transfers – Classification Only"
   - name : Cis_3142_Tran_Typ_Rsn_Cd
   - name : Cis_319_Term_Cust_Id
   - name : Cis_900_Employee_Id
@@ -30,4 +156,8 @@ columns:
   - name : Phone_Tx
   - name : Recommended_Date
   - name : Transfer_Date
+    description : |-
+      The date the transfer happened
   - name : Transfer_Id
+    description : |-
+      The primary key field
