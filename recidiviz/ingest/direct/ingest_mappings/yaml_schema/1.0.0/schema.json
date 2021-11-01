@@ -28,7 +28,8 @@
     },
     "output": {
       "description": "The entity tree to generate for each row in the input file.",
-      "type": "object"
+      "type": "object",
+      "$ref": "entity_nodes/entity_tree.json#/definitions/manifest"
     }
   },
   "required": ["manifest_language", "input_columns", "unused_columns", "output"]
