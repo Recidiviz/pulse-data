@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2019 Recidiviz, Inc.
+# Copyright (C) 2021 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,14 +18,14 @@
 calculations."""
 import abc
 import logging
-from typing import Any, Dict, Iterable, Optional, Set, Tuple, Type, TypeVar
+from typing import Any, Dict, Optional, Set, Tuple, Type
 
 import apache_beam as beam
-from apache_beam import Pipeline
 from apache_beam.typehints import with_input_types, with_output_types
 from more_itertools import one
 from sqlalchemy.orm.relationships import RelationshipProperty
 
+from recidiviz.calculator.pipeline.utils.beam_utils import ReadFromBigQuery
 from recidiviz.calculator.pipeline.utils.execution_utils import select_all_query
 from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.persistence.database import schema_utils
@@ -161,61 +161,6 @@ class BuildRootEntity(beam.PTransform):
             >> beam.ParDo(
                 _HydrateRootEntitiesWithRelationshipPropertyEntities(), **hydrate_kwargs
             )
-        )
-
-
-TypeToLift = TypeVar("TypeToLift")
-
-
-@with_input_types(TypeToLift)
-@with_output_types(TypeToLift)
-class LiftToPCollectionElement(beam.DoFn):
-    """Takes in the input and yields as an element in a PCollection. Does not manipulate the input in any
-    way.
-
-    Note: This is used when reading from BigQuery to avoid errors that we have encountered when passing output from
-    BigQuery as a SideInput without yet processing it as an element in a PCollection.
-    """
-
-    # pylint: disable=arguments-differ
-    def process(self, element: TypeToLift) -> Iterable[TypeToLift]:
-        yield element
-
-    def to_runner_api_parameter(self, _):
-        pass  # Passing unused abstract method.
-
-
-class ReadFromBigQuery(beam.PTransform):
-    """Reads query results from BigQuery."""
-
-    def __init__(self, query: str):
-        super().__init__()
-        self._query = query
-
-    # pylint: disable=arguments-renamed
-    def expand(self, pipeline: Pipeline):
-        return (
-            pipeline
-            | "Read from BigQuery"
-            >> beam.io.Read(
-                beam.io.ReadFromBigQuery(
-                    query=self._query, use_standard_sql=True, validate=True
-                )
-            )
-            | "Process table rows as elements" >> beam.ParDo(LiftToPCollectionElement())
-        )
-
-
-class WriteAppendToBigQuery(beam.io.WriteToBigQuery):
-    """Appends result rows to the given output BigQuery table."""
-
-    def __init__(self, output_dataset: str, output_table: str):
-        super().__init__(
-            table=output_table,
-            dataset=output_dataset,
-            create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,
-            write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
-            method=beam.io.WriteToBigQuery.Method.FILE_LOADS,
         )
 
 
