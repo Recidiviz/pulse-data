@@ -44,13 +44,15 @@ from recidiviz.calculator.dataflow_config import (
 from recidiviz.calculator.pipeline.base_identifier import BaseIdentifier
 from recidiviz.calculator.pipeline.base_metric_producer import BaseMetricProducer
 from recidiviz.calculator.pipeline.pipeline_type import PipelineType
-from recidiviz.calculator.pipeline.utils.beam_utils import RecidivizMetricWritableDict
+from recidiviz.calculator.pipeline.utils.beam_utils import (
+    RecidivizMetricWritableDict,
+    WriteAppendToBigQuery,
+)
 from recidiviz.calculator.pipeline.utils.event_utils import IdentifierEvent
 from recidiviz.calculator.pipeline.utils.execution_utils import (
     get_job_id,
     person_and_kwargs_for_identifier,
 )
-from recidiviz.calculator.pipeline.utils.extractor_utils import WriteAppendToBigQuery
 from recidiviz.calculator.pipeline.utils.metric_utils import (
     RecidivizMetric,
     RecidivizMetricType,
