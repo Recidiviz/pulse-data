@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "description": "TODO(#9099): Delete this once all object nodes have been defined and change anyOf to oneOf wherever this is used.",
+  "definitions": {
+    "manifest": {
+      "description": "A catch-all node for any object (function) manifest node.",
+      "type": "object",
+      "maxProperties": 1,
+      "additionalProperties": false,
+      "patternProperties": {
+        "^\\$.*": {
+          "oneOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "array"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

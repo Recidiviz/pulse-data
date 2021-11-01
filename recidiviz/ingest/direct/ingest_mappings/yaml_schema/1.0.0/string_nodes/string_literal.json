@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "description": "Evaluates to the same string for every input CSV row, regardless of the CSV's contents.",
+  "definitions": {
+    "manifest": {
+      "type": "string",
+      "pattern": "^\\$literal\\(\\\"(.+)\\\"\\)$",
+      "examples": [
+        "$literal(\"US_XX_ID_TYPE\")"
+      ]
+    }
+  }
+}
