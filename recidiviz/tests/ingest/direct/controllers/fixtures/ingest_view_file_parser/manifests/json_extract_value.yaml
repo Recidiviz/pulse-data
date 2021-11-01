@@ -7,20 +7,22 @@ output:
   FakePerson:
     name: PERSONNAME
     gender:
-      $raw_text:
-        $json_extract:
-          $json: DEMOGRAPHICINFO
-          $key: gender
-      $mappings:
-        FakeGender.MALE: M
-        FakeGender.FEMALE: F
+      $enum_mapping:
+        $raw_text:
+          $json_extract:
+            $json: DEMOGRAPHICINFO
+            $key: gender
+        $mappings:
+          FakeGender.MALE: M
+          FakeGender.FEMALE: F
     races:
       - FakePersonRace:
           race:
-            $raw_text:
-              $json_extract:
-                $json: DEMOGRAPHICINFO
-                $key: race
-            $mappings:
-              FakeRace.ASIAN: A
-              FakeRace.BLACK: B
+            $enum_mapping:
+              $raw_text:
+                $json_extract:
+                  $json: DEMOGRAPHICINFO
+                  $key: race
+              $mappings:
+                FakeRace.ASIAN: A
+                FakeRace.BLACK: B

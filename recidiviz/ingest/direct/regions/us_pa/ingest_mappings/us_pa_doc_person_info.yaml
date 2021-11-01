@@ -47,39 +47,43 @@ output:
         $state: legal_state
         $zip: legal_zip_code
     residency_status:
-      $raw_text:
-        $concat:
-          $values:
-            - legal_address_1
-            - legal_address_2
-          $include_nulls: False
-      $custom_parser: us_pa_custom_enum_parsers.residency_status_from_address
+      $enum_mapping:
+        $raw_text:
+          $concat:
+            $values:
+              - legal_address_1
+              - legal_address_2
+            $include_nulls: False
+        $custom_parser: us_pa_custom_enum_parsers.residency_status_from_address
     gender:
-      $raw_text: sex
-      $mappings:
-        Gender.MALE: MALE
-        Gender.FEMALE: FEMALE
+      $enum_mapping:
+        $raw_text: sex
+        $mappings:
+          Gender.MALE: MALE
+          Gender.FEMALE: FEMALE
     races:
       - StatePersonRace:
           race:
-            $raw_text: race
-            $mappings:
-              Race.ASIAN: ASIAN
-              Race.BLACK: BLACK
-              Race.AMERICAN_INDIAN_ALASKAN_NATIVE: "AMERICAN INDIAN"
-              Race.OTHER: OTHER
-              Race.WHITE: WHITE
-            $ignore:
-              # This is an ethnicity value - ignore when mapping to race.
-              - HISPANIC
+            $enum_mapping:
+              $raw_text: race
+              $mappings:
+                Race.ASIAN: ASIAN
+                Race.BLACK: BLACK
+                Race.AMERICAN_INDIAN_ALASKAN_NATIVE: "AMERICAN INDIAN"
+                Race.OTHER: OTHER
+                Race.WHITE: WHITE
+              $ignore:
+                # This is an ethnicity value - ignore when mapping to race.
+                - HISPANIC
     ethnicities:
       - StatePersonEthnicity:
           ethnicity:
-            $raw_text: race
-            $mappings:
-              Ethnicity.HISPANIC: HISPANIC
-            # These are race values - ignore when mapping to ethnicity.
-            $ignore: [ASIAN, BLACK, "AMERICAN INDIAN", OTHER, WHITE]
+            $enum_mapping:
+              $raw_text: race
+              $mappings:
+                Ethnicity.HISPANIC: HISPANIC
+              # These are race values - ignore when mapping to ethnicity.
+              $ignore: [ASIAN, BLACK, "AMERICAN INDIAN", OTHER, WHITE]
     sentence_groups:
       - $foreach:
           $iterable: inmate_numbers
