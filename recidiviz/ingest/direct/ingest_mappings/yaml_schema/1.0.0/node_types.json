@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "description": "Definitions for various high-level 'node' types that can be composed to define how we hydrate an entity (and its children) from the contents of a single ingest view row.",
+  "definitions": {
+    "string_node": {
+      "description": "Describes how we use some or all of the columns in an ingest view row to generate a single string value.",
+      "oneOf": [
+        {
+          "$ref": "string_nodes/string_literal.json#/definitions/manifest"
+        },
+        {
+          "$ref": "string_nodes/column_reference.json#/definitions/manifest"
+        },
+        {
+          "$ref": "string_nodes/iter_item_reference.json#/definitions/manifest"
+        },
+        {
+          "$ref": "fallback_object_node.json#/definitions/manifest"
+        }
+      ]
+    },
+    "enum_node": {
+      "oneOf": [
+        {
+          "$ref": "enum_nodes/enum_literal.json#/definitions/manifest"
+        }
+      ]
+    }
+  }
+}
