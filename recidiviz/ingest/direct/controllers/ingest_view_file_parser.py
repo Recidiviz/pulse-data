@@ -18,6 +18,7 @@
  for this ingest view.
 """
 import csv
+import os
 from enum import Enum, auto
 from typing import Dict, Iterator, List, Set, Tuple
 
@@ -32,6 +33,7 @@ from recidiviz.ingest.direct.controllers.ingest_view_manifest import (
     EntityTreeManifest,
     EntityTreeManifestFactory,
 )
+from recidiviz.ingest.direct.ingest_mappings import yaml_schema
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.utils.yaml_dict import YAMLDict
 
@@ -43,12 +45,6 @@ class FileFormat(Enum):
 # This key tracks the version number for the actual mappings manifest structure,
 # allowing us to gate any breaking changes in the file syntax etc.
 MANIFEST_LANGUAGE_VERSION_KEY = "manifest_language"
-
-# Minimum supported value in MANIFEST_LANGUAGE_VERSION_KEY field
-MIN_LANGUAGE_VERSION = "1.0.0"
-
-# Maximum supported value in MANIFEST_LANGUAGE_VERSION_KEY field
-MAX_LANGUAGE_VERSION = "1.0.0"
 
 
 class IngestViewFileParser:
@@ -118,9 +114,21 @@ class IngestViewFileParser:
         """
         manifest_dict = YAMLDict.from_path(manifest_path)
 
-        version = manifest_dict.pop(MANIFEST_LANGUAGE_VERSION_KEY, str)
-        if not MIN_LANGUAGE_VERSION <= version <= MAX_LANGUAGE_VERSION:
+        # Don't pop manifest version key, otherwise schema won't validate
+        version = manifest_dict.peek(MANIFEST_LANGUAGE_VERSION_KEY, str)
+
+        json_schema_dir_path = os.path.join(
+            os.path.dirname(yaml_schema.__file__), version
+        )
+        if not os.path.exists(json_schema_dir_path):
             raise ValueError(f"Unsupported language version: [{version}]")
+
+        manifest_dict.validate(
+            json_schema_path=os.path.join(
+                os.path.dirname(yaml_schema.__file__), version, "schema.json"
+            )
+        )
+        _ = manifest_dict.pop(MANIFEST_LANGUAGE_VERSION_KEY, str)
 
         # TODO(#8981): Add logic to enforce that version changes are accompanied with
         #  proper migrations / reruns.
