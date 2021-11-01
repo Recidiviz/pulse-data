@@ -7,9 +7,9 @@ output:
     name: PERSONNAME
     gender:
       $conditional:
-        $if:
-          $equal:
-            - PERSONNAME
-            - $literal("COLIN")
-        $then: $literal_enum(FakeGender.MALE)
-        $else: $literal_enum(FakeGender.FEMALE)
+        - $if:
+            $equal:
+              - PERSONNAME
+              - $literal("COLIN")
+          $then: $literal_enum(FakeGender.MALE)
+        - $else: $literal_enum(FakeGender.FEMALE)

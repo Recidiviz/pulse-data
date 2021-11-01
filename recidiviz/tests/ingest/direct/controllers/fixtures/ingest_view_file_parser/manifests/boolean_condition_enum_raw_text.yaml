@@ -12,14 +12,14 @@ output:
     gender:
       $raw_text:
         $conditional:
-          $if:
-            $in:
-              $value: GENDER
-              $options:
-                - $literal("MA")
-                - $literal("M")
-          $then: GENDER
-          $else: $literal("MALE")
+          - $if:
+              $in:
+                $value: GENDER
+                $options:
+                  - $literal("MA")
+                  - $literal("M")
+            $then: GENDER
+          - $else: $literal("MALE")
       $mappings:
         FakeGender.MALE:
           - MA

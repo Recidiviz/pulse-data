@@ -7,12 +7,12 @@ output:
   FakePerson:
     name:
       $conditional:
-        $if:
-          $not_null:
-            $concat:
-              $values:
-                - PART_1
-                - PART_2
-              $include_nulls: False
-        $then: PART_1
-        $else: $literal("BOTH NULL")
+        - $if:
+            $not_null:
+              $concat:
+                $values:
+                  - PART_1
+                  - PART_2
+                $include_nulls: False
+          $then: PART_1
+        - $else: $literal("BOTH NULL")

@@ -1452,13 +1452,16 @@ class BooleanConditionManifest(ManifestNode[ManifestNodeT]):
 
     BOOLEAN_CONDITION_KEY = "$conditional"
 
-    # Function argument key for the boolean condition to evaluate.
-    CONDITION_ARG_KEY = "$if"
+    # Key for the boolean condition to evaluate.
+    IF_CONDITION_ARG_KEY = "$if"
 
-    # Function argument key for the node to evaluate if the condition is True.
+    # Key for the boolean condition to evaluate.
+    ELSE_IF_CONDITION_ARG_KEY = "$else_if"
+
+    # Key for the node to evaluate if the condition is True.
     THEN_ARG_KEY = "$then"
 
-    # Function argument key for the node to evaluate if the condition is False.
+    # Key for the node to evaluate if all conditions in a list of conditions are False.
     ELSE_ARG_KEY = "$else"
 
     condition_manifest: ManifestNode[bool] = attr.ib()
@@ -1467,16 +1470,6 @@ class BooleanConditionManifest(ManifestNode[ManifestNodeT]):
 
     @property
     def result_type(self) -> Type[ManifestNodeT]:
-        if (
-            self.else_manifest
-            and self.then_manifest.result_type != self.then_manifest.result_type
-        ):
-            raise ValueError(
-                f"Result types of $then and $else blocks must match. Found "
-                f"[{self.then_manifest.result_type}] and "
-                f"[{self.else_manifest.result_type}]."
-            )
-
         return self.then_manifest.result_type
 
     def build_from_row(self, row: Dict[str, str]) -> Optional[ManifestNodeT]:
@@ -1500,7 +1493,6 @@ class BooleanConditionManifest(ManifestNode[ManifestNodeT]):
         }
 
 
-# TODO(#9320): Add support for conditional entity expressions
 class BooleanConditionManifestFactory:
     """Factory class for building BooleanConditionManifests."""
 
@@ -1508,49 +1500,82 @@ class BooleanConditionManifestFactory:
     def from_raw_manifest(
         cls,
         *,
-        raw_function_manifest: YAMLDict,
+        raw_condition_manifests: List[YAMLDict],
         delegate: IngestViewFileParserDelegate,
         result_type: Type[ManifestNodeT],
         enum_cls: Optional[Type[Enum]],
     ) -> "BooleanConditionManifest[ManifestNodeT]":
         """Builds a BooleanConditionManifest from the provided raw manifest."""
-        condition_manifest = build_manifest_from_raw_typed(
-            pop_raw_flat_field_manifest(
-                BooleanConditionManifest.CONDITION_ARG_KEY, raw_function_manifest
-            ),
-            delegate,
-            bool,
-        )
 
-        then_manifest = build_manifest_from_raw_typed(
-            pop_raw_flat_field_manifest(
-                BooleanConditionManifest.THEN_ARG_KEY, raw_function_manifest
-            ),
-            delegate,
-            result_type,
-            enum_cls,
-        )
-
+        highest_level_boolean_manifest = None
         else_manifest = None
-        else_manifest_raw = pop_raw_flat_field_manifest_optional(
-            BooleanConditionManifest.ELSE_ARG_KEY, raw_function_manifest
-        )
-        if else_manifest_raw:
-            else_manifest = build_manifest_from_raw_typed(
-                else_manifest_raw, delegate, result_type, enum_cls
+
+        # Reverse the order so we can build a nested if/else condition node from the
+        # inside out.
+        for reverse_index, raw_condition_manifest in enumerate(
+            reversed(raw_condition_manifests)
+        ):
+            index = len(raw_condition_manifests) - reverse_index - 1
+            else_manifest_raw = pop_raw_flat_field_manifest_optional(
+                BooleanConditionManifest.ELSE_ARG_KEY, raw_condition_manifest
+            )
+            if else_manifest_raw:
+                if reverse_index != 0:
+                    raise ValueError(
+                        f"Found $else statement in condition [{index}] of the "
+                        f"$conditional statement. Only the final condition may have a "
+                        f"$else clause."
+                    )
+                if len(raw_condition_manifests) == 1:
+                    raise ValueError(
+                        "Found only $else condition in $conditional statement."
+                    )
+                else_manifest = build_manifest_from_raw_typed(
+                    else_manifest_raw, delegate, result_type, enum_cls
+                )
+                continue
+
+            if index == 0:
+                condition_manifest_raw = pop_raw_flat_field_manifest(
+                    BooleanConditionManifest.IF_CONDITION_ARG_KEY,
+                    raw_condition_manifest,
+                )
+            else:
+                condition_manifest_raw = pop_raw_flat_field_manifest(
+                    BooleanConditionManifest.ELSE_IF_CONDITION_ARG_KEY,
+                    raw_condition_manifest,
+                )
+
+            condition_manifest = build_manifest_from_raw_typed(
+                condition_manifest_raw, delegate, bool
             )
 
-        if len(raw_function_manifest):
-            raise ValueError(
-                f"Found unused keys in boolean condition manifest: "
-                f"{raw_function_manifest.keys()}"
+            then_manifest = build_manifest_from_raw_typed(
+                pop_raw_flat_field_manifest(
+                    BooleanConditionManifest.THEN_ARG_KEY, raw_condition_manifest
+                ),
+                delegate,
+                result_type,
+                enum_cls,
+            )
+            highest_level_boolean_manifest = BooleanConditionManifest(
+                condition_manifest=condition_manifest,
+                then_manifest=then_manifest,
+                # Set the previous highest level manifest as the else-block, creating a
+                # nested if-else chain.
+                else_manifest=highest_level_boolean_manifest or else_manifest,
             )
 
-        return BooleanConditionManifest(
-            condition_manifest=condition_manifest,
-            then_manifest=then_manifest,
-            else_manifest=else_manifest,
-        )
+            if len(raw_condition_manifest):
+                raise ValueError(
+                    f"Found unused keys in boolean condition item [{index}]: "
+                    f"{raw_condition_manifest.keys()}"
+                )
+
+        if not highest_level_boolean_manifest:
+            raise ValueError("Found empty conditions list for $conditional statement.")
+
+        return highest_level_boolean_manifest
 
 
 def pop_raw_flat_field_manifest_optional(
@@ -1701,9 +1726,10 @@ def build_manifest_from_raw(
                 delegate=delegate,
             )
         if manifest_node_name == BooleanConditionManifest.BOOLEAN_CONDITION_KEY:
-
             return BooleanConditionManifestFactory.from_raw_manifest(
-                raw_function_manifest=raw_field_manifest.pop_dict(manifest_node_name),
+                raw_condition_manifests=raw_field_manifest.pop_dicts(
+                    manifest_node_name
+                ),
                 delegate=delegate,
                 result_type=result_type,
                 enum_cls=enum_cls,

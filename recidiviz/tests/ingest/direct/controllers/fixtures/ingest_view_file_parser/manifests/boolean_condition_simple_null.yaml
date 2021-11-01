@@ -8,17 +8,17 @@ output:
   FakePerson:
     name:
       $conditional:
-        $if:
-          $not_null: DOB
-        $then: PERSONNAME
+        - $if:
+            $not_null: DOB
+          $then: PERSONNAME
     birthdate: DOB
     gender:
       $raw_text:
         $conditional:
-          $if:
-            $is_null: GENDER
-          $then: $literal("MM")
-          $else: GENDER
+          - $if:
+              $is_null: GENDER
+            $then: $literal("MM")
+          - $else: GENDER
       $mappings:
         FakeGender.MALE:
           - M
