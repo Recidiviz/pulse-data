@@ -17,9 +17,10 @@
 """Base test class for ingest view parser tests."""
 import csv
 import os
+import re
 import unittest
 from abc import abstractmethod
-from typing import Dict, Sequence
+from typing import List, Sequence
 
 from recidiviz.cloud_storage.gcs_file_system import GcsfsFileContentsHandle
 from recidiviz.common.constants.states import StateCode
@@ -44,10 +45,13 @@ from recidiviz.persistence.entity.entity_utils import print_entity_trees
 from recidiviz.tests.ingest.direct.fixture_util import direct_ingest_fixture_path
 from recidiviz.utils.environment import in_ci
 from recidiviz.utils.regions import Region, get_region
+from recidiviz.utils.yaml_dict import YAMLDict
+
+YAML_LANGUAGE_SERVER_PRAGMA = re.compile(
+    r"^# yaml-language-server: \$schema=(?P<schema_path>.*schema.json)$"
+)
 
 
-# TODO(#9022): Enforce that every single ingest view manifest has an associated parser
-#  test.
 class StateIngestViewParserTestBase:
     """Base test class for ingest view parser tests."""
 
@@ -134,31 +138,23 @@ class StateIngestViewParserTestBase:
 
         self.test.assertEqual(expected_output, parsed_output)
 
-    # TODO(#8905): Change this function to just return manifest paths once all
-    # manifests have been migrated to v2 mappings and have
-    # test_all_ingest_view_manifests_parse do the parsing.
-    def _manifest_path_to_v2_manifest(self) -> Dict[str, EntityTreeManifest]:
+    # TODO(#8905): Rename this function once all manifests have been migrated to v2
+    #  mappings and have test_all_ingest_view_manifests_parse do the parsing.
+    def _v2_manifest_paths(self) -> List[str]:
         region = self._region()
         manifest_dir = ingest_view_manifest_dir(region)
 
-        parser = self._build_parser()
-
-        result = {}
+        result = []
         for file in os.listdir(manifest_dir):
             if file == "__init__.py":
                 continue
             manifest_path = os.path.join(manifest_dir, file)
-            try:
-                manifest_ast, _ = parser.parse_manifest(manifest_path)
-            except KeyError as e:
-                if "Expected nonnull [manifest_language] in input" in str(e):
-                    # TODO(#8905): Remove this check once all files have been migrated
-                    #  to v2 structure.
-                    continue
-                raise e
-
-            self.test.assertIsInstance(manifest_ast, EntityTreeManifest)
-            result[manifest_path] = manifest_ast
+            manifest_dict = YAMLDict.from_path(manifest_path)
+            if "manifest_language" not in manifest_dict.keys():
+                # TODO(#8905): Remove this check once all files have been migrated
+                #  to v2 structure.
+                continue
+            result.append(manifest_path)
         return result
 
     def test_all_ingest_view_manifests_parse(self) -> None:
@@ -167,15 +163,39 @@ class StateIngestViewParserTestBase:
             return
 
         # Make sure building all manifests doesn't crash
-        _ = self._manifest_path_to_v2_manifest()
+        parser = self._build_parser()
+        for manifest_path in self._v2_manifest_paths():
+            manifest_ast, _ = parser.parse_manifest(manifest_path)
+            self.test.assertIsInstance(manifest_ast, EntityTreeManifest)
 
     def test_all_ingest_view_manifests_are_tested(self) -> None:
         if self.region_code() == StateCode.US_XX.value:
             # Skip template region
             return
 
-        for manifest_path in self._manifest_path_to_v2_manifest():
+        for manifest_path in self._v2_manifest_paths():
             self._check_manifest_has_parser_test(manifest_path)
+
+    def test_all_ingest_view_manifests_define_schema_pragma(self) -> None:
+        if self.region_code() == StateCode.US_XX.value:
+            # Skip template region
+            return
+
+        for manifest_path in self._v2_manifest_paths():
+            with open(manifest_path, encoding="utf-8") as f:
+                line = f.readline()
+                match = re.match(YAML_LANGUAGE_SERVER_PRAGMA, line.strip())
+                if not match:
+                    raise ValueError(
+                        f"First line of manifest file [{manifest_path}] does not match "
+                        f"expected pattern."
+                    )
+                relative_schema_path = match.group("schema_path")
+                abs_schema_path = os.path.normpath(
+                    os.path.join(os.path.dirname(manifest_path), relative_schema_path)
+                )
+                if not os.path.exists(abs_schema_path):
+                    raise ValueError(f"Schema path [{abs_schema_path}] does not exist.")
 
     def _check_manifest_has_parser_test(self, manifest_path: str) -> None:
         """Validates that manifest at the given path has an associated test defined in
