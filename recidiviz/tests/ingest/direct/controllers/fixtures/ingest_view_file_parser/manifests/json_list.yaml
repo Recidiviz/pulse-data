@@ -13,10 +13,11 @@ output:
           $result:
             FakePersonRace:
               race:
-                $raw_text:
-                  $json_extract:
-                    $json: $iter_item
-                    $key: race
-                $mappings:
-                  FakeRace.ASIAN: A
-                  FakeRace.BLACK: B
+                $enum_mapping:
+                  $raw_text:
+                    $json_extract:
+                      $json: $iter_item
+                      $key: race
+                  $mappings:
+                    FakeRace.ASIAN: A
+                    FakeRace.BLACK: B

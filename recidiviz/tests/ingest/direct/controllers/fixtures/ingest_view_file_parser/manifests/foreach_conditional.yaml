@@ -21,9 +21,10 @@ output:
               - $else:
                   FakePersonRace:
                     race:
-                      $raw_text: $iter_item
-                      $mappings:
-                        FakeRace.BLACK: B
-                        FakeRace.WHITE: W
-                      $ignore:
-                        - X
+                      $enum_mapping:
+                        $raw_text: $iter_item
+                        $mappings:
+                          FakeRace.BLACK: B
+                          FakeRace.WHITE: W
+                        $ignore:
+                          - X

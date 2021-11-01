@@ -17,6 +17,7 @@
 """Custom enum parsers functions for US_ME. Can be referenced in an ingest view manifest
 like this:
 my_enum_field:
+  $enum_mapping:
     $raw_text: MY_CSV_COL
     $custom_parser: us_me_custom_enum_parsers.<function name>
 """

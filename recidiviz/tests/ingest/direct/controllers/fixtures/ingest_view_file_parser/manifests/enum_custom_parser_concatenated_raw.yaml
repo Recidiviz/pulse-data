@@ -13,10 +13,11 @@ output:
     races:
       - FakePersonRace:
           race:
-            $raw_text:
-              $concat:
-                $separator: "$$"
-                $values:
-                  - RACE
-                  - RACE_SUFFIX
-            $custom_parser: fake_custom_enum_parsers.race_two_parts
+            $enum_mapping:
+              $raw_text:
+                $concat:
+                  $separator: "$$"
+                  $values:
+                    - RACE
+                    - RACE_SUFFIX
+              $custom_parser: fake_custom_enum_parsers.race_two_parts

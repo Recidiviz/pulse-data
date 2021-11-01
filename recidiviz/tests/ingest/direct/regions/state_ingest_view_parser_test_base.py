@@ -36,7 +36,7 @@ from recidiviz.ingest.direct.controllers.ingest_view_file_parser_delegate import
 )
 from recidiviz.ingest.direct.controllers.ingest_view_manifest import (
     EntityTreeManifest,
-    EnumFieldManifest,
+    EnumMappingManifest,
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.entity.base_entity import Entity
@@ -94,7 +94,7 @@ class StateIngestViewParserTestBase:
         return manifest_ast
 
     def _parse_enum_manifest_test(
-        self, file_tag: str, enum_parser_manifest: EnumFieldManifest
+        self, file_tag: str, enum_parser_manifest: EnumMappingManifest
     ) -> None:
         fixture_path = direct_ingest_fixture_path(
             region_code=self.region_code(),

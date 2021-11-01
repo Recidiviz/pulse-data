@@ -12,9 +12,10 @@ output:
     races:
       - FakePersonRace:
           race:
-            $raw_text: RACE
-            $mappings:
-              FakeRace.BLACK: B
-              FakeRace.WHITE: W
-            $ignore:
-              - X
+            $enum_mapping:
+              $raw_text: RACE
+              $mappings:
+                FakeRace.BLACK: B
+                FakeRace.WHITE: W
+              $ignore:
+                - X

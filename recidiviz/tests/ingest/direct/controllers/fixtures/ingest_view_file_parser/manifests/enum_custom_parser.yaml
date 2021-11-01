@@ -12,7 +12,8 @@ output:
     races:
       - FakePersonRace:
           race:
-            $raw_text: RACE
-            $custom_parser: fake_custom_enum_parsers.flip_black_and_white
-            $ignore:
-              - X
+            $enum_mapping:
+              $raw_text: RACE
+              $custom_parser: fake_custom_enum_parsers.flip_black_and_white
+              $ignore:
+                - X

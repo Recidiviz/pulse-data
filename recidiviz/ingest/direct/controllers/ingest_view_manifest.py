@@ -242,9 +242,9 @@ class EntityTreeManifestFactory:
                 )
                 field_manifests[field_name] = field_manifest
 
-                if isinstance(field_manifest, EnumFieldManifest):
+                if isinstance(field_manifest, EnumMappingManifest):
                     field_manifests[
-                        EnumFieldManifest.raw_text_field_name(field_name)
+                        EnumMappingManifest.raw_text_field_name(field_name)
                     ] = field_manifest.raw_text_field_manifest
                 elif isinstance(field_manifest, EnumLiteralFieldManifest):
                     # Do not hydrate raw text for enum literals
@@ -582,8 +582,12 @@ class EnumLiteralFieldManifest(ManifestNode[LiteralEnumParser]):
 
 
 @attr.s(kw_only=True)
-class EnumFieldManifest(ManifestNode[StrictEnumParser]):
+class EnumMappingManifest(ManifestNode[StrictEnumParser]):
     """Manifest describing a flat field that will be hydrated into a parsed enum value."""
+
+    # Key for an enum mappings manifest that will hydrate an enum field and its
+    # associated raw text field.
+    ENUM_MAPPING_KEY = "$enum_mapping"
 
     # Raw manifest key whose value describes where to look for the raw text value to
     # parse this enum from.
@@ -633,12 +637,12 @@ class EnumFieldManifest(ManifestNode[StrictEnumParser]):
         enum_cls: Type[Enum],
         field_enum_mappings_manifest: YAMLDict,
         delegate: IngestViewFileParserDelegate,
-    ) -> "EnumFieldManifest":
+    ) -> "EnumMappingManifest":
         """Factory method for building an enum field manifest."""
 
         raw_text_field_manifest = build_str_manifest_from_raw(
             pop_raw_flat_field_manifest(
-                EnumFieldManifest.RAW_TEXT_KEY, field_enum_mappings_manifest
+                EnumMappingManifest.RAW_TEXT_KEY, field_enum_mappings_manifest
             ),
             delegate,
         )
@@ -647,13 +651,13 @@ class EnumFieldManifest(ManifestNode[StrictEnumParser]):
             enum_cls,
             delegate.get_custom_function_registry(),
             ignores_list=field_enum_mappings_manifest.pop_list_optional(
-                EnumFieldManifest.IGNORES_KEY, str
+                EnumMappingManifest.IGNORES_KEY, str
             ),
             direct_mappings_manifest=field_enum_mappings_manifest.pop_dict_optional(
-                EnumFieldManifest.MAPPINGS_KEY
+                EnumMappingManifest.MAPPINGS_KEY
             ),
             custom_parser_function_reference=field_enum_mappings_manifest.pop_optional(
-                EnumFieldManifest.CUSTOM_PARSER_FUNCTION_KEY, str
+                EnumMappingManifest.CUSTOM_PARSER_FUNCTION_KEY, str
             ),
         )
 
@@ -662,7 +666,7 @@ class EnumFieldManifest(ManifestNode[StrictEnumParser]):
                 f"Found unused keys in field enum mappings manifest: "
                 f"{field_enum_mappings_manifest.keys()}"
             )
-        return EnumFieldManifest(
+        return EnumMappingManifest(
             enum_cls=enum_cls,
             enum_overrides=enum_overrides,
             raw_text_field_manifest=raw_text_field_manifest,
@@ -1687,18 +1691,20 @@ def build_manifest_from_raw(
         return DirectMappingFieldManifest(mapped_column=raw_field_manifest)
 
     if isinstance(raw_field_manifest, YAMLDict):
-        if len(raw_field_manifest.keys()) > 1:
+        manifest_node_name = one(raw_field_manifest.keys())
+
+        if manifest_node_name == EnumMappingManifest.ENUM_MAPPING_KEY:
             if not enum_cls:
                 raise ValueError(
                     f"Expected nonnull enum_cls for enum manifest: {raw_field_manifest}"
                 )
-            return EnumFieldManifest.from_raw_manifest(
+            return EnumMappingManifest.from_raw_manifest(
                 enum_cls=enum_cls,
-                field_enum_mappings_manifest=raw_field_manifest,
+                field_enum_mappings_manifest=raw_field_manifest.pop_dict(
+                    manifest_node_name
+                ),
                 delegate=delegate,
             )
-
-        manifest_node_name = one(raw_field_manifest.keys())
 
         if manifest_node_name == SerializedJSONDictFieldManifest.JSON_DICT_KEY:
             function_arguments = raw_field_manifest.pop_dict(manifest_node_name)
