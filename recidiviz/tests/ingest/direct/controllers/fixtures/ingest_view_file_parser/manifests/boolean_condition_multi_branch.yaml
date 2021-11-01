@@ -1,0 +1,33 @@
+manifest_language: 1.0.0
+input_columns:
+  - PERSONNAME
+  - NICKNAME
+  - NICKNAME2
+  - DOB
+unused_columns: []
+output:
+  FakePerson:
+    name:
+      $conditional:
+        - $if:
+            $not_null: PERSONNAME
+          $then: PERSONNAME
+        - $else_if:
+            $not_null: NICKNAME
+          $then: NICKNAME
+        - $else_if:
+            $not_null: NICKNAME2
+          $then: NICKNAME2
+    birthdate:
+      $conditional:
+        - $if:
+            $is_null: DOB
+          $then: $literal("19700101")
+        - $else_if:
+            $in:
+              $value: DOB
+              $options:
+                - $literal("99999999")
+                - $literal("00000000")
+          $then: $literal("19800101")
+        - $else: DOB

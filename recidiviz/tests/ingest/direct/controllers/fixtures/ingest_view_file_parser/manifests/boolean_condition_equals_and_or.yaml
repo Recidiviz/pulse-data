@@ -9,23 +9,23 @@ output:
   FakePerson:
     name:
       $conditional:
-        $if:
-          $or:
-            - $is_null: NICKNAME
-            - $equal:
-              - NICKNAME
-              - PERSONNAME
-        $then: PERSONNAME
-        $else: NICKNAME
+        - $if:
+            $or:
+              - $is_null: NICKNAME
+              - $equal:
+                - NICKNAME
+                - PERSONNAME
+          $then: PERSONNAME
+        - $else: NICKNAME
     birthdate:
       $conditional:
-        $if:
-          $and:
-            - $not_null: DOB
-            - $not_in:
-                $value: DOB
-                $options:
-                  - $literal("99999999")
-                  - $literal("00000000")
-        $then: DOB
-        $else: DOB_2
+        - $if:
+            $and:
+              - $not_null: DOB
+              - $not_in:
+                  $value: DOB
+                  $options:
+                    - $literal("99999999")
+                    - $literal("00000000")
+          $then: DOB
+        - $else: DOB_2

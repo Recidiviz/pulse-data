@@ -8,9 +8,9 @@ output:
     name: PERSONNAME
     ssn:
       $conditional:
-        $if:
-          $custom:
-            $function: fake_custom_conditionals.should_include_ssn
-            $args:
-              ssn: SSN
-        $then: SSN
+        - $if:
+            $custom:
+              $function: fake_custom_conditionals.should_include_ssn
+              $args:
+                ssn: SSN
+          $then: SSN

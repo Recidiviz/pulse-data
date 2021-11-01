@@ -1649,6 +1649,47 @@ class IngestViewFileParserTest(unittest.TestCase):
         # Assert
         self.assertEqual(expected_output, parsed_output)
 
+    def test_boolean_condition_multi_branch(self) -> None:
+        # Arrange
+        expected_output = [
+            FakePerson(
+                fake_state_code="US_XX",
+                name="ANNA",
+                birthdate=datetime.date(1962, 1, 29),
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                name="HANNAH",
+                birthdate=datetime.date(1980, 1, 1),
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                name="JULIA",
+                birthdate=datetime.date(1980, 1, 1),
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                name="SALLY",
+                birthdate=datetime.date(1997, 10, 5),
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                name="ROSIE",
+                birthdate=datetime.date(1970, 1, 1),
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                name=None,
+                birthdate=datetime.date(1970, 1, 1),
+            ),
+        ]
+
+        # Act
+        parsed_output = self._run_parse_for_tag("boolean_condition_multi_branch")
+
+        # Assert
+        self.assertEqual(expected_output, parsed_output)
+
     def test_custom_parsers(self) -> None:
         # Arrange
         expected_output = [
