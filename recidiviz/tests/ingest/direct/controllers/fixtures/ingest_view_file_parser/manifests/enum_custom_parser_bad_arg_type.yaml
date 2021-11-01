@@ -7,5 +7,6 @@ output:
     races:
       - FakePersonRace:
           race:
-            $raw_text: RACE
-            $custom_parser: fake_custom_enum_parsers.enum_parser_bad_arg_type
+            $enum_mapping:
+              $raw_text: RACE
+              $custom_parser: fake_custom_enum_parsers.enum_parser_bad_arg_type

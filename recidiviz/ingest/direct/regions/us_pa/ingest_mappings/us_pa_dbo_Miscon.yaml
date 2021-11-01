@@ -55,13 +55,14 @@ output:
                   hearing_date: hearing_after_date
                   report_date: report_date
                   outcome_type:
-                    $raw_text: confinement
-                    $mappings:
-                      StateIncarcerationIncidentOutcomeType.CELL_CONFINEMENT:
-                        - C  # Cell Confinement
-                      StateIncarcerationIncidentOutcomeType.RESTRICTED_CONFINEMENT:
-                        - Y  # Restricted Confinement
-                    $ignore:
+                    $enum_mapping:
+                      $raw_text: confinement
+                      $mappings:
+                        StateIncarcerationIncidentOutcomeType.CELL_CONFINEMENT:
+                          - C  # Cell Confinement
+                        StateIncarcerationIncidentOutcomeType.RESTRICTED_CONFINEMENT:
+                          - Y  # Restricted Confinement
+                      $ignore:
                         - N  # No Confinement
                   date_effective:
                     $conditional:

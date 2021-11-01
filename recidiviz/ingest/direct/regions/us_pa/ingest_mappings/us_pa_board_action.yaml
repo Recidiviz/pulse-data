@@ -31,10 +31,11 @@ output:
                 supervision_violation_response_decisions:
                   - StateSupervisionViolationResponseDecisionEntry:
                       decision:
-                        $raw_text: CndConditionCode
-                        $mappings:
-                          StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION:
-                            - RESCR
-                            - RESCR6
-                            - RESCR9
-                            - RESCR12
+                        $enum_mapping:
+                          $raw_text: CndConditionCode
+                          $mappings:
+                            StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION:
+                              - RESCR
+                              - RESCR6
+                              - RESCR9
+                              - RESCR12

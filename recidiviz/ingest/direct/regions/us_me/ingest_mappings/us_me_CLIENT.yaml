@@ -24,30 +24,33 @@ output:
         $middle_names: Middle_Name
         $surname: Last_Name
     gender:
-      $raw_text: Gender
-      $mappings:
-        Gender.MALE: '1'
-        Gender.FEMALE: '2'
-        Gender.EXTERNAL_UNKNOWN: '3'
+      $enum_mapping:
+        $raw_text: Gender
+        $mappings:
+          Gender.MALE: '1'
+          Gender.FEMALE: '2'
+          Gender.EXTERNAL_UNKNOWN: '3'
     races:
       - StatePersonRace:
           race:
-            $raw_text: Race
-            $mappings:
-              Race.AMERICAN_INDIAN_ALASKAN_NATIVE: '1'
-              Race.ASIAN: '2'
-              Race.BLACK: '3'
-              Race.NATIVE_HAWAIIAN_PACIFIC_ISLANDER: '4'
-              Race.WHITE: '5'
-              Race.EXTERNAL_UNKNOWN: '6'
-              Race.OTHER:
-                - '8'
-                - '9'
+            $enum_mapping:
+              $raw_text: Race
+              $mappings:
+                Race.AMERICAN_INDIAN_ALASKAN_NATIVE: '1'
+                Race.ASIAN: '2'
+                Race.BLACK: '3'
+                Race.NATIVE_HAWAIIAN_PACIFIC_ISLANDER: '4'
+                Race.WHITE: '5'
+                Race.EXTERNAL_UNKNOWN: '6'
+                Race.OTHER:
+                  - '8'
+                  - '9'
     ethnicities:
       - StatePersonEthnicity:
           ethnicity:
-            $raw_text: Ethnicity
-            $mappings:
-              Ethnicity.HISPANIC: '186'
-              Ethnicity.NOT_HISPANIC: '187'
-              Ethnicity.EXTERNAL_UNKNOWN: '188'
+            $enum_mapping:
+              $raw_text: Ethnicity
+              $mappings:
+                Ethnicity.HISPANIC: '186'
+                Ethnicity.NOT_HISPANIC: '187'
+                Ethnicity.EXTERNAL_UNKNOWN: '188'

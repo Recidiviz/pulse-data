@@ -18,6 +18,7 @@
 manifest like this:
 
 my_enum_field:
+  $enum_mapping:
     $raw_text: MY_CSV_COL
     $custom_parser: us_tx_brazos_custom_enum_parsers.<function name>
 """

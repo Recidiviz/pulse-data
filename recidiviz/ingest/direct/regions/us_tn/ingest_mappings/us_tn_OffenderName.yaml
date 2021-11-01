@@ -26,23 +26,26 @@ output:
         $middle_names: MiddleName
         $surname: LastName
     gender:
-      $raw_text: Sex
-      $mappings:
-        Gender.MALE: M
-        Gender.FEMALE: F
+      $enum_mapping:
+        $raw_text: Sex
+        $mappings:
+          Gender.MALE: M
+          Gender.FEMALE: F
     races:
       - StatePersonRace:
           race:
-            $raw_text: Race
-            $mappings:
-              Race.ASIAN: A
-              Race.BLACK: B
-              Race.AMERICAN_INDIAN_ALASKAN_NATIVE: I
-              Race.WHITE: W
+            $enum_mapping:
+              $raw_text: Race
+              $mappings:
+                Race.ASIAN: A
+                Race.BLACK: B
+                Race.AMERICAN_INDIAN_ALASKAN_NATIVE: I
+                Race.WHITE: W
     ethnicities:
       - StatePersonEthnicity:
           ethnicity:
-            $raw_text: Ethnicity
-            $mappings:
-              Ethnicity.HISPANIC: HISPANIC
-              Ethnicity.NOT_HISPANIC: NOT_HISPANIC
+            $enum_mapping:
+              $raw_text: Ethnicity
+              $mappings:
+                Ethnicity.HISPANIC: HISPANIC
+                Ethnicity.NOT_HISPANIC: NOT_HISPANIC

@@ -10,5 +10,6 @@ output:
           external_id: PERSONID
           id_type: $literal("ID_TYPE")
     gender:
-      $raw_text: GENDER
-      $custom_parser: fake_custom_enum_parsers.flip_black_and_white
+      $enum_mapping:
+        $raw_text: GENDER
+        $custom_parser: fake_custom_enum_parsers.flip_black_and_white

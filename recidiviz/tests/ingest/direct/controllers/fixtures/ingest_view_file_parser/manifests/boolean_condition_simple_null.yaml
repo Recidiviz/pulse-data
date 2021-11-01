@@ -13,14 +13,15 @@ output:
           $then: PERSONNAME
     birthdate: DOB
     gender:
-      $raw_text:
-        $conditional:
-          - $if:
-              $is_null: GENDER
-            $then: $literal("MM")
-          - $else: GENDER
-      $mappings:
-        FakeGender.MALE:
-          - M
-          - MM
-        FakeGender.FEMALE: F
+      $enum_mapping:
+        $raw_text:
+          $conditional:
+            - $if:
+                $is_null: GENDER
+              $then: $literal("MM")
+            - $else: GENDER
+        $mappings:
+          FakeGender.MALE:
+            - M
+            - MM
+          FakeGender.FEMALE: F
