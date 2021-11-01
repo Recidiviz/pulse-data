@@ -1,21 +1,39 @@
 file_tag: CIS_319_TERM
 file_description: |-
-  TODO(#9296): Add raw data descriptions
-primary_key_cols: []
+  A client is entered into the DOC on a "Term" that can include multiple charges or dispositions. This table shows
+  for each term that a client has with the DOC: their intake date, max release date, and earliest release date,
+  with all sentences/dispositions taken into account. Then it shows the status of whether the "Term" is still active
+  or if it is complete. "Safekeepers" and "boarders" will not have a Term because they do not have a DOC sentence,
+  though their status will be listed as incarcerated. Juveniles also may not have an associated term.
+  A new "Society In" transfer record would generate a new Term record. This table is updated daily to reflect
+  new early and current release dates that are affected by good time earned, lost, and restored.
+primary_key_cols:
+  - Term_Id
 columns:
   - name : Cis_100_Client_Id
+    description: |-
+      The unique identifier for all clients in the offender management system.
   - name : Cis_1200_Term_Status_Cd
   - name : Comm_Rel_Date
+    description: |-
+      The date that probation is expected to end.
   - name : Created_By_Tx
   - name : Created_On_Date
   - name : Curr_Cust_Rel_Date
+    description: |-
+      The current release date from incarceration which is calculated and changes over time depending on the
+      earned, lost and restored time.
   - name : Det_Release_Rsn_Tx
   - name : Detainers_Not_Ind
   - name : Detainers_Not_Tx
   - name : Early_Cust_Rel_Date
+    description: |-
+      TThe earliest release date from incarceration with all earned/good time credits applied.
   - name : Intake_Date
   - name : Locking_Tsp
   - name : Max_Cust_Rel_Date
+    description: |-
+      The max release date from incarceration.
   - name : Message_30_Ind
   - name : Message_Ind
   - name : Modified_By_Tx
@@ -25,3 +43,5 @@ columns:
   - name : Rpt_Early_Cust_Rel_Date
   - name : Rpt_Max_Cust_Rel_Date
   - name : Term_Id
+    description: |-
+      Primary key field

@@ -1,22 +1,84 @@
 file_tag: CIS_309_MOVEMENT
 file_description: |-
-  TODO(#9296): Add raw data descriptions
-primary_key_cols: []
+  This table records movements to/from and between DOC facilities. It includes information about the movement type,
+  status and direction. Movement types could refer to furloughs, admissions, transfers, releases to supervision,
+  discharges to society, transports and escapes. The movement status refers to whether the movement is Pending,
+  In Transit, Complete, or Cancelled. When a person is admitted to a DOC Facility, a movement record is auto-generated
+  with a "Pending" status for their discharge or release date. When a person is released to supervision, two records are
+  auto-generated: one with the movement type of "Release" from the facility and one with the movement type of
+  "Transfer" to the supervision location. Transport movement types are when a person is being escorted to a location
+  for the day either for work or medical reasons. When a movement is related to transfers or intakes
+  (Sentence/Disposition, Transfer), a related record is generated in the CIS_314_TRANSFER table.
+  Movement types of Furlough, Escape, Transport, Discharge, and Release do not generate transfer records.
+primary_key_cols:
+  - Movement_Id
 columns:
   - name : Actual_Time
   - name : Cis_3090_Movement_Type_Cd
+    description: |-
+      The code that maps to the movement type.
+    known_values:
+      - value: 1
+        description: "Furlough"
+      - value: 2
+        description: "Sentence/Disposition"
+      - value: 3
+        description: "Transfer"
+      - value: 4
+        description: "Detention (Juvenile Populations Only)"
+      - value: 5
+        description: "Transport"
+      - value: 6
+        description: "Escape"
+      - value: 7
+        description: "Discharge"
+      - value: 8
+        description: "Release"
+      - value: 9
+        description: "Community Transition (Juvenile Populations Only)"
+      - value: 10
+        description: "Furlough Hospital"
   - name : Cis_3092_Transport_Type_Cd
   - name : Cis_3093_Mvmt_Status_Cd
+    description : |-
+      The current status of the movement.
+    known_values :
+      - value: 1
+        description: "Pending"
+      - value: 2
+        description: "In Transit"
+      - value: 3
+        description: "Complete"
+      - value: 4
+        description: "Cancelled"
   - name : Cis_3095_Mvmt_Direction_Cd
+    description: |-
+      Whether the movement was in or out of a DOC facility. When someone is transferred between facilities, two records
+      are auto-generated for the "In" and "Out" directions. The "To" and "From" locations are the same for both of these
+      records, so we know from one of these rows that the person is being transferred "Out" of the Cis_908_Ccs_Location_Id
+      and "In" to the Cis_908_Ccs_Location_2_Id.
+    known_values :
+      - value: 1
+        description: "In"
+      - value: 2
+        description: "Out"
   - name : Cis_310_Remand_Id
   - name : Cis_314_Transfer_Id
+    description : |-
+      Foreign-key ID for the CIS_314_TRANSFER table
   - name : Cis_317_Ta_Tr_Days_Id
   - name : Cis_319_Term_Id
   - name : Cis_322_Escorted_Leave_Id
   - name : Cis_324_Awol_Id
   - name : Cis_908_Ccs_Location_2_Id
+    description : |-
+      The destination of the movement (To location)
   - name : Cis_908_Ccs_Location_Id
+    description: |-
+      The originating location of the movement (From location)
   - name : Cis_Client_Id
+    description: |-
+      The unique identifier for all clients in the offender management system.
   - name : Created_By_Tx
   - name : Created_On_Date
   - name : Estimated_Time
@@ -24,4 +86,6 @@ columns:
   - name : Modified_By_Tx
   - name : Modified_On_Date
   - name : Movement_Date
+    description : The date the movement occurred.
   - name : Movement_Id
+    description : Primary key field
