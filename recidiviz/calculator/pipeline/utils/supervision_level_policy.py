@@ -30,7 +30,7 @@ from recidiviz.persistence.entity.state.entities import StatePerson
 @attr.s
 class SupervisionLevelPolicy:
     """Defines the supervision level policies for a given state over a given time
-    period. The main method is `recommended_supervision_level_for_person` which takes
+    period. The main method is `recommended_supervision_level_from_score` which takes
     in the person and their last assessment score and outputs what the policy would
     recommend."""
 
@@ -43,8 +43,10 @@ class SupervisionLevelPolicy:
     # start_date is inclusive
     start_date: Optional[date] = attr.ib(default=None)
     end_date_exclusive: Optional[date] = attr.ib(default=None)
+    # states may or may not have a policy about this
+    pre_assessment_level: Optional[StateSupervisionLevel] = attr.ib(default=None)
 
-    def recommended_supervision_level_for_person(
+    def recommended_supervision_level_from_score(
         self, person: StatePerson, last_assessment_score: int
     ) -> Optional[StateSupervisionLevel]:
         if not (gender := person.gender) or not (
