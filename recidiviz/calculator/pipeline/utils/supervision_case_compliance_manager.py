@@ -354,15 +354,23 @@ class StateSupervisionCaseComplianceManager:
                 state_code=self.supervision_period.state_code,
             )
         )
+
+        # if there is no assessment within the current supervision period, fall back to default level
+        # (which may be None)
         if (
             most_recent_assessment is None
-            or (last_score := most_recent_assessment.assessment_score) is None
+            or most_recent_assessment.assessment_date is None
+            or most_recent_assessment.assessment_date < self.start_of_supervision
         ):
-            return None
+            recommended_level = policy.pre_assessment_level
+        else:
+            if (last_score := most_recent_assessment.assessment_score) is None:
+                return None
 
-        recommended_level = policy.recommended_supervision_level_for_person(
-            self.person, last_score
-        )
+            recommended_level = policy.recommended_supervision_level_from_score(
+                self.person, last_score
+            )
+
         if not recommended_level or recommended_level >= current_level:
             return None
 
