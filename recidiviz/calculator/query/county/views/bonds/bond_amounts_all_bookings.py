@@ -26,21 +26,20 @@ from recidiviz.calculator.query.county.views.vera.county_names import (
     COUNTY_NAMES_VIEW_BUILDER,
 )
 from recidiviz.common.constants.enum_canonical_strings import bond_type_denied
-
 from recidiviz.persistence.database.schema.county.schema import Booking, Person
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 BOND_AMOUNTS_ALL_BOOKINGS_VIEW_NAME = "bond_amounts_all_bookings"
 
-BOND_AMOUNTS_ALL_BOOKINGS_DESCRIPTION = """
+BOND_AMOUNTS_ALL_BOOKINGS_DESCRIPTION = f"""
 A complete table of total bond amounts,
 and whether the bonds are UNKNOWN or {bond_type_denied}, for every Booking.
 
-Joins {bond_amounts_by_booking_view} with all of the Bookings,
+Joins {BOND_AMOUNTS_BY_BOOKING_VIEW_BUILDER.view_id} with all of the Bookings,
 and all of those bookings' People.
 
-If no bonds are present for a Booking in {bond_amounts_by_booking_view},
+If no bonds are present for a Booking in {BOND_AMOUNTS_BY_BOOKING_VIEW_BUILDER.view_id},
 `total_bond_dollars` is NULL, `denied` is False, and `unknown` is True.
 
 Constraints:
@@ -53,12 +52,9 @@ The total number of distinct `booking_id`s in this table should be equal to
 the total number of distinct  `booking_id`s in Booking.
 
 The number of UNKNOWN Bookings must be equal to the sum of
-UNKNOWN Bookings in `{bond_amounts_by_booking_view}`,
+UNKNOWN Bookings in `{BOND_AMOUNTS_BY_BOOKING_VIEW_BUILDER.view_id}`,
 plus all the Bookings whose booking_id is not in Bonds.
-""".format(
-    bond_type_denied=bond_type_denied,
-    bond_amounts_by_booking_view=BOND_AMOUNTS_BY_BOOKING_VIEW_BUILDER.view_id,
-)
+"""
 
 BOND_AMOUNTS_ALL_BOOKINGS_QUERY_TEMPLATE = """
 /*{description}*/

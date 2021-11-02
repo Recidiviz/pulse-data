@@ -22,14 +22,13 @@ from recidiviz.calculator.query.county import dataset_config
 from recidiviz.calculator.query.county.views.bonds.bond_amounts_unknown_denied import (
     BOND_AMOUNTS_UNKNOWN_DENIED_VIEW_BUILDER,
 )
-
 from recidiviz.common.constants.enum_canonical_strings import bond_type_denied
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 BOND_AMOUNTS_BY_BOOKING_VIEW_NAME = "bond_amounts_by_booking"
 
-BOND_AMOUNTS_BY_BOOKING_DESCRIPTION = """
+BOND_AMOUNTS_BY_BOOKING_DESCRIPTION = f"""
 Collapse all bonds for a booking into a Bond Amounts by Booking table.
 
 If any of the booking's bonds are {bond_type_denied}, consider the entire booking's bonds to be {bond_type_denied}.
@@ -40,9 +39,7 @@ Constraints:
 If a Bond has `total_bond_dollars`, it cannot be {bond_type_denied} or UNKNOWN.
 If a Bond's `total_bond_dollars` is NULL, it must be one of {bond_type_denied} or UNKNOWN.
 If a Bond is {bond_type_denied} or UNKNOWN, its `total_bond_dollars` must be NULL.
-""".format(
-    bond_type_denied=bond_type_denied
-)
+"""
 
 BOND_AMOUNTS_BY_BOOKING_QUERY_TEMPLATE = """
 /*{description}*/

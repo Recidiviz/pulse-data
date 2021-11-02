@@ -30,7 +30,9 @@ INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_DESCRIPTION = """Maps in
      the incarceration. If there are multiple non-null judicial districts associated with a supervision period,
     prioritizes ones associated with controlling charges on the sentence."""
 
-INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_QUERY_TEMPLATE = """
+# This is formatted first so that the joins can contain arguments that will be formatted later during
+# the creation of the view
+INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_QUERY_TEMPLATE = f"""
     /*{{description}}*/
     WITH ips_to_sentence_groups AS (
       -- Sentence groups from incarceration sentences --
@@ -40,7 +42,7 @@ INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_QUERY_TEMPLATE = """
         incarceration_period_id,
         sentence_group_id
       FROM 
-        {period_to_sentence_group_incarceration_join}
+        {bq_utils.period_to_sentence_group_joins("incarceration", "incarceration")}
       
       UNION ALL
       
@@ -51,7 +53,7 @@ INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_QUERY_TEMPLATE = """
         incarceration_period_id,
         sentence_group_id
       FROM
-        {period_to_sentence_group_supervision_join}
+        {bq_utils.period_to_sentence_group_joins("incarceration", "supervision")}
     ), ranked_judicial_districts AS (
       SELECT
         * EXCEPT(sentence_group_id),
@@ -73,16 +75,7 @@ INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_QUERY_TEMPLATE = """
     WHERE ranking = 1
     -- This will limit the size of the output, improving Dataflow job speeds
     AND judicial_district_code IS NOT NULL
-    """.format(
-    # This is formatted first so that the joins can contain arguments that will be formatted later during
-    # the creation of the view
-    period_to_sentence_group_incarceration_join=bq_utils.period_to_sentence_group_joins(
-        "incarceration", "incarceration"
-    ),
-    period_to_sentence_group_supervision_join=bq_utils.period_to_sentence_group_joins(
-        "incarceration", "supervision"
-    ),
-)
+    """
 
 INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.REFERENCE_VIEWS_DATASET,
