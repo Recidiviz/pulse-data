@@ -18,7 +18,6 @@
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.county import dataset_config
-
 from recidiviz.calculator.query.county.views.population.population_admissions_releases_race_gender_all import (
     POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_ALL_VIEW_BUILDER,
 )
@@ -34,14 +33,12 @@ CUTOFF_YEAR = 1999
 
 JAIL_POP_AND_RESIDENT_POP_VIEW_NAME = "jail_pop_and_resident_pop"
 
-JAIL_POP_AND_RESIDENT_POP_DESCRIPTION = """
+JAIL_POP_AND_RESIDENT_POP_DESCRIPTION = f"""
 Combines jail population and resident population counts into one table.
 Joined based on fips-year-race-gender combinations.
 
-All years <= {cutoff_year} are excluded.
-""".format(
-    cutoff_year=CUTOFF_YEAR
-)
+All years <= {CUTOFF_YEAR} are excluded.
+"""
 
 JAIL_POP_AND_RESIDENT_POP_QUERY_TEMPLATE = """
 /*{description}*/

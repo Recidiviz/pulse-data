@@ -307,18 +307,13 @@ def move_old_dataflow_metrics_to_cold_storage(dry_run: bool = False) -> None:
             insert_job.result()
 
         # This will return the rows that were not moved to cold storage and should remain in the table
-        replace_query = """
+        columns_to_exclude = ", ".join(columns_to_exclude_from_transfer)
+        replace_query = f"""
             SELECT * EXCEPT({columns_to_exclude}) FROM
-            `{project_id}.{dataflow_metrics_dataset}.{table_id}`
+            `{table_ref.project}.{table_ref.dataset_id}.{table_id}`
             {source_data_join_clause}
             WHERE keep_job_id IS NOT NULL OR keep_created_date IS NOT NULL
-        """.format(
-            columns_to_exclude=", ".join(columns_to_exclude_from_transfer),
-            project_id=table_ref.project,
-            dataflow_metrics_dataset=table_ref.dataset_id,
-            table_id=table_id,
-            source_data_join_clause=source_data_join_clause,
-        )
+        """
 
         if dry_run:
             logging.info("###REPLACE QUERY INTO METRIC TABLE###")

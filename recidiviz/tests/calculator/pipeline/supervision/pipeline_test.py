@@ -2265,9 +2265,7 @@ class AssertMatchers:
 
             if len(with_violation_types) == 0:
                 raise BeamAssertException(
-                    "No metrics with source violation type {} set.".format(
-                        expected_violation
-                    )
+                    f"No metrics with source violation type {expected_violation} set."
                 )
 
         return _assert_source_violation_type_set

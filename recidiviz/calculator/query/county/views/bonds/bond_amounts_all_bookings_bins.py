@@ -31,8 +31,8 @@ from recidiviz.utils.metadata import local_project_id_override
 
 BOND_AMOUNTS_ALL_BOOKINGS_BINS_VIEW_NAME = "bond_amounts_all_bookings_bins"
 
-BOND_AMOUNTS_ALL_BOOKINGS_BINS_DESCRIPTION = """
-Adds a 'bond_amount_category' field to `{bond_amounts_all_bookings_view}`
+BOND_AMOUNTS_ALL_BOOKINGS_BINS_DESCRIPTION = f"""
+Adds a 'bond_amount_category' field to `{BOND_AMOUNTS_ALL_BOOKINGS_VIEW_BUILDER.view_id}`
 with either '{bond_type_denied}', 'UNKNOWN', or bins from:
 0-500
 500-100
@@ -43,10 +43,7 @@ with either '{bond_type_denied}', 'UNKNOWN', or bins from:
 
 Also sums the counts of populations, admissions, and releases for each
 day-fips-category grouping.
-""".format(
-    bond_amounts_all_bookings_view=BOND_AMOUNTS_ALL_BOOKINGS_VIEW_BUILDER.view_id,
-    bond_type_denied=bond_type_denied,
-)
+"""
 
 BOND_AMOUNTS_ALL_BOOKINGS_BINS_QUERY_TEMPLATE = """
 /*{description}*/
