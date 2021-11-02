@@ -32,7 +32,7 @@ Supervision period termination count split by termination reason, month, distric
 # TODO(#4155): Use the supervision_termination_metrics instead of the raw state_supervision_period table
 def _get_query_prep_statement(reference_views_dataset: str) -> str:
     """Return the Common Table Expression used to gather the termination case data"""
-    return """
+    return f"""
         -- Gather supervision period case termination data
         WITH case_terminations AS (
           SELECT
@@ -47,18 +47,12 @@ def _get_query_prep_statement(reference_views_dataset: str) -> str:
           FROM `{{project_id}}.state.state_supervision_period` supervision_period
           LEFT JOIN `{{project_id}}.{reference_views_dataset}.supervision_period_to_agent_association` agent
             USING (supervision_period_id),
-          {district_dimension},
-          {supervision_type_dimension}
+          {bq_utils.unnest_district(district_column="supervision_site")},
+          {bq_utils.unnest_supervision_type(supervision_type_column="supervision_period.supervision_type")}
           WHERE termination_date IS NOT NULL
         )
 
-    """.format(
-        reference_views_dataset=reference_views_dataset,
-        district_dimension=bq_utils.unnest_district(district_column="supervision_site"),
-        supervision_type_dimension=bq_utils.unnest_supervision_type(
-            supervision_type_column="supervision_period.supervision_type"
-        ),
-    )
+    """
 
 
 CASE_TERMINATIONS_BY_TYPE_BY_MONTH_QUERY_TEMPLATE = f"""

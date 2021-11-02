@@ -23,20 +23,17 @@ from recidiviz.calculator.query.county.views.charges.charge_class_severity_ranks
     CHARGE_CLASS_SEVERITY_RANKS_VIEW_BUILDER,
 )
 from recidiviz.common.constants.enum_canonical_strings import external_unknown
-
 from recidiviz.persistence.database.schema.county.schema import Charge
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 CHARGES_AND_SEVERITY_VIEW_NAME = "charges_and_severity"
 
-CHARGES_AND_SEVERITY_DESCRIPTION = """
+CHARGES_AND_SEVERITY_DESCRIPTION = f"""
 Assigns a numeric column "severity" to each charge.
-Charge class severity is defined in `{views_dataset}.charge_class_severity_ranks`.
+Charge class severity is defined in `{dataset_config.VIEWS_DATASET}.charge_class_severity_ranks`.
 The lower the number, the more severe the charge class (1 is most severe, 8 is least).
-""".format(
-    views_dataset=dataset_config.VIEWS_DATASET
-)
+"""
 
 CHARGES_AND_SEVERITY_QUERY_TEMPLATE = """
 /*{description}*/

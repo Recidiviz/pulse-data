@@ -22,22 +22,18 @@ from recidiviz.calculator.query.county.views.charges.charges_and_severity import
     CHARGES_AND_SEVERITY_VIEW_BUILDER,
 )
 from recidiviz.common.constants.enum_canonical_strings import external_unknown
-
 from recidiviz.persistence.database.schema.county.schema import Booking
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 CHARGE_SEVERITY_ALL_BOOKINGS_VIEW_NAME = "charge_severity_all_bookings"
 
-CHARGE_SEVERITY_ALL_BOOKINGS_DESCRIPTION = """
+CHARGE_SEVERITY_ALL_BOOKINGS_DESCRIPTION = f"""
 For each booking_id, create a column called 'most_severe_charge'
 which defines the severity of its most severe charge.
-See `{views_dataset}.{charges_and_severity_view}` for details.
+See `{dataset_config.VIEWS_DATASET}.{CHARGES_AND_SEVERITY_VIEW_BUILDER.view_id}` for details.
 Bookings without charges have most_severe_charge listed as 'EXTERNAL_UNKNOWN'.
-""".format(
-    views_dataset=dataset_config.VIEWS_DATASET,
-    charges_and_severity_view=CHARGES_AND_SEVERITY_VIEW_BUILDER.view_id,
-)
+"""
 
 CHARGE_SEVERITY_ALL_BOOKINGS_QUERY_TEMPLATE = """
 /*{description}*/

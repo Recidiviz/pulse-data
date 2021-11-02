@@ -163,7 +163,7 @@ class SupervisionMetricProducer(
 
             if not applicable_metric_types:
                 raise ValueError(
-                    "No metric types mapped to event of type {}".format(type(event))
+                    f"No metric types mapped to event of type {type(event)}"
                 )
 
             for metric_type in applicable_metric_types:
@@ -173,9 +173,7 @@ class SupervisionMetricProducer(
                 metric_class = self.metric_type_to_class.get(metric_type)
 
                 if not metric_class:
-                    raise ValueError(
-                        "No metric class for metric type {}".format(metric_type)
-                    )
+                    raise ValueError(f"No metric class for metric type {metric_type}")
 
                 if self.include_event_in_metric(event, metric_type):
                     metric = build_metric(

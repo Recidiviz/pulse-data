@@ -32,11 +32,13 @@ from recidiviz.calculator.query.county.views.stitch.state_aggregate_stitch_subse
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.utils.string import StrictStringFormatter
 
-_DESCRIPTION = """
+_DESCRIPTION = StrictStringFormatter().format(
+    """
 Combine {interpolated_state_aggregate}, {scraper_data_aggregated},
 {incarceration_trends_aggregate}, and {single_count} into one unified view
-""".format(
+""",
     interpolated_state_aggregate=STATE_AGGREGATE_STITCH_SUBSET_VIEW_BUILDER.view_id,
     scraper_data_aggregated=SCRAPER_AGGREGATED_STITCH_SUBSET_VIEW_BUILDER.view_id,
     single_count=SINGLE_COUNT_STITCH_SUBSET_VIEW_BUILDER.view_id,

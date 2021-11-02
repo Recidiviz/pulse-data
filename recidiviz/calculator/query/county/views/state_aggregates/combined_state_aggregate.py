@@ -34,9 +34,7 @@ def _to_bq_table(query_str: str) -> str:
     base_dataset = dataset_config.COUNTY_BASE_DATASET
 
     for table in schema_utils.get_aggregate_table_classes():
-        bq_table_name = "`{{project_id}}.{base_dataset}.{table_name}`".format(
-            base_dataset=base_dataset, table_name=table.name
-        )
+        bq_table_name = f"`{{project_id}}.{base_dataset}.{table.name}`"
         query_str = query_str.replace(table.name, bq_table_name)
 
     return query_str

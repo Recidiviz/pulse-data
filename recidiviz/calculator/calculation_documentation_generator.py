@@ -76,6 +76,7 @@ from recidiviz.tools.docs.summary_file_generator import update_summary_file
 from recidiviz.tools.docs.utils import persist_file_contents
 from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCPEnvironment
 from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.utils.string import StrictStringFormatter
 from recidiviz.utils.yaml_dict import YAMLDict
 from recidiviz.view_registry.datasets import (
     LATEST_VIEW_DATASETS,
@@ -843,12 +844,14 @@ class CalculationDocumentationGenerator:
                 f"Unexpected raw data view address: [{dag_key.dataset_id}.{dag_key.table_id}]"
             )
 
-        staging_link = BQ_LINK_TEMPLATE.format(
+        staging_link = StrictStringFormatter().format(
+            BQ_LINK_TEMPLATE,
             project="recidiviz-staging",
             dataset_id=dag_key.dataset_id,
             table_id=dag_key.table_id,
         )
-        prod_link = BQ_LINK_TEMPLATE.format(
+        prod_link = StrictStringFormatter().format(
+            BQ_LINK_TEMPLATE,
             project="recidiviz-123",
             dataset_id=dag_key.dataset_id,
             table_id=dag_key.table_id,
@@ -870,7 +873,8 @@ class CalculationDocumentationGenerator:
         elif is_metric:
             table_name_str += f"(../../metrics/{self.generic_types_by_metric_name[dag_key.table_id].lower()}/{dag_key.table_id}.md)"
         elif is_raw_data_table:
-            table_name_str += RAW_DATA_LINKS_TEMPLATE.format(
+            table_name_str += StrictStringFormatter().format(
+                RAW_DATA_LINKS_TEMPLATE,
                 region=dag_key.dataset_id[:-26],
                 raw_data_table=dag_key.table_id[:-7],
                 staging_link=staging_link,
@@ -887,6 +891,9 @@ class CalculationDocumentationGenerator:
         dag_key: DagKey,
         descendants: bool = False,
     ) -> str:
+        """Gets the string representation of the view's tree.
+
+        If it is too large a command to generate it will be output instead."""
         if (node_family.full_parentage and not descendants) or (
             node_family.full_descendants and descendants
         ):
@@ -905,7 +912,8 @@ class CalculationDocumentationGenerator:
                     < MAX_DEPENDENCY_TREE_LENGTH
                 ):
                     return node_family.parent_dfs_tree_str
-            return DEPENDENCY_TREE_SCRIPT_TEMPLATE.format(
+            return StrictStringFormatter().format(
+                DEPENDENCY_TREE_SCRIPT_TEMPLATE,
                 dataset_id=dag_key.dataset_id,
                 table_id=dag_key.table_id,
                 descendants=descendants,
@@ -930,17 +938,20 @@ class CalculationDocumentationGenerator:
         """Returns string contents for a view markdown."""
         view_node = self.dag_walker.nodes_by_key[view_key]
 
-        staging_link = BQ_LINK_TEMPLATE.format(
+        staging_link = StrictStringFormatter().format(
+            BQ_LINK_TEMPLATE,
             project="recidiviz-staging",
             dataset_id=view_key.dataset_id,
             table_id=view_key.table_id,
         )
-        prod_link = BQ_LINK_TEMPLATE.format(
+        prod_link = StrictStringFormatter().format(
+            BQ_LINK_TEMPLATE,
             project="recidiviz-123",
             dataset_id=view_key.dataset_id,
             table_id=view_key.table_id,
         )
-        documentation = VIEW_DOCS_TEMPLATE.format(
+        documentation = StrictStringFormatter().format(
+            VIEW_DOCS_TEMPLATE,
             view_dataset_id=view_key.dataset_id,
             view_table_id=view_key.table_id,
             description=view_node.view.description,
@@ -1068,15 +1079,18 @@ class CalculationDocumentationGenerator:
             margin=0,
         )
 
-        documentation = METRIC_DOCS_TEMPLATE.format(
+        documentation = StrictStringFormatter().format(
+            METRIC_DOCS_TEMPLATE,
             metric_attributes=metric_attribute_info_writer.dumps(),
             common_attributes=common_attribute_info_writer.dumps(),
-            staging_link=BQ_LINK_TEMPLATE.format(
+            staging_link=StrictStringFormatter().format(
+                BQ_LINK_TEMPLATE,
                 project="recidiviz-staging",
                 dataset_id="dataflow_metrics",
                 table_id=metric_table_id,
             ),
-            prod_link=BQ_LINK_TEMPLATE.format(
+            prod_link=StrictStringFormatter().format(
+                BQ_LINK_TEMPLATE,
                 project="recidiviz-123",
                 dataset_id="dataflow_metrics",
                 table_id=metric_table_id,
@@ -1084,7 +1098,6 @@ class CalculationDocumentationGenerator:
             metric_name=metric.__name__,
             description=metric.get_description(),
             metrics_cadence_table=state_info_writer.dumps(),
-            metric_table_id=metric_table_id,
             dependency_scripts_information_text=self._create_script_text_for_dependencies(
                 metric_table_id
             ),

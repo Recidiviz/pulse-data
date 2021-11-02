@@ -325,18 +325,18 @@ class SpatialAggregationViewBuilder(SimpleBigQueryViewBuilder):
         select_clauses: List[str] = []
         for column, aggregation in context_columns.items():
             if aggregation is self.ContextAggregation.ANY:
-                formatter = "ANY_VALUE({column})"
+                column_clause = f"ANY_VALUE({column})"
             elif aggregation is self.ContextAggregation.ARRAY:
-                formatter = "ARRAY_AGG(DISTINCT {column})"
+                column_clause = f"ARRAY_AGG(DISTINCT {column})"
             elif aggregation is self.ContextAggregation.ARRAY_CONCAT:
-                formatter = "ARRAY_CONCAT_AGG({column})"
+                column_clause = f"ARRAY_CONCAT_AGG({column})"
             elif aggregation is self.ContextAggregation.MAX:
-                formatter = "MAX({column})"
+                column_clause = f"MAX({column})"
             elif aggregation is self.ContextAggregation.MIN:
-                formatter = "MIN({column})"
+                column_clause = f"MIN({column})"
             else:
                 raise ValueError(f"Unsupported context aggregation: {aggregation}")
-            select_clauses.append(formatter.format(column=column) + f" AS {column}")
+            select_clauses.append(f"{column_clause} AS {column}")
         all_columns.extend(context_columns)
 
         value_columns_clause = ", ".join(

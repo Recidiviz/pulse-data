@@ -36,8 +36,10 @@ from recidiviz.calculator.query.county.views.stitch.state_aggregate_stitch_subse
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.utils.string import StrictStringFormatter
 
-_DESCRIPTION = """ Combine {itp}, {state}, {scraper}, and {single_count} into
+_DESCRIPTION = StrictStringFormatter().format(
+    """ Combine {itp}, {state}, {scraper}, and {single_count} into
 one unified view, limited to total jail population only. When overlapping
 data exists, we select {state} data first. We then select any {itp}
 data that exists before {state} data. We then select any {scraper}
@@ -46,7 +48,7 @@ data after that.
 
 Note: we use valid_from to check cutoffs, instead of checking
 valid_from and valid_to (eg: {itp}.valid_to < {state}.valid_from).
-This is because all data points are plotted using valid_from.  """.format(
+This is because all data points are plotted using valid_from.  """,
     state=INCARCERATION_TRENDS_STITCH_SUBSET_VIEW_BUILDER.view_id,
     scraper=SCRAPER_AGGREGATED_STITCH_SUBSET_VIEW_BUILDER.view_id,
     single_count=SINGLE_COUNT_STITCH_SUBSET_VIEW_BUILDER.view_id,

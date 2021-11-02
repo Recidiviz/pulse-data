@@ -25,14 +25,12 @@ from recidiviz.calculator.query.county.views.state_aggregates.combined_state_agg
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_DESCRIPTION = """
-Select {combined_state_aggregates} and SUM each field around fips, report_date
+_DESCRIPTION = f"""
+Select {COMBINED_STATE_AGGREGATE_VIEW_BUILDER.view_id} and SUM each field around fips, report_date
 and aggregation_window. This has the effect of collapsing records around a
 single fips in a given report. This is necessary since some reports list data
 per facility which all get mapped to the same fips. 
-""".format(
-    combined_state_aggregates=COMBINED_STATE_AGGREGATE_VIEW_BUILDER.view_id
-)
+"""
 
 _QUERY_TEMPLATE = """
 /*{description}*/
