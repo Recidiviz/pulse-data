@@ -485,4 +485,5 @@ class UsIdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
         return SupervisionLevelPolicy(
             level_mapping=CURRENT_US_ID_ASSESSMENT_SCORE_RANGE,
             start_date=DATE_OF_SUPERVISION_LEVEL_SWITCH,
+            pre_assessment_level=StateSupervisionLevel.MEDIUM,
         )
