@@ -86,7 +86,7 @@ def check_for_finished_scrapers():
 
     if failed_regions:
         return (
-            "Failed to check regions: {}".format(failed_regions),
+            f"Failed to check regions: {failed_regions}",
             HTTPStatus.INTERNAL_SERVER_ERROR,
         )
     return ("", HTTPStatus.OK)

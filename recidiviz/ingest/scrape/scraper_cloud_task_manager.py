@@ -17,16 +17,16 @@
 """Class for interacting with the scraper cloud task queues."""
 
 import uuid
-from typing import List, Optional, Dict, Any
+from typing import Any, Dict, List, Optional
 
 from google.cloud import tasks_v2
 
-from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import (
-    SCRAPER_PHASE_QUEUE_V2,
-)
 from recidiviz.common.google_cloud.google_cloud_tasks_client_wrapper import (
     GoogleCloudTasksClientWrapper,
     HttpMethod,
+)
+from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import (
+    SCRAPER_PHASE_QUEUE_V2,
 )
 
 
@@ -37,7 +37,7 @@ class ScraperCloudTaskManager:
         self.cloud_task_client = GoogleCloudTasksClientWrapper(project_id=project_id)
 
     def _format_scrape_task_id(self, region_code: str, rest: str):
-        return "{}-{}".format(region_code, rest)
+        return f"{region_code}-{rest}"
 
     def purge_scrape_tasks(self, *, region_code: str, queue_name: str):
         """Purge scrape tasks for a given region from its queue.

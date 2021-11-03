@@ -24,8 +24,8 @@ import pandas as pd
 import tabula
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
-from recidiviz.common.constants.aggregate import enum_canonical_strings as enum_strings
 from recidiviz.common import str_field_utils
+from recidiviz.common.constants.aggregate import enum_canonical_strings as enum_strings
 from recidiviz.common.errors import FipsMergingError
 from recidiviz.ingest.aggregate.errors import (
     AggregateDateParsingError,
@@ -217,9 +217,7 @@ def _format_contracted_facilities(df: pd.DataFrame) -> pd.DataFrame:
 def _facility_acronym_to_name(facility_acronym: str) -> str:
     if facility_acronym not in _FACILITY_ACRONYM_TO_FIPS:
         raise AggregateIngestError(
-            "Failed to match facility acronym '{}' to facility_name".format(
-                facility_acronym
-            )
+            f"Failed to match facility acronym '{facility_acronym}' to facility_name"
         )
 
     return _FACILITY_ACRONYM_TO_NAME[facility_acronym]
@@ -228,7 +226,7 @@ def _facility_acronym_to_name(facility_acronym: str) -> str:
 def _facility_acronym_to_fips(facility_acronym: str) -> str:
     if facility_acronym not in _FACILITY_ACRONYM_TO_FIPS:
         raise FipsMergingError(
-            "Failed to match facility acronym '{}' to fips".format(facility_acronym)
+            f"Failed to match facility acronym '{facility_acronym}' to fips"
         )
 
     return _FACILITY_ACRONYM_TO_FIPS[facility_acronym]

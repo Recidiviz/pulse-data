@@ -19,15 +19,17 @@
 import datetime
 from typing import Set
 from urllib.parse import unquote
-from lxml import html
+
 import requests
+from lxml import html
 
 from recidiviz.ingest.aggregate.regions.ky.ky_aggregate_ingest import parse_date
+from recidiviz.utils.string import StrictStringFormatter
 
 STATE_AGGREGATE_URL = (
     "https://corrections.ky.gov/About/researchandstats/Pages/WeeklyJail.aspx"
 )
-BASE_URL = "https://corrections.ky.gov{}"
+BASE_URL = "https://corrections.ky.gov{path}"
 ACCEPTABLE_DATE = datetime.date(year=2018, month=8, day=9)
 
 
@@ -56,6 +58,6 @@ def get_urls_to_download() -> Set[str]:
                 d = parse_date(link)
                 if d < ACCEPTABLE_DATE:
                     continue
-            url = BASE_URL.format(link)
+            url = StrictStringFormatter().format(BASE_URL, path=link)
             aggregate_report_urls.add(url)
     return aggregate_report_urls

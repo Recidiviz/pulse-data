@@ -47,6 +47,7 @@ from recidiviz.ingest.aggregate.regions.wv import wv_aggregate_site_scraper
 from recidiviz.utils import metadata
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.params import get_str_param_value
+from recidiviz.utils.string import StrictStringFormatter
 
 scrape_aggregate_reports_blueprint = Blueprint("scrape_aggregate_reports", __name__)
 
@@ -57,13 +58,18 @@ class ScrapeAggregateError(Exception):
 
 # GCP has globally unique names for buckets, so we instead have to prepend
 # the buckets with the gcp project.
-HISTORICAL_BUCKET = "{}-processed-state-aggregates"
-UPLOAD_BUCKET = "{}-state-aggregate-reports"
+HISTORICAL_BUCKET = "{project_id}-processed-state-aggregates"
+UPLOAD_BUCKET = "{project_id}-state-aggregate-reports"
 
 
 def build_path(bucket_template: str, state: str, pdf_name: str) -> GcsfsFilePath:
     return GcsfsFilePath.from_directory_and_file_name(
-        GcsfsDirectoryPath(bucket_template.format(metadata.project_id()), state),
+        GcsfsDirectoryPath(
+            StrictStringFormatter().format(
+                bucket_template, project_id=metadata.project_id()
+            ),
+            state,
+        ),
         pdf_name,
     )
 
@@ -167,4 +173,4 @@ def _get_file_to_upload(
         # This is a PDF so use content to get the bytes directly.
         return GcsfsFileContentsHandle.from_bytes(response.content)
 
-    raise ScrapeAggregateError("Could not download file {}".format(pdf_name))
+    raise ScrapeAggregateError(f"Could not download file {pdf_name}")

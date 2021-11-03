@@ -68,7 +68,7 @@ class ParsingError(Exception):
     """Exception containing the text that failed to parse"""
 
     def __init__(self, response_type: constants.ResponseType, text: str):
-        msg = "Error parsing response as {}:\n{}".format(response_type, text)
+        msg = f"Error parsing response as {response_type}:\n{text}"
         super().__init__(msg)
 
 
@@ -167,9 +167,7 @@ class BaseScraper(Scraper):
             return response.content, cookies
 
         raise ValueError(
-            "Unexpected response type '{}' for endpoint '{}'".format(
-                response_type, endpoint
-            )
+            f"Unexpected response type '{response_type}' for endpoint '{endpoint}'"
         )
 
     @staticmethod

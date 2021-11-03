@@ -23,13 +23,12 @@ that does not depend on member data.
 import base64
 import random
 import zlib
-from typing import Union, Optional
+from typing import Optional, Union
 
-from recidiviz.ingest.models.ingest_info import IngestInfo, IngestObject, PLURALS
+from recidiviz.ingest.models.ingest_info import PLURALS, IngestInfo, IngestObject
 from recidiviz.ingest.models.ingest_object_hierarchy import get_ancestor_class_sequence
 from recidiviz.ingest.scrape.task_params import ScrapedData
-from recidiviz.utils import environment
-from recidiviz.utils import secrets
+from recidiviz.utils import environment, secrets
 
 # We add a random session in order to rotate the IPs from luminati.
 PROXY_USER_TEMPLATE = "{}-session-{}"
@@ -52,7 +51,7 @@ def get_value_from_html_tree(html_tree, attribute_value, attribute_name="id"):
         A string representing the value of the id from the html page.
 
     """
-    html_obj = html_tree.cssselect("[{}={}]".format(attribute_name, attribute_value))
+    html_obj = html_tree.cssselect(f"[{attribute_name}={attribute_value}]")
     if html_obj:
         return html_obj[0].get("value")
     return None
