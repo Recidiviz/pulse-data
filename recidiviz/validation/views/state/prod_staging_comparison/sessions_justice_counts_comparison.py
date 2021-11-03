@@ -20,14 +20,13 @@ to the justice counts population counts. This view combines sessions + justice c
 """
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.calculator.query.justice_counts.dataset_config import (
     JUSTICE_COUNTS_DASHBOARD_DATASET,
 )
+from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
-
 
 SESSIONS_JUSTICE_COUNTS_COMPARISON_VIEW_NAME = "sessions_justice_counts_comparison"
 
@@ -58,7 +57,7 @@ SESSIONS_JUSTICE_COUNTS_COMPARISON_QUERY_TEMPLATE = """
             WHEN compartment_level_2 IN ("PAROLE", "DUAL") THEN "POPULATION_PAROLE"
             WHEN compartment_level_2 = "PROBATION" THEN "POPULATION_PROBATION"
             END AS metric
-      FROM `{project_id}.{analyst_dataset}.compartment_sessions_materialized`
+      FROM `{project_id}.{sessions_dataset}.compartment_sessions_materialized`
       ) b
     USING (state_code, metric)
     WHERE a.date_reported BETWEEN b.start_date AND COALESCE(b.end_date,'9999-01-01')
@@ -71,7 +70,7 @@ SESSIONS_JUSTICE_COUNTS_COMPARISON_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=SESSIONS_JUSTICE_COUNTS_COMPARISON_VIEW_NAME,
     view_query_template=SESSIONS_JUSTICE_COUNTS_COMPARISON_QUERY_TEMPLATE,
     description=SESSIONS_JUSTICE_COUNTS_COMPARISON_DESCRIPTION,
-    analyst_dataset=ANALYST_VIEWS_DATASET,
+    sessions_dataset=SESSIONS_DATASET,
     justice_counts_dataset=JUSTICE_COUNTS_DASHBOARD_DATASET,
     should_materialize=True,
 )

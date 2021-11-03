@@ -99,7 +99,7 @@ US_ID_MONTHLY_PAID_INCARCERATION_POPULATION_QUERY_TEMPLATE = """
             sessions.compartment_level_2,
             pay_flag
         FROM `{project_id}.{population_projection_dataset}.simulation_run_dates` AS report_month
-        INNER JOIN `{project_id}.{analyst_dataset}.dataflow_sessions_materialized` sessions
+        INNER JOIN `{project_id}.{sessions_dataset}.dataflow_sessions_materialized` sessions
             ON report_month.run_date BETWEEN sessions.start_date AND COALESCE(sessions.end_date, '9999-01-01')
         -- Drop incarceration locations that should not be counted (mostly out of state incarcerations)
         INNER JOIN `{project_id}.{static_reference_dataset}.population_projection_facilities` facilities
@@ -109,7 +109,7 @@ US_ID_MONTHLY_PAID_INCARCERATION_POPULATION_QUERY_TEMPLATE = """
             ON paid_status.state_code = sessions.state_code
             AND paid_status.person_id = sessions.person_id
             AND report_month.run_date BETWEEN paid_status.movement_start_date AND COALESCE(paid_status.movement_end_date, '9999-01-01')
-        LEFT JOIN `{project_id}.{analyst_dataset}.person_demographics_materialized` demographics
+        LEFT JOIN `{project_id}.{sessions_dataset}.person_demographics_materialized` demographics
             ON sessions.person_id = demographics.person_id        
         WHERE sessions.state_code = 'US_ID'
             AND gender IN ('FEMALE', 'MALE')
@@ -135,7 +135,7 @@ US_ID_MONTHLY_PAID_INCARCERATION_POPULATION_VIEW_BUILDER = SimpleBigQueryViewBui
     view_id=US_ID_MONTHLY_PAID_INCARCERATION_POPULATION_VIEW_NAME,
     view_query_template=US_ID_MONTHLY_PAID_INCARCERATION_POPULATION_QUERY_TEMPLATE,
     description=US_ID_MONTHLY_PAID_INCARCERATION_POPULATION_VIEW_DESCRIPTION,
-    analyst_dataset=dataset_config.ANALYST_VIEWS_DATASET,
+    sessions_dataset=dataset_config.SESSIONS_DATASET,
     population_projection_dataset=dataset_config.POPULATION_PROJECTION_DATASET,
     state_base_dataset=dataset_config.STATE_BASE_DATASET,
     static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,

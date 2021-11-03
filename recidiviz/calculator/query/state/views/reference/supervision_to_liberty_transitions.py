@@ -39,7 +39,7 @@ SUPERVISION_TO_LIBERTY_TRANSITIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=SUPERVISION_TO_LIBERTY_TRANSITIONS_VIEW_NAME,
     view_query_template=SUPERVISION_TO_LIBERTY_TRANSITIONS_QUERY_TEMPLATE,
     description=SUPERVISION_TO_LIBERTY_TRANSITIONS_DESCRIPTION,
-    analyst_dataset=dataset_config.ANALYST_VIEWS_DATASET,
+    sessions_dataset=dataset_config.SESSIONS_DATASET,
 )
 
 if __name__ == "__main__":

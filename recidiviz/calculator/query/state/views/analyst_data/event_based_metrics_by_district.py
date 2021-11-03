@@ -17,7 +17,6 @@
 """View tracking daily positive and backstop metrics at the district level
 for use in impact measurement"""
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -54,7 +53,7 @@ EVENT_BASED_METRICS_BY_DISTRICT_QUERY_TEMPLATE = """
     """
 
 EVENT_BASED_METRICS_BY_DISTRICT_VIEW_BUILDER = SimpleBigQueryViewBuilder(
-    dataset_id=dataset_config.ANALYST_VIEWS_DATASET,
+    dataset_id=ANALYST_VIEWS_DATASET,
     view_id=EVENT_BASED_METRICS_BY_DISTRICT_VIEW_NAME,
     view_query_template=EVENT_BASED_METRICS_BY_DISTRICT_QUERY_TEMPLATE,
     description=EVENT_BASED_METRICS_BY_DISTRICT_VIEW_DESCRIPTION,

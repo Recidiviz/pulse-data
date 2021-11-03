@@ -55,6 +55,9 @@ PUBLIC_DASHBOARD_VIEWS_DATASET: str = "public_dashboard_views"
 # Where analyst datasets live
 ANALYST_VIEWS_DATASET: str = "analyst_data"
 
+# Where sessions datasets live
+SESSIONS_DATASET: str = "sessions"
+
 # Where the population projection simulation views live
 POPULATION_PROJECTION_DATASET: str = "population_projection_data"
 

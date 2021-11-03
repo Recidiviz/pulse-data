@@ -58,8 +58,8 @@ MICROSIM_PROJECTION_QUERY_TEMPLATE = """
           legal_status,
           simulation_group,
           COUNT(DISTINCT sessions.person_id) AS total_population
-      FROM `{project_id}.{analyst_dataset}.dataflow_sessions_materialized` sessions
-      LEFT JOIN `{project_id}.{analyst_dataset}.person_demographics_materialized` demographics
+      FROM `{project_id}.{sessions_dataset}.dataflow_sessions_materialized` sessions
+      LEFT JOIN `{project_id}.{sessions_dataset}.person_demographics_materialized` demographics
         ON sessions.person_id = demographics.person_id 
       INNER JOIN historical_dates
         ON historical_dates.date BETWEEN sessions.start_date AND COALESCE(sessions.end_date, '9999-01-01'),
@@ -160,7 +160,7 @@ MICROSIM_PROJECTION_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=MICROSIM_PROJECTION_VIEW_NAME,
     view_query_template=MICROSIM_PROJECTION_QUERY_TEMPLATE,
     description=MICROSIM_PROJECTION_VIEW_DESCRIPTION,
-    analyst_dataset=dataset_config.ANALYST_VIEWS_DATASET,
+    sessions_dataset=dataset_config.SESSIONS_DATASET,
     population_projection_dataset=dataset_config.POPULATION_PROJECTION_DATASET,
     population_projection_output_dataset=dataset_config.POPULATION_PROJECTION_OUTPUT_DATASET,
     included_types="', '".join(
