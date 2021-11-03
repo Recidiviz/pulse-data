@@ -209,7 +209,7 @@ def _expand_columns_with_spaces_to_new_columns(df: pd.DataFrame) -> pd.DataFrame
                 if (smashed_col.isnull()).all():
                     break
 
-                smashed_col.name = col.name + "_{}".format(cur_smashed_col)
+                smashed_col.name = col.name + f"_{cur_smashed_col}"
                 expanded_df = expanded_df.join(smashed_col)
                 cur_smashed_col += 1
 

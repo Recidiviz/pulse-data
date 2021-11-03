@@ -41,16 +41,19 @@ class FetchPageError(Exception):
         details = ""
         if request is not None:
             details += (
-                "\n\nRequest headers: \n{0}" "\n\nMethod: {1}" "\n\nBody: \n{2} "
-            ).format(request.headers, request.method, request.body)
-        if response is not None:
-            details += (
-                "\n\nResponse: \n{0} / {1}" "\n\nHeaders: \n{2}" "\n\nText: \n{3}"
-            ).format(
-                response.status_code, response.reason, response.headers, response.text
+                f"\n\nRequest headers: \n{request.headers}"
+                f"\n\nMethod: {request.method}"
+                f"\n\nBody: \n{request.body}"
             )
 
-        msg = "Problem retrieving page: {}".format(details)
+        if response is not None:
+            details += (
+                f"\n\nResponse: \n{response.status_code} / {response.reason}"
+                f"\n\nHeaders: \n{response.headers}"
+                f"\n\nText: \n{response.text}"
+            )
+
+        msg = f"Problem retrieving page: {details}"
         super().__init__(msg)
 
 
@@ -78,7 +81,7 @@ class Scraper(Ingestor, metaclass=abc.ABCMeta):
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)  # type: ignore[attr-defined]
 
         self.region = regions.get_region(region_name)
-        self.scraper_work_url = "/scraper/work/{}".format(region_name)
+        self.scraper_work_url = f"/scraper/work/{region_name}"
         self.cloud_task_manager = ScraperCloudTaskManager()
 
     @abc.abstractmethod
@@ -326,10 +329,8 @@ class Scraper(Ingestor, metaclass=abc.ABCMeta):
                 )
             else:
                 raise ValueError(
-                    "Both params ({}) for a GET request and either post_data "
-                    "({}) or json_data ({}) for a POST request were set.".format(
-                        params, post_data, json_data
-                    )
+                    f"Both params ({params}) for a GET request and either post_data "
+                    f"({post_data}) or json_data ({json_data}) for a POST request were set."
                 )
             page.raise_for_status()
         except requests.exceptions.RequestException as ce:

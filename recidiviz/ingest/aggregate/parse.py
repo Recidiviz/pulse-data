@@ -41,6 +41,7 @@ from recidiviz.persistence.database.schema.aggregate import dao
 from recidiviz.utils import metadata
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.params import get_str_param_value
+from recidiviz.utils.string import StrictStringFormatter
 
 aggregate_parse_blueprint = Blueprint("aggregate_parse", __name__)
 
@@ -49,7 +50,7 @@ class StateAggregateError(Exception):
     """Errors thrown in the state aggregate endpoint"""
 
 
-HISTORICAL_BUCKET = "{}-processed-state-aggregates"
+HISTORICAL_BUCKET = "{project_id}-processed-state-aggregates"
 
 # Please add new states in alphabetical order
 STATE_TO_PARSER = {
@@ -111,7 +112,11 @@ def state_aggregate() -> Tuple[str, HTTPStatus]:
     # If we are successful, we want to move the file out of the cloud
     # function triggered directory, and into the historical path.
     historical_path = GcsfsFilePath.from_directory_and_file_name(
-        GcsfsDirectoryPath(HISTORICAL_BUCKET.format(project_id), state), filename
+        GcsfsDirectoryPath(
+            StrictStringFormatter().format(HISTORICAL_BUCKET, project_id=project_id),
+            state,
+        ),
+        filename,
     )
     fs.mv(path, historical_path)
     return "", HTTPStatus.OK

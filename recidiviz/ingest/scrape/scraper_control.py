@@ -87,8 +87,8 @@ def scraper_start():
         )
         if most_recent_session and not most_recent_session.phase.has_persisted():
             raise Exception(
-                "Session already running for region [%s]. Could "
-                "not start a new session" % region
+                f"Session already running for region [{region}]. Could "
+                "not start a new session"
             )
 
         logging.info(
@@ -193,7 +193,7 @@ def scraper_start():
         # likely still had sessions opened and thus will be skipped, but it is
         # worth retrying anyway.
         return (
-            "Failed to start regions: {}".format(failed_starts),
+            f"Failed to start regions: {failed_starts}",
             HTTPStatus.INTERNAL_SERVER_ERROR,
         )
     return ("", HTTPStatus.OK)
@@ -311,7 +311,7 @@ def scraper_stop():
         # start likely still had their sessions closed and thus will be skipped,
         # but it is worth retrying anyway.
         return (
-            "Failed to stop regions: {}".format(failed_stops),
+            f"Failed to stop regions: {failed_stops}",
             HTTPStatus.INTERNAL_SERVER_ERROR,
         )
     return ("", HTTPStatus.OK)

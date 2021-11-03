@@ -100,11 +100,11 @@ class ScrapeSession:
     def __setattr__(self, attr, value):
         if attr == "scrape_type":
             if value not in constants.ScrapeType:
-                raise ValueError("Invalid scrape type: {}.".format(value))
+                raise ValueError(f"Invalid scrape type: {value}.")
             value = value.value
         elif attr == "phase":
             if value not in scrape_phase.ScrapePhase:
-                raise ValueError("Invalid phase: {}.".format(value))
+                raise ValueError(f"Invalid phase: {value}.")
             value = value.value
         self.__dict__["_entity"][attr] = value
 
@@ -116,7 +116,7 @@ class ScrapeSession:
                 return scrape_phase.ScrapePhase(self._entity[attr])
             return self.__dict__["_entity"][attr]
         raise AttributeError(
-            "%r object has no attribute %r" % (self.__class__.__name__, attr)
+            f"{self.__class__.__name__!r} object has no attribute {attr!r}"
         )
 
     def to_entity(self):
@@ -464,7 +464,7 @@ class ScrapedRecord:
         if attr in self._entity:
             return self._entity[attr]
         raise AttributeError(
-            "%r object has no attribute %r" % (self.__class__.__name__, attr)
+            f"{self.__class__.__name__!r} object has no attribute {attr!r}"
         )
 
     def to_entity(self):

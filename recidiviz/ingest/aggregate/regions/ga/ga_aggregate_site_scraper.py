@@ -18,11 +18,14 @@
 """Scrapes the georgia aggregate site and finds pdfs to download."""
 import re
 from typing import Set
-from lxml import html
+
 import requests
+from lxml import html
+
+from recidiviz.utils.string import StrictStringFormatter
 
 STATE_AGGREGATE_URL = "https://www.dca.ga.gov/node/3811/documents/2086"
-BASE_URL = "https://www.dca.ga.gov{}"
+BASE_URL = "https://www.dca.ga.gov{path}"
 YEAR_PATTERN = re.compile(r"[0-9]{4} Jail Reports")
 
 
@@ -34,7 +37,7 @@ def get_urls_to_download() -> Set[str]:
     aggregate_report_urls = set()
     for link in links:
         if YEAR_PATTERN.match(link.text_content()):
-            url = BASE_URL.format(link.attrib["href"])
+            url = StrictStringFormatter().format(BASE_URL, path=link.attrib["href"])
             # We need to do a separate get request on the actual report page
             page = requests.get(url).text
             html_tree = html.fromstring(page)
