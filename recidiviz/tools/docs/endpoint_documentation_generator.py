@@ -34,6 +34,7 @@ from werkzeug.routing import Rule
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tools.docs.summary_file_generator import update_summary_file
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
+from recidiviz.utils.string import StrictStringFormatter
 
 ENDPOINT_DOCS_DIRECTORY = "docs/endpoints"
 ENDPOINT_CATALOG_SPECIFICATION = "docs/endpoints/endpoint_specification_template.md"
@@ -126,7 +127,8 @@ class EndpointDocumentationGenerator:
         ]
         path_params = ", ".join(sorted(escaped_path_params))
         with open(specification_template_path, "r", encoding="utf-8") as spec_file:
-            spec = spec_file.read().format(
+            spec = StrictStringFormatter().format(
+                spec_file.read(),
                 endpoint=self._escape_special_characters(rule.rule),
                 methods=methods,
                 path_params=path_params,
@@ -150,7 +152,8 @@ class EndpointDocumentationGenerator:
         markdown_path = self.generate_markdown_path_for_endpoint(
             docs_directory, endpoint
         )
-        return self.MARKDOWN_TABLE_OF_CONTENTS_FOR_SUMMARY.format(
+        return StrictStringFormatter().format(
+            self.MARKDOWN_TABLE_OF_CONTENTS_FOR_SUMMARY,
             endpoint=self._escape_special_characters(endpoint),
             markdown_path=os.path.relpath(markdown_path, docs_directory),
         )

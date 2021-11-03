@@ -71,12 +71,10 @@ def _trigger_dataflow_job_from_template(
     service = build("dataflow", "v1b3", credentials=credentials)
 
     body = {
-        "jobName": "{job_name}".format(job_name=job_name),
-        "gcsPath": "gs://{bucket}/templates/{template}".format(
-            bucket=bucket, template=template
-        ),
+        "jobName": f"{job_name}",
+        "gcsPath": f"gs://{bucket}/templates/{template}",
         "environment": {
-            "tempLocation": "gs://{bucket}/temp".format(bucket=bucket),
+            "tempLocation": f"gs://{bucket}/temp",
         },
     }
 

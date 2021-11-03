@@ -30,6 +30,7 @@ from recidiviz.tools.utils.migration_script_helpers import (
     get_migration_header_section,
     path_to_versions_directory,
 )
+from recidiviz.utils.string import StrictStringFormatter
 
 _PATH_TO_BODY_SECTION_TEMPLATE = os.path.join(
     PATH_TO_MIGRATIONS_DIRECTORY, "enum_migration_template.txt"
@@ -48,7 +49,8 @@ def _get_migration_body_section(
     """
     with open(_PATH_TO_BODY_SECTION_TEMPLATE, "r", encoding="utf-8") as template_file:
         template = template_file.read()
-    return template.format(
+    return StrictStringFormatter().format(
+        template,
         primary_table=primary_table_name,
         enum_name=enum_name,
         column=column_name,
@@ -199,7 +201,7 @@ def main() -> None:
         old_enum_values,
         new_enum_values,
     )
-    file_content = "{}\n{}".format(header_section, body_section)
+    file_content = f"{header_section}\n{body_section}"
 
     with open(migration_filepath, "w", encoding="utf-8") as migration_file:
         migration_file.write(file_content)

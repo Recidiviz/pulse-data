@@ -298,11 +298,17 @@ def _format_failure(failure: Tuple[FrozenSet[str], FrozenSet[str], str]) -> str:
     matched_prefixes = failure[0]
     failed_prefixes = failure[1]
     set_to_validate = failure[2]
-    return "Failure:\n\tModified file(s):\n{}\n\tWithout modifying file(s):\n{}\n{}".format(
-        "\n".join(map(lambda file: "\t\t" + file, matched_prefixes)),
-        "\n".join(map(lambda file: "\t\t" + file, failed_prefixes)),
-        f"If your change does not require documentation changes, prefix your commit with "
-        f'"[skip validation {set_to_validate}]".',
+
+    matched_prefixes_string = "\n".join(
+        map(lambda file: "\t\t" + file, matched_prefixes)
+    )
+    failed_prefixes_string = "\n".join(map(lambda file: "\t\t" + file, failed_prefixes))
+    return (
+        "Failure:\n"
+        f"\tModified file(s):\n{matched_prefixes_string}\n"
+        f"\tWithout modifying file(s):\n{failed_prefixes_string}\n"
+        "If your change does not require documentation changes, prefix your commit with "
+        f'"[skip validation {set_to_validate}]".'
     )
 
 
@@ -325,7 +331,7 @@ def _get_assertions_to_skip(commit_range: str) -> FrozenSet[str]:
             "git",
             "log",
             "--format=%h %B",
-            "--grep={}".format(_SKIP_COMMIT_REGEX),
+            f"--grep={_SKIP_COMMIT_REGEX}",
             commit_range,
         ],
         stdout=subprocess.PIPE,

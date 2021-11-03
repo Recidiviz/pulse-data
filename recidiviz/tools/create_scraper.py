@@ -128,7 +128,7 @@ def _create_scraper_files(subs: Dict[str, str], vendor: Optional[str]) -> None:
     template_dir = os.path.join(os.path.dirname(__file__), "scraper_template")
     target_dir = os.path.join(regions_dir, subs["region"])
     if os.path.exists(target_dir):
-        raise OSError("directory %s already exists" % target_dir)
+        raise OSError(f"directory {target_dir} already exists")
     os.mkdir(target_dir)
 
     init_template = os.path.join(template_dir, "__init__.txt")
@@ -163,7 +163,7 @@ def _create_test_files(subs: Dict[str, str], vendor: Optional[str]) -> None:
         )
     target_test_dir = os.path.join(test_dir, subs["region"])
     if os.path.exists(target_test_dir):
-        raise OSError("directory %s already exists" % target_test_dir)
+        raise OSError(f"directory {target_test_dir} already exists")
     os.mkdir(target_test_dir)
 
     template_dir = os.path.join(os.path.dirname(__file__), "scraper_template")
@@ -187,7 +187,7 @@ def _populate_file(
 def _get_state(state_arg: str) -> us.states.State:
     state = us.states.lookup(state_arg)
     if state is None:
-        raise ValueError("Couldn't parse state '%s'" % state_arg)
+        raise ValueError(f"Couldn't parse state '{state_arg}'")
 
     return state
 
@@ -201,7 +201,7 @@ def _gen_region_name(
 
 def _get_jurisdiction_id(county_name: str, state: us.states.State) -> str:
     try:
-        return "'{}'".format(jid.get(county_name, state))
+        return f"'{jid.get(county_name, state)}'"
     except FipsMergingError:
         # If no 1:1 mapping, leave jurisdiction_id blank to be caught by tests
         return ""
