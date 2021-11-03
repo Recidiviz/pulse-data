@@ -23,7 +23,7 @@ To generate the view, run:
 from recidiviz.big_query.selected_columns_big_query_view import (
     SelectedColumnsBigQueryViewBuilder,
 )
-from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
+from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.case_triage.client_event.types import ClientEventType
 from recidiviz.case_triage.views.dataset_config import VIEWS_DATASET
 from recidiviz.common.constants.state.state_supervision_contact import (
@@ -115,7 +115,7 @@ CLIENT_EVENTS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         "event_metadata",
         "exported_at",
     ],
-    analyst_views_dataset=ANALYST_VIEWS_DATASET,
+    analyst_views_dataset=SESSIONS_DATASET,
     case_triage_dataset=VIEWS_DATASET,
 )
 

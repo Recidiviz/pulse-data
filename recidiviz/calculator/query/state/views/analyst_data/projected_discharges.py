@@ -19,6 +19,7 @@ from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    SESSIONS_DATASET,
     STATE_BASE_DATASET,
 )
 from recidiviz.calculator.query.state.views.analyst_data.us_id.us_id_raw_projected_discharges import (
@@ -72,7 +73,7 @@ PROJECTED_DISCHARGES_QUERY_TEMPLATE = (
         JSON_VALUE(person.full_name, '$.given_names') AS first_name,
         JSON_VALUE(person.full_name, '$.surname') AS last_name,
     FROM unioned
-    INNER JOIN `{project_id}.{analyst_dataset}.supervision_super_sessions_materialized` ss
+    INNER JOIN `{project_id}.{sessions_dataset}.supervision_super_sessions_materialized` ss
         ON unioned.person_id = ss.person_id
         AND unioned.date_of_supervision BETWEEN ss.start_date AND COALESCE(ss.end_date, '9999-01-01')
     LEFT JOIN 
@@ -92,7 +93,7 @@ PROJECTED_DISCHARGES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=PROJECTED_DISCHARGES_VIEW_NAME,
     view_query_template=PROJECTED_DISCHARGES_QUERY_TEMPLATE,
     description=PROJECTED_DISCHARGES_VIEW_DESCRIPTION,
-    analyst_dataset=ANALYST_VIEWS_DATASET,
+    sessions_dataset=SESSIONS_DATASET,
     base_dataset=STATE_BASE_DATASET,
     dataflow_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
     should_materialize=True,

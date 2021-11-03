@@ -16,8 +16,10 @@
 # =============================================================================
 """Metric capturing proportional reduction in supervision sentence length via early discharge"""
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state import dataset_config
-from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
+from recidiviz.calculator.query.state.dataset_config import (
+    ANALYST_VIEWS_DATASET,
+    SESSIONS_DATASET,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -58,7 +60,7 @@ US_ID_PPO_METRICS_EARLY_DISCHARGE_REDUCTION_QUERY_TEMPLATE = """
         FROM `{project_id}.{analyst_dataset}.us_id_ppo_metrics_early_discharges` ed
         LEFT JOIN `{project_id}.{analyst_dataset}.us_id_ppo_metrics_successful_supervision_terminations` t
             USING (person_id, state_code, supervision_type)
-        LEFT JOIN `{project_id}.{analyst_dataset}.compartment_sentences_materialized` c
+        LEFT JOIN `{project_id}.{sessions_dataset}.compartment_sentences_materialized` c
             USING (state_code, session_id, person_id)
         WHERE ed.state_code = 'US_ID'
       )
@@ -81,11 +83,12 @@ US_ID_PPO_METRICS_EARLY_DISCHARGE_REDUCTION_QUERY_TEMPLATE = """
     """
 
 US_ID_PPO_METRICS_EARLY_DISCHARGE_REDUCTION_VIEW_BUILDER = SimpleBigQueryViewBuilder(
-    dataset_id=dataset_config.ANALYST_VIEWS_DATASET,
+    dataset_id=ANALYST_VIEWS_DATASET,
     view_id=US_ID_PPO_METRICS_EARLY_DISCHARGE_REDUCTION_VIEW_NAME,
     view_query_template=US_ID_PPO_METRICS_EARLY_DISCHARGE_REDUCTION_QUERY_TEMPLATE,
     description=US_ID_PPO_METRICS_EARLY_DISCHARGE_REDUCTION_VIEW_DESCRIPTION,
     analyst_dataset=ANALYST_VIEWS_DATASET,
+    sessions_dataset=SESSIONS_DATASET,
     should_materialize=True,
 )
 

@@ -18,6 +18,7 @@
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
+    SESSIONS_DATASET,
     STATE_BASE_DATASET,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -89,7 +90,7 @@ US_ID_BEHAVIOR_RESPONSES_QUERY_TEMPLATE = """
     compartment_level_1, 
     compartment_level_2 
     FROM combined
-    INNER JOIN `{project_id}.{analyst_dataset}.compartment_sessions_materialized` cs
+    INNER JOIN `{project_id}.{sessions_dataset}.compartment_sessions_materialized` cs
         ON combined.person_id = cs.person_id
         AND combined.action_date BETWEEN cs.start_date AND COALESCE(cs.end_date,'9999-01-01')
     -- sparse responses data before 2016
@@ -103,6 +104,7 @@ US_ID_BEHAVIOR_RESPONSES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=US_ID_BEHAVIOR_RESPONSES_QUERY_TEMPLATE,
     description=US_ID_BEHAVIOR_RESPONSES_VIEW_DESCRIPTION,
     analyst_dataset=ANALYST_VIEWS_DATASET,
+    sessions_dataset=SESSIONS_DATASET,
     raw_dataset=US_ID_RAW_DATASET,
     base_dataset=STATE_BASE_DATASET,
     should_materialize=True,

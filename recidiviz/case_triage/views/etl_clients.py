@@ -24,8 +24,8 @@ from recidiviz.big_query.selected_columns_big_query_view import (
     SelectedColumnsBigQueryViewBuilder,
 )
 from recidiviz.calculator.query.state.dataset_config import (
-    ANALYST_VIEWS_DATASET,
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    SESSIONS_DATASET,
 )
 from recidiviz.case_triage.views.dataset_config import VIEWS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -229,7 +229,7 @@ CLIENT_LIST_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     dataset_id=VIEWS_DATASET,
     view_id="etl_clients",
     view_query_template=CLIENT_LIST_QUERY_TEMPLATE,
-    analyst_views_dataset=ANALYST_VIEWS_DATASET,
+    analyst_views_dataset=SESSIONS_DATASET,
     case_triage_dataset=VIEWS_DATASET,
     materialized_metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
     columns=[
