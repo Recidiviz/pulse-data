@@ -98,7 +98,7 @@ def _run_ingest(
     For each manifest file in state directory, it runs local ingest and if that is successful,
     will then run manual upload.
     """
-    region_directory = "%s/%s/%s/" % (repo_directory, region_code, system.value)
+    region_directory = f"{repo_directory}/{region_code}/{system.value}/"
     manifest_files = [
         os.path.join(region_directory, name)
         for name in os.listdir(region_directory)

@@ -1,3 +1,19 @@
+# Recidiviz - a data platform for criminal justice reform
+# Copyright (C) 2021 Recidiviz, Inc.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+# =============================================================================
 """Script to generate an alembic migration for deprecating a field on an entity for a
 state_code by setting the value of all instances to null.
 
@@ -30,6 +46,7 @@ from recidiviz.tools.utils.migration_script_helpers import (
     get_migration_header_section,
     path_to_versions_directory,
 )
+from recidiviz.utils.string import StrictStringFormatter
 
 _PATH_TO_BODY_SECTION_TEMPLATE = os.path.join(
     PATH_TO_MIGRATIONS_DIRECTORY, "field_deprecation_migration_template.txt"
@@ -47,7 +64,8 @@ def _get_migration_body_section(
     with open(_PATH_TO_BODY_SECTION_TEMPLATE, "r", encoding="utf-8") as template_file:
         template = template_file.read()
 
-    return template.format(
+    return StrictStringFormatter().format(
+        template,
         primary_table=primary_table_name,
         columns=", ".join([f"'{col}'" for col in columns_to_nullify]),
         state_codes_to_deprecate=", ".join(
@@ -128,7 +146,7 @@ def main() -> None:
         columns_to_nullify,
         args.state_code_to_deprecate,
     )
-    file_content = "{}\n{}".format(header_section, body_section)
+    file_content = f"{header_section}\n{body_section}"
 
     with open(migration_filepath, "w", encoding="utf-8") as migration_file:
         migration_file.write(file_content)

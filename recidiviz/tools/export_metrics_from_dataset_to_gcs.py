@@ -43,6 +43,7 @@ from recidiviz.metrics.export.view_export_manager import (
 )
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.utils.string import StrictStringFormatter
 from recidiviz.view_registry.dataset_overrides import (
     dataset_overrides_for_deployed_view_datasets,
 )
@@ -55,7 +56,7 @@ def get_protected_buckets(project_id: str) -> List[str]:
     }
 
     return [
-        bucket_template.format(project_id=project_id)
+        StrictStringFormatter().format(bucket_template, project_id=project_id)
         for bucket_template in protected_bucket_templates
     ]
 
