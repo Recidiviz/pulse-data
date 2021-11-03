@@ -254,13 +254,8 @@ class BaseHistoricalSnapshotUpdater(Generic[SchemaPersonType]):
         if not snapshot_ids:
             return []
 
-        filter_statement = (
-            "{historical_table}.{primary_key_column} IN ({ids_list})".format(
-                historical_table=history_table_name,
-                primary_key_column=history_table_class.get_primary_key_column_name(),
-                ids_list=", ".join([str(id) for id in snapshot_ids]),
-            )
-        )
+        ids_list = ", ".join([str(id) for id in snapshot_ids])
+        filter_statement = f"{history_table_name}.{history_table_class.get_primary_key_column_name()} IN ({ids_list})"
 
         return session.query(history_table_class).filter(text(filter_statement)).all()
 
@@ -430,9 +425,7 @@ class BaseHistoricalSnapshotUpdater(Generic[SchemaPersonType]):
                 )
             if key in keys_by_type[type_name]:
                 raise AssertionError(
-                    "Duplicate entities passed of type {} with ID {}".format(
-                        type_name, key
-                    )
+                    f"Duplicate entities passed of type {type_name} with ID {key}"
                 )
             keys_by_type[type_name].add(key)
 
@@ -555,9 +548,7 @@ def _get_historical_class(
     |primary_class|
     """
     # See module assumption #1
-    historical_class_name = "{}{}".format(
-        primary_class.__name__, HISTORICAL_TABLE_CLASS_SUFFIX
-    )
+    historical_class_name = f"{primary_class.__name__}{HISTORICAL_TABLE_CLASS_SUFFIX}"
     return getattr(schema, historical_class_name)
 
 
@@ -621,8 +612,8 @@ class _SnapshotContextRegistry:
         entity_id = schema_object.get_primary_key()
         if entity_id in self.snapshot_contexts[type_name]:
             raise ValueError(
-                "Entity already registered with type {type} and primary key "
-                "{primary_key}".format(type=type_name, primary_key=entity_id)
+                f"Entity already registered with type {type_name} and primary key "
+                f"{entity_id}"
             )
         if entity_id is None:
             raise ValueError("primary key should not be None")
@@ -655,10 +646,8 @@ class _SnapshotContextRegistry:
             is not None
         ):
             raise ValueError(
-                "Snapshot already registered for primary entity with type "
-                "{type} and primary key {primary_key}".format(
-                    type=primary_type_name, primary_key=primary_entity_id
-                )
+                f"Snapshot already registered for primary entity with type "
+                f"{primary_type_name} and primary key {primary_entity_id}"
             )
 
         self.snapshot_contexts[primary_type_name][

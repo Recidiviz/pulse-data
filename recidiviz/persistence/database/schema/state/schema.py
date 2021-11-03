@@ -67,6 +67,7 @@ from recidiviz.persistence.database.schema.shared_enums import (
     race,
     residency_status,
 )
+from recidiviz.utils.string import StrictStringFormatter
 
 ASSOCIATON_TABLE_COMMENT_TEMPLATE = (
     "Association table that connects {first_object_name_plural} with "
@@ -584,16 +585,21 @@ state_supervision_sentence_incarceration_period_association_table = Table(
         Integer,
         ForeignKey("state_supervision_sentence.supervision_sentence_id"),
         index=True,
-        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="supervision sentence"),
+        comment=StrictStringFormatter().format(
+            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="supervision sentence"
+        ),
     ),
     Column(
         "incarceration_period_id",
         Integer,
         ForeignKey("state_incarceration_period.incarceration_period_id"),
         index=True,
-        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="incarceration period"),
+        comment=StrictStringFormatter().format(
+            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="incarceration period"
+        ),
     ),
-    comment=ASSOCIATON_TABLE_COMMENT_TEMPLATE.format(
+    comment=StrictStringFormatter().format(
+        ASSOCIATON_TABLE_COMMENT_TEMPLATE,
         first_object_name_plural="supervision sentences",
         second_object_name_plural="incarceration periods",
     ),
@@ -607,16 +613,21 @@ state_supervision_sentence_supervision_period_association_table = Table(
         Integer,
         ForeignKey("state_supervision_sentence.supervision_sentence_id"),
         index=True,
-        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="supervision sentence"),
+        comment=StrictStringFormatter().format(
+            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="supervision sentence"
+        ),
     ),
     Column(
         "supervision_period_id",
         Integer,
         ForeignKey("state_supervision_period.supervision_period_id"),
         index=True,
-        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="supervision period"),
+        comment=StrictStringFormatter().format(
+            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="supervision period"
+        ),
     ),
-    comment=ASSOCIATON_TABLE_COMMENT_TEMPLATE.format(
+    comment=StrictStringFormatter().format(
+        ASSOCIATON_TABLE_COMMENT_TEMPLATE,
         first_object_name_plural="supervision sentences",
         second_object_name_plural="supervision periods",
     ),
@@ -630,8 +641,8 @@ state_incarceration_sentence_incarceration_period_association_table = Table(
         Integer,
         ForeignKey("state_incarceration_sentence.incarceration_sentence_id"),
         index=True,
-        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(
-            object_name="incarceration sentence"
+        comment=StrictStringFormatter().format(
+            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="incarceration sentence"
         ),
     ),
     Column(
@@ -639,9 +650,12 @@ state_incarceration_sentence_incarceration_period_association_table = Table(
         Integer,
         ForeignKey("state_incarceration_period.incarceration_period_id"),
         index=True,
-        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="incarceration period"),
+        comment=StrictStringFormatter().format(
+            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="incarceration period"
+        ),
     ),
-    comment=ASSOCIATON_TABLE_COMMENT_TEMPLATE.format(
+    comment=StrictStringFormatter().format(
+        ASSOCIATON_TABLE_COMMENT_TEMPLATE,
         first_object_name_plural="incarceration sentences",
         second_object_name_plural="incarceration periods",
     ),
@@ -655,8 +669,8 @@ state_incarceration_sentence_supervision_period_association_table = Table(
         Integer,
         ForeignKey("state_incarceration_sentence.incarceration_sentence_id"),
         index=True,
-        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(
-            object_name="incarceration sentence"
+        comment=StrictStringFormatter().format(
+            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="incarceration sentence"
         ),
     ),
     Column(
@@ -664,9 +678,12 @@ state_incarceration_sentence_supervision_period_association_table = Table(
         Integer,
         ForeignKey("state_supervision_period.supervision_period_id"),
         index=True,
-        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="supervision period"),
+        comment=StrictStringFormatter().format(
+            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="supervision period"
+        ),
     ),
-    comment=ASSOCIATON_TABLE_COMMENT_TEMPLATE.format(
+    comment=StrictStringFormatter().format(
+        ASSOCIATON_TABLE_COMMENT_TEMPLATE,
         first_object_name_plural="incarceration sentences",
         second_object_name_plural="supervision periods",
     ),
@@ -680,18 +697,21 @@ state_charge_incarceration_sentence_association_table = Table(
         Integer,
         ForeignKey("state_charge.charge_id"),
         index=True,
-        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="charge"),
+        comment=StrictStringFormatter().format(
+            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="charge"
+        ),
     ),
     Column(
         "incarceration_sentence_id",
         Integer,
         ForeignKey("state_incarceration_sentence.incarceration_sentence_id"),
         index=True,
-        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(
-            object_name="incarceration sentence"
+        comment=StrictStringFormatter().format(
+            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="incarceration sentence"
         ),
     ),
-    comment=ASSOCIATON_TABLE_COMMENT_TEMPLATE.format(
+    comment=StrictStringFormatter().format(
+        ASSOCIATON_TABLE_COMMENT_TEMPLATE,
         first_object_name_plural="charges",
         second_object_name_plural="incarceration sentences",
     ),
@@ -705,16 +725,21 @@ state_charge_supervision_sentence_association_table = Table(
         Integer,
         ForeignKey("state_charge.charge_id"),
         index=True,
-        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="charge"),
+        comment=StrictStringFormatter().format(
+            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="charge"
+        ),
     ),
     Column(
         "supervision_sentence_id",
         Integer,
         ForeignKey("state_supervision_sentence.supervision_sentence_id"),
         index=True,
-        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="supervision sentence"),
+        comment=StrictStringFormatter().format(
+            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="supervision sentence"
+        ),
     ),
-    comment=ASSOCIATON_TABLE_COMMENT_TEMPLATE.format(
+    comment=StrictStringFormatter().format(
+        ASSOCIATON_TABLE_COMMENT_TEMPLATE,
         first_object_name_plural="charges",
         second_object_name_plural="supervision sentences",
     ),
@@ -728,17 +753,23 @@ state_parole_decision_decision_agent_association_table = Table(
         Integer,
         ForeignKey("state_parole_decision.parole_decision_id"),
         index=True,
-        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="parole decision"),
+        comment=StrictStringFormatter().format(
+            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="parole decision"
+        ),
     ),
     Column(
         "agent_id",
         Integer,
         ForeignKey("state_agent.agent_id"),
         index=True,
-        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="fine"),
+        comment=StrictStringFormatter().format(
+            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="fine"
+        ),
     ),
-    comment=ASSOCIATON_TABLE_COMMENT_TEMPLATE.format(
-        first_object_name_plural="parole decisions", second_object_name_plural="agents"
+    comment=StrictStringFormatter().format(
+        ASSOCIATON_TABLE_COMMENT_TEMPLATE,
+        first_object_name_plural="parole decisions",
+        second_object_name_plural="agents",
     ),
 )
 
@@ -752,16 +783,21 @@ state_supervision_violation_response_decision_agent_association_table = Table(
             "state_supervision_violation_response." "supervision_violation_response_id"
         ),
         index=True,
-        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="violation response"),
+        comment=StrictStringFormatter().format(
+            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="violation response"
+        ),
     ),
     Column(
         "agent_id",
         Integer,
         ForeignKey("state_agent.agent_id"),
         index=True,
-        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="agent"),
+        comment=StrictStringFormatter().format(
+            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="agent"
+        ),
     ),
-    comment=ASSOCIATON_TABLE_COMMENT_TEMPLATE.format(
+    comment=StrictStringFormatter().format(
+        ASSOCIATON_TABLE_COMMENT_TEMPLATE,
         first_object_name_plural="supervision violation responses",
         second_object_name_plural="agents",
     ),
@@ -793,7 +829,9 @@ class _ReferencesStatePersonSharedColumns:
             ForeignKey("state_person.person_id", deferrable=True, initially="DEFERRED"),
             index=True,
             nullable=False,
-            comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="person"),
+            comment=StrictStringFormatter().format(
+                FOREIGN_KEY_COMMENT_TEMPLATE, object_name="person"
+            ),
         )
 
 
@@ -820,7 +858,9 @@ class _ReferencesStateSentenceGroupSharedColumns:
             ),
             index=True,
             nullable=False,
-            comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="sentence group"),
+            comment=StrictStringFormatter().format(
+                FOREIGN_KEY_COMMENT_TEMPLATE, object_name="sentence group"
+            ),
         )
 
 
@@ -841,8 +881,8 @@ class _StatePersonExternalIdSharedColumns(_ReferencesStatePersonSharedColumns):
         String(255),
         nullable=False,
         index=True,
-        comment=EXTERNAL_ID_COMMENT_TEMPLATE.format(
-            object_name="StatePersonExternalId"
+        comment=StrictStringFormatter().format(
+            EXTERNAL_ID_COMMENT_TEMPLATE, object_name="StatePersonExternalId"
         ),
     )
     state_code = Column(
@@ -884,7 +924,9 @@ class StatePersonExternalId(StateBase, _StatePersonExternalIdSharedColumns):
     person_external_id_id = Column(
         Integer,
         primary_key=True,
-        comment=PRIMARY_KEY_COMMENT_TEMPLATE.format(object_name="person external id"),
+        comment=StrictStringFormatter().format(
+            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="person external id"
+        ),
     )
 
 
@@ -895,8 +937,8 @@ class StatePersonExternalIdHistory(
 
     __tablename__ = "state_person_external_id_history"
     __table_args__ = {
-        "comment": HISTORICAL_TABLE_COMMENT_TEMPLATE.format(
-            object_name="StatePersonExternalId"
+        "comment": StrictStringFormatter().format(
+            HISTORICAL_TABLE_COMMENT_TEMPLATE, object_name="StatePersonExternalId"
         )
     }
     # This primary key should NOT be used. It only exists because SQLAlchemy
@@ -910,7 +952,9 @@ class StatePersonExternalIdHistory(
         ForeignKey("state_person_external_id.person_external_id_id"),
         nullable=False,
         index=True,
-        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="person external id"),
+        comment=StrictStringFormatter().format(
+            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="person external id"
+        ),
     )
 
 
@@ -956,7 +1000,9 @@ class StatePersonAlias(StateBase, _StatePersonAliasSharedColumns):
     person_alias_id = Column(
         Integer,
         primary_key=True,
-        comment=PRIMARY_KEY_COMMENT_TEMPLATE.format(object_name="person"),
+        comment=StrictStringFormatter().format(
+            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="person"
+        ),
     )
 
 
@@ -967,8 +1013,8 @@ class StatePersonAliasHistory(
 
     __tablename__ = "state_person_alias_history"
     __table_args__ = {
-        "comment": HISTORICAL_TABLE_COMMENT_TEMPLATE.format(
-            object_name="StatePersonAlias"
+        "comment": StrictStringFormatter().format(
+            HISTORICAL_TABLE_COMMENT_TEMPLATE, object_name="StatePersonAlias"
         )
     }
 
@@ -983,7 +1029,9 @@ class StatePersonAliasHistory(
         ForeignKey("state_person_alias.person_alias_id"),
         nullable=False,
         index=True,
-        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="person alias"),
+        comment=StrictStringFormatter().format(
+            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="person alias"
+        ),
     )
 
 
@@ -1025,7 +1073,9 @@ class StatePersonRace(StateBase, _StatePersonRaceSharedColumns):
     person_race_id = Column(
         Integer,
         primary_key=True,
-        comment=PRIMARY_KEY_COMMENT_TEMPLATE.format(object_name="person race"),
+        comment=StrictStringFormatter().format(
+            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="person race"
+        ),
     )
 
 
@@ -1036,8 +1086,8 @@ class StatePersonRaceHistory(
 
     __tablename__ = "state_person_race_history"
     __table_args__ = {
-        "comment": HISTORICAL_TABLE_COMMENT_TEMPLATE.format(
-            object_name="StatePersonRace"
+        "comment": StrictStringFormatter().format(
+            HISTORICAL_TABLE_COMMENT_TEMPLATE, object_name="StatePersonRace"
         )
     }
 
@@ -1052,7 +1102,9 @@ class StatePersonRaceHistory(
         ForeignKey("state_person_race.person_race_id"),
         nullable=False,
         index=True,
-        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="person race"),
+        comment=StrictStringFormatter().format(
+            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="person race"
+        ),
     )
 
 
@@ -1094,7 +1146,9 @@ class StatePersonEthnicity(StateBase, _StatePersonEthnicitySharedColumns):
     person_ethnicity_id = Column(
         Integer,
         primary_key=True,
-        comment=PRIMARY_KEY_COMMENT_TEMPLATE.format(object_name="person ethnicity"),
+        comment=StrictStringFormatter().format(
+            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="person ethnicity"
+        ),
     )
 
 
@@ -1105,8 +1159,8 @@ class StatePersonEthnicityHistory(
 
     __tablename__ = "state_person_ethnicity_history"
     __table_args__ = {
-        "comment": HISTORICAL_TABLE_COMMENT_TEMPLATE.format(
-            object_name="StatePersonEthnicity"
+        "comment": StrictStringFormatter().format(
+            HISTORICAL_TABLE_COMMENT_TEMPLATE, object_name="StatePersonEthnicity"
         )
     }
 
@@ -1121,8 +1175,8 @@ class StatePersonEthnicityHistory(
         ForeignKey("state_person_ethnicity.person_ethnicity_id"),
         nullable=False,
         index=True,
-        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(
-            object_name="state person ethnicity"
+        comment=StrictStringFormatter().format(
+            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="state person ethnicity"
         ),
     )
 
@@ -1189,7 +1243,9 @@ class _StatePersonSharedColumns:
             ForeignKey("state_agent.agent_id"),
             index=True,
             nullable=True,
-            comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="state agent"),
+            comment=StrictStringFormatter().format(
+                FOREIGN_KEY_COMMENT_TEMPLATE, object_name="state agent"
+            ),
         )
 
 
@@ -1206,7 +1262,9 @@ class StatePerson(StateBase, _StatePersonSharedColumns):
     person_id = Column(
         Integer,
         primary_key=True,
-        comment=PRIMARY_KEY_COMMENT_TEMPLATE.format(object_name="person"),
+        comment=StrictStringFormatter().format(
+            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="person"
+        ),
     )
 
     external_ids = relationship(
@@ -1243,7 +1301,9 @@ class StatePersonHistory(
 
     __tablename__ = "state_person_history"
     __table_args__ = {
-        "comment": HISTORICAL_TABLE_COMMENT_TEMPLATE.format(object_name="StatePerson")
+        "comment": StrictStringFormatter().format(
+            HISTORICAL_TABLE_COMMENT_TEMPLATE, object_name="StatePerson"
+        )
     }
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
@@ -1255,7 +1315,9 @@ class StatePersonHistory(
         ForeignKey("state_person.person_id"),
         nullable=False,
         index=True,
-        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="state person"),
+        comment=StrictStringFormatter().format(
+            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="state person"
+        ),
     )
 
 
@@ -1276,7 +1338,9 @@ class _StateCourtCaseSharedColumns(_ReferencesStatePersonSharedColumns):
     external_id = Column(
         String(255),
         index=True,
-        comment=EXTERNAL_ID_COMMENT_TEMPLATE.format(object_name="StateCourtCase"),
+        comment=StrictStringFormatter().format(
+            EXTERNAL_ID_COMMENT_TEMPLATE, object_name="StateCourtCase"
+        ),
     )
     status = Column(state_court_case_status, comment="The current status of the case.")
     status_raw_text = Column(
@@ -1320,7 +1384,9 @@ class _StateCourtCaseSharedColumns(_ReferencesStatePersonSharedColumns):
             index=True,
             nullable=True,
             comment="The id of the judge who tried the case.<br />"
-            + FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="state agent"),
+            + StrictStringFormatter().format(
+                FOREIGN_KEY_COMMENT_TEMPLATE, object_name="state agent"
+            ),
         )
 
 
@@ -1347,7 +1413,9 @@ class StateCourtCase(StateBase, _StateCourtCaseSharedColumns):
     court_case_id = Column(
         Integer,
         primary_key=True,
-        comment=PRIMARY_KEY_COMMENT_TEMPLATE.format(object_name="court case"),
+        comment=StrictStringFormatter().format(
+            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="court case"
+        ),
     )
     person = relationship("StatePerson", uselist=False)
     judge = relationship("StateAgent", uselist=False, lazy="selectin")
@@ -1377,7 +1445,9 @@ class StateCourtCaseHistory(
         ForeignKey("state_court_case.court_case_id"),
         nullable=False,
         index=True,
-        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="court case"),
+        comment=StrictStringFormatter().format(
+            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="court case"
+        ),
     )
 
 
@@ -1397,7 +1467,9 @@ class _StateChargeSharedColumns(_ReferencesStatePersonSharedColumns):
     external_id = Column(
         String(255),
         index=True,
-        comment=EXTERNAL_ID_COMMENT_TEMPLATE.format(object_name="StateCharge"),
+        comment=StrictStringFormatter().format(
+            EXTERNAL_ID_COMMENT_TEMPLATE, object_name="StateCharge"
+        ),
     )
     status = Column(charge_status, nullable=False, comment="The status of the charge.")
     status_raw_text = Column(
@@ -1481,7 +1553,9 @@ class _StateChargeSharedColumns(_ReferencesStatePersonSharedColumns):
             Integer,
             ForeignKey("state_court_case.court_case_id"),
             index=True,
-            comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="court case"),
+            comment=StrictStringFormatter().format(
+                FOREIGN_KEY_COMMENT_TEMPLATE, object_name="court case"
+            ),
         )
 
 
@@ -1511,7 +1585,9 @@ class StateCharge(StateBase, _StateChargeSharedColumns):
     charge_id = Column(
         Integer,
         primary_key=True,
-        comment=PRIMARY_KEY_COMMENT_TEMPLATE.format(object_name="charge"),
+        comment=StrictStringFormatter().format(
+            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="charge"
+        ),
     )
 
     # Cross-entity relationships
@@ -1528,7 +1604,9 @@ class StateChargeHistory(
 
     __tablename__ = "state_charge_history"
     __table_args__ = {
-        "comment": HISTORICAL_TABLE_COMMENT_TEMPLATE.format(object_name="StateCharge")
+        "comment": StrictStringFormatter().format(
+            HISTORICAL_TABLE_COMMENT_TEMPLATE, object_name="StateCharge"
+        )
     }
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
@@ -1543,7 +1621,9 @@ class StateChargeHistory(
         ForeignKey("state_charge.charge_id"),
         nullable=False,
         index=True,
-        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="state charge"),
+        comment=StrictStringFormatter().format(
+            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="state charge"
+        ),
     )
 
 
@@ -1563,7 +1643,9 @@ class _StateAssessmentSharedColumns(_ReferencesStatePersonSharedColumns):
     external_id = Column(
         String(255),
         index=True,
-        comment=EXTERNAL_ID_COMMENT_TEMPLATE.format(object_name="StateAssessment"),
+        comment=StrictStringFormatter().format(
+            EXTERNAL_ID_COMMENT_TEMPLATE, object_name="StateAssessment"
+        ),
     )
     assessment_class = Column(
         state_assessment_class,
@@ -1629,7 +1711,9 @@ class StateAssessment(StateBase, _StateAssessmentSharedColumns):
     assessment_id = Column(
         Integer,
         primary_key=True,
-        comment=PRIMARY_KEY_COMMENT_TEMPLATE.format(object_name="assessment"),
+        comment=StrictStringFormatter().format(
+            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="assessment"
+        ),
     )
 
     conducting_agent = relationship("StateAgent", uselist=False, lazy="selectin")
@@ -1642,8 +1726,8 @@ class StateAssessmentHistory(
 
     __tablename__ = "state_assessment_history"
     __table_args__ = {
-        "comment": HISTORICAL_TABLE_COMMENT_TEMPLATE.format(
-            object_name="StateAssessment"
+        "comment": StrictStringFormatter().format(
+            HISTORICAL_TABLE_COMMENT_TEMPLATE, object_name="StateAssessment"
         )
     }
 
@@ -1660,7 +1744,9 @@ class StateAssessmentHistory(
         ForeignKey("state_assessment.assessment_id"),
         nullable=False,
         index=True,
-        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="state assessment"),
+        comment=StrictStringFormatter().format(
+            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="state assessment"
+        ),
     )
 
 
@@ -1710,7 +1796,9 @@ class StateSentenceGroup(StateBase, _StateSentenceGroupSharedColumns):
     sentence_group_id = Column(
         Integer,
         primary_key=True,
-        comment=PRIMARY_KEY_COMMENT_TEMPLATE.format(object_name="sentence group"),
+        comment=StrictStringFormatter().format(
+            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="sentence group"
+        ),
     )
 
     supervision_sentences = relationship(
@@ -1762,8 +1850,8 @@ class _StateSupervisionSentenceSharedColumns(
     external_id = Column(
         String(255),
         index=True,
-        comment=EXTERNAL_ID_COMMENT_TEMPLATE.format(
-            object_name="StateSupervisionSentence"
+        comment=StrictStringFormatter().format(
+            EXTERNAL_ID_COMMENT_TEMPLATE, object_name="StateSupervisionSentence"
         ),
     )
     status = Column(
@@ -1839,7 +1927,9 @@ class StateSupervisionSentence(StateBase, _StateSupervisionSentenceSharedColumns
     supervision_sentence_id = Column(
         Integer,
         primary_key=True,
-        comment=PRIMARY_KEY_COMMENT_TEMPLATE.format(object_name="supervision sentence"),
+        comment=StrictStringFormatter().format(
+            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="supervision sentence"
+        ),
     )
 
     person = relationship("StatePerson", uselist=False)
@@ -1873,8 +1963,8 @@ class StateSupervisionSentenceHistory(
 
     __tablename__ = "state_supervision_sentence_history"
     __table_args__ = {
-        "comment": HISTORICAL_TABLE_COMMENT_TEMPLATE.format(
-            object_name="StateSupervisionSentence"
+        "comment": StrictStringFormatter().format(
+            HISTORICAL_TABLE_COMMENT_TEMPLATE, object_name="StateSupervisionSentence"
         )
     }
 
@@ -1889,7 +1979,9 @@ class StateSupervisionSentenceHistory(
         ForeignKey("state_supervision_sentence.supervision_sentence_id"),
         nullable=False,
         index=True,
-        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="supervision sentence"),
+        comment=StrictStringFormatter().format(
+            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="supervision sentence"
+        ),
     )
 
 
@@ -1912,8 +2004,8 @@ class _StateIncarcerationSentenceSharedColumns(
     external_id = Column(
         String(255),
         index=True,
-        comment=EXTERNAL_ID_COMMENT_TEMPLATE.format(
-            object_name="StateIncarcerationSentence"
+        comment=StrictStringFormatter().format(
+            EXTERNAL_ID_COMMENT_TEMPLATE, object_name="StateIncarcerationSentence"
         ),
     )
     status = Column(
@@ -2023,8 +2115,8 @@ class StateIncarcerationSentence(StateBase, _StateIncarcerationSentenceSharedCol
     incarceration_sentence_id = Column(
         Integer,
         primary_key=True,
-        comment=PRIMARY_KEY_COMMENT_TEMPLATE.format(
-            object_name="incarceration sentence"
+        comment=StrictStringFormatter().format(
+            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="incarceration sentence"
         ),
     )
 
@@ -2061,8 +2153,8 @@ class StateIncarcerationSentenceHistory(
 
     __tablename__ = "state_incarceration_sentence_history"
     __table_args__ = {
-        "comment": HISTORICAL_TABLE_COMMENT_TEMPLATE.format(
-            object_name="StateIncarcerationSentence"
+        "comment": StrictStringFormatter().format(
+            HISTORICAL_TABLE_COMMENT_TEMPLATE, object_name="StateIncarcerationSentence"
         )
     }
 
@@ -2077,8 +2169,8 @@ class StateIncarcerationSentenceHistory(
         ForeignKey("state_incarceration_sentence.incarceration_sentence_id"),
         nullable=False,
         index=True,
-        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(
-            object_name="incarceration sentence"
+        comment=StrictStringFormatter().format(
+            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="incarceration sentence"
         ),
     )
 
@@ -2100,8 +2192,8 @@ class _StateIncarcerationPeriodSharedColumns(_ReferencesStatePersonSharedColumns
     external_id = Column(
         String(255),
         index=True,
-        comment=EXTERNAL_ID_COMMENT_TEMPLATE.format(
-            object_name="StateIncarcerationPeriod"
+        comment=StrictStringFormatter().format(
+            EXTERNAL_ID_COMMENT_TEMPLATE, object_name="StateIncarcerationPeriod"
         ),
     )
     status = Column(
@@ -2236,7 +2328,9 @@ class StateIncarcerationPeriod(StateBase, _StateIncarcerationPeriodSharedColumns
     incarceration_period_id = Column(
         Integer,
         primary_key=True,
-        comment=PRIMARY_KEY_COMMENT_TEMPLATE.format(object_name="incarceration period"),
+        comment=StrictStringFormatter().format(
+            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="incarceration period"
+        ),
     )
 
     person = relationship("StatePerson", uselist=False)
@@ -2253,8 +2347,8 @@ class StateIncarcerationPeriodHistory(
 
     __tablename__ = "state_incarceration_period_history"
     __table_args__ = {
-        "comment": HISTORICAL_TABLE_COMMENT_TEMPLATE.format(
-            object_name="StateIncarcerationPeriod"
+        "comment": StrictStringFormatter().format(
+            HISTORICAL_TABLE_COMMENT_TEMPLATE, object_name="StateIncarcerationPeriod"
         )
     }
     # This primary key should NOT be used. It only exists because SQLAlchemy
@@ -2268,7 +2362,9 @@ class StateIncarcerationPeriodHistory(
         ForeignKey("state_incarceration_period.incarceration_period_id"),
         nullable=False,
         index=True,
-        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="incarceration period"),
+        comment=StrictStringFormatter().format(
+            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="incarceration period"
+        ),
     )
 
 
@@ -2289,8 +2385,8 @@ class _StateSupervisionPeriodSharedColumns(_ReferencesStatePersonSharedColumns):
     external_id = Column(
         String(255),
         index=True,
-        comment=EXTERNAL_ID_COMMENT_TEMPLATE.format(
-            object_name="StateSupervisionPeriod"
+        comment=StrictStringFormatter().format(
+            EXTERNAL_ID_COMMENT_TEMPLATE, object_name="StateSupervisionPeriod"
         ),
     )
     supervision_type = Column(
@@ -2378,7 +2474,9 @@ class _StateSupervisionPeriodSharedColumns(_ReferencesStatePersonSharedColumns):
             ForeignKey("state_agent.agent_id"),
             index=True,
             nullable=True,
-            comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="state agent"),
+            comment=StrictStringFormatter().format(
+                FOREIGN_KEY_COMMENT_TEMPLATE, object_name="state agent"
+            ),
         )
 
 
@@ -2405,7 +2503,9 @@ class StateSupervisionPeriod(StateBase, _StateSupervisionPeriodSharedColumns):
     supervision_period_id = Column(
         Integer,
         primary_key=True,
-        comment=PRIMARY_KEY_COMMENT_TEMPLATE.format(object_name="supervision period"),
+        comment=StrictStringFormatter().format(
+            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="supervision period"
+        ),
     )
 
     person = relationship("StatePerson", uselist=False)
@@ -2422,8 +2522,8 @@ class StateSupervisionPeriodHistory(
 
     __tablename__ = "state_supervision_period_history"
     __table_args__ = {
-        "comment": HISTORICAL_TABLE_COMMENT_TEMPLATE.format(
-            object_name="StateSupervisionPeriod"
+        "comment": StrictStringFormatter().format(
+            HISTORICAL_TABLE_COMMENT_TEMPLATE, object_name="StateSupervisionPeriod"
         )
     }
 
@@ -2438,8 +2538,8 @@ class StateSupervisionPeriodHistory(
         ForeignKey("state_supervision_period.supervision_period_id"),
         nullable=False,
         index=True,
-        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(
-            object_name="state supervision period"
+        comment=StrictStringFormatter().format(
+            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="state supervision period"
         ),
     )
 
@@ -2481,8 +2581,8 @@ class _StateSupervisionCaseTypeEntrySharedColumns(_ReferencesStatePersonSharedCo
             ForeignKey("state_supervision_period.supervision_period_id"),
             index=True,
             nullable=True,
-            comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(
-                object_name="state supervision period"
+            comment=StrictStringFormatter().format(
+                FOREIGN_KEY_COMMENT_TEMPLATE, object_name="state supervision period"
             ),
         )
 
@@ -2514,7 +2614,9 @@ class StateSupervisionCaseTypeEntry(
     supervision_case_type_entry_id = Column(
         Integer,
         primary_key=True,
-        comment=PRIMARY_KEY_COMMENT_TEMPLATE.format(object_name="case type entry"),
+        comment=StrictStringFormatter().format(
+            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="case type entry"
+        ),
     )
 
     person = relationship("StatePerson", uselist=False)
@@ -2522,8 +2624,8 @@ class StateSupervisionCaseTypeEntry(
     external_id = Column(
         String(255),
         index=True,
-        comment=EXTERNAL_ID_COMMENT_TEMPLATE.format(
-            object_name="StateSupervisionCaseTypeEntry"
+        comment=StrictStringFormatter().format(
+            EXTERNAL_ID_COMMENT_TEMPLATE, object_name="StateSupervisionCaseTypeEntry"
         ),
     )
 
@@ -2536,8 +2638,9 @@ class StateSupervisionCaseTypeEntryHistory(
 
     __tablename__ = "state_supervision_case_type_entry_history"
     __table_args__ = {
-        "comment": HISTORICAL_TABLE_COMMENT_TEMPLATE.format(
-            object_name="StateSupervisionCaseTypeEntry"
+        "comment": StrictStringFormatter().format(
+            HISTORICAL_TABLE_COMMENT_TEMPLATE,
+            object_name="StateSupervisionCaseTypeEntry",
         )
     }
 
@@ -2554,8 +2657,8 @@ class StateSupervisionCaseTypeEntryHistory(
         ),
         nullable=False,
         index=True,
-        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(
-            object_name="state case type entry"
+        comment=StrictStringFormatter().format(
+            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="state case type entry"
         ),
     )
 
@@ -2577,8 +2680,8 @@ class _StateIncarcerationIncidentSharedColumns(_ReferencesStatePersonSharedColum
     external_id = Column(
         String(255),
         index=True,
-        comment=EXTERNAL_ID_COMMENT_TEMPLATE.format(
-            object_name="StateIncarcerationIncident"
+        comment=StrictStringFormatter().format(
+            EXTERNAL_ID_COMMENT_TEMPLATE, object_name="StateIncarcerationIncident"
         ),
     )
     incident_type = Column(
@@ -2611,7 +2714,9 @@ class _StateIncarcerationIncidentSharedColumns(_ReferencesStatePersonSharedColum
             ForeignKey("state_agent.agent_id"),
             index=True,
             nullable=True,
-            comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="state agent"),
+            comment=StrictStringFormatter().format(
+                FOREIGN_KEY_COMMENT_TEMPLATE, object_name="state agent"
+            ),
         )
 
 
@@ -2639,8 +2744,8 @@ class StateIncarcerationIncident(StateBase, _StateIncarcerationIncidentSharedCol
     incarceration_incident_id = Column(
         Integer,
         primary_key=True,
-        comment=PRIMARY_KEY_COMMENT_TEMPLATE.format(
-            object_name="incarceartion incident"
+        comment=StrictStringFormatter().format(
+            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="incarceartion incident"
         ),
     )
 
@@ -2660,8 +2765,8 @@ class StateIncarcerationIncidentHistory(
 
     __tablename__ = "state_incarceration_incident_history"
     __table_args__ = {
-        "comment": HISTORICAL_TABLE_COMMENT_TEMPLATE.format(
-            object_name="StateIncarcerationIncident"
+        "comment": StrictStringFormatter().format(
+            HISTORICAL_TABLE_COMMENT_TEMPLATE, object_name="StateIncarcerationIncident"
         )
     }
     # This primary key should NOT be used. It only exists because SQLAlchemy
@@ -2675,8 +2780,8 @@ class StateIncarcerationIncidentHistory(
         ForeignKey("state_incarceration_incident.incarceration_incident_id"),
         nullable=False,
         index=True,
-        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(
-            object_name="incarceration incident"
+        comment=StrictStringFormatter().format(
+            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="incarceration incident"
         ),
     )
 
@@ -2703,8 +2808,9 @@ class _StateIncarcerationIncidentOutcomeSharedColumns(
     external_id = Column(
         String(255),
         index=True,
-        comment=EXTERNAL_ID_COMMENT_TEMPLATE.format(
-            object_name="StateIncarcerationIncidentOutcome"
+        comment=StrictStringFormatter().format(
+            EXTERNAL_ID_COMMENT_TEMPLATE,
+            object_name="StateIncarcerationIncidentOutcome",
         ),
     )
     outcome_type = Column(
@@ -2738,8 +2844,8 @@ class _StateIncarcerationIncidentOutcomeSharedColumns(
             ForeignKey("state_incarceration_incident.incarceration_incident_id"),
             index=True,
             nullable=True,
-            comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(
-                object_name="incarceration incident"
+            comment=StrictStringFormatter().format(
+                FOREIGN_KEY_COMMENT_TEMPLATE, object_name="incarceration incident"
             ),
         )
 
@@ -2769,8 +2875,8 @@ class StateIncarcerationIncidentOutcome(
     incarceration_incident_outcome_id = Column(
         Integer,
         primary_key=True,
-        comment=PRIMARY_KEY_COMMENT_TEMPLATE.format(
-            object_name="incarceration incident outcome"
+        comment=StrictStringFormatter().format(
+            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="incarceration incident outcome"
         ),
     )
 
@@ -2786,8 +2892,9 @@ class StateIncarcerationIncidentOutcomeHistory(
 
     __tablename__ = "state_incarceration_incident_outcome_history"
     __table_args__ = {
-        "comment": HISTORICAL_TABLE_COMMENT_TEMPLATE.format(
-            object_name="StateIncarcerationIncidentOutcome"
+        "comment": StrictStringFormatter().format(
+            HISTORICAL_TABLE_COMMENT_TEMPLATE,
+            object_name="StateIncarcerationIncidentOutcome",
         )
     }
     # This primary key should NOT be used. It only exists because SQLAlchemy
@@ -2803,8 +2910,8 @@ class StateIncarcerationIncidentOutcomeHistory(
         ),
         nullable=False,
         index=True,
-        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(
-            object_name="incarceration incident outcome"
+        comment=StrictStringFormatter().format(
+            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="incarceration incident outcome"
         ),
     )
 
@@ -2826,7 +2933,9 @@ class _StateParoleDecisionSharedColumns(_ReferencesStatePersonSharedColumns):
     external_id = Column(
         String(255),
         index=True,
-        comment=EXTERNAL_ID_COMMENT_TEMPLATE.format(object_name="StateParoleDecision"),
+        comment=StrictStringFormatter().format(
+            EXTERNAL_ID_COMMENT_TEMPLATE, object_name="StateParoleDecision"
+        ),
     )
 
     decision_date = Column(Date, comment="The date on which the decision was made.")
@@ -2865,8 +2974,8 @@ class _StateParoleDecisionSharedColumns(_ReferencesStatePersonSharedColumns):
             ForeignKey("state_incarceration_period.incarceration_period_id"),
             index=True,
             nullable=True,
-            comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(
-                object_name="incarceration period"
+            comment=StrictStringFormatter().format(
+                FOREIGN_KEY_COMMENT_TEMPLATE, object_name="incarceration period"
             ),
         )
 
@@ -2892,7 +3001,9 @@ class StateParoleDecision(StateBase, _StateParoleDecisionSharedColumns):
     parole_decision_id = Column(
         Integer,
         primary_key=True,
-        comment=PRIMARY_KEY_COMMENT_TEMPLATE.format(object_name="parole decision"),
+        comment=StrictStringFormatter().format(
+            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="parole decision"
+        ),
     )
 
     person = relationship("StatePerson", uselist=False)
@@ -2910,8 +3021,8 @@ class StateParoleDecisionHistory(
 
     __tablename__ = "state_parole_decision_history"
     __table_args__ = {
-        "comment": HISTORICAL_TABLE_COMMENT_TEMPLATE.format(
-            object_name="StateParoleDecision"
+        "comment": StrictStringFormatter().format(
+            HISTORICAL_TABLE_COMMENT_TEMPLATE, object_name="StateParoleDecision"
         )
     }
 
@@ -2926,7 +3037,9 @@ class StateParoleDecisionHistory(
         ForeignKey("state_parole_decision.parole_decision_id"),
         nullable=False,
         index=True,
-        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="parole decision"),
+        comment=StrictStringFormatter().format(
+            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="parole decision"
+        ),
     )
 
 
@@ -2966,8 +3079,8 @@ class _StateSupervisionViolationTypeEntrySharedColumns(
             ForeignKey("state_supervision_violation." "supervision_violation_id"),
             index=True,
             nullable=True,
-            comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(
-                object_name="supervision violation"
+            comment=StrictStringFormatter().format(
+                FOREIGN_KEY_COMMENT_TEMPLATE, object_name="supervision violation"
             ),
         )
 
@@ -2994,8 +3107,8 @@ class StateSupervisionViolationTypeEntry(
     supervision_violation_type_entry_id = Column(
         Integer,
         primary_key=True,
-        comment=PRIMARY_KEY_COMMENT_TEMPLATE.format(
-            object_name="supervision violation type entry"
+        comment=StrictStringFormatter().format(
+            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="supervision violation type entry"
         ),
     )
 
@@ -3013,8 +3126,9 @@ class StateSupervisionViolationTypeEntryHistory(
 
     __tablename__ = "state_supervision_violation_type_entry_history"
     __table_args__ = {
-        "comment": HISTORICAL_TABLE_COMMENT_TEMPLATE.format(
-            object_name="StateSupervisionViolationTypeEntry"
+        "comment": StrictStringFormatter().format(
+            HISTORICAL_TABLE_COMMENT_TEMPLATE,
+            object_name="StateSupervisionViolationTypeEntry",
         )
     }
 
@@ -3032,8 +3146,8 @@ class StateSupervisionViolationTypeEntryHistory(
         ),
         nullable=False,
         index=True,
-        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(
-            object_name="supervision violation type entry"
+        comment=StrictStringFormatter().format(
+            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="supervision violation type entry"
         ),
     )
 
@@ -3076,8 +3190,8 @@ class _StateSupervisionViolatedConditionEntrySharedColumns(
             ForeignKey("state_supervision_violation." "supervision_violation_id"),
             index=True,
             nullable=True,
-            comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(
-                object_name="supervision violation"
+            comment=StrictStringFormatter().format(
+                FOREIGN_KEY_COMMENT_TEMPLATE, object_name="supervision violation"
             ),
         )
 
@@ -3098,8 +3212,9 @@ class StateSupervisionViolatedConditionEntry(
     supervision_violated_condition_entry_id = Column(
         Integer,
         primary_key=True,
-        comment=PRIMARY_KEY_COMMENT_TEMPLATE.format(
-            object_name="supervision violated condition entry"
+        comment=StrictStringFormatter().format(
+            PRIMARY_KEY_COMMENT_TEMPLATE,
+            object_name="supervision violated condition entry",
         ),
     )
 
@@ -3117,8 +3232,9 @@ class StateSupervisionViolatedConditionEntryHistory(
 
     __tablename__ = "state_supervision_violated_condition_entry_history"
     __table_args__ = {
-        "comment": HISTORICAL_TABLE_COMMENT_TEMPLATE.format(
-            object_name="StateSupervisionViolatedConditionEntry"
+        "comment": StrictStringFormatter().format(
+            HISTORICAL_TABLE_COMMENT_TEMPLATE,
+            object_name="StateSupervisionViolatedConditionEntry",
         )
     }
 
@@ -3136,8 +3252,9 @@ class StateSupervisionViolatedConditionEntryHistory(
         ),
         nullable=False,
         index=True,
-        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(
-            object_name="supervision violation response decision entry"
+        comment=StrictStringFormatter().format(
+            FOREIGN_KEY_COMMENT_TEMPLATE,
+            object_name="supervision violation response decision entry",
         ),
     )
 
@@ -3159,8 +3276,8 @@ class _StateSupervisionViolationSharedColumns(_ReferencesStatePersonSharedColumn
     external_id = Column(
         String(255),
         index=True,
-        comment=EXTERNAL_ID_COMMENT_TEMPLATE.format(
-            object_name="StateSupervisionViolation"
+        comment=StrictStringFormatter().format(
+            EXTERNAL_ID_COMMENT_TEMPLATE, object_name="StateSupervisionViolation"
         ),
     )
 
@@ -3200,8 +3317,8 @@ class StateSupervisionViolation(StateBase, _StateSupervisionViolationSharedColum
     supervision_violation_id = Column(
         Integer,
         primary_key=True,
-        comment=PRIMARY_KEY_COMMENT_TEMPLATE.format(
-            object_name="supervision violation"
+        comment=StrictStringFormatter().format(
+            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="supervision violation"
         ),
     )
 
@@ -3229,8 +3346,8 @@ class StateSupervisionViolationHistory(
 
     __tablename__ = "state_supervision_violation_history"
     __table_args__ = {
-        "comment": HISTORICAL_TABLE_COMMENT_TEMPLATE.format(
-            object_name="StateSupervisionViolation"
+        "comment": StrictStringFormatter().format(
+            HISTORICAL_TABLE_COMMENT_TEMPLATE, object_name="StateSupervisionViolation"
         )
     }
 
@@ -3245,8 +3362,8 @@ class StateSupervisionViolationHistory(
         ForeignKey("state_supervision_violation.supervision_violation_id"),
         nullable=False,
         index=True,
-        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(
-            object_name="supervision violation"
+        comment=StrictStringFormatter().format(
+            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="supervision violation"
         ),
     )
 
@@ -3292,8 +3409,9 @@ class _StateSupervisionViolationResponseDecisionEntrySharedColumns(
             ),
             index=True,
             nullable=True,
-            comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(
-                object_name="supervision violation response"
+            comment=StrictStringFormatter().format(
+                FOREIGN_KEY_COMMENT_TEMPLATE,
+                object_name="supervision violation response",
             ),
         )
 
@@ -3317,8 +3435,9 @@ class StateSupervisionViolationResponseDecisionEntry(
     supervision_violation_response_decision_entry_id = Column(
         Integer,
         primary_key=True,
-        comment=PRIMARY_KEY_COMMENT_TEMPLATE.format(
-            object_name="supervision violation response decision entry"
+        comment=StrictStringFormatter().format(
+            PRIMARY_KEY_COMMENT_TEMPLATE,
+            object_name="supervision violation response decision entry",
         ),
     )
 
@@ -3336,8 +3455,9 @@ class StateSupervisionViolationResponseDecisionEntryHistory(
 
     __tablename__ = "state_supervision_violation_response_decision_entry_history"
     __table_args__ = {
-        "comment": HISTORICAL_TABLE_COMMENT_TEMPLATE.format(
-            object_name="StateSupervisionViolationResponseDecisionEntry"
+        "comment": StrictStringFormatter().format(
+            HISTORICAL_TABLE_COMMENT_TEMPLATE,
+            object_name="StateSupervisionViolationResponseDecisionEntry",
         )
     }
 
@@ -3355,8 +3475,8 @@ class StateSupervisionViolationResponseDecisionEntryHistory(
         ),
         nullable=False,
         index=True,
-        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(
-            object_name="supervision violation response"
+        comment=StrictStringFormatter().format(
+            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="supervision violation response"
         ),
     )
 
@@ -3383,8 +3503,9 @@ class _StateSupervisionViolationResponseSharedColumns(
     external_id = Column(
         String(255),
         index=True,
-        comment=EXTERNAL_ID_COMMENT_TEMPLATE.format(
-            object_name="StateSupervisionViolationResponse"
+        comment=StrictStringFormatter().format(
+            EXTERNAL_ID_COMMENT_TEMPLATE,
+            object_name="StateSupervisionViolationResponse",
         ),
     )
     response_type = Column(
@@ -3426,8 +3547,8 @@ class _StateSupervisionViolationResponseSharedColumns(
             ForeignKey("state_supervision_violation.supervision_violation_id"),
             index=True,
             nullable=True,
-            comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(
-                object_name="supervision violation"
+            comment=StrictStringFormatter().format(
+                FOREIGN_KEY_COMMENT_TEMPLATE, object_name="supervision violation"
             ),
         )
 
@@ -3461,8 +3582,8 @@ class StateSupervisionViolationResponse(
     supervision_violation_response_id = Column(
         Integer,
         primary_key=True,
-        comment=PRIMARY_KEY_COMMENT_TEMPLATE.format(
-            object_name="supervision violation response"
+        comment=StrictStringFormatter().format(
+            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="supervision violation response"
         ),
     )
 
@@ -3488,8 +3609,9 @@ class StateSupervisionViolationResponseHistory(
 
     __tablename__ = "state_supervision_violation_response_history"
     __table_args__ = {
-        "comment": HISTORICAL_TABLE_COMMENT_TEMPLATE.format(
-            object_name="StateSupervisionViolationResponse"
+        "comment": StrictStringFormatter().format(
+            HISTORICAL_TABLE_COMMENT_TEMPLATE,
+            object_name="StateSupervisionViolationResponse",
         )
     }
 
@@ -3506,8 +3628,8 @@ class StateSupervisionViolationResponseHistory(
         ),
         nullable=False,
         index=True,
-        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(
-            object_name="supervision violation response"
+        comment=StrictStringFormatter().format(
+            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="supervision violation response"
         ),
     )
 
@@ -3529,7 +3651,9 @@ class _StateAgentSharedColumns:
     external_id = Column(
         String(255),
         index=True,
-        comment=EXTERNAL_ID_COMMENT_TEMPLATE.format(object_name="StateAgent"),
+        comment=StrictStringFormatter().format(
+            EXTERNAL_ID_COMMENT_TEMPLATE, object_name="StateAgent"
+        ),
     )
     agent_type = Column(state_agent_type, nullable=False, comment="The type of agent.")
     agent_type_raw_text = Column(
@@ -3561,7 +3685,9 @@ class StateAgent(StateBase, _StateAgentSharedColumns):
     agent_id = Column(
         Integer,
         primary_key=True,
-        comment=PRIMARY_KEY_COMMENT_TEMPLATE.format(object_name="agent"),
+        comment=StrictStringFormatter().format(
+            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="agent"
+        ),
     )
 
 
@@ -3570,7 +3696,9 @@ class StateAgentHistory(StateBase, _StateAgentSharedColumns, HistoryTableSharedC
 
     __tablename__ = "state_agent_history"
     __table_args__ = {
-        "comment": HISTORICAL_TABLE_COMMENT_TEMPLATE.format(object_name="StateAgent")
+        "comment": StrictStringFormatter().format(
+            HISTORICAL_TABLE_COMMENT_TEMPLATE, object_name="StateAgent"
+        )
     }
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
@@ -3607,8 +3735,8 @@ class _StateProgramAssignmentSharedColumns(_ReferencesStatePersonSharedColumns):
     external_id = Column(
         String(255),
         index=True,
-        comment=EXTERNAL_ID_COMMENT_TEMPLATE.format(
-            object_name="StateProgramAssignment"
+        comment=StrictStringFormatter().format(
+            EXTERNAL_ID_COMMENT_TEMPLATE, object_name="StateProgramAssignment"
         ),
     )
     state_code = Column(
@@ -3665,7 +3793,9 @@ class _StateProgramAssignmentSharedColumns(_ReferencesStatePersonSharedColumns):
             ForeignKey("state_agent.agent_id"),
             index=True,
             nullable=True,
-            comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="state agent"),
+            comment=StrictStringFormatter().format(
+                FOREIGN_KEY_COMMENT_TEMPLATE, object_name="state agent"
+            ),
         )
 
 
@@ -3698,7 +3828,9 @@ class StateProgramAssignment(StateBase, _StateProgramAssignmentSharedColumns):
     program_assignment_id = Column(
         Integer,
         primary_key=True,
-        comment=PRIMARY_KEY_COMMENT_TEMPLATE.format(object_name="program assignment"),
+        comment=StrictStringFormatter().format(
+            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="program assignment"
+        ),
     )
     referring_agent = relationship("StateAgent", uselist=False, lazy="selectin")
 
@@ -3710,8 +3842,8 @@ class StateProgramAssignmentHistory(
 
     __tablename__ = "state_program_assignment_history"
     __table_args__ = {
-        "comment": HISTORICAL_TABLE_COMMENT_TEMPLATE.format(
-            object_name="StateProgramAssignment"
+        "comment": StrictStringFormatter().format(
+            HISTORICAL_TABLE_COMMENT_TEMPLATE, object_name="StateProgramAssignment"
         )
     }
     # This primary key should NOT be used. It only exists because SQLAlchemy
@@ -3725,7 +3857,9 @@ class StateProgramAssignmentHistory(
         ForeignKey("state_program_assignment.program_assignment_id"),
         nullable=False,
         index=True,
-        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="program assignment"),
+        comment=StrictStringFormatter().format(
+            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="program assignment"
+        ),
     )
 
 
@@ -3746,7 +3880,9 @@ class _StateEarlyDischargeSharedColumns(_ReferencesStatePersonSharedColumns):
     external_id = Column(
         String(255),
         index=True,
-        comment=EXTERNAL_ID_COMMENT_TEMPLATE.format(object_name="StateEarlyDischarge"),
+        comment=StrictStringFormatter().format(
+            EXTERNAL_ID_COMMENT_TEMPLATE, object_name="StateEarlyDischarge"
+        ),
     )
     state_code = Column(
         String(255),
@@ -3806,8 +3942,8 @@ class _StateEarlyDischargeSharedColumns(_ReferencesStatePersonSharedColumns):
             ),
             index=True,
             nullable=True,
-            comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(
-                object_name="supervision sentence"
+            comment=StrictStringFormatter().format(
+                FOREIGN_KEY_COMMENT_TEMPLATE, object_name="supervision sentence"
             ),
         )
 
@@ -3822,8 +3958,8 @@ class _StateEarlyDischargeSharedColumns(_ReferencesStatePersonSharedColumns):
             ),
             index=True,
             nullable=True,
-            comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(
-                object_name="incarceration sentence"
+            comment=StrictStringFormatter().format(
+                FOREIGN_KEY_COMMENT_TEMPLATE, object_name="incarceration sentence"
             ),
         )
 
@@ -3852,7 +3988,9 @@ class StateEarlyDischarge(StateBase, _StateEarlyDischargeSharedColumns):
     early_discharge_id = Column(
         Integer,
         primary_key=True,
-        comment=PRIMARY_KEY_COMMENT_TEMPLATE.format(object_name="early discharge"),
+        comment=StrictStringFormatter().format(
+            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="early discharge"
+        ),
     )
 
     person = relationship("StatePerson", uselist=False)
@@ -3865,8 +4003,8 @@ class StateEarlyDischargeHistory(
 
     __tablename__ = "state_early_discharge_history"
     __table_args__ = {
-        "comment": HISTORICAL_TABLE_COMMENT_TEMPLATE.format(
-            object_name="StateEarlyDischarge"
+        "comment": StrictStringFormatter().format(
+            HISTORICAL_TABLE_COMMENT_TEMPLATE, object_name="StateEarlyDischarge"
         )
     }
     # This primary key should NOT be used. It only exists because SQLAlchemy
@@ -3880,7 +4018,9 @@ class StateEarlyDischargeHistory(
         ForeignKey("state_early_discharge.early_discharge_id"),
         nullable=False,
         index=True,
-        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="early discharge"),
+        comment=StrictStringFormatter().format(
+            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="early discharge"
+        ),
     )
 
 
@@ -3901,8 +4041,8 @@ class _StateSupervisionContactSharedColumns(_ReferencesStatePersonSharedColumns)
     external_id = Column(
         String(255),
         index=True,
-        comment=EXTERNAL_ID_COMMENT_TEMPLATE.format(
-            object_name="StateSupervisionContact"
+        comment=StrictStringFormatter().format(
+            EXTERNAL_ID_COMMENT_TEMPLATE, object_name="StateSupervisionContact"
         ),
     )
     state_code = Column(
@@ -3961,7 +4101,9 @@ class _StateSupervisionContactSharedColumns(_ReferencesStatePersonSharedColumns)
             ForeignKey("state_agent.agent_id"),
             index=True,
             nullable=True,
-            comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="state agent"),
+            comment=StrictStringFormatter().format(
+                FOREIGN_KEY_COMMENT_TEMPLATE, object_name="state agent"
+            ),
         )
 
 
@@ -3994,7 +4136,9 @@ class StateSupervisionContact(StateBase, _StateSupervisionContactSharedColumns):
     supervision_contact_id = Column(
         Integer,
         primary_key=True,
-        comment=PRIMARY_KEY_COMMENT_TEMPLATE.format(object_name="supervision contact"),
+        comment=StrictStringFormatter().format(
+            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="supervision contact"
+        ),
     )
 
     contacted_agent = relationship("StateAgent", uselist=False, lazy="selectin")
@@ -4007,8 +4151,8 @@ class StateSupervisionContactHistory(
 
     __tablename__ = "state_supervision_contact_history"
     __table_args__ = {
-        "comment": HISTORICAL_TABLE_COMMENT_TEMPLATE.format(
-            object_name="StateSupervisionContact"
+        "comment": StrictStringFormatter().format(
+            HISTORICAL_TABLE_COMMENT_TEMPLATE, object_name="StateSupervisionContact"
         )
     }
 
@@ -4023,7 +4167,7 @@ class StateSupervisionContactHistory(
         ForeignKey("state_supervision_contact.supervision_contact_id"),
         nullable=False,
         index=True,
-        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(
-            object_name="state supervision contact"
+        comment=StrictStringFormatter().format(
+            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="state supervision contact"
         ),
     )

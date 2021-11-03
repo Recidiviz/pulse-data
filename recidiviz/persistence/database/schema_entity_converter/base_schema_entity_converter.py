@@ -24,22 +24,22 @@ from collections import defaultdict
 from enum import Enum
 from types import ModuleType
 from typing import (
-    Generic,
-    Dict,
-    List,
-    Type,
-    Optional,
     Any,
-    Tuple,
+    Dict,
+    Generic,
+    List,
+    Optional,
     Sequence,
+    Tuple,
+    Type,
     TypeVar,
     Union,
 )
 
 import attr
 
-from recidiviz.common.attr_utils import is_enum, get_enum_cls
 from recidiviz.common.attr_mixins import BuildableAttr
+from recidiviz.common.attr_utils import get_enum_cls, is_enum
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import SchemaEdgeDirectionChecker
@@ -69,7 +69,7 @@ class _Direction(Enum):
         if issubclass(src_cls, DatabaseEntity):
             return _Direction.SCHEMA_TO_ENTITY
 
-        raise DatabaseConversionError("Unable to convert class [{0}]".format(src_cls))
+        raise DatabaseConversionError(f"Unable to convert class [{src_cls}]")
 
 
 class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
@@ -221,9 +221,7 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
 
             dst_builder = entity_cls.builder()
         else:
-            raise DatabaseConversionError(
-                "Unable to convert class [{0}]".format(src.__class__)
-            )
+            raise DatabaseConversionError(f"Unable to convert class [{src.__class__}]")
 
         for field, attribute in attr.fields_dict(entity_cls).items():
             if self._should_skip_field(entity_cls, field):

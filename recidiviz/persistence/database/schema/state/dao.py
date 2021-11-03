@@ -18,16 +18,16 @@
 """Data Access Object (DAO) with logic for accessing state-level information
 from a SQL Database."""
 import datetime
-from collections import defaultdict
 import logging
-from typing import Dict, List, Type, Iterable
+from collections import defaultdict
+from typing import Dict, Iterable, List, Type
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from recidiviz.persistence.database.base_schema import StateBase
-from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.database.schema.state import schema
+from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.errors import PersistenceError
 
 
@@ -201,10 +201,7 @@ def _normalize_record_trees(
     ]
     if duplicates:
         id_counts = "\n".join(
-            [
-                "ID {} with count {}".format(duplicate[0], duplicate[1])
-                for duplicate in duplicates
-            ]
+            [f"ID {duplicate[0]} with count {duplicate[1]}" for duplicate in duplicates]
         )
         logging.error("Duplicate records returned for person IDs:\n%s", id_counts)
 

@@ -18,18 +18,18 @@
 """Data Access Object (DAO) with logic for accessing county-level information
 from a SQL Database."""
 import datetime
-from collections import defaultdict
 import logging
+from collections import defaultdict
 from typing import Dict, List
 
-from sqlalchemy.orm import Session, Query
+from sqlalchemy.orm import Query, Session
 
 from recidiviz.common.constants.county.booking import CustodyStatus
-from recidiviz.persistence.entity.county import entities
+from recidiviz.persistence.database.schema.county.schema import Booking, Person
 from recidiviz.persistence.database.schema_entity_converter import (
     schema_entity_converter as converter,
 )
-from recidiviz.persistence.database.schema.county.schema import Person, Booking
+from recidiviz.persistence.entity.county import entities
 
 
 def read_people(
@@ -156,10 +156,7 @@ def _convert_and_normalize_record_trees(people: List[Person]) -> List[entities.P
     ]
     if duplicates:
         id_counts = "\n".join(
-            [
-                "ID {} with count {}".format(duplicate[0], duplicate[1])
-                for duplicate in duplicates
-            ]
+            [f"ID {duplicate[0]} with count {duplicate[1]}" for duplicate in duplicates]
         )
         logging.error("Duplicate records returned for person IDs:\n%s", id_counts)
 

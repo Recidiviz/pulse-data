@@ -15,18 +15,17 @@
 # =============================================================================
 
 """Utilities for managing ingest infos stored on Datastore."""
+import logging
 from datetime import datetime
 from typing import List, Optional, Type, TypeVar
-import logging
+
 import attr
 import cattr
-
 from google.cloud import datastore
 
-from recidiviz.common.common_utils import get_trace_id_from_flask
+from recidiviz.common.common_utils import get_trace_id_from_flask, retry_grpc
 from recidiviz.ingest.models import serialization
 from recidiviz.ingest.models.ingest_info import IngestInfo
-from recidiviz.common.common_utils import retry_grpc
 from recidiviz.utils import environment
 from recidiviz.utils.types import ClsT
 
@@ -38,12 +37,10 @@ class DatastoreWriteIngestInfoError(Exception):
     Datastore."""
 
     def __init__(self, ingest_info: IngestInfo, region: str):
-        msg_template = (
-            "Error when writing to Datastore ingest info '{}' for"
-            " region {}. Trace id: {}"
+        super().__init__(
+            f"Error when writing to Datastore ingest info '{ingest_info}' for"
+            f" region {region}. Trace id: {get_trace_id_from_flask()}"
         )
-        msg = msg_template.format(ingest_info, region, get_trace_id_from_flask())
-        super().__init__(msg)
 
 
 class DatastoreErrorWriteError(Exception):
@@ -51,11 +48,9 @@ class DatastoreErrorWriteError(Exception):
     Datastore."""
 
     def __init__(self, error: str, region: str):
-        msg_template = (
-            "Error when writing to Datastore error '{}' for region {}. Trace id: {}"
+        super().__init__(
+            f"Error when writing to Datastore error '{error}' for region {region}. Trace id: {get_trace_id_from_flask()}"
         )
-        msg = msg_template.format(error, region, get_trace_id_from_flask())
-        super().__init__(msg)
 
 
 class DatastoreBatchGetError(Exception):
@@ -63,9 +58,7 @@ class DatastoreBatchGetError(Exception):
     from Datastore."""
 
     def __init__(self, region: str):
-        msg_template = "Error when batch getting ingest_infos for region {}"
-        msg = msg_template.format(region)
-        super().__init__(msg)
+        super().__init__(f"Error when batch getting ingest_infos for region {region}")
 
 
 class DatastoreBatchDeleteError(Exception):
@@ -73,9 +66,7 @@ class DatastoreBatchDeleteError(Exception):
     from Datastore."""
 
     def __init__(self, region: str):
-        msg_template = "Error when batch deleting ingest_infos for region {}"
-        msg = msg_template.format(region)
-        super().__init__(msg)
+        super().__init__(f"Error when batch deleting ingest_infos for region {region}")
 
 
 def ds() -> datastore.Client:
