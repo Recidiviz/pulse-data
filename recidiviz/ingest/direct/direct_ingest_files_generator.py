@@ -105,8 +105,9 @@ class DirectIngestFilesGenerator:
         ]
         existing_dirs = [d for d in dirs_to_create if os.path.exists(d)]
         if existing_dirs:
+            existing_dirs_string = "\n".join(existing_dirs)
             raise FileExistsError(
-                "The following already exists:\n{}".format("\n".join(existing_dirs))
+                f"The following already exists:\n{existing_dirs_string}"
             )
 
         template_to_dest: Dict[str, str] = {

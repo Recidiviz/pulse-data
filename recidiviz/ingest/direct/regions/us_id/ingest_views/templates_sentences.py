@@ -17,6 +17,8 @@
 """Helper templates for the US_ID sentence queries."""
 from enum import Enum, auto
 
+from recidiviz.utils.string import StrictStringFormatter
+
 
 class SentenceType(Enum):
     INCARCERATION = auto()
@@ -126,6 +128,7 @@ def _get_relevant_sentence_query_for_type(sentence_type: SentenceType) -> str:
 
 
 def sentence_view_template(sentence_type: SentenceType) -> str:
-    return SENTENCE_QUERY_TEMPLATE.format(
+    return StrictStringFormatter().format(
+        SENTENCE_QUERY_TEMPLATE,
         sentence_query=_get_relevant_sentence_query_for_type(sentence_type),
     )

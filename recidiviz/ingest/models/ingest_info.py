@@ -2136,9 +2136,9 @@ def to_string(obj, exclude=None):
             continue
         if isinstance(val, list):
             for index, elem in enumerate(val):
-                out += "{}[{}]: {}".format(key, index, elem).split("\n")
+                out += f"{key}[{index}]: {elem}".split("\n")
         elif val is not None:
-            out += "{}: {}".format(key, val).split("\n")
+            out += f"{key}: {val}".split("\n")
     return "\n   ".join(out)
 
 
@@ -2150,14 +2150,14 @@ def to_repr(obj, exclude=None):
         if key in exclude:
             continue
         if val is not None:
-            args.append("{}={}".format(key, repr(val)))
+            args.append(f"{key}={repr(val)}")
 
-    return "{}({})".format(obj.__class__.__name__, ", ".join(args))
+    return f"{obj.__class__.__name__}({', '.join(args)})"
 
 
 def restricted_setattr(self, last_field, name, value):
     if isinstance(value, str) and (value == "" or value.isspace()):
         value = None
     if hasattr(self, last_field) and not hasattr(self, name):
-        raise AttributeError("No field {} in object {}".format(name, type(self)))
+        raise AttributeError(f"No field {name} in object {type(self)}")
     self.__dict__[name] = value

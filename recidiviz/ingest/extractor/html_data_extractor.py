@@ -34,7 +34,7 @@ for the HTML patterns we search over.
 import copy
 import logging
 from collections import defaultdict
-from typing import Optional, Iterator, List, Dict, Set, Union
+from typing import Dict, Iterator, List, Optional, Set, Union
 
 from lxml.html import HtmlElement, tostring
 
@@ -193,7 +193,7 @@ class HtmlDataExtractor(DataExtractor):
         """
         matches = content.xpath(
             ".//*[starts-with("
-            'normalize-space(translate(text(),"\xA0"," ")),"%s")]' % key
+            f'normalize-space(translate(text(),"\xA0"," ")),"{key}")]'
         )
         # results from the xpath call are references, so modifying them changes
         # |content|.

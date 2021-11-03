@@ -23,8 +23,8 @@ import uuid
 import pytz
 
 from recidiviz.common.google_cloud.cloud_task_queue_manager import (
-    CloudTaskQueueManager,
     CloudTaskQueueInfo,
+    CloudTaskQueueManager,
 )
 from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import (
     BIGQUERY_QUEUE_V2,
@@ -47,8 +47,13 @@ class DirectIngestRawUpdateCloudTaskManager:
             f"/direct/update_raw_data_latest_views_for_state?region={region_code}"
         )
 
-        task_id = "{}-update_raw_data_latest_views-{}-{}".format(
-            region_code, str(datetime.datetime.now(tz=pytz.UTC).date()), uuid.uuid4()
+        task_id = "-".join(
+            [
+                region_code,
+                "update_raw_data_latest_views",
+                str(datetime.datetime.now(tz=pytz.UTC).date()),
+                str(uuid.uuid4()),
+            ]
         )
 
         self.cloud_task_queue_manager.create_task(

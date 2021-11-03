@@ -45,20 +45,18 @@ def diff_ingest_infos(expected, actual):
                 _format_add(location, item) for location, item in diffs.items()
             )
         else:
-            raise ValueError("Unexpected diff value: {}".format(diff_type))
+            raise ValueError(f"Unexpected diff value: {diff_type}")
 
     return differences
 
 
 def _format_change(location, old, new):
-    return "{}: expected {} but got {}".format(location, old, new)
+    return f"{location}: expected {old} but got {new}"
 
 
 def _format_remove(location, item):
-    return "{}: expected the following object, but none was found:\n{}".format(
-        location, item
-    )
+    return f"{location}: expected the following object, but none was found:\n{item}"
 
 
 def _format_add(location, item):
-    return "{}: got the following unexpected item:\n{}".format(location, item)
+    return f"{location}: got the following unexpected item:\n{item}"

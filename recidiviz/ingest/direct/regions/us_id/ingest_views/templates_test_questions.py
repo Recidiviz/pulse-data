@@ -18,7 +18,7 @@
 
 
 def question_numbers_with_descriptive_answers_view_fragment(test_id: str) -> str:
-    return """
+    return f"""
         qstn_nums_with_descriptive_answers AS (
           SELECT
             ofndr_num,
@@ -51,6 +51,4 @@ def question_numbers_with_descriptive_answers_view_fragment(test_id: str) -> str
             assess_qstn_num, 
             tst_sctn_num
         ) 
-    """.format(
-        test_id=test_id
-    )
+    """
