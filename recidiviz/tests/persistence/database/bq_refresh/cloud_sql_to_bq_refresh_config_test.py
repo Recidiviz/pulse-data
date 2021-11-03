@@ -219,9 +219,9 @@ county_columns_to_exclude:
         for table, _ in config.columns_to_exclude.items():
             self.assertTrue(
                 table in table_names,
-                msg='Table "{}" in `cloud_sql_to_bq_export_config.COUNTY_COLUMNS_TO_EXCLUDE`'
+                msg=f'Table "{table}" in `cloud_sql_to_bq_export_config.COUNTY_COLUMNS_TO_EXCLUDE`'
                 " not found in in the JailsBase schema."
-                " Did you spell it correctly?".format(table),
+                " Did you spell it correctly?",
             )
 
     @parameterized.expand(

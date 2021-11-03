@@ -16,21 +16,19 @@
 # =============================================================================
 """County schema-specific implementation of BaseHistoricalSnapshotUpdater"""
 
-from types import ModuleType
-from typing import List, Any, Optional
-
 from datetime import date, datetime
+from types import ModuleType
+from typing import Any, List, Optional
 
 from recidiviz.common.constants.county.booking import CustodyStatus
 from recidiviz.common.constants.county.sentence import SentenceStatus
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.persistence.database.history.base_historical_snapshot_updater import (
     BaseHistoricalSnapshotUpdater,
-    _SnapshotContextRegistry,
     _SnapshotContext,
+    _SnapshotContextRegistry,
 )
 from recidiviz.persistence.database.schema.county import schema
-
 
 _BOOKING_DESCENDANT_START_DATE_FIELD = {schema.Sentence.__name__: "date_imposed"}
 
@@ -56,8 +54,7 @@ class CountyHistoricalSnapshotUpdater(BaseHistoricalSnapshotUpdater[schema.Perso
             initial_snapshot.status = SentenceStatus.PRESENT_WITHOUT_INFO.value
         else:
             raise NotImplementedError(
-                "Snapshot backdating not supported for "
-                "type {}".format(type(snapshot_entity))
+                f"Snapshot backdating not supported for type {type(snapshot_entity)}"
             )
 
     def set_provided_start_and_end_times(

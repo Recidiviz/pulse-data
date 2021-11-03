@@ -1013,7 +1013,7 @@ class TestPersistence(TestCase):
 
 
 def _format_full_name(full_name: str) -> str:
-    return '{{"full_name": "{}"}}'.format(full_name)
+    return f'{{"full_name": "{full_name}"}}'
 
 
 PERSON_STATE_1_BASE_INGEST_INFO = StatePerson(

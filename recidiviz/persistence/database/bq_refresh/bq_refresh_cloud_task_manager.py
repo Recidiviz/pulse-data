@@ -63,10 +63,12 @@ class BQRefreshCloudTaskManager:
             pipeline_run_type: Which pipeline run should be triggered after the
                 refresh, if any
         """
-        task_id = "{}-{}-{}".format(
-            "reenqueue_wait_task",
-            str(datetime.datetime.now(tz=pytz.UTC).date()),
-            uuid.uuid4(),
+        task_id = "-".join(
+            [
+                "reenqueue_wait_task",
+                str(datetime.datetime.now(tz=pytz.UTC).date()),
+                str(uuid.uuid4()),
+            ]
         )
         body = {"lock_id": lock_id}
         if pipeline_run_type:
@@ -90,10 +92,12 @@ class BQRefreshCloudTaskManager:
             schema_type: The SchemaType of the table being exported.
             body: The body of the request
         """
-        task_id = "{}-{}-{}".format(
-            schema_type.value,
-            str(datetime.datetime.now(tz=pytz.UTC).date()),
-            uuid.uuid4(),
+        task_id = "-".join(
+            [
+                schema_type.value,
+                str(datetime.datetime.now(tz=pytz.UTC).date()),
+                str(uuid.uuid4()),
+            ]
         )
 
         self.bq_cloud_task_queue_manager.create_task(

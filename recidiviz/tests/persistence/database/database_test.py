@@ -470,29 +470,20 @@ class TestDatabase(TestCase):
 
             arrange_session.execute(
                 text(
-                    "INSERT INTO person_history (person_id, region, jurisdiction_id, "
-                    "race, valid_from) "
-                    "VALUES ({}, '{}', '{}', '{}', '{}');".format(
-                        1, _REGION, _JURISDICTION_ID, Race.OTHER.value, snapshot_time
-                    )
+                    "INSERT INTO person_history (person_id, region, jurisdiction_id, race, valid_from) "
+                    f"VALUES ({1}, '{_REGION}', '{_JURISDICTION_ID}', '{Race.OTHER.value}', '{snapshot_time}');"
                 )
             )
             arrange_session.execute(
                 text(
-                    "INSERT INTO booking_history "
-                    "(booking_id, person_id, custody_status, valid_from) "
-                    "VALUES ({}, {}, '{}', '{}');".format(
-                        2, 1, CustodyStatus.IN_CUSTODY.value, snapshot_time
-                    )
+                    "INSERT INTO booking_history (booking_id, person_id, custody_status, valid_from) "
+                    f"VALUES ({2}, {1}, '{CustodyStatus.IN_CUSTODY.value}', '{snapshot_time}');"
                 )
             )
             arrange_session.execute(
                 text(
-                    "INSERT INTO bond_history "
-                    "(bond_id, booking_id, status, valid_from) "
-                    "VALUES ({}, {}, '{}', '{}');".format(
-                        4, 2, BondStatus.PRESENT_WITHOUT_INFO.value, snapshot_time
-                    )
+                    "INSERT INTO bond_history (bond_id, booking_id, status, valid_from) "
+                    f"VALUES ({4}, {2}, '{BondStatus.PRESENT_WITHOUT_INFO.value}', '{snapshot_time}');"
                 )
             )
 
@@ -502,23 +493,14 @@ class TestDatabase(TestCase):
                     "INSERT INTO charge_history "
                     "(charge_id, booking_id, bond_id, status, valid_from, valid_to) "
                     "VALUES "
-                    "({}, {}, {}, '{}', '{valid_from}', '{valid_to}');".format(
-                        3,
-                        2,
-                        4,
-                        ChargeStatus.PENDING.value,
-                        valid_from=snapshot_time,
-                        valid_to=snapshot_time,
-                    )
+                    f"({3}, {2}, {4}, '{ChargeStatus.PENDING.value}', '{snapshot_time}', '{snapshot_time}');"
                 )
             )
             arrange_session.execute(
                 text(
                     "INSERT INTO charge_history "
                     "(charge_id, booking_id, bond_id, status, valid_from) "
-                    "VALUES ({}, {}, {}, '{}', '{}');".format(
-                        3, 2, 4, ChargeStatus.PENDING.value, snapshot_time
-                    )
+                    f"VALUES ({3}, {2}, {4}, '{ChargeStatus.PENDING.value}', '{snapshot_time}');"
                 )
             )
 
@@ -541,7 +523,7 @@ class TestDatabase(TestCase):
                     ),
                 )
             except Exception as e:
-                self.fail("Writing person failed with error: {}".format(e))
+                self.fail(f"Writing person failed with error: {e}")
 
     def testWritePeople_duplicatePeople_raisesError(self) -> None:
         shared_id = 48

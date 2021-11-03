@@ -29,6 +29,7 @@ from recidiviz.big_query.big_query_view import (
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+from recidiviz.utils.string import StrictStringFormatter
 
 TABLE_QUERY_TEMPLATE = """/*{description}*/
 SELECT
@@ -65,7 +66,8 @@ class FederatedCloudSQLTableBigQueryView(BigQueryView):
         materialized_address_override: BigQueryAddress,
         dataset_overrides: Optional[Dict[str, str]] = None,
     ):
-        description = DESCRIPTION_TEMPLATE.format(
+        description = StrictStringFormatter().format(
+            DESCRIPTION_TEMPLATE,
             cloudsql_table_name=table.name,
             database_name=database_key.db_name,
             schema_name=database_key.schema_type.value,
