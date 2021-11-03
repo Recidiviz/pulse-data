@@ -37,5 +37,5 @@ class ManifestValidationTest(unittest.TestCase):
                 manifest = yaml.full_load(yaml_file)
                 for val in manifest.values():
                     self.assertIsNotNone(
-                        val, "Must set all fields in {}".format(manifest_filename)
+                        val, f"Must set all fields in {manifest_filename}"
                     )

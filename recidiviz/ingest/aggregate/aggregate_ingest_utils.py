@@ -19,7 +19,7 @@ import calendar
 import datetime
 import itertools
 import re
-from typing import Dict, Iterable, Any, Optional, Set, Pattern
+from typing import Any, Dict, Iterable, Optional, Pattern, Set
 
 import pandas as pd
 from more_itertools import one
@@ -93,7 +93,7 @@ def cast_columns_to_int(
     df: pd.DataFrame,
     *,
     ignore_columns: Optional[Set[str]] = None,
-    nullable_int_columns: Optional[Set[str]] = None
+    nullable_int_columns: Optional[Set[str]] = None,
 ) -> pd.DataFrame:
     """Casts every column in |df| to an int, unless otherwise specified.
 
@@ -127,9 +127,7 @@ def _validate_column_names(df: pd.DataFrame, column_names: Iterable[str]):
     """Verify that all column_names exist as columns in |df|."""
     for column_name in column_names:
         if column_name not in df.columns:
-            raise DataFrameCastError(
-                "Invalid column_name when casting: {}".format(column_name)
-            )
+            raise DataFrameCastError(f"Invalid column_name when casting: {column_name}")
 
 
 def on_last_day_of_month(date: datetime.date) -> datetime.date:

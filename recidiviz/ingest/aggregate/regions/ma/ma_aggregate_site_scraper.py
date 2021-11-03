@@ -23,8 +23,10 @@ from typing import Set
 import requests
 from lxml import html
 
+from recidiviz.utils.string import StrictStringFormatter
+
 STATE_AGGREGATE_URL = "https://www.mass.gov/report/research-reports"
-BASE_URL = "https://www.mass.gov{}"
+BASE_URL = "https://www.mass.gov{path}"
 
 
 def get_urls_to_download() -> Set[str]:
@@ -35,7 +37,9 @@ def get_urls_to_download() -> Set[str]:
     aggregate_report_urls = set()
 
     for year_link in year_links:
-        year_url = BASE_URL.format(year_link.attrib["href"])
+        year_url = StrictStringFormatter().format(
+            BASE_URL, path=year_link.attrib["href"]
+        )
         if "lists/weekly-inmate-count-" in year_url:
             page = requests.get(year_url).text
             html_tree = html.fromstring(page)

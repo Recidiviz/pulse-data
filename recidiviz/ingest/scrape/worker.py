@@ -24,8 +24,8 @@ import pprint
 from http import HTTPStatus
 
 from flask import Blueprint, request
-
 from opencensus.stats import aggregation, measure, view
+
 from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.ingest.scrape import sessions
 from recidiviz.ingest.scrape.task_params import QueueRequest
@@ -51,9 +51,7 @@ class RequestProcessingError(Exception):
 
     def __init__(self, region: str, task: str, queue_request: QueueRequest):
         request_string = pprint.pformat(queue_request.to_serializable())
-        msg = "Error when running '{}' for '{}' with request:\n{}".format(
-            task, region, request_string
-        )
+        msg = f"Error when running '{task}' for '{region}' with request:\n{request_string}"
         super().__init__(msg)
 
 
@@ -107,9 +105,7 @@ def work(region):
 
     if region != data["region"]:
         raise ValueError(
-            "Region specified in task {} does not match region from url {}.".format(
-                data["region"], region
-            )
+            f"Region specified in task {data['region']} does not match region from url {region}."
         )
 
     task_tags = {monitoring.TagKey.STATUS: "COMPLETED"}
@@ -138,7 +134,7 @@ def work(region):
         try:
             scraper_task(params)
         except Exception as e:
-            task_tags[monitoring.TagKey.STATUS] = "ERROR: {}".format(type(e).__name__)
+            task_tags[monitoring.TagKey.STATUS] = f"ERROR: {type(e).__name__}"
             raise RequestProcessingError(region, task, params) from e
 
         # Respond to the task queue to mark this task as done
