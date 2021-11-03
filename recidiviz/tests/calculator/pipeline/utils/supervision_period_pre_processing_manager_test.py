@@ -130,6 +130,20 @@ class TestPreProcessedSupervisionPeriodsForCalculations(unittest.TestCase):
         )
         self.assertEqual([], updated_periods)
 
+    def test_prepare_supervision_periods_for_calculations_no_start_or_end_dates(
+        self,
+    ) -> None:
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            state_code="US_XX",
+            start_date=None,
+            termination_date=None,
+        )
+        updated_periods = self._pre_processed_supervision_periods_for_calculations(
+            [supervision_period]
+        )
+        self.assertEqual([], updated_periods)
+
     def test_prepare_supervision_periods_for_calculations_drop_open_sp_after_death(
         self,
     ) -> None:
