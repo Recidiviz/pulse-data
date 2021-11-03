@@ -64,18 +64,16 @@ class BatchPersistError(Exception):
     """Raised when there was an error with batch persistence."""
 
     def __init__(self, region: str, scrape_type: ScrapeType):
-        msg_template = "Error when running '{}' for region {}"
-        msg = msg_template.format(scrape_type, region)
-        super().__init__(msg)
+        super().__init__(f"Error when running '{scrape_type}' for region {region}")
 
 
 class DatastoreError(Exception):
     """Raised when there was an error with Datastore."""
 
     def __init__(self, region: str, call_type: str):
-        msg_template = "Error when calling '{}' for region {} in Datastore."
-        msg = msg_template.format(call_type, region)
-        super().__init__(msg)
+        super().__init__(
+            f"Error when calling '{call_type}' for region {region} in Datastore."
+        )
 
 
 def _get_proto_from_batch_ingest_info_data_list(
@@ -282,7 +280,7 @@ def read_and_persist() -> Tuple[str, HTTPStatus]:
             logging.exception(
                 "An exception occurred in read and persist: %s", type(e).__name__
             )
-            batch_tags[monitoring.TagKey.STATUS] = "ERROR: {}".format(type(e).__name__)
+            batch_tags[monitoring.TagKey.STATUS] = f"ERROR: {type(e).__name__}"
             sessions.update_phase(session, scrape_phase.ScrapePhase.DONE)
             raise BatchPersistError(region, scrape_type) from e
 

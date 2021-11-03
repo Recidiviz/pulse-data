@@ -118,10 +118,8 @@ class TestSchemaEnums(TestCase):
         self.assertEqual(
             schema_enum_values,
             persistence_enum_values,
-            msg='Values of schema enum "{schema_enum}" did not match values of '
-            'persistence enum "{persistence_enum}"'.format(
-                schema_enum=schema_enum.name, persistence_enum=persistence_enum.__name__
-            ),
+            msg=f'Values of schema enum "{schema_enum.name}" did not match values of '
+            f'persistence enum "{persistence_enum.__name__}"',
         )
 
     @staticmethod

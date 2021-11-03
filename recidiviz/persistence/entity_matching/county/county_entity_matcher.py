@@ -103,7 +103,7 @@ def match_people_and_return_error_count(
     *,
     db_people: List[entities.Person],
     ingested_people: List[entities.Person],
-    field_index: CoreEntityFieldIndex
+    field_index: CoreEntityFieldIndex,
 ) -> MatchedEntities:
     """
     Attempts to match all people from |ingested_people| with people from the
@@ -152,7 +152,7 @@ def match_person(
     db_people: List[entities.Person],
     orphaned_entities: List[Entity],
     matched_people_by_db_id: Dict[int, entities.Person],
-    field_index: CoreEntityFieldIndex
+    field_index: CoreEntityFieldIndex,
 ) -> None:
     """
     Finds the best match for the provided |ingested_person| from the
@@ -195,7 +195,7 @@ def match_bookings(
     db_person: entities.Person,
     ingested_person: entities.Person,
     orphaned_entities: List[Entity],
-    field_index: CoreEntityFieldIndex
+    field_index: CoreEntityFieldIndex,
 ) -> None:
     """
     Attempts to match all bookings on the |ingested_person| with bookings on
@@ -291,7 +291,7 @@ def match_holds(
     *,
     db_booking: entities.Booking,
     ingested_booking: entities.Booking,
-    field_index: CoreEntityFieldIndex
+    field_index: CoreEntityFieldIndex,
 ) -> None:
     """
     Attempts to match all holds on the |ingested_booking| with holds on
@@ -421,7 +421,7 @@ def match_bonds(
     *,
     db_booking: entities.Booking,
     ingested_booking: entities.Booking,
-    orphaned_entities: List[Entity]
+    orphaned_entities: List[Entity],
 ) -> None:
     """
     Attempts to match all bonds found on the |ingested_booking| with bonds on
@@ -440,7 +440,7 @@ def match_sentences(
     *,
     db_booking: entities.Booking,
     ingested_booking: entities.Booking,
-    orphaned_entities: List[Entity]
+    orphaned_entities: List[Entity],
 ) -> None:
     """
     Attempts to match all sentences found on the |ingested_booking| with
@@ -461,7 +461,7 @@ def _match_from_charges(
     db_booking: entities.Booking,
     ingested_booking: entities.Booking,
     name: str,
-    orphaned_entities: List[Entity]
+    orphaned_entities: List[Entity],
 ) -> None:
     """Helper function that, within a booking, matches objects that are children
     of the booking's charges. |name| should be 'bond' or 'sentence'.
@@ -479,7 +479,7 @@ def _match_from_charges(
     ) -> bool:
         ing_entity_id = generate_id_from_obj(ingested_entity)
         db_entity_id = db_entity.get_id()
-        matcher = getattr(county_matching_utils, "is_{}_match".format(name))
+        matcher = getattr(county_matching_utils, f"is_{name}_match")
         obj_match = matcher(db_entity=db_entity, ingested_entity=ingested_entity)
         # The relationships "match" if new relationships have been added
         # since the last scrape, but not if relationships have been removed.

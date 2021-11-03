@@ -31,13 +31,13 @@ from recidiviz.persistence import persistence_utils
 from recidiviz.persistence.entity.county import entities
 from recidiviz.persistence.ingest_info_converter.base_converter import BaseConverter
 from recidiviz.persistence.ingest_info_converter.county.entity_helpers import (
+    arrest,
+    bond,
     booking,
     charge,
     hold,
     person,
     sentence,
-    arrest,
-    bond,
 )
 from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
     fn,
@@ -204,7 +204,7 @@ def _duplicate_charge_with_counts(
         # than duplicated.
         duplicated_charge = copy.copy(converted_charge)
         if duplicated_charge.external_id:
-            new_external_id = "{}_COUNT_{}".format(converted_charge.external_id, i)
+            new_external_id = f"{converted_charge.external_id}_COUNT_{i}"
             duplicated_charge.external_id = new_external_id
         duplicated_charges.append(duplicated_charge)
     return duplicated_charges

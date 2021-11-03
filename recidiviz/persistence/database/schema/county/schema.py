@@ -223,8 +223,7 @@ class _PersonSharedColumns:
     def validate_jurisdiction_id(self, _: Any, jurisdiction_id: str) -> str:
         if len(jurisdiction_id) != 8:
             raise ValueError(
-                "Jurisdiction ID invalid length: {} characters, should be "
-                "8".format(len(jurisdiction_id))
+                f"Jurisdiction ID invalid length: {len(jurisdiction_id)} characters, should be 8"
             )
         return jurisdiction_id
 
@@ -309,8 +308,7 @@ class _BookingSharedColumns:
     def validate_facility_id(self, _: Any, facility_id: str) -> str:
         if facility_id and len(facility_id) != 16:
             raise ValueError(
-                "Facility ID invalid length: {} characters, should be "
-                "16".format(len(facility_id))
+                f"Facility ID invalid length: {len(facility_id)} characters, should be 16"
             )
         return facility_id
 

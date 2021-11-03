@@ -65,23 +65,17 @@ class TestIngestInfoCountyConverter(unittest.TestCase):
         )
         if conversion_result.enum_parsing_errors > 0:
             raise ValueError(
-                "Had [{}] enum parsing errors".format(
-                    conversion_result.enum_parsing_errors
-                )
+                f"Had [{conversion_result.enum_parsing_errors}] enum parsing errors"
             )
 
         if conversion_result.general_parsing_errors > 0:
             raise ValueError(
-                "Had [{}] general parsing errors".format(
-                    conversion_result.general_parsing_errors
-                )
+                f"Had [{conversion_result.general_parsing_errors}] general parsing errors"
             )
 
         if conversion_result.protected_class_errors > 0:
             raise ValueError(
-                "Had [{}] protected class errors".format(
-                    conversion_result.protected_class_errors
-                )
+                f"Had [{conversion_result.protected_class_errors}] protected class errors"
             )
         return conversion_result.people
 

@@ -144,7 +144,7 @@ class SchemaTableRegionFilteredQueryBuilder:
                     + f",{region_code_table.name}.{region_code_col} AS {region_code_col}"
                 )
 
-        return "SELECT {columns}".format(columns=formatted_columns)
+        return f"SELECT {formatted_columns}"
 
     @abstractmethod
     def _formatted_columns_for_select_clause(self) -> str:

@@ -18,12 +18,12 @@
 import unittest
 from datetime import date, datetime
 
-from mock import patch, Mock
+from mock import Mock, patch
 
 from recidiviz.common.constants.person_characteristics import (
+    Ethnicity,
     Gender,
     Race,
-    Ethnicity,
     ResidencyStatus,
 )
 from recidiviz.ingest.models import ingest_info_pb2
@@ -61,7 +61,7 @@ class PersonConverterTest(unittest.TestCase):
 
         # Assert
         expected_result = entities.Person.new_with_defaults(
-            full_name='{{"full_name": "{}"}}'.format("FULL_NAME"),
+            full_name='{"full_name": "FULL_NAME"}',
             birthdate=date(year=1999, month=12, day=31),
             birthdate_inferred_from_age=False,
             gender=Gender.MALE,
@@ -102,11 +102,7 @@ class PersonConverterTest(unittest.TestCase):
         result = self.subject.build()
 
         # Assert
-        expected_full_name = (
-            '{{"given_names": "{}", "middle_names": "{}", "surname": "{}"}}'.format(
-                "GIVEN_NAMES", "MIDDLE_NAMES", 'UNESCAPED,SURNAME\\"WITH-CHARS\\"'
-            )
-        )
+        expected_full_name = '{"given_names": "GIVEN_NAMES", "middle_names": "MIDDLE_NAMES", "surname": "UNESCAPED,SURNAME\\"WITH-CHARS\\""}'
         expected_result = entities.Person.new_with_defaults(
             region="REGION",
             jurisdiction_id="JURISDICTION_ID",

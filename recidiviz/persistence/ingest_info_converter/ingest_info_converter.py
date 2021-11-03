@@ -51,5 +51,5 @@ def _get_converter(ingest_info: IngestInfo, metadata: IngestMetadata) -> BaseCon
         return StateConverter(ingest_info, metadata)
 
     raise ValueError(
-        "Ingest metadata includes invalid system level of [{}]".format(system_level)
+        f"Ingest metadata includes invalid system level of [{system_level}]"
     )

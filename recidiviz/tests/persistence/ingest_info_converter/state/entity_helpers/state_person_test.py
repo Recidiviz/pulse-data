@@ -94,11 +94,7 @@ class StatePersonConverterTest(unittest.TestCase):
         result = self.subject.build(StatePersonFactory.deserialize)
 
         # Assert
-        expected_full_name = (
-            '{{"given_names": "{}", "middle_names": "{}", "surname": "{}"}}'.format(
-                "GIVEN_NAMES", "MIDDLE_NAMES", 'UNESCAPED,SURNAME\\"WITH-CHARS\\"'
-            )
-        )
+        expected_full_name = '{"given_names": "GIVEN_NAMES", "middle_names": "MIDDLE_NAMES", "surname": "UNESCAPED,SURNAME\\"WITH-CHARS\\""}'
         expected_result = entities.StatePerson.new_with_defaults(
             state_code="US_XX", full_name=expected_full_name
         )

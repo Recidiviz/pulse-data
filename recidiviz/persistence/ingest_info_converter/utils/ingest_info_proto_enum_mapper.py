@@ -101,7 +101,7 @@ class IngestInfoProtoEnumMapper:
             return default
 
         multiple_matches_error = ValueError(
-            "Found multiple values for enum field %s: %s" % (enum_type, matching_values)
+            f"Found multiple values for enum field {enum_type}: {matching_values}"
         )
 
         return one(matching_values, too_long=multiple_matches_error)

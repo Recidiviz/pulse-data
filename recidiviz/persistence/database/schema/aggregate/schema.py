@@ -96,7 +96,7 @@ class _AggregateTableMixin:
     def validate_fips(self, _: Any, fips: str) -> str:
         if len(fips) != 5:
             raise ValueError(
-                "FIPS code invalid length: {} characters, should be 5".format(len(fips))
+                f"FIPS code invalid length: {len(fips)} characters, should be 5"
             )
         return fips
 
