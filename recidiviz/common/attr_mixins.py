@@ -244,7 +244,7 @@ class BuildableAttr:
             if key in self.fields:
                 return self.fields[key]
             raise AttributeError(
-                "{} object has no attribute {}".format(self.__class__.__name__, key)
+                f"{self.__class__.__name__} object has no attribute {key}"
             )
 
         def build(self, constructor_fn_override: Optional[Callable] = None) -> Any:
@@ -388,14 +388,8 @@ class BuilderException(Exception):
 def _error_message(
     cls: Type[ClsT], required_fields: Set[str], fields_with_value: Set[str]
 ) -> str:
-    return """Failed to build {cls}.
-        Expected Fields: {expected_fields}
+    return f"""Failed to build {cls}.
+        Expected Fields: {required_fields}
         Fields Provided or with Defaults: {fields_with_value}
-        Missing Fields: {missing_fields}
-        Extra Fields: {extra_fields}""".format(
-        cls=cls,
-        expected_fields=required_fields,
-        fields_with_value=fields_with_value,
-        missing_fields=required_fields - fields_with_value,
-        extra_fields=fields_with_value - required_fields,
-    )
+        Missing Fields: {required_fields - fields_with_value}
+        Extra Fields: {fields_with_value - required_fields}"""

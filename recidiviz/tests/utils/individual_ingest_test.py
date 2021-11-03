@@ -72,18 +72,14 @@ class IndividualIngestTest:
         differences = diff_ingest_infos(expected_ingest_info, ingest_info)
 
         if differences:
+            differences_string = "\n".join(differences)
             self.fail(  # type: ignore[attr-defined]
-                "IngestInfo objects do not match.\n"
-                "Expected:\n{}\n"
-                "Actual:\n{}\n"
-                "Differences:\n{}\n\n"
-                "(paste the following) scraped object:"
-                "\n{}".format(
-                    expected_ingest_info,
-                    ingest_info,
-                    "\n".join(differences),
-                    repr(ingest_info),
-                )
+                f"IngestInfo objects do not match.\n"
+                f"Expected:\n{expected_ingest_info}\n"
+                f"Actual:\n{ingest_info}\n"
+                f"Differences:\n{differences_string}\n\n"
+                f"(paste the following) scraped object:\n"
+                f"{repr(ingest_info)}"
             )
 
         return ingest_info

@@ -100,7 +100,7 @@ class CommonScraperTest(Generic[ScraperT], IndividualIngestTest):
                     "keys_to_ignore",
                     "css_key_mappings",
                 ]:
-                    raise AttributeError("Unknown yaml key %s" % key)
+                    raise AttributeError(f"Unknown yaml key {key}")
 
             # Make sure every mapped value in the yaml file exists as a variable
             # in the relevant class.
@@ -108,8 +108,7 @@ class CommonScraperTest(Generic[ScraperT], IndividualIngestTest):
                 class_to_set, attr = value.split(".")
                 if attr not in vars(object_verification_map[class_to_set]):
                     raise AttributeError(
-                        "Attribute %s is unknown on %s, found in key_mappings"
-                        % (attr, class_to_set)
+                        f"Attribute {attr} is unknown on {class_to_set}, found in key_mappings"
                     )
 
             if "multi_key_mappings" in manifest:
@@ -117,8 +116,7 @@ class CommonScraperTest(Generic[ScraperT], IndividualIngestTest):
                     class_to_set, attr = value.split(".")
                     if attr not in vars(object_verification_map[class_to_set]):
                         raise AttributeError(
-                            "Attribute %s is unknown on %s, found in "
-                            "multi_key_mappings" % (attr, class_to_set)
+                            f"Attribute {attr} is unknown on {class_to_set}, found in multi_key_mappings"
                         )
 
     def test_overrides_are_correct(self) -> None:
