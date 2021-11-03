@@ -147,10 +147,7 @@ class StructuredAppEngineHandler(handlers.AppEngineHandler):
         labels.update(self.get_gae_labels())
 
         # pylint: disable=protected-access
-        trace_id = "projects/%s/traces/%s" % (
-            self.project_id,
-            labels.get(handlers.app_engine._TRACE_ID_LABEL, None),
-        )
+        trace_id = f"projects/{self.project_id}/traces/{labels.get(handlers.app_engine._TRACE_ID_LABEL, None)}"
         self.transport.send(
             record,
             _truncate_if_needed(super().format(record)),

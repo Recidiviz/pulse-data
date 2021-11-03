@@ -41,7 +41,7 @@ def parse_dollars(dollar_string: str) -> int:
     try:
         return int(locale.atof(clean_string))
     except Exception as e:
-        raise ValueError("Cannot parse dollar value: %s" % dollar_string) from e
+        raise ValueError(f"Cannot parse dollar value: {dollar_string}") from e
 
 
 def parse_bool(bool_string: str) -> bool:
@@ -49,7 +49,7 @@ def parse_bool(bool_string: str) -> bool:
     try:
         return bool(strtobool(bool_string))
     except Exception as e:
-        raise ValueError("Cannot parse bool value: %s" % bool_string) from e
+        raise ValueError(f"Cannot parse bool value: {bool_string}") from e
 
 
 def parse_int(int_string: str) -> int:
@@ -57,7 +57,7 @@ def parse_int(int_string: str) -> int:
     try:
         return int(float(normalize(int_string)))
     except Exception as e:
-        raise ValueError("Cannot parse int value: %s" % int_string) from e
+        raise ValueError(f"Cannot parse int value: {int_string}") from e
 
 
 # TODO(#2365): All usages of this function should pass in a datetime, otherwise
@@ -79,7 +79,7 @@ def parse_days(time_string: str, from_dt: Optional[datetime.datetime] = None) ->
         if past_dt:
             return (current_dt - past_dt).days
 
-    raise ValueError("Cannot parse time duration: %s" % time_string)
+    raise ValueError(f"Cannot parse time duration: {time_string}")
 
 
 def safe_parse_days_from_duration_str(
@@ -255,7 +255,7 @@ def parse_datetime(
     if parsed:
         return parsed
 
-    raise ValueError("cannot parse date: %s" % date_string)
+    raise ValueError(f"cannot parse date: {date_string}")
 
 
 def _has_non_punctuation(date_string: str) -> bool:

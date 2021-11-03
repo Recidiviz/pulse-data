@@ -15,9 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Utils for parsing dates."""
-from abc import ABCMeta, abstractmethod
 import datetime
 import re
+from abc import ABCMeta, abstractmethod
 from typing import List, Optional, Tuple
 
 import attr
@@ -46,11 +46,11 @@ def _date_component_match(match: re.Match) -> str:
     components = []
 
     if match.group("year"):
-        components.append("{year}year".format(year=match.group("year")))
+        components.append(f"{match.group('year')}year")
     if match.group("month"):
-        components.append("{month}month".format(month=match.group("month")))
+        components.append(f"{match.group('month')}month")
     if match.group("day"):
-        components.append("{day}day".format(day=match.group("day")))
+        components.append(f"{match.group('day')}day")
 
     return " ".join(components)
 
