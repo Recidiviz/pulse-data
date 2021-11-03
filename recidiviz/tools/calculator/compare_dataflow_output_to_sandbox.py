@@ -114,10 +114,12 @@ OUTPUT_COMPARISON_TEMPLATE = """
       SELECT {columns_to_compare}
       FROM `{project_id}.{base_dataset_id}.{table_id}`
       WHERE job_id = '{base_output_job_id}'
+      {optional_group_by}
     ), sandbox_output AS (
       SELECT {columns_to_compare}
       FROM `{project_id}.{sandbox_dataset_id}.{table_id}`
       WHERE job_id = '{sandbox_output_job_id}'
+      {optional_group_by}
     ), joined_output AS (
       SELECT
         {dimensions},
@@ -300,16 +302,18 @@ def _query_for_metric_comparison(
     columns_to_compare = dimensions.copy()
 
     output_col_exclusion = ""
+    optional_group_by = ""
 
     if additional_columns_to_compare:
         applicable_columns = [
-            col
+            f"ARRAY_AGG({col} ORDER BY {col})"
             for col in additional_columns_to_compare
             if hasattr(metric_class.__dict__.get("__attrs_attrs__"), col)
         ]
 
         if applicable_columns:
             columns_to_compare.extend(applicable_columns)
+            optional_group_by = f"GROUP BY {', '.join(dimensions)}"
             output_col_exclusion = f"EXCEPT ({', '.join(dimensions)})"
 
     return StrictStringFormatter().format(
@@ -323,6 +327,7 @@ def _query_for_metric_comparison(
         base_output_job_id=base_output_job_id,
         sandbox_output_job_id=sandbox_output_job_id,
         output_col_exclusion=output_col_exclusion,
+        optional_group_by=optional_group_by,
     )
 
 
