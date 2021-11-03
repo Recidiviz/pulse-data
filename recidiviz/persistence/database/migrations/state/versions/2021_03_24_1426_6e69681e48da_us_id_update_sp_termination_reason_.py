@@ -6,9 +6,10 @@ Revises: 3913de7c14eb
 Create Date: 2021-03-24 14:26:51.411080
 
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
+from recidiviz.utils.string import StrictStringFormatter
 
 # revision identifiers, used by Alembic.
 revision = "6e69681e48da"
@@ -41,10 +42,13 @@ def upgrade() -> None:
             SUPERVISION_PERIOD_HISTORY_TABLE_NAME,
         ]:
             op.execute(
-                UPDATE_QUERY.format(
+                StrictStringFormatter().format(
+                    UPDATE_QUERY,
                     table_name=table_name,
                     new_value=updated_termination_reason,
-                    ids_query=TERMINATION_REASON_QUERY.format(table_name=table_name),
+                    ids_query=StrictStringFormatter().format(
+                        TERMINATION_REASON_QUERY, table_name=table_name
+                    ),
                 )
             )
 
@@ -57,9 +61,12 @@ def downgrade() -> None:
             SUPERVISION_PERIOD_HISTORY_TABLE_NAME,
         ]:
             op.execute(
-                UPDATE_QUERY.format(
+                StrictStringFormatter().format(
+                    UPDATE_QUERY,
                     table_name=table_name,
                     new_value=updated_termination_reason,
-                    ids_query=TERMINATION_REASON_QUERY.format(table_name=table_name),
+                    ids_query=StrictStringFormatter().format(
+                        TERMINATION_REASON_QUERY, table_name=table_name
+                    ),
                 )
             )

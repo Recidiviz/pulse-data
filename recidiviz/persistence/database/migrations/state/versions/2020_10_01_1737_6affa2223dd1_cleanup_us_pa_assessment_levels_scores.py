@@ -6,9 +6,10 @@ Revises: 7795ab9ba9e2
 Create Date: 2020-10-01 17:37:28.502507
 
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
+from recidiviz.utils.string import StrictStringFormatter
 
 # revision identifiers, used by Alembic.
 revision = "6affa2223dd1"
@@ -65,11 +66,12 @@ DOWNGRADE_UPDATE_LEVEL_EXTRACT_SCORE_QUERY = (
 def upgrade() -> None:
     connection = op.get_bind()
 
-    change_55_to_54_query = UPGRADE_UPDATE_55_TO_54_QUERY.format(
-        ids_query=UPGRADE_55_TO_54_QUERY
+    change_55_to_54_query = StrictStringFormatter().format(
+        UPGRADE_UPDATE_55_TO_54_QUERY, ids_query=UPGRADE_55_TO_54_QUERY
     )
 
-    out_of_range_query = UPGRADE_UPDATE_LEVEL_CLEAR_SCORE_QUERY.format(
+    out_of_range_query = StrictStringFormatter().format(
+        UPGRADE_UPDATE_LEVEL_CLEAR_SCORE_QUERY,
         assessment_level_value="EXTERNAL_UNKNOWN",
         ids_query=UPGRADE_SCORE_OUT_OF_RANGE_QUERY,
     )
@@ -81,10 +83,9 @@ def upgrade() -> None:
 def downgrade() -> None:
     connection = op.get_bind()
 
-    downgrade_extract_invalid_score_query = (
-        DOWNGRADE_UPDATE_LEVEL_EXTRACT_SCORE_QUERY.format(
-            ids_query=DOWNGRADE_UNKNOWN_UNSET_SCORES_QUERY
-        )
+    downgrade_extract_invalid_score_query = StrictStringFormatter().format(
+        DOWNGRADE_UPDATE_LEVEL_EXTRACT_SCORE_QUERY,
+        ids_query=DOWNGRADE_UNKNOWN_UNSET_SCORES_QUERY,
     )
 
     connection.execute(downgrade_extract_invalid_score_query)

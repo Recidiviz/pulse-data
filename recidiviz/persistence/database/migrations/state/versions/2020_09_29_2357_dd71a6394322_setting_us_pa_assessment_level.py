@@ -6,9 +6,10 @@ Revises: a6181898067d
 Create Date: 2020-09-29 23:57:52.844913
 
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
+from recidiviz.utils.string import StrictStringFormatter
 
 # revision identifiers, used by Alembic.
 revision = "dd71a6394322"
@@ -117,43 +118,50 @@ DOWNGRADE_UPDATE_LEVEL_EXTRACT_SCORE_QUERY = (
 def upgrade() -> None:
     connection = op.get_bind()
 
-    low_query = UPGRADE_UPDATE_LEVEL_QUERY.format(
+    low_query = StrictStringFormatter().format(
+        UPGRADE_UPDATE_LEVEL_QUERY,
         assessment_level_value="LOW",
         assessment_level_raw_text_value="LOW",
         ids_query=UPGRADE_LOW_QUERY,
     )
 
-    medium_query = UPGRADE_UPDATE_LEVEL_QUERY.format(
+    medium_query = StrictStringFormatter().format(
+        UPGRADE_UPDATE_LEVEL_QUERY,
         assessment_level_value="MEDIUM",
         assessment_level_raw_text_value="MEDIUM",
         ids_query=UPGRADE_MEDIUM_QUERY,
     )
 
-    high_query = UPGRADE_UPDATE_LEVEL_QUERY.format(
+    high_query = StrictStringFormatter().format(
+        UPGRADE_UPDATE_LEVEL_QUERY,
         assessment_level_value="HIGH",
         assessment_level_raw_text_value="HIGH",
         ids_query=UPGRADE_HIGH_QUERY,
     )
 
-    no_date_query = UPGRADE_UPDATE_LEVEL_QUERY.format(
+    no_date_query = StrictStringFormatter().format(
+        UPGRADE_UPDATE_LEVEL_QUERY,
         assessment_level_value="EXTERNAL_UNKNOWN",
         assessment_level_raw_text_value="UNKNOWN (NO_DATE)",
         ids_query=UPGRADE_NO_DATE_QUERY,
     )
 
-    incomplete_query = UPGRADE_UPDATE_LEVEL_CLEAR_SCORE_QUERY.format(
+    incomplete_query = StrictStringFormatter().format(
+        UPGRADE_UPDATE_LEVEL_CLEAR_SCORE_QUERY,
         assessment_level_value="EXTERNAL_UNKNOWN",
         unknown_level_identifier="ATTEMPTED_INCOMPLETE",
         ids_query=UPGRADE_ATTEMPTED_INCOMPLETE_QUERY,
     )
 
-    refused_query = UPGRADE_UPDATE_LEVEL_CLEAR_SCORE_QUERY.format(
+    refused_query = StrictStringFormatter().format(
+        UPGRADE_UPDATE_LEVEL_CLEAR_SCORE_QUERY,
         assessment_level_value="EXTERNAL_UNKNOWN",
         unknown_level_identifier="REFUSED",
         ids_query=UPGRADE_REFUSED_QUERY,
     )
 
-    out_of_range_query = UPGRADE_UPDATE_LEVEL_CLEAR_SCORE_QUERY.format(
+    out_of_range_query = StrictStringFormatter().format(
+        UPGRADE_UPDATE_LEVEL_CLEAR_SCORE_QUERY,
         assessment_level_value="EXTERNAL_UNKNOWN",
         unknown_level_identifier="SCORE_OUT_OF_RANGE",
         ids_query=UPGRADE_SCORE_OUT_OF_RANGE_QUERY,
@@ -171,14 +179,14 @@ def upgrade() -> None:
 def downgrade() -> None:
     connection = op.get_bind()
 
-    downgrade_valid_scores_query = DOWNGRADE_UPDATE_LEVEL_VALID_SCORES_QUERY.format(
-        ids_query=DOWNGRADE_VALID_SCORES_QUERY
+    downgrade_valid_scores_query = StrictStringFormatter().format(
+        DOWNGRADE_UPDATE_LEVEL_VALID_SCORES_QUERY,
+        ids_query=DOWNGRADE_VALID_SCORES_QUERY,
     )
 
-    downgrade_extract_invalid_score_query = (
-        DOWNGRADE_UPDATE_LEVEL_EXTRACT_SCORE_QUERY.format(
-            ids_query=DOWNGRADE_UNKNOWN_UNSET_SCORES_QUERY
-        )
+    downgrade_extract_invalid_score_query = StrictStringFormatter().format(
+        DOWNGRADE_UPDATE_LEVEL_EXTRACT_SCORE_QUERY,
+        ids_query=DOWNGRADE_UNKNOWN_UNSET_SCORES_QUERY,
     )
 
     connection.execute(downgrade_valid_scores_query)

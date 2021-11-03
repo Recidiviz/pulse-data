@@ -6,9 +6,10 @@ Revises: e5949964b987
 Create Date: 2020-07-23 22:40:28.347075
 
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
+from recidiviz.utils.string import StrictStringFormatter
 
 # revision identifiers, used by Alembic.
 revision = "5d0aa76119c5"
@@ -35,8 +36,10 @@ def upgrade() -> None:
     updated_admission_reason = "TRANSFERRED_FROM_OUT_OF_STATE"
 
     connection.execute(
-        UPDATE_QUERY.format(
-            new_value=updated_admission_reason, ids_query=ADMISSION_REASON_QUERY
+        StrictStringFormatter().format(
+            UPDATE_QUERY,
+            new_value=updated_admission_reason,
+            ids_query=ADMISSION_REASON_QUERY,
         )
     )
 
@@ -47,7 +50,9 @@ def downgrade() -> None:
     updated_admission_reason = "TRANSFER"
 
     connection.execute(
-        UPDATE_QUERY.format(
-            new_value=updated_admission_reason, ids_query=ADMISSION_REASON_QUERY
+        StrictStringFormatter().format(
+            UPDATE_QUERY,
+            new_value=updated_admission_reason,
+            ids_query=ADMISSION_REASON_QUERY,
         )
     )

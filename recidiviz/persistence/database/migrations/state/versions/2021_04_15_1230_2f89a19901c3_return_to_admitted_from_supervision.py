@@ -6,9 +6,10 @@ Revises: 6b86cdd713ab
 Create Date: 2021-04-15 12:30:50.724732
 
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
+from recidiviz.utils.string import StrictStringFormatter
 
 # revision identifiers, used by Alembic.
 revision = "2f89a19901c3"
@@ -43,10 +44,12 @@ def upgrade() -> None:
             INCARCERATION_PERIOD_HISTORY_TABLE_NAME,
         ]:
             connection.execute(
-                UPDATE_QUERY.format(
+                StrictStringFormatter().format(
+                    UPDATE_QUERY,
                     table_name=table_name,
                     new_value=new_value,
-                    ids_query=ENUM_VALUE_SELECT_IDS_QUERY.format(
+                    ids_query=StrictStringFormatter().format(
+                        ENUM_VALUE_SELECT_IDS_QUERY,
                         table_name=table_name,
                         enum_value=old_value,
                     ),
@@ -66,10 +69,12 @@ def downgrade() -> None:
             INCARCERATION_PERIOD_HISTORY_TABLE_NAME,
         ]:
             connection.execute(
-                UPDATE_QUERY.format(
+                StrictStringFormatter().format(
+                    UPDATE_QUERY,
                     table_name=table_name,
                     new_value=new_value,
-                    ids_query=ENUM_VALUE_SELECT_IDS_QUERY.format(
+                    ids_query=StrictStringFormatter().format(
+                        ENUM_VALUE_SELECT_IDS_QUERY,
                         table_name=table_name,
                         enum_value=old_value,
                     ),

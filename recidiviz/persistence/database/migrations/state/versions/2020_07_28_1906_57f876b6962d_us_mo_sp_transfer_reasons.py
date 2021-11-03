@@ -6,9 +6,10 @@ Revises: e5949964b987
 Create Date: 2020-07-28 19:06:50.511026
 
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
+from recidiviz.utils.string import StrictStringFormatter
 
 # revision identifiers, used by Alembic.
 revision = "57f876b6962d"
@@ -49,17 +50,23 @@ DOWNGRADE_UPDATE_QUERY = (
 def upgrade() -> None:
     connection = op.get_bind()
 
-    admission_reason_upgrade_query = UPGRADE_UPDATE_QUERY.format(
+    admission_reason_upgrade_query = StrictStringFormatter().format(
+        UPGRADE_UPDATE_QUERY,
         reason_field_name="admission_reason",
-        ids_query=UPGRADE_REASON_QUERY.format(
-            date_field_name="start_date", reason_field_name="admission_reason"
+        ids_query=StrictStringFormatter().format(
+            UPGRADE_REASON_QUERY,
+            date_field_name="start_date",
+            reason_field_name="admission_reason",
         ),
     )
 
-    termination_reason_upgrade_query = UPGRADE_UPDATE_QUERY.format(
+    termination_reason_upgrade_query = StrictStringFormatter().format(
+        UPGRADE_UPDATE_QUERY,
         reason_field_name="termination_reason",
-        ids_query=UPGRADE_REASON_QUERY.format(
-            date_field_name="termination_date", reason_field_name="termination_reason"
+        ids_query=StrictStringFormatter().format(
+            UPGRADE_REASON_QUERY,
+            date_field_name="termination_date",
+            reason_field_name="termination_reason",
         ),
     )
 
@@ -70,17 +77,23 @@ def upgrade() -> None:
 def downgrade() -> None:
     connection = op.get_bind()
 
-    admission_reason_downgrade_query = DOWNGRADE_UPDATE_QUERY.format(
+    admission_reason_downgrade_query = StrictStringFormatter().format(
+        DOWNGRADE_UPDATE_QUERY,
         reason_field_name="admission_reason",
-        ids_query=DOWNGRADE_REASON_QUERY.format(
-            date_field_name="start_date", reason_field_name="admission_reason"
+        ids_query=StrictStringFormatter().format(
+            DOWNGRADE_REASON_QUERY,
+            date_field_name="start_date",
+            reason_field_name="admission_reason",
         ),
     )
 
-    termination_reason_downgrade_query = DOWNGRADE_UPDATE_QUERY.format(
+    termination_reason_downgrade_query = StrictStringFormatter().format(
+        DOWNGRADE_UPDATE_QUERY,
         reason_field_name="termination_reason",
-        ids_query=DOWNGRADE_REASON_QUERY.format(
-            date_field_name="termination_date", reason_field_name="termination_reason"
+        ids_query=StrictStringFormatter().format(
+            DOWNGRADE_REASON_QUERY,
+            date_field_name="termination_date",
+            reason_field_name="termination_reason",
         ),
     )
 

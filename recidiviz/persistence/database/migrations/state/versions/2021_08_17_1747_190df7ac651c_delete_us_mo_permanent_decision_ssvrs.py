@@ -9,6 +9,8 @@ Create Date: 2021-08-17 17:47:39.086443
 import sqlalchemy as sa
 from alembic import op
 
+from recidiviz.utils.string import StrictStringFormatter
+
 # revision identifiers, used by Alembic.
 revision = "190df7ac651c"
 down_revision = "787c13afabf2"
@@ -33,7 +35,7 @@ TABLES_TO_UPDATE = [
 
 def upgrade() -> None:
     for table in TABLES_TO_UPDATE:
-        op.execute(DELETE_QUERY.format(table_name=table))
+        op.execute(StrictStringFormatter().format(DELETE_QUERY, table_name=table))
 
 
 def downgrade() -> None:

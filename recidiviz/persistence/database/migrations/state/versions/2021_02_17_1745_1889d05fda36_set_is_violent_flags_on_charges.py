@@ -8,6 +8,7 @@ Create Date: 2021-02-17 17:45:26.210779
 """
 from alembic import op
 
+from recidiviz.utils.string import StrictStringFormatter
 
 # revision identifiers, used by Alembic.
 revision = "1889d05fda36"
@@ -233,13 +234,27 @@ WHERE ch.ncic_code IS NOT NULL
 
 def upgrade() -> None:
     with op.get_context().autocommit_block():
-        op.execute(US_ND_UPGRADE_BY_STATUTE_QUERY.format(table_name="state_charge"))
         op.execute(
-            US_ND_UPGRADE_BY_STATUTE_QUERY.format(table_name="state_charge_history")
+            StrictStringFormatter().format(
+                US_ND_UPGRADE_BY_STATUTE_QUERY, table_name="state_charge"
+            )
+        )
+        op.execute(
+            StrictStringFormatter().format(
+                US_ND_UPGRADE_BY_STATUTE_QUERY, table_name="state_charge_history"
+            )
         )
 
-        op.execute(UPGRADE_BY_NCIC_CODE_QUERY.format(table_name="state_charge"))
-        op.execute(UPGRADE_BY_NCIC_CODE_QUERY.format(table_name="state_charge_history"))
+        op.execute(
+            StrictStringFormatter().format(
+                UPGRADE_BY_NCIC_CODE_QUERY, table_name="state_charge"
+            )
+        )
+        op.execute(
+            StrictStringFormatter().format(
+                UPGRADE_BY_NCIC_CODE_QUERY, table_name="state_charge_history"
+            )
+        )
 
 
 def downgrade() -> None:

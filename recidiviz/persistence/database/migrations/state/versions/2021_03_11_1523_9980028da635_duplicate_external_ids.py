@@ -6,9 +6,10 @@ Revises: 826ccffeb6b8
 Create Date: 2021-03-11 15:23:13.157329
 
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
+from recidiviz.utils.string import StrictStringFormatter
 
 # revision identifiers, used by Alembic.
 revision = "9980028da635"
@@ -46,7 +47,11 @@ def upgrade() -> None:
     table_to_primary_key = {"state_incarceration_sentence": "incarceration_sentence_id"}
     with op.get_context().autocommit_block():
         for table, primary_key in table_to_primary_key.items():
-            op.execute(DEDUP_UPGRADE_QUERY.format(table=table, primary_key=primary_key))
+            op.execute(
+                StrictStringFormatter().format(
+                    DEDUP_UPGRADE_QUERY, table=table, primary_key=primary_key
+                )
+            )
 
 
 def downgrade() -> None:

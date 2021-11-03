@@ -6,9 +6,10 @@ Revises: 98cfa7151385
 Create Date: 2021-03-22 12:02:15.296805
 
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
+from recidiviz.utils.string import StrictStringFormatter
 
 # revision identifiers, used by Alembic.
 revision = "e650b61844c5"
@@ -62,41 +63,49 @@ def upgrade() -> None:
     new_transfer_out_of_state = "TRANSFER_OUT_OF_STATE"
 
     connection.execute(
-        UPDATE_QUERY_RELEASE_REASON.format(
+        StrictStringFormatter().format(
+            UPDATE_QUERY_RELEASE_REASON,
             table_name=INCARCERATION_PERIOD_TABLE_NAME,
             new_value=new_transfer_out_of_state,
-            ids_query=TRANSFERRED_OUT_OF_STATE_RELEASE_REASON_QUERY.format(
-                table_name=INCARCERATION_PERIOD_TABLE_NAME
+            ids_query=StrictStringFormatter().format(
+                TRANSFERRED_OUT_OF_STATE_RELEASE_REASON_QUERY,
+                table_name=INCARCERATION_PERIOD_TABLE_NAME,
             ),
         )
     )
 
     connection.execute(
-        UPDATE_QUERY_PROJECTED_RELEASE_REASON.format(
+        StrictStringFormatter().format(
+            UPDATE_QUERY_PROJECTED_RELEASE_REASON,
             table_name=INCARCERATION_PERIOD_TABLE_NAME,
             new_value=new_transfer_out_of_state,
-            ids_query=TRANSFERRED_OUT_OF_STATE_PROJECTED_RELEASE_REASON_QUERY.format(
-                table_name=INCARCERATION_PERIOD_TABLE_NAME
+            ids_query=StrictStringFormatter().format(
+                TRANSFERRED_OUT_OF_STATE_PROJECTED_RELEASE_REASON_QUERY,
+                table_name=INCARCERATION_PERIOD_TABLE_NAME,
             ),
         )
     )
 
     connection.execute(
-        UPDATE_QUERY_RELEASE_REASON.format(
+        StrictStringFormatter().format(
+            UPDATE_QUERY_RELEASE_REASON,
             table_name=INCARCERATION_PERIOD_HISTORY_TABLE_NAME,
             new_value=new_transfer_out_of_state,
-            ids_query=TRANSFERRED_OUT_OF_STATE_RELEASE_REASON_QUERY.format(
-                table_name=INCARCERATION_PERIOD_HISTORY_TABLE_NAME
+            ids_query=StrictStringFormatter().format(
+                TRANSFERRED_OUT_OF_STATE_RELEASE_REASON_QUERY,
+                table_name=INCARCERATION_PERIOD_HISTORY_TABLE_NAME,
             ),
         )
     )
 
     connection.execute(
-        UPDATE_QUERY_PROJECTED_RELEASE_REASON.format(
+        StrictStringFormatter().format(
+            UPDATE_QUERY_PROJECTED_RELEASE_REASON,
             table_name=INCARCERATION_PERIOD_HISTORY_TABLE_NAME,
             new_value=new_transfer_out_of_state,
-            ids_query=TRANSFERRED_OUT_OF_STATE_PROJECTED_RELEASE_REASON_QUERY.format(
-                table_name=INCARCERATION_PERIOD_HISTORY_TABLE_NAME
+            ids_query=StrictStringFormatter().format(
+                TRANSFERRED_OUT_OF_STATE_PROJECTED_RELEASE_REASON_QUERY,
+                table_name=INCARCERATION_PERIOD_HISTORY_TABLE_NAME,
             ),
         )
     )
@@ -108,41 +117,49 @@ def downgrade() -> None:
     deprecated_transferred_out_of_state = "TRANSFERRED_OUT_OF_STATE"
 
     connection.execute(
-        UPDATE_QUERY_RELEASE_REASON.format(
+        StrictStringFormatter().format(
+            UPDATE_QUERY_RELEASE_REASON,
             table_name=INCARCERATION_PERIOD_TABLE_NAME,
             new_value=deprecated_transferred_out_of_state,
-            ids_query=TRANSFER_OUT_OF_STATE_RELEASE_REASON_QUERY.format(
-                table_name=INCARCERATION_PERIOD_TABLE_NAME
+            ids_query=StrictStringFormatter().format(
+                TRANSFER_OUT_OF_STATE_RELEASE_REASON_QUERY,
+                table_name=INCARCERATION_PERIOD_TABLE_NAME,
             ),
         )
     )
 
     connection.execute(
-        UPDATE_QUERY_PROJECTED_RELEASE_REASON.format(
+        StrictStringFormatter().format(
+            UPDATE_QUERY_PROJECTED_RELEASE_REASON,
             table_name=INCARCERATION_PERIOD_TABLE_NAME,
             new_value=deprecated_transferred_out_of_state,
-            ids_query=TRANSFER_OUT_OF_STATE_PROJECTED_RELEASE_QUERY.format(
-                table_name=INCARCERATION_PERIOD_TABLE_NAME
+            ids_query=StrictStringFormatter().format(
+                TRANSFER_OUT_OF_STATE_PROJECTED_RELEASE_QUERY,
+                table_name=INCARCERATION_PERIOD_TABLE_NAME,
             ),
         )
     )
 
     connection.execute(
-        UPDATE_QUERY_RELEASE_REASON.format(
+        StrictStringFormatter().format(
+            UPDATE_QUERY_RELEASE_REASON,
             table_name=INCARCERATION_PERIOD_HISTORY_TABLE_NAME,
             new_value=deprecated_transferred_out_of_state,
-            ids_query=TRANSFER_OUT_OF_STATE_RELEASE_REASON_QUERY.format(
-                table_name=INCARCERATION_PERIOD_HISTORY_TABLE_NAME
+            ids_query=StrictStringFormatter().format(
+                TRANSFER_OUT_OF_STATE_RELEASE_REASON_QUERY,
+                table_name=INCARCERATION_PERIOD_HISTORY_TABLE_NAME,
             ),
         )
     )
 
     connection.execute(
-        UPDATE_QUERY_PROJECTED_RELEASE_REASON.format(
+        StrictStringFormatter().format(
+            UPDATE_QUERY_PROJECTED_RELEASE_REASON,
             table_name=INCARCERATION_PERIOD_HISTORY_TABLE_NAME,
             new_value=deprecated_transferred_out_of_state,
-            ids_query=TRANSFER_OUT_OF_STATE_PROJECTED_RELEASE_QUERY.format(
-                table_name=INCARCERATION_PERIOD_HISTORY_TABLE_NAME
+            ids_query=StrictStringFormatter().format(
+                TRANSFER_OUT_OF_STATE_PROJECTED_RELEASE_QUERY,
+                table_name=INCARCERATION_PERIOD_HISTORY_TABLE_NAME,
             ),
         )
     )

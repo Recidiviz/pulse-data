@@ -6,9 +6,10 @@ Revises: 42c3e60d0887
 Create Date: 2020-07-02 15:10:55.452109
 
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
+from recidiviz.utils.string import StrictStringFormatter
 
 # revision identifiers, used by Alembic.
 revision = "e5949964b987"
@@ -46,14 +47,17 @@ def upgrade() -> None:
     connection = op.get_bind()
 
     # Set the revocation_type and revocation_type_raw_text to NULL for all 'A' (WARRANT_ISSUED) decisions
-    connection.execute(SET_TO_NULL_QUERY.format(ids_query=WARRANT_QUERY))
+    connection.execute(
+        StrictStringFormatter().format(SET_TO_NULL_QUERY, ids_query=WARRANT_QUERY)
+    )
 
     updated_revocation_type_shock = "SHOCK_INCARCERATION"
 
     # Set the revocation_type and revocation_type_raw_text to SHOCK_INCARCERATION for all 'CO'
     # (SHOCK_INCARCERATION) decisions
     connection.execute(
-        UPDATE_TO_NEW_VALUE_QUERY.format(
+        StrictStringFormatter().format(
+            UPDATE_TO_NEW_VALUE_QUERY,
             new_value=updated_revocation_type_shock,
             new_raw_text_value=updated_revocation_type_shock,
             ids_query=SHOCK_INCARCERATION_QUERY,
@@ -70,7 +74,8 @@ def downgrade() -> None:
     # Set the revocation_type and revocation_type_raw_text back to 'REINCARCERATION' for all 'A' (WARRANT_ISSUED)
     # decisions
     connection.execute(
-        UPDATE_TO_NEW_VALUE_QUERY.format(
+        StrictStringFormatter().format(
+            UPDATE_TO_NEW_VALUE_QUERY,
             new_value=reincarceration_value,
             new_raw_text_value=reincarceration_value,
             ids_query=WARRANT_QUERY,
@@ -80,7 +85,8 @@ def downgrade() -> None:
     # Set the revocation_type and revocation_type_raw_text back to TREATMENT_IN_PRISON for all 'CO'
     # (SHOCK_INCARCERATION) decisions
     connection.execute(
-        UPDATE_TO_NEW_VALUE_QUERY.format(
+        StrictStringFormatter().format(
+            UPDATE_TO_NEW_VALUE_QUERY,
             new_value=treatment_in_prison_value,
             new_raw_text_value=treatment_in_prison_value,
             ids_query=SHOCK_INCARCERATION_QUERY,

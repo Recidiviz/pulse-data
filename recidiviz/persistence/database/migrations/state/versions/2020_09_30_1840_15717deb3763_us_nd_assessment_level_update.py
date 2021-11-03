@@ -6,9 +6,10 @@ Revises: dd71a6394322
 Create Date: 2020-09-30 18:40:53.495693
 
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
+from recidiviz.utils.string import StrictStringFormatter
 
 # revision identifiers, used by Alembic.
 revision = "15717deb3763"
@@ -44,18 +45,22 @@ def upgrade() -> None:
 
     updated_assessment_level = "EXTERNAL_UNKNOWN"
 
-    update_assessment_level_query = UPDATE_ASSESSMENT_LEVEL_QUERY.format(
+    update_assessment_level_query = StrictStringFormatter().format(
+        UPDATE_ASSESSMENT_LEVEL_QUERY,
         table_name=TABLE_NAME,
         updated_assessment_level=updated_assessment_level,
-        ids_query=UPGRADE_DEPRECATED_ASSESSMENT_LEVELS_QUERY.format(
+        ids_query=StrictStringFormatter().format(
+            UPGRADE_DEPRECATED_ASSESSMENT_LEVELS_QUERY,
             table_name=TABLE_NAME,
         ),
     )
 
-    update_assessment_level_historical_query = UPDATE_ASSESSMENT_LEVEL_QUERY.format(
+    update_assessment_level_historical_query = StrictStringFormatter().format(
+        UPDATE_ASSESSMENT_LEVEL_QUERY,
         table_name=HISTORICAL_TABLE_NAME,
         updated_assessment_level=updated_assessment_level,
-        ids_query=UPGRADE_DEPRECATED_ASSESSMENT_LEVELS_QUERY.format(
+        ids_query=StrictStringFormatter().format(
+            UPGRADE_DEPRECATED_ASSESSMENT_LEVELS_QUERY,
             table_name=HISTORICAL_TABLE_NAME,
         ),
     )
@@ -70,19 +75,23 @@ def downgrade() -> None:
     undetermined_assessment_level_raw_text = "UNDETERMINED"
     undetermined_assessment_level = "UNDETERMINED"
 
-    update_undetermined_level_query = UPDATE_ASSESSMENT_LEVEL_QUERY.format(
+    update_undetermined_level_query = StrictStringFormatter().format(
+        UPDATE_ASSESSMENT_LEVEL_QUERY,
         table_name=TABLE_NAME,
         updated_assessment_level=undetermined_assessment_level,
-        ids_query=DOWNGRADE_DEPRECATED_LEVEL_QUERY.format(
+        ids_query=StrictStringFormatter().format(
+            DOWNGRADE_DEPRECATED_LEVEL_QUERY,
             table_name=TABLE_NAME,
             assessment_level_raw_text_value=undetermined_assessment_level_raw_text,
         ),
     )
 
-    update_undetermined_level_historical_query = UPDATE_ASSESSMENT_LEVEL_QUERY.format(
+    update_undetermined_level_historical_query = StrictStringFormatter().format(
+        UPDATE_ASSESSMENT_LEVEL_QUERY,
         table_name=HISTORICAL_TABLE_NAME,
         updated_assessment_level=undetermined_assessment_level,
-        ids_query=DOWNGRADE_DEPRECATED_LEVEL_QUERY.format(
+        ids_query=StrictStringFormatter().format(
+            DOWNGRADE_DEPRECATED_LEVEL_QUERY,
             table_name=HISTORICAL_TABLE_NAME,
             assessment_level_raw_text_value=undetermined_assessment_level_raw_text,
         ),
@@ -91,19 +100,23 @@ def downgrade() -> None:
     not_applicable_assessment_level_raw_text = "NOT APPLICABLE"
     not_applicable_assessment_level = "NOT_APPLICABLE"
 
-    update_not_applicable_level_query = UPDATE_ASSESSMENT_LEVEL_QUERY.format(
+    update_not_applicable_level_query = StrictStringFormatter().format(
+        UPDATE_ASSESSMENT_LEVEL_QUERY,
         table_name=TABLE_NAME,
         updated_assessment_level=not_applicable_assessment_level,
-        ids_query=DOWNGRADE_DEPRECATED_LEVEL_QUERY.format(
+        ids_query=StrictStringFormatter().format(
+            DOWNGRADE_DEPRECATED_LEVEL_QUERY,
             table_name=TABLE_NAME,
             assessment_level_raw_text_value=not_applicable_assessment_level_raw_text,
         ),
     )
 
-    update_not_applicable_level_historical_query = UPDATE_ASSESSMENT_LEVEL_QUERY.format(
+    update_not_applicable_level_historical_query = StrictStringFormatter().format(
+        UPDATE_ASSESSMENT_LEVEL_QUERY,
         table_name=HISTORICAL_TABLE_NAME,
         updated_assessment_level=not_applicable_assessment_level,
-        ids_query=DOWNGRADE_DEPRECATED_LEVEL_QUERY.format(
+        ids_query=StrictStringFormatter().format(
+            DOWNGRADE_DEPRECATED_LEVEL_QUERY,
             table_name=HISTORICAL_TABLE_NAME,
             assessment_level_raw_text_value=not_applicable_assessment_level_raw_text,
         ),
