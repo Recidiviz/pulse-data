@@ -6,9 +6,10 @@ Revises: 26f50952aaab
 Create Date: 2021-03-30 11:23:44.284084
 
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
+from recidiviz.utils.string import StrictStringFormatter
 
 # revision identifiers, used by Alembic.
 revision = "bed035a0cd79"
@@ -41,10 +42,13 @@ def upgrade() -> None:
             PROGRAM_ASSIGNMENT_HISTORY_TABLE_NAME,
         ]:
             op.execute(
-                UPDATE_QUERY.format(
+                StrictStringFormatter().format(
+                    UPDATE_QUERY,
                     table_name=table_name,
                     new_value=updated_participation_status,
-                    ids_query=REFUSED_STATUS_QUERY.format(table_name=table_name),
+                    ids_query=StrictStringFormatter().format(
+                        REFUSED_STATUS_QUERY, table_name=table_name
+                    ),
                 )
             )
 
@@ -57,9 +61,12 @@ def downgrade() -> None:
             PROGRAM_ASSIGNMENT_HISTORY_TABLE_NAME,
         ]:
             op.execute(
-                UPDATE_QUERY.format(
+                StrictStringFormatter().format(
+                    UPDATE_QUERY,
                     table_name=table_name,
                     new_value=updated_participation_status,
-                    ids_query=REFUSED_STATUS_QUERY.format(table_name=table_name),
+                    ids_query=StrictStringFormatter().format(
+                        REFUSED_STATUS_QUERY, table_name=table_name
+                    ),
                 )
             )

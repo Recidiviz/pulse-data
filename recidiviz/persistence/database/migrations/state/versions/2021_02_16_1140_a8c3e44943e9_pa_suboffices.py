@@ -6,9 +6,10 @@ Revises: cfee400e144c
 Create Date: 2021-02-16 11:40:40.836657
 
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
+from recidiviz.utils.string import StrictStringFormatter
 
 # revision identifiers, used by Alembic.
 revision = "a8c3e44943e9"
@@ -99,13 +100,27 @@ WHERE sp.supervision_period_id = old_sp.supervision_period_id;
 
 def upgrade() -> None:
     with op.get_context().autocommit_block():
-        op.execute(UPGRADE_QUERY.format(table_name="state_supervision_period"))
-        op.execute(UPGRADE_QUERY.format(table_name="state_supervision_period_history"))
+        op.execute(
+            StrictStringFormatter().format(
+                UPGRADE_QUERY, table_name="state_supervision_period"
+            )
+        )
+        op.execute(
+            StrictStringFormatter().format(
+                UPGRADE_QUERY, table_name="state_supervision_period_history"
+            )
+        )
 
 
 def downgrade() -> None:
     with op.get_context().autocommit_block():
-        op.execute(DOWNGRADE_QUERY.format(table_name="state_supervision_period"))
         op.execute(
-            DOWNGRADE_QUERY.format(table_name="state_supervision_period_history")
+            StrictStringFormatter().format(
+                DOWNGRADE_QUERY, table_name="state_supervision_period"
+            )
+        )
+        op.execute(
+            StrictStringFormatter().format(
+                DOWNGRADE_QUERY, table_name="state_supervision_period_history"
+            )
         )

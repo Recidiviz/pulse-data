@@ -6,9 +6,10 @@ Revises: 1889d05fda36
 Create Date: 2021-02-19 18:13:06.276767
 
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
+from recidiviz.utils.string import StrictStringFormatter
 
 # revision identifiers, used by Alembic.
 revision = "c0aa7ce19f4c"
@@ -57,14 +58,16 @@ def upgrade() -> None:
     with op.get_context().autocommit_block():
         for base_table, base_table_primary_key in table_to_primary_key.items():
             op.execute(
-                DEDUP_UPGRADE_QUERY.format(
+                StrictStringFormatter().format(
+                    DEDUP_UPGRADE_QUERY,
                     base_table_name=base_table,
                     table_name=base_table,
                     primary_key_col=base_table_primary_key,
                 )
             )
             op.execute(
-                DEDUP_UPGRADE_QUERY.format(
+                StrictStringFormatter().format(
+                    DEDUP_UPGRADE_QUERY,
                     base_table_name=base_table,
                     table_name=f"{base_table}_history",
                     primary_key_col=base_table_primary_key,

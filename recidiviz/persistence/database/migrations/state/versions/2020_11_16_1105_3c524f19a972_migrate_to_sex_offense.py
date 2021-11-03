@@ -6,9 +6,10 @@ Revises: 33805fc8578f
 Create Date: 2020-11-16 11:05:43.620455
 
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
+from recidiviz.utils.string import StrictStringFormatter
 
 # revision identifiers, used by Alembic.
 revision = "3c524f19a972"
@@ -44,19 +45,23 @@ def upgrade() -> None:
     new_sex_offense = "SEX_OFFENSE"
 
     connection.execute(
-        UPDATE_QUERY.format(
+        StrictStringFormatter().format(
+            UPDATE_QUERY,
             table_name=CASE_TYPE_TABLE_NAME,
             new_value=new_sex_offense,
-            ids_query=SEX_OFFENDER_QUERY.format(table_name=CASE_TYPE_TABLE_NAME),
+            ids_query=StrictStringFormatter().format(
+                SEX_OFFENDER_QUERY, table_name=CASE_TYPE_TABLE_NAME
+            ),
         )
     )
 
     connection.execute(
-        UPDATE_QUERY.format(
+        StrictStringFormatter().format(
+            UPDATE_QUERY,
             table_name=CASE_TYPE_HISTORY_TABLE_NAME,
             new_value=new_sex_offense,
-            ids_query=SEX_OFFENDER_QUERY.format(
-                table_name=CASE_TYPE_HISTORY_TABLE_NAME
+            ids_query=StrictStringFormatter().format(
+                SEX_OFFENDER_QUERY, table_name=CASE_TYPE_HISTORY_TABLE_NAME
             ),
         )
     )
@@ -68,17 +73,23 @@ def downgrade() -> None:
     deprecated_sex_offender = "SEX_OFFENDER"
 
     connection.execute(
-        UPDATE_QUERY.format(
+        StrictStringFormatter().format(
+            UPDATE_QUERY,
             table_name=CASE_TYPE_TABLE_NAME,
             new_value=deprecated_sex_offender,
-            ids_query=SEX_OFFENSE_QUERY.format(table_name=CASE_TYPE_TABLE_NAME),
+            ids_query=StrictStringFormatter().format(
+                SEX_OFFENSE_QUERY, table_name=CASE_TYPE_TABLE_NAME
+            ),
         )
     )
 
     connection.execute(
-        UPDATE_QUERY.format(
+        StrictStringFormatter().format(
+            UPDATE_QUERY,
             table_name=CASE_TYPE_HISTORY_TABLE_NAME,
             new_value=deprecated_sex_offender,
-            ids_query=SEX_OFFENSE_QUERY.format(table_name=CASE_TYPE_HISTORY_TABLE_NAME),
+            ids_query=StrictStringFormatter().format(
+                SEX_OFFENSE_QUERY, table_name=CASE_TYPE_HISTORY_TABLE_NAME
+            ),
         )
     )

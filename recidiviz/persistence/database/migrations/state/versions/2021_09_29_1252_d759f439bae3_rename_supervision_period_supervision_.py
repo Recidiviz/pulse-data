@@ -10,6 +10,8 @@ import sqlalchemy as sa
 from alembic import op
 from sqlalchemy.dialects import postgresql
 
+from recidiviz.utils.string import StrictStringFormatter
+
 # revision identifiers, used by Alembic.
 revision = "d759f439bae3"
 down_revision = "b4a5dd037630"
@@ -95,11 +97,13 @@ def upgrade() -> None:
             # Put supervision_period_supervision_type_raw_text values into the
             # supervision_type_raw_text column
             connection.execute(
-                UPDATE_QUERY.format(
+                StrictStringFormatter().format(
+                    UPDATE_QUERY,
                     table_name=table_name,
                     column_name="supervision_type_raw_text",
                     new_value="supervision_period_supervision_type_raw_text",
-                    ids_query=SELECT_IDS_QUERY.format(
+                    ids_query=StrictStringFormatter().format(
+                        SELECT_IDS_QUERY,
                         table_name=table_name,
                         filter_clause="supervision_period_supervision_type_raw_text IS NOT NULL",
                     ),
@@ -109,11 +113,13 @@ def upgrade() -> None:
             # Put supervision_period_supervision_type values into the
             # supervision_type column
             connection.execute(
-                UPDATE_QUERY.format(
+                StrictStringFormatter().format(
+                    UPDATE_QUERY,
                     table_name=table_name,
                     column_name="supervision_type",
                     new_value="supervision_period_supervision_type",
-                    ids_query=SELECT_IDS_QUERY.format(
+                    ids_query=StrictStringFormatter().format(
+                        SELECT_IDS_QUERY,
                         table_name=table_name,
                         filter_clause="supervision_period_supervision_type IS NOT NULL",
                     ),
@@ -207,11 +213,13 @@ def downgrade() -> None:
             # Put supervision_type_raw_text values into the
             # supervision_period_supervision_type_raw_text column
             connection.execute(
-                UPDATE_QUERY.format(
+                StrictStringFormatter().format(
+                    UPDATE_QUERY,
                     table_name=table_name,
                     column_name="supervision_period_supervision_type_raw_text",
                     new_value="supervision_type_raw_text",
-                    ids_query=SELECT_IDS_QUERY.format(
+                    ids_query=StrictStringFormatter().format(
+                        SELECT_IDS_QUERY,
                         table_name=table_name,
                         filter_clause="supervision_type_raw_text IS NOT NULL",
                     ),
@@ -221,11 +229,13 @@ def downgrade() -> None:
             # Put supervision_type values into the
             # supervision_period_supervision_type column
             connection.execute(
-                UPDATE_QUERY.format(
+                StrictStringFormatter().format(
+                    UPDATE_QUERY,
                     table_name=table_name,
                     column_name="supervision_period_supervision_type",
                     new_value="supervision_type",
-                    ids_query=SELECT_IDS_QUERY.format(
+                    ids_query=StrictStringFormatter().format(
+                        SELECT_IDS_QUERY,
                         table_name=table_name,
                         filter_clause="supervision_type IS NOT NULL",
                     ),

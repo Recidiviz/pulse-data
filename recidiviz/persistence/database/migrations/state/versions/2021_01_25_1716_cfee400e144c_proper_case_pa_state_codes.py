@@ -6,9 +6,10 @@ Revises: 101a1096302b
 Create Date: 2021-01-25 17:16:00.460982
 
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
+from recidiviz.utils.string import StrictStringFormatter
 
 # revision identifiers, used by Alembic.
 revision = "cfee400e144c"
@@ -56,8 +57,16 @@ TABLE_NAMES = [
 def upgrade() -> None:
     with op.get_context().autocommit_block():
         for table_name in TABLE_NAMES:
-            op.execute(UPDATE_TO_NEW_VALUE_QUERY.format(table=table_name))
-            op.execute(UPDATE_TO_NEW_VALUE_QUERY.format(table=f"{table_name}_history"))
+            op.execute(
+                StrictStringFormatter().format(
+                    UPDATE_TO_NEW_VALUE_QUERY, table=table_name
+                )
+            )
+            op.execute(
+                StrictStringFormatter().format(
+                    UPDATE_TO_NEW_VALUE_QUERY, table=f"{table_name}_history"
+                )
+            )
 
 
 def downgrade() -> None:

@@ -24,9 +24,7 @@ def _create_index_if_doesnt_exist(
     # Index check adopted from https://stackoverflow.com/questions/43994229/create-a-db-index-if-it-doesnt-exist
     connection = op.get_bind()
     result = connection.execute(
-        "SELECT exists(SELECT 1 from pg_indexes where indexname = '{}') as ix_exists;".format(
-            index_name
-        )
+        f"SELECT exists(SELECT 1 from pg_indexes where indexname = '{index_name}') as ix_exists;"
     ).first()
     if not result.ix_exists:
         op.create_index(op.f(index_name), table_name, columns, unique=unique)

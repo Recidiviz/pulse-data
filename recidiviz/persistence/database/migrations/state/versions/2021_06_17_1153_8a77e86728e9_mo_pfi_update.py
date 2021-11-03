@@ -9,6 +9,8 @@ Create Date: 2021-06-17 11:53:44.318674
 import sqlalchemy as sa
 from alembic import op
 
+from recidiviz.utils.string import StrictStringFormatter
+
 # revision identifiers, used by Alembic.
 revision = "8a77e86728e9"
 down_revision = "8a50c937d9cb"
@@ -38,7 +40,8 @@ def upgrade() -> None:
             INCARCERATION_PERIOD_HISTORY_TABLE_NAME,
         ]:
             connection.execute(
-                UPDATE_QUERY.format(
+                StrictStringFormatter().format(
+                    UPDATE_QUERY,
                     table_name=table_name,
                     new_value=new_value,
                 )
@@ -56,7 +59,8 @@ def downgrade() -> None:
             INCARCERATION_PERIOD_HISTORY_TABLE_NAME,
         ]:
             connection.execute(
-                UPDATE_QUERY.format(
+                StrictStringFormatter().format(
+                    UPDATE_QUERY,
                     table_name=table_name,
                     new_value=new_value,
                 )

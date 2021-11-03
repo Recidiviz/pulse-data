@@ -6,9 +6,10 @@ Revises: 6affa2223dd1
 Create Date: 2020-10-09 11:14:04.874206
 
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
+from recidiviz.utils.string import StrictStringFormatter
 
 # revision identifiers, used by Alembic.
 revision = "0002e286d896"
@@ -79,13 +80,15 @@ def upgrade() -> None:
 
     connection = op.get_bind()
     # Update state tables with default values
-    pending_state_table_query = UPDATE_QUERY.format(
+    pending_state_table_query = StrictStringFormatter().format(
+        UPDATE_QUERY,
         table_name="state_early_discharge",
         decision_status="PENDING",
         decision_status_raw_text="PENDING",
         ids_query=PENDING_EARLY_DISCHARGES_IDS_QUERY,
     )
-    decided_state_table_query = UPDATE_QUERY.format(
+    decided_state_table_query = StrictStringFormatter().format(
+        UPDATE_QUERY,
         table_name="state_early_discharge",
         decision_status="DECIDED",
         decision_status_raw_text="DECIDED",
@@ -96,13 +99,15 @@ def upgrade() -> None:
     connection.execute(decided_state_table_query)
 
     # Update history tables with default values
-    pending_history_table_query = UPDATE_QUERY.format(
+    pending_history_table_query = StrictStringFormatter().format(
+        UPDATE_QUERY,
         table_name="state_early_discharge_history",
         decision_status="PENDING",
         decision_status_raw_text="PENDING",
         ids_query=PENDING_EARLY_DISCHARGES_IDS_QUERY,
     )
-    decided_history_table_query = UPDATE_QUERY.format(
+    decided_history_table_query = StrictStringFormatter().format(
+        UPDATE_QUERY,
         table_name="state_early_discharge_history",
         decision_status="DECIDED",
         decision_status_raw_text="DECIDED",

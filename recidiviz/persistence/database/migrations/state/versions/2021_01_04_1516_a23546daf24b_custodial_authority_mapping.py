@@ -6,9 +6,10 @@ Revises: dd6deec65b5b
 Create Date: 2020-01-04 15:16:54.185111
 
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
+from recidiviz.utils.string import StrictStringFormatter
 
 # revision identifiers, used by Alembic.
 revision = "a23546daf24b"
@@ -84,10 +85,14 @@ def upgrade() -> None:
         # Set custodial_authority values for the supervision tables
         if "supervision" in table_id:
             # Set custodial_authority value for US_ID
-            connection.execute(UPDATE_QUERY_US_ID.format(table_id=table_id))
+            connection.execute(
+                StrictStringFormatter().format(UPDATE_QUERY_US_ID, table_id=table_id)
+            )
 
             # Set custodial_authority value for US_PA
-            connection.execute(UPDATE_QUERY_US_PA.format(table_id=table_id))
+            connection.execute(
+                StrictStringFormatter().format(UPDATE_QUERY_US_PA, table_id=table_id)
+            )
 
         # Convert the custodial_authority column to an enum
         op.alter_column(
@@ -116,9 +121,13 @@ def downgrade() -> None:
         # Set custodial_authority values for the supervision tables
         if "supervision" in table_id:
             # Set original custodial_authority value for US_ID
-            connection.execute(DOWNGRADE_QUERY_US_ID.format(table_id=table_id))
+            connection.execute(
+                StrictStringFormatter().format(DOWNGRADE_QUERY_US_ID, table_id=table_id)
+            )
 
             # Set original custodial_authority value for US_PA
-            connection.execute(DOWNGRADE_QUERY_US_PA.format(table_id=table_id))
+            connection.execute(
+                StrictStringFormatter().format(DOWNGRADE_QUERY_US_PA, table_id=table_id)
+            )
 
     op.execute("DROP TYPE state_custodial_authority;")
