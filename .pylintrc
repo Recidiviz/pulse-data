@@ -9,7 +9,7 @@
 
 # Python code to execute, usually for sys.path manipulation such as
 # pygtk.require().
-#init-hook=
+init-hook='import sys; sys.path.append(".")'
 
 # Profiled execution.
 #profile=no
@@ -27,10 +27,10 @@ persistent=yes
 
 # List of plugins (as comma separated values of python modules names) to load,
 # usually to register additional checkers.
-load-plugins=
+load-plugins=recidiviz.tools.lint.pylint_checkers
 
 # Whitelists trusted C, Python extensions outside of the standard library.
-extension-pkg-whitelist=lxml,numpy
+extension-pkg-whitelist=lxml,mypy,numpy
 
 [MESSAGES CONTROL]
 
