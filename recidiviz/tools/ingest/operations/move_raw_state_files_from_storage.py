@@ -71,6 +71,7 @@ from recidiviz.tools.gsutil_shell_helpers import (
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool
+from recidiviz.utils.string import StrictStringFormatter
 
 # pylint: disable=not-callable
 
@@ -84,13 +85,11 @@ class MoveFilesFromStorageController:
         r"^(processed_|unprocessed_|un)?(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}:\d{6}(raw|ingest_view)?.*)"
     )
 
-    PAUSE_QUEUE_URL = "https://cloudtasks.googleapis.com/v2/projects/{}/locations/us-east1/queues/{}:pause"
+    PAUSE_QUEUE_URL = "https://cloudtasks.googleapis.com/v2/projects/{project_id}/locations/us-east1/queues/{queue_name}:pause"
 
-    PURGE_QUEUE_URL = "https://cloudtasks.googleapis.com/v2/projects/{}/locations/us-east1/queues/{}:purge"
+    PURGE_QUEUE_URL = "https://cloudtasks.googleapis.com/v2/projects/{project_id}/locations/us-east1/queues/{queue_name}:purge"
 
-    CURL_POST_REQUEST_TEMPLATE = (
-        'curl -X POST -H "Authorization: Bearer $(gcloud auth print-access-token)" {}'
-    )
+    CURL_POST_REQUEST_TEMPLATE = 'curl -X POST -H "Authorization: Bearer $(gcloud auth print-access-token)" {url}'
 
     def __init__(
         self,
@@ -252,7 +251,7 @@ class MoveFilesFromStorageController:
     def do_post_request(self, url: str) -> None:
         """Executes a googleapis.com curl POST request with the given url."""
         res = subprocess.run(
-            self.CURL_POST_REQUEST_TEMPLATE.format(url),
+            StrictStringFormatter().format(self.CURL_POST_REQUEST_TEMPLATE, url=url),
             shell=True,
             stdout=subprocess.PIPE,
             check=True,
@@ -264,12 +263,20 @@ class MoveFilesFromStorageController:
     def pause_queue(self, queue_name: str) -> None:
         """Posts a request to pause the queue with the given name."""
         logging.info("Pausing [%s] in [%s]", queue_name, self.project_id)
-        self.do_post_request(self.PAUSE_QUEUE_URL.format(self.project_id, queue_name))
+        self.do_post_request(
+            StrictStringFormatter().format(
+                self.PAUSE_QUEUE_URL, project_id=self.project_id, queue_name=queue_name
+            )
+        )
 
     def purge_queue(self, queue_name: str) -> None:
         """Posts a request to purge the queue with the given name."""
         logging.info("Purging [%s] in [%s]", queue_name, self.project_id)
-        self.do_post_request(self.PURGE_QUEUE_URL.format(self.project_id, queue_name))
+        self.do_post_request(
+            StrictStringFormatter().format(
+                self.PURGE_QUEUE_URL, project_id=self.project_id, queue_name=queue_name
+            )
+        )
 
     def pause_and_purge_queues(self) -> None:
         """Pauses and purges Direct Ingest queues for the specified project."""
@@ -328,12 +335,12 @@ class MoveFilesFromStorageController:
         self.moves_list.sort()
         with open(self.log_output_path, "w", encoding="utf-8") as f:
             if self.dry_run:
-                template = "[DRY RUN] Would move {} -> {}\n"
+                prefix = "[DRY RUN] Would move"
             else:
-                template = "Moved {} -> {}\n"
+                prefix = "Moved"
 
             f.writelines(
-                template.format(original_path, new_path)
+                f"{prefix} {original_path} -> {new_path}\n"
                 for original_path, new_path in self.moves_list
             )
 

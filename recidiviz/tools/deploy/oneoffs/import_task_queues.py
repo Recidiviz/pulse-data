@@ -101,7 +101,7 @@ if __name__ == "__main__":
         queue_params = vendors.get_vendor_queue_params(vendor)
         if queue_params is None:
             continue
-        vendor_queue_name = "vendor-{}-scraper-v2".format(vendor.replace("_", "-"))
+        vendor_queue_name = f"vendor-{vendor.replace('_', '-')}-scraper-v2"
         tf_queues.add(vendor_queue_name)
         terraform_import(
             f'module.scraper-vendor-queues[\\"{vendor}\\"].google_cloud_tasks_queue.queue',

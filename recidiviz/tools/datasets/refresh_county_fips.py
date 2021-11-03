@@ -152,8 +152,8 @@ def add_unknowns(fips_df: pd.DataFrame) -> pd.DataFrame:
             STATE_ABBREV_COL: row[STATE_ABBREV_COL],
             STATE_CODE_COL: row[STATE_CODE_COL],
             COUNTY_CODE_COL: unknown_county_code,
-            COUNTY_NAME_COL: "{} Unknown".format(row[STATE_ABBREV_COL]),
-            FIPS_COL: "{}{}".format(row[STATE_CODE_COL], unknown_county_code),
+            COUNTY_NAME_COL: f"{row[STATE_ABBREV_COL]} Unknown",
+            FIPS_COL: f"{row[STATE_CODE_COL]}{unknown_county_code}",
         },
         axis="columns",
     )

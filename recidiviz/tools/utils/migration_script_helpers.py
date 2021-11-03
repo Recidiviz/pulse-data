@@ -19,6 +19,7 @@ import os
 from typing import Set
 
 from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.utils.string import StrictStringFormatter
 
 _ALEMBIC_REVISION_COMMAND_TEMPLATE = (
     "alembic -c {config_path} revision -m {migration_name}"
@@ -72,8 +73,10 @@ def create_new_empty_migration_and_return_filename(
     |migration_name| and returns its filename"""
     initial_filenames = _get_all_filenames_in_versions_directory(schema)
 
-    command = _ALEMBIC_REVISION_COMMAND_TEMPLATE.format(
-        config_path=_path_to_config_file(schema), migration_name=migration_name
+    command = StrictStringFormatter().format(
+        _ALEMBIC_REVISION_COMMAND_TEMPLATE,
+        config_path=_path_to_config_file(schema),
+        migration_name=migration_name,
     )
     exit_code = os.system(command)
     if exit_code != 0:

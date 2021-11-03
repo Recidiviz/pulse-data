@@ -174,14 +174,12 @@ class OperateOnStorageIngestFilesController:
         self.operations_list.sort()
         with open(self.log_output_path, "w", encoding="utf-8") as f:
             if self.dry_run:
-                template = "[DRY RUN] Would {} {} -> {}\n"
+                prefix = "[DRY RUN] Would"
             else:
-                template = "Did {} {} -> {}\n"
+                prefix = "Did"
 
             f.writelines(
-                template.format(
-                    self.operation_type.value.lower(), original_path, new_path
-                )
+                f"{prefix} {self.operation_type.value.lower()} {original_path} -> {new_path}\n"
                 for original_path, new_path in self.operations_list
             )
 

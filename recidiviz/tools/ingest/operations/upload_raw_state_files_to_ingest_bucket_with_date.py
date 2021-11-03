@@ -164,18 +164,17 @@ class ManualUploadStateFilesToIngestBucketController(
         self.copies_list.sort()
         with open(self.log_output_path, "w", encoding="utf-8") as f:
             if self.dry_run:
-                template = "[DRY RUN] Would copy {} -> {}\n"
+                prefix = "[DRY RUN] Would copy"
             else:
-                template = "Copied {} -> {}\n"
+                prefix = "Copied"
 
             f.writelines(
-                template.format(original_path, new_path)
+                f"{prefix} {original_path} -> {new_path}\n"
                 for original_path, new_path in self.copies_list
             )
             if self.unable_to_upload_files:
                 f.writelines(
-                    "Failed to copy {}".format(path)
-                    for path in self.unable_to_upload_files
+                    f"Failed to copy {path}" for path in self.unable_to_upload_files
                 )
 
 

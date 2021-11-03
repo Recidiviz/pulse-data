@@ -49,7 +49,6 @@ python -m recidiviz.tools.upload_sendgrid_csv_to_gcs_and_bq
     --project-id [project-id]
     --backfill true
 """
-
 import argparse
 import logging
 import sys
