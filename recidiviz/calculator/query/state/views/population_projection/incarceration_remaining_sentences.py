@@ -17,8 +17,8 @@
 """Current total population by compartment, outflow compartment, and months until transition will be made"""
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
-    ANALYST_VIEWS_DATASET,
     POPULATION_PROJECTION_DATASET,
+    SESSIONS_DATASET,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -76,7 +76,7 @@ REMAINING_SENTENCES_QUERY_TEMPLATE = """
                     THEN FLOOR(DATE_DIFF(parole_eligibility_date, run_date_array.run_date, DAY)/30)
             END AS compartment_duration
         FROM `{project_id}.{population_projection_dataset}.population_projection_sessions_materialized` sessions
-        LEFT JOIN `{project_id}.{analyst_dataset}.compartment_sentences_materialized`  sentences
+        LEFT JOIN `{project_id}.{sessions_dataset}.compartment_sentences_materialized`  sentences
           USING (state_code, person_id, session_id)
         JOIN `{project_id}.{population_projection_dataset}.simulation_run_dates` run_date_array
           ON run_date_array.run_date BETWEEN start_date AND coalesce(end_date, '9999-01-01')
@@ -108,7 +108,7 @@ INCARCERATION_REMAINING_SENTENCES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=REMAINING_SENTENCES_VIEW_NAME,
     view_query_template=REMAINING_SENTENCES_QUERY_TEMPLATE,
     description=REMAINING_SENTENCES_VIEW_DESCRIPTION,
-    analyst_dataset=ANALYST_VIEWS_DATASET,
+    sessions_dataset=SESSIONS_DATASET,
     population_projection_dataset=POPULATION_PROJECTION_DATASET,
     should_materialize=False,
 )

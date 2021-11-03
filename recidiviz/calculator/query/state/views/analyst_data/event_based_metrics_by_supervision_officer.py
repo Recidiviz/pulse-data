@@ -17,8 +17,12 @@
 """View tracking daily positive and backstop metrics, along with demographic attributes, at the officer/district level
 for use in impact measurement"""
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state import dataset_config
-from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
+from recidiviz.calculator.query.state.dataset_config import (
+    ANALYST_VIEWS_DATASET,
+    PO_REPORT_DATASET,
+    SESSIONS_DATASET,
+    STATE_BASE_DATASET,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -43,8 +47,8 @@ EVENT_BASED_METRICS_BY_SUPERVISION_OFFICER_QUERY_TEMPLATE = """
             person_id,
             supervising_officer_external_id,
             end_date as completion_date,
-        FROM `{project_id}.{analyst_dataset}.compartment_sessions_materialized` sessions
-        LEFT JOIN `{project_id}.{analyst_dataset}.supervision_officer_sessions_materialized` officers
+        FROM `{project_id}.{sessions_dataset}.compartment_sessions_materialized` sessions
+        LEFT JOIN `{project_id}.{sessions_dataset}.supervision_officer_sessions_materialized` officers
         USING (state_code, person_id, end_date)
         WHERE compartment_level_1 IN ('SUPERVISION', 'SUPERVISION_OUT_OF_STATE')
         AND outflow_to_level_1 = 'RELEASE'
@@ -60,7 +64,7 @@ EVENT_BASED_METRICS_BY_SUPERVISION_OFFICER_QUERY_TEMPLATE = """
 
         FROM `{project_id}.{base_dataset}.state_early_discharge` ed
         /* Join with overlapping session to get supervision type at time of request */
-        LEFT JOIN `{project_id}.{analyst_dataset}.supervision_officer_sessions_materialized` officers
+        LEFT JOIN `{project_id}.{sessions_dataset}.supervision_officer_sessions_materialized` officers
         ON ed.state_code = officers.state_code
             AND ed.person_id = officers.person_id
             AND ed.request_date BETWEEN officers.start_date AND COALESCE(officers.end_date, "9999-01-01")
@@ -73,8 +77,8 @@ EVENT_BASED_METRICS_BY_SUPERVISION_OFFICER_QUERY_TEMPLATE = """
             levels.person_id,
             supervising_officer_external_id,
             levels.start_date as supervision_downgrade_date
-        FROM `{project_id}.{analyst_dataset}.supervision_level_sessions_materialized` levels
-        LEFT JOIN `{project_id}.{analyst_dataset}.supervision_officer_sessions_materialized` officers
+        FROM `{project_id}.{sessions_dataset}.supervision_level_sessions_materialized` levels
+        LEFT JOIN `{project_id}.{sessions_dataset}.supervision_officer_sessions_materialized` officers
         ON levels.state_code = officers.state_code
         AND levels.person_id = officers.person_id
         AND levels.start_date BETWEEN officers.start_date AND COALESCE(officers.end_date, CURRENT_DATE())
@@ -89,8 +93,8 @@ EVENT_BASED_METRICS_BY_SUPERVISION_OFFICER_QUERY_TEMPLATE = """
             response_date,
             most_serious_violation_type,
             most_severe_response_decision as response_decision
-        FROM `{project_id}.{analyst_dataset}.violations_sessions_materialized` violations
-        LEFT JOIN `{project_id}.{analyst_dataset}.supervision_officer_sessions_materialized` officers
+        FROM `{project_id}.{sessions_dataset}.violations_sessions_materialized` violations
+        LEFT JOIN `{project_id}.{sessions_dataset}.supervision_officer_sessions_materialized` officers
         ON violations.state_code = officers.state_code
         AND violations.person_id = officers.person_id
         AND violations.response_date BETWEEN officers.start_date AND COALESCE(officers.end_date, CURRENT_DATE())
@@ -105,10 +109,10 @@ EVENT_BASED_METRICS_BY_SUPERVISION_OFFICER_QUERY_TEMPLATE = """
             sessions.start_sub_reason AS revocation_type,
             sessions.compartment_level_2, 
             sessions.inflow_from_level_2
-        FROM `{project_id}.{analyst_dataset}.revocation_sessions_materialized` revocations
-        LEFT JOIN `{project_id}.{analyst_dataset}.compartment_sessions_materialized` sessions
+        FROM `{project_id}.{sessions_dataset}.revocation_sessions_materialized` revocations
+        LEFT JOIN `{project_id}.{sessions_dataset}.compartment_sessions_materialized` sessions
         USING (state_code, person_id)
-        LEFT JOIN `{project_id}.{analyst_dataset}.supervision_officer_sessions_materialized` officers
+        LEFT JOIN `{project_id}.{sessions_dataset}.supervision_officer_sessions_materialized` officers
         ON revocations.person_id = officers.person_id
         AND revocation_date BETWEEN officers.start_date AND DATE_ADD(officers.end_date, INTERVAL 1 DAY)
         WHERE revocations.revocation_session_id = sessions.session_id
@@ -189,13 +193,14 @@ EVENT_BASED_METRICS_BY_SUPERVISION_OFFICER_QUERY_TEMPLATE = """
     """
 
 EVENT_BASED_METRICS_BY_SUPERVISION_OFFICER_VIEW_BUILDER = SimpleBigQueryViewBuilder(
-    dataset_id=dataset_config.ANALYST_VIEWS_DATASET,
+    dataset_id=ANALYST_VIEWS_DATASET,
     view_id=EVENT_BASED_METRICS_BY_SUPERVISION_OFFICER_VIEW_NAME,
     view_query_template=EVENT_BASED_METRICS_BY_SUPERVISION_OFFICER_QUERY_TEMPLATE,
     description=EVENT_BASED_METRICS_BY_SUPERVISION_OFFICER_VIEW_DESCRIPTION,
     analyst_dataset=ANALYST_VIEWS_DATASET,
-    po_report_dataset=dataset_config.PO_REPORT_DATASET,
-    base_dataset=dataset_config.STATE_BASE_DATASET,
+    sessions_dataset=SESSIONS_DATASET,
+    po_report_dataset=PO_REPORT_DATASET,
+    base_dataset=STATE_BASE_DATASET,
     should_materialize=True,
 )
 

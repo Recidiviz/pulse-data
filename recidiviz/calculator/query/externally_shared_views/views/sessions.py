@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Creates the view builders for specified Sessions tables in analyst_data."""
+"""Creates the view builders for specified Sessions tables in sessions dataset."""
 
 from typing import List, Tuple
 
@@ -26,22 +26,22 @@ from recidiviz.calculator.query.externally_shared_views.dataset_config import (
     CSG_CONFIG,
     EXTERNALLY_SHARED_VIEWS_DATASET,
 )
-from recidiviz.calculator.query.state.views.analyst_data.compartment_sentences import (
+from recidiviz.calculator.query.state.views.sessions.compartment_sentences import (
     COMPARTMENT_SENTENCES_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.compartment_sessions import (
+from recidiviz.calculator.query.state.views.sessions.compartment_sessions import (
     COMPARTMENT_SESSIONS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.reincarceration_sessions_from_sessions import (
+from recidiviz.calculator.query.state.views.sessions.reincarceration_sessions_from_sessions import (
     REINCARCERATION_SESSIONS_FROM_SESSIONS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.revocation_sessions import (
+from recidiviz.calculator.query.state.views.sessions.revocation_sessions import (
     REVOCATION_SESSIONS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.supervision_super_sessions import (
+from recidiviz.calculator.query.state.views.sessions.supervision_super_sessions import (
     SUPERVISION_SUPER_SESSIONS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.violations_sessions import (
+from recidiviz.calculator.query.state.views.sessions.violations_sessions import (
     VIOLATIONS_SESSIONS_VIEW_BUILDER,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING

@@ -21,8 +21,8 @@ from recidiviz.calculator.query.experiments.dataset_config import (
     EXPERIMENTS_DATASET,
 )
 from recidiviz.calculator.query.state.dataset_config import (
-    ANALYST_VIEWS_DATASET,
     PO_REPORT_DATASET,
+    SESSIONS_DATASET,
     STATE_BASE_DATASET,
     STATIC_REFERENCE_TABLES_DATASET,
 )
@@ -97,7 +97,7 @@ CASE_TRIAGE_EVENTS_QUERY_TEMPLATE = """
             COUNTIF(level.supervision_level = "MINIMUM") AS caseload_low_supervision,
             COUNTIF(COALESCE(level.supervision_level, "INTERNAL_UNKNOWN") = "INTERNAL_UNKNOWN") AS caseload_unknown_supervision_level,
         FROM
-            `{project_id}.{analyst_dataset}.supervision_officer_sessions_materialized` AS officer,
+            `{project_id}.{sessions_dataset}.supervision_officer_sessions_materialized` AS officer,
         UNNEST(
             -- Unnest supervision officer sessions that were open in 2021 or later
             GENERATE_DATE_ARRAY(
@@ -105,13 +105,13 @@ CASE_TRIAGE_EVENTS_QUERY_TEMPLATE = """
                 COALESCE(officer.end_date, CURRENT_DATE)
             )) AS date_of_supervision
         INNER JOIN
-            `{project_id}.{analyst_dataset}.compartment_sessions_materialized` session
+            `{project_id}.{sessions_dataset}.compartment_sessions_materialized` session
             ON session.state_code = officer.state_code
             AND session.person_id = officer.person_id
             AND date_of_supervision BETWEEN session.start_date
                 AND COALESCE(session.end_date, CURRENT_DATE)
         LEFT JOIN
-            `{project_id}.{analyst_dataset}.supervision_level_sessions_materialized` AS level
+            `{project_id}.{sessions_dataset}.supervision_level_sessions_materialized` AS level
             ON officer.state_code = level.state_code
             AND officer.person_id = level.person_id
             AND date_of_supervision BETWEEN level.start_date
@@ -148,7 +148,7 @@ CASE_TRIAGE_EVENTS_QUERY_TEMPLATE = """
         LEFT JOIN `{project_id}.{state_base_dataset}.state_person_external_id` client
             ON selected.person_external_id = client.external_id
             AND recipients.state_code = client.state_code
-        LEFT JOIN `{project_id}.{analyst_dataset}.dataflow_sessions_materialized` metrics
+        LEFT JOIN `{project_id}.{sessions_dataset}.dataflow_sessions_materialized` metrics
             ON client.state_code = metrics.state_code
             AND client.person_id = metrics.person_id
             AND EXTRACT(DATE FROM selected.timestamp AT TIME ZONE 'US/Pacific')
@@ -224,7 +224,7 @@ CASE_TRIAGE_EVENTS_QUERY_TEMPLATE = """
             , employ.recorded_start_date
             , employ.recorded_end AS recorded_end_date
         FROM `{project_id}.{experiments_dataset}.case_triage_feedback_actions` updated
-        LEFT JOIN `{project_id}.{analyst_dataset}.dataflow_sessions_materialized` metrics
+        LEFT JOIN `{project_id}.{sessions_dataset}.dataflow_sessions_materialized` metrics
             ON updated.state_code = metrics.state_code
             AND updated.person_id = metrics.person_id
             AND updated.feedback_date BETWEEN metrics.start_date AND COALESCE(metrics.end_date, CURRENT_DATE())
@@ -288,7 +288,7 @@ CASE_TRIAGE_EVENTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=CASE_TRIAGE_EVENTS_VIEW_DESCRIPTION,
     static_reference_tables_dataset=STATIC_REFERENCE_TABLES_DATASET,
     po_report_dataset=PO_REPORT_DATASET,
-    analyst_dataset=ANALYST_VIEWS_DATASET,
+    sessions_dataset=SESSIONS_DATASET,
     case_triage_dataset=CASE_TRIAGE_DATASET,
     case_triage_segment_dataset=CASE_TRIAGE_SEGMENT_DATASET,
     experiments_dataset=EXPERIMENTS_DATASET,

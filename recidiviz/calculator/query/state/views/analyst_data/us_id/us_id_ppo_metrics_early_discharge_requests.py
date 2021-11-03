@@ -16,9 +16,9 @@
 # =============================================================================
 """Metric capturing number of unique people receiving an early discharge request each month"""
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
+    SESSIONS_DATASET,
     STATE_BASE_DATASET,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -57,7 +57,7 @@ US_ID_PPO_METRICS_EARLY_DISCHARGE_REQUESTS_QUERY_TEMPLATE = """
         IF(request_date IS NOT NULL, ed.person_id, NULL) as ed_requested_person,
       FROM `{project_id}.{base_dataset}.state_early_discharge` ed
       /* Join with overlapping session to get supervision type at time of request */
-      LEFT JOIN `{project_id}.{analyst_dataset}.compartment_sessions_materialized` sessions
+      LEFT JOIN `{project_id}.{sessions_dataset}.compartment_sessions_materialized` sessions
         ON ed.state_code = sessions.state_code
           AND ed.person_id = sessions.person_id
           AND ed.request_date >= sessions.start_date  
@@ -71,12 +71,12 @@ US_ID_PPO_METRICS_EARLY_DISCHARGE_REQUESTS_QUERY_TEMPLATE = """
     """
 
 US_ID_PPO_METRICS_EARLY_DISCHARGE_REQUESTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
-    dataset_id=dataset_config.ANALYST_VIEWS_DATASET,
+    dataset_id=ANALYST_VIEWS_DATASET,
     view_id=US_ID_PPO_METRICS_EARLY_DISCHARGE_REQUESTS_VIEW_NAME,
     view_query_template=US_ID_PPO_METRICS_EARLY_DISCHARGE_REQUESTS_QUERY_TEMPLATE,
     description=US_ID_PPO_METRICS_EARLY_DISCHARGE_REQUESTS_VIEW_DESCRIPTION,
     base_dataset=STATE_BASE_DATASET,
-    analyst_dataset=ANALYST_VIEWS_DATASET,
+    sessions_dataset=SESSIONS_DATASET,
     should_materialize=True,
 )
 

@@ -16,7 +16,12 @@
 # =============================================================================
 """View tracking characteristics/composition of the supervision population for each supervision officer at monthly cadence"""
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state.dataset_config import (
+    ANALYST_VIEWS_DATASET,
+    DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    SESSIONS_DATASET,
+    STATE_BASE_DATASET,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -37,7 +42,7 @@ SUPERVISION_OFFICER_CASELOAD_HEALTH_METRICS_QUERY_TEMPLATE = """
             officers.person_id,
             supervising_officer_external_id,
             MIN(officers.start_date) OVER (PARTITION BY officers.state_code, supervising_officer_external_id) as officer_tenure_start_date
-        FROM `{project_id}.{analyst_dataset}.supervision_officer_sessions_materialized` officers,
+        FROM `{project_id}.{sessions_dataset}.supervision_officer_sessions_materialized` officers,
           UNNEST(GENERATE_DATE_ARRAY(DATE_SUB(CURRENT_DATE(), INTERVAL 5 YEAR), CURRENT_DATE(), INTERVAL 1 MONTH)) supervision_date 
         WHERE supervision_date BETWEEN officers.start_date AND COALESCE(officers.end_date, '9999-01-01')
     ),
@@ -53,9 +58,9 @@ SUPERVISION_OFFICER_CASELOAD_HEALTH_METRICS_QUERY_TEMPLATE = """
             COUNT(DISTINCT IF(levels.supervision_upgrade > 0 AND levels.start_date BETWEEN officers.start_date AND supervision_date, CONCAT(officers.person_id, levels.start_date), NULL)) as client_upgrades,
             COUNT(DISTINCT IF(ed.decision_status != 'INVALID' AND ed.request_date BETWEEN officers.start_date AND supervision_date, ed.person_id, NULL)) as client_earned_discharge_requests,
         FROM officers_unnested officers 
-        LEFT JOIN `{project_id}.{analyst_dataset}.violations_sessions_materialized` violations
+        LEFT JOIN `{project_id}.{sessions_dataset}.violations_sessions_materialized` violations
             USING (state_code, person_id)
-        LEFT JOIN `{project_id}.{analyst_dataset}.supervision_level_sessions_materialized` levels
+        LEFT JOIN `{project_id}.{sessions_dataset}.supervision_level_sessions_materialized` levels
             USING (state_code, person_id)
         LEFT JOIN `{project_id}.{base_dataset}.state_early_discharge` ed
             USING (state_code, person_id)
@@ -65,9 +70,9 @@ SUPERVISION_OFFICER_CASELOAD_HEALTH_METRICS_QUERY_TEMPLATE = """
         /* Calculate total number of revocations over the entire course of an officer's tenure */
         SELECT officers.state_code, supervision_date, supervising_officer_external_id, 
             COUNT(revocation_date) as lifetime_revocation_count,
-        FROM `{project_id}.{analyst_dataset}.supervision_officer_sessions_materialized` officers,
+        FROM `{project_id}.{sessions_dataset}.supervision_officer_sessions_materialized` officers,
             UNNEST(GENERATE_DATE_ARRAY(DATE_SUB(CURRENT_DATE(), INTERVAL 5 YEAR), CURRENT_DATE(), INTERVAL 1 MONTH)) supervision_date 
-        LEFT JOIN `{project_id}.{analyst_dataset}.revocation_sessions_materialized` revocations
+        LEFT JOIN `{project_id}.{sessions_dataset}.revocation_sessions_materialized` revocations
             ON officers.state_code = revocations.state_code
             AND officers.person_id = revocations.person_id
             AND DATE_SUB(revocations.revocation_date, INTERVAL 1 DAY) BETWEEN officers.start_date AND LEAST(COALESCE(officers.end_date, CURRENT_DATE()), supervision_date)
@@ -78,9 +83,9 @@ SUPERVISION_OFFICER_CASELOAD_HEALTH_METRICS_QUERY_TEMPLATE = """
         /* Calculate total number of successful supervision completions over the entire course of an officer's tenure */
         SELECT officers.state_code, supervision_date, supervising_officer_external_id, 
             COUNT(sessions.end_date) as lifetime_release_count,
-        FROM `{project_id}.{analyst_dataset}.supervision_officer_sessions_materialized` officers,
+        FROM `{project_id}.{sessions_dataset}.supervision_officer_sessions_materialized` officers,
             UNNEST(GENERATE_DATE_ARRAY(DATE_SUB(CURRENT_DATE(), INTERVAL 5 YEAR), CURRENT_DATE(), INTERVAL 1 MONTH)) supervision_date 
-        LEFT JOIN `{project_id}.{analyst_dataset}.compartment_sessions_materialized` sessions
+        LEFT JOIN `{project_id}.{sessions_dataset}.compartment_sessions_materialized` sessions
             ON officers.state_code = sessions.state_code
             AND officers.person_id = sessions.person_id
             AND outflow_to_level_1 = 'RELEASE'
@@ -102,13 +107,13 @@ SUPERVISION_OFFICER_CASELOAD_HEALTH_METRICS_QUERY_TEMPLATE = """
             COUNTIF(recommended_supervision_downgrade_level IS NOT NULL) AS supervision_level_mismatch_count
     
         FROM officers_unnested officers
-        LEFT JOIN `{project_id}.{analyst_dataset}.person_demographics_materialized` demographics
+        LEFT JOIN `{project_id}.{sessions_dataset}.person_demographics_materialized` demographics
             USING (state_code, person_id)
-        LEFT JOIN `{project_id}.{analyst_dataset}.dataflow_sessions_materialized` dataflow
+        LEFT JOIN `{project_id}.{sessions_dataset}.dataflow_sessions_materialized` dataflow
             ON officers.state_code = dataflow.state_code
             AND officers.person_id = dataflow.person_id
             AND supervision_date BETWEEN dataflow.start_date AND COALESCE(dataflow.end_date, CURRENT_DATE()) 
-        LEFT JOIN `{project_id}.{analyst_dataset}.assessment_score_sessions_materialized` assessment
+        LEFT JOIN `{project_id}.{sessions_dataset}.assessment_score_sessions_materialized` assessment
             ON officers.state_code = assessment.state_code
             AND officers.person_id = assessment.person_id
             AND supervision_date BETWEEN assessment.assessment_date AND COALESCE(assessment.score_end_date, CURRENT_DATE())
@@ -131,13 +136,13 @@ SUPERVISION_OFFICER_CASELOAD_HEALTH_METRICS_QUERY_TEMPLATE = """
     """
 
 SUPERVISION_OFFICER_CASELOAD_HEALTH_METRICS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
-    dataset_id=dataset_config.ANALYST_VIEWS_DATASET,
+    dataset_id=ANALYST_VIEWS_DATASET,
     view_id=SUPERVISION_OFFICER_CASELOAD_HEALTH_METRICS_VIEW_NAME,
     view_query_template=SUPERVISION_OFFICER_CASELOAD_HEALTH_METRICS_QUERY_TEMPLATE,
     description=SUPERVISION_OFFICER_CASELOAD_HEALTH_METRICS_VIEW_DESCRIPTION,
-    analyst_dataset=dataset_config.ANALYST_VIEWS_DATASET,
-    base_dataset=dataset_config.STATE_BASE_DATASET,
-    materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    sessions_dataset=SESSIONS_DATASET,
+    base_dataset=STATE_BASE_DATASET,
+    materialized_metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
     should_materialize=True,
 )
 

@@ -29,7 +29,7 @@ def supervision_transition_template(outflow_compartments: List[str]) -> str:
         gender,
         supervising_officer_external_id_end as supervising_officer,
       FROM
-        `{{project_id}}.{{analyst_dataset}}.compartment_sessions_materialized`
+        `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized`
       WHERE
         state_code = 'US_ID'
         AND compartment_level_1 = 'SUPERVISION'

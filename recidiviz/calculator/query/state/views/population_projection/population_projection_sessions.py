@@ -33,13 +33,13 @@ POPULATION_PROJECTION_SESSIONS_QUERY_TEMPLATE = """
       SELECT
         session.state_code, session.person_id, session.session_id,
         LOGICAL_OR(prev_rel_session.session_id IS NOT NULL) AS previously_incarcerated
-      FROM `{project_id}.{analyst_dataset}.compartment_sessions_materialized` session
-      LEFT JOIN `{project_id}.{analyst_dataset}.compartment_sessions_materialized` prev_inc_session
+      FROM `{project_id}.{sessions_dataset}.compartment_sessions_materialized` session
+      LEFT JOIN `{project_id}.{sessions_dataset}.compartment_sessions_materialized` prev_inc_session
         ON session.state_code = prev_inc_session.state_code
         AND session.person_id = prev_inc_session.person_id
         AND prev_inc_session.start_date < session.start_date
         AND prev_inc_session.compartment_level_1 = 'INCARCERATION'
-      LEFT JOIN `{project_id}.{analyst_dataset}.compartment_sessions_materialized` prev_rel_session
+      LEFT JOIN `{project_id}.{sessions_dataset}.compartment_sessions_materialized` prev_rel_session
         ON session.state_code = prev_rel_session.state_code
         AND session.person_id = prev_rel_session.person_id
         AND prev_rel_session.start_date BETWEEN prev_inc_session.end_date AND session.start_date
@@ -97,7 +97,7 @@ POPULATION_PROJECTION_SESSIONS_QUERY_TEMPLATE = """
       END AS outflow_to,
       session_length_days,
       last_day_of_data
-    FROM `{project_id}.{analyst_dataset}.compartment_sessions_materialized`
+    FROM `{project_id}.{sessions_dataset}.compartment_sessions_materialized`
     INNER JOIN previously_incarcerated_cte
       USING (state_code, person_id, session_id)
     ),
@@ -140,7 +140,7 @@ POPULATION_PROJECTION_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=POPULATION_PROJECTION_SESSIONS_VIEW_NAME,
     view_query_template=POPULATION_PROJECTION_SESSIONS_QUERY_TEMPLATE,
     description=POPULATION_PROJECTION_SESSIONS_VIEW_DESCRIPTION,
-    analyst_dataset=dataset_config.ANALYST_VIEWS_DATASET,
+    sessions_dataset=dataset_config.SESSIONS_DATASET,
     should_materialize=True,
 )
 

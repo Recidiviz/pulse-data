@@ -17,8 +17,10 @@
 """Metric capturing successful supervision terminations"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state import dataset_config
-from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
+from recidiviz.calculator.query.state.dataset_config import (
+    ANALYST_VIEWS_DATASET,
+    SESSIONS_DATASET,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -42,18 +44,18 @@ US_ID_PPO_METRICS_SUCCESSFUL_SUPERVISION_TERMINATIONS_QUERY_TEMPLATE = """
         session_id, 
         session_length_days,  
         compartment_level_2 as supervision_type,
-    FROM `{project_id}.{analyst_dataset}.compartment_sessions_materialized`
+    FROM `{project_id}.{sessions_dataset}.compartment_sessions_materialized`
     WHERE compartment_level_1 = 'SUPERVISION'
         AND outflow_to_level_1 = 'RELEASE'
         AND end_reason in ('DISCHARGE', 'EXPIRATION', 'COMMUTED', 'PARDONED')  
     """
 
 US_ID_PPO_METRICS_SUCCESSFUL_SUPERVISION_TERMINATIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
-    dataset_id=dataset_config.ANALYST_VIEWS_DATASET,
+    dataset_id=ANALYST_VIEWS_DATASET,
     view_id=US_ID_PPO_METRICS_SUCCESSFUL_SUPERVISION_TERMINATIONS_VIEW_NAME,
     view_query_template=US_ID_PPO_METRICS_SUCCESSFUL_SUPERVISION_TERMINATIONS_QUERY_TEMPLATE,
     description=US_ID_PPO_METRICS_SUCCESSFUL_SUPERVISION_TERMINATIONS_VIEW_DESCRIPTION,
-    analyst_dataset=ANALYST_VIEWS_DATASET,
+    sessions_dataset=SESSIONS_DATASET,
     should_materialize=False,
 )
 

@@ -18,7 +18,7 @@
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
-    ANALYST_VIEWS_DATASET,
+    SESSIONS_DATASET,
     STATE_BASE_DATASET,
 )
 from recidiviz.case_triage.views.dataset_config import VIEWS_DATASET
@@ -77,11 +77,11 @@ CLIENT_ELIGIBILITY_CRITERIA_QUERY_TEMPLATE = """
       JOIN `{project_id}.{base_dataset}.state_person_external_id` p
       ON clients.person_external_id = p.external_id
         AND clients.state_code = p.state_code
-      JOIN `{project_id}.{analyst_dataset}.compartment_sessions_materialized` sessions
+      JOIN `{project_id}.{sessions_dataset}.compartment_sessions_materialized` sessions
       ON p.person_id = sessions.person_id
         AND sessions.end_date IS NULL
         AND sessions.compartment_level_1 = 'SUPERVISION'
-      LEFT JOIN `{project_id}.{analyst_dataset}.supervision_level_sessions_materialized` levels
+      LEFT JOIN `{project_id}.{sessions_dataset}.supervision_level_sessions_materialized` levels
       ON p.person_id = levels.person_id
         AND levels.end_date IS NULL
       LEFT JOIN `{project_id}.{base_dataset}.state_early_discharge` ed
@@ -91,10 +91,10 @@ CLIENT_ELIGIBILITY_CRITERIA_QUERY_TEMPLATE = """
       LEFT JOIN `{project_id}.{base_dataset}.state_supervision_contact` contacts
       ON p.person_id = contacts.person_id
         AND contacts.contact_date >= sessions.start_date
-      LEFT JOIN `{project_id}.{analyst_dataset}.us_id_employment_sessions_materialized` employment
+      LEFT JOIN `{project_id}.{sessions_dataset}.us_id_employment_sessions_materialized` employment
       ON p.person_id = employment.person_id
         AND employment.employment_status_end_date IS NULL
-      LEFT JOIN `{project_id}.{analyst_dataset}.us_id_positive_urine_analysis_sessions_materialized` ua
+      LEFT JOIN `{project_id}.{sessions_dataset}.us_id_positive_urine_analysis_sessions_materialized` ua
       ON p.person_id = ua.person_id )
     WHERE
       rn = 1
@@ -106,7 +106,7 @@ CLIENT_ELIGIBILITY_CRITERIA_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=CLIENT_ELIGIBILITY_CRITERIA_VIEW_NAME,
     description=CLIENT_ELIGIBILITY_CRITERIA_VIEW_DESCRIPTION,
     view_query_template=CLIENT_ELIGIBILITY_CRITERIA_QUERY_TEMPLATE,
-    analyst_dataset=ANALYST_VIEWS_DATASET,
+    sessions_dataset=SESSIONS_DATASET,
     case_triage_dataset=VIEWS_DATASET,
     base_dataset=STATE_BASE_DATASET,
     should_materialize=True,
