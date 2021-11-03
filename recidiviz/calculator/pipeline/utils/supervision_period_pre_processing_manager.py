@@ -97,6 +97,11 @@ class SupervisionPreProcessingManager:
                 periods_for_pre_processing
             )
 
+            # Drop periods that have neither a start nor end date
+            mid_processing_periods = self._drop_missing_date_periods(
+                periods_for_pre_processing
+            )
+
             # Sort periods, and infer as much missing information as possible
             mid_processing_periods = self._infer_missing_dates_and_statuses(
                 mid_processing_periods
@@ -132,6 +137,16 @@ class SupervisionPreProcessingManager:
             period
             for period in supervision_periods
             if not is_placeholder(period, self.field_index)
+        ]
+
+    def _drop_missing_date_periods(
+        self, supervision_periods: List[StateSupervisionPeriod]
+    ) -> List[StateSupervisionPeriod]:
+        """Drops all periods that have no start and no end dates."""
+        return [
+            period
+            for period in supervision_periods
+            if period.start_date_inclusive or period.end_date_exclusive
         ]
 
     @staticmethod
