@@ -197,10 +197,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
                 view_filter_clause=f" WHERE state_code = '{self.mock_state_code}'",
                 intermediate_table_name=f"{view.view_id}_table_{self.mock_state_code}",
                 output_directory=GcsfsDirectoryPath.from_absolute_path(
-                    "gs://{project_id}-dataset-location/subdirectory/{state_code}".format(
-                        project_id=self.mock_project_id,
-                        state_code=self.mock_state_code,
-                    )
+                    f"gs://{self.mock_project_id}-dataset-location/subdirectory/{self.mock_state_code}"
                 ),
                 export_output_formats=[ExportOutputFormatType.JSON],
             ),
@@ -210,10 +207,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
                 view_filter_clause=f" WHERE state_code = '{self.mock_state_code}'",
                 intermediate_table_name=f"{view.view_id}_table_{self.mock_state_code}",
                 output_directory=GcsfsDirectoryPath.from_absolute_path(
-                    "gs://{project_id}-dataset-location/subdirectory/{state_code}".format(
-                        project_id=self.mock_project_id,
-                        state_code=self.mock_state_code,
-                    )
+                    f"gs://{self.mock_project_id}-dataset-location/subdirectory/{self.mock_state_code}"
                 ),
                 export_output_formats=[
                     ExportOutputFormatType.JSON,
@@ -253,9 +247,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
                 view_filter_clause=None,
                 intermediate_table_name=f"{view.view_id}_table",
                 output_directory=GcsfsDirectoryPath.from_absolute_path(
-                    "gs://{project_id}-dataset-location/subdirectory".format(
-                        project_id=self.mock_project_id,
-                    )
+                    f"gs://{self.mock_project_id}-dataset-location/subdirectory"
                 ),
                 export_output_formats=[ExportOutputFormatType.JSON],
             ),
@@ -265,9 +257,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
                 view_filter_clause=None,
                 intermediate_table_name=f"{view.view_id}_table",
                 output_directory=GcsfsDirectoryPath.from_absolute_path(
-                    "gs://{project_id}-dataset-location/subdirectory".format(
-                        project_id=self.mock_project_id,
-                    )
+                    f"gs://{self.mock_project_id}-dataset-location/subdirectory"
                 ),
                 export_output_formats=[
                     ExportOutputFormatType.JSON,
@@ -308,10 +298,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
                 view_filter_clause=" WHERE state_code = 'US_XX'",
                 intermediate_table_name=f"{view.view_id}_table_US_XX",
                 output_directory=GcsfsDirectoryPath.from_absolute_path(
-                    "gs://{project_id}-dataset-location/subdirectory/{state_code}".format(
-                        project_id=self.mock_project_id,
-                        state_code="US_XX",
-                    )
+                    f"gs://{self.mock_project_id}-dataset-location/subdirectory/US_XX"
                 ),
                 export_output_formats=[ExportOutputFormatType.JSON],
             )
@@ -324,10 +311,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
                 view_filter_clause=" WHERE state_code = 'US_XX'",
                 intermediate_table_name=f"{view.view_id}_table_US_XX",
                 output_directory=GcsfsDirectoryPath.from_absolute_path(
-                    "gs://{project_id}-dataset-location/subdirectory/{state_code}".format(
-                        project_id=self.mock_project_id,
-                        state_code="US_XX",
-                    )
+                    f"gs://{self.mock_project_id}-dataset-location/subdirectory/US_XX"
                 ),
                 export_output_formats=[
                     ExportOutputFormatType.JSON,
@@ -415,9 +399,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
                 view_filter_clause=None,
                 intermediate_table_name=f"{view.view_id}_table",
                 output_directory=GcsfsDirectoryPath.from_absolute_path(
-                    "gs://{project_id}-bucket-without-state-codes".format(
-                        project_id=self.mock_project_id,
-                    )
+                    f"gs://{self.mock_project_id}-bucket-without-state-codes"
                 ),
                 export_output_formats=[ExportOutputFormatType.JSON],
             ),
@@ -427,9 +409,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
                 view_filter_clause=None,
                 intermediate_table_name=f"{view.view_id}_table",
                 output_directory=GcsfsDirectoryPath.from_absolute_path(
-                    "gs://{project_id}-bucket-without-state-codes".format(
-                        project_id=self.mock_project_id,
-                    )
+                    f"gs://{self.mock_project_id}-bucket-without-state-codes"
                 ),
                 export_output_formats=[
                     ExportOutputFormatType.JSON,

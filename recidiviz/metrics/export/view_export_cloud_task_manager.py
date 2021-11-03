@@ -23,8 +23,8 @@ from typing import Optional
 import pytz
 
 from recidiviz.common.google_cloud.cloud_task_queue_manager import (
-    CloudTaskQueueManager,
     CloudTaskQueueInfo,
+    CloudTaskQueueManager,
 )
 from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import (
     BIGQUERY_QUEUE_V2,
@@ -54,19 +54,25 @@ class ViewExportCloudTaskManager:
         if state_code:
             uri = f"/export/metric_view_data?export_job_name={export_job_name}&state_code={state_code}"
 
-            task_id = "view_export-{}-{}-{}-{}".format(
-                export_job_name,
-                state_code,
-                str(datetime.datetime.now(tz=pytz.UTC).date()),
-                uuid.uuid4(),
+            task_id = "-".join(
+                [
+                    "view_export",
+                    export_job_name,
+                    state_code,
+                    str(datetime.datetime.now(tz=pytz.UTC).date()),
+                    str(uuid.uuid4()),
+                ]
             )
         else:
             uri = f"/export/metric_view_data?export_job_name={export_job_name}"
 
-            task_id = "view_export-{}-{}-{}".format(
-                export_job_name,
-                str(datetime.datetime.now(tz=pytz.UTC).date()),
-                uuid.uuid4(),
+            task_id = "-".join(
+                [
+                    "view_export",
+                    export_job_name,
+                    str(datetime.datetime.now(tz=pytz.UTC).date()),
+                    str(uuid.uuid4()),
+                ]
             )
 
         self.cloud_task_queue_manager.create_task(

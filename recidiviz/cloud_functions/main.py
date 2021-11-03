@@ -14,14 +14,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-
 """This file contains all of the relevant cloud functions"""
 import json
 import logging
 import os
 from base64 import b64decode
 from http import HTTPStatus
-from typing import Any, Dict, Tuple, TypeVar
+from typing import Any, Dict, Optional, Tuple, TypeVar
+from urllib.parse import urlencode
 
 from cloud_function_utils import (  # type: ignore[import]
     GCP_PROJECT_ID_KEY,
@@ -40,33 +40,25 @@ from direct_ingest_bucket_name_utils import (  # type: ignore[import]
 # A stand-in type for google.cloud.functions.Context for which no apparent type is available
 ContextType = TypeVar("ContextType", bound=Any)
 
+_STATE_AGGREGATE_PATH = "/aggregate/persist_file"
+_DIRECT_INGEST_PATH = "/direct/handle_direct_ingest_file"
+_DIRECT_INGEST_NORMALIZE_RAW_PATH_PATH = "/direct/normalize_raw_file_path"
 
-_STATE_AGGREGATE_CLOUD_FUNCTION_URL = (
-    "http://{}.appspot.com/aggregate/persist_file?bucket={}&state={}&filename={}"
+_METRIC_VIEW_EXPORT_PATH = "/export/create_metric_view_data_export_tasks"
+_APP_ENGINE_UPDATE_AUTH0_USER_METADATA_PATH = "/auth/update_auth0_user_metadata"
+_APP_ENGINE_IMPORT_USER_RESTRICTIONS_CSV_TO_SQL_PATH = (
+    "/auth/handle_import_user_restrictions_csv_to_sql"
 )
-_DIRECT_INGEST_CLOUD_FUNCTION_URL = (
-    "http://{}.appspot.com/direct/handle_direct_ingest_file?region={}"
-    "&bucket={}&relative_file_path={}&start_ingest={}"
-)
-
-_DIRECT_INGEST_NORMALIZE_RAW_PATH_URL = (
-    "http://{}.appspot.com/direct/normalize_raw_file_path"
-    "?bucket={}&relative_file_path={}"
+_APP_ENGINE_IMPORT_CASE_TRIAGE_ETL_CSV_TO_SQL_PATH = (
+    "/case_triage_ops/handle_gcs_imports"
 )
 
-_METRIC_VIEW_EXPORT_CLOUD_FUNCTION_URL = (
-    "http://{}.appspot.com/export/create_metric_view_data_export_tasks"
-)
-_APP_ENGINE_UPDATE_AUTH0_USER_METADATA_URL = (
-    "https://{}.appspot.com/auth/update_auth0_user_metadata?region_code={}"
-)
-_APP_ENGINE_IMPORT_USER_RESTRICTIONS_CSV_TO_SQL_URL = "https://{}.appspot.com/auth/handle_import_user_restrictions_csv_to_sql?region_code={}"
-_APP_ENGINE_IMPORT_CASE_TRIAGE_ETL_CSV_TO_SQL_URL = (
-    "https://{}.appspot.com/case_triage_ops/handle_gcs_imports?filename={}"
-)
-_CLOUDSQL_TO_BQ_POST_DEPLOY_REFRESH = (
-    "https://{}.appspot.com/cloud_sql_to_bq/create_refresh_bq_schema_task/{}"
-)
+
+def _build_url(project_id: str, path: str, params: Optional[Dict[str, Any]]) -> str:
+    url = f"http://{project_id}.appspot.com{path}"
+    if params is not None:
+        url += f"?{urlencode(params)}"
+    return url
 
 
 def parse_state_aggregate(
@@ -82,15 +74,17 @@ def parse_state_aggregate(
     """
     bucket = data["bucket"]
     state, filename = data["name"].split("/")
-    project_id = os.environ.get(GCP_PROJECT_ID_KEY)
+    project_id = os.environ[GCP_PROJECT_ID_KEY]
     logging.info(
         "Running cloud function for bucket %s, state %s, filename %s",
         bucket,
         state,
         filename,
     )
-    url = _STATE_AGGREGATE_CLOUD_FUNCTION_URL.format(
-        project_id, bucket, state, filename
+    url = _build_url(
+        project_id,
+        _STATE_AGGREGATE_PATH,
+        {"bucket": bucket, "state": state, "filename": filename},
     )
     # Hit the cloud function backend, which persists the table data to our
     # database.
@@ -116,8 +110,13 @@ def normalize_raw_file_path(
     bucket = data["bucket"]
     relative_file_path = data["name"]
 
-    url = _DIRECT_INGEST_NORMALIZE_RAW_PATH_URL.format(
-        project_id, bucket, relative_file_path
+    url = _build_url(
+        project_id,
+        _DIRECT_INGEST_NORMALIZE_RAW_PATH_PATH,
+        {
+            "bucket": bucket,
+            "relative_file_path": relative_file_path,
+        },
     )
 
     logging.info("Calling URL: %s", url)
@@ -179,8 +178,10 @@ def handle_new_case_triage_etl(
         logging.info("Ignoring file %s", filename)
         return "", HTTPStatus.OK
 
-    import_url = _APP_ENGINE_IMPORT_CASE_TRIAGE_ETL_CSV_TO_SQL_URL.format(
-        project_id, filename
+    import_url = _build_url(
+        project_id,
+        _APP_ENGINE_IMPORT_CASE_TRIAGE_ETL_CSV_TO_SQL_PATH,
+        {"filename": filename},
     )
     import_response = make_iap_request(import_url, IAP_CLIENT_ID[project_id])
     return "", HTTPStatus(import_response.status_code)
@@ -220,11 +221,10 @@ def handle_state_dashboard_user_restrictions_file(
     csv_file = "dashboard_user_restrictions.csv"
 
     if filename == csv_file:
-        import_user_restrictions_url = (
-            _APP_ENGINE_IMPORT_USER_RESTRICTIONS_CSV_TO_SQL_URL.format(
-                project_id,
-                region_code,
-            )
+        import_user_restrictions_url = _build_url(
+            project_id,
+            _APP_ENGINE_IMPORT_USER_RESTRICTIONS_CSV_TO_SQL_PATH,
+            {"region_code": region_code},
         )
         logging.info("Calling URL: %s", import_user_restrictions_url)
 
@@ -239,8 +239,10 @@ def handle_state_dashboard_user_restrictions_file(
         )
 
         if response.status_code == HTTPStatus.OK:
-            update_users_url = _APP_ENGINE_UPDATE_AUTH0_USER_METADATA_URL.format(
-                project_id, region_code
+            update_users_url = _build_url(
+                project_id,
+                _APP_ENGINE_UPDATE_AUTH0_USER_METADATA_PATH,
+                {"region_code": region_code},
             )
             # Hit the App Engine endpoint `auth/update_auth0_user_metadata`.
             response = make_iap_request(update_users_url, IAP_CLIENT_ID[project_id])
@@ -272,8 +274,15 @@ def _handle_state_direct_ingest_file(
         logging.error(error_str)
         return error_str, HTTPStatus.BAD_REQUEST
 
-    url = _DIRECT_INGEST_CLOUD_FUNCTION_URL.format(
-        project_id, region_code, bucket, relative_file_path, str(start_ingest)
+    url = _build_url(
+        project_id,
+        _DIRECT_INGEST_PATH,
+        {
+            "region_code": region_code,
+            "bucket": bucket,
+            "relative_file_path": relative_file_path,
+            "start_ingest": str(start_ingest),
+        },
     )
 
     logging.info("Calling URL: %s", url)
@@ -299,10 +308,10 @@ def export_metric_view_data(
 
     if "data" in event:
         logging.info("data found")
-        url = (
-            _METRIC_VIEW_EXPORT_CLOUD_FUNCTION_URL.format(project_id)
-            + "?export_job_filter="
-            + b64decode(event["data"]).decode("utf-8")
+        url = _build_url(
+            project_id,
+            _METRIC_VIEW_EXPORT_PATH,
+            {"export_job_filter": b64decode(event["data"]).decode("utf-8")},
         )
     else:
         error_str = "Missing required export_job_filter in data of the Pub/Sub message."
@@ -351,8 +360,8 @@ def trigger_calculation_pipeline_dag(
         return error_str, HTTPStatus.BAD_REQUEST
 
     # The name of the DAG you wish to trigger
-    dag_name = "{}_{}_calculation_pipeline_dag".format(project_id, pipeline_dag_type)
-    webserver_url = "{}/api/experimental/dags/{}/dag_runs".format(airflow_uri, dag_name)
+    dag_name = f"{project_id}_{pipeline_dag_type}_calculation_pipeline_dag"
+    webserver_url = f"{airflow_uri}/api/experimental/dags/{dag_name}/dag_runs"
 
     monitor_response = make_iap_request(
         webserver_url, iap_client_id, method="POST", json={"conf": data}
@@ -380,7 +389,11 @@ def trigger_post_deploy_cloudsql_to_bq_refresh(
         logging.error(error_str)
         return error_str, HTTPStatus.BAD_REQUEST
 
-    url = _CLOUDSQL_TO_BQ_POST_DEPLOY_REFRESH.format(project_id, schema)
+    url = _build_url(
+        project_id,
+        f"/cloud_sql_to_bq/create_refresh_bq_schema_task/{schema}",
+        params=None,
+    )
 
     data = {"pipeline_run_type": "historical"} if schema.upper() == "STATE" else {}
 

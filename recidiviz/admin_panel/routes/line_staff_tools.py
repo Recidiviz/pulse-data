@@ -74,6 +74,7 @@ from recidiviz.utils import metadata
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.environment import GCP_PROJECT_STAGING, in_development
 from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.utils.string import StrictStringFormatter
 
 
 def add_line_staff_tools_routes(bp: Blueprint) -> None:
@@ -112,8 +113,9 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
                 table_class.name,
                 GcsfsFilePath.from_absolute_path(
                     os.path.join(
-                        CASE_TRIAGE_VIEWS_OUTPUT_DIRECTORY_URI.format(
-                            project_id=metadata.project_id()
+                        StrictStringFormatter().format(
+                            CASE_TRIAGE_VIEWS_OUTPUT_DIRECTORY_URI,
+                            project_id=metadata.project_id(),
                         ),
                         "exported",
                         f"{table_class.name}.csv",
@@ -153,8 +155,9 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
             elif view_id in known_view_builders:
                 csv_path = GcsfsFilePath.from_absolute_path(
                     os.path.join(
-                        CASE_TRIAGE_VIEWS_OUTPUT_DIRECTORY_URI.format(
-                            project_id=metadata.project_id()
+                        StrictStringFormatter().format(
+                            CASE_TRIAGE_VIEWS_OUTPUT_DIRECTORY_URI,
+                            project_id=metadata.project_id(),
                         ),
                         f"{view_id}.csv",
                     )

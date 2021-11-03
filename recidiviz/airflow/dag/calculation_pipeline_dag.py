@@ -99,7 +99,7 @@ def get_dataflow_default_args(pipeline_config: YAMLDict) -> Dict[str, Any]:
 # to false, it ensures that new DAG runs aren't enqueued while the old one is
 # waiting to finish.
 with models.DAG(
-    dag_id="{}_incremental_calculation_pipeline_dag".format(project_id),
+    dag_id=f"{project_id}_incremental_calculation_pipeline_dag",
     default_args=default_args,
     schedule_interval=None,
     catchup=False,
@@ -149,7 +149,7 @@ with models.DAG(
 # to false, it ensures that new DAG runs aren't enqueued while the old one is
 # waiting to finish.
 with models.DAG(
-    dag_id="{}_historical_calculation_pipeline_dag".format(project_id),
+    dag_id=f"{project_id}_historical_calculation_pipeline_dag",
     default_args=default_args,
     schedule_interval=None,
     catchup=False,

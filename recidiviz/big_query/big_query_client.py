@@ -42,6 +42,7 @@ from more_itertools import one
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.big_query.export.export_query_config import ExportQueryConfig
 from recidiviz.utils import metadata
+from recidiviz.utils.string import StrictStringFormatter
 
 _clients_by_project_id_by_region: Dict[str, Dict[str, bigquery.Client]] = defaultdict(
     dict
@@ -1575,7 +1576,8 @@ class BigQueryClientImpl(BigQueryClient):
                 f"Cannot copy data to dataset [{destination_dataset_id}] which does not exist"
             )
 
-        display_name = CROSS_REGION_COPY_DISPLAY_NAME_TEMPLATE.format(
+        display_name = StrictStringFormatter().format(
+            CROSS_REGION_COPY_DISPLAY_NAME_TEMPLATE,
             source_dataset_id=source_dataset_id,
             destination_dataset_id=destination_dataset_id,
             ts=datetime.datetime.now(pytz.UTC).isoformat(),
