@@ -344,6 +344,11 @@ class IncarcerationPreProcessingManager:
                     periods_for_pre_processing
                 )
 
+                # Drop placeholder IPs with no start and no end dates
+                mid_processing_periods = self._drop_missing_date_periods(
+                    mid_processing_periods
+                )
+
                 # Sort periods, and infer as much missing information as possible
                 mid_processing_periods = (
                     self._sort_and_infer_missing_dates_and_statuses(
@@ -417,6 +422,16 @@ class IncarcerationPreProcessingManager:
             if not is_placeholder(ip, self.field_index)
         ]
         return filtered_periods
+
+    def _drop_missing_date_periods(
+        self, incarceration_periods: List[StateIncarcerationPeriod]
+    ) -> List[StateIncarcerationPeriod]:
+        """Removes any incarceration periods that do not have start nor end dates."""
+        return [
+            ip
+            for ip in incarceration_periods
+            if ip.start_date_inclusive or ip.end_date_exclusive
+        ]
 
     def _drop_periods_from_calculations(
         self, incarceration_periods: List[StateIncarcerationPeriod]
