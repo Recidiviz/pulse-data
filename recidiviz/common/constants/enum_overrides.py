@@ -68,9 +68,7 @@ class EnumOverrides:
         }
         if len(matches) > 1:
             raise ValueError(
-                "Overrides map matched too many values from label {}: [{}]".format(
-                    label, matches
-                )
+                f"Overrides map matched too many values from label {label}: [{matches}]"
             )
         if matches:
             return matches.pop()
@@ -174,7 +172,7 @@ class EnumOverrides:
                 # mapped value that was passed in.
                 raise ValueError(
                     "Cannot override a mapping that has already been set. "
-                    f"{label=} was mapped to {old_mapping=} but call was made to map to {mapped_enum=}"
+                    f"{label} was mapped to {old_mapping} but call was made to map to {mapped_enum}"
                 )
             self._str_mappings_dict[from_field][label] = mapped_enum
             return self

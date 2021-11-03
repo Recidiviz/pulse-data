@@ -28,7 +28,7 @@ class EnumParsingError(Exception):
     """Raised if an enum can't be built from the provided string."""
 
     def __init__(self, cls: type, string_to_parse: str):
-        msg = "Could not parse {0} when building {1}".format(string_to_parse, cls)
+        msg = f"Could not parse {string_to_parse} when building {cls}"
         self.entity_type = cls
         super().__init__(msg)
 

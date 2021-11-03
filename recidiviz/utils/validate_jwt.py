@@ -23,7 +23,8 @@ For applications running in the App Engine standard environment, use
 App Engine's Users API instead.
 """
 # [START iap_validate_jwt]
-from typing import Optional, Tuple, Dict, Any
+from typing import Any, Dict, Optional, Tuple
+
 import jwt
 import requests
 
@@ -48,9 +49,7 @@ def validate_iap_jwt_from_app_engine(
     Returns:
       (user_id, user_email, error_str).
     """
-    expected_audience = "/projects/{}/apps/{}".format(
-        cloud_project_number, cloud_project_id
-    )
+    expected_audience = f"/projects/{cloud_project_number}/apps/{cloud_project_id}"
     return _validate_iap_jwt(iap_jwt, expected_audience)
 
 
@@ -72,8 +71,8 @@ def validate_iap_jwt_from_compute_engine(
     Returns:
       (user_id, user_email, error_str).
     """
-    expected_audience = "/projects/{}/global/backendServices/{}".format(
-        cloud_project_number, backend_service_id
+    expected_audience = (
+        f"/projects/{cloud_project_number}/global/backendServices/{backend_service_id}"
     )
     return _validate_iap_jwt(iap_jwt, expected_audience)
 
@@ -94,7 +93,7 @@ def _validate_iap_jwt(
         jwt.exceptions.InvalidTokenError,
         requests.exceptions.RequestException,
     ) as e:
-        return (None, None, "**ERROR: JWT validation error {}**".format(e))
+        return (None, None, f"**ERROR: JWT validation error {e}**")
 
 
 def get_iap_key(key_id: str) -> str:
@@ -108,14 +107,12 @@ def get_iap_key(key_id: str) -> str:
         resp = requests.get("https://www.gstatic.com/iap/verify/public_key")
         if resp.status_code != 200:
             raise Exception(
-                "Unable to fetch IAP keys: {} / {} / {}".format(
-                    resp.status_code, resp.headers, resp.text
-                )
+                f"Unable to fetch IAP keys: {resp.status_code} / {resp.headers} / {resp.text}"
             )
         _key_cache = resp.json()
         key = _key_cache.get(key_id)
         if not key:
-            raise Exception("Key {!r} not found".format(key_id))
+            raise Exception(f"Key {repr(key_id)} not found")
     return key
 
 

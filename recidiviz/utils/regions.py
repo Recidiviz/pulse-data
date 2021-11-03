@@ -125,7 +125,7 @@ class Region:
                 "Direct ingest regions may not have queues configured via yaml."
             )
         if self.environment not in {*environment.GCP_ENVIRONMENTS, None}:
-            raise ValueError("Invalid environment: {}".format(self.environment))
+            raise ValueError(f"Invalid environment: {self.environment}")
         if self.facility_id and len(self.facility_id) != 16:
             raise ValueError(
                 f"Improperly formatted FID [{self.facility_id}], should be length 16"
@@ -178,7 +178,7 @@ class Region:
         return (
             self.shared_queue
             if self.shared_queue
-            else "{}-scraper-v2".format(self.region_code.replace("_", "-"))
+            else f"{self.region_code.replace('_', '-')}-scraper-v2"
         )
 
     def is_ingest_launched_in_env(self) -> bool:

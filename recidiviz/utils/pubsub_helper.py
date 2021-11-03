@@ -30,7 +30,7 @@ from google.cloud import pubsub
 
 from recidiviz.common.common_utils import retry_grpc
 from recidiviz.ingest.models.scrape_key import ScrapeKey
-from recidiviz.utils import metadata, environment
+from recidiviz.utils import environment, metadata
 
 ACK_DEADLINE_SECONDS = 300
 NUM_GRPC_RETRIES = 2
@@ -68,18 +68,14 @@ def clear_subscriber() -> None:
 def get_topic_path(scrape_key: ScrapeKey, pubsub_type: str) -> str:
     return get_publisher().topic_path(
         metadata.project_id(),
-        "v1.{}.{}-{}".format(
-            pubsub_type, scrape_key.region_code, scrape_key.scrape_type
-        ),
+        f"v1.{pubsub_type}.{scrape_key.region_code}-{scrape_key.scrape_type}",
     )
 
 
 def get_subscription_path(scrape_key: ScrapeKey, pubsub_type: str) -> str:
     return get_subscriber().subscription_path(
         metadata.project_id(),
-        "v1.{}.{}-{}".format(
-            pubsub_type, scrape_key.region_code, scrape_key.scrape_type
-        ),
+        f"v1.{pubsub_type}.{scrape_key.region_code}-{scrape_key.scrape_type}",
     )
 
 

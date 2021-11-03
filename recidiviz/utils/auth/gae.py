@@ -16,8 +16,8 @@
 # =============================================================================
 """Tools for handling authentication of requests."""
 import logging
-from http import HTTPStatus
 from functools import wraps
+from http import HTTPStatus
 from typing import Any, Callable
 
 from flask import request
@@ -93,7 +93,7 @@ def requires_gae_auth(func: Callable) -> Callable:
             logging.info("Requester authenticated as [%s] ([%s]).", user_id, user_email)
             if error_str:
                 logging.info("Error validating user credentials: [%s].", error_str)
-                return ("Error: %s" % error_str, HTTPStatus.UNAUTHORIZED)
+                return (f"Error: {error_str}", HTTPStatus.UNAUTHORIZED)
         else:
             return ("Failed: Unauthorized external request.", HTTPStatus.UNAUTHORIZED)
 

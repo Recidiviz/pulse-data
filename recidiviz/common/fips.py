@@ -30,7 +30,8 @@ share the same county names.
 More info: https://en.wikipedia.org/wiki/FIPS_county_code
 """
 import re
-from typing import Tuple, Set, Dict
+from typing import Dict, Set, Tuple
+
 import pandas as pd
 import us
 
@@ -84,7 +85,7 @@ def get_fips_for(state: us.states.State) -> pd.DataFrame:
 
     fips = fips[fips.state_code == int(state.fips)]
     if fips.empty:
-        raise FipsMergingError("Failed to find FIPS codes for state: {}".format(state))
+        raise FipsMergingError(f"Failed to find FIPS codes for state: {state}")
 
     fips["county_name"] = fips["county_name"].apply(sanitize_county_name)
     fips = fips.set_index("county_name")
