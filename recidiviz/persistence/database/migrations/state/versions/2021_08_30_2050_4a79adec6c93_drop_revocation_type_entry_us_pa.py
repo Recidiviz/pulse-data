@@ -9,6 +9,8 @@ Create Date: 2021-08-26 16:02:03.241572
 import sqlalchemy as sa
 from alembic import op
 
+from recidiviz.utils.string import StrictStringFormatter
+
 # revision identifiers, used by Alembic.
 revision = "4a79adec6c93"
 down_revision = "d38a342c35c5"
@@ -34,8 +36,10 @@ def upgrade() -> None:
                 [f"{col} = NULL" for col in COLS_TO_NULLIFY]
             )
             op.execute(
-                UPDATE_QUERY.format(
-                    table_name=table, nullify_cols_statement=nullify_cols_statement
+                StrictStringFormatter().format(
+                    UPDATE_QUERY,
+                    table_name=table,
+                    nullify_cols_statement=nullify_cols_statement,
                 )
             )
 

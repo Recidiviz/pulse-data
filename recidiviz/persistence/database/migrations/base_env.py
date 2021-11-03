@@ -46,9 +46,7 @@ def get_sqlalchemy_url() -> str:
     use_ssl = int(os.getenv(SQLALCHEMY_USE_SSL, "0"))
 
     if use_ssl not in {0, 1}:
-        raise RuntimeError(
-            "Invalid value for use_ssl: {use_ssl}".format(use_ssl=use_ssl)
-        )
+        raise RuntimeError(f"Invalid value for use_ssl: {use_ssl}")
     return _get_sqlalchemy_url(use_ssl=bool(use_ssl))
 
 

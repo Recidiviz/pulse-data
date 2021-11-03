@@ -9,6 +9,8 @@ Create Date: 2021-09-28 16:46:15.910611
 import sqlalchemy as sa
 from alembic import op
 
+from recidiviz.utils.string import StrictStringFormatter
+
 # revision identifiers, used by Alembic.
 revision = "fa392d2c4eb1"
 down_revision = "581ca2c69255"
@@ -46,11 +48,13 @@ def upgrade() -> None:
             # Put supervision_type_raw_text values into the
             # supervision_period_supervision_type_raw_text column
             connection.execute(
-                UPDATE_QUERY.format(
+                StrictStringFormatter().format(
+                    UPDATE_QUERY,
                     table_name=table_name,
                     column_name="supervision_period_supervision_type_raw_text",
                     new_value="supervision_type_raw_text",
-                    ids_query=SELECT_IDS_QUERY.format(
+                    ids_query=StrictStringFormatter().format(
+                        SELECT_IDS_QUERY,
                         table_name=table_name,
                         filter_clause="supervision_type_raw_text IS NOT NULL",
                     ),
@@ -61,11 +65,13 @@ def upgrade() -> None:
             # mappings
             for raw_values, new_value in NEW_ENUM_MAPPINGS.items():
                 connection.execute(
-                    UPDATE_QUERY.format(
+                    StrictStringFormatter().format(
+                        UPDATE_QUERY,
                         table_name=table_name,
                         column_name="supervision_period_supervision_type",
                         new_value=f"'{new_value}'",
-                        ids_query=SELECT_IDS_QUERY.format(
+                        ids_query=StrictStringFormatter().format(
+                            SELECT_IDS_QUERY,
                             table_name=table_name,
                             filter_clause=f"supervision_type_raw_text IN ({raw_values})",
                         ),
@@ -90,7 +96,9 @@ def downgrade() -> None:
                 [f"{col} = NULL" for col in COLS_TO_NULLIFY]
             )
             op.execute(
-                DOWNGRADE_UPDATE_QUERY.format(
-                    table_name=table, nullify_cols_statement=nullify_cols_statement
+                StrictStringFormatter().format(
+                    DOWNGRADE_UPDATE_QUERY,
+                    table_name=table,
+                    nullify_cols_statement=nullify_cols_statement,
                 )
             )

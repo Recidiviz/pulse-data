@@ -6,9 +6,10 @@ Revises: 57a4819a429c
 Create Date: 2020-06-30 17:58:15.998472
 
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
+from recidiviz.utils.string import StrictStringFormatter
 
 # revision identifiers, used by Alembic.
 revision = "dfcb0a5afd65"
@@ -41,16 +42,20 @@ def upgrade() -> None:
     updated_decision_warrant = "WARRANT_ISSUED"
 
     connection.execute(
-        UPDATE_QUERY.format(
-            new_value=updated_decision_warrant, ids_query=WARRANT_DECISIONS_QUERY
+        StrictStringFormatter().format(
+            UPDATE_QUERY,
+            new_value=updated_decision_warrant,
+            ids_query=WARRANT_DECISIONS_QUERY,
         )
     )
 
     updated_decision_shock = "SHOCK_INCARCERATION"
 
     connection.execute(
-        UPDATE_QUERY.format(
-            new_value=updated_decision_shock, ids_query=SHOCK_INCARCERATION_QUERY
+        StrictStringFormatter().format(
+            UPDATE_QUERY,
+            new_value=updated_decision_shock,
+            ids_query=SHOCK_INCARCERATION_QUERY,
         )
     )
 
@@ -61,13 +66,17 @@ def downgrade() -> None:
     deprecated_decision_value = "REVOCATION"
 
     connection.execute(
-        UPDATE_QUERY.format(
-            new_value=deprecated_decision_value, ids_query=WARRANT_DECISIONS_QUERY
+        StrictStringFormatter().format(
+            UPDATE_QUERY,
+            new_value=deprecated_decision_value,
+            ids_query=WARRANT_DECISIONS_QUERY,
         )
     )
 
     connection.execute(
-        UPDATE_QUERY.format(
-            new_value=deprecated_decision_value, ids_query=SHOCK_INCARCERATION_QUERY
+        StrictStringFormatter().format(
+            UPDATE_QUERY,
+            new_value=deprecated_decision_value,
+            ids_query=SHOCK_INCARCERATION_QUERY,
         )
     )

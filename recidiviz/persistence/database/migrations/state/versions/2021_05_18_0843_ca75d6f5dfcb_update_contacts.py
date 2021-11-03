@@ -6,9 +6,10 @@ Revises: 9a623575162e
 Create Date: 2021-05-18 08:43:35.889795
 
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
+from recidiviz.utils.string import StrictStringFormatter
 
 # revision identifiers, used by Alembic.
 revision = "ca75d6f5dfcb"
@@ -32,7 +33,9 @@ def upgrade() -> None:
         for table in TABLES:
             for status, raw_text in status_to_raw_text.items():
                 op.execute(
-                    QUERY.format(table=table, status=status, status_raw_text=raw_text)
+                    StrictStringFormatter().format(
+                        QUERY, table=table, status=status, status_raw_text=raw_text
+                    )
                 )
 
 
@@ -42,5 +45,7 @@ def downgrade() -> None:
         for table in TABLES:
             for status, raw_text in status_to_raw_text.items():
                 op.execute(
-                    QUERY.format(table=table, status=status, status_raw_text=raw_text)
+                    StrictStringFormatter().format(
+                        QUERY, table=table, status=status, status_raw_text=raw_text
+                    )
                 )

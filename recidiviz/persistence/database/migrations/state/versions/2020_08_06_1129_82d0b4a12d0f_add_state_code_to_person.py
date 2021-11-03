@@ -6,8 +6,10 @@ Revises: 57f876b6962d
 Create Date: 2020-08-06 11:29:34.788688
 
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
+
+from recidiviz.utils.string import StrictStringFormatter
 
 # revision identifiers, used by Alembic.
 revision = "82d0b4a12d0f"
@@ -63,7 +65,9 @@ def upgrade() -> None:
     op.add_column(
         "state_person", sa.Column("state_code", sa.String(length=255), nullable=True)
     )
-    state_person_update_query = UPDATE_QUERY.format(table_name="state_person")
+    state_person_update_query = StrictStringFormatter().format(
+        UPDATE_QUERY, table_name="state_person"
+    )
     connection.execute(state_person_update_query)
     op.alter_column(
         "state_person", "state_code", existing_type=sa.String(), nullable=False
@@ -76,8 +80,8 @@ def upgrade() -> None:
         "state_person_history",
         sa.Column("state_code", sa.String(length=255), nullable=True),
     )
-    state_person_history_update_query = UPDATE_QUERY.format(
-        table_name="state_person_history"
+    state_person_history_update_query = StrictStringFormatter().format(
+        UPDATE_QUERY, table_name="state_person_history"
     )
     connection.execute(state_person_history_update_query)
     op.alter_column(

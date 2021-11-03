@@ -11,6 +11,8 @@ from typing import Dict, List, Tuple
 import sqlalchemy as sa
 from alembic import op
 
+from recidiviz.utils.string import StrictStringFormatter
+
 # revision identifiers, used by Alembic.
 revision = "6b4aad103cc6"
 down_revision = "fd60c913b759"
@@ -68,7 +70,8 @@ def upgrade() -> None:
     with op.get_context().autocommit_block():
         for table_name in TABLES_TO_UPDATE:
             connection.execute(
-                UPGRADE_UPDATE_QUERY.format(
+                StrictStringFormatter().format(
+                    UPGRADE_UPDATE_QUERY,
                     table_name=table_name,
                     new_value=new_value,
                 )
@@ -85,7 +88,8 @@ def downgrade() -> None:
                 original_value,
             ) in RAW_TEXT_ORIGINAL_VALUES_ORDERED_MAP:
                 connection.execute(
-                    DOWNGRADE_UPDATE_QUERY.format(
+                    StrictStringFormatter().format(
+                        DOWNGRADE_UPDATE_QUERY,
                         table_name=table_name,
                         new_value=original_value,
                         raw_text_value=raw_text_value,

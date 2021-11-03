@@ -6,9 +6,10 @@ Revises: 5d0aa76119c5
 Create Date: 2020-07-23 23:05:57.383679
 
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
+from recidiviz.utils.string import StrictStringFormatter
 
 # revision identifiers, used by Alembic.
 revision = "0aeeb9565367"
@@ -36,8 +37,10 @@ def upgrade() -> None:
     updated_release_reason = "TRANSFERRED_OUT_OF_STATE"
 
     connection.execute(
-        UPDATE_QUERY.format(
-            new_value=updated_release_reason, ids_query=RELEASE_REASON_QUERY
+        StrictStringFormatter().format(
+            UPDATE_QUERY,
+            new_value=updated_release_reason,
+            ids_query=RELEASE_REASON_QUERY,
         )
     )
 
@@ -48,7 +51,9 @@ def downgrade() -> None:
     updated_release_reason = "TRANSFER"
 
     connection.execute(
-        UPDATE_QUERY.format(
-            new_value=updated_release_reason, ids_query=RELEASE_REASON_QUERY
+        StrictStringFormatter().format(
+            UPDATE_QUERY,
+            new_value=updated_release_reason,
+            ids_query=RELEASE_REASON_QUERY,
         )
     )

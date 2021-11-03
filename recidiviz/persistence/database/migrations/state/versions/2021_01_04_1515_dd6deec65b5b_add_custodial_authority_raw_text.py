@@ -6,9 +6,10 @@ Revises: be48397d71ec
 Create Date: 2020-12-10 15:15:06.564944
 
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
+from recidiviz.utils.string import StrictStringFormatter
 
 # revision identifiers, used by Alembic.
 revision = "dd6deec65b5b"
@@ -64,10 +65,14 @@ def upgrade() -> None:
         # Set custodial_authority_raw_text values for the supervision tables
         if "supervision" in table_id:
             # Set custodial_authority_raw_text value for US_ID
-            connection.execute(UPDATE_QUERY_US_ID.format(table_id=table_id))
+            connection.execute(
+                StrictStringFormatter().format(UPDATE_QUERY_US_ID, table_id=table_id)
+            )
 
             # Set custodial_authority_raw_text value for US_PA
-            connection.execute(UPDATE_QUERY_US_PA.format(table_id=table_id))
+            connection.execute(
+                StrictStringFormatter().format(UPDATE_QUERY_US_PA, table_id=table_id)
+            )
 
 
 def downgrade() -> None:

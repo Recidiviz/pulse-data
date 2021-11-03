@@ -9,6 +9,8 @@ Create Date: 2021-09-20 17:23:37.698259
 import sqlalchemy as sa
 from alembic import op
 
+from recidiviz.utils.string import StrictStringFormatter
+
 # revision identifiers, used by Alembic.
 revision = "c5e0b7ec2b9a"
 down_revision = "cd0e4833e102"
@@ -32,7 +34,8 @@ def upgrade() -> None:
             "state_person_history",
         ]:
             op.execute(
-                UPDATE_QUERY.format(
+                StrictStringFormatter().format(
+                    UPDATE_QUERY,
                     table_name=table_name,
                 )
             )

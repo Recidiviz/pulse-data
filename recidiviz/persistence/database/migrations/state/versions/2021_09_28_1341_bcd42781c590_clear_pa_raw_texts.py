@@ -9,6 +9,8 @@ Create Date: 2021-09-28 13:41:32.099729
 import sqlalchemy as sa
 from alembic import op
 
+from recidiviz.utils.string import StrictStringFormatter
+
 # revision identifiers, used by Alembic.
 revision = "bcd42781c590"
 down_revision = "c5e0b7ec2b9a"
@@ -42,7 +44,8 @@ def upgrade() -> None:
                 base_table, enum_col, raw_text_values_to_clear = update_info
                 for table in [base_table, f"{base_table}_history"]:
                     op.execute(
-                        UPDATE_QUERY.format(
+                        StrictStringFormatter().format(
+                            UPDATE_QUERY,
                             table_name=table,
                             state_code=state_code,
                             enum_col=enum_col,
@@ -59,7 +62,8 @@ def downgrade() -> None:
                 base_table, enum_col, raw_text_values = update_info
                 for table in [base_table, f"{base_table}_history"]:
                     op.execute(
-                        DOWNGRADE_QUERY.format(
+                        StrictStringFormatter().format(
+                            DOWNGRADE_QUERY,
                             table_name=table,
                             state_code=state_code,
                             enum_col=enum_col,

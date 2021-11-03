@@ -9,6 +9,8 @@ Create Date: 2021-09-16 12:03:30.264086
 import sqlalchemy as sa
 from alembic import op
 
+from recidiviz.utils.string import StrictStringFormatter
+
 # revision identifiers, used by Alembic.
 revision = "09fefc551098"
 down_revision = "44db47c4fffc"
@@ -44,11 +46,13 @@ def upgrade() -> None:
         ]:
             for column in COLUMNS_TO_UPDATE:
                 connection.execute(
-                    UPDATE_QUERY.format(
+                    StrictStringFormatter().format(
+                        UPDATE_QUERY,
                         table_name=table_name,
                         column_name=column,
                         new_value=new_value,
-                        ids_query=ENUM_VALUE_SELECT_IDS_QUERY.format(
+                        ids_query=StrictStringFormatter().format(
+                            ENUM_VALUE_SELECT_IDS_QUERY,
                             table_name=table_name,
                             column_name=column,
                             enum_value=old_value,
@@ -57,11 +61,13 @@ def upgrade() -> None:
                 )
 
                 connection.execute(
-                    UPDATE_QUERY.format(
+                    StrictStringFormatter().format(
+                        UPDATE_QUERY,
                         table_name=table_name,
                         column_name=column,
                         new_value=new_value,
-                        ids_query=ENUM_VALUE_SELECT_IDS_QUERY.format(
+                        ids_query=StrictStringFormatter().format(
+                            ENUM_VALUE_SELECT_IDS_QUERY,
                             table_name=table_name,
                             column_name=column,
                             enum_value=old_value,
@@ -83,11 +89,13 @@ def downgrade() -> None:
         ]:
             for column in COLUMNS_TO_UPDATE:
                 connection.execute(
-                    UPDATE_QUERY.format(
+                    StrictStringFormatter().format(
+                        UPDATE_QUERY,
                         table_name=table_name,
                         column_name=column,
                         new_value=new_value,
-                        ids_query=ENUM_VALUE_SELECT_IDS_QUERY.format(
+                        ids_query=StrictStringFormatter().format(
+                            ENUM_VALUE_SELECT_IDS_QUERY,
                             table_name=table_name,
                             column_name=column,
                             enum_value=old_value,
@@ -96,11 +104,13 @@ def downgrade() -> None:
                 )
 
                 connection.execute(
-                    UPDATE_QUERY.format(
+                    StrictStringFormatter().format(
+                        UPDATE_QUERY,
                         table_name=table_name,
                         column_name=column,
                         new_value=new_value,
-                        ids_query=ENUM_VALUE_SELECT_IDS_QUERY.format(
+                        ids_query=StrictStringFormatter().format(
+                            ENUM_VALUE_SELECT_IDS_QUERY,
                             table_name=table_name,
                             column_name=column,
                             enum_value=old_value,

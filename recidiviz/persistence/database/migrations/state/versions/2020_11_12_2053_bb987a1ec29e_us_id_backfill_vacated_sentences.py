@@ -6,9 +6,10 @@ Revises: 08bfc99a8d94
 Create Date: 2020-11-12 20:53:43.544546
 
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
+from recidiviz.utils.string import StrictStringFormatter
 
 # revision identifiers, used by Alembic.
 revision = "bb987a1ec29e"
@@ -39,12 +40,14 @@ TABLES_TO_UPDATE = [
 def upgrade() -> None:
     connection = op.get_bind()
     for table in TABLES_TO_UPDATE:
-        update_query = UPDATE_QUERY.format(table_name=table)
+        update_query = StrictStringFormatter().format(UPDATE_QUERY, table_name=table)
         connection.execute(update_query)
 
 
 def downgrade() -> None:
     connection = op.get_bind()
     for table in TABLES_TO_UPDATE:
-        downgrade_query = DOWNGRADE_QUERY.format(table_name=table)
+        downgrade_query = StrictStringFormatter().format(
+            DOWNGRADE_QUERY, table_name=table
+        )
         connection.execute(downgrade_query)

@@ -11,6 +11,8 @@ from typing import Dict, List, Tuple
 import sqlalchemy as sa
 from alembic import op
 
+from recidiviz.utils.string import StrictStringFormatter
+
 # revision identifiers, used by Alembic.
 revision = "527877e24009"
 down_revision = "cc9bd09e8e85"
@@ -108,7 +110,8 @@ def upgrade() -> None:
         for upgrade_query, upgrade_mapping in UPGRADE_QUERIES_WITH_MAPPINGS:
             for new_type_value, old_values in upgrade_mapping.items():
                 connection.execute(
-                    upgrade_query.format(
+                    StrictStringFormatter().format(
+                        upgrade_query,
                         table=table,
                         new_type_value=new_type_value,
                         old_values="', '".join(old_values),
@@ -123,10 +126,13 @@ def downgrade() -> None:
     connection = op.get_bind()
     for table in TABLES_TO_UPDATE:
         for downgrade_query in DOWNGRADE_QUERIES:
-            connection.execute(downgrade_query.format(table=table))
+            connection.execute(
+                StrictStringFormatter().format(downgrade_query, table=table)
+            )
         for old_type_value, old_method_values in DOWNGRADE_CONTACT_TYPE_MAPPING.items():
             connection.execute(
-                DOWNGRADE_CONTACT_TYPE_QUERY.format(
+                StrictStringFormatter().format(
+                    DOWNGRADE_CONTACT_TYPE_QUERY,
                     table=table,
                     old_type_value=old_type_value,
                     old_method_values="', '".join(old_method_values),
