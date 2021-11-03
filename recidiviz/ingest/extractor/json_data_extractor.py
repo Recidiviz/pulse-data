@@ -21,7 +21,7 @@ ingest data model and returned.
 """
 import logging
 from collections import defaultdict
-from typing import Union, Dict, List
+from typing import Dict, List, Union
 
 from recidiviz.ingest.extractor.data_extractor import DataExtractor
 from recidiviz.ingest.models.ingest_info import IngestInfo
@@ -57,7 +57,7 @@ class JsonDataExtractor(DataExtractor):
             self._extract_list(content, ingest_info, seen_map, current_key)
         elif isinstance(content, dict):
             for k, v in content.items():
-                lookup_key = "{}.{}".format(current_key, k) if current_key else k
+                lookup_key = f"{current_key}.{k}" if current_key else k
                 if v is None or isinstance(v, str):
                     self._set_value_if_key_exists(lookup_key, v, ingest_info, seen_map)
                 elif isinstance(v, dict):

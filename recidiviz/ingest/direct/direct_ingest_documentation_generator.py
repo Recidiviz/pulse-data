@@ -16,24 +16,26 @@
 # =============================================================================
 
 """Functionality for generating documentation about our direct ingest integrations."""
-import os
-from collections import defaultdict
 import datetime
-from typing import List, Dict, Optional
+import os
 import subprocess
+from collections import defaultdict
+from typing import Dict, List, Optional
+
 from pytablewriter import MarkdownTableWriter
 
 import recidiviz
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import (
-    DirectIngestRegionRawFileConfig,
-    DirectIngestRawFileConfig,
     ColumnEnumValueInfo,
+    DirectIngestRawFileConfig,
+    DirectIngestRegionRawFileConfig,
 )
 from recidiviz.ingest.direct.controllers.direct_ingest_view_collector import (
     DirectIngestPreProcessedIngestViewCollector,
 )
 from recidiviz.utils import regions
+from recidiviz.utils.string import StrictStringFormatter
 
 STATE_RAW_DATA_FILE_HEADER_TEMPLATE = """# {state_name} Raw Data Description
 
@@ -66,8 +68,10 @@ class DirectIngestDocumentationGenerator:
             state_code = StateCode(region_code.upper())
             state_name = state_code.get_state().name
 
-            file_header = STATE_RAW_DATA_FILE_HEADER_TEMPLATE.format(
-                state_name=state_name, state_code_lower=state_code.value.lower()
+            file_header = StrictStringFormatter().format(
+                STATE_RAW_DATA_FILE_HEADER_TEMPLATE,
+                state_name=state_name,
+                state_code_lower=state_code.value.lower(),
             )
         else:
             file_header = ""

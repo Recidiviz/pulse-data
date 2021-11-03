@@ -35,6 +35,7 @@ from recidiviz.persistence.database.schema_utils import (
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.utils.string import StrictStringFormatter
 
 STATE_PERSON_ENUM_QUERY_TEMPLATE = """
 WITH person_ids AS (
@@ -104,8 +105,8 @@ class StatePersonBigQueryViewCollector(
             SimpleBigQueryViewBuilder(
                 dataset_id=VIEWS_DATASET,
                 view_id=f"ingest_state_metadata__{STATE_PERSON_TABLE_NAME}__{col}",
-                description=STATE_PERSON_ENUM_COLUMN_DESCRIPTION_TEMPLATE.format(
-                    col=col
+                description=StrictStringFormatter().format(
+                    STATE_PERSON_ENUM_COLUMN_DESCRIPTION_TEMPLATE, col=col
                 ),
                 view_query_template=STATE_PERSON_ENUM_QUERY_TEMPLATE,
                 column_name=col,
@@ -121,8 +122,8 @@ class StatePersonBigQueryViewCollector(
                 SimpleBigQueryViewBuilder(
                     dataset_id=VIEWS_DATASET,
                     view_id=f"ingest_state_metadata__{STATE_PERSON_TABLE_NAME}__{col}",
-                    description=STATE_PERSON_NON_ENUM_COLUMN_DESCRIPTION_TEMPLATE.format(
-                        col=col
+                    description=StrictStringFormatter().format(
+                        STATE_PERSON_NON_ENUM_COLUMN_DESCRIPTION_TEMPLATE, col=col
                     ),
                     view_query_template=STATE_PERSON_NON_ENUM_QUERY_TEMPLATE,
                     column_name=col,

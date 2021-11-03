@@ -74,7 +74,7 @@ def parse_supervision_sentence_max_length(
         days_str=None,
         start_dt_str=effective_date,
     )
-    day_string = "{}d".format(total_days)
+    day_string = f"{total_days}d"
     return day_string
 
 

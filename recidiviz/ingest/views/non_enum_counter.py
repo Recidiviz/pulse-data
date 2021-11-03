@@ -38,6 +38,7 @@ from recidiviz.ingest.views.metadata_helpers import (
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.utils.string import StrictStringFormatter
 
 NON_ENUM_COUNTER_STATE_QUERY_TEMPLATE = """
 WITH table_rows AS (
@@ -107,8 +108,8 @@ class StateTableNonEnumCounterBigQueryViewCollector(
                     SimpleBigQueryViewBuilder(
                         dataset_id=VIEWS_DATASET,
                         view_id=f"ingest_state_metadata__{table_name}__{col}",
-                        description=STATE_TABLE_NON_ENUM_COLUMN_DESCRIPTION_TEMPLATE.format(
-                            col=col
+                        description=StrictStringFormatter().format(
+                            STATE_TABLE_NON_ENUM_COLUMN_DESCRIPTION_TEMPLATE, col=col
                         ),
                         view_query_template=template,
                         table_name=table_name,
