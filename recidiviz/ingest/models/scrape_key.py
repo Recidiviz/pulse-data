@@ -30,9 +30,7 @@ class ScrapeKey:
         self.scrape_type = scrape_type
 
     def __repr__(self):
-        return "<ScrapeKey region_code: {}, scrape_type: {}>".format(
-            self.region_code, self.scrape_type
-        )
+        return f"<ScrapeKey region_code: {self.region_code}, scrape_type: {self.scrape_type}>"
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
