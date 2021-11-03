@@ -37,6 +37,7 @@ from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
     RawTableViewType,
 )
 from recidiviz.tests.ingest.direct import fake_regions as fake_regions_module
+from recidiviz.utils.string import StrictStringFormatter
 
 
 class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
@@ -93,7 +94,8 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
         self.assertEqual("table_name_latest", view.table_id)
         self.assertEqual("table_name_latest", view.view_id)
 
-        expected_view_query = RAW_DATA_LATEST_VIEW_QUERY_TEMPLATE.format(
+        expected_view_query = StrictStringFormatter().format(
+            RAW_DATA_LATEST_VIEW_QUERY_TEMPLATE,
             project_id=self.PROJECT_ID,
             raw_table_primary_key_str="col1, col2",
             raw_table_dataset_id="us_xx_raw_data",
@@ -140,16 +142,15 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
         self.assertEqual("table_name_latest", view.table_id)
         self.assertEqual("table_name_latest", view.view_id)
 
-        expected_view_query = (
-            RAW_DATA_LATEST_HISTORICAL_FILE_VIEW_QUERY_TEMPLATE.format(
-                project_id=self.PROJECT_ID,
-                raw_table_primary_key_str="col1, col2",
-                raw_table_dataset_id="us_xx_raw_data",
-                raw_table_name="table_name",
-                columns_clause="col1, col2",
-                normalized_columns="*",
-                supplemental_order_by_clause=", CAST(seq_num AS INT64)",
-            )
+        expected_view_query = StrictStringFormatter().format(
+            RAW_DATA_LATEST_HISTORICAL_FILE_VIEW_QUERY_TEMPLATE,
+            project_id=self.PROJECT_ID,
+            raw_table_primary_key_str="col1, col2",
+            raw_table_dataset_id="us_xx_raw_data",
+            raw_table_name="table_name",
+            columns_clause="col1, col2",
+            normalized_columns="*",
+            supplemental_order_by_clause=", CAST(seq_num AS INT64)",
         )
 
         self.assertEqual(expected_view_query, view.view_query)
@@ -209,7 +210,8 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
             undocumented_column
         ) AS undocumented_column"""
 
-        expected_view_query = RAW_DATA_UP_TO_DATE_VIEW_QUERY_TEMPLATE.format(
+        expected_view_query = StrictStringFormatter().format(
+            RAW_DATA_UP_TO_DATE_VIEW_QUERY_TEMPLATE,
             project_id=self.PROJECT_ID,
             raw_table_primary_key_str="col1",
             raw_table_dataset_id="us_xx_raw_data",
@@ -265,7 +267,8 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
             col2
         ) AS col2"""
 
-        expected_view_query = RAW_DATA_UP_TO_DATE_HISTORICAL_FILE_VIEW_QUERY_TEMPLATE.format(
+        expected_view_query = StrictStringFormatter().format(
+            RAW_DATA_UP_TO_DATE_HISTORICAL_FILE_VIEW_QUERY_TEMPLATE,
             project_id=self.PROJECT_ID,
             raw_table_primary_key_str="col1",
             raw_table_dataset_id="us_xx_raw_data",

@@ -79,6 +79,6 @@ def align_columns(rows: List[List]) -> str:
     # Compute column widths by taking maximum length of values per column
     column_widths = [max(len(value) for value in col) for col in columns]
     # Formatter outputs string on the left side, padded to width + 4 characters
-    formatter = " ".join(["%%-%ds" % (width + 4) for width in column_widths])
+    formatter = " ".join([f"%-{width + 4}s" for width in column_widths])
     # Print each row using the computed format
     return "\n".join([formatter % tuple(row) for row in rows])

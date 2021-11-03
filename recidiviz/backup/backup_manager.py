@@ -17,9 +17,9 @@
 
 """Cron endpoint for managing long-term Cloud SQL backups"""
 import datetime
-from http import HTTPStatus
 import logging
 import time
+from http import HTTPStatus
 from typing import Tuple
 
 import flask
@@ -31,7 +31,6 @@ from recidiviz.persistence.database.sqlalchemy_engine_manager import (
 )
 from recidiviz.utils import metadata
 from recidiviz.utils.auth.gae import requires_gae_auth
-
 
 # Approximately 6 months - with weekly backups, we will always have
 # approximately 26 backups, but there may be extra ones triggered via the
@@ -162,9 +161,7 @@ def _await_operation(project_id: str, operation_id: str) -> None:
         elif current_status == "DONE":
             done = True
         else:
-            raise RuntimeError(
-                "Unrecognized operation status: {}".format(current_status)
-            )
+            raise RuntimeError(f"Unrecognized operation status: {current_status}")
 
 
 def _throw_if_error(project_id: str, operation_id: str, operation_type: str) -> None:
@@ -178,12 +175,10 @@ def _throw_if_error(project_id: str, operation_id: str, operation_type: str) -> 
     if "error" in operation:
         errors = operation["error"].get("errors", [])
         error_messages = [
-            "code: {}\n message: {}".format(error["code"], error["message"])
-            for error in errors
+            f"code: {error['code']}\n message: {error['message']}" for error in errors
         ]
         raise RuntimeError(
-            "Backup {} operation finished with "
-            "{} errors:\n{}".format(
-                operation_type, str(len(errors)), "\n".join(error_messages)
-            )
+            f"Backup {operation_type} operation finished with "
+            f"{len(errors)} errors:\n"
+            "\n".join(error_messages)
         )

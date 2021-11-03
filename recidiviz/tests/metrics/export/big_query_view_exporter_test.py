@@ -20,10 +20,7 @@ import unittest
 import mock
 
 from recidiviz.big_query.big_query_client import BigQueryClient
-from recidiviz.big_query.big_query_view import (
-    SimpleBigQueryViewBuilder,
-)
-from recidiviz.view_registry.namespaces import BigQueryViewNamespace
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.big_query.export.big_query_view_export_validator import (
     BigQueryViewExportValidator,
 )
@@ -36,6 +33,7 @@ from recidiviz.big_query.export.export_query_config import (
     ExportOutputFormatType,
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
+from recidiviz.view_registry.namespaces import BigQueryViewNamespace
 
 
 class BigQueryViewExporterTest(unittest.TestCase):
@@ -72,10 +70,7 @@ class BigQueryViewExporterTest(unittest.TestCase):
                 view_filter_clause=" WHERE state_code = 'US_XX'",
                 intermediate_table_name=f"{self.view_builder.view_id}_table_US_XX",
                 output_directory=GcsfsDirectoryPath.from_absolute_path(
-                    "gs://{project_id}-dataset-location/subdirectory/{state_code}".format(
-                        project_id=self.mock_project_id,
-                        state_code="US_XX",
-                    )
+                    f"gs://{self.mock_project_id}-dataset-location/subdirectory/US_XX"
                 ),
                 export_output_formats=[
                     ExportOutputFormatType.JSON,
@@ -88,10 +83,7 @@ class BigQueryViewExporterTest(unittest.TestCase):
                 view_filter_clause=" WHERE state_code = 'US_XX'",
                 intermediate_table_name=f"{self.second_view_builder.view_id}_table_US_XX",
                 output_directory=GcsfsDirectoryPath.from_absolute_path(
-                    "gs://{project_id}-dataset-location/subdirectory/{state_code}".format(
-                        project_id=self.mock_project_id,
-                        state_code="US_XX",
-                    )
+                    f"gs://{self.mock_project_id}-dataset-location/subdirectory/US_XX"
                 ),
                 export_output_formats=[
                     ExportOutputFormatType.JSON,
@@ -124,10 +116,7 @@ class BigQueryViewExporterTest(unittest.TestCase):
                 view_filter_clause=" WHERE state_code = 'US_XX'",
                 intermediate_table_name=f"{self.view_builder.view_id}_table_US_XX",
                 output_directory=GcsfsDirectoryPath.from_absolute_path(
-                    "gs://{project_id}-dataset-location/subdirectory/{state_code}".format(
-                        project_id=self.mock_project_id,
-                        state_code="US_XX",
-                    )
+                    f"gs://{self.mock_project_id}-dataset-location/subdirectory/US_XX"
                 ),
                 export_output_formats=[
                     ExportOutputFormatType.JSON,
@@ -140,10 +129,7 @@ class BigQueryViewExporterTest(unittest.TestCase):
                 view_filter_clause=" WHERE state_code = 'US_XX'",
                 intermediate_table_name=f"{self.second_view_builder.view_id}_table_US_XX",
                 output_directory=GcsfsDirectoryPath.from_absolute_path(
-                    "gs://{project_id}-dataset-location/subdirectory/{state_code}".format(
-                        project_id=self.mock_project_id,
-                        state_code="US_XX",
-                    )
+                    f"gs://{self.mock_project_id}-dataset-location/subdirectory/US_XX"
                 ),
                 export_output_formats=[ExportOutputFormatType.JSON],
             ),
@@ -177,10 +163,7 @@ class BigQueryViewExporterTest(unittest.TestCase):
                 view_filter_clause=" WHERE state_code = 'US_XX'",
                 intermediate_table_name=f"{self.view_builder.view_id}_table_US_XX",
                 output_directory=GcsfsDirectoryPath.from_absolute_path(
-                    "gs://{project_id}-dataset-location/subdirectory/{state_code}".format(
-                        project_id=self.mock_project_id,
-                        state_code="US_XX",
-                    )
+                    f"gs://{self.mock_project_id}-dataset-location/subdirectory/US_XX"
                 ),
                 export_output_formats=[
                     ExportOutputFormatType.JSON,
@@ -193,10 +176,7 @@ class BigQueryViewExporterTest(unittest.TestCase):
                 view_filter_clause=" WHERE state_code = 'US_XX'",
                 intermediate_table_name=f"{self.second_view_builder.view_id}_table_US_XX",
                 output_directory=GcsfsDirectoryPath.from_absolute_path(
-                    "gs://{project_id}-dataset-location/subdirectory/{state_code}".format(
-                        project_id=self.mock_project_id,
-                        state_code="US_XX",
-                    )
+                    f"gs://{self.mock_project_id}-dataset-location/subdirectory/US_XX"
                 ),
                 export_output_formats=[ExportOutputFormatType.METRIC],
             ),

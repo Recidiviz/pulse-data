@@ -47,12 +47,15 @@ from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
 )
 from recidiviz.persistence.database.session import Session
 from recidiviz.tools.postgres import local_postgres_helpers
+from recidiviz.utils.string import StrictStringFormatter
 
 
 def _replace_iter(query: str, regex: str, replacement: str, flags: int = 0) -> str:
     compiled = re.compile(regex, flags)
     for match in re.finditer(compiled, query):
-        query = query.replace(match[0], replacement.format(**match.groupdict()))
+        query = query.replace(
+            match[0], StrictStringFormatter().format(replacement, **match.groupdict())
+        )
     return query
 
 

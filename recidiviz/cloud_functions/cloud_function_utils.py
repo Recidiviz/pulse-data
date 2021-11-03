@@ -109,19 +109,18 @@ def make_iap_request(
     response = requests.request(
         method,
         url,
-        headers={"Authorization": "Bearer {}".format(google_open_id_connect_token)},
+        headers={"Authorization": f"Bearer {google_open_id_connect_token}"},
         **kwargs,
     )
     if response.status_code == 403:
         raise Exception(
-            "Service account {} does not have permission to "
-            "access the IAP-protected application.".format(signer_email)
+            f"Service account {signer_email} does not have permission to "
+            "access the IAP-protected application."
         )
     if response.status_code != 200:
         raise Exception(
-            "Bad response from application: {!r} / {!r} / {!r}".format(
-                response.status_code, response.headers, response.text
-            )
+            f"Bad response from application: {repr(response.status_code)} / "
+            f"{repr(response.headers)} / {repr(response.text)}"
         )
     return response
 

@@ -71,16 +71,15 @@ class TestIngestInfo(unittest.TestCase):
             for field in proto_fields:
                 if field not in source_fields and field not in ignore:
                     raise FieldsDontMatchError(
-                        "Field '%s' exists in '%s' proto"
-                        " but not in the IngestInfo object" % (field, proto.__name__)
+                        f"Field '{field}' exists in '{proto.__name__}' proto"
+                        " but not in the IngestInfo object"
                     )
 
             for field in source_fields:
                 if field not in proto_fields and field not in ignore:
                     raise FieldsDontMatchError(
-                        "Field '%s' exists in '%s'"
+                        f"Field '{field}' exists in '{proto.__name__}'"
                         " IngestInfo object but not in the proto object"
-                        % (field, proto.__name__)
                     )
 
         # These should only contain fields that are listed in ingest_info.proto

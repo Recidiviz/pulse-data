@@ -19,6 +19,7 @@
 
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.utils.string import StrictStringFormatter
 from recidiviz.validation.views.case_triage.utils import DT_CLAUSE, FRESHNESS_FRAGMENT
 from recidiviz.validation.views.dataset_config import VIEWS_DATASET
 from recidiviz.validation.views.utils.freshness_validation import (
@@ -26,7 +27,7 @@ from recidiviz.validation.views.utils.freshness_validation import (
     FreshnessValidationAssertion,
 )
 
-UPDDATE_DT_CLAUSE = DT_CLAUSE.format(datetime_field="upddate")
+UPDDATE_DT_CLAUSE = StrictStringFormatter().format(DT_CLAUSE, datetime_field="upddate")
 
 EMPLOYMENT_FRESHNESS_VALIDATION_VIEW_BUILDER = FreshnessValidation(
     dataset=VIEWS_DATASET,

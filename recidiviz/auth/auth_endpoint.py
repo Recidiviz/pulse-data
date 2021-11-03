@@ -52,6 +52,7 @@ from recidiviz.reporting.email_reporting_utils import validate_email_address
 from recidiviz.utils import metadata
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.params import get_only_str_param_value
+from recidiviz.utils.string import StrictStringFormatter
 
 auth_endpoint_blueprint = Blueprint("auth_endpoint_blueprint", __name__)
 
@@ -103,8 +104,9 @@ def import_user_restrictions_csv_to_sql() -> Tuple[str, HTTPStatus]:
         view_builder = DASHBOARD_USER_RESTRICTIONS_VIEW_BUILDER
         csv_path = GcsfsFilePath.from_absolute_path(
             os.path.join(
-                DASHBOARD_USER_RESTRICTIONS_OUTPUT_DIRECTORY_URI.format(
-                    project_id=metadata.project_id()
+                StrictStringFormatter().format(
+                    DASHBOARD_USER_RESTRICTIONS_OUTPUT_DIRECTORY_URI,
+                    project_id=metadata.project_id(),
                 ),
                 region_code,
                 f"{view_builder.view_id}.csv",
