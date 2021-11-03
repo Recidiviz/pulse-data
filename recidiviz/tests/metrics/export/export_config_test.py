@@ -21,21 +21,22 @@ from unittest import mock
 from google.cloud import bigquery
 
 from recidiviz.big_query.export.export_query_config import ExportOutputFormatType
-from recidiviz.view_registry.namespaces import BigQueryViewNamespace
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
 from recidiviz.metrics.export.export_config import (
-    ExportBigQueryViewConfig,
-    ExportViewCollectionConfig,
     _VIEW_COLLECTION_EXPORT_CONFIGS,
     VIEW_COLLECTION_EXPORT_INDEX,
+    BadProductExportSpecificationError,
+    ExportBigQueryViewConfig,
+    ExportViewCollectionConfig,
     ProductConfig,
-    ProductStateConfig,
     ProductConfigs,
     ProductExportConfig,
-    BadProductExportSpecificationError,
+    ProductStateConfig,
 )
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.tests.ingest import fixtures
+from recidiviz.utils.string import StrictStringFormatter
+from recidiviz.view_registry.namespaces import BigQueryViewNamespace
 
 
 class TestProductConfig(unittest.TestCase):
@@ -243,7 +244,8 @@ class TestExportViewCollectionConfig(unittest.TestCase):
                 view_filter_clause=None,
                 intermediate_table_name=f"{expected_view.view_id}_table",
                 output_directory=GcsfsDirectoryPath.from_absolute_path(
-                    state_agnostic_dataset_export_config.output_directory_uri_template.format(
+                    StrictStringFormatter().format(
+                        state_agnostic_dataset_export_config.output_directory_uri_template,
                         project_id=self.mock_project_id,
                     )
                 ),
@@ -320,7 +322,8 @@ class TestExportViewCollectionConfig(unittest.TestCase):
                 view_filter_clause=None,
                 intermediate_table_name=f"{expected_view.view_id}_table",
                 output_directory=GcsfsDirectoryPath.from_absolute_path(
-                    lantern_dashboard_dataset_export_config.output_directory_uri_template.format(
+                    StrictStringFormatter().format(
+                        lantern_dashboard_dataset_export_config.output_directory_uri_template,
                         project_id=self.mock_project_id,
                     )
                 ),

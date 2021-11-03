@@ -76,6 +76,7 @@ from recidiviz.reporting.context.report_context import ReportContext
 from recidiviz.reporting.recipient import Recipient
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.utils.string import StrictStringFormatter
 
 _AVERAGE_VALUES_SIGNIFICANT_DIGITS = 3
 
@@ -376,8 +377,9 @@ class PoMonthlyReportContext(ReportContext):
             [
                 (
                     f'{format_full_name(client["full_name"])} ({client["person_external_id"]})',
-                    "{d:%B} {d.day}".format(
-                        d=date.fromisoformat(client["projected_end_date"])
+                    StrictStringFormatter().format(
+                        "{d:%B} {d.day}",
+                        d=date.fromisoformat(client["projected_end_date"]),
                     ),
                 )
                 for client in action_clients

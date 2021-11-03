@@ -22,12 +22,11 @@ import subprocess
 from time import sleep, time
 from typing import Dict, List, Optional, Tuple
 
-from mock import patch
 import pytest
 import yaml
+from mock import patch
 
 import recidiviz
-
 
 EMULATOR_STARTUP_TIMEOUT = 30
 
@@ -89,8 +88,8 @@ def pytest_runtest_teardown(item: pytest.Item) -> None:
 def emulator(request) -> None:
     # Lazy imports here to avoid slow top-level import when running pytest for any tests
     # pylint: disable=import-outside-toplevel
-    from recidiviz.utils import pubsub_helper
     from recidiviz.ingest.scrape import sessions
+    from recidiviz.utils import pubsub_helper
 
     datastore_emulator, pubsub_emulator = _start_emulators()
 
@@ -115,6 +114,7 @@ def emulator(request) -> None:
 
 def _start_emulators() -> Tuple[subprocess.Popen, subprocess.Popen]:
     """Start gcloud datastore and pubsub emulators."""
+    # pylint: disable=consider-using-with
     datastore_emulator = subprocess.Popen(
         shlex.split(
             "gcloud beta emulators datastore start --no-store-on-disk "
@@ -145,7 +145,7 @@ def _get_emulator_env_paths() -> List[str]:
     return [
         os.path.join(
             os.environ.get("HOME", ""),
-            ".config/gcloud/emulators/{}/env.yaml".format(emulator_name),
+            f".config/gcloud/emulators/{emulator_name}/env.yaml",
         )
         for emulator_name in ["datastore", "pubsub"]
     ]
@@ -163,6 +163,7 @@ def _write_emulator_environs() -> Dict[str, Optional[str]]:
     # wins
     env_dict = {}
     for emulator_env_path in _get_emulator_env_paths():
+        # pylint: disable=consider-using-with,unspecified-encoding
         env_file = open(emulator_env_path, "r")
         env_file_contents = yaml.full_load(env_file)
         if env_file_contents:

@@ -400,9 +400,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         queue_name = "direct-ingest-state-us-xx-scheduler"
         queue_path = f"{queue_name}-path"
 
-        task_name = queue_name + "/{}-{}-{}".format(
-            _REGION.region_code, "2019-07-20", uuid
-        )
+        task_name = queue_name + f"/{_REGION.region_code}-2019-07-20-{uuid}"
         task = tasks_v2.types.task_pb2.Task(
             name=task_name,
             app_engine_http_request={
@@ -444,9 +442,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         queue_path = "us_xx-scheduler-queue-path"
         queue_name = "direct-ingest-state-us-xx-scheduler"
 
-        task_name = "{}/{}-{}-{}".format(
-            queue_name, _REGION.region_code, "2019-07-20", uuid
-        )
+        task_name = f"{queue_name}/{_REGION.region_code}-2019-07-20-{uuid}"
         task = tasks_v2.types.task_pb2.Task(
             name=task_name,
             app_engine_http_request={
@@ -506,7 +502,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         queue_name = "direct-ingest-state-us-xx-process-job-queue"
         queue_path = "process-queue-path"
 
-        task_name = "{}/{}-{}-{}".format(queue_name, _REGION.region_code, date, uuid)
+        task_name = f"{queue_name}/{_REGION.region_code}-{date}-{uuid}"
         url_params = {"region": _REGION.region_code, "file_path": file_path.abs_path()}
         task = tasks_v2.types.task_pb2.Task(
             name=task_name,
@@ -565,7 +561,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         queue_path = "us-xx-process-queue-path"
         queue_name = "direct-ingest-state-us-xx-process-job-queue"
 
-        task_name = "{}/{}-{}-{}".format(queue_name, _REGION.region_code, date, uuid)
+        task_name = f"{queue_name}/{_REGION.region_code}-{date}-{uuid}"
         url_params = {"region": _REGION.region_code, "file_path": file_path.abs_path()}
         task = tasks_v2.types.task_pb2.Task(
             name=task_name,
@@ -627,9 +623,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         queue_name = "direct-ingest-state-us-xx-process-job-queue"
         queue_path = f"{queue_name}-path"
 
-        task_name = _REGION.get_queue_name() + "/{}-{}-{}".format(
-            _REGION.region_code, date, uuid
-        )
+        task_name = _REGION.get_queue_name() + f"/{_REGION.region_code}-{date}-{uuid}"
         url_params = {"region": _REGION.region_code, "file_path": file_path.abs_path()}
         task = tasks_v2.types.task_pb2.Task(
             name=task_name,
@@ -684,7 +678,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         queue_name = "direct-ingest-state-us-xx-bq-import-export"
         queue_path = f"{queue_name}-path"
 
-        task_name = queue_name + "/{}-{}-{}".format(_REGION.region_code, date, uuid)
+        task_name = queue_name + f"/{_REGION.region_code}-{date}-{uuid}"
         url_params = {
             "region": _REGION.region_code,
             "file_path": raw_data_path.abs_path(),
@@ -740,7 +734,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         queue_name = "direct-ingest-state-us-xx-bq-import-export"
         queue_path = f"{queue_name}-path"
 
-        task_name = queue_name + "/{}-{}-{}".format(_REGION.region_code, date, uuid)
+        task_name = queue_name + f"/{_REGION.region_code}-{date}-{uuid}"
         url_params = {
             "region": _REGION.region_code,
             "output_bucket": _PRIMARY_INGEST_BUCKET.bucket_name,
@@ -783,7 +777,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         queue_path = "us-xx-sftp-path"
         queue_name = "direct-ingest-state-us-xx-sftp-queue"
         date = "2021-01-01"
-        task_name = "{}/{}-{}-{}".format(queue_name, _REGION.region_code, date, uuid)
+        task_name = f"{queue_name}/{_REGION.region_code}-{date}-{uuid}"
         task = tasks_v2.types.task_pb2.Task(
             name=task_name,
             app_engine_http_request={

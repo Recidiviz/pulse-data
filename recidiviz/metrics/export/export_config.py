@@ -60,6 +60,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.views.view_config import INGEST_METADATA_BUILDERS
 from recidiviz.metrics import export as export_module
 from recidiviz.utils import environment
+from recidiviz.utils.string import StrictStringFormatter
 from recidiviz.utils.yaml_dict import YAMLDict
 from recidiviz.validation.views.view_config import VALIDATION_METADATA_BUILDERS
 from recidiviz.view_registry.namespaces import BigQueryViewNamespace
@@ -288,10 +289,12 @@ class ExportViewCollectionConfig:
 
         intermediate_table_name = "{export_view_name}_table"
         if destination_override:
-            output_directory = destination_override.format(project_id=project_id)
+            output_directory = StrictStringFormatter().format(
+                destination_override, project_id=project_id
+            )
         else:
-            output_directory = self.output_directory_uri_template.format(
-                project_id=project_id
+            output_directory = StrictStringFormatter().format(
+                self.output_directory_uri_template, project_id=project_id
             )
         if state_code_filter:
             intermediate_table_name += f"_{state_code_filter}"
@@ -308,8 +311,8 @@ class ExportViewCollectionConfig:
                     bq_view_namespace=self.bq_view_namespace,
                     view=view,
                     view_filter_clause=view_filter_clause,
-                    intermediate_table_name=intermediate_table_name.format(
-                        export_view_name=view.view_id
+                    intermediate_table_name=StrictStringFormatter().format(
+                        intermediate_table_name, export_view_name=view.view_id
                     ),
                     output_directory=GcsfsDirectoryPath.from_absolute_path(
                         output_directory

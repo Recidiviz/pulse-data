@@ -45,6 +45,7 @@ from recidiviz.persistence.database.schema_utils import (
 from recidiviz.utils import metadata
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.params import get_only_str_param_value
+from recidiviz.utils.string import StrictStringFormatter
 
 CASE_TRIAGE_DB_OPERATIONS_QUEUE = "case-triage-db-operations-queue"
 
@@ -65,8 +66,9 @@ def _run_gcs_imports() -> Tuple[str, HTTPStatus]:
 
         csv_path = GcsfsFilePath.from_absolute_path(
             os.path.join(
-                CASE_TRIAGE_VIEWS_OUTPUT_DIRECTORY_URI.format(
-                    project_id=metadata.project_id()
+                StrictStringFormatter().format(
+                    CASE_TRIAGE_VIEWS_OUTPUT_DIRECTORY_URI,
+                    project_id=metadata.project_id(),
                 ),
                 filename,
             )
