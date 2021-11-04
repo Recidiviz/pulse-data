@@ -346,7 +346,6 @@ def generate_test_person(
         state_code=state_code,
         full_name="name",
         birthdate=datetime.date(1980, 1, 5),
-        birthdate_inferred_from_age=False,
         external_ids=[
             state_schema.StatePersonExternalId(
                 person_external_id_id=234,

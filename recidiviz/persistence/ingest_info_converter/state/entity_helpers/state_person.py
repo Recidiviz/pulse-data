@@ -54,7 +54,6 @@ def copy_fields_to_builder(
     # 1-to-1 mappings
     new.full_name = parse_name(proto)
     new.birthdate = getattr(proto, "birthdate")
-    new.birthdate_inferred_from_age = "False" if new.birthdate else None
     new.current_address = getattr(proto, "current_address")
     new.residency_status = StrictEnumParser(
         raw_text=getattr(proto, "current_address"),

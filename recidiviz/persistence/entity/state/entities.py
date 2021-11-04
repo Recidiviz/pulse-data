@@ -262,10 +262,6 @@ class StatePerson(Entity, BuildableAttr, DefaultableAttr):
     birthdate: Optional[datetime.date] = attr.ib(
         default=None, validator=attr_validators.is_opt_date
     )
-    # TODO(#7236): DEPRECATED - DO NOT ADD NEW USAGES
-    birthdate_inferred_from_age: Optional[bool] = attr.ib(
-        default=None, validator=attr_validators.is_opt_bool
-    )
 
     gender: Optional[Gender] = attr.ib(
         default=None, validator=attr_validators.is_opt(Gender)
