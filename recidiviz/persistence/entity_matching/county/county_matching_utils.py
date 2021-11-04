@@ -25,7 +25,6 @@ from more_itertools import pairwise
 from recidiviz.common.constants.county.booking import CustodyStatus
 from recidiviz.persistence.entity.base_entity import Entity, ExternalIdEntity
 from recidiviz.persistence.entity.county import entities
-from recidiviz.persistence.entity.entities import EntityPersonType
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity_matching.entity_matching_utils import get_all_matches
 from recidiviz.persistence.persistence_utils import is_booking_active
@@ -291,7 +290,7 @@ def get_best_match(
     return min(matches, key=lambda db_entity: diff_count(ingest_entity, db_entity))
 
 
-def is_birthdate_match(a: EntityPersonType, b: EntityPersonType) -> bool:
+def is_birthdate_match(a: entities.Person, b: entities.Person) -> bool:
     if a.birthdate_inferred_from_age and b.birthdate_inferred_from_age:
         return _is_inferred_birthdate_match(a.birthdate, b.birthdate)
 

@@ -60,7 +60,6 @@ class StatePersonConverterTest(unittest.TestCase):
             gender_raw_text="MALE",
             full_name='{"full_name": "FULL_NAME"}',
             birthdate=date(year=1999, month=12, day=31),
-            birthdate_inferred_from_age=False,
             current_address="NNN STREET ZIP",
             residency_status=ResidencyStatus.PERMANENT,
             state_code="US_ND",

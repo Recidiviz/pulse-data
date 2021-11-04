@@ -201,7 +201,6 @@ class TestDeserializeEntityFactories(unittest.TestCase):
             gender_raw_text="MALE",
             full_name='{"full_name": "FULL NAME"}',
             birthdate=date(year=1999, month=12, day=31),
-            birthdate_inferred_from_age=None,
             current_address="NNN STREET ZIP",
             residency_status=ResidencyStatus.PERMANENT,
             state_code="US_XX",
