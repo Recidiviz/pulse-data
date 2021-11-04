@@ -1843,7 +1843,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
         # Arrange
         person_1.full_name = '{"given_names": "JON", "surname": "HOPKINS"}'
         person_1.birthdate = datetime.date(year=1979, month=8, day=15)
-        person_1.birthdate_inferred_from_age = False
         person_1.gender = Gender.MALE
         person_1.gender_raw_text = "M"
         person_1.state_code = _STATE_CODE
@@ -1865,7 +1864,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
 
         person_2.full_name = '{"given_names": "SOLANGE", "surname": "KNOWLES"}'
         person_2.birthdate = datetime.date(year=1986, month=6, day=24)
-        person_2.birthdate_inferred_from_age = False
         person_2.gender = Gender.FEMALE
         person_2.gender_raw_text = "F"
         person_2.state_code = _STATE_CODE
@@ -3164,7 +3162,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
         person_6 = entities.StatePerson.new_with_defaults(
             full_name='{"given_names": "MIKE", "surname": "SANDISON"}',
             birthdate=datetime.date(year=1970, month=6, day=1),
-            birthdate_inferred_from_age=False,
             current_address="111 3RD ST S #6, FARGO, ND, 58103",
             residency_status=ResidencyStatus.PERMANENT,
             gender=Gender.MALE,
@@ -3244,7 +3241,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
         person_7 = entities.StatePerson.new_with_defaults(
             full_name='{"given_names": "GRACE", "surname": "HOPPER"}',
             birthdate=datetime.date(year=1985, month=7, day=1),
-            birthdate_inferred_from_age=False,
             current_address="111 8TH ST S #5, FARGO, ND, 58103",
             residency_status=ResidencyStatus.PERMANENT,
             gender=Gender.MALE,
@@ -4223,7 +4219,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
         person_1 = entities.StatePerson.new_with_defaults(state_code=_STATE_CODE)
         person_1.full_name = '{"given_names": "JON", "surname": "HOPKINS"}'
         person_1.birthdate = datetime.date(year=1979, month=8, day=15)
-        person_1.birthdate_inferred_from_age = False
         person_1.gender = Gender.MALE
         person_1.gender_raw_text = "M"
         person_1_race = entities.StatePersonRace.new_with_defaults(
@@ -4258,7 +4253,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
         )
         person_2.full_name = '{"given_names": "SOLANGE", "surname": "KNOWLES"}'
         person_2.birthdate = datetime.date(year=1986, month=6, day=24)
-        person_2.birthdate_inferred_from_age = False
         person_2.gender = Gender.FEMALE
         person_2.gender_raw_text = "F"
         person_2_race = entities.StatePersonRace.new_with_defaults(

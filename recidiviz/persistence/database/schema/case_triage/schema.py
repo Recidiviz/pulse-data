@@ -84,7 +84,6 @@ class ETLClient(CaseTriageBase, ETLDerivedEntity):
     gender = Column(String(255))
     current_address = Column(Text)
     birthdate = Column(Date)
-    birthdate_inferred_from_age = Column(Boolean)
     supervision_start_date = Column(Date)
     projected_end_date = Column(Date)
     supervision_type = Column(String(255), nullable=False)
@@ -186,9 +185,6 @@ class ETLClient(CaseTriageBase, ETLDerivedEntity):
             "gender": json_client.get("gender"),
             "current_address": json_client.get("current_address"),
             "birthdate": _get_json_field_as_date(json_client, "birthdate"),
-            "birthdate_inferred_from_age": json_client.get(
-                "birthdate_inferred_from_age"
-            ),
             "supervision_start_date": _get_json_field_as_date(
                 json_client, "supervision_start_date"
             ),

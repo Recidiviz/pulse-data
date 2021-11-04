@@ -241,7 +241,6 @@ CLIENT_LIST_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         "current_address",
         "gender",
         "birthdate",
-        "birthdate_inferred_from_age",
         "supervision_start_date",
         "projected_end_date",
         "supervision_type",

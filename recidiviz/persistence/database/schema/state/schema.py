@@ -1217,11 +1217,6 @@ class _StatePersonSharedColumns:
         comment="Date the person was born. Use this when it is known. When a "
         "person’s age but not birthdate is reported, use age instead.",
     )
-    # TODO(#7236): DEPRECATED - DO NOT ADD NEW USAGES
-    birthdate_inferred_from_age = Column(
-        Boolean,
-        comment="Whether or not the person's birthdate was inferred from " "their age.",
-    )
 
     gender = Column(gender, comment="A person’s gender, as reported by the state.")
     gender_raw_text = Column(
