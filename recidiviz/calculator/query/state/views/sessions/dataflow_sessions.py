@@ -325,6 +325,7 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = """
         case_type,
         session_attributes,
         session_attributes_json,
+        CONCAT(COALESCE(compartment_level_1,''),'|', COALESCE(compartment_level_2,''),'|',COALESCE(compartment_location,''),'|',COALESCE(correctional_level,''),'|',COALESCE(supervising_officer_external_id,''),'|',COALESCE(case_type,'') ) AS new_session_string,
     FROM 
         (
         SELECT 
@@ -347,8 +348,8 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = """
     */
     (
     SELECT
-        group_continuous_dates_in_compartment,
         person_id,
+        dataflow_session_id,
         state_code,
         metric_source,
         compartment_level_1,
@@ -366,25 +367,26 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = """
         Create groups used to identify unique sessions. This is the same technique used above to identify continuous 
         dates, but now restricted to continuous dates within a compartment
         */
-        SELECT *,
-            DATE_SUB(DATE, INTERVAL ROW_NUMBER() OVER(PARTITION BY person_id, metric_source, 
-                compartment_level_1, correctional_level, case_type, ARRAY_TO_STRING(session_attributes_json, '|')
-                ORDER BY date ASC) DAY) AS group_continuous_dates_in_compartment
-        FROM dedup_step_4_cte
+        SELECT 
+            *,
+            SUM(IF(new_session OR date_gap,1,0)) OVER(PARTITION BY person_id ORDER BY date) AS dataflow_session_id
+        FROM 
+            (
+            SELECT 
+                *,
+                COALESCE(LAG(new_session_string) OVER(PARTITION BY person_id ORDER BY date),'') != COALESCE(new_session_string,'') AS new_session,
+                LAG(date) OVER(PARTITION BY person_id ORDER BY date) != DATE_SUB(date, INTERVAL 1 DAY) AS date_gap
+            FROM dedup_step_4_cte
+            )
         )
-    GROUP BY group_continuous_dates_in_compartment, person_id, state_code, metric_source,
-        compartment_level_1, compartment_level_2,
-        compartment_location, correctional_level, supervising_officer_external_id, case_type
-    ORDER BY MIN(DATE) ASC
+    GROUP BY 1,2,3,4,5,6,7,8,9,10
     )
-    ,
-    sessionized_null_end_date_cte AS
     /*
     Same as sessionized cte with null end dates for active sessions.
     */
-    (
     SELECT 
         s.person_id,
+        s.dataflow_session_id,
         s.state_code,
         s.metric_source,
         s.compartment_level_1,
@@ -400,10 +402,6 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = """
     FROM sessionized_cte s
     LEFT JOIN last_day_of_data_by_state l
         USING(state_code)
-    )
-    SELECT *,
-        ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY start_date ASC) AS dataflow_session_id,
-    FROM sessionized_null_end_date_cte
 """
 
 DATAFLOW_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
