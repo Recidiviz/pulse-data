@@ -86,6 +86,9 @@ from recidiviz.validation.views.state.incarceration_admission_person_level_exter
 from recidiviz.validation.views.state.incarceration_lengths_by_demographics_internal_consistency import (
     INCARCERATION_LENGTHS_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.incarceration_period_dates_existence import (
+    INCARCERATION_PERIOD_DATES_EXISTENCE_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.incarceration_population_by_admission_reason_internal_consistency import (
     INCARCERATION_POPULATION_BY_ADMISSION_REASON_INTERNAL_CONSISTENCY_VIEW_BUILDER,
 )
@@ -195,6 +198,9 @@ from recidiviz.validation.views.state.revocations_by_period_dashboard_comparison
 )
 from recidiviz.validation.views.state.sentence_type_by_district_by_demographics_internal_consistency import (
     SENTENCE_TYPE_BY_DISTRICT_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.supervision_period_dates_existence import (
+    SUPERVISION_PERIOD_DATES_EXISTENCE_VIEW_BUILDER,
 )
 from recidiviz.validation.views.state.supervision_population_by_district_by_demographics_internal_consistency import (
     SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER,
@@ -363,6 +369,14 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         ExistenceDataValidationCheck(
             view_builder=INVALID_ADMISSION_REASON_AND_PFI_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=INCARCERATION_PERIOD_DATES_EXISTENCE_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=SUPERVISION_PERIOD_DATES_EXISTENCE_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
         ),
         SamenessDataValidationCheck(
