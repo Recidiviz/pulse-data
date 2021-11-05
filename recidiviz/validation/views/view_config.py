@@ -76,6 +76,9 @@ from recidiviz.validation.views.state.incarceration_admission_person_level_exter
 from recidiviz.validation.views.state.incarceration_lengths_by_demographics_internal_consistency import (
     INCARCERATION_LENGTHS_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.incarceration_period_dates_existence import (
+    INCARCERATION_PERIOD_DATES_EXISTENCE_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.incarceration_population_by_admission_reason_internal_consistency import (
     INCARCERATION_POPULATION_BY_ADMISSION_REASON_INTERNAL_CONSISTENCY_VIEW_BUILDER,
 )
@@ -238,6 +241,9 @@ from recidiviz.validation.views.state.sessions_validation.session_supervision_st
 from recidiviz.validation.views.state.sessions_validation.session_supervision_terminations_to_dataflow_disaggregated import (
     SESSION_SUPERVISION_TERMINATIONS_TO_DATAFLOW_VIEW_BUILDER_DISAGGREGATED,
 )
+from recidiviz.validation.views.state.supervision_period_dates_existence import (
+    SUPERVISION_PERIOD_DATES_EXISTENCE_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.supervision_population_by_district_by_demographics_internal_consistency import (
     SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER,
 )
@@ -368,6 +374,8 @@ VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = (
         MOST_RECENT_ASSESSMENT_SCORE_BY_PERSON_BY_STATE_COMPARISON_VIEW_BUILDER,
         MOST_RECENT_FACE_TO_FACE_CONTACT_DATE_BY_PERSON_BY_STATE_COMPARISON_VIEW_BUILDER,
         SESSIONS_JUSTICE_COUNTS_COMPARISON_VIEW_BUILDER,
+        INCARCERATION_PERIOD_DATES_EXISTENCE_VIEW_BUILDER,
+        SUPERVISION_PERIOD_DATES_EXISTENCE_VIEW_BUILDER,
     ]
     + _CROSS_PROJECT_VALIDATION_VIEW_BUILDERS
     + POPULATION_PROJECTION_DATA_VALIDATION_VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE
