@@ -331,6 +331,14 @@ class StateSupervisionCaseComplianceManager:
             and lower_bound_inclusive <= contact.contact_date <= upper_bound_inclusive
         ]
 
+    def _awaiting_new_intake_assessment(
+        self,
+        evaluation_date: date,  # pylint: disable=unused-argument
+        most_recent_assessment_date: date,  # pylint: disable=unused-argument
+    ) -> bool:
+        # for states where this concept is applicable, override with necessary logic
+        return False
+
     def _get_recommended_supervision_downgrade_level(
         self, evaluation_date: date
     ) -> Optional[StateSupervisionLevel]:
@@ -355,18 +363,27 @@ class StateSupervisionCaseComplianceManager:
             )
         )
 
-        # if there is no assessment within the current supervision period, fall back to default level
-        # (which may be None)
         if (
             most_recent_assessment is None
             or most_recent_assessment.assessment_date is None
-            or most_recent_assessment.assessment_date < self.start_of_supervision
         ):
+            # fall back to default when a person has never been assessed
             recommended_level = policy.pre_assessment_level
         else:
+            # Scores can be missing for various reasons (incomplete assessments, etc),
+            # in which case we can't proceed with a recommendation
             if (last_score := most_recent_assessment.assessment_score) is None:
                 return None
 
+            if (
+                self._awaiting_new_intake_assessment(
+                    evaluation_date, most_recent_assessment.assessment_date
+                )
+                and current_level == policy.pre_assessment_level
+            ):
+                return None
+
+            # if we've gotten this far, we have an existing assessment score to work with
             recommended_level = policy.recommended_supervision_level_from_score(
                 self.person, last_score
             )
