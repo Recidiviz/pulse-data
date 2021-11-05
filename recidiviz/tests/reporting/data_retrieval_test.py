@@ -566,3 +566,71 @@ class DataRetrievalTests(TestCase):
             [mismatch["person_external_id"] for mismatch in mismatches],
             [client.person_external_id for client in many_opportunity_clients[11:16]],
         )
+
+    @freeze_time("2021-01-15 00:00")
+    def test_mismatches_without_dates(self) -> None:
+        many_opportunities_officer = generate_fake_officer(
+            "many_opportunities_officer", "many-opportunities@recidiviz.org"
+        )
+        many_opportunity_clients = [
+            generate_fake_client(
+                client_id=f"many_opportunities_client_{i}",
+                supervising_officer_id=many_opportunities_officer.external_id,
+                supervision_level=StateSupervisionLevel.MEDIUM,
+                last_assessment_date=date(2021, 1, i + 1),
+                assessment_score=1,
+            )
+            for i in range(4)
+        ]
+
+        opportunities = [
+            generate_fake_etl_opportunity(
+                officer_id=many_opportunities_officer.external_id,
+                person_external_id=client.person_external_id,
+                opportunity_type=OpportunityType.OVERDUE_DOWNGRADE,
+                opportunity_metadata={
+                    "assessmentScore": client.assessment_score,
+                    "latestAssessmentDate": str(client.most_recent_assessment_date),
+                    "recommendedSupervisionLevel": "MINIMUM",
+                },
+            )
+            for client in many_opportunity_clients
+        ]
+
+        # add one client who has never been assessed
+        many_opportunity_clients.append(
+            generate_fake_client(
+                client_id="many_opportunities_client_no_date",
+                supervising_officer_id=many_opportunities_officer.external_id,
+                supervision_level=StateSupervisionLevel.HIGH,
+                last_assessment_date=None,
+                assessment_score=None,
+            )
+        )
+        opportunities.append(
+            generate_fake_etl_opportunity(
+                officer_id=many_opportunities_officer.external_id,
+                person_external_id="many_opportunities_client_no_date",
+                opportunity_type=OpportunityType.OVERDUE_DOWNGRADE,
+                opportunity_metadata={
+                    "assessmentScore": None,
+                    "latestAssessmentDate": None,
+                    "recommendedSupervisionLevel": "MEDIUM",
+                },
+            )
+        )
+
+        with SessionFactory.using_database(self.database_key) as session:
+            session.expire_on_commit = False
+            session.add_all(
+                [many_opportunities_officer, *many_opportunity_clients, *opportunities]
+            )
+
+        mismatches = _get_mismatch_data_for_officer(
+            many_opportunities_officer.email_address
+        )
+        self.assertCountEqual(
+            [mismatch["person_external_id"] for mismatch in mismatches],
+            [client.person_external_id for client in many_opportunity_clients],
+        )
+        self.assertIsNone(mismatches[0]["last_assessment_date"])
