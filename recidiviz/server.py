@@ -62,6 +62,7 @@ from recidiviz.utils import environment, metadata, monitoring, structured_loggin
 from recidiviz.validation.validation_manager import validation_manager_blueprint
 
 structured_logging.setup()
+
 logging.info("[%s] Running server.py", datetime.datetime.now().isoformat())
 
 app = Flask(__name__)
