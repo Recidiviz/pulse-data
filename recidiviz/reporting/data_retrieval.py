@@ -56,6 +56,7 @@ from recidiviz.reporting.context.po_monthly_report.constants import (
 from recidiviz.reporting.email_reporting_utils import gcsfs_path_for_batch_metadata
 from recidiviz.reporting.recipient import Recipient
 from recidiviz.reporting.region_codes import REGION_CODES, InvalidRegionCodeException
+from recidiviz.reporting.types import SupervisionLevelMismatch
 
 MAX_SUPERVISION_MISMATCHES_TO_SHOW = 5
 IDEAL_SUPERVISION_MISMATCH_AGE_IN_DAYS = 30
@@ -216,7 +217,7 @@ def _top_opps_email_recipient_addresses() -> List[str]:
 
 def _get_mismatch_data_for_officer(
     officer_email: str,
-) -> List[Dict[str, str]]:
+) -> List[SupervisionLevelMismatch]:
     """Fetches the list of supervision mismatches on an officer's caseload for display
     in our email templates."""
     with SessionFactory.using_database(
@@ -249,7 +250,7 @@ def _get_mismatch_data_for_officer(
             and opp.opportunity.opportunity_type
             == OpportunityType.OVERDUE_DOWNGRADE.value
         ]
-        mismatches: List[Dict[str, str]] = []
+        mismatches: List[SupervisionLevelMismatch] = []
         for opp in opportunities:
             client = CaseTriageQuerier.etl_client_for_officer(
                 session, user_context, opp.person_external_id
@@ -274,7 +275,12 @@ def _get_mismatch_data_for_officer(
                 }
             )
 
-        mismatches.sort(key=lambda x: x["last_assessment_date"], reverse=True)
+        # we want clients without dates to rise to the top when sorting;
+        # they should be new to supervision
+        max_date_formatted = date.max.strftime("%Y-%m-%d")
+        mismatches.sort(
+            key=lambda x: x["last_assessment_date"] or max_date_formatted, reverse=True
+        )
         if len(mismatches) > MAX_SUPERVISION_MISMATCHES_TO_SHOW:
             cutoff_date = date.today() - timedelta(
                 days=IDEAL_SUPERVISION_MISMATCH_AGE_IN_DAYS
@@ -282,9 +288,10 @@ def _get_mismatch_data_for_officer(
 
             cutoff_index = len(mismatches) - MAX_SUPERVISION_MISMATCHES_TO_SHOW
             for i in range(cutoff_index):
+                assessment_date = mismatches[i]["last_assessment_date"]
                 if (
-                    dateutil.parser.parse(mismatches[i]["last_assessment_date"]).date()
-                    <= cutoff_date
+                    assessment_date
+                    and dateutil.parser.parse(assessment_date).date() <= cutoff_date
                 ):
                     cutoff_index = i
                     break

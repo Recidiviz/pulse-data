@@ -67,7 +67,7 @@ def generate_fake_client(
     last_face_to_face_date: Optional[date] = None,
     last_home_visit_date: Optional[date] = None,
     supervision_level: StateSupervisionLevel = StateSupervisionLevel.MEDIUM,
-    assessment_score: int = 1,
+    assessment_score: Optional[int] = 1,
 ) -> ETLClient:
     # these can trigger opportunities if they are overdue or upcoming;
     # default them to today to prevent unexpected side effects
