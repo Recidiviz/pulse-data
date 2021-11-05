@@ -1,9 +1,9 @@
 file_tag: ofndr_tst_cert
 file_description: |-
-  Has a single row for every LSIR assessment performed for someone under IDOC jurisdiction, with score details filled
-  out only if the test has been “certified” by the external service MHS (multi health systems). When someone completes
-  an LSIR assessment, an API is called to validate the results, and usually a the assessment is certified immediately.
-  Only assessments that are certified should be used by the DOC for any of its decisions.
+  Has a single row for every LSIR assessment performed for someone under IDOC jurisdiction and “certified” by the
+  external service MHS (multi health systems). When someone completes an LSIR assessment, an API is called to validate
+  the results, and usually a the assessment is certified immediately. Only assessments that are certified should be used
+  by the DOC for any of its decisions.
 primary_key_cols:
   - ofndr_tst_id
 columns:
@@ -25,7 +25,8 @@ columns:
       Date the test was certified
   - name: cert_pass_flg
     description: |-
-      (bool) Whether the test was certified
+      (bool) Whether the test passed certain certification tests. A "N" here doesn't actually mean the test has not been certified,
+      it typically refers to formatting problems.
   - name: updt_usr_id
     description: |-
       IDOC username of the last person to update this row

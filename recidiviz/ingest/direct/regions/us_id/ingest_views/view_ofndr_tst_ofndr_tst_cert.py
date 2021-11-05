@@ -29,13 +29,14 @@ EXCEPT
     (updt_usr_id, updt_dt, cert_xml_doc)
 FROM
     {ofndr_tst}
-LEFT JOIN
+# Use INNER JOIN to keep only records that appear in the ofndr_test_cert table
+# which indicates that the test has been certified
+INNER JOIN
     {ofndr_tst_cert}
 USING
     (ofndr_tst_id, assess_tst_id)
 WHERE
     {ofndr_tst}.assess_tst_id = '2'  # LSIR assessments
-    AND {ofndr_tst_cert}.cert_pass_flg = 'Y'  # Test score has been certified
 """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
