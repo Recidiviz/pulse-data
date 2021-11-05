@@ -278,7 +278,7 @@ def _handle_state_direct_ingest_file(
         project_id,
         _DIRECT_INGEST_PATH,
         {
-            "region_code": region_code,
+            "region": region_code,
             "bucket": bucket,
             "relative_file_path": relative_file_path,
             "start_ingest": str(start_ingest),
