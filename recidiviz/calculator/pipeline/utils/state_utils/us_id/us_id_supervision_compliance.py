@@ -62,7 +62,7 @@
 """
 import logging
 import sys
-from datetime import date
+from datetime import date, timedelta
 from typing import Dict, List, Optional, Tuple
 
 from dateutil.relativedelta import relativedelta
@@ -486,4 +486,17 @@ class UsIdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
             level_mapping=CURRENT_US_ID_ASSESSMENT_SCORE_RANGE,
             start_date=DATE_OF_SUPERVISION_LEVEL_SWITCH,
             pre_assessment_level=StateSupervisionLevel.MEDIUM,
+        )
+
+    def _awaiting_new_intake_assessment(
+        self, evaluation_date: date, most_recent_assessment_date: date
+    ) -> bool:
+        return (
+            # no assessment has been made since period start
+            most_recent_assessment_date < self.start_of_supervision
+            and
+            # initial assessment deadline has not passed yet
+            self.start_of_supervision
+            + timedelta(days=self._get_initial_assessment_number_of_days())
+            > evaluation_date
         )
