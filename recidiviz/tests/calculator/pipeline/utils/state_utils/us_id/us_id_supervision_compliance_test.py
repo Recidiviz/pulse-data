@@ -2855,7 +2855,7 @@ class TestSupervisionDowngrades(unittest.TestCase):
         assert recommended_level is not None
         self.assertTrue(recommended_level < level)
 
-    def test_no_assessment_in_period(self) -> None:
+    def test_no_assessment(self) -> None:
         evaluation_date = date(2020, 12, 31)
 
         person = self._person_with_gender(Gender.MALE)
@@ -2880,32 +2880,6 @@ class TestSupervisionDowngrades(unittest.TestCase):
             )
         )
 
-        assessment_previous_period = self._assessment_with_score(1)
-        assessment_previous_period.assessment_date = (
-            self.start_of_supervision - timedelta(days=450)
-        )
-
-        outdated_assessment_no_downgrade = UsIdSupervisionCaseCompliance(
-            person,
-            supervision_period=self._supervision_period_with_level(
-                StateSupervisionLevel.MEDIUM
-            ),
-            case_type=StateSupervisionCaseType.GENERAL,
-            start_of_supervision=self.start_of_supervision,
-            assessments=[assessment_previous_period],
-            supervision_contacts=[],
-            violation_responses=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
-            ),
-        )
-
-        self.assertIsNone(
-            outdated_assessment_no_downgrade._get_recommended_supervision_downgrade_level(
-                evaluation_date
-            )
-        )
-
         no_assessments_should_downgrade = UsIdSupervisionCaseCompliance(
             person,
             supervision_period=self._supervision_period_with_level(
@@ -2925,4 +2899,39 @@ class TestSupervisionDowngrades(unittest.TestCase):
                 evaluation_date
             ),
             StateSupervisionLevel.MEDIUM,
+        )
+
+    def test_no_assessment_intake(self) -> None:
+        supervision_start = date(2021, 3, 15)
+        evaluation_date = supervision_start + timedelta(days=40)
+
+        person = self._person_with_gender(Gender.MALE)
+
+        intake_no_downgrade = UsIdSupervisionCaseCompliance(
+            person,
+            supervision_period=self._supervision_period_with_level(
+                StateSupervisionLevel.MEDIUM
+            ),
+            case_type=StateSupervisionCaseType.GENERAL,
+            start_of_supervision=supervision_start,
+            assessments=[
+                # this would result in a MINIMUM recommendation
+                StateAssessment.new_with_defaults(
+                    state_code=StateCode.US_ID.value,
+                    assessment_type=StateAssessmentType.LSIR,
+                    assessment_date=supervision_start - timedelta(days=14),
+                    assessment_score=1,
+                )
+            ],
+            supervision_contacts=[],
+            violation_responses=[],
+            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+                incarceration_periods=[], ip_id_to_pfi_subtype={}
+            ),
+        )
+
+        self.assertIsNone(
+            intake_no_downgrade._get_recommended_supervision_downgrade_level(
+                evaluation_date
+            )
         )
