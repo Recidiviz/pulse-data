@@ -38,6 +38,7 @@ pre-commit = "*"
 #  other google libraries > 2.0.0). Version proto-plus==1.19.7 requires protobuf >= 3.19.0.
 proto-plus = "==1.19.6"
 pygtrie = "*"
+"ruamel.yaml" = "*"
 types-beautifulsoup4 = "*"
 types-dateparser = "*"
 types-flask = "*"
