@@ -92,3 +92,7 @@ num_allowed_rows_overrides:
     override_reason: TODO(#6254) - Likely a rare edge case related to how the ingest
       view and entity matching handles cases where a supervision period is deleted.
       There are 12 of these as of 3/5/2021.
+  - validation_name: supervision_period_dates_existence
+    hard_num_allowed_rows_override: 1
+    override_reason: There is one ingested supervision period that has empty
+      date fields, evidenced at the ingest view layer as well.
