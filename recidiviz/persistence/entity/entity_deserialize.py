@@ -22,6 +22,7 @@ import attr
 
 from recidiviz.common.attr_utils import (
     is_attr_decorated,
+    is_bool,
     is_date,
     is_enum,
     is_forward_ref,
@@ -116,8 +117,12 @@ def entity_deserialize(
                 return parse_date(field_value)
             if is_int(field):
                 return parse_int(field_value)
-            if field.type in {bool, Union[bool, None]}:
+            if is_bool(field):
                 return parse_bool(field_value)
+
+        if isinstance(field_value, bool):
+            if is_bool(field):
+                return field_value
 
         raise ValueError(f"Unsupported field {field.name}")
 
