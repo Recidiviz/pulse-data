@@ -130,7 +130,7 @@ class EntityTreeManifest(ManifestNode[EntityT]):
 
         for field_name, field_manifest in self.field_manifests.items():
             field_value = field_manifest.build_from_row(row)
-            if field_value:
+            if field_value is not None:
                 args[field_name] = field_value
 
         entity = self.entity_factory_cls.deserialize(**args)
@@ -265,7 +265,6 @@ class EntityTreeManifestFactory:
                 # These are flat fields and should be parsed into a ManifestNode[str],
                 # since all values will be converted from string -> real value in the
                 # deserializing entity factory.
-                BuildableAttrFieldType.BOOLEAN,
                 BuildableAttrFieldType.DATE,
                 BuildableAttrFieldType.STRING,
                 BuildableAttrFieldType.INTEGER,
@@ -279,6 +278,12 @@ class EntityTreeManifestFactory:
                 field_manifests[field_name] = build_str_manifest_from_raw(
                     pop_raw_flat_field_manifest(field_name, raw_fields_manifest),
                     delegate,
+                )
+            elif field_type is BuildableAttrFieldType.BOOLEAN:
+                field_manifests[field_name] = build_manifest_from_raw_typed(
+                    pop_raw_flat_field_manifest(field_name, raw_fields_manifest),
+                    delegate,
+                    bool,
                 )
             else:
                 raise ValueError(

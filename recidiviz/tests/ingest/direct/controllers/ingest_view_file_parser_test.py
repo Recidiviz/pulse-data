@@ -313,6 +313,34 @@ class IngestViewFileParserTest(unittest.TestCase):
         # Assert
         self.assertEqual(expected_output, parsed_output)
 
+    def test_boolean_field(self) -> None:
+        # Arrange
+        expected_output = [
+            FakePerson(
+                fake_state_code="US_XX",
+                name="ALICE",
+                birthdate=datetime.date(1962, 1, 29),
+                is_dead=True,
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                name="BOB",
+                birthdate=datetime.date(1954, 4, 29),
+                is_dead=False,
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                name="CHARLIE",
+                is_dead=False,
+            ),
+        ]
+
+        # Act
+        parsed_output = self._run_parse_for_tag("boolean_field")
+
+        # Assert
+        self.assertEqual(expected_output, parsed_output)
+
     def test_unpack_list_into_field(self) -> None:
         # Arrange
         expected_output = [

@@ -1,0 +1,12 @@
+manifest_language: 1.0.0
+input_columns:
+  - PERSONNAME
+  - DOB
+  - DEATH_DATE
+unused_columns: []
+output:
+  FakePerson:
+    name: PERSONNAME
+    birthdate: DOB
+    is_dead:
+      $not_null: DEATH_DATE

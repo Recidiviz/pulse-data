@@ -82,13 +82,11 @@ def are_new_offenses_violent(
     new_offense_1_ncic: str,
     new_offense_2_ncic: str,
     new_offense_3_ncic: str,
-) -> str:
-    """Returns whether any of the NCIC codes are for violent offenses, in boolean string
-    format.
-    """
+) -> bool:
+    """Returns whether any of the NCIC codes are for violent offenses."""
     violent_flags = [
         ncic.get_is_violent(code)
         for code in [new_offense_1_ncic, new_offense_2_ncic, new_offense_3_ncic]
         if code
     ]
-    return str(any(violent_flags))
+    return any(violent_flags)
