@@ -602,7 +602,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         }
 
         person_incarceration_periods = {
-            "person": [fake_person],
+            "persons": [fake_person],
             "supervision_periods": [],
             "incarceration_periods": [
                 initial_incarceration,
@@ -700,7 +700,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         }
 
         person_incarceration_periods = {
-            "person": [fake_person],
+            "persons": [fake_person],
             "supervision_periods": [],
             "incarceration_periods": [only_incarceration],
             "persons_to_recent_county_of_residence": [
@@ -766,7 +766,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         }
 
         person_incarceration_periods = {
-            "person": [fake_person],
+            "persons": [fake_person],
             "supervision_periods": [],
             "incarceration_periods": [],
             "persons_to_recent_county_of_residence": [
@@ -840,7 +840,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         }
 
         person_incarceration_periods = {
-            "person": [fake_person],
+            "persons": [fake_person],
             "supervision_periods": [],
             "incarceration_periods": [
                 initial_incarceration,
@@ -958,7 +958,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         }
 
         person_incarceration_periods = {
-            "person": [fake_person],
+            "persons": [fake_person],
             "supervision_periods": [],
             "incarceration_periods": [
                 subsequent_reincarceration,

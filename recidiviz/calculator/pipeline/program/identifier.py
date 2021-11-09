@@ -43,6 +43,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_ma
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
     supervising_officer_and_location_info,
 )
+from recidiviz.calculator.query.state.views.reference.supervision_period_to_agent_association import (
+    SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME,
+)
 from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentClass,
     StateAssessmentType,
@@ -75,7 +78,14 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
     def find_events(
         self, _person: StatePerson, identifier_context: IdentifierContextT
     ) -> List[ProgramEvent]:
-        return self._find_program_events(**identifier_context)
+        return self._find_program_events(
+            program_assignments=identifier_context[StateProgramAssignment.__name__],
+            assessments=identifier_context[StateAssessment.__name__],
+            supervision_periods=identifier_context[StateSupervisionPeriod.__name__],
+            supervision_period_to_agent_association=identifier_context[
+                SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME
+            ],
+        )
 
     def _find_program_events(
         self,

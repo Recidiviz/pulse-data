@@ -192,7 +192,9 @@ def person_and_kwargs_for_identifier(
     person = None
 
     for key, values in arg_to_entities_map.items():
-        if key == "person":
+        # TODO(#2769): Only check for StatePerson.__name__ once all pipelines have
+        #  been migrated to v2 entity hydration
+        if key in (StatePerson.__name__, "persons"):
             if not values:
                 raise ValueError(
                     f"Found no person values in arg_to_entities_map: {arg_to_entities_map}"
@@ -216,17 +218,18 @@ def select_all_by_person_query(
     state_code_filter: str,
     person_id_filter_set: Optional[Set[int]],
 ) -> str:
-    return select_all_query(
+    return select_query(
         dataset, table, state_code_filter, "person_id", person_id_filter_set
     )
 
 
-def select_all_query(
+def select_query(
     dataset: str,
     table: str,
     state_code_filter: str,
     unifying_id_field: Optional[str],
     unifying_id_field_filter_set: Optional[Set[int]],
+    columns_to_include: Optional[List[str]] = None,
 ) -> str:
     """Returns a query string formatted to select all contents of the table in the given dataset, filtering by the
     provided state code and unifying id filter sets, if necessary."""
@@ -234,8 +237,12 @@ def select_all_query(
     if not state_code_filter:
         raise ValueError(f"State code filter unexpectedly empty for table [{table}]")
 
+    if not columns_to_include:
+        columns_to_include = ["*"]
+
     entity_query = (
-        f"SELECT * FROM `{dataset}.{table}` WHERE state_code IN ('{state_code_filter}')"
+        f"SELECT {', '.join(columns_to_include)} FROM `{dataset}.{table}` WHERE "
+        f"state_code IN ('{state_code_filter}')"
     )
 
     if unifying_id_field_filter_set:

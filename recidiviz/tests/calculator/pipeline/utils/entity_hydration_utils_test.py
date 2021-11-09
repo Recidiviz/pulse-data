@@ -38,7 +38,6 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodStatus,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
-
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )

@@ -20,6 +20,7 @@ from typing import Any, Dict, Iterable, Optional, Set, TypeVar
 
 import apache_beam as beam
 from apache_beam import Pipeline
+from apache_beam.pvalue import PBegin
 from apache_beam.typehints import with_input_types, with_output_types
 
 from recidiviz.calculator.pipeline.utils.execution_utils import (
@@ -197,10 +198,9 @@ class ReadFromBigQuery(beam.PTransform):
         super().__init__()
         self._query = query
 
-    # pylint: disable=arguments-renamed
-    def expand(self, pipeline: Pipeline):
+    def expand(self, input_or_inputs: PBegin):
         return (
-            pipeline
+            input_or_inputs
             | "Read from BigQuery"
             >> beam.io.Read(
                 beam.io.ReadFromBigQuery(

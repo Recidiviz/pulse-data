@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2020 Recidiviz, Inc.
+# Copyright (C) 2021 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -547,10 +547,10 @@ class TestClassifyProgramAssignments(unittest.TestCase):
         }
 
         person_periods = {
-            "person": [fake_person],
-            "program_assignments": [program_assignment],
-            "assessments": [assessment],
-            "supervision_periods": [supervision_period],
+            entities.StatePerson.__name__: [fake_person],
+            entities.StateProgramAssignment.__name__: [program_assignment],
+            entities.StateAssessment.__name__: [assessment],
+            entities.StateSupervisionPeriod.__name__: [supervision_period],
             "supervision_period_to_agent_association": [
                 supervision_period_to_agent_map
             ],
@@ -641,10 +641,10 @@ class TestClassifyProgramAssignments(unittest.TestCase):
         }
 
         person_periods = {
-            "person": [fake_person],
-            "program_assignments": [program_assignment],
-            "assessments": [assessment],
-            "supervision_periods": [supervision_period],
+            entities.StatePerson.__name__: [fake_person],
+            entities.StateProgramAssignment.__name__: [program_assignment],
+            entities.StateAssessment.__name__: [assessment],
+            entities.StateSupervisionPeriod.__name__: [supervision_period],
             "supervision_period_to_agent_association": [
                 supervision_period_to_agent_map
             ],
@@ -725,10 +725,10 @@ class TestClassifyProgramAssignments(unittest.TestCase):
         }
 
         person_periods = {
-            "person": [fake_person],
-            "program_assignments": [],
-            "assessments": [assessment],
-            "supervision_periods": [supervision_period],
+            entities.StatePerson.__name__: [fake_person],
+            entities.StateProgramAssignment.__name__: [],
+            entities.StateAssessment.__name__: [assessment],
+            entities.StateSupervisionPeriod.__name__: [supervision_period],
             "supervision_period_to_agent_association": [
                 supervision_period_to_agent_map
             ],
@@ -783,10 +783,10 @@ class TestClassifyProgramAssignments(unittest.TestCase):
         }
 
         person_periods = {
-            "person": [fake_person],
-            "program_assignments": [program_assignment],
-            "assessments": [],
-            "supervision_periods": [supervision_period],
+            entities.StatePerson.__name__: [fake_person],
+            entities.StateProgramAssignment.__name__: [program_assignment],
+            entities.StateAssessment.__name__: [],
+            entities.StateSupervisionPeriod.__name__: [supervision_period],
             "supervision_period_to_agent_association": [
                 supervision_period_to_agent_map
             ],
@@ -848,10 +848,10 @@ class TestClassifyProgramAssignments(unittest.TestCase):
         supervision_period_to_agent_map = {"supervision_period_id": "fake_map"}
 
         person_periods = {
-            "person": [fake_person],
-            "program_assignments": [program_assignment],
-            "assessments": [assessment],
-            "supervision_periods": [],
+            entities.StatePerson.__name__: [fake_person],
+            entities.StateProgramAssignment.__name__: [program_assignment],
+            entities.StateAssessment.__name__: [assessment],
+            entities.StateSupervisionPeriod.__name__: [],
             "supervision_period_to_agent_association": [
                 supervision_period_to_agent_map
             ],

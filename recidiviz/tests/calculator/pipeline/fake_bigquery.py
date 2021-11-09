@@ -50,7 +50,7 @@ DataDictQueryFn = Callable[
 # Example query:
 # SELECT * FROM `recidiviz-staging.state.state_person` WHERE state_code IN ('US_XX') AND person_id IN (123, 456)
 ENTITY_TABLE_QUERY_REGEX = re.compile(
-    r"SELECT \* FROM `([a-z\d\-]+\.[a-z_]+)\.([a-z_]+)` "
+    r"SELECT ([A-Za-z_\ \,\*]+) FROM `([a-z\d\-]+\.[a-z_]+)\.([a-z_]+)` "
     r"WHERE state_code IN \(\'([\w\d]+)\'\)( AND ([a-z_]+) IN \(([\'\w\d ,]+)\))?"
 )
 
@@ -63,8 +63,28 @@ ENTITY_TABLE_QUERY_REGEX = re.compile(
 #       WHERE state_code IN ('US_XX') AND person_id IN (12345)) state_incarceration_incident
 # ON state_incarceration_incident.incarceration_incident_id
 #   = state_incarceration_incident_outcome.incarceration_incident_id
-ASSOCIATION_TABLE_QUERY_REGEX = re.compile(
+ASSOCIATION_TABLE_TUPLE_QUERY_REGEX = re.compile(
     r"SELECT ([a-z_]+\.[a-z_]+), ([a-z_]+\.[a-z_]+) "
+    r"FROM `([a-z\d\-]+\.[a-z_]+)\.([a-z_]+)` ([a-z_]+) "
+    r"JOIN \(SELECT \* FROM `([a-z\d\-]+\.[a-z_]+)\.([a-z_]+)` "
+    r"WHERE state_code IN \(\'([\w\d]+)\'\)( AND ([a-z_]+) IN \(([\'\w\d ,]+)\))?\) ([a-z_]+) "
+    r"ON ([a-z_]+\.[a-z_]+) = ([a-z_]+\.[a-z_]+)"
+)
+
+
+# Regex matching queries used by calc pipelines to hydrate association table rows
+# that include the unifying_id (usually person_id).
+# Example query (with newlines added for readability):
+# SELECT state_incarceration_incident.person_id as unifying_id,
+#   state_incarceration_incident_outcome.incarceration_incident_outcome_id,
+#   state_incarceration_incident_outcome.incarceration_incident_id
+# FROM `recidiviz-123.state.state_incarceration_incident_outcome` state_incarceration_incident_outcome
+# JOIN (SELECT * FROM `recidiviz-123.state.state_incarceration_incident`
+#       WHERE state_code IN ('US_XX') AND person_id IN (12345)) state_incarceration_incident
+# ON state_incarceration_incident.incarceration_incident_id
+#   = state_incarceration_incident_outcome.incarceration_incident_id
+ASSOCIATION_VALUES_QUERY_REGEX = re.compile(
+    r"SELECT ([a-z_]+\.[a-z_]+) as unifying_id, ([a-z_]+\.[a-z_]+), ([a-z_]+\.[a-z_]+) "
     r"FROM `([a-z\d\-]+\.[a-z_]+)\.([a-z_]+)` ([a-z_]+) "
     r"JOIN \(SELECT \* FROM `([a-z\d\-]+\.[a-z_]+)\.([a-z_]+)` "
     r"WHERE state_code IN \(\'([\w\d]+)\'\)( AND ([a-z_]+) IN \(([\'\w\d ,]+)\))?\) ([a-z_]+) "
@@ -146,11 +166,18 @@ class FakeReadFromBigQueryFactory:
         data_dict: DataTablesDict,
         unifying_id_field: str,
     ) -> List[NormalizedDatabaseDict]:
-        """Default implementation of the fake query function, which parses, validates, and replicates the behavior of
-        the provided query string, returning data out of the data_dict object."""
-        if re.match(ASSOCIATION_TABLE_QUERY_REGEX, query):
+        """Default implementation of the fake query function, which parses, validates,
+        and replicates the behavior of the provided query string, returning data out
+        of the data_dict object."""
+        if re.match(ASSOCIATION_TABLE_TUPLE_QUERY_REGEX, query):
             return FakeReadFromBigQueryFactory._do_fake_association_tables_query(
                 data_dict, query, expected_dataset, unifying_id_field
+            )
+
+        if re.match(ASSOCIATION_VALUES_QUERY_REGEX, query):
+            # TODO(#2769): Implement support for this kind of association query
+            raise NotImplementedError(
+                "Must implement to move all pipelines to v2 entity hydration."
             )
 
         if re.match(ENTITY_TABLE_QUERY_REGEX, query):
@@ -167,28 +194,29 @@ class FakeReadFromBigQueryFactory:
         expected_dataset: str,
         expected_unifying_id_field: str,
     ) -> List[NormalizedDatabaseDict]:
-        """Parses, validates, and replicates the behavior of the provided entity table query string, returning
-        data out of the data_dict object.
+        """Parses, validates, and replicates the behavior of the provided entity table
+        query string, returning data out of the data_dict object.
         """
         match = re.match(ENTITY_TABLE_QUERY_REGEX, query)
 
         if not match:
             raise ValueError(f"Query does not match regex: {query}")
 
-        dataset = match.group(1)
+        dataset = match.group(2)
 
         if dataset != expected_dataset:
             raise ValueError(
-                f"Found dataset {dataset} does not match expected dataset {expected_dataset}"
+                f"Found dataset {dataset} does not match expected "
+                f"dataset {expected_dataset}"
             )
 
-        table_name = match.group(2)
+        table_name = match.group(3)
         if table_name not in data_dict:
             raise ValueError(f"Table {table_name} not in data dict")
 
         all_table_rows = data_dict[table_name]
 
-        state_code_value = match.group(3)
+        state_code_value = match.group(4)
         if not state_code_value:
             raise ValueError(f"Found no state_code in query [{query}]")
 
@@ -200,14 +228,14 @@ class FakeReadFromBigQueryFactory:
             allow_none_values=False,
         )
 
-        unifying_id_field = match.group(5)
-        unifying_id_field_filter_list_str = match.group(6)
+        unifying_id_field = match.group(6)
+        unifying_id_field_filter_list_str = match.group(7)
 
         if unifying_id_field and unifying_id_field_filter_list_str:
             if unifying_id_field != expected_unifying_id_field:
                 raise ValueError(
-                    f"Expected value [{expected_unifying_id_field}] for unifying_id_field does not match: "
-                    f"[{unifying_id_field}"
+                    f"Expected value [{expected_unifying_id_field}] "
+                    f"for unifying_id_field does not match: [{unifying_id_field}"
                 )
 
             filtered_rows = filter_results(
@@ -219,8 +247,35 @@ class FakeReadFromBigQueryFactory:
             )
         elif unifying_id_field or unifying_id_field_filter_list_str:
             raise ValueError(
-                "Found one of unifying_id_field, unifying_id_field_filter_list_str is None, but not both."
+                "Found one of unifying_id_field, unifying_id_field_filter_list_str is"
+                " None, but not both."
             )
+
+        selected_columns = match.group(1)
+
+        if selected_columns != "*":
+            # This query selected for certain columns from the entity table. Filter
+            # output to just those columns.
+            col_entity_name_to_query_name_pairs = [
+                (col, col)
+                if " as " not in col
+                else (col.split(" as ")[0], col.split(" as ")[1])
+                for col in selected_columns.split(",")
+            ]
+
+            query_names_to_col_entity_names = {
+                query_name.strip(): col_name.strip()
+                for col_name, query_name in col_entity_name_to_query_name_pairs
+            }
+
+            filtered_rows_limited_columns: List[NormalizedDatabaseDict] = []
+            for row in filtered_rows:
+                limited_columns_row = {
+                    query_name: row[col_name]
+                    for query_name, col_name in query_names_to_col_entity_names.items()
+                }
+                filtered_rows_limited_columns.append(limited_columns_row)
+            filtered_rows = filtered_rows_limited_columns
 
         return filtered_rows
 
@@ -231,10 +286,10 @@ class FakeReadFromBigQueryFactory:
         expected_dataset: str,
         expected_unifying_id_field: str,
     ) -> List[NormalizedDatabaseDict]:
-        """Parses, validates, and replicates the behavior of the provided association table query string, returning
-        data out of the data_dict object.
+        """Parses, validates, and replicates the behavior of the provided association
+        table query string, returning data out of the data_dict object.
         """
-        match = re.match(ASSOCIATION_TABLE_QUERY_REGEX, query)
+        match = re.match(ASSOCIATION_TABLE_TUPLE_QUERY_REGEX, query)
         if not match:
             raise ValueError(f"Query does not match regex: {query}")
 
