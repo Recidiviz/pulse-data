@@ -45,7 +45,7 @@ class StateSupervisionContactConverterTest(unittest.TestCase):
         # Arrange
         ingest_contact = ingest_info_pb2.StateSupervisionContact(
             state_supervision_contact_id="CONTACT_ID",
-            contact_type="FACE_TO_FACE",
+            contact_type="DIRECT",
             status="COMPLETED",
             contact_reason="GENERAL_CONTACT",
             location="RESIDENCE",
@@ -67,8 +67,8 @@ class StateSupervisionContactConverterTest(unittest.TestCase):
             external_id="CONTACT_ID",
             status=StateSupervisionContactStatus.COMPLETED,
             status_raw_text="COMPLETED",
-            contact_type=StateSupervisionContactType.FACE_TO_FACE,
-            contact_type_raw_text="FACE_TO_FACE",
+            contact_type=StateSupervisionContactType.DIRECT,
+            contact_type_raw_text="DIRECT",
             contact_date=date(year=1111, month=1, day=2),
             state_code="US_CA",
             contact_reason=StateSupervisionContactReason.GENERAL_CONTACT,

@@ -17,7 +17,7 @@
 """Tests for the functions in us_id_supervision_compliance.py"""
 import unittest
 from datetime import date, timedelta
-from typing import List
+from typing import List, Optional
 
 from dateutil.relativedelta import relativedelta
 from parameterized import parameterized
@@ -204,7 +204,7 @@ class TestFaceToFaceContactsInComplianceMonth(unittest.TestCase):
         contact_wrong_type = StateSupervisionContact.new_with_defaults(
             state_code="US_ID",
             contact_date=date(2018, 4, 30),
-            contact_type=StateSupervisionContactType.WRITTEN_MESSAGE,
+            contact_type=StateSupervisionContactType.COLLATERAL,
             status=StateSupervisionContactStatus.COMPLETED,
         )
 
@@ -441,7 +441,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
                 state_code="US_ID",
                 contact_date=supervision_period.start_date,
                 # Only contact is invalid type
-                contact_type=StateSupervisionContactType.WRITTEN_MESSAGE,
+                contact_type=StateSupervisionContactType.COLLATERAL,
                 status=StateSupervisionContactStatus.COMPLETED,
             )
         ]
@@ -471,794 +471,229 @@ class TestNextRecommendedContactDate(unittest.TestCase):
 
         self.assertEqual(next_face_to_face, date(2018, 3, 8))
 
-    def test_next_recommended_face_to_face_date_contacts_minimum_level_general_case(
-        self,
-    ) -> None:
-        start_of_supervision = date(2018, 3, 5)
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=111,
-            external_id="sp1",
-            state_code="US_ID",
-            custodial_authority_raw_text="US_ID_DOC",
-            start_date=start_of_supervision,
-            termination_date=date(2018, 5, 19),
-            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
-            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            supervision_level=StateSupervisionLevel.MINIMUM,
-            supervision_level_raw_text="LOW",
-        )
-
-        supervision_contacts = [
-            StateSupervisionContact.new_with_defaults(
-                state_code="US_ID",
-                contact_date=start_of_supervision + relativedelta(days=1),
-                contact_type=StateSupervisionContactType.DIRECT,
-                status=StateSupervisionContactStatus.COMPLETED,
-            )
-        ]
-
-        evaluation_date = start_of_supervision + relativedelta(
-            days=(NEW_SUPERVISION_CONTACT_DEADLINE_BUSINESS_DAYS + 10)
-        )
-
-        us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
-            self.person,
-            supervision_period=supervision_period,
-            case_type=StateSupervisionCaseType.GENERAL,
-            start_of_supervision=start_of_supervision,
-            assessments=[],
-            supervision_contacts=supervision_contacts,
-            violation_responses=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
+    @parameterized.expand(
+        [
+            (
+                "minimum",
+                StateSupervisionLevel.MINIMUM,
+                "LOW",
+                [date(2018, 3, 6)],
+                date(2018, 3, 5)
+                + relativedelta(
+                    days=NEW_SUPERVISION_CONTACT_DEADLINE_BUSINESS_DAYS + 10
+                ),
+                date(2018, 9, 2),
             ),
-        )
-
-        face_to_face_frequency_sufficient = (
-            us_id_supervision_compliance._next_recommended_face_to_face_date(
-                evaluation_date
-            )
-        )
-
-        self.assertTrue(face_to_face_frequency_sufficient)
-
-    def test_next_recommended_face_to_face_date_contacts_minimum_level_deprecated_general_case(
-        self,
-    ) -> None:
-        start_of_supervision = date(2018, 3, 5)
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=111,
-            external_id="sp1",
-            state_code="US_ID",
-            custodial_authority_raw_text="US_ID_DOC",
-            start_date=start_of_supervision,
-            termination_date=date(2018, 5, 19),
-            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
-            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            supervision_level=StateSupervisionLevel.MINIMUM,
-            supervision_level_raw_text="LEVEL 1",
-        )
-
-        supervision_contacts = [
-            StateSupervisionContact.new_with_defaults(
-                state_code="US_ID",
-                contact_date=start_of_supervision + relativedelta(days=1),
-                contact_type=StateSupervisionContactType.DIRECT,
-                status=StateSupervisionContactStatus.COMPLETED,
-            )
-        ]
-
-        evaluation_date = start_of_supervision + relativedelta(
-            days=(NEW_SUPERVISION_CONTACT_DEADLINE_BUSINESS_DAYS + 10)
-        )
-
-        us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
-            self.person,
-            supervision_period=supervision_period,
-            case_type=StateSupervisionCaseType.GENERAL,
-            start_of_supervision=start_of_supervision,
-            assessments=[],
-            supervision_contacts=supervision_contacts,
-            violation_responses=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
+            (
+                "minimum_deprecated",
+                StateSupervisionLevel.MINIMUM,
+                "LEVEL 1",
+                [date(2018, 3, 6)],
+                date(2018, 3, 5)
+                + relativedelta(
+                    days=NEW_SUPERVISION_CONTACT_DEADLINE_BUSINESS_DAYS + 10
+                ),
+                None,
             ),
-        )
-
-        next_face_to_face = (
-            us_id_supervision_compliance._next_recommended_face_to_face_date(
-                evaluation_date
-            )
-        )
-
-        self.assertIsNone(next_face_to_face)
-
-    def test_next_recommended_face_to_face_date_contacts_maximum_level_up_to_date_one_contact_general_case(
-        self,
-    ) -> None:
-        start_of_supervision = date(2018, 3, 5)
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=111,
-            external_id="sp1",
-            state_code="US_ID",
-            custodial_authority_raw_text="US_ID_DOC",
-            start_date=start_of_supervision,
-            termination_date=date(2018, 5, 19),
-            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
-            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            supervision_level=StateSupervisionLevel.MAXIMUM,
-            supervision_level_raw_text="LEVEL 4",
-        )
-
-        supervision_contacts = [
-            StateSupervisionContact.new_with_defaults(
-                state_code="US_ID",
-                contact_date=start_of_supervision + relativedelta(days=1),
-                contact_type=StateSupervisionContactType.DIRECT,
-                status=StateSupervisionContactStatus.COMPLETED,
-            )
-        ]
-
-        evaluation_date = start_of_supervision + relativedelta(
-            days=(
-                DEPRECATED_MAXIMUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE - 10
-            )
-        )
-
-        us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
-            self.person,
-            supervision_period=supervision_period,
-            case_type=StateSupervisionCaseType.GENERAL,
-            start_of_supervision=start_of_supervision,
-            assessments=[],
-            supervision_contacts=supervision_contacts,
-            violation_responses=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
+            (
+                "maximum_up_to_date_one_contact",
+                StateSupervisionLevel.MAXIMUM,
+                "LEVEL 4",
+                [date(2018, 3, 6)],
+                date(2018, 3, 5)
+                + relativedelta(
+                    days=(
+                        DEPRECATED_MAXIMUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE
+                        - 10
+                    )
+                ),
+                date(2018, 4, 4),
             ),
-        )
-
-        face_to_face_frequency_sufficient = (
-            us_id_supervision_compliance._next_recommended_face_to_face_date(
-                evaluation_date
-            )
-        )
-
-        self.assertTrue(face_to_face_frequency_sufficient)
-
-    def test_next_recommended_face_to_face_date_contacts_maximum_level_up_to_date_two_contacts_general_case(
-        self,
-    ) -> None:
-        start_of_supervision = date(2018, 3, 5)
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=111,
-            external_id="sp1",
-            state_code="US_ID",
-            custodial_authority_raw_text="US_ID_DOC",
-            start_date=start_of_supervision,
-            termination_date=date(2018, 5, 19),
-            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
-            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            supervision_level=StateSupervisionLevel.MAXIMUM,
-            supervision_level_raw_text="LEVEL 4",
-        )
-
-        supervision_contacts = [
-            StateSupervisionContact.new_with_defaults(
-                state_code="US_ID",
-                contact_date=start_of_supervision + relativedelta(days=30),
-                contact_type=StateSupervisionContactType.DIRECT,
-                status=StateSupervisionContactStatus.COMPLETED,
+            (
+                "maximum_up_to_date_two_contacts",
+                StateSupervisionLevel.MAXIMUM,
+                "LEVEL 4",
+                [
+                    date(2018, 3, 5) + relativedelta(days=30),
+                    date(2018, 3, 5) + relativedelta(days=40),
+                ],
+                date(2018, 3, 5) + relativedelta(days=50),
+                date(2018, 5, 4),
             ),
-            StateSupervisionContact.new_with_defaults(
-                state_code="US_ID",
-                contact_date=start_of_supervision + relativedelta(days=40),
-                contact_type=StateSupervisionContactType.DIRECT,
-                status=StateSupervisionContactStatus.COMPLETED,
+            (
+                "maximum_not_up_to_date",
+                StateSupervisionLevel.MAXIMUM,
+                "LEVEL 4",
+                [
+                    date(2018, 3, 5)
+                    + relativedelta(
+                        days=DEPRECATED_MEDIUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE
+                        + 1
+                    )
+                ],
+                date(2018, 3, 5)
+                + relativedelta(
+                    days=DEPRECATED_MAXIMUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE
+                    + 10
+                ),
+                date(2018, 3, 8),
             ),
-        ]
-
-        evaluation_date = start_of_supervision + relativedelta(days=50)
-
-        us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
-            self.person,
-            supervision_period=supervision_period,
-            case_type=StateSupervisionCaseType.GENERAL,
-            start_of_supervision=start_of_supervision,
-            assessments=[],
-            supervision_contacts=supervision_contacts,
-            violation_responses=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
+            (
+                "high",
+                StateSupervisionLevel.HIGH,
+                "HIGH",
+                [
+                    date(2018, 3, 5)
+                    + relativedelta(
+                        days=HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE - 10
+                    ),
+                    date(2018, 3, 5)
+                    + relativedelta(
+                        days=HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE - 5
+                    ),
+                ],
+                date(2018, 3, 5)
+                + relativedelta(
+                    days=HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE
+                ),
+                date(2018, 3, 30),
             ),
-        )
-
-        face_to_face_frequency_sufficient = (
-            us_id_supervision_compliance._next_recommended_face_to_face_date(
-                evaluation_date
-            )
-        )
-
-        self.assertTrue(face_to_face_frequency_sufficient)
-
-    def test_next_recommended_face_to_face_date_contacts_high_level_general_case(
-        self,
-    ) -> None:
-        start_of_supervision = date(2018, 3, 5)
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=111,
-            external_id="sp1",
-            state_code="US_ID",
-            custodial_authority_raw_text="US_ID_DOC",
-            start_date=start_of_supervision,
-            termination_date=date(2018, 5, 19),
-            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
-            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            supervision_level=StateSupervisionLevel.HIGH,
-            supervision_level_raw_text="HIGH",
-        )
-
-        supervision_contacts = [
-            StateSupervisionContact.new_with_defaults(
-                state_code="US_ID",
-                contact_date=start_of_supervision
+            (
+                "high_deprecated",
+                StateSupervisionLevel.HIGH,
+                "LEVEL 3",
+                [
+                    date(2018, 3, 5)
+                    + relativedelta(
+                        days=DEPRECATED_HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE
+                        - 10
+                    ),
+                    date(2018, 3, 5)
+                    + relativedelta(
+                        days=DEPRECATED_HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE
+                        - 5
+                    ),
+                ],
+                date(2018, 3, 5)
+                + relativedelta(
+                    days=DEPRECATED_HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE
+                ),
+                date(2018, 4, 29),
+            ),
+            (
+                "high_up_to_date",
+                StateSupervisionLevel.HIGH,
+                "HIGH",
+                [date(2018, 3, 5)],
+                date(2018, 3, 5)
                 + relativedelta(
                     days=HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE - 10
                 ),
-                contact_type=StateSupervisionContactType.DIRECT,
-                status=StateSupervisionContactStatus.COMPLETED,
+                date(2018, 3, 20),
             ),
-            StateSupervisionContact.new_with_defaults(
-                state_code="US_ID",
-                contact_date=start_of_supervision
-                + relativedelta(
-                    days=HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE - 5
-                ),
-                contact_type=StateSupervisionContactType.DIRECT,
-                status=StateSupervisionContactStatus.COMPLETED,
-            ),
-        ]
-
-        evaluation_date = start_of_supervision + relativedelta(
-            days=HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE
-        )
-
-        us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
-            self.person,
-            supervision_period=supervision_period,
-            case_type=StateSupervisionCaseType.GENERAL,
-            start_of_supervision=start_of_supervision,
-            assessments=[],
-            supervision_contacts=supervision_contacts,
-            violation_responses=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
-            ),
-        )
-
-        face_to_face_frequency_sufficient = (
-            us_id_supervision_compliance._next_recommended_face_to_face_date(
-                evaluation_date
-            )
-        )
-
-        self.assertTrue(face_to_face_frequency_sufficient)
-
-    def test_next_recommended_face_to_face_date_contacts_high_level_deprecated_general_case(
-        self,
-    ) -> None:
-        start_of_supervision = date(2018, 3, 5)
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=111,
-            external_id="sp1",
-            state_code="US_ID",
-            custodial_authority_raw_text="US_ID_DOC",
-            start_date=start_of_supervision,
-            termination_date=date(2018, 5, 19),
-            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
-            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            supervision_level=StateSupervisionLevel.HIGH,
-            supervision_level_raw_text="LEVEL 3",
-        )
-
-        supervision_contacts = [
-            StateSupervisionContact.new_with_defaults(
-                state_code="US_ID",
-                contact_date=start_of_supervision
+            (
+                "high_deprecated_up_to_date",
+                StateSupervisionLevel.HIGH,
+                "LEVEL 3",
+                [date(2018, 3, 5)],
+                date(2018, 3, 5)
                 + relativedelta(
                     days=DEPRECATED_HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE
                     - 10
                 ),
-                contact_type=StateSupervisionContactType.DIRECT,
-                status=StateSupervisionContactStatus.COMPLETED,
+                date(2018, 4, 4),
             ),
-            StateSupervisionContact.new_with_defaults(
-                state_code="US_ID",
-                contact_date=start_of_supervision
+            (
+                "high_not_up_to_date",
+                StateSupervisionLevel.HIGH,
+                "HIGH",
+                [
+                    date(2018, 3, 5) + relativedelta(days=15),
+                    date(2018, 3, 5)
+                    + relativedelta(
+                        days=HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE + 1
+                    ),
+                ],
+                date(2018, 3, 5)
+                + relativedelta(
+                    days=HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE
+                ),
+                date(2018, 4, 4),
+            ),
+            (
+                "high_not_up_to_date_deprecated",
+                StateSupervisionLevel.HIGH,
+                "LEVEL 3",
+                [date(2018, 3, 5)],
+                date(2018, 3, 5)
                 + relativedelta(
                     days=DEPRECATED_HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE
-                    - 5
+                    + 10
                 ),
-                contact_type=StateSupervisionContactType.DIRECT,
-                status=StateSupervisionContactStatus.COMPLETED,
+                date(2018, 4, 4),
             ),
-        ]
-
-        evaluation_date = start_of_supervision + relativedelta(
-            days=DEPRECATED_HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE
-        )
-
-        us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
-            self.person,
-            supervision_period=supervision_period,
-            case_type=StateSupervisionCaseType.GENERAL,
-            start_of_supervision=start_of_supervision,
-            assessments=[],
-            supervision_contacts=supervision_contacts,
-            violation_responses=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
+            (
+                "medium_up_to_date",
+                StateSupervisionLevel.MEDIUM,
+                "MODERATE",
+                [date(2018, 3, 5)],
+                date(2018, 3, 5)
+                + relativedelta(
+                    days=(MEDIUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE - 10)
+                ),
+                date(2018, 4, 19),
             ),
-        )
-
-        face_to_face_frequency_sufficient = (
-            us_id_supervision_compliance._next_recommended_face_to_face_date(
-                evaluation_date
-            )
-        )
-
-        self.assertTrue(face_to_face_frequency_sufficient)
-
-    def test_next_recommended_face_to_face_date_contacts_maximum_level_not_up_to_date_general_case(
-        self,
-    ) -> None:
-        start_of_supervision = date(2018, 3, 5)
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=111,
-            external_id="sp1",
-            state_code="US_ID",
-            custodial_authority_raw_text="US_ID_DOC",
-            start_date=start_of_supervision,
-            termination_date=date(2018, 5, 19),
-            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
-            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            supervision_level=StateSupervisionLevel.MAXIMUM,
-            supervision_level_raw_text="LEVEL 4",
-        )
-
-        supervision_contacts = [
-            StateSupervisionContact.new_with_defaults(
-                state_code="US_ID",
-                contact_date=start_of_supervision
+            (
+                "medium_up_to_date_deprecated",
+                StateSupervisionLevel.MEDIUM,
+                "LEVEL 2",
+                [date(2018, 3, 5)],
+                date(2018, 3, 5)
                 + relativedelta(
                     days=DEPRECATED_MEDIUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE
-                    + 1
+                    - 10
                 ),
-                contact_type=StateSupervisionContactType.DIRECT,
-                status=StateSupervisionContactStatus.COMPLETED,
-            )
-        ]
-
-        evaluation_date = start_of_supervision + relativedelta(
-            days=DEPRECATED_MAXIMUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE + 10
-        )
-
-        us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
-            self.person,
-            supervision_period=supervision_period,
-            case_type=StateSupervisionCaseType.GENERAL,
-            start_of_supervision=start_of_supervision,
-            assessments=[],
-            supervision_contacts=supervision_contacts,
-            violation_responses=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
+                date(2018, 9, 1),
             ),
-        )
-
-        next_face_to_face = (
-            us_id_supervision_compliance._next_recommended_face_to_face_date(
-                evaluation_date
-            )
-        )
-
-        self.assertEqual(next_face_to_face, date(2018, 3, 8))
-
-    def test_next_recommended_face_to_face_date_contacts_high_level_up_to_date_general_case(
-        self,
-    ) -> None:
-        start_of_supervision = date(2018, 3, 5)
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=111,
-            external_id="sp1",
-            state_code="US_ID",
-            custodial_authority_raw_text="US_ID_DOC",
-            start_date=start_of_supervision,
-            termination_date=date(2018, 5, 19),
-            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
-            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            supervision_level=StateSupervisionLevel.HIGH,
-            supervision_level_raw_text="HIGH",
-        )
-
-        supervision_contacts = [
-            StateSupervisionContact.new_with_defaults(
-                state_code="US_ID",
-                contact_date=supervision_period.start_date,
-                contact_type=StateSupervisionContactType.DIRECT,
-                status=StateSupervisionContactStatus.COMPLETED,
-            )
-        ]
-
-        evaluation_date = start_of_supervision + relativedelta(
-            days=(HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE - 10)
-        )
-
-        us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
-            self.person,
-            supervision_period=supervision_period,
-            case_type=StateSupervisionCaseType.GENERAL,
-            start_of_supervision=start_of_supervision,
-            assessments=[],
-            supervision_contacts=supervision_contacts,
-            violation_responses=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
-            ),
-        )
-
-        face_to_face_frequency_sufficient = (
-            us_id_supervision_compliance._next_recommended_face_to_face_date(
-                evaluation_date
-            )
-        )
-
-        self.assertTrue(face_to_face_frequency_sufficient)
-
-    def test_next_recommended_face_to_face_date_contacts_high_level_up_to_date_deprecated_general_case(
-        self,
-    ) -> None:
-        start_of_supervision = date(2018, 3, 5)
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=111,
-            external_id="sp1",
-            state_code="US_ID",
-            custodial_authority_raw_text="US_ID_DOC",
-            start_date=start_of_supervision,
-            termination_date=date(2018, 5, 19),
-            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
-            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            supervision_level=StateSupervisionLevel.HIGH,
-            supervision_level_raw_text="LEVEL 3",
-        )
-
-        supervision_contacts = [
-            StateSupervisionContact.new_with_defaults(
-                state_code="US_ID",
-                contact_date=supervision_period.start_date,
-                contact_type=StateSupervisionContactType.DIRECT,
-                status=StateSupervisionContactStatus.COMPLETED,
-            )
-        ]
-
-        evaluation_date = start_of_supervision + relativedelta(
-            days=(DEPRECATED_HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE - 10)
-        )
-
-        us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
-            self.person,
-            supervision_period=supervision_period,
-            case_type=StateSupervisionCaseType.GENERAL,
-            start_of_supervision=start_of_supervision,
-            assessments=[],
-            supervision_contacts=supervision_contacts,
-            violation_responses=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
-            ),
-        )
-
-        face_to_face_frequency_sufficient = (
-            us_id_supervision_compliance._next_recommended_face_to_face_date(
-                evaluation_date
-            )
-        )
-
-        self.assertTrue(face_to_face_frequency_sufficient)
-
-    def test_next_recommended_face_to_face_date_contacts_high_level_not_up_to_date_general_case(
-        self,
-    ) -> None:
-        start_of_supervision = date(2018, 3, 5)
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=111,
-            external_id="sp1",
-            state_code="US_ID",
-            custodial_authority_raw_text="US_ID_DOC",
-            start_date=start_of_supervision,
-            termination_date=date(2018, 5, 19),
-            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
-            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            supervision_level=StateSupervisionLevel.HIGH,
-            supervision_level_raw_text="HIGH",
-        )
-
-        # One contact within the time window, one outside.
-        supervision_contacts = [
-            StateSupervisionContact.new_with_defaults(
-                state_code="US_ID",
-                contact_date=start_of_supervision + relativedelta(days=15),
-                contact_type=StateSupervisionContactType.DIRECT,
-                status=StateSupervisionContactStatus.COMPLETED,
-            ),
-            StateSupervisionContact.new_with_defaults(
-                state_code="US_ID",
-                contact_date=start_of_supervision
+            (
+                "medium_not_up_to_date",
+                StateSupervisionLevel.MEDIUM,
+                "MODERATE",
+                [
+                    date(2018, 3, 5) + relativedelta(days=15),
+                    date(2018, 3, 5)
+                    + relativedelta(
+                        days=MEDIUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE + 1
+                    ),
+                ],
+                date(2018, 3, 5)
                 + relativedelta(
-                    days=HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE + 1
+                    days=MEDIUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE
                 ),
-                contact_type=StateSupervisionContactType.DIRECT,
-                status=StateSupervisionContactStatus.COMPLETED,
+                date(2018, 5, 4),
             ),
-        ]
-
-        evaluation_date = start_of_supervision + relativedelta(
-            days=(HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE)
-        )
-
-        us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
-            self.person,
-            supervision_period=supervision_period,
-            case_type=StateSupervisionCaseType.GENERAL,
-            start_of_supervision=start_of_supervision,
-            assessments=[],
-            supervision_contacts=supervision_contacts,
-            violation_responses=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
-            ),
-        )
-
-        next_face_to_face = (
-            us_id_supervision_compliance._next_recommended_face_to_face_date(
-                evaluation_date
-            )
-        )
-
-        self.assertEqual(next_face_to_face, date(2018, 4, 4))
-
-    def test_next_recommended_face_to_face_date_contacts_high_level_not_up_to_date_deprecated_general_case(
-        self,
-    ) -> None:
-        start_of_supervision = date(2018, 3, 5)
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=111,
-            external_id="sp1",
-            state_code="US_ID",
-            custodial_authority_raw_text="US_ID_DOC",
-            start_date=start_of_supervision,
-            termination_date=date(2018, 5, 19),
-            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
-            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            supervision_level=StateSupervisionLevel.HIGH,
-            supervision_level_raw_text="LEVEL 3",
-        )
-
-        supervision_contacts = [
-            StateSupervisionContact.new_with_defaults(
-                state_code="US_ID",
-                contact_date=supervision_period.start_date,
-                contact_type=StateSupervisionContactType.DIRECT,
-                status=StateSupervisionContactStatus.COMPLETED,
-            )
-        ]
-
-        evaluation_date = start_of_supervision + relativedelta(
-            days=(DEPRECATED_HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE + 10)
-        )
-
-        us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
-            self.person,
-            supervision_period=supervision_period,
-            case_type=StateSupervisionCaseType.GENERAL,
-            start_of_supervision=start_of_supervision,
-            assessments=[],
-            supervision_contacts=supervision_contacts,
-            violation_responses=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
-            ),
-        )
-
-        next_face_to_face = (
-            us_id_supervision_compliance._next_recommended_face_to_face_date(
-                evaluation_date
-            )
-        )
-
-        self.assertEqual(next_face_to_face, date(2018, 4, 4))
-
-    def test_next_recommended_face_to_face_date_contacts_medium_level_up_to_date_general_case(
-        self,
-    ) -> None:
-        start_of_supervision = date(2018, 3, 5)
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=111,
-            external_id="sp1",
-            state_code="US_ID",
-            custodial_authority_raw_text="US_ID_DOC",
-            start_date=start_of_supervision,
-            termination_date=date(2018, 5, 19),
-            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
-            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            supervision_level=StateSupervisionLevel.MEDIUM,
-            supervision_level_raw_text="MODERATE",
-        )
-
-        supervision_contacts = [
-            StateSupervisionContact.new_with_defaults(
-                state_code="US_ID",
-                contact_date=supervision_period.start_date,
-                contact_type=StateSupervisionContactType.DIRECT,
-                status=StateSupervisionContactStatus.COMPLETED,
-            )
-        ]
-
-        evaluation_date = start_of_supervision + relativedelta(
-            days=(MEDIUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE - 10)
-        )
-
-        us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
-            self.person,
-            supervision_period=supervision_period,
-            case_type=StateSupervisionCaseType.GENERAL,
-            start_of_supervision=start_of_supervision,
-            assessments=[],
-            supervision_contacts=supervision_contacts,
-            violation_responses=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
-            ),
-        )
-
-        face_to_face_frequency_sufficient = (
-            us_id_supervision_compliance._next_recommended_face_to_face_date(
-                evaluation_date
-            )
-        )
-
-        self.assertTrue(face_to_face_frequency_sufficient)
-
-    def test_next_recommended_face_to_face_date_contacts_medium_level_up_to_date_deprecated_general_case(
-        self,
-    ) -> None:
-        start_of_supervision = date(2018, 3, 5)
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=111,
-            external_id="sp1",
-            state_code="US_ID",
-            custodial_authority_raw_text="US_ID_DOC",
-            start_date=start_of_supervision,
-            termination_date=date(2018, 5, 19),
-            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
-            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            supervision_level=StateSupervisionLevel.MEDIUM,
-            supervision_level_raw_text="LEVEL 2",
-        )
-
-        supervision_contacts = [
-            StateSupervisionContact.new_with_defaults(
-                state_code="US_ID",
-                contact_date=supervision_period.start_date,
-                contact_type=StateSupervisionContactType.DIRECT,
-                status=StateSupervisionContactStatus.COMPLETED,
-            )
-        ]
-
-        evaluation_date = start_of_supervision + relativedelta(
-            days=(
-                DEPRECATED_MEDIUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE - 10
-            )
-        )
-
-        us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
-            self.person,
-            supervision_period=supervision_period,
-            case_type=StateSupervisionCaseType.GENERAL,
-            start_of_supervision=start_of_supervision,
-            assessments=[],
-            supervision_contacts=supervision_contacts,
-            violation_responses=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
-            ),
-        )
-
-        face_to_face_frequency_sufficient = (
-            us_id_supervision_compliance._next_recommended_face_to_face_date(
-                evaluation_date
-            )
-        )
-
-        self.assertTrue(face_to_face_frequency_sufficient)
-
-    def test_next_recommended_face_to_face_date_contacts_medium_level_not_up_to_date_general_case(
-        self,
-    ) -> None:
-        start_of_supervision = date(2018, 3, 5)
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=111,
-            external_id="sp1",
-            state_code="US_ID",
-            custodial_authority_raw_text="US_ID_DOC",
-            start_date=start_of_supervision,
-            termination_date=date(2018, 5, 19),
-            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
-            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            supervision_level=StateSupervisionLevel.MEDIUM,
-            supervision_level_raw_text="MODERATE",
-        )
-
-        # One contact within the time window, one outside.
-        supervision_contacts = [
-            StateSupervisionContact.new_with_defaults(
-                state_code="US_ID",
-                contact_date=start_of_supervision + relativedelta(days=15),
-                contact_type=StateSupervisionContactType.DIRECT,
-                status=StateSupervisionContactStatus.COMPLETED,
-            ),
-            StateSupervisionContact.new_with_defaults(
-                state_code="US_ID",
-                contact_date=start_of_supervision
+            (
+                "medium_not_up_to_date_deprecated",
+                StateSupervisionLevel.MEDIUM,
+                "LEVEL 2",
+                [date(2018, 3, 5)],
+                date(2018, 3, 5)
                 + relativedelta(
-                    days=MEDIUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE + 1
+                    days=DEPRECATED_MEDIUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE
+                    + 10
                 ),
-                contact_type=StateSupervisionContactType.DIRECT,
-                status=StateSupervisionContactStatus.COMPLETED,
+                date(2018, 9, 1),
             ),
         ]
-
-        evaluation_date = start_of_supervision + relativedelta(
-            days=(MEDIUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE)
-        )
-
-        us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
-            self.person,
-            supervision_period=supervision_period,
-            case_type=StateSupervisionCaseType.GENERAL,
-            start_of_supervision=start_of_supervision,
-            assessments=[],
-            supervision_contacts=supervision_contacts,
-            violation_responses=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
-            ),
-        )
-
-        next_face_to_face = (
-            us_id_supervision_compliance._next_recommended_face_to_face_date(
-                evaluation_date
-            )
-        )
-
-        self.assertEqual(next_face_to_face, date(2018, 5, 4))
-
-    def test_next_recommended_face_to_face_date_contacts_medium_level_not_up_to_date_deprecated_general_case(
+    )
+    def test_next_recommended_face_to_face_date_contacts_general_case_per_level(
         self,
+        _name: str,
+        supervision_level: StateSupervisionLevel,
+        supervision_level_raw_text: str,
+        contact_dates: List[date],
+        evaluation_date: date,
+        expected_contact_date: Optional[date],
     ) -> None:
         start_of_supervision = date(2018, 3, 5)
         supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -1271,24 +706,19 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            supervision_level=StateSupervisionLevel.MEDIUM,
-            supervision_level_raw_text="LEVEL 2",
+            supervision_level=supervision_level,
+            supervision_level_raw_text=supervision_level_raw_text,
         )
 
         supervision_contacts = [
             StateSupervisionContact.new_with_defaults(
                 state_code="US_ID",
-                contact_date=supervision_period.start_date,
+                contact_date=contact_date,
                 contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
             )
+            for contact_date in contact_dates
         ]
-
-        evaluation_date = start_of_supervision + relativedelta(
-            days=(
-                DEPRECATED_MEDIUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE + 10
-            )
-        )
 
         us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
             self.person,
@@ -1303,13 +733,13 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             ),
         )
 
-        next_face_to_face = (
+        next_recommended_face_to_face_date = (
             us_id_supervision_compliance._next_recommended_face_to_face_date(
                 evaluation_date
             )
         )
 
-        self.assertEqual(next_face_to_face, date(2018, 9, 1))
+        self.assertEqual(next_recommended_face_to_face_date, expected_contact_date)
 
     def test_next_recommended_face_to_face_date_contacts_new_case_opened_on_friday_general_case(
         self,
@@ -1397,164 +827,106 @@ class TestNextRecommendedContactDate(unittest.TestCase):
 
         self.assertTrue(face_to_face_frequency_sufficient)
 
-    def test_next_recommended_face_to_face_date_contacts_minimum_level_sex_offense_case(
-        self,
-    ) -> None:
-        start_of_supervision = date(2018, 3, 5)
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=111,
-            external_id="sp1",
-            state_code="US_ID",
-            custodial_authority_raw_text="US_ID_DOC",
-            start_date=start_of_supervision,
-            termination_date=date(2018, 5, 19),
-            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
-            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            supervision_level=StateSupervisionLevel.MINIMUM,
-            supervision_level_raw_text="SO LOW",
-        )
-
-        supervision_contacts = [
-            StateSupervisionContact.new_with_defaults(
-                state_code="US_ID",
-                contact_date=start_of_supervision + relativedelta(days=1),
-                contact_type=StateSupervisionContactType.DIRECT,
-                status=StateSupervisionContactStatus.COMPLETED,
-            )
-        ]
-
-        evaluation_date = start_of_supervision + relativedelta(
-            days=(MINIMUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_SEX_OFFENSE_CASE - 1)
-        )
-
-        us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
-            self.person,
-            supervision_period=supervision_period,
-            case_type=StateSupervisionCaseType.GENERAL,
-            start_of_supervision=start_of_supervision,
-            assessments=[],
-            supervision_contacts=supervision_contacts,
-            violation_responses=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
+    @parameterized.expand(
+        [
+            (
+                "minimum",
+                StateSupervisionLevel.MINIMUM,
+                "SO LOW",
+                [date(2018, 3, 5) + relativedelta(days=1)],
+                date(2018, 3, 5)
+                + relativedelta(
+                    days=MINIMUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_SEX_OFFENSE_CASE - 1
+                ),
+                date(2018, 6, 4),
             ),
-        )
-
-        next_face_to_face = (
-            us_id_supervision_compliance._next_recommended_face_to_face_date(
-                evaluation_date
-            )
-        )
-
-        self.assertIsNone(next_face_to_face)
-
-    def test_next_recommended_face_to_face_date_contacts_minimum_level_sex_offense_case_not_met(
-        self,
-    ) -> None:
-        start_of_supervision = date(2018, 3, 5)
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=111,
-            external_id="sp1",
-            state_code="US_ID",
-            custodial_authority_raw_text="US_ID_DOC",
-            start_date=start_of_supervision,
-            termination_date=date(2018, 5, 19),
-            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
-            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            supervision_level=StateSupervisionLevel.MINIMUM,
-            supervision_level_raw_text="SO LOW",
-        )
-
-        supervision_contacts = [
-            StateSupervisionContact.new_with_defaults(
-                state_code="US_ID",
-                contact_date=start_of_supervision + relativedelta(days=1),
-                contact_type=StateSupervisionContactType.DIRECT,
-                status=StateSupervisionContactStatus.COMPLETED,
-            )
-        ]
-
-        evaluation_date = start_of_supervision + relativedelta(
-            days=(MINIMUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_SEX_OFFENSE_CASE + 1)
-        )
-
-        us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
-            self.person,
-            supervision_period=supervision_period,
-            case_type=StateSupervisionCaseType.SEX_OFFENSE,
-            start_of_supervision=start_of_supervision,
-            assessments=[],
-            supervision_contacts=supervision_contacts,
-            violation_responses=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
+            (
+                "minimum_case_not_met",
+                StateSupervisionLevel.MINIMUM,
+                "SO LOW",
+                [date(2018, 3, 5) + relativedelta(days=1)],
+                date(2018, 3, 5)
+                + relativedelta(
+                    days=MINIMUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_SEX_OFFENSE_CASE + 1
+                ),
+                date(2018, 6, 4),
             ),
-        )
-
-        next_face_to_face_date = (
-            us_id_supervision_compliance._next_recommended_face_to_face_date(
-                evaluation_date
-            )
-        )
-
-        self.assertEqual(next_face_to_face_date, date(2018, 6, 4))
-
-    def test_next_recommended_face_to_face_date_contacts_medium_level_sex_offense_case(
-        self,
-    ) -> None:
-        start_of_supervision = date(2018, 3, 5)
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=111,
-            external_id="sp1",
-            state_code="US_ID",
-            custodial_authority_raw_text="US_ID_DOC",
-            start_date=start_of_supervision,
-            termination_date=date(2018, 5, 19),
-            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
-            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            supervision_level=StateSupervisionLevel.MEDIUM,
-            supervision_level_raw_text="SO MODERATE",
-        )
-
-        supervision_contacts = [
-            StateSupervisionContact.new_with_defaults(
-                state_code="US_ID",
-                contact_date=start_of_supervision + relativedelta(days=1),
-                contact_type=StateSupervisionContactType.DIRECT,
-                status=StateSupervisionContactStatus.COMPLETED,
-            )
-        ]
-
-        evaluation_date = start_of_supervision + relativedelta(
-            days=(MEDIUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_SEX_OFFENSE_CASE - 1)
-        )
-
-        us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
-            self.person,
-            supervision_period=supervision_period,
-            case_type=StateSupervisionCaseType.GENERAL,
-            start_of_supervision=start_of_supervision,
-            assessments=[],
-            supervision_contacts=supervision_contacts,
-            violation_responses=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
+            (
+                "medium",
+                StateSupervisionLevel.MEDIUM,
+                "SO MODERATE",
+                [date(2018, 3, 5) + relativedelta(days=1)],
+                date(2018, 3, 5)
+                + relativedelta(
+                    days=MEDIUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_SEX_OFFENSE_CASE - 1
+                ),
+                date(2018, 4, 5),
             ),
-        )
-
-        face_to_face_frequency_sufficient = (
-            us_id_supervision_compliance._next_recommended_face_to_face_date(
-                evaluation_date
-            )
-        )
-
-        self.assertTrue(face_to_face_frequency_sufficient)
-
-    def test_next_recommended_face_to_face_date_contacts_medium_level_sex_offense_case_not_met(
+            (
+                "medium_case_not_met",
+                StateSupervisionLevel.MEDIUM,
+                "SO MODERATE",
+                [date(2018, 3, 5) + relativedelta(days=1)],
+                date(2018, 3, 5)
+                + relativedelta(
+                    days=MEDIUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_SEX_OFFENSE_CASE + 1
+                ),
+                date(2018, 4, 5),
+            ),
+            (
+                "high",
+                StateSupervisionLevel.HIGH,
+                "SO HIGH",
+                [
+                    date(2018, 3, 5)
+                    + relativedelta(
+                        days=HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS_SEX_OFFENSE_CASE
+                        - 10
+                    ),
+                    date(2018, 3, 5)
+                    + relativedelta(
+                        days=HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS_SEX_OFFENSE_CASE
+                        - 20
+                    ),
+                ],
+                date(2018, 3, 5)
+                + relativedelta(
+                    days=HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS_SEX_OFFENSE_CASE
+                ),
+                date(2018, 4, 14),
+            ),
+            (
+                "high_case_not_met",
+                StateSupervisionLevel.HIGH,
+                "SO HIGH",
+                [
+                    date(2018, 3, 5)
+                    + relativedelta(
+                        days=HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS_SEX_OFFENSE_CASE
+                        - 10
+                    ),
+                    date(2018, 3, 5)
+                    + relativedelta(
+                        days=HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS_SEX_OFFENSE_CASE
+                        + 10
+                    ),
+                ],
+                date(2018, 3, 5)
+                + relativedelta(
+                    days=HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS_SEX_OFFENSE_CASE
+                ),
+                date(2018, 4, 4),
+            ),
+        ]
+    )
+    def test_next_recommended_face_to_face_date_contacts_sex_offense_case_per_level(
         self,
+        _name: str,
+        supervision_level: StateSupervisionLevel,
+        supervision_level_raw_text: str,
+        contact_dates: List[date],
+        evaluation_date: date,
+        expected_contact_date: Optional[date],
     ) -> None:
         start_of_supervision = date(2018, 3, 5)
         supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -1567,22 +939,19 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            supervision_level=StateSupervisionLevel.MEDIUM,
-            supervision_level_raw_text="SO MODERATE",
+            supervision_level=supervision_level,
+            supervision_level_raw_text=supervision_level_raw_text,
         )
 
         supervision_contacts = [
             StateSupervisionContact.new_with_defaults(
                 state_code="US_ID",
-                contact_date=start_of_supervision + relativedelta(days=1),
+                contact_date=contact_date,
                 contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
             )
+            for contact_date in contact_dates
         ]
-
-        evaluation_date = start_of_supervision + relativedelta(
-            days=(MEDIUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_SEX_OFFENSE_CASE + 1)
-        )
 
         us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
             self.person,
@@ -1603,136 +972,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             )
         )
 
-        self.assertEqual(next_face_to_face, date(2018, 4, 5))
-
-    def test_next_recommended_face_to_face_date_contacts_high_level_sex_offense_case(
-        self,
-    ) -> None:
-        start_of_supervision = date(2018, 3, 5)
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=111,
-            external_id="sp1",
-            state_code="US_ID",
-            custodial_authority_raw_text="US_ID_DOC",
-            start_date=start_of_supervision,
-            termination_date=date(2018, 5, 19),
-            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
-            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            supervision_level=StateSupervisionLevel.HIGH,
-            supervision_level_raw_text="SO HIGH",
-        )
-
-        supervision_contacts = [
-            StateSupervisionContact.new_with_defaults(
-                state_code="US_ID",
-                contact_date=start_of_supervision
-                + relativedelta(
-                    days=HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS_SEX_OFFENSE_CASE - 10
-                ),
-                contact_type=StateSupervisionContactType.DIRECT,
-                status=StateSupervisionContactStatus.COMPLETED,
-            ),
-            StateSupervisionContact.new_with_defaults(
-                state_code="US_ID",
-                contact_date=start_of_supervision
-                + relativedelta(
-                    days=HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS_SEX_OFFENSE_CASE - 20
-                ),
-                contact_type=StateSupervisionContactType.DIRECT,
-                status=StateSupervisionContactStatus.COMPLETED,
-            ),
-        ]
-
-        evaluation_date = start_of_supervision + relativedelta(
-            days=(HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS_SEX_OFFENSE_CASE)
-        )
-
-        us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
-            self.person,
-            supervision_period=supervision_period,
-            case_type=StateSupervisionCaseType.GENERAL,
-            start_of_supervision=start_of_supervision,
-            assessments=[],
-            supervision_contacts=supervision_contacts,
-            violation_responses=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
-            ),
-        )
-
-        face_to_face_frequency_sufficient = (
-            us_id_supervision_compliance._next_recommended_face_to_face_date(
-                evaluation_date
-            )
-        )
-
-        self.assertTrue(face_to_face_frequency_sufficient)
-
-    def test_next_recommended_face_to_face_date_contacts_high_level_sex_offense_case_not_met(
-        self,
-    ) -> None:
-        start_of_supervision = date(2018, 3, 5)
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=111,
-            external_id="sp1",
-            state_code="US_ID",
-            custodial_authority_raw_text="US_ID_DOC",
-            start_date=start_of_supervision,
-            termination_date=date(2018, 5, 19),
-            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
-            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            supervision_level=StateSupervisionLevel.HIGH,
-            supervision_level_raw_text="SO HIGH",
-        )
-
-        # One contact within in time period, and one after.
-        supervision_contacts = [
-            StateSupervisionContact.new_with_defaults(
-                state_code="US_ID",
-                contact_date=start_of_supervision
-                + relativedelta(
-                    days=HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS_SEX_OFFENSE_CASE - 10
-                ),
-                contact_type=StateSupervisionContactType.DIRECT,
-                status=StateSupervisionContactStatus.COMPLETED,
-            ),
-            StateSupervisionContact.new_with_defaults(
-                state_code="US_ID",
-                contact_date=start_of_supervision
-                + relativedelta(
-                    days=HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS_SEX_OFFENSE_CASE + 10
-                ),
-                contact_type=StateSupervisionContactType.DIRECT,
-                status=StateSupervisionContactStatus.COMPLETED,
-            ),
-        ]
-
-        evaluation_date = start_of_supervision + relativedelta(
-            days=(HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS_SEX_OFFENSE_CASE)
-        )
-
-        us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
-            self.person,
-            supervision_period=supervision_period,
-            case_type=StateSupervisionCaseType.SEX_OFFENSE,
-            start_of_supervision=start_of_supervision,
-            assessments=[],
-            supervision_contacts=supervision_contacts,
-            violation_responses=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
-            ),
-        )
-
-        next_face_to_face = (
-            us_id_supervision_compliance._next_recommended_face_to_face_date(
-                evaluation_date
-            )
-        )
-
-        self.assertEqual(next_face_to_face, date(2018, 4, 4))
+        self.assertEqual(next_face_to_face, expected_contact_date)
 
     @parameterized.expand(
         [

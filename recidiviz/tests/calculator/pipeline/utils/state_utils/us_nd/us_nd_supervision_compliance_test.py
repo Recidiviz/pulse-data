@@ -22,6 +22,7 @@ from datetime import date
 from typing import List
 
 from dateutil.relativedelta import relativedelta
+from parameterized import parameterized
 
 from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
     PreProcessedIncarcerationPeriodIndex,
@@ -140,37 +141,37 @@ class TestFaceToFaceContactsInComplianceMonth(unittest.TestCase):
         contact_1 = StateSupervisionContact.new_with_defaults(
             state_code="US_ND",
             contact_date=date(2018, 4, 1),
-            contact_type=StateSupervisionContactType.FACE_TO_FACE,
+            contact_type=StateSupervisionContactType.DIRECT,
             status=StateSupervisionContactStatus.COMPLETED,
         )
         contact_2 = StateSupervisionContact.new_with_defaults(
             state_code="US_ND",
             contact_date=date(2018, 4, 15),
-            contact_type=StateSupervisionContactType.FACE_TO_FACE,
+            contact_type=StateSupervisionContactType.DIRECT,
             status=StateSupervisionContactStatus.COMPLETED,
         )
         contact_3 = StateSupervisionContact.new_with_defaults(
             state_code="US_ND",
             contact_date=date(2018, 4, 30),
-            contact_type=StateSupervisionContactType.FACE_TO_FACE,
+            contact_type=StateSupervisionContactType.DIRECT,
             status=StateSupervisionContactStatus.COMPLETED,
         )
         contact_out_of_range = StateSupervisionContact.new_with_defaults(
             state_code="US_ND",
             contact_date=date(2018, 3, 30),
-            contact_type=StateSupervisionContactType.FACE_TO_FACE,
+            contact_type=StateSupervisionContactType.DIRECT,
             status=StateSupervisionContactStatus.COMPLETED,
         )
         contact_incomplete = StateSupervisionContact.new_with_defaults(
             state_code="US_ND",
             contact_date=date(2018, 4, 30),
-            contact_type=StateSupervisionContactType.FACE_TO_FACE,
+            contact_type=StateSupervisionContactType.DIRECT,
             status=StateSupervisionContactStatus.ATTEMPTED,
         )
         contact_wrong_type = StateSupervisionContact.new_with_defaults(
             state_code="US_ND",
             contact_date=date(2018, 4, 30),
-            contact_type=StateSupervisionContactType.WRITTEN_MESSAGE,
+            contact_type=StateSupervisionContactType.COLLATERAL,
             status=StateSupervisionContactStatus.COMPLETED,
         )
 
@@ -463,7 +464,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             StateSupervisionContact.new_with_defaults(
                 state_code="US_ND",
                 contact_date=contact_date,
-                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
             )
             for contact_date in contact_dates
@@ -503,7 +504,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             StateSupervisionContact.new_with_defaults(
                 state_code=StateCode.US_ND.value,
                 contact_date=supervision_period.start_date,
-                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
             )
         ]
@@ -549,7 +550,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
                 state_code="US_ND",
                 # Only contact happened before supervision started
                 contact_date=start_of_supervision - relativedelta(days=100),
-                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
             )
         ]
@@ -598,7 +599,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             StateSupervisionContact.new_with_defaults(
                 state_code="US_ND",
                 contact_date=supervision_period.start_date,
-                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                contact_type=StateSupervisionContactType.DIRECT,
                 # Only contact was not completed
                 status=StateSupervisionContactStatus.ATTEMPTED,
             )
@@ -649,7 +650,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
                 state_code="US_ND",
                 contact_date=supervision_period.start_date,
                 # Only contact is invalid type
-                contact_type=StateSupervisionContactType.WRITTEN_MESSAGE,
+                contact_type=StateSupervisionContactType.COLLATERAL,
                 status=StateSupervisionContactStatus.COMPLETED,
             )
         ]
@@ -698,7 +699,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
                 state_code="US_ND",
                 contact_date=start_of_supervision,
                 # Only contact is invalid type
-                contact_type=StateSupervisionContactType.WRITTEN_MESSAGE,
+                contact_type=StateSupervisionContactType.COLLATERAL,
                 status=StateSupervisionContactStatus.COMPLETED,
             )
         ]
@@ -725,22 +726,48 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
 
         self.assertEqual(next_face_to_face, date(2018, 6, 30))
 
-    def test_next_recommended_face_to_face_date_contacts_minimum_level(
+    @parameterized.expand(
+        [
+            (
+                "minimum",
+                StateSupervisionLevel.MINIMUM,
+                [date(2018, 3, 5) + relativedelta(days=89)],
+                date(2018, 3, 5) + relativedelta(days=170),
+            ),
+            (
+                "medium",
+                StateSupervisionLevel.MEDIUM,
+                [date(2018, 3, 5) + relativedelta(days=58)],
+                date(2018, 3, 5) + relativedelta(days=99),
+            ),
+            # note that the evaluation date is outside 30 days but within the next
+            # calendar month so the contact requirement should still be fulfilled
+            (
+                "maximum",
+                StateSupervisionLevel.MAXIMUM,
+                [
+                    date(2018, 3, 20),
+                    date(2018, 4, 2),
+                ],
+                date(2018, 5, 28),
+            ),
+        ]
+    )
+    def test_next_recommended_face_to_face_date_contacts_per_level(
         self,
+        _name: str,
+        supervision_level: StateSupervisionLevel,
+        contact_dates: List[date],
+        evaluation_date: date,
     ) -> None:
-        """Tests face to face contacts for the minimum level case."""
         start_of_supervision = date(2018, 3, 5)
 
         us_nd_supervision_compliance = self.generate_supervision_case_compliance(
             start_of_supervision=start_of_supervision,
             termination_date=date(2018, 5, 19),
-            supervision_level=StateSupervisionLevel.MINIMUM,
-            contact_dates=[
-                start_of_supervision + relativedelta(days=89),
-            ],
+            supervision_level=supervision_level,
+            contact_dates=contact_dates,
         )
-
-        evaluation_date = start_of_supervision + relativedelta(days=170)
 
         next_recommended_face_to_face_date = (
             us_nd_supervision_compliance._next_recommended_face_to_face_date(
@@ -748,76 +775,49 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             )
         )
 
-        self.assertTrue(next_recommended_face_to_face_date)
+        self.assertIsNotNone(next_recommended_face_to_face_date)
 
-    def test_next_recommended_face_to_face_date_insufficient_contacts_minimum_level(
+    @parameterized.expand(
+        [
+            (
+                "minimum",
+                StateSupervisionLevel.MINIMUM,
+                [date(2018, 3, 5) + relativedelta(days=89)],
+                date(2018, 3, 5) + relativedelta(days=290),
+                date(2018, 9, 30),
+            ),
+            (
+                "medium",
+                StateSupervisionLevel.MEDIUM,
+                [date(2018, 4, 30)],
+                date(2018, 7, 1),
+                date(2018, 6, 30),
+            ),
+            (
+                "maximum",
+                StateSupervisionLevel.MAXIMUM,
+                [date(2018, 4, 2)],
+                date(2018, 6, 1),
+                date(2018, 5, 31),
+            ),
+        ]
+    )
+    def test_next_recommended_face_to_face_date_insufficient_contacts_per_level(
         self,
+        _name: str,
+        supervision_level: StateSupervisionLevel,
+        contact_dates: List[date],
+        evaluation_date: date,
+        expected_contact_date: date,
     ) -> None:
-        """Tests face to face contacts for the minimum level case."""
-        start_of_supervision = date(1618, 3, 5)
-
-        us_nd_supervision_compliance = self.generate_supervision_case_compliance(
-            start_of_supervision=start_of_supervision,
-            termination_date=date(1618, 5, 19),
-            supervision_level=StateSupervisionLevel.MINIMUM,
-            contact_dates=[
-                start_of_supervision + relativedelta(days=89),
-            ],
-        )
-
-        evaluation_date = start_of_supervision + relativedelta(days=290)
-
-        next_face_to_face = (
-            us_nd_supervision_compliance._next_recommended_face_to_face_date(
-                evaluation_date
-            )
-        )
-
-        self.assertEqual(next_face_to_face, date(1618, 9, 30))
-
-    def test_next_recommended_face_to_face_date_contacts_medium_level(
-        self,
-    ) -> None:
-        """Tests face to face contacts for the medium level case."""
         start_of_supervision = date(2018, 3, 5)
 
         us_nd_supervision_compliance = self.generate_supervision_case_compliance(
             start_of_supervision=start_of_supervision,
             termination_date=date(2018, 5, 19),
-            supervision_level=StateSupervisionLevel.MEDIUM,
-            contact_dates=[
-                start_of_supervision + relativedelta(days=58),
-            ],
+            supervision_level=supervision_level,
+            contact_dates=contact_dates,
         )
-
-        evaluation_date = start_of_supervision + relativedelta(days=99)
-
-        next_recommended_face_to_face_date = (
-            us_nd_supervision_compliance._next_recommended_face_to_face_date(
-                evaluation_date
-            )
-        )
-
-        self.assertTrue(next_recommended_face_to_face_date)
-
-    def test_next_recommended_face_to_face_date_insufficient_contacts_medium_level(
-        self,
-    ) -> None:
-        """Tests face to face contacts for the medium level case."""
-        start_of_supervision = date(1734, 3, 5)
-
-        us_nd_supervision_compliance = self.generate_supervision_case_compliance(
-            start_of_supervision=start_of_supervision,
-            termination_date=date(1736, 5, 19),
-            supervision_level=StateSupervisionLevel.MEDIUM,
-            contact_dates=[
-                date(1734, 4, 30),
-            ],
-        )
-
-        # First day of calendar month 3 after the last contact which should
-        # be the first date where contacts are overdue
-        evaluation_date = date(1734, 7, 1)
 
         next_face_to_face = (
             us_nd_supervision_compliance._next_recommended_face_to_face_date(
@@ -825,58 +825,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             )
         )
 
-        self.assertEqual(next_face_to_face, date(1734, 6, 30))
-
-    def test_next_recommended_face_to_face_date_contacts_maximum_level(
-        self,
-    ) -> None:
-        """Tests face to face contacts for the maximum level case."""
-        us_nd_supervision_compliance = self.generate_supervision_case_compliance(
-            start_of_supervision=date(1818, 3, 5),
-            termination_date=date(1820, 5, 19),
-            supervision_level=StateSupervisionLevel.MAXIMUM,
-            contact_dates=[
-                date(1818, 3, 20),
-                date(1818, 4, 2),
-            ],
-        )
-
-        # note that this is outside 30 days but within the next calendar month
-        # so the contact requirement should still be fulfilled
-        evaluation_date = date(1818, 5, 28)
-
-        next_recommended_face_to_face_date = (
-            us_nd_supervision_compliance._next_recommended_face_to_face_date(
-                evaluation_date
-            )
-        )
-
-        self.assertTrue(next_recommended_face_to_face_date)
-
-    def test_next_recommended_face_to_face_date_insufficient_contacts_maximum_level(
-        self,
-    ) -> None:
-        """Tests face to face contacts for the maximum level case."""
-        us_nd_supervision_compliance = self.generate_supervision_case_compliance(
-            start_of_supervision=date(1818, 3, 5),
-            termination_date=date(1820, 5, 19),
-            supervision_level=StateSupervisionLevel.MAXIMUM,
-            contact_dates=[
-                date(1818, 4, 2),
-            ],
-        )
-
-        # First day of calendar month 2 after the last contact which should
-        # be the first date where contacts are overdue
-        evaluation_date = date(1818, 6, 1)
-
-        next_face_to_face = (
-            us_nd_supervision_compliance._next_recommended_face_to_face_date(
-                evaluation_date
-            )
-        )
-
-        self.assertEqual(next_face_to_face, date(1818, 5, 31))
+        self.assertEqual(next_face_to_face, expected_contact_date)
 
 
 class TestReassessmentRequirementAreMet(unittest.TestCase):
@@ -998,7 +947,7 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
             StateSupervisionContact.new_with_defaults(
                 state_code="US_ND",
                 contact_date=start_of_supervision + relativedelta(days=1),
-                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
                 location=StateSupervisionContactLocation.RESIDENCE,
             )
@@ -1092,7 +1041,7 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
             StateSupervisionContact.new_with_defaults(
                 state_code="US_ND",
                 contact_date=start_of_supervision + relativedelta(days=1),
-                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
                 location=StateSupervisionContactLocation.SUPERVISION_OFFICE,
             )
@@ -1173,14 +1122,14 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
         contact_1 = StateSupervisionContact.new_with_defaults(
             state_code="US_ND",
             contact_date=date(2018, 3, 8),
-            contact_type=StateSupervisionContactType.FACE_TO_FACE,
+            contact_type=StateSupervisionContactType.DIRECT,
             status=StateSupervisionContactStatus.COMPLETED,
             location=StateSupervisionContactLocation.RESIDENCE,
         )
         contact_2 = StateSupervisionContact.new_with_defaults(
             state_code="US_ND",
             contact_date=date(2019, 3, 6),
-            contact_type=StateSupervisionContactType.FACE_TO_FACE,
+            contact_type=StateSupervisionContactType.DIRECT,
             status=StateSupervisionContactStatus.COMPLETED,
             location=StateSupervisionContactLocation.RESIDENCE,
         )
@@ -1230,7 +1179,7 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
         contact_1 = StateSupervisionContact.new_with_defaults(
             state_code="US_ND",
             contact_date=date(2018, 3, 5),
-            contact_type=StateSupervisionContactType.FACE_TO_FACE,
+            contact_type=StateSupervisionContactType.DIRECT,
             status=StateSupervisionContactStatus.COMPLETED,
             location=StateSupervisionContactLocation.RESIDENCE,
         )

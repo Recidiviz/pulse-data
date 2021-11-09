@@ -67,7 +67,7 @@ def generate_client_events_fixture() -> None:
                     ].isoformat(),
                     "event_metadata": json.dumps(
                         {
-                            "contact_type": StateSupervisionContactType.FACE_TO_FACE.value,
+                            "contact_type": StateSupervisionContactType.DIRECT.value,
                             "location": StateSupervisionContactLocation.RESIDENCE.value
                             if index % 2
                             else StateSupervisionContactLocation.SUPERVISION_OFFICE.value,

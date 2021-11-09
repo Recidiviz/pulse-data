@@ -57,7 +57,7 @@ WITH
   WHERE
     contact_date IS NOT NULL
     AND status = 'COMPLETED'
-    AND contact_type = 'FACE_TO_FACE'
+    AND contact_type IN ('DIRECT', 'BOTH_DIRECT_AND_COLLATERAL')
   GROUP BY
     state_code,
     person_id),
