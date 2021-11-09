@@ -29,6 +29,8 @@ US_MO_RAW_PROJECTED_DISCHARGES_SUBQUERY_TEMPLATE = """
             caseload.date_of_supervision,
             person_external_id,
             supervision_level,
+            -- Take max of is_life - if there's a concurrent sentence where one is a life sentence and one isn't, we take the max value which is true
+            MAX(COALESCE(incarceration_sentence.is_life,false)) as is_life,
             -- This logic takes the maximum of state_incarceration_sentence and state_supervision_sentence
             # TODO(#9211): Use projected_end_date from dataflow metrics once #9197 is resolved
             # TODO(#9272): Improve projected_end_date to account for earned credits
@@ -70,5 +72,6 @@ US_MO_RAW_PROJECTED_DISCHARGES_SUBQUERY_TEMPLATE = """
             LEFT JOIN us_mo_lifetime_sentences ls
                 ON ls.external_id = max_dates.person_external_id
             WHERE ls.external_id is NULL
+            AND COALESCE(is_life, false) = false
         )
         """
