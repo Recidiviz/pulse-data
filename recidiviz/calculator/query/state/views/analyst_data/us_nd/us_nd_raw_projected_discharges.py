@@ -29,12 +29,16 @@ US_ND_RAW_PROJECTED_DISCHARGES_SUBQUERY_TEMPLATE = """
         caseload.date_of_supervision,
         person_external_id,
         supervision_level,
+        -- Take max of is_life - if there's a concurrent sentence where one is a life sentence and one isn't, we take the max value which is true
+        MAX(COALESCE(incarceration_sentence.is_life,false)) as is_life,
         MAX(supervision_sentence.projected_completion_date) AS max_parole_to_date,
       FROM `{project_id}.{dataflow_dataset}.most_recent_single_day_supervision_population_metrics_materialized` caseload
       -- The projected completion date is pulled from this table because it needs to correspond to the PAROLE_TO date, 
       -- which is ingested into supervision sentence. Using dataflow metrics would mean we are sometimes using PAROLE_TO 
       -- and sometimes the sentence expiration date from state_incarceration_sentence
       # TODO(#9271): Use projected_end_date from dataflow once state specific override is implemented
+      LEFT JOIN `{project_id}.{base_dataset}.state_incarceration_sentence` incarceration_sentence
+        ON caseload.person_id = incarceration_sentence.person_id
       LEFT JOIN `{project_id}.{base_dataset}.state_supervision_sentence` supervision_sentence
         ON caseload.person_id = supervision_sentence.person_id 
       WHERE caseload.state_code = 'US_ND' 
@@ -61,18 +65,19 @@ US_ND_RAW_PROJECTED_DISCHARGES_SUBQUERY_TEMPLATE = """
         -- This subquery identifies individuals in "active revocation" where TA_TYPE = 13
         # TODO(#9210): Remove this logic when ingest issue is resolved, since these should be getting marked as supervision periods ending in "ABSCONSION" which are excluded from this table
         LEFT JOIN (
-            SELECT DATE(PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S%p', PAROLE_TO)) AS PAROLE_TO, 
-                    1 AS active_revocation ,
-                    pei.person_id
-            FROM `{project_id}.us_nd_raw_data_up_to_date_views.docstars_offendercasestable_latest`
-            LEFT JOIN `{project_id}.{base_dataset}.state_person_external_id` pei
-                ON SID = pei.external_id
-                AND pei.state_code = "US_ND"
-                AND pei.id_type = 'US_ND_SID'
-            WHERE TA_TYPE = '13'
-            QUALIFY ROW_NUMBER() OVER(partition by SID ORDER BY  PAROLE_TO DESC ) = 1
-        ) docstars_cases
-        ON max_dates.person_id = docstars_cases.person_id
-        AND max_dates.max_parole_to_date = docstars_cases.PAROLE_TO 
+                SELECT DATE(PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S%p', PAROLE_TO)) AS PAROLE_TO, 
+                        1 AS active_revocation ,
+                        pei.person_id
+                FROM `{project_id}.us_nd_raw_data_up_to_date_views.docstars_offendercasestable_latest`
+                LEFT JOIN `{project_id}.{base_dataset}.state_person_external_id` pei
+                    ON SID = pei.external_id
+                    AND pei.state_code = "US_ND"
+                    AND pei.id_type = 'US_ND_SID'
+                WHERE TA_TYPE = '13'
+                QUALIFY ROW_NUMBER() OVER(partition by SID ORDER BY  PAROLE_TO DESC ) = 1
+            ) docstars_cases
+            ON max_dates.person_id = docstars_cases.person_id
+            AND max_dates.max_parole_to_date = docstars_cases.PAROLE_TO
+        WHERE COALESCE(is_life, false) = false 
     )
     """
