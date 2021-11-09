@@ -58,6 +58,17 @@ class ClientEventPresenter:
         else:
             return contact_type
 
+    @property
+    def contact_method(self) -> Optional[str]:
+        """Optionally computes the contact method based on event metadata. Returns None
+        if not a contact event."""
+        try:
+            contact_method = self.etl_client_event.event_metadata["contact_method"]
+        except KeyError:
+            return None
+        else:
+            return contact_method
+
     def to_json(self) -> Dict[str, Any]:
         base_dict = {
             "eventType": self.etl_client_event.event_type,
@@ -68,6 +79,9 @@ class ClientEventPresenter:
             base_dict["eventMetadata"] = self.score_metadata
 
         if self.etl_client_event.event_type == ClientEventType.CONTACT.value:
-            base_dict["eventMetadata"] = {"contactType": self.contact_type}
+            base_dict["eventMetadata"] = {
+                "contactType": self.contact_type,
+                "contactMethod": self.contact_method,
+            }
 
         return base_dict

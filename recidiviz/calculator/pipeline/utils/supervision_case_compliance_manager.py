@@ -224,10 +224,6 @@ class StateSupervisionCaseComplianceManager:
             in (
                 StateSupervisionContactType.DIRECT,
                 StateSupervisionContactType.BOTH_COLLATERAL_AND_DIRECT,
-                # TODO(#9159): Remove these once all of the supervision contacts are switched over.
-                StateSupervisionContactType.FACE_TO_FACE,
-                StateSupervisionContactType.TELEPHONE,
-                StateSupervisionContactType.VIRTUAL,
             )
             # Contact must be marked as completed
             and contact.status == StateSupervisionContactStatus.COMPLETED
@@ -270,8 +266,6 @@ class StateSupervisionCaseComplianceManager:
             in (
                 StateSupervisionContactType.DIRECT,
                 StateSupervisionContactType.BOTH_COLLATERAL_AND_DIRECT,
-                # TODO(#9159): Remove this once all of the supervision contacts are switched over.
-                StateSupervisionContactType.FACE_TO_FACE,
             )
             # Contact must be marked as completed
             and contact.status == StateSupervisionContactStatus.COMPLETED

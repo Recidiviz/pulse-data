@@ -22,6 +22,7 @@ from recidiviz.case_triage.client_event.types import ClientEventType
 from recidiviz.case_triage.querier.client_event_presenter import ClientEventPresenter
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactLocation,
+    StateSupervisionContactMethod,
     StateSupervisionContactType,
 )
 from recidiviz.persistence.database.schema.case_triage.schema import ETLClientEvent
@@ -100,7 +101,8 @@ class TestClientEventPresenter(TestCase):
             event_date=self.event_date,
             event_type=ClientEventType.CONTACT.value,
             event_metadata={
-                "contact_type": StateSupervisionContactType.FACE_TO_FACE.value,
+                "contact_type": StateSupervisionContactType.DIRECT.value,
+                "contact_method": StateSupervisionContactMethod.VIRTUAL.value,
                 "location": StateSupervisionContactLocation.RESIDENCE.value,
             },
         )
@@ -112,7 +114,8 @@ class TestClientEventPresenter(TestCase):
                 "eventType": ClientEventType.CONTACT.value,
                 "eventDate": "2020-03-15",
                 "eventMetadata": {
-                    "contactType": StateSupervisionContactType.FACE_TO_FACE.value,
+                    "contactType": StateSupervisionContactType.DIRECT.value,
+                    "contactMethod": StateSupervisionContactMethod.VIRTUAL.value,
                 },
             },
         )
@@ -123,14 +126,10 @@ class TestClientEventPresenter(TestCase):
 
         self.assertEqual(
             presenter.to_json()["eventMetadata"]["contactType"],
-            StateSupervisionContactType.FACE_TO_FACE.value,
+            StateSupervisionContactType.DIRECT.value,
         )
 
-        event.event_metadata = {
-            "contact_type": StateSupervisionContactType.VIRTUAL.value,
-            "location": None,
-        }
         self.assertEqual(
-            presenter.to_json()["eventMetadata"]["contactType"],
-            StateSupervisionContactType.VIRTUAL.value,
+            presenter.to_json()["eventMetadata"]["contactMethod"],
+            StateSupervisionContactMethod.VIRTUAL.value,
         )

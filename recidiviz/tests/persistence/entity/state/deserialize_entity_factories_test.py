@@ -430,16 +430,16 @@ class TestDeserializeEntityFactories(unittest.TestCase):
             .add("C", StateSupervisionContactStatus.COMPLETED)
             .add("GC", StateSupervisionContactReason.GENERAL_CONTACT)
             .add("R", StateSupervisionContactLocation.RESIDENCE)
-            .add("FTF", StateSupervisionContactType.FACE_TO_FACE)
+            .add("D", StateSupervisionContactType.DIRECT)
             .build()
         )
         result = (
             deserialize_entity_factories.StateSupervisionContactFactory.deserialize(
                 external_id="CONTACT_ID",
                 contact_type=StrictEnumParser(
-                    "FTF", StateSupervisionContactType, overrides
+                    "D", StateSupervisionContactType, overrides
                 ),
-                contact_type_raw_text="FTF",
+                contact_type_raw_text="D",
                 status=StrictEnumParser("C", StateSupervisionContactStatus, overrides),
                 status_raw_text="C",
                 contact_reason=StrictEnumParser(
@@ -462,8 +462,8 @@ class TestDeserializeEntityFactories(unittest.TestCase):
             external_id="CONTACT_ID",
             status=StateSupervisionContactStatus.COMPLETED,
             status_raw_text="C",
-            contact_type=StateSupervisionContactType.FACE_TO_FACE,
-            contact_type_raw_text="FTF",
+            contact_type=StateSupervisionContactType.DIRECT,
+            contact_type_raw_text="D",
             contact_date=date(year=1111, month=1, day=2),
             state_code="US_XX",
             contact_reason=StateSupervisionContactReason.GENERAL_CONTACT,
