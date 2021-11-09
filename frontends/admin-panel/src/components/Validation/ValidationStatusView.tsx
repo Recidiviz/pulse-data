@@ -73,6 +73,7 @@ const ValidationStatusView = (): JSX.Element => {
   }, {} as { [name: string]: MetadataRecord<ValidationStatusRecord> });
 
   const validationNames = Object.keys(recordsByName).sort();
+  const allStates = uniqueStates(Object.values(recordsByName));
 
   const dictOfCategoryIdsToRecords = validationNames.reduce((acc, name) => {
     const result = recordsByName[name];
@@ -88,6 +89,8 @@ const ValidationStatusView = (): JSX.Element => {
     return acc;
   }, {} as { [category: string]: MetadataRecord<ValidationStatusRecord>[] });
 
+  const categoryIds = Object.keys(dictOfCategoryIdsToRecords).sort();
+
   const failureLabelColumns: ColumnsType<ValidationStatusRecord> = [
     {
       title: "Category",
@@ -100,6 +103,12 @@ const ValidationStatusView = (): JSX.Element => {
           )}
         </div>
       ),
+      filters: categoryIds.map((categoryId: string) => ({
+        text: readableNameForCategoryId(categoryId),
+        value: categoryId,
+      })),
+      onFilter: (value, record: ValidationStatusRecord) =>
+        chooseIdNameForCategory(record.getCategory()) === value,
     },
     {
       title: "Validation Name",
@@ -117,6 +126,12 @@ const ValidationStatusView = (): JSX.Element => {
       render: (_: string, record: ValidationStatusRecord) => (
         <div>{record.getStateCode()}</div>
       ),
+      filters: allStates.map((state: string) => ({
+        text: state,
+        value: state,
+      })),
+      onFilter: (value, record: ValidationStatusRecord) =>
+        record.getStateCode() === value,
     },
     {
       title: "Status",
@@ -170,7 +185,6 @@ const ValidationStatusView = (): JSX.Element => {
       ),
     },
   ];
-  const allStates = uniqueStates(Object.values(recordsByName));
 
   const columns = labelColumns.concat(
     allStates.map((s) => columnTypeForState(s, history))
@@ -185,8 +199,6 @@ const ValidationStatusView = (): JSX.Element => {
     },
     { key: "System Version", value: initialRecord?.getSystemVersion() },
   ];
-
-  const categoryIds = Object.keys(dictOfCategoryIdsToRecords).sort();
 
   return (
     <>
