@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2020 Recidiviz, Inc.
+# Copyright (C) 2021 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -67,14 +67,22 @@ class BuildPersonMetadata(beam.DoFn):
     # pylint: disable=arguments-differ
     def process(
         self,
-        person_id_person: Tuple[int, BuildableAttr],
+        element: Tuple[int, Dict[str, Iterable[Any]]],
         *_args: Tuple[Any, ...],
         state_race_ethnicity_population_counts: List[Dict[str, Any]],
         **_kwargs: Dict[str, Any],
     ) -> Iterable[Tuple[int, PersonMetadata]]:
         """Returns a tuple containing the person_id and the PersonMetadata containing information about the given
         StatePerson."""
-        person_id, person = person_id_person
+        _, hydrated_required_entities = element
+
+        # TODO(#2769): Update this to only accept StatePerson.__name__ as the key for
+        #  the list of StatePerson entities once all pipelines have been migrated to
+        #  v2 entity hydration
+        if "persons" in hydrated_required_entities:
+            person = one(list(hydrated_required_entities["persons"]))
+        else:
+            person = one(list(hydrated_required_entities[StatePerson.__name__]))
 
         person = cast(StatePerson, person)
 
@@ -92,7 +100,7 @@ class BuildPersonMetadata(beam.DoFn):
             person, race_ethnicity_population_counts
         )
 
-        yield person_id, person_metadata
+        yield person.person_id, person_metadata
 
     def to_runner_api_parameter(self, _):
         pass  # Passing unused abstract method.

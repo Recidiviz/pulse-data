@@ -80,22 +80,33 @@ class FakeIngestMetadata(IngestMetadata):
         )
 
 
+def generate_test_supervision_violation_response_decision_entry(
+    person_id,
+) -> state_schema.StateSupervisionViolationResponseDecisionEntry:
+    return state_schema.StateSupervisionViolationResponseDecisionEntry(
+        supervision_violation_response_decision_entry_id=123,
+        state_code="US_XX",
+        decision=StateSupervisionViolationResponseDecision.REVOCATION.value,
+        decision_raw_text="REV",
+        person_id=person_id,
+    )
+
+
 def generate_test_supervision_violation_response(
     person_id,
+    decisions: Optional[
+        List[state_schema.StateSupervisionViolationResponseDecisionEntry]
+    ] = None,
 ) -> state_schema.StateSupervisionViolationResponse:
+    decisions = decisions or [
+        generate_test_supervision_violation_response_decision_entry(person_id)
+    ]
+
     instance = state_schema.StateSupervisionViolationResponse(
         supervision_violation_response_id=456,
         state_code="US_XX",
         person_id=person_id,
-        supervision_violation_response_decisions=[
-            state_schema.StateSupervisionViolationResponseDecisionEntry(
-                supervision_violation_response_decision_entry_id=123,
-                state_code="US_XX",
-                decision=StateSupervisionViolationResponseDecision.REVOCATION.value,
-                decision_raw_text="REV",
-                person_id=person_id,
-            )
-        ],
+        supervision_violation_response_decisions=decisions,
     )
 
     return instance
@@ -141,9 +152,11 @@ def generate_test_supervision_contact(
 def generate_test_supervision_violation(
     person_id, supervision_violation_responses
 ) -> state_schema.StateSupervisionViolation:
+    """Generates a test StateSupervisionViolation."""
+    supervision_violation_id = 321
 
     instance = state_schema.StateSupervisionViolation(
-        supervision_violation_id=321,
+        supervision_violation_id=supervision_violation_id,
         state_code="US_XX",
         person_id=person_id,
         supervision_violated_conditions=[
@@ -152,6 +165,7 @@ def generate_test_supervision_violation(
                 state_code="US_XX",
                 condition="CURFEW",
                 person_id=person_id,
+                supervision_violation_id=supervision_violation_id,
             )
         ],
         supervision_violation_types=[
@@ -161,6 +175,7 @@ def generate_test_supervision_violation(
                 violation_type=StateSupervisionViolationType.TECHNICAL.value,
                 violation_type_raw_text="T",
                 person_id=person_id,
+                supervision_violation_id=supervision_violation_id,
             )
         ],
         supervision_violation_responses=supervision_violation_responses,

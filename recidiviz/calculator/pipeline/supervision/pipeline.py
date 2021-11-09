@@ -35,6 +35,7 @@ from recidiviz.calculator.pipeline.utils.beam_utils import (
     ConvertDictToKVTuple,
     ImportTable,
     ImportTableAsKVTuples,
+    ReadFromBigQuery,
 )
 from recidiviz.calculator.pipeline.utils.entity_hydration_utils import (
     ConvertSentencesToStateSpecificType,
@@ -43,10 +44,7 @@ from recidiviz.calculator.pipeline.utils.entity_hydration_utils import (
 from recidiviz.calculator.pipeline.utils.execution_utils import (
     select_all_by_person_query,
 )
-from recidiviz.calculator.pipeline.utils.extractor_utils import (
-    BuildRootEntity,
-    ReadFromBigQuery,
-)
+from recidiviz.calculator.pipeline.utils.extractor_utils import BuildRootEntity
 from recidiviz.calculator.pipeline.utils.person_utils import (
     BuildPersonMetadata,
     ExtractPersonEventsMetadata,
@@ -87,6 +85,7 @@ class SupervisionPipeline(BasePipeline):
         calculation_month_count: int = -1,
         calculation_end_month: Optional[str] = None,
     ) -> beam.Pipeline:
+        # TODO(#2769): Migrate the supervision pipeline to v2 entity hydration
         # Get StatePersons
         persons = pipeline | "Load Persons" >> BuildRootEntity(
             dataset=input_dataset,
@@ -303,7 +302,7 @@ class SupervisionPipeline(BasePipeline):
 
         # Group each StatePerson with their related entities
         person_entities = {
-            "person": persons,
+            "persons": persons,
             "assessments": assessments,
             "incarceration_periods": incarceration_periods,
             "supervision_periods": supervision_periods,
@@ -321,7 +320,7 @@ class SupervisionPipeline(BasePipeline):
         )
 
         person_metadata = (
-            persons
+            person_entities
             | "Build the person_metadata dictionary"
             >> beam.ParDo(
                 BuildPersonMetadata(),

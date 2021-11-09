@@ -106,6 +106,7 @@ class RecidivismPipeline(BasePipeline):
         calculation_month_count: int = -1,
         calculation_end_month: Optional[str] = None,
     ) -> beam.Pipeline:
+        # TODO(#2769): Migrate the recidivism pipeline to v2 entity hydration
         persons = pipeline | "Load Persons" >> BuildRootEntity(
             dataset=input_dataset,
             root_entity_class=entities.StatePerson,
@@ -154,7 +155,7 @@ class RecidivismPipeline(BasePipeline):
 
         # Group each StatePerson with their StateIncarcerationPeriods
         person_entities = {
-            "person": persons,
+            "persons": persons,
             "incarceration_periods": incarceration_periods,
             "supervision_periods": supervision_periods,
             "persons_to_recent_county_of_residence": person_id_to_county_kv,
@@ -177,7 +178,7 @@ class RecidivismPipeline(BasePipeline):
         )
 
         person_metadata = (
-            persons
+            person_entities
             | "Build the person_metadata dictionary"
             >> beam.ParDo(
                 BuildPersonMetadata(),

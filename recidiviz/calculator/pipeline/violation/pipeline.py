@@ -67,6 +67,7 @@ class ViolationPipeline(BasePipeline):
         calculation_month_count: int = -1,
         calculation_end_month: Optional[str] = None,
     ) -> beam.Pipeline:
+        # TODO(#2769): Migrate the violation pipeline to v2 entity hydration
         # Get StatePersons
         persons = pipeline | "Load Persons" >> BuildRootEntity(
             dataset=input_dataset,
@@ -133,7 +134,7 @@ class ViolationPipeline(BasePipeline):
         )
 
         person_entities = {
-            "person": persons,
+            "persons": persons,
             "violations": violations_with_hydrated_violation_responses,
         } | "Group StatePerson to violation entities" >> beam.CoGroupByKey()
 
@@ -142,7 +143,7 @@ class ViolationPipeline(BasePipeline):
         )
 
         person_metadata = (
-            persons
+            person_entities
             | "Build the person_metadata dictionary"
             >> beam.ParDo(
                 BuildPersonMetadata(),

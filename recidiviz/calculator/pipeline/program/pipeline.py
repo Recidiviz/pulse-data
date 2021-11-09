@@ -24,6 +24,8 @@ import apache_beam as beam
 from apache_beam.pvalue import AsList
 
 from recidiviz.calculator.pipeline.base_pipeline import (
+    HYDRATED_ENTITIES_KEY,
+    AugmentHydratedEntitiesWithSideInputs,
     BasePipeline,
     ClassifyEvents,
     GetMetrics,
@@ -35,7 +37,9 @@ from recidiviz.calculator.pipeline.utils.beam_utils import (
     ImportTable,
     ImportTableAsKVTuples,
 )
-from recidiviz.calculator.pipeline.utils.extractor_utils import BuildRootEntity
+from recidiviz.calculator.pipeline.utils.extractor_utils import (
+    ExtractEntitiesForPipeline,
+)
 from recidiviz.calculator.pipeline.utils.person_utils import (
     BuildPersonMetadata,
     ExtractPersonEventsMetadata,
@@ -54,6 +58,14 @@ class ProgramPipeline(BasePipeline):
             pipeline_type=PipelineType.PROGRAM,
             identifier=identifier.ProgramIdentifier(),
             metric_producer=metric_producer.ProgramMetricProducer(),
+            required_entities=[
+                entities.StatePerson,
+                entities.StatePersonRace,
+                entities.StatePersonEthnicity,
+                entities.StateProgramAssignment,
+                entities.StateAssessment,
+                entities.StateSupervisionPeriod,
+            ],
         )
         self.include_calculation_limit_args = True
 
@@ -70,44 +82,21 @@ class ProgramPipeline(BasePipeline):
         calculation_month_count: int = -1,
         calculation_end_month: Optional[str] = None,
     ) -> beam.Pipeline:
-        # Get StatePersons
-        persons = pipeline | "Load Persons" >> BuildRootEntity(
-            dataset=input_dataset,
-            root_entity_class=entities.StatePerson,
-            unifying_id_field=entities.StatePerson.get_class_id_name(),
-            build_related_entities=True,
-            unifying_id_field_filter_set=person_id_filter_set,
-            state_code=state_code,
-        )
+        # TODO(#2769): Remove this once required_entities is non-optional
+        if not self.pipeline_config.required_entities:
+            raise ValueError("Must set required_entities arg on PipelineConfig.")
 
-        # Get StateProgramAssignments
-        program_assignments = pipeline | "Load Program Assignments" >> BuildRootEntity(
-            dataset=input_dataset,
-            root_entity_class=entities.StateProgramAssignment,
-            unifying_id_field=entities.StatePerson.get_class_id_name(),
-            build_related_entities=True,
-            unifying_id_field_filter_set=person_id_filter_set,
-            state_code=state_code,
-        )
-
-        # Get StateAssessments
-        assessments = pipeline | "Load Assessments" >> BuildRootEntity(
-            dataset=input_dataset,
-            root_entity_class=entities.StateAssessment,
-            unifying_id_field=entities.StatePerson.get_class_id_name(),
-            build_related_entities=False,
-            unifying_id_field_filter_set=person_id_filter_set,
-            state_code=state_code,
-        )
-
-        # Get StateSupervisionPeriods
-        supervision_periods = pipeline | "Load SupervisionPeriods" >> BuildRootEntity(
-            dataset=input_dataset,
-            root_entity_class=entities.StateSupervisionPeriod,
-            unifying_id_field=entities.StatePerson.get_class_id_name(),
-            build_related_entities=False,
-            unifying_id_field_filter_set=person_id_filter_set,
-            state_code=state_code,
+        # Get all required entities
+        hydrated_required_entities = (
+            pipeline
+            | "Load required entities"
+            >> ExtractEntitiesForPipeline(
+                state_code=state_code,
+                dataset=input_dataset,
+                required_entity_classes=self.pipeline_config.required_entities,
+                unifying_class=entities.StatePerson,
+                unifying_id_field_filter_set=person_id_filter_set,
+            )
         )
 
         supervision_period_to_agent_associations_as_kv = (
@@ -133,22 +122,26 @@ class ProgramPipeline(BasePipeline):
             )
         )
 
-        # Group each StatePerson with their other entities
-        persons_entities = {
-            "person": persons,
-            "program_assignments": program_assignments,
-            "assessments": assessments,
-            "supervision_periods": supervision_periods,
-            "supervision_period_to_agent_association": supervision_period_to_agent_associations_as_kv,
-        } | "Group StatePerson to StateProgramAssignments and" >> beam.CoGroupByKey()
+        persons_entities = (
+            {
+                HYDRATED_ENTITIES_KEY: hydrated_required_entities,
+                SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME: supervision_period_to_agent_associations_as_kv,
+            }
+            | "Group hydrated entities to person-specific side inputs"
+            >> beam.CoGroupByKey()
+            | "Augment hydrated entities dict with person-level side input information"
+            >> beam.ParDo(AugmentHydratedEntitiesWithSideInputs())
+        )
 
         # Identify ProgramEvents from the StatePerson's StateProgramAssignments
-        person_program_events = persons_entities | beam.ParDo(
-            ClassifyEvents(), identifier=self.pipeline_config.identifier
+        person_program_events = (
+            persons_entities
+            | "Identify program events"
+            >> beam.ParDo(ClassifyEvents(), identifier=self.pipeline_config.identifier)
         )
 
         person_metadata = (
-            persons
+            hydrated_required_entities
             | "Build the person_metadata dictionary"
             >> beam.ParDo(
                 BuildPersonMetadata(),

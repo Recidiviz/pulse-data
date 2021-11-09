@@ -1167,7 +1167,7 @@ class TestClassifyEvents(unittest.TestCase):
         supervision_period_to_agent_association: List[Dict[Any, Any]] = None,
     ) -> Dict[str, List[Any]]:
         return {
-            "person": [person],
+            "persons": [person],
             "supervision_periods": supervision_periods if supervision_periods else [],
             "assessments": assessments if assessments else [],
             "incarceration_periods": incarceration_periods
