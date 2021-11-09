@@ -421,3 +421,5 @@ columns:
   - name: LastUpdateDate
     description: |-
       This element will be associated with each record in each DB2 table in TOMIS.  It is the timestamp of the last time this record was updated.
+separator: '{‡}'
+encoding: WINDOWS-1252
