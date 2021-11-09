@@ -34,6 +34,7 @@ from recidiviz.case_triage.demo_helpers import (
 from recidiviz.case_triage.opportunities.types import OpportunityType
 from recidiviz.case_triage.scoped_sessions import setup_scoped_sessions
 from recidiviz.common.constants.state.state_supervision_contact import (
+    StateSupervisionContactMethod,
     StateSupervisionContactType,
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
@@ -395,7 +396,8 @@ class TestDemoUser(TestCase):
                 "eventType": ClientEventType.CONTACT.value,
                 "eventDate": client.most_recent_face_to_face_date.isoformat(),
                 "eventMetadata": {
-                    "contactType": StateSupervisionContactType.FACE_TO_FACE.value
+                    "contactType": StateSupervisionContactType.DIRECT.value,
+                    "contactMethod": StateSupervisionContactMethod.TELEPHONE.value,
                 },
             },
         )

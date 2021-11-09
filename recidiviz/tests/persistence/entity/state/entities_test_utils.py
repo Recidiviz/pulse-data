@@ -339,7 +339,7 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
         external_id="CONTACT_ID",
         status=StateSupervisionContactStatus.COMPLETED,
         status_raw_text="COMPLETED",
-        contact_type=StateSupervisionContactType.FACE_TO_FACE,
+        contact_type=StateSupervisionContactType.DIRECT,
         contact_type_raw_text="FACE_TO_FACE",
         contact_date=datetime.date(year=1111, month=1, day=2),
         state_code="US_XX",

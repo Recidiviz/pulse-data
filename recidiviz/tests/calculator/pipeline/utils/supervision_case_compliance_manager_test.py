@@ -47,6 +47,7 @@ from recidiviz.common.constants.state.state_assessment import (
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactLocation,
+    StateSupervisionContactMethod,
     StateSupervisionContactStatus,
     StateSupervisionContactType,
 )
@@ -455,7 +456,7 @@ class TestCaseCompliance(unittest.TestCase):
             compliance,
         )
 
-    def test_us_id_get_case_compliance_on_date_with_virtual_contact_on_date(
+    def test_us_id_get_case_compliance_on_date_with_direct_contact_on_date(
         self,
     ) -> None:
         supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -488,13 +489,15 @@ class TestCaseCompliance(unittest.TestCase):
             StateSupervisionContact.new_with_defaults(
                 state_code=StateCode.US_ID.value,
                 contact_date=date(2018, 3, 6),
-                contact_type=StateSupervisionContactType.VIRTUAL,
+                contact_type=StateSupervisionContactType.DIRECT,
+                contact_method=StateSupervisionContactMethod.VIRTUAL,
                 status=StateSupervisionContactStatus.COMPLETED,
             ),
             StateSupervisionContact.new_with_defaults(
                 state_code=StateCode.US_ID.value,
                 contact_date=date(2018, 4, 6),
                 contact_type=StateSupervisionContactType.DIRECT,
+                contact_method=StateSupervisionContactMethod.VIRTUAL,
                 status=StateSupervisionContactStatus.COMPLETED,
             ),
         ]
