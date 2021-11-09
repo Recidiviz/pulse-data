@@ -1786,6 +1786,300 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
         self.assertEqual(next_home_visit_date, None)
 
 
+class TestNextRecommendedTreatmentCollateralVisitDate(unittest.TestCase):
+    """Tests the _next_recommended_treatment_collateral_contact_date function."""
+
+    def setUp(self) -> None:
+        self.person = StatePerson.new_with_defaults(state_code="US_PA")
+
+    def test_next_recommended_treatment_collateral_contact_date_contacts_not_required(
+        self,
+    ) -> None:
+        start_of_supervision = date(2000, 1, 21)
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            state_code="US_PA",
+            custodial_authority_raw_text="US_PA_DOC",
+            start_date=start_of_supervision,
+            admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
+            supervision_type=None,
+            supervision_level=StateSupervisionLevel.LIMITED,
+        )
+
+        supervision_contacts: List[StateSupervisionContact] = []
+
+        evaluation_date = start_of_supervision + relativedelta(days=20)
+
+        us_pa_supervision_compliance = UsPaSupervisionCaseCompliance(
+            self.person,
+            supervision_period=supervision_period,
+            case_type=StateSupervisionCaseType.GENERAL,
+            start_of_supervision=start_of_supervision,
+            assessments=[],
+            supervision_contacts=supervision_contacts,
+            violation_responses=[],
+            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+                incarceration_periods=[], ip_id_to_pfi_subtype={}
+            ),
+        )
+
+        next_recommended_treatment_collateral_contact_date = us_pa_supervision_compliance._next_recommended_treatment_collateral_contact_date(
+            evaluation_date
+        )
+
+        self.assertIsNone(next_recommended_treatment_collateral_contact_date)
+
+    @parameterized.expand(
+        [
+            ("minimum", StateSupervisionLevel.MINIMUM),
+            ("medium", StateSupervisionLevel.MEDIUM),
+            ("maximum", StateSupervisionLevel.MAXIMUM),
+            ("high", StateSupervisionLevel.HIGH),
+        ]
+    )
+    def test_next_recommended_treatment_collateral_contact_date_no_contacts(
+        self, _name: str, supervision_level: StateSupervisionLevel
+    ) -> None:
+        start_of_supervision = date(2000, 1, 21)
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            state_code="US_PA",
+            custodial_authority_raw_text="US_PA_DOC",
+            start_date=start_of_supervision,
+            admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
+            supervision_type=None,
+            supervision_level=supervision_level,
+        )
+
+        supervision_contacts: List[StateSupervisionContact] = []
+
+        evaluation_date = start_of_supervision + relativedelta(
+            days=NEW_SUPERVISION_CONTACT_DEADLINE_BUSINESS_DAYS + 10
+        )
+
+        us_pa_supervision_compliance = UsPaSupervisionCaseCompliance(
+            self.person,
+            supervision_period=supervision_period,
+            case_type=StateSupervisionCaseType.GENERAL,
+            start_of_supervision=start_of_supervision,
+            assessments=[],
+            supervision_contacts=supervision_contacts,
+            violation_responses=[],
+            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+                incarceration_periods=[], ip_id_to_pfi_subtype={}
+            ),
+        )
+
+        next_recommended_treatment_collateral_date = us_pa_supervision_compliance._next_recommended_treatment_collateral_contact_date(
+            evaluation_date
+        )
+
+        self.assertIsNotNone(next_recommended_treatment_collateral_date)
+
+    @parameterized.expand(
+        [
+            (
+                "high",
+                StateSupervisionLevel.HIGH,
+                [date(2000, 1, 21) + relativedelta(days=20)],
+                date(2000, 1, 21) + relativedelta(days=30),
+                date(2000, 2, 20),
+            ),
+            (
+                "high_out_of_bounds",
+                StateSupervisionLevel.HIGH,
+                [date(2000, 1, 21) + relativedelta(days=20)],
+                date(2000, 1, 21) + relativedelta(days=45),
+                date(2000, 2, 20),
+            ),
+            (
+                "maximum",
+                StateSupervisionLevel.MAXIMUM,
+                [date(2000, 1, 21) + relativedelta(days=20)],
+                date(2000, 1, 21) + relativedelta(days=30),
+                date(2000, 3, 11),
+            ),
+            (
+                "maximum_out_of_bounds",
+                StateSupervisionLevel.MAXIMUM,
+                [date(2000, 1, 21) + relativedelta(days=10)],
+                date(2000, 1, 21) + relativedelta(days=50),
+                date(2000, 3, 1),
+            ),
+            (
+                "medium",
+                StateSupervisionLevel.MEDIUM,
+                [date(2000, 1, 21) + relativedelta(days=20)],
+                date(2000, 1, 21) + relativedelta(days=30),
+                date(2000, 5, 10),
+            ),
+            (
+                "medium_out_of_bounds",
+                StateSupervisionLevel.MEDIUM,
+                [date(2000, 1, 21) + relativedelta(days=20)],
+                date(2000, 1, 21) + relativedelta(days=100),
+                date(2000, 5, 10),
+            ),
+            (
+                "minimum",
+                StateSupervisionLevel.MINIMUM,
+                [date(2000, 1, 21) + relativedelta(days=20)],
+                date(2000, 1, 21) + relativedelta(days=30),
+                date(2000, 5, 10),
+            ),
+            (
+                "minimum_out_of_bounds",
+                StateSupervisionLevel.MINIMUM,
+                [date(2000, 1, 21) + relativedelta(days=20)],
+                date(2000, 1, 21) + relativedelta(days=100),
+                date(2000, 5, 10),
+            ),
+        ]
+    )
+    def test_next_recommended_treatment_collateral_contact_date_per_level(
+        self,
+        _name: str,
+        supervision_level: StateSupervisionLevel,
+        contact_dates: List[date],
+        evaluation_date: date,
+        expected_contact_date: date,
+    ) -> None:
+        start_of_supervision = date(2000, 1, 21)
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            state_code="US_PA",
+            custodial_authority_raw_text="US_PA_DOC",
+            start_date=start_of_supervision,
+            admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
+            supervision_type=None,
+            supervision_level=supervision_level,
+        )
+
+        supervision_contacts: List[StateSupervisionContact] = [
+            StateSupervisionContact.new_with_defaults(
+                state_code="US_PA",
+                contact_date=contact_date,
+                contact_type=StateSupervisionContactType.COLLATERAL,
+                location=StateSupervisionContactLocation.PLACE_OF_EMPLOYMENT,
+                status=StateSupervisionContactStatus.COMPLETED,
+            )
+            for contact_date in contact_dates
+        ]
+
+        us_pa_supervision_compliance = UsPaSupervisionCaseCompliance(
+            self.person,
+            supervision_period=supervision_period,
+            case_type=StateSupervisionCaseType.GENERAL,
+            start_of_supervision=start_of_supervision,
+            assessments=[],
+            supervision_contacts=supervision_contacts,
+            violation_responses=[],
+            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+                incarceration_periods=[], ip_id_to_pfi_subtype={}
+            ),
+        )
+
+        next_recommended_treatment_collateral_date = us_pa_supervision_compliance._next_recommended_treatment_collateral_contact_date(
+            evaluation_date
+        )
+
+        self.assertEqual(
+            next_recommended_treatment_collateral_date, expected_contact_date
+        )
+
+    def test_next_recommended_treatment_collateral_contact_date_skipped_if_in_jail(
+        self,
+    ) -> None:
+        start_of_supervision = date(2017, 3, 5)
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            state_code=StateCode.US_PA.value,
+            start_date=start_of_supervision,
+            termination_date=date(2020, 5, 19),
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_type=None,
+            supervision_level=StateSupervisionLevel.MINIMUM,
+        )
+
+        us_pa_supervision_compliance = UsPaSupervisionCaseCompliance(
+            self.person,
+            supervision_period=supervision_period,
+            case_type=StateSupervisionCaseType.GENERAL,
+            start_of_supervision=start_of_supervision,
+            assessments=[],
+            supervision_contacts=[],
+            violation_responses=[],
+            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+                incarceration_periods=[
+                    StateIncarcerationPeriod.new_with_defaults(
+                        incarceration_period_id=1,
+                        state_code=StateCode.US_PA.value,
+                        status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+                        incarceration_type=StateIncarcerationType.COUNTY_JAIL,
+                        admission_date=date(2018, 4, 1),
+                        release_date=date(2018, 4, 30),
+                        admission_reason=StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
+                    )
+                ],
+                ip_id_to_pfi_subtype={},
+            ),
+        )
+
+        next_treatment_collateral_date = us_pa_supervision_compliance._next_recommended_treatment_collateral_contact_date(
+            date(2018, 4, 2)
+        )
+
+        self.assertEqual(next_treatment_collateral_date, None)
+
+    def test_next_recommended_treatment_collateral_contact_date_skipped_if_past_max_date(
+        self,
+    ) -> None:
+        start_of_supervision = date(2017, 3, 5)
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            state_code=StateCode.US_PA.value,
+            start_date=start_of_supervision,
+            termination_date=date(2018, 4, 2),
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_type=None,
+            supervision_level=StateSupervisionLevel.MINIMUM,
+            supervision_sentences=[
+                StateSupervisionSentence(
+                    state_code=StateCode.US_PA.value,
+                    status=StateSentenceStatus.COMPLETED,
+                    start_date=start_of_supervision,
+                    projected_completion_date=date(2018, 4, 1),
+                )
+            ],
+        )
+
+        us_pa_supervision_compliance = UsPaSupervisionCaseCompliance(
+            self.person,
+            supervision_period=supervision_period,
+            case_type=StateSupervisionCaseType.GENERAL,
+            start_of_supervision=start_of_supervision,
+            assessments=[],
+            supervision_contacts=[],
+            violation_responses=[],
+            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+                incarceration_periods=[], ip_id_to_pfi_subtype={}
+            ),
+        )
+
+        next_treatment_collateral_date = us_pa_supervision_compliance._next_recommended_treatment_collateral_contact_date(
+            date(2018, 3, 20)
+        )
+
+        self.assertEqual(next_treatment_collateral_date, None)
+
+
 class TestGuidelinesApplicableForCase(unittest.TestCase):
     """Tests the guidelines_applicable_for_case function."""
 

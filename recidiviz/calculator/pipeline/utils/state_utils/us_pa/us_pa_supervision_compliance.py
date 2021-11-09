@@ -30,10 +30,15 @@ from recidiviz.calculator.pipeline.utils.supervision_level_policy import (
 from recidiviz.common.constants.person_characteristics import Gender
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
+from recidiviz.common.constants.state.state_supervision_contact import (
+    StateSupervisionContactStatus,
+    StateSupervisionContactType,
+)
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
 )
 from recidiviz.common.date import DateRange
+from recidiviz.persistence.entity.state.entities import StateSupervisionContact
 
 NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS = 45
 REASSESSMENT_DEADLINE_DAYS = 365
@@ -50,6 +55,7 @@ SUPERVISION_CONTACT_FREQUENCY_REQUIREMENTS: Dict[
         StateSupervisionLevel.HIGH: (4, 30),
     }
 }
+
 # Dictionary from supervision level -> tuple of number of times they must be contacted per time period.
 # A tuple (x, y) should be interpreted as x home visits every y days.
 SUPERVISION_HOME_VISIT_FREQUENCY_REQUIREMENTS: Dict[
@@ -58,6 +64,15 @@ SUPERVISION_HOME_VISIT_FREQUENCY_REQUIREMENTS: Dict[
     StateSupervisionLevel.MEDIUM: (1, 60),
     StateSupervisionLevel.MAXIMUM: (1, 30),
     StateSupervisionLevel.HIGH: (1, 30),
+}
+
+SUPERVISION_COLLATERAL_VISIT_FREQUENCY_REQUIREMENTS: Dict[
+    StateSupervisionLevel, Tuple[int, int]
+] = {
+    StateSupervisionLevel.HIGH: (2, 30),
+    StateSupervisionLevel.MAXIMUM: (1, 30),
+    StateSupervisionLevel.MEDIUM: (1, 90),
+    StateSupervisionLevel.MINIMUM: (1, 90),
 }
 
 NEW_SUPERVISION_CONTACT_DEADLINE_BUSINESS_DAYS = 2
@@ -251,6 +266,11 @@ class UsPaSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
     ) -> Optional[date]:
         """Returns when the next home visit should be. Returns None if compliance
         standards are unknown or no subsequent home visits are required."""
+        if self.supervision_period.supervision_level is None:
+            raise ValueError(
+                "Supervision level not provided and therefore cannot calculate home visit contact frequency"
+            )
+
         # No home visits are required for these supervision levels
         if (
             self.supervision_period.supervision_level
@@ -260,13 +280,17 @@ class UsPaSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
                 StateSupervisionLevel.MINIMUM,
             )
             or self._can_skip_contact_or_reassessment(compliance_evaluation_date)
+            or self.supervision_period.supervision_level
+            not in SUPERVISION_HOME_VISIT_FREQUENCY_REQUIREMENTS
         ):
             return None
 
         (
             required_contacts,
             period_days,
-        ) = self._get_required_home_visits_and_period_days()
+        ) = SUPERVISION_HOME_VISIT_FREQUENCY_REQUIREMENTS[
+            self.supervision_period.supervision_level
+        ]
 
         return self._default_next_recommended_contact_date_given_requirements(
             compliance_evaluation_date,
@@ -277,25 +301,57 @@ class UsPaSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
             use_business_days=False,
         )
 
+    def _get_applicable_treatment_collateral_contacts_between_dates(
+        self, lower_bound_inclusive: date, upper_bound_inclusive: date
+    ) -> List[StateSupervisionContact]:
+        """In PA, we will count all collateral contacts as treatment collateral contacts
+        for compliance reasons, as policy currently doesn't distinguish between the two."""
+        return [
+            contact
+            for contact in self.supervision_contacts
+            if contact.contact_type
+            in (
+                StateSupervisionContactType.COLLATERAL,
+                StateSupervisionContactType.BOTH_COLLATERAL_AND_DIRECT,
+            )
+            # Contact must be marked as completed
+            and contact.status == StateSupervisionContactStatus.COMPLETED
+            and contact.contact_date is not None
+            and lower_bound_inclusive <= contact.contact_date <= upper_bound_inclusive
+        ]
+
     def _next_recommended_treatment_collateral_contact_date(
-        self, _compliance_evaluation_date: date
+        self, compliance_evaluation_date: date
     ) -> Optional[date]:
-        """US_PA currently has no treatment collateral contacts requirements."""
-        return None
-
-    def _get_required_home_visits_and_period_days(self) -> Tuple[int, int]:
-        """Returns the number of home visits that are required within time period
-        (in days) for a supervision case"""
-        supervision_level: Optional[
-            StateSupervisionLevel
-        ] = self.supervision_period.supervision_level
-
-        if supervision_level is None:
+        """Returns when the next collateral contact should be. Returns None if compliance
+        standards are unknown or no subsequent collateral contacts are required."""
+        if self.supervision_period.supervision_level is None:
             raise ValueError(
-                "Supervision level not provided and so cannot calculate required home visit frequency."
+                "Supervision level not provided and therefore cannot calculate collateral visit contact frequency"
             )
 
-        return SUPERVISION_HOME_VISIT_FREQUENCY_REQUIREMENTS[supervision_level]
+        # No collateral contacts are required for these supervision levels
+        if (
+            self.supervision_period.supervision_level == StateSupervisionLevel.LIMITED
+            or self._can_skip_contact_or_reassessment(compliance_evaluation_date)
+        ):
+            return None
+
+        (
+            required_contacts,
+            period_days,
+        ) = SUPERVISION_COLLATERAL_VISIT_FREQUENCY_REQUIREMENTS[
+            self.supervision_period.supervision_level
+        ]
+
+        return self._default_next_recommended_contact_date_given_requirements(
+            compliance_evaluation_date,
+            required_contacts,
+            period_days,
+            NEW_SUPERVISION_CONTACT_DEADLINE_BUSINESS_DAYS,
+            self._get_applicable_treatment_collateral_contacts_between_dates,
+            use_business_days=False,
+        )
 
     def _get_supervision_level_policy(
         self, evaluation_date: date
