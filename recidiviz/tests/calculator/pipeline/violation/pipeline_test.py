@@ -381,7 +381,7 @@ class TestClassifyViolationEvents(unittest.TestCase):
             Tuple[int, Tuple[entities.StatePerson, List[ViolationWithResponseEvent]]]
         ] = [(self.fake_person_id, (self.fake_person, violation_events))]
 
-        person_violations = {"person": [self.fake_person], "violations": [violation]}
+        person_violations = {"persons": [self.fake_person], "violations": [violation]}
         test_pipeline = TestPipeline()
         output = (
             test_pipeline
@@ -400,7 +400,7 @@ class TestClassifyViolationEvents(unittest.TestCase):
             Tuple[int, Tuple[entities.StatePerson, List[ViolationWithResponseEvent]]]
         ] = []
 
-        person_violations = {"person": [self.fake_person], "violations": []}
+        person_violations = {"persons": [self.fake_person], "violations": []}
         test_pipeline = TestPipeline()
         output = (
             test_pipeline
@@ -431,7 +431,7 @@ class TestClassifyViolationEvents(unittest.TestCase):
             Tuple[int, Tuple[entities.StatePerson, List[ViolationWithResponseEvent]]]
         ] = []
 
-        person_violations = {"person": [self.fake_person], "violations": [violation]}
+        person_violations = {"persons": [self.fake_person], "violations": [violation]}
         test_pipeline = TestPipeline()
         output = (
             test_pipeline

@@ -36,6 +36,7 @@ import attr
 from apache_beam.options.pipeline_options import PipelineOptions, SetupOptions
 from apache_beam.runners.pipeline_context import PipelineContext
 from apache_beam.typehints.decorators import with_input_types, with_output_types
+from more_itertools import one
 
 from recidiviz.calculator.dataflow_config import (
     DATAFLOW_METRICS_TO_TABLES,
@@ -62,8 +63,12 @@ from recidiviz.calculator.pipeline.utils.pipeline_args_utils import (
     add_shared_pipeline_arguments,
 )
 from recidiviz.persistence.database.schema.state import schema
+from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state import entities
 from recidiviz.utils import environment
+
+HYDRATED_ENTITIES_KEY = "hydrated_entities"
+
 
 # Cached job_id value
 _job_id = None
@@ -94,6 +99,10 @@ class PipelineConfig:
 
     # The metric producer transforming events to metrics
     metric_producer: BaseMetricProducer = attr.ib()
+
+    # TODO(#2769): Make non-optional and remove default value once all pipelines are
+    #  using v2 entity hydration
+    required_entities: Optional[List[Type[Entity]]] = attr.ib(default=None)
 
 
 @with_input_types(
@@ -267,6 +276,74 @@ class ClassifyEvents(beam.DoFn):
         pass
 
 
+@with_input_types(
+    beam.typehints.Tuple[int, Dict[str, Iterable[Any]]],
+)
+@with_output_types(beam.typehints.Tuple[int, Dict[str, Iterable[Any]]])
+class AugmentHydratedEntitiesWithSideInputs(beam.DoFn):
+    """Augments a dictionary storing all of a person's hydrated entities with side
+    input data that is relevant to the person.
+
+    For example, when provided with the following:
+        (123,
+            {
+                "hydrated_entities": {
+                    "persons": [StatePerson()],
+                    "person_races": [StatePersonRace(), StatePersonRace()]
+                },
+                "supervision_period_to_agent_association": [
+                    {
+                        "state_code": "US_XX",
+                        "agent_id": 1010,
+                        "person_id": 123,
+                        "agent_external_id": "OFFICER0009",
+                        "supervision_period_id": 567,
+                    }
+                ]
+            }
+        )
+    This function will return:
+        (123,
+            {
+                "persons": [StatePerson()],
+                "person_races": [StatePersonRace(), StatePersonRace()],
+                "supervision_period_to_agent_association": [
+                    {
+                        "state_code": "US_XX",
+                        "agent_id": 1010,
+                        "person_id": 123,
+                        "agent_external_id": "OFFICER0009",
+                        "supervision_period_id": 567,
+                    }
+                ]
+            }
+        )
+    """
+
+    # pylint: disable=arguments-differ
+    def process(
+        self, element: Tuple[int, Dict[str, List[Any]]]
+    ) -> Iterable[Tuple[int, Dict[str, Iterable[Any]]]]:
+        """Adds all person-level side input values to the dictionary storing hydrated
+        entities."""
+        unifying_id, all_inputs = element
+
+        hydrated_entities: Dict[str, Iterable[Any]] = one(
+            list(all_inputs.pop(HYDRATED_ENTITIES_KEY))
+        )
+
+        # Adds each of the side inputs to the entities dict
+        for key, value in all_inputs.items():
+            hydrated_entities[key] = list(value)
+
+        yield unifying_id, hydrated_entities
+
+    def to_runner_api_parameter(
+        self, _unused_context: PipelineContext
+    ) -> Tuple[str, Any]:
+        pass
+
+
 @attr.s
 class BasePipeline(abc.ABC):
     """A base class defining a calculation pipeline."""
@@ -288,7 +365,8 @@ class BasePipeline(abc.ABC):
         calculation_month_count: int = -1,
         calculation_end_month: Optional[str] = None,
     ) -> beam.Pipeline:
-        """Define the specific pipeline steps here and returns the last step of the pipeline as the output before writing metrics."""
+        """Define the specific pipeline steps here and returns the last step of the
+        pipeline as the output before writing metrics."""
 
     @property
     def _metric_type_values(self) -> List[str]:
@@ -355,6 +433,26 @@ class BasePipeline(abc.ABC):
                 output_table=table_id, output_dataset=output
             )
 
+    def _validate_pipeline_config(self) -> None:
+        """Validates the contents of the PipelineConfig."""
+        # All of these entities are required for all pipelines
+        default_entities: Set[Type[Entity]] = {
+            entities.StatePerson,
+            entities.StatePersonRace,
+            entities.StatePersonEthnicity,
+        }
+
+        if self.pipeline_config.required_entities:
+            missing_default_entities = default_entities.difference(
+                set(self.pipeline_config.required_entities)
+            )
+            if missing_default_entities:
+                raise ValueError(
+                    "PipelineConfig.required_entities must include the "
+                    f"following default entity types: ["
+                    f"{default_entities}]. Missing: {missing_default_entities}"
+                )
+
     def run(
         self,
         apache_beam_pipeline_options: PipelineOptions,
@@ -369,6 +467,7 @@ class BasePipeline(abc.ABC):
         calculation_end_month: Optional[str] = None,
     ) -> None:
         """Runs the designated pipeline."""
+        self._validate_pipeline_config()
 
         # Workaround to load SQLAlchemy objects at start of pipeline. This is necessary because the BuildRootEntity
         # function tries to access attributes of relationship properties on the SQLAlchemy room_schema_class before they

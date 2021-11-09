@@ -822,7 +822,7 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
         person_id_to_county_kv: List[Dict[Any, Any]] = None,
     ) -> Dict[str, List]:
         return {
-            "person": [person],
+            "persons": [person],
             "assessments": assessments or [],
             "sentence_groups": sentence_groups or [],
             "violation_responses": violation_responses or [],

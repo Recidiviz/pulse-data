@@ -31,7 +31,7 @@ from recidiviz.calculator.pipeline.utils.execution_utils import (
     extract_county_of_residence_from_rows,
     person_and_kwargs_for_identifier,
     select_all_by_person_query,
-    select_all_query,
+    select_query,
 )
 from recidiviz.persistence.entity.state.entities import StateAssessment, StatePerson
 
@@ -167,7 +167,7 @@ class TestPersonAndKwargsForIdentifier(unittest.TestCase):
         assessment = StateAssessment.new_with_defaults(state_code="US_XX")
 
         arg_to_entities_map: Dict[str, Iterable[Any]] = {
-            "person": iter([person_input]),
+            "persons": iter([person_input]),
             "assessments": iter([assessment]),
         }
 
@@ -191,7 +191,7 @@ class TestPersonAndKwargsForIdentifier(unittest.TestCase):
 
         arg_to_entities_map: Dict[str, Iterable[Any]] = {
             # There should never be two StatePerson entities with the same person_id. This should fail loudly.
-            "person": iter([person_input_1, person_input_2]),
+            "persons": iter([person_input_1, person_input_2]),
             "assessments": iter([assessment]),
         }
 
@@ -211,7 +211,7 @@ class TestPersonAndKwargsForIdentifier(unittest.TestCase):
 
 
 class TestSelectAllQuery(unittest.TestCase):
-    """Tests for the select_all_by_person_query AND select_all_query functions."""
+    """Tests for the select_all_by_person_query AND select_query functions."""
 
     def setUp(self) -> None:
         self.dataset = "project-id.my_dataset"
@@ -232,7 +232,7 @@ class TestSelectAllQuery(unittest.TestCase):
 
         self.assertEqual(
             expected_query,
-            select_all_query(
+            select_query(
                 self.dataset,
                 self.table_id,
                 state_code_filter="US_XX",
@@ -263,7 +263,7 @@ class TestSelectAllQuery(unittest.TestCase):
         )
         self.assertEqual(
             expected_query,
-            select_all_query(
+            select_query(
                 self.dataset,
                 self.table_id,
                 state_code_filter="US_XX",
