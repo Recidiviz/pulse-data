@@ -16,7 +16,7 @@
 # =============================================================================
 """An implementation of bigquery.TableReference with extra functionality related to views."""
 import abc
-from typing import Any, Callable, Dict, Generic, Optional, Set, TypeVar
+from typing import Any, Callable, Dict, Generic, List, Optional, Set, TypeVar
 
 import attr
 from google.cloud import bigquery
@@ -68,6 +68,7 @@ class BigQueryView(bigquery.TableReference):
         dataset_overrides: Optional[
             Dict[str, str]
         ] = None,  # 'original_name' -> 'prefix_original_name'
+        clustering_fields: Optional[List[str]] = None,
         **query_format_kwargs: Any,
     ) -> None:
         override_kwargs = {}
@@ -135,6 +136,7 @@ class BigQueryView(bigquery.TableReference):
                 f"cannot be same as view itself."
             )
         self._materialized_address_override = materialized_address_override
+        self._clustering_fields = clustering_fields
 
     @classmethod
     def _get_dataset_override_kwargs(
@@ -269,6 +271,10 @@ class BigQueryView(bigquery.TableReference):
             f"view_query='{self.view_query}')"
         )
 
+    @property
+    def clustering_fields(self) -> Optional[List[str]]:
+        return self._clustering_fields
+
 
 def _validate_view_query_template(
     dataset_id: str, view_id: str, view_query_template: str
@@ -348,6 +354,7 @@ class SimpleBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
         projects_to_deploy: Optional[Set[str]] = None,
         materialized_address_override: Optional[BigQueryAddress] = None,
         should_build_predicate: Optional[Callable[[], bool]] = None,
+        clustering_fields: Optional[List[str]] = None,
         # All query format kwargs args must have string values
         **query_format_kwargs: str,
     ):
@@ -359,6 +366,7 @@ class SimpleBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
         self.should_materialize = should_materialize
         self.should_build_predicate = should_build_predicate
         self.materialized_address_override = materialized_address_override
+        self.clustering_fields = clustering_fields
         self.query_format_kwargs = query_format_kwargs
 
     def _build(self, *, dataset_overrides: Dict[str, str] = None) -> BigQueryView:
@@ -369,6 +377,7 @@ class SimpleBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
             view_query_template=self.view_query_template,
             should_materialize=self.should_materialize,
             materialized_address_override=self.materialized_address_override,
+            clustering_fields=self.clustering_fields,
             dataset_overrides=dataset_overrides,
             **self.query_format_kwargs,
         )

@@ -350,8 +350,12 @@ def _create_or_update_view_and_materialize_if_necessary(
 
     try:
         existing_view = bq_client.get_table(dataset_ref, view.view_id)
-        if existing_view.view_query != view.view_query:
+        if (
+            existing_view.view_query != view.view_query
+            or existing_view.clustering_fields != view.clustering_fields
+        ):
             # If the view query has changed, the view has changed
+            # Also update the view if clustering fields have changed
             view_changed = True
         old_schema = existing_view.schema
     except exceptions.NotFound:

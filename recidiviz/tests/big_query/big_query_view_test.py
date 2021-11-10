@@ -42,11 +42,13 @@ class BigQueryViewTest(unittest.TestCase):
         self.metadata_patcher.stop()
 
     def test_simple_view_no_extra_args(self) -> None:
+        fake_clustering_fields = ["clustering_field_1", "clustering_field_2"]
         view = BigQueryView(
             dataset_id="view_dataset",
             view_id="my_view",
             description="my_view description",
             view_query_template="SELECT * FROM `{project_id}.some_dataset.table`",
+            clustering_fields=fake_clustering_fields,
         )
 
         self.assertEqual(self.PROJECT_ID, view.project)
@@ -59,6 +61,7 @@ class BigQueryViewTest(unittest.TestCase):
         self.assertEqual(
             f"SELECT * FROM `{self.PROJECT_ID}.view_dataset.my_view`", view.select_query
         )
+        self.assertEqual(fake_clustering_fields, view.clustering_fields)
 
     def test_simple_view_overwrite_project_id(self) -> None:
         view = BigQueryView(

@@ -101,6 +101,7 @@ class ViewManagerTest(unittest.TestCase):
                 should_materialize=False,
                 projects_to_deploy=None,
                 materialized_address_override=None,
+                clustering_fields=None,
                 should_build_predicate=None,
                 **view,
             )
@@ -213,6 +214,7 @@ class ViewManagerTest(unittest.TestCase):
             return mock.MagicMock(
                 view_query=view.view_query,
                 schema=[bigquery.SchemaField("some_field", "STRING", "REQUIRED")],
+                clustering_fields=None,
             )
 
         # Create/Update returns the table that was already there
@@ -495,6 +497,7 @@ class ViewManagerTest(unittest.TestCase):
                 should_materialize=False,
                 projects_to_deploy=None,
                 materialized_address_override=None,
+                clustering_fields=None,
                 should_build_predicate=None,
                 **view,
             )
@@ -601,6 +604,7 @@ class ViewManagerTest(unittest.TestCase):
                 description=f"{view['view_id']} description",
                 should_materialize=False,
                 materialized_address_override=None,
+                clustering_fields=None,
                 dataset_overrides=None,
                 **view,
             )
