@@ -28,13 +28,12 @@ python -m recidiviz.reporting.context.po_monthly_report.context --state_code US_
 import argparse
 import copy
 import json
-import os
 import sys
 from datetime import date
 from math import isnan
 from typing import Dict, List, Literal, Optional
 
-from jinja2 import Environment, FileSystemLoader, Template
+from jinja2 import Template
 
 import recidiviz.reporting.email_reporting_utils as utils
 from recidiviz.common.constants.states import StateCode
@@ -57,6 +56,7 @@ from recidiviz.reporting.context.po_monthly_report.constants import (
     POS_DISCHARGES,
     SUPERVISION_DOWNGRADES,
     TECHNICAL_REVOCATIONS,
+    Batch,
     OfficerHighlightComparison,
     OfficerHighlightType,
     ReportType,
@@ -96,16 +96,12 @@ _METRIC_DISPLAY_TEXT = {
 class PoMonthlyReportContext(ReportContext):
     """Report context for the PO Monthly Report."""
 
-    def __init__(self, batch: utils.Batch, recipient: Recipient):
+    def __init__(self, batch: Batch, recipient: Recipient):
         self.metrics_delegate = PoMonthlyReportMetricsDelegateFactory.build(
             state_code=batch.state_code
         )
         super().__init__(batch, recipient)
         self.recipient_data = self._prepare_recipient_data(recipient.data)
-
-        self.jinja_env = Environment(
-            loader=FileSystemLoader(self._get_context_templates_folder())
-        )
 
         self.state_name = self.state_code.get_state().name
 
@@ -118,10 +114,6 @@ class PoMonthlyReportContext(ReportContext):
 
     def get_report_type(self) -> ReportType:
         return ReportType.POMonthlyReport
-
-    def get_properties_filepath(self) -> str:
-        """Returns path to the properties.json, assumes it is in the same directory as the context."""
-        return os.path.join(os.path.dirname(__file__), "properties.json")
 
     @property
     def html_template(self) -> Template:
@@ -150,7 +142,7 @@ class PoMonthlyReportContext(ReportContext):
         self.prepared_data = {
             k: v
             for k, v in copy.deepcopy(self.recipient_data).items()
-            if k in [utils.KEY_BATCH_ID, utils.KEY_EMAIL_ADDRESS, utils.KEY_STATE_CODE]
+            if k in [utils.KEY_STATE_CODE]
         }
 
         self.prepared_data["static_image_path"] = utils.get_static_image_path(
@@ -643,7 +635,7 @@ if __name__ == "__main__":
         raise ValueError("You must supply a valid state code.")
 
     context = PoMonthlyReportContext(
-        utils.Batch(
+        Batch(
             state_code=demo_state_code,
             batch_id="test",
             report_type=ReportType.POMonthlyReport,

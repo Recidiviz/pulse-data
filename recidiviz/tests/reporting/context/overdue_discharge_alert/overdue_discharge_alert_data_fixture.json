@@ -1,0 +1,22 @@
+{
+    "review_year": 2021,
+    "review_month": 10,
+    "email_address": "test@recidiviz.org",
+    "state_code": "US_ID",
+    "district": "US_ID_D3",
+    "officer_given_name": "Alex",
+    "overdue_discharges": [
+      {
+        "full_name": "Linet",
+        "person_external_id": "123",
+        "expiration_date": "123"
+      }
+    ],
+    "upcoming_discharges": [
+        {
+            "full_name": "Bobbye",
+            "person_external_id": "456",
+            "expiration_date": "456"
+        }
+    ]
+}
