@@ -15,7 +15,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { Badge, Card, Descriptions, Divider, Spin } from "antd";
+import { InfoCircleOutlined } from "@ant-design/icons";
+import { Badge, Card, Descriptions, Divider, Spin, Tooltip } from "antd";
 import React from "react";
 import { fetchValidationDetails } from "../../AdminPanelAPI";
 import { useFetchedDataProtobuf } from "../../hooks";
@@ -27,10 +28,13 @@ import { RecordStatus, ValidationDetailsProps } from "./constants";
 import SamenessPerRowDetails from "./SamenessPerRowDetails";
 import SamenessPerViewDetails from "./SamenessPerViewDetails";
 import {
+  convertResultStatus,
   formatStatusAmount,
   getBadgeStatusForRecordStatus,
+  getDaysActive,
   getRecordStatus,
   getTextForRecordStatus,
+  replaceInfinity,
 } from "./utils";
 import ValidationDetailsGraph from "./ValidationDetailsGraph";
 
@@ -137,13 +141,72 @@ const ValidationDetails: React.FC<ValidationDetailsProps> = ({
       >
         {validationLoading && <Spin />}
         {records && (
-          <Card>
-            <ValidationDetailsGraph
-              // Use slice() to copy before reversing.
-              records={records.slice().reverse()}
-              isPercent={latestRecord?.getIsPercentage()}
-            />
-          </Card>
+          <>
+            <Card title="Graph">
+              <ValidationDetailsGraph
+                // Use slice() to copy before reversing.
+                records={records.slice().reverse()}
+                isPercent={latestRecord?.getIsPercentage()}
+              />
+            </Card>
+
+            {
+              // Only show the "Last Better Run" card if it is not this run.
+              latestRecord?.getLastBetterStatusRunId() !==
+                latestRecord?.getRunId() && (
+                <Card
+                  title={`Last ${getTextForRecordStatus(
+                    convertResultStatus(
+                      latestRecord?.getLastBetterStatusRunResultStatus()
+                    )
+                  )} Run`}
+                  extra={
+                    <Tooltip title="Information about the most recent run that had a better status.">
+                      <InfoCircleOutlined />
+                    </Tooltip>
+                  }
+                >
+                  {!latestRecord?.hasLastBetterStatusRunDatetime() ? (
+                    "No prior better run exists."
+                  ) : (
+                    <Descriptions bordered column={1}>
+                      <Descriptions.Item label="Days Ago">
+                        {latestRecord === undefined
+                          ? "Unknown"
+                          : replaceInfinity(
+                              getDaysActive(latestRecord),
+                              "Always"
+                            )}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="Run ID">
+                        {latestRecord?.getLastBetterStatusRunId()}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="Run Datetime">
+                        {latestRecord
+                          ?.getLastBetterStatusRunDatetime()
+                          ?.toDate()
+                          .toISOString()}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="Status">
+                        <Badge
+                          status={getBadgeStatusForRecordStatus(
+                            convertResultStatus(
+                              latestRecord?.getLastBetterStatusRunResultStatus()
+                            )
+                          )}
+                          text={getTextForRecordStatus(
+                            convertResultStatus(
+                              latestRecord?.getLastBetterStatusRunResultStatus()
+                            )
+                          )}
+                        />
+                      </Descriptions.Item>
+                    </Descriptions>
+                  )}
+                </Card>
+              )
+            }
+          </>
         )}
       </div>
     </>

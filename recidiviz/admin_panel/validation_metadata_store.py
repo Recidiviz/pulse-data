@@ -100,8 +100,34 @@ SELECT
     was_successful,
     failure_description,
     result_details_type,
-    result_details
-FROM `{project_id}.{validation_result_address.dataset_id}.{validation_result_address.table_id}`
+    result_details,
+    last_better_status_run_id,
+    last_better_status_run_datetime,
+    last_better_status_run_result_status,
+FROM (
+    SELECT
+    result.*,
+    last_better_status_run.run_id as last_better_status_run_id,
+    last_better_status_run.run_datetime as last_better_status_run_datetime,
+    last_better_status_run.validation_result_status as last_better_status_run_result_status,
+    ROW_NUMBER() OVER (
+        PARTITION BY result.run_id, result.validation_name, result.region_code
+        -- Orders by recency of the compared data
+        ORDER BY last_better_status_run.run_datetime DESC) as ordinal
+    FROM `{project_id}.{validation_result_address.dataset_id}.{validation_result_address.table_id}` result
+    -- Explodes to all prior better runs
+    LEFT JOIN `{project_id}.{validation_result_address.dataset_id}.{validation_result_address.table_id}` last_better_status_run
+    ON (result.validation_name = last_better_status_run.validation_name
+        AND result.region_code = last_better_status_run.region_code
+        AND result.run_datetime >= last_better_status_run.run_datetime
+        AND CASE result.validation_result_status 
+                WHEN "FAIL_HARD" THEN last_better_status_run.validation_result_status IN ("FAIL_SOFT", "SUCCESS")
+                ELSE last_better_status_run.validation_result_status = "SUCCESS"
+            END
+    )
+)
+-- Get the row with the most recent better run
+WHERE ordinal = 1
 """
 
 
@@ -110,7 +136,7 @@ def recent_run_results_query(
 ) -> str:
     return f"""
 {results_query(project_id, validation_result_address)}
-WHERE run_id = (
+AND run_id = (
     SELECT run_id
     FROM `{project_id}.{validation_result_address.dataset_id}.{validation_result_address.table_id}`
     ORDER BY run_datetime desc LIMIT 1
@@ -127,9 +153,9 @@ def validation_history_results_query(
 ) -> str:
     return f"""
 {results_query(project_id, validation_result_address)}
-WHERE validation_name = "{validation_name}"
-    AND region_code = "{region_code}"
-    AND run_datetime >= DATETIME_SUB(current_date(), INTERVAL {days_to_include} DAY)
+AND validation_name = "{validation_name}"
+AND region_code = "{region_code}"
+AND run_datetime >= DATETIME_SUB(current_date(), INTERVAL {days_to_include} DAY)
 ORDER BY run_datetime desc 
 """
 
@@ -267,6 +293,21 @@ def _validation_status_record_from_row(row: Row) -> ValidationStatusRecord_pb2:
     run_datetime = Timestamp()
     run_datetime.FromDatetime(row.get("run_datetime"))
 
+    last_better_status_run_id = None
+    last_better_status_run_datetime = None
+    last_better_status_run_result_status = None
+    if row.get("last_better_status_run_id") is not None:
+        last_better_status_run_id = row.get("last_better_status_run_id")
+        last_better_status_run_datetime = Timestamp()
+        last_better_status_run_datetime.FromDatetime(
+            row.get("last_better_status_run_datetime")
+        )
+        last_better_status_run_result_status = (
+            ValidationStatusRecord_pb2.ValidationResultStatus.Value(
+                row.get("last_better_status_run_result_status")
+            )
+        )
+
     return ValidationStatusRecord_pb2(
         run_id=row.get("run_id"),
         run_datetime=run_datetime,
@@ -287,6 +328,9 @@ def _validation_status_record_from_row(row: Row) -> ValidationStatusRecord_pb2:
         existence=result_details_oneof.existence,
         sameness_per_row=result_details_oneof.sameness_per_row,
         sameness_per_view=result_details_oneof.sameness_per_view,
+        last_better_status_run_id=last_better_status_run_id,
+        last_better_status_run_datetime=last_better_status_run_datetime,
+        last_better_status_run_result_status=last_better_status_run_result_status,
     )
 
 

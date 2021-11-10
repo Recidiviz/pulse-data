@@ -263,6 +263,9 @@ class ValidationStatusRecord(google.protobuf.message.Message):
     EXISTENCE_FIELD_NUMBER: builtins.int
     SAMENESS_PER_ROW_FIELD_NUMBER: builtins.int
     SAMENESS_PER_VIEW_FIELD_NUMBER: builtins.int
+    LAST_BETTER_STATUS_RUN_ID_FIELD_NUMBER: builtins.int
+    LAST_BETTER_STATUS_RUN_DATETIME_FIELD_NUMBER: builtins.int
+    LAST_BETTER_STATUS_RUN_RESULT_STATUS_FIELD_NUMBER: builtins.int
     run_id: typing.Text = ...
     """These apply to this entire valdiation run (i.e. whole /validate request)"""
     @property
@@ -291,6 +294,21 @@ class ValidationStatusRecord(google.protobuf.message.Message):
     def sameness_per_row(self) -> global___SamenessPerRowValidationResultDetails: ...
     @property
     def sameness_per_view(self) -> global___SamenessPerViewValidationResultDetails: ...
+    last_better_status_run_id: typing.Text = ...
+    """These describe the most recent run that had a better result status than this run.
+    - If this is a hard failure, the last run that was a soft failure or success
+    - If this is a soft failure, the last run that was a success
+    - If this is a success, this run
+    If no prior run meets the above criteria (a failure with no prior, better status)
+    then the fields will be null.
+    """
+    @property
+    def last_better_status_run_datetime(
+        self,
+    ) -> google.protobuf.timestamp_pb2.Timestamp: ...
+    last_better_status_run_result_status: global___ValidationStatusRecord.ValidationResultStatus.V = (
+        ...
+    )
     def __init__(
         self,
         *,
@@ -319,6 +337,13 @@ class ValidationStatusRecord(google.protobuf.message.Message):
         sameness_per_view: typing.Optional[
             global___SamenessPerViewValidationResultDetails
         ] = ...,
+        last_better_status_run_id: typing.Optional[typing.Text] = ...,
+        last_better_status_run_datetime: typing.Optional[
+            google.protobuf.timestamp_pb2.Timestamp
+        ] = ...,
+        last_better_status_run_result_status: typing.Optional[
+            global___ValidationStatusRecord.ValidationResultStatus.V
+        ] = ...,
     ) -> None: ...
     def HasField(
         self,
@@ -339,6 +364,12 @@ class ValidationStatusRecord(google.protobuf.message.Message):
             b"has_data",
             "is_percentage",
             b"is_percentage",
+            "last_better_status_run_datetime",
+            b"last_better_status_run_datetime",
+            "last_better_status_run_id",
+            b"last_better_status_run_id",
+            "last_better_status_run_result_status",
+            b"last_better_status_run_result_status",
             "name",
             b"name",
             "result_details",
@@ -380,6 +411,12 @@ class ValidationStatusRecord(google.protobuf.message.Message):
             b"has_data",
             "is_percentage",
             b"is_percentage",
+            "last_better_status_run_datetime",
+            b"last_better_status_run_datetime",
+            "last_better_status_run_id",
+            b"last_better_status_run_id",
+            "last_better_status_run_result_status",
+            b"last_better_status_run_result_status",
             "name",
             b"name",
             "result_details",

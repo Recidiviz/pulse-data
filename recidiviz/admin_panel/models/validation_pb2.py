@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto2",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n-recidiviz/admin_panel/models/validation.proto\x12\x1crecidiviz.admin_panel.models\x1a\x1fgoogle/protobuf/timestamp.proto"<\n\tResultRow\x12\x14\n\x0clabel_values\x18\x01 \x03(\t\x12\x19\n\x11\x63omparison_values\x18\x02 \x03(\x02""\n ExistenceValidationResultDetails"\xe3\x01\n%SamenessPerRowValidationResultDetails\x12\x65\n\x0b\x66\x61iled_rows\x18\x01 \x03(\x0b\x32P.recidiviz.admin_panel.models.SamenessPerRowValidationResultDetails.RowWithError\x1aS\n\x0cRowWithError\x12\x34\n\x03row\x18\x01 \x01(\x0b\x32\'.recidiviz.admin_panel.models.ResultRow\x12\r\n\x05\x65rror\x18\x02 \x01(\x02"\xc3\x03\n&SamenessPerViewValidationResultDetails\x12\x16\n\x0enum_error_rows\x18\x01 \x01(\x05\x12\x16\n\x0etotal_num_rows\x18\x02 \x01(\x05\x12\x86\x01\n(non_null_counts_per_column_per_partition\x18\x03 \x03(\x0b\x32T.recidiviz.admin_panel.models.SamenessPerViewValidationResultDetails.PartitionCounts\x1a\xdf\x01\n\x0fPartitionCounts\x12\x18\n\x10partition_labels\x18\x01 \x03(\t\x12}\n\rcolumn_counts\x18\x02 \x03(\x0b\x32\x66.recidiviz.admin_panel.models.SamenessPerViewValidationResultDetails.PartitionCounts.ColumnCountsEntry\x1a\x33\n\x11\x43olumnCountsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x05:\x02\x38\x01"\xe0\x07\n\x16ValidationStatusRecord\x12\x0e\n\x06run_id\x18\x01 \x01(\t\x12\x30\n\x0crun_datetime\x18\x02 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12\x16\n\x0esystem_version\x18\x03 \x01(\t\x12\x0c\n\x04name\x18\x04 \x01(\t\x12Y\n\x08\x63\x61tegory\x18\x05 \x01(\x0e\x32G.recidiviz.admin_panel.models.ValidationStatusRecord.ValidationCategory\x12\x15\n\ris_percentage\x18\x06 \x01(\x08\x12\x12\n\nstate_code\x18\x07 \x01(\t\x12\x0f\n\x07\x64id_run\x18\x08 \x01(\x08\x12\x10\n\x08has_data\x18\t \x01(\x08\x12\x1b\n\x13hard_failure_amount\x18\n \x01(\x02\x12\x1b\n\x13soft_failure_amount\x18\x0b \x01(\x02\x12\x62\n\rresult_status\x18\x0c \x01(\x0e\x32K.recidiviz.admin_panel.models.ValidationStatusRecord.ValidationResultStatus\x12\x14\n\x0c\x65rror_amount\x18\r \x01(\x02\x12\x1b\n\x13\x66\x61ilure_description\x18\x0e \x01(\t\x12S\n\texistence\x18\x0f \x01(\x0b\x32>.recidiviz.admin_panel.models.ExistenceValidationResultDetailsH\x00\x12_\n\x10sameness_per_row\x18\x10 \x01(\x0b\x32\x43.recidiviz.admin_panel.models.SamenessPerRowValidationResultDetailsH\x00\x12\x61\n\x11sameness_per_view\x18\x11 \x01(\x0b\x32\x44.recidiviz.admin_panel.models.SamenessPerViewValidationResultDetailsH\x00"t\n\x12ValidationCategory\x12\x16\n\x12\x45XTERNAL_AGGREGATE\x10\x00\x12\x17\n\x13\x45XTERNAL_INDIVIDUAL\x10\x01\x12\x0f\n\x0b\x43ONSISTENCY\x10\x02\x12\r\n\tINVARIANT\x10\x03\x12\r\n\tFRESHNESS\x10\x04"C\n\x16ValidationResultStatus\x12\x0b\n\x07SUCCESS\x10\x00\x12\r\n\tFAIL_SOFT\x10\x01\x12\r\n\tFAIL_HARD\x10\x02\x42\x10\n\x0eresult_details"`\n\x17ValidationStatusRecords\x12\x45\n\x07records\x18\x01 \x03(\x0b\x32\x34.recidiviz.admin_panel.models.ValidationStatusRecord',
+    serialized_pb=b'\n-recidiviz/admin_panel/models/validation.proto\x12\x1crecidiviz.admin_panel.models\x1a\x1fgoogle/protobuf/timestamp.proto"<\n\tResultRow\x12\x14\n\x0clabel_values\x18\x01 \x03(\t\x12\x19\n\x11\x63omparison_values\x18\x02 \x03(\x02""\n ExistenceValidationResultDetails"\xe3\x01\n%SamenessPerRowValidationResultDetails\x12\x65\n\x0b\x66\x61iled_rows\x18\x01 \x03(\x0b\x32P.recidiviz.admin_panel.models.SamenessPerRowValidationResultDetails.RowWithError\x1aS\n\x0cRowWithError\x12\x34\n\x03row\x18\x01 \x01(\x0b\x32\'.recidiviz.admin_panel.models.ResultRow\x12\r\n\x05\x65rror\x18\x02 \x01(\x02"\xc3\x03\n&SamenessPerViewValidationResultDetails\x12\x16\n\x0enum_error_rows\x18\x01 \x01(\x05\x12\x16\n\x0etotal_num_rows\x18\x02 \x01(\x05\x12\x86\x01\n(non_null_counts_per_column_per_partition\x18\x03 \x03(\x0b\x32T.recidiviz.admin_panel.models.SamenessPerViewValidationResultDetails.PartitionCounts\x1a\xdf\x01\n\x0fPartitionCounts\x12\x18\n\x10partition_labels\x18\x01 \x03(\t\x12}\n\rcolumn_counts\x18\x02 \x03(\x0b\x32\x66.recidiviz.admin_panel.models.SamenessPerViewValidationResultDetails.PartitionCounts.ColumnCountsEntry\x1a\x33\n\x11\x43olumnCountsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x05:\x02\x38\x01"\xc3\t\n\x16ValidationStatusRecord\x12\x0e\n\x06run_id\x18\x01 \x01(\t\x12\x30\n\x0crun_datetime\x18\x02 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12\x16\n\x0esystem_version\x18\x03 \x01(\t\x12\x0c\n\x04name\x18\x04 \x01(\t\x12Y\n\x08\x63\x61tegory\x18\x05 \x01(\x0e\x32G.recidiviz.admin_panel.models.ValidationStatusRecord.ValidationCategory\x12\x15\n\ris_percentage\x18\x06 \x01(\x08\x12\x12\n\nstate_code\x18\x07 \x01(\t\x12\x0f\n\x07\x64id_run\x18\x08 \x01(\x08\x12\x10\n\x08has_data\x18\t \x01(\x08\x12\x1b\n\x13hard_failure_amount\x18\n \x01(\x02\x12\x1b\n\x13soft_failure_amount\x18\x0b \x01(\x02\x12\x62\n\rresult_status\x18\x0c \x01(\x0e\x32K.recidiviz.admin_panel.models.ValidationStatusRecord.ValidationResultStatus\x12\x14\n\x0c\x65rror_amount\x18\r \x01(\x02\x12\x1b\n\x13\x66\x61ilure_description\x18\x0e \x01(\t\x12S\n\texistence\x18\x0f \x01(\x0b\x32>.recidiviz.admin_panel.models.ExistenceValidationResultDetailsH\x00\x12_\n\x10sameness_per_row\x18\x10 \x01(\x0b\x32\x43.recidiviz.admin_panel.models.SamenessPerRowValidationResultDetailsH\x00\x12\x61\n\x11sameness_per_view\x18\x11 \x01(\x0b\x32\x44.recidiviz.admin_panel.models.SamenessPerViewValidationResultDetailsH\x00\x12!\n\x19last_better_status_run_id\x18\x12 \x01(\t\x12\x43\n\x1flast_better_status_run_datetime\x18\x13 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12y\n$last_better_status_run_result_status\x18\x14 \x01(\x0e\x32K.recidiviz.admin_panel.models.ValidationStatusRecord.ValidationResultStatus"t\n\x12ValidationCategory\x12\x16\n\x12\x45XTERNAL_AGGREGATE\x10\x00\x12\x17\n\x13\x45XTERNAL_INDIVIDUAL\x10\x01\x12\x0f\n\x0b\x43ONSISTENCY\x10\x02\x12\r\n\tINVARIANT\x10\x03\x12\r\n\tFRESHNESS\x10\x04"C\n\x16ValidationResultStatus\x12\x0b\n\x07SUCCESS\x10\x00\x12\r\n\tFAIL_SOFT\x10\x01\x12\r\n\tFAIL_HARD\x10\x02\x42\x10\n\x0eresult_details"`\n\x17ValidationStatusRecords\x12\x45\n\x07records\x18\x01 \x03(\x0b\x32\x34.recidiviz.admin_panel.models.ValidationStatusRecord',
     dependencies=[
         google_dot_protobuf_dot_timestamp__pb2.DESCRIPTOR,
     ],
@@ -77,8 +77,8 @@ _VALIDATIONSTATUSRECORD_VALIDATIONCATEGORY = _descriptor.EnumDescriptor(
     ],
     containing_type=None,
     serialized_options=None,
-    serialized_start=1684,
-    serialized_end=1800,
+    serialized_start=1911,
+    serialized_end=2027,
 )
 _sym_db.RegisterEnumDescriptor(_VALIDATIONSTATUSRECORD_VALIDATIONCATEGORY)
 
@@ -116,8 +116,8 @@ _VALIDATIONSTATUSRECORD_VALIDATIONRESULTSTATUS = _descriptor.EnumDescriptor(
     ],
     containing_type=None,
     serialized_options=None,
-    serialized_start=1802,
-    serialized_end=1869,
+    serialized_start=2029,
+    serialized_end=2096,
 )
 _sym_db.RegisterEnumDescriptor(_VALIDATIONSTATUSRECORD_VALIDATIONRESULTSTATUS)
 
@@ -837,6 +837,63 @@ _VALIDATIONSTATUSRECORD = _descriptor.Descriptor(
             file=DESCRIPTOR,
             create_key=_descriptor._internal_create_key,
         ),
+        _descriptor.FieldDescriptor(
+            name="last_better_status_run_id",
+            full_name="recidiviz.admin_panel.models.ValidationStatusRecord.last_better_status_run_id",
+            index=17,
+            number=18,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="last_better_status_run_datetime",
+            full_name="recidiviz.admin_panel.models.ValidationStatusRecord.last_better_status_run_datetime",
+            index=18,
+            number=19,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="last_better_status_run_result_status",
+            full_name="recidiviz.admin_panel.models.ValidationStatusRecord.last_better_status_run_result_status",
+            index=19,
+            number=20,
+            type=14,
+            cpp_type=8,
+            label=1,
+            has_default_value=False,
+            default_value=0,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
     ],
     extensions=[],
     nested_types=[],
@@ -859,7 +916,7 @@ _VALIDATIONSTATUSRECORD = _descriptor.Descriptor(
         ),
     ],
     serialized_start=895,
-    serialized_end=1887,
+    serialized_end=2114,
 )
 
 
@@ -899,8 +956,8 @@ _VALIDATIONSTATUSRECORDS = _descriptor.Descriptor(
     syntax="proto2",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1889,
-    serialized_end=1985,
+    serialized_start=2116,
+    serialized_end=2212,
 )
 
 _SAMENESSPERROWVALIDATIONRESULTDETAILS_ROWWITHERROR.fields_by_name[
@@ -944,6 +1001,12 @@ _VALIDATIONSTATUSRECORD.fields_by_name[
 _VALIDATIONSTATUSRECORD.fields_by_name[
     "sameness_per_view"
 ].message_type = _SAMENESSPERVIEWVALIDATIONRESULTDETAILS
+_VALIDATIONSTATUSRECORD.fields_by_name[
+    "last_better_status_run_datetime"
+].message_type = google_dot_protobuf_dot_timestamp__pb2._TIMESTAMP
+_VALIDATIONSTATUSRECORD.fields_by_name[
+    "last_better_status_run_result_status"
+].enum_type = _VALIDATIONSTATUSRECORD_VALIDATIONRESULTSTATUS
 _VALIDATIONSTATUSRECORD_VALIDATIONCATEGORY.containing_type = _VALIDATIONSTATUSRECORD
 _VALIDATIONSTATUSRECORD_VALIDATIONRESULTSTATUS.containing_type = _VALIDATIONSTATUSRECORD
 _VALIDATIONSTATUSRECORD.oneofs_by_name["result_details"].fields.append(
