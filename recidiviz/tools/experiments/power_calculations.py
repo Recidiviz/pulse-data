@@ -192,7 +192,7 @@ class PowerCalc:
         self.checks()
 
         # make sure necessary params defined
-        if not self.n_clusters:
+        if self.n_clusters is None:
             raise ValueError("`n_clusters' must be defined.")
 
         # (unnecessary) param checks for mypy
@@ -262,6 +262,10 @@ class PowerCalc:
                 "`x_range` must contain TWO values: lower and upper bounds."
             )
 
+        # check that x_range elements are strictly increasing
+        if x_range[0] >= x_range[1]:
+            raise ValueError("`x_range` values must be strictly increasing.")
+
         # check that `param` is something we have a method for
         acceptable_params = ["n_clusters"]
         if param not in acceptable_params:
@@ -271,13 +275,28 @@ class PowerCalc:
 
         # initialize list of calculated MDEs and x values
         mde_all = []
-        x_vals = np.linspace(x_range[0], x_range[1], 100)
 
         # calc for n_clusters
         if param == "n_clusters":
 
+            # check that values in x_range for `n_clusters` param are integers.
+            if not all(isinstance(x, int) for x in x_range):
+                raise ValueError(
+                    "`x_range` values for param `n_clusters` must be integers."
+                )
+
+            # check that lower bound of x_range for `n_clusters` is greater than 1.
+            if x_range[0] <= 1:
+                raise ValueError(
+                    "`x_range` values for param `n_clusters` must be greater than 1."
+                )
+
             # store existing value
             temp_val = self.n_clusters
+
+            # generate an array of x values
+            step_size = max(np.floor((x_range[1] - x_range[0]) / 100), 1)
+            x_vals = np.arange(x_range[0], x_range[1], step_size)
 
             # loop through x_range getting MDE each round
             for x in x_vals:
