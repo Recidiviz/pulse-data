@@ -14,10 +14,27 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
+variable "labels" {
+  type    = map(string)
+  default = {}
+}
 
-module "state-specific-scratch-dataset" {
-  count       = var.is_production ? 0 : 1
-  source      = "../big_query_dataset"
-  dataset_id  =  "${lower(var.state_code)}_scratch"
-  description = "State-specific scratch space dataset that can be used to save one-off queries related to ${upper(var.state_code)} data. May provide a temporary staging ground for some ingest external validation data."
+variable "location" {
+  type    = string
+  default = "US"
+}
+
+variable "dataset_id" {
+  type    = string
+}
+
+variable "description" {
+  type    = string
+}
+
+resource "google_bigquery_dataset" "dataset" {
+  dataset_id  = var.dataset_id
+  location    = var.location
+  labels      = merge(var.labels, {managed_by_terraform = "true"})
+  description = var.description
 }

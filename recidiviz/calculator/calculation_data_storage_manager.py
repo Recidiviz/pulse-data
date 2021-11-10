@@ -41,6 +41,7 @@ from recidiviz.utils.yaml_dict import YAMLDict
 # Datasets must be at least 12 hours old to be deleted
 DATASET_DELETION_MIN_SECONDS = 12 * 60 * 60
 
+DATASET_MANAGED_BY_TERRAFORM_KEY = "managed_by_terraform"
 
 calculation_data_storage_manager_blueprint = flask.Blueprint(
     "calculation_data_storage_manager", __name__
@@ -73,6 +74,17 @@ def _delete_empty_datasets() -> None:
     for dataset_resource in datasets:
         dataset_ref = bq_client.dataset_ref_for_id(dataset_resource.dataset_id)
         dataset = bq_client.get_dataset(dataset_ref)
+        dataset_labels = dataset.labels
+
+        # Skip datasets that are managed by terraform
+        for label, value in dataset_labels.items():
+            if label == DATASET_MANAGED_BY_TERRAFORM_KEY and value == "true":
+                logging.info(
+                    "Skipping empty dataset that is in Terraform state [%s]",
+                    dataset_ref.dataset_id,
+                )
+                return
+
         tables = peekable(bq_client.list_tables(dataset.dataset_id))
         created_time = dataset.created
         dataset_age_seconds = (

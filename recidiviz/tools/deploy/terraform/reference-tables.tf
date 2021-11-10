@@ -22,10 +22,10 @@ module "external_reference_tables_bucket" {
   name_suffix = "external-reference-data"
 }
 
-resource "google_bigquery_dataset" "external_reference" {
+module "external_reference_dataset" {
+  source      = "./modules/big_query_dataset"
   dataset_id  = "external_reference"
   description = "Contains reference tables from external sources that are synced from our repository."
-  location    = "US"
 }
 
 module "county_resident_adult_populations_table" {
@@ -33,7 +33,7 @@ module "county_resident_adult_populations_table" {
 
   project_id     = var.project_id
   bucket_name    = module.external_reference_tables_bucket.name
-  dataset_id     = google_bigquery_dataset.external_reference.dataset_id
+  dataset_id     = module.external_reference_dataset.dataset_id
   recidiviz_root = local.recidiviz_root
 
   table_name = "county_resident_adult_populations"
@@ -63,7 +63,7 @@ module "county_resident_populations_table" {
 
   project_id     = var.project_id
   bucket_name    = module.external_reference_tables_bucket.name
-  dataset_id     = google_bigquery_dataset.external_reference.dataset_id
+  dataset_id     = module.external_reference_dataset.dataset_id
   recidiviz_root = local.recidiviz_root
 
   table_name = "county_resident_populations"
@@ -93,7 +93,7 @@ module "county_fips_table" {
 
   project_id     = var.project_id
   bucket_name    = module.external_reference_tables_bucket.name
-  dataset_id     = google_bigquery_dataset.external_reference.dataset_id
+  dataset_id     = module.external_reference_dataset.dataset_id
   recidiviz_root = local.recidiviz_root
 
   table_name = "county_fips"
