@@ -1,0 +1,21 @@
+file_tag: CIS_9080_CCS_LOCATION_TYPE
+file_description: |-
+  This is a code table with one row per code and description. The Ccs_Location_Type_Cd is used in the
+  Cis_9080_Ccs_Location_Type_Cd field on the CIS_908_CCS_LOCATION table.
+primary_key_cols:
+  - Ccs_Location_Type_Cd
+columns:
+  - name : Created_By_Tx
+  - name : Created_On_Date
+  - name : E_Ccs_Location_Type_Desc
+    description : |-
+      The value for the Cis_9080_Ccs_Location_Type_Cd code. See CIS_908_CCS_LOCATION config for all possible values.
+  - name : Locking_Tsp
+  - name : Logical_Delete_Ind
+  - name : Modified_By_Tx
+  - name : Modified_On_Date
+  - name : System_Ref_Comments_Tx
+  - name : System_Ref_Tx
+  - name : Ccs_Location_Type_Cd
+    description : |-
+      Primary key field and location type code used in CIS_908_CCS_LOCATION table

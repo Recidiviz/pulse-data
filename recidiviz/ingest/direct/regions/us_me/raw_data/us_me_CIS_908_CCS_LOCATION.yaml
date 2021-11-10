@@ -19,25 +19,27 @@ columns:
       - value: 1
         description: Central Office, Administration location or Non-DOC Location type
       - value: 2
-        description: DOC Correctional Facilities
+        description: Adult DOC Correctional Facilities
       - value: 3
-        description: Juvenile Detention Centers
+        description: Juvenile Facilities
       - value: 4
         description: Adult supervision offices
       - value: 7
-        description: Pre-release centers
+        description: Adult Pre-release centers
       - value: 8
         description: US and Canadian States and territories
       - value: 9
         desription: County jails
       - value: 11
-        description: Location types including Federal, Puerto Rico, and Other County
+        description: Dispositions - locations include Federal, Puerto Rico, and Other County
+      - value: 12
+        description: Transport - Values include Federal, Puerto Rico, and Other County
       - value: 13
         description: Maine Counties
       - value: 14
         description: Values include "Locked" and "Deceased"
       - value: 15
-        description: Group homes, juvenile supervision offices
+        description: Juvenile supervision offices
       - value: 16
         description: Re-entry centers
       - value: 21
