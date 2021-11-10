@@ -17,7 +17,7 @@
 
 """An extension of BigQueryView with extra functionality related to metric views specifically."""
 
-from typing import Dict, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from recidiviz.big_query.big_query_view import (
     BigQueryAddress,
@@ -42,6 +42,7 @@ class MetricBigQueryView(BigQueryView):
         should_materialize: bool,
         materialized_address_override: Optional[BigQueryAddress],
         dataset_overrides: Optional[Dict[str, str]],
+        clustering_fields: Optional[List[str]] = None,
         **query_format_kwargs: str,
     ):
         super().__init__(
@@ -52,6 +53,7 @@ class MetricBigQueryView(BigQueryView):
             should_materialize=should_materialize,
             materialized_address_override=materialized_address_override,
             dataset_overrides=dataset_overrides,
+            clustering_fields=clustering_fields,
             **query_format_kwargs,
         )
         self.dimensions = dimensions
@@ -80,6 +82,7 @@ class MetricBigQueryViewBuilder(BigQueryViewBuilder[MetricBigQueryView]):
         dimensions: Tuple[str, ...],
         should_materialize: bool = False,
         materialized_address_override: Optional[BigQueryAddress] = None,
+        clustering_fields: Optional[List[str]] = None,
         # All keyword args must have string values
         **query_format_kwargs: str,
     ):
@@ -91,6 +94,7 @@ class MetricBigQueryViewBuilder(BigQueryViewBuilder[MetricBigQueryView]):
         self.dimensions = dimensions
         self.should_materialize = should_materialize
         self.materialized_address_override = materialized_address_override
+        self.clustering_fields = clustering_fields
         self.query_format_kwargs = query_format_kwargs
 
     def _build(
@@ -104,6 +108,7 @@ class MetricBigQueryViewBuilder(BigQueryViewBuilder[MetricBigQueryView]):
             dimensions=self.dimensions,
             should_materialize=self.should_materialize,
             materialized_address_override=self.materialized_address_override,
+            clustering_fields=self.clustering_fields,
             dataset_overrides=dataset_overrides,
             **self.query_format_kwargs,
         )

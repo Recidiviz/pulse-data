@@ -259,6 +259,7 @@ class UnionedStateSegmentsViewBuilder(BigQueryViewBuilder[BigQueryView]):
             f"across all state segments.",
             view_query_template=table_union_query_fmt,
             should_materialize=True,
+            clustering_fields=None,
             **kwargs,
         )
 

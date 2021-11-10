@@ -356,6 +356,7 @@ class BigQueryClient:
         query: str,
         query_parameters: Optional[List[bigquery.ScalarQueryParameter]] = None,
         overwrite: Optional[bool] = False,
+        clustering_fields: Optional[List[str]] = None,
     ) -> bigquery.QueryJob:
         """Creates a table at the given address with the output from the given query.
         If overwrite is False, a 'duplicate' error is returned in the job result if the
@@ -368,6 +369,7 @@ class BigQueryClient:
             query: The query to run. The result will be loaded into the new table.
             query_parameters: Optional parameters for the query
             overwrite: Whether or not to overwrite an existing table.
+            clustering_fields: Columns by which to cluster the table.
 
         Returns:
             A QueryJob which will contain the results once the query is complete.
@@ -443,6 +445,7 @@ class BigQueryClient:
         query_parameters: Optional[List[bigquery.ScalarQueryParameter]] = None,
         allow_field_additions: bool = False,
         write_disposition: bigquery.WriteDisposition = bigquery.WriteDisposition.WRITE_APPEND,
+        clustering_fields: Optional[List[str]] = None,
     ) -> bigquery.QueryJob:
         """Inserts the results of the given query into the table at the given address.
         Creates a table if one does not yet exist. If |allow_field_additions| is set to
@@ -458,6 +461,7 @@ class BigQueryClient:
                 schema in the query result does not exactly match the destination table. Defaults to False.
             write_disposition: What to do if the destination table already exists. Defaults to WRITE_APPEND, which will
                 append rows to an existing table.
+            clustering_fields: Columns by which to cluster the table.
 
         Returns:
             A QueryJob which will contain the results once the query is complete.
@@ -1012,7 +1016,16 @@ class BigQueryClientImpl(BigQueryClient):
 
         new_view_ref = destination_dataset_ref.table(view.view_id)
         new_view = bigquery.Table(new_view_ref)
-        new_view.view_query = view.view_query
+        new_view.view_query = StrictStringFormatter().format(
+            view.view_query,
+            project_id=destination_client.project_id,
+            dataset_id=destination_dataset_ref.dataset_id,
+            view_id=view.view_id,
+        )
+
+        # copy clustering fields, if found in source view
+        if view.clustering_fields:
+            new_view.clustering_fields = view.clustering_fields
         table = destination_client.create_table(new_view)
         logging.info("Created %s", new_view_ref)
         return table
@@ -1024,6 +1037,7 @@ class BigQueryClientImpl(BigQueryClient):
         query: str,
         query_parameters: Optional[List[bigquery.ScalarQueryParameter]] = None,
         overwrite: Optional[bool] = False,
+        clustering_fields: Optional[List[str]] = None,
     ) -> bigquery.QueryJob:
         # If overwrite is False, errors if the table already exists and contains data. Else, overwrites the table if
         # it already exists.
@@ -1041,6 +1055,7 @@ class BigQueryClientImpl(BigQueryClient):
             query=query,
             query_parameters=query_parameters,
             write_disposition=write_disposition,
+            clustering_fields=clustering_fields,
         )
 
     def _insert_into_table_from_table_async(
@@ -1119,6 +1134,7 @@ class BigQueryClientImpl(BigQueryClient):
         query_parameters: Optional[List[bigquery.ScalarQueryParameter]] = None,
         allow_field_additions: bool = False,
         write_disposition: bigquery.WriteDisposition = bigquery.WriteDisposition.WRITE_APPEND,
+        clustering_fields: Optional[List[str]] = None,
     ) -> bigquery.QueryJob:
         destination_dataset_ref = self.dataset_ref_for_id(destination_dataset_id)
 
@@ -1129,6 +1145,27 @@ class BigQueryClientImpl(BigQueryClient):
 
         job_config.write_disposition = write_disposition
         job_config.query_parameters = query_parameters or []
+
+        if clustering_fields:
+            job_config.clustering_fields = clustering_fields
+
+            # if new clustering fields are different, delete existing table
+            # only if the write_disposition is WRITE_TRUNCATE
+            try:
+                existing_table = self.get_table(
+                    destination_dataset_ref, destination_table_id
+                )
+                if existing_table.clustering_fields != clustering_fields:
+                    if write_disposition == bigquery.WriteDisposition.WRITE_TRUNCATE:
+                        self.delete_table(destination_dataset_id, destination_table_id)
+                    else:
+                        raise ValueError(
+                            "Trying to materialize into a table using different "
+                            "clustering fields than what currently exists requires "
+                            "'WRITE_TRUNCATE' write_disposition."
+                        )
+            except exceptions.NotFound:
+                pass
 
         if allow_field_additions:
             job_config.schema_update_options = [
@@ -1278,6 +1315,7 @@ class BigQueryClientImpl(BigQueryClient):
             dst_table_id,
             view.direct_select_query,
             overwrite=True,
+            clustering_fields=view.clustering_fields,
         )
         create_job.result()
         table_description = (

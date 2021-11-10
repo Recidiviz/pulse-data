@@ -43,6 +43,7 @@ class SelectedColumnsBigQueryView(BigQueryView):
         should_materialize: bool,
         materialized_address_override: Optional[BigQueryAddress],
         dataset_overrides: Optional[Dict[str, str]],
+        clustering_fields: Optional[List[str]] = None,
         **query_format_kwargs: str,
     ):
         query_format_kwargs["columns"] = ",\n    ".join(columns)
@@ -58,6 +59,7 @@ class SelectedColumnsBigQueryView(BigQueryView):
             should_materialize=should_materialize,
             materialized_address_override=materialized_address_override,
             dataset_overrides=dataset_overrides,
+            clustering_fields=clustering_fields,
             **query_format_kwargs,
         )
         self.columns = columns
@@ -87,6 +89,7 @@ class SelectedColumnsBigQueryViewBuilder(
         should_materialize: bool = False,
         projects_to_deploy: Optional[Set[str]] = None,
         materialized_address_override: Optional[BigQueryAddress] = None,
+        clustering_fields: Optional[List[str]] = None,
         # All keyword args must have string values
         **query_format_kwargs: str,
     ):
@@ -98,6 +101,7 @@ class SelectedColumnsBigQueryViewBuilder(
         self.should_materialize = should_materialize
         self.projects_to_deploy = projects_to_deploy
         self.materialized_address_override = materialized_address_override
+        self.clustering_fields = clustering_fields
         self.query_format_kwargs = query_format_kwargs
 
     def _build(
@@ -111,6 +115,7 @@ class SelectedColumnsBigQueryViewBuilder(
             description=self.description,
             should_materialize=self.should_materialize,
             materialized_address_override=self.materialized_address_override,
+            clustering_fields=self.clustering_fields,
             dataset_overrides=dataset_overrides,
             **self.query_format_kwargs,
         )

@@ -272,6 +272,48 @@ class BigQueryClientImplTest(unittest.TestCase):
         )
         self.mock_client.query.assert_called()
 
+    def test_insert_into_table_from_query_async_with_clustering_fields(
+        self,
+    ) -> None:
+        """
+        Tests that insert_into_table_from_query_async() handles BigQueryViews that
+        include clustering_fields in the config passed to client.query().
+        """
+        fake_query = "SELECT NULL LIMIT 0"
+        fake_cluster_fields = ["clustering_field_1", "clustering_field_2"]
+        self.bq_client.insert_into_table_from_query_async(
+            destination_dataset_id=self.mock_dataset_id,
+            destination_table_id="fake_table_temp",
+            query=fake_query,
+            clustering_fields=fake_cluster_fields,
+            write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
+        )
+
+        # get inputs passed to client.query()
+        _, inputs = self.mock_client.query.call_args
+        # verify that job_config contains the correct clustering fields
+        self.assertEqual(inputs["job_config"].clustering_fields, fake_cluster_fields)
+
+    def test_insert_into_table_with_clustering_fails_without_write_truncate(
+        self,
+    ) -> None:
+        """
+        Tests that insert_into_table_from_query_async() fails with BigQueryViews that
+        include new clustering_fields without WRITE_TRUNCATE permissions.
+        """
+        fake_query = "SELECT NULL LIMIT 0"
+        fake_cluster_fields = ["clustering_field_1", "clustering_field_2"]
+
+        # verify ValueError thrown
+        with self.assertRaises(ValueError):
+            self.bq_client.insert_into_table_from_query_async(
+                destination_dataset_id=self.mock_dataset_id,
+                destination_table_id="fake_table_temp",
+                query=fake_query,
+                clustering_fields=fake_cluster_fields,
+                write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
+            )
+
     @mock.patch("google.cloud.bigquery.job.QueryJobConfig")
     def test_insert_into_table_from_table_async(
         self, mock_job_config: mock.MagicMock
