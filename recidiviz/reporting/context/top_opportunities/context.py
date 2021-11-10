@@ -23,16 +23,16 @@ python -m recidiviz.reporting.context.top_opportunities.context
 """
 
 import copy
+import os
 from typing import List
 
-from jinja2 import Template
+from jinja2 import Environment, FileSystemLoader, Template
 
 import recidiviz.reporting.email_reporting_utils as utils
 from recidiviz.common.constants.states import StateCode
 from recidiviz.reporting.context.po_monthly_report.constants import (
     DEFAULT_MESSAGE_BODY_KEY,
     OFFICER_GIVEN_NAME,
-    Batch,
     ReportType,
 )
 from recidiviz.reporting.context.report_context import ReportContext
@@ -44,15 +44,23 @@ from recidiviz.utils.metadata import local_project_id_override
 class TopOpportunitiesReportContext(ReportContext):
     """Report context for the Top Opportunities email."""
 
-    def __init__(self, batch: Batch, recipient: Recipient):
-        super().__init__(batch, recipient)
+    def __init__(self, batch: utils.Batch, recipient: Recipient):
         self.recipient_data = recipient.data
+
+        self.jinja_env = Environment(
+            loader=FileSystemLoader(self._get_context_templates_folder())
+        )
+        super().__init__(batch, recipient)
 
     def get_required_recipient_data_fields(self) -> List[str]:
         return [OFFICER_GIVEN_NAME, "mismatches"]
 
     def get_report_type(self) -> ReportType:
         return ReportType.TopOpportunities
+
+    def get_properties_filepath(self) -> str:
+        """Returns path to the properties.json, assumes it is in the same directory as the context."""
+        return os.path.join(os.path.dirname(__file__), "properties.json")
 
     @property
     def html_template(self) -> Template:
@@ -81,7 +89,7 @@ class TopOpportunitiesReportContext(ReportContext):
 
 if __name__ == "__main__":
     context = TopOpportunitiesReportContext(
-        Batch(
+        utils.Batch(
             state_code=StateCode.US_ID,
             batch_id="test",
             report_type=ReportType.TopOpportunities,
