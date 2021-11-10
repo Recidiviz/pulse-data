@@ -53,14 +53,14 @@ from recidiviz.calculator.query.state.views.vitals_report.vitals_report_views im
 VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = list(
     itertools.chain.from_iterable(
         (
-            DATAFLOW_METRICS_MATERIALIZED_VIEW_BUILDERS,
-            REFERENCE_VIEW_BUILDERS,
+            ANALYST_DATA_VIEW_BUILDERS,
             COVID_DASHBOARD_VIEW_BUILDERS,
             DASHBOARD_VIEW_BUILDERS,
+            DATAFLOW_METRICS_MATERIALIZED_VIEW_BUILDERS,
             PO_REPORT_VIEW_BUILDERS,
-            PUBLIC_DASHBOARD_VIEW_BUILDERS,
-            ANALYST_DATA_VIEW_BUILDERS,
             POPULATION_PROJECTION_VIEW_BUILDERS,
+            PUBLIC_DASHBOARD_VIEW_BUILDERS,
+            REFERENCE_VIEW_BUILDERS,
             SESSIONS_VIEW_BUILDERS,
             VITALS_REPORT_VIEW_BUILDERS,
         )

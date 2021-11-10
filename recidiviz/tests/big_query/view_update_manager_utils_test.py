@@ -458,6 +458,7 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
                 should_materialize=False,
                 projects_to_deploy=None,
                 materialized_address_override=None,
+                clustering_fields=None,
                 should_build_predicate=None,
                 **view,
             )
@@ -646,6 +647,7 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
                 should_materialize=False,
                 projects_to_deploy=None,
                 materialized_address_override=None,
+                clustering_fields=None,
                 should_build_predicate=None,
                 **view,
             )
@@ -717,6 +719,7 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
                 should_materialize=False,
                 projects_to_deploy=None,
                 materialized_address_override=None,
+                clustering_fields=None,
                 should_build_predicate=None,
                 **view,
             )

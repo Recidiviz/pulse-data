@@ -173,6 +173,7 @@ class FakeDirectIngestBigQueryClient(BigQueryClient):
         query: str,
         query_parameters: Optional[List[bigquery.ScalarQueryParameter]] = None,
         overwrite: Optional[bool] = False,
+        clustering_fields: Optional[List[str]] = None,
     ) -> bigquery.QueryJob:
         return FakeQueryJob()
 
@@ -206,6 +207,7 @@ class FakeDirectIngestBigQueryClient(BigQueryClient):
         query_parameters: Optional[List[bigquery.ScalarQueryParameter]] = None,
         allow_field_additions: bool = False,
         write_disposition: bigquery.WriteDisposition = bigquery.WriteDisposition.WRITE_APPEND,
+        clustering_fields: Optional[List[str]] = None,
     ) -> bigquery.QueryJob:
         raise ValueError("Must be implemented for use in tests.")
 
