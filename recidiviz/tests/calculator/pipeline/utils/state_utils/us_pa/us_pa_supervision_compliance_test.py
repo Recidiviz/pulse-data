@@ -39,6 +39,7 @@ from recidiviz.common.constants.state.state_incarceration import StateIncarcerat
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodStatus,
+    StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_contact import (
@@ -675,7 +676,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
 
         self.assertTrue(face_to_face_frequency_sufficient)
 
-    def test_next_recommended_face_to_face_date_skipped_if_in_jail(self) -> None:
+    def test_next_recommended_face_to_face_date_skipped_if_incarcerated(self) -> None:
         start_of_supervision = date(2017, 3, 5)
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
@@ -704,6 +705,55 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
                         state_code=StateCode.US_PA.value,
                         status=StateIncarcerationPeriodStatus.IN_CUSTODY,
                         incarceration_type=StateIncarcerationType.COUNTY_JAIL,
+                        admission_date=date(2018, 4, 1),
+                        release_date=date(2018, 4, 30),
+                        admission_reason=StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
+                    )
+                ],
+                ip_id_to_pfi_subtype={},
+            ),
+        )
+
+        next_face_to_face_date = (
+            us_pa_supervision_compliance._next_recommended_face_to_face_date(
+                date(2018, 4, 2)
+            )
+        )
+
+        self.assertEqual(next_face_to_face_date, None)
+
+    def test_next_recommended_face_to_face_date_skipped_if_in_parole_board_hold(
+        self,
+    ) -> None:
+        start_of_supervision = date(2017, 3, 5)
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            state_code=StateCode.US_PA.value,
+            start_date=start_of_supervision,
+            termination_date=date(2020, 5, 19),
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_type=None,
+            supervision_level=StateSupervisionLevel.MINIMUM,
+        )
+
+        us_pa_supervision_compliance = UsPaSupervisionCaseCompliance(
+            self.person,
+            supervision_period=supervision_period,
+            case_type=StateSupervisionCaseType.GENERAL,
+            start_of_supervision=start_of_supervision,
+            assessments=[],
+            supervision_contacts=[],
+            violation_responses=[],
+            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+                incarceration_periods=[
+                    StateIncarcerationPeriod.new_with_defaults(
+                        incarceration_period_id=1,
+                        state_code=StateCode.US_PA.value,
+                        status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+                        incarceration_type=StateIncarcerationType.EXTERNAL_UNKNOWN,
+                        specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
                         admission_date=date(2018, 4, 1),
                         release_date=date(2018, 4, 30),
                         admission_reason=StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
@@ -1261,7 +1311,51 @@ class TestNextRecommendedTreatmentCollateralVisitDate(unittest.TestCase):
             next_recommended_treatment_collateral_date, expected_contact_date
         )
 
-    def test_next_recommended_treatment_collateral_contact_date_skipped_if_in_jail(
+    def test_next_recommended_home_visit_date_skipped_if_incarcerated(self) -> None:
+        start_of_supervision = date(2017, 3, 5)
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            state_code=StateCode.US_PA.value,
+            start_date=start_of_supervision,
+            termination_date=date(2020, 5, 19),
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_type=None,
+            supervision_level=StateSupervisionLevel.MINIMUM,
+        )
+
+        us_pa_supervision_compliance = UsPaSupervisionCaseCompliance(
+            self.person,
+            supervision_period=supervision_period,
+            case_type=StateSupervisionCaseType.GENERAL,
+            start_of_supervision=start_of_supervision,
+            assessments=[],
+            supervision_contacts=[],
+            violation_responses=[],
+            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+                incarceration_periods=[
+                    StateIncarcerationPeriod.new_with_defaults(
+                        incarceration_period_id=1,
+                        state_code=StateCode.US_PA.value,
+                        status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+                        incarceration_type=StateIncarcerationType.COUNTY_JAIL,
+                        admission_date=date(2018, 4, 1),
+                        release_date=date(2018, 4, 30),
+                        admission_reason=StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
+                    )
+                ],
+                ip_id_to_pfi_subtype={},
+            ),
+        )
+
+        next_treatment_collateral_date = us_pa_supervision_compliance._next_recommended_treatment_collateral_contact_date(
+            date(2018, 4, 2)
+        )
+
+        self.assertEqual(next_treatment_collateral_date, None)
+
+    def test_next_recommended_home_visit_date_skipped_if_in_parole_board_hold(
         self,
     ) -> None:
         start_of_supervision = date(2017, 3, 5)
@@ -1291,7 +1385,8 @@ class TestNextRecommendedTreatmentCollateralVisitDate(unittest.TestCase):
                         incarceration_period_id=1,
                         state_code=StateCode.US_PA.value,
                         status=StateIncarcerationPeriodStatus.IN_CUSTODY,
-                        incarceration_type=StateIncarcerationType.COUNTY_JAIL,
+                        incarceration_type=StateIncarcerationType.EXTERNAL_UNKNOWN,
+                        specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
                         admission_date=date(2018, 4, 1),
                         release_date=date(2018, 4, 30),
                         admission_reason=StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
@@ -1816,7 +1911,7 @@ class TestNextRecommendedReassessment(unittest.TestCase):
 
         self.assertEqual(reassessment_date, None)
 
-    def test_next_recommended_reassessment_can_skip_reassessment_due_to_in_jail(
+    def test_next_recommended_reassessment_can_skip_reassessment_due_to_incarcerated(
         self,
     ) -> None:
         start_of_supervision = date(2017, 3, 5)
@@ -1856,6 +1951,62 @@ class TestNextRecommendedReassessment(unittest.TestCase):
                         state_code=StateCode.US_PA.value,
                         status=StateIncarcerationPeriodStatus.IN_CUSTODY,
                         incarceration_type=StateIncarcerationType.COUNTY_JAIL,
+                        admission_date=date(2018, 4, 1),
+                        release_date=date(2018, 4, 30),
+                        admission_reason=StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
+                    )
+                ],
+                ip_id_to_pfi_subtype={},
+            ),
+        )
+
+        reassessment_date = us_pa_supervision_compliance._next_recommended_reassessment(
+            assessment_date, assessment_score, date(2018, 4, 2)
+        )
+
+        self.assertEqual(reassessment_date, None)
+
+    def test_next_recommended_reassessment_can_skip_reassessment_due_to_in_parole_board_hold(
+        self,
+    ) -> None:
+        start_of_supervision = date(2017, 3, 5)
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            state_code=StateCode.US_PA.value,
+            start_date=start_of_supervision,
+            termination_date=date(2020, 5, 19),
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_type=None,
+            supervision_level=StateSupervisionLevel.MINIMUM,
+        )
+
+        assessment_date = date(2018, 4, 2)
+        assessment_score = 18
+        assessment = StateAssessment.new_with_defaults(
+            state_code=StateCode.US_PA.value,
+            assessment_type=StateAssessmentType.LSIR,
+            assessment_date=assessment_date,
+            assessment_score=assessment_score,
+        )
+
+        us_pa_supervision_compliance = UsPaSupervisionCaseCompliance(
+            self.person,
+            supervision_period=supervision_period,
+            case_type=StateSupervisionCaseType.GENERAL,
+            start_of_supervision=start_of_supervision,
+            assessments=[assessment],
+            supervision_contacts=[],
+            violation_responses=[],
+            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+                incarceration_periods=[
+                    StateIncarcerationPeriod.new_with_defaults(
+                        incarceration_period_id=1,
+                        state_code=StateCode.US_PA.value,
+                        status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+                        incarceration_type=StateIncarcerationType.EXTERNAL_UNKNOWN,
+                        specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
                         admission_date=date(2018, 4, 1),
                         release_date=date(2018, 4, 30),
                         admission_reason=StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
