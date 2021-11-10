@@ -142,3 +142,20 @@ class TestPowerCalc(unittest.TestCase):
         mde = pc.get_mde()
         # true mde =~ 0.13
         self.assertAlmostEqual(mde, 0.13, delta=0.01)
+
+    def test_plot_mde_vs(self) -> None:
+        pc = PowerCalc(
+            alpha=0.05,
+            power=0.8,
+            sigma2=2400 ** 2,
+            percent_treated=0.5,
+            n_clusters=1005,
+        )
+        # check error if lower bound is strictly greater than 1, and less than upper bound.
+        for b in [0, 1, 5, 6]:
+            with self.assertRaises(ValueError):
+                pc.plot_mde_vs([b, 5])
+
+        # check that `n_clusters` range contains only integer values
+        with self.assertRaises(ValueError):
+            pc.plot_mde_vs([2.5, 8.5], param="n_clusters")
