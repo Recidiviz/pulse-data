@@ -30,6 +30,9 @@ from recidiviz.calculator.pipeline.utils.supervision_level_policy import (
 from recidiviz.common.constants.person_characteristics import Gender
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateSpecializedPurposeForIncarceration,
+)
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactStatus,
     StateSupervisionContactType,
@@ -211,9 +214,11 @@ class UsPaSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
         self, compliance_evaluation_date: date
     ) -> bool:
         """Determines whether a contact can be skipped."""
-        return self._is_in_jail(
-            compliance_evaluation_date
-        ) or self._is_past_max_date_of_supervision(compliance_evaluation_date)
+        return (
+            self._is_incarcerated(compliance_evaluation_date)
+            or self._is_in_parole_board_hold(compliance_evaluation_date)
+            or self._is_past_max_date_of_supervision(compliance_evaluation_date)
+        )
 
     def _next_recommended_face_to_face_date(
         self, compliance_evaluation_date: date
@@ -370,14 +375,31 @@ class UsPaSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
             start_date=RISK_SCORE_TO_SUPERVISION_LEVEL_POLICY_DATE,
         )
 
-    def _is_in_jail(self, compliance_evaluation_date: date) -> bool:
-        "Returns whether or not the client is currently in jail."
-        current_incarceration_types = {
+    def _is_incarcerated(self, compliance_evaluation_date: date) -> bool:
+        """Returns whether or not the client has an incarceration period that overlaps
+        with the evaluation date. Specifically, we check if they are either in jail
+        or in state prison."""
+        incarceration_types = {
             incarceration_period.incarceration_type
             for incarceration_period in self.incarceration_period_index.incarceration_periods
             if incarceration_period.duration.contains_day(compliance_evaluation_date)
         }
-        return StateIncarcerationType.COUNTY_JAIL in current_incarceration_types
+        return (
+            StateIncarcerationType.COUNTY_JAIL in incarceration_types
+            or StateIncarcerationType.STATE_PRISON in incarceration_types
+        )
+
+    def _is_in_parole_board_hold(self, compliance_evaluation_date: date) -> bool:
+        """Returns whether or not the client is in a parole board hold."""
+        specialized_purposes_for_incarceration = {
+            incarceration_period.specialized_purpose_for_incarceration
+            for incarceration_period in self.incarceration_period_index.incarceration_periods
+            if incarceration_period.duration.contains_day(compliance_evaluation_date)
+        }
+        return (
+            StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD
+            in specialized_purposes_for_incarceration
+        )
 
     def _max_completion_date_of_supervision(
         self, compliance_evaluation_date: date
