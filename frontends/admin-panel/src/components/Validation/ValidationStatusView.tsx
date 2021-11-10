@@ -15,6 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
+import { InfoCircleOutlined } from "@ant-design/icons";
 import {
   Anchor,
   Breadcrumb,
@@ -22,6 +23,7 @@ import {
   PageHeader,
   Spin,
   Table,
+  Tooltip,
   Typography,
 } from "antd";
 import { ColumnsType, ColumnType } from "antd/es/table";
@@ -42,9 +44,11 @@ import {
   chooseIdNameForCategory,
   formatStatusAmount,
   getClassNameForRecordStatus,
+  getDaysActive,
   getRecordStatus,
   getTextForRecordStatus,
   readableNameForCategoryId,
+  replaceInfinity,
 } from "./utils";
 
 const { Title } = Typography;
@@ -166,6 +170,24 @@ const ValidationStatusView = (): JSX.Element => {
           )}
         </div>
       ),
+    },
+    {
+      title: (
+        <span>
+          Days Active&nbsp;
+          <Tooltip title="Number of days the validation has been failing with this status or worse.">
+            <InfoCircleOutlined />
+          </Tooltip>
+        </span>
+      ),
+      key: "days-active",
+      fixed: "left",
+      render: (_: string, record: ValidationStatusRecord) => (
+        <div>{replaceInfinity(getDaysActive(record), "Always")}</div>
+      ),
+      sorter: (a: ValidationStatusRecord, b: ValidationStatusRecord) =>
+        getDaysActive(a) - getDaysActive(b),
+      showSorterTooltip: false,
     },
   ];
 

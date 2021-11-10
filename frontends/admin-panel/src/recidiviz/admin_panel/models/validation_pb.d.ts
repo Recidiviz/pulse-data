@@ -243,6 +243,21 @@ export class ValidationStatusRecord extends jspb.Message {
   getSamenessPerView(): SamenessPerViewValidationResultDetails | undefined;
   setSamenessPerView(value?: SamenessPerViewValidationResultDetails): void;
 
+  hasLastBetterStatusRunId(): boolean;
+  clearLastBetterStatusRunId(): void;
+  getLastBetterStatusRunId(): string | undefined;
+  setLastBetterStatusRunId(value: string): void;
+
+  hasLastBetterStatusRunDatetime(): boolean;
+  clearLastBetterStatusRunDatetime(): void;
+  getLastBetterStatusRunDatetime(): google_protobuf_timestamp_pb.Timestamp | undefined;
+  setLastBetterStatusRunDatetime(value?: google_protobuf_timestamp_pb.Timestamp): void;
+
+  hasLastBetterStatusRunResultStatus(): boolean;
+  clearLastBetterStatusRunResultStatus(): void;
+  getLastBetterStatusRunResultStatus(): ValidationStatusRecord.ValidationResultStatusMap[keyof ValidationStatusRecord.ValidationResultStatusMap] | undefined;
+  setLastBetterStatusRunResultStatus(value: ValidationStatusRecord.ValidationResultStatusMap[keyof ValidationStatusRecord.ValidationResultStatusMap]): void;
+
   getResultDetailsCase(): ValidationStatusRecord.ResultDetailsCase;
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): ValidationStatusRecord.AsObject;
@@ -273,6 +288,9 @@ export namespace ValidationStatusRecord {
     existence?: ExistenceValidationResultDetails.AsObject,
     samenessPerRow?: SamenessPerRowValidationResultDetails.AsObject,
     samenessPerView?: SamenessPerViewValidationResultDetails.AsObject,
+    lastBetterStatusRunId?: string,
+    lastBetterStatusRunDatetime?: google_protobuf_timestamp_pb.Timestamp.AsObject,
+    lastBetterStatusRunResultStatus?: ValidationStatusRecord.ValidationResultStatusMap[keyof ValidationStatusRecord.ValidationResultStatusMap],
   }
 
   export interface ValidationCategoryMap {
