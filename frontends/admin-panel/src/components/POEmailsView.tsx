@@ -14,22 +14,25 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { Alert, Card, Col, Empty, PageHeader, Row } from "antd";
+import { Alert, Col, PageHeader, Row, Space } from "antd";
 import * as React from "react";
 import { fetchEmailStateCodes } from "../AdminPanelAPI/LineStaffTools";
 import { StateCodeInfo } from "./IngestOperationsView/constants";
 import GenerateEmails from "./POEmails/GenerateEmails";
 import ListBatches from "./POEmails/ListBatches";
+import ReportTypeSelector from "./POEmails/ReportTypeSelector";
 import SendEmails from "./POEmails/SendEmails";
 import StateSelector from "./Utilities/StateSelector";
 
 const POEmailsView = (): JSX.Element => {
+  const [reportType, setReportType] =
+    React.useState<string | undefined>(undefined);
   const [stateCode, setStateCode] =
     React.useState<StateCodeInfo | undefined>(undefined);
 
   return (
     <>
-      <PageHeader title="PO Emails" />
+      <PageHeader title="Email Reports" />
       <Alert
         message="Caution!"
         description={
@@ -46,41 +49,25 @@ const POEmailsView = (): JSX.Element => {
         showIcon
       />
       <br />
-      <StateSelector
-        fetchStateList={fetchEmailStateCodes}
-        onChange={(state) => setStateCode(state)}
-      />
+      <Space>
+        <ReportTypeSelector onChange={setReportType} />
+        <StateSelector
+          fetchStateList={fetchEmailStateCodes}
+          onChange={(state) => setStateCode(state)}
+        />
+      </Space>
       <Row gutter={[8, 8]}>
         <Col span={12}>
-          {stateCode ? (
-            <GenerateEmails stateInfo={stateCode} />
-          ) : (
-            <Card title="Generate Emails" style={{ margin: 10, height: "95%" }}>
-              <Empty />
-            </Card>
-          )}
+          <GenerateEmails stateInfo={stateCode} reportType={reportType} />
         </Col>
         <Col span={12}>
-          {stateCode ? (
-            <SendEmails stateInfo={stateCode} />
-          ) : (
-            <Card title="Send Emails" style={{ margin: 10, height: "95%" }}>
-              <Empty />
-            </Card>
-          )}
+          <SendEmails stateInfo={stateCode} reportType={reportType} />
         </Col>
       </Row>
-      <Row justify="center">
-        {stateCode ? (
-          <ListBatches stateInfo={stateCode} />
-        ) : (
-          <Card
-            title="Previously Generated Batches"
-            style={{ margin: 10, height: "95%" }}
-          >
-            <Empty />
-          </Card>
-        )}
+      <Row gutter={[8, 8]} justify="center">
+        <Col span={18}>
+          <ListBatches stateInfo={stateCode} reportType={reportType} />
+        </Col>
       </Row>
     </>
   );

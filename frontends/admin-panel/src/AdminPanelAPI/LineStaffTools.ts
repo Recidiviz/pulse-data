@@ -48,9 +48,14 @@ export const fetchRosterStateCodes = async (): Promise<Response> => {
   return postWithURLAndBody("/api/line_staff_tools/fetch_roster_state_codes");
 };
 
+export const fetchReportTypes = async (): Promise<Response> => {
+  return postWithURLAndBody("/api/line_staff_tools/fetch_report_types");
+};
+
 // Generate PO Monthly Report Emails
 export const generateEmails = async (
   stateCode: string,
+  reportType: string,
   testAddress: string | undefined,
   regionCode: string | undefined,
   messageBodyOverride: string | undefined,
@@ -62,7 +67,7 @@ export const generateEmails = async (
       testAddress,
       regionCode,
       messageBodyOverride,
-      reportType: "po_monthly_report",
+      reportType,
       emailAllowlist,
     }
   );
@@ -71,6 +76,7 @@ export const generateEmails = async (
 // Send PO Monthly Report Emails
 export const sendEmails = async (
   stateCode: string,
+  reportType: string,
   batchId: string,
   redirectAddress: string | undefined,
   ccAddresses: string[] | undefined,
@@ -80,7 +86,7 @@ export const sendEmails = async (
   return postWithURLAndBody(`/api/line_staff_tools/${stateCode}/send_emails`, {
     batchId,
     redirectAddress,
-    reportType: "po_monthly_report",
+    reportType,
     ccAddresses,
     subjectOverride,
     emailAllowlist,
@@ -88,9 +94,11 @@ export const sendEmails = async (
 };
 
 export const getListBatchInfo = async (
-  stateCode: string
+  stateCode: string,
+  reportType: string
 ): Promise<Response> => {
   return postWithURLAndBody("/api/line_staff_tools/list_batch_info", {
     stateCode,
+    reportType,
   });
 };

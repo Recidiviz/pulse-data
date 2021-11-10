@@ -226,6 +226,10 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
         state_code_info = fetch_state_codes(ROSTER_STATE_CODES)
         return jsonify(state_code_info), HTTPStatus.OK
 
+    @bp.route("/api/line_staff_tools/fetch_report_types", methods=["POST"])
+    def _fetch_report_types() -> Tuple[str, HTTPStatus]:
+        return jsonify([t.value for t in ReportType]), HTTPStatus.OK
+
     # Generate monthly report emails
     @bp.route(
         "/api/line_staff_tools/<state_code_str>/generate_emails", methods=["POST"]
@@ -433,11 +437,12 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
             state_code = StateCode(data.get("stateCode"))
             if state_code not in EMAIL_STATE_CODES:
                 raise ValueError("State code is invalid for retrieving batch ids")
+            report_type = ReportType(data.get("reportType"))
 
         except ValueError as error:
             logging.error(error)
             return str(error), HTTPStatus.BAD_REQUEST
-        batch_info = email_handler.get_batch_info(state_code)
+        batch_info = email_handler.get_batch_info(state_code, report_type)
 
         return (
             jsonify({"batchInfo": batch_info}),

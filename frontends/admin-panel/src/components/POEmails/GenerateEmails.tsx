@@ -19,6 +19,7 @@ import {
   AlertProps,
   Button,
   Card,
+  Empty,
   Form,
   Input,
   message,
@@ -40,7 +41,10 @@ interface GenerateFormData {
   emailAllowlist: string[];
 }
 
-const GenerateEmails: React.FC<POEmailsFormProps> = ({ stateInfo }) => {
+const GenerateEmails: React.FC<POEmailsFormProps> = ({
+  stateInfo,
+  reportType,
+}) => {
   const isProduction = window.RUNTIME_GCP_ENVIRONMENT === "production";
   const projectId = isProduction ? "recidiviz-123" : "recidiviz-staging";
 
@@ -58,12 +62,15 @@ const GenerateEmails: React.FC<POEmailsFormProps> = ({ stateInfo }) => {
   };
 
   const onEmailActionConfirmation = async () => {
+    if (!stateInfo || !reportType) return;
+
     setGenerationResult();
     setIsConfirmationModalVisible(false);
     setShowSpinner(true);
     message.info("Generating emails...");
     const r = await generateEmails(
       stateInfo.code,
+      reportType,
       formData?.testAddress,
       formData?.regionCode,
       formData?.messageBodyOverride,
@@ -133,55 +140,64 @@ const GenerateEmails: React.FC<POEmailsFormProps> = ({ stateInfo }) => {
   return (
     <>
       <Card
-        title={`Generate ${stateInfo.name} Emails`}
+        title={`Generate ${stateInfo?.name || ""} ${reportType || ""} Emails`}
         style={{ margin: 10, height: "95%" }}
       >
-        <Form
-          {...layout}
-          className="buffer"
-          onFinish={(values) => {
-            onFinish(values);
-          }}
-        >
-          {stateInfo && <DataFreshnessInfo state={stateInfo.code} />}
-          <Form.Item
-            label="Test Address"
-            name="testAddress"
-            rules={[{ type: "email" }]}
-          >
-            <Input placeholder="xxx@recidiviz.org" />
-          </Form.Item>
-          <Form.Item label="Region Code" name="regionCode">
-            <Input placeholder="ex. US_ID_D5" />
-          </Form.Item>
-          <Form.Item label="Message Body Override" name="messageBodyOverride">
-            <Input.TextArea />
-          </Form.Item>
-          <Form.Item
-            label="Email Allowlist"
-            name="emailAllowlist"
-            rules={[{ type: "array" }]}
-          >
-            <Select
-              mode="tags"
-              tokenSeparators={[",", " "]}
-              placeholder="cc1@domain.gov, cc2@domain.gov"
+        {stateInfo && reportType ? (
+          <>
+            <Form
+              {...layout}
+              className="buffer"
+              onFinish={(values) => {
+                onFinish(values);
+              }}
             >
-              <option value="user@recidiviz.org">user@recidiviz.org</option>
-            </Select>
-          </Form.Item>
-          <Form.Item {...tailLayout}>
-            <Button type="primary" htmlType="submit" disabled={showSpinner}>
-              Generate Emails
-            </Button>
-            <br />
-            <Typography.Text type="secondary">
-              (May take a few minutes)
-            </Typography.Text>
-          </Form.Item>
-        </Form>
-        {showSpinner && <Spin />}
-        {generationResult && <Alert {...generationResult} />}
+              {stateInfo && <DataFreshnessInfo state={stateInfo.code} />}
+              <Form.Item
+                label="Test Address"
+                name="testAddress"
+                rules={[{ type: "email" }]}
+              >
+                <Input placeholder="xxx@recidiviz.org" />
+              </Form.Item>
+              <Form.Item label="Region Code" name="regionCode">
+                <Input placeholder="ex. US_ID_D5" />
+              </Form.Item>
+              <Form.Item
+                label="Message Body Override"
+                name="messageBodyOverride"
+              >
+                <Input.TextArea />
+              </Form.Item>
+              <Form.Item
+                label="Email Allowlist"
+                name="emailAllowlist"
+                rules={[{ type: "array" }]}
+              >
+                <Select
+                  mode="tags"
+                  tokenSeparators={[",", " "]}
+                  placeholder="cc1@domain.gov, cc2@domain.gov"
+                >
+                  <option value="user@recidiviz.org">user@recidiviz.org</option>
+                </Select>
+              </Form.Item>
+              <Form.Item {...tailLayout}>
+                <Button type="primary" htmlType="submit" disabled={showSpinner}>
+                  Generate Emails
+                </Button>
+                <br />
+                <Typography.Text type="secondary">
+                  (May take a few minutes)
+                </Typography.Text>
+              </Form.Item>
+            </Form>
+            {showSpinner && <Spin />}
+            {generationResult && <Alert {...generationResult} />}
+          </>
+        ) : (
+          <Empty />
+        )}
       </Card>
 
       {stateInfo ? (

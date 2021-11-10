@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { Button, Card, Form, Input, message, Select, Spin } from "antd";
+import { Button, Card, Empty, Form, Input, message, Select, Spin } from "antd";
 import * as React from "react";
 import {
   getListBatchInfo,
@@ -37,7 +37,7 @@ interface SendFormData {
   emailAllowlist: string[];
 }
 
-const SendEmails: React.FC<POEmailsFormProps> = ({ stateInfo }) => {
+const SendEmails: React.FC<POEmailsFormProps> = ({ stateInfo, reportType }) => {
   const [form] = Form.useForm();
   const [formData, setFormData] =
     React.useState<SendFormData | undefined>(undefined);
@@ -53,12 +53,15 @@ const SendEmails: React.FC<POEmailsFormProps> = ({ stateInfo }) => {
   };
 
   const onEmailActionConfirmation = async () => {
+    if (!stateInfo || !reportType) return;
+
     setIsConfirmationModalVisible(false);
     setShowSpinner(true);
     message.info("Sending emails...");
     if (formData?.batchId) {
       const r = await sendEmails(
         stateInfo.code,
+        reportType,
         formData.batchId,
         formData.redirectAddress,
         formData.ccAddresses,
@@ -85,17 +88,19 @@ const SendEmails: React.FC<POEmailsFormProps> = ({ stateInfo }) => {
   };
 
   const getBatches = React.useCallback(() => {
+    if (!stateInfo?.code || !reportType) return;
+
     setLabeledBatchList(undefined);
     const getBatchInfo = async () => {
       form.setFieldsValue({
         batchId: undefined,
       });
-      const r = await getListBatchInfo(stateInfo.code);
+      const r = await getListBatchInfo(stateInfo.code, reportType);
       const json = await r.json();
       labelBatchesInSelect(json.batchInfo);
     };
     getBatchInfo();
-  }, [stateInfo.code, form]);
+  }, [stateInfo?.code, reportType, form]);
 
   const labelBatchesInSelect = (batchInfo: BatchInfoType[]) => {
     const labeledList: string[] = batchInfo.map((x) => {
@@ -114,7 +119,7 @@ const SendEmails: React.FC<POEmailsFormProps> = ({ stateInfo }) => {
   return (
     <>
       <Card
-        title={`Send ${stateInfo.name} Emails`}
+        title={`Send ${stateInfo?.name || ""} ${reportType || ""} Emails`}
         style={{ margin: 10, height: "95%" }}
         extra={
           <Button type="primary" size="small" onClick={getBatches}>
@@ -122,77 +127,87 @@ const SendEmails: React.FC<POEmailsFormProps> = ({ stateInfo }) => {
           </Button>
         }
       >
-        <Form
-          form={form}
-          {...layout}
-          className="buffer"
-          onFinish={(values) => {
-            onFinish(values);
-          }}
-        >
-          {labeledBatchList ? (
-            <Form.Item
-              label="Batch ID"
-              name="batchId"
-              rules={[{ required: true }]}
-              initialValue={labeledBatchList[0]}
+        {stateInfo && reportType ? (
+          <>
+            <Form
+              form={form}
+              {...layout}
+              className="buffer"
+              onFinish={(values) => {
+                onFinish(values);
+              }}
             >
-              <Select
-                placeholder={labeledBatchList[0]}
-                defaultValue={labeledBatchList[0]}
-              >
-                {labeledBatchList?.map((item) => (
-                  <Select.Option
-                    key={item}
-                    label={item}
-                    value={item.substring(0, 14)}
+              {labeledBatchList ? (
+                <Form.Item
+                  label="Batch ID"
+                  name="batchId"
+                  rules={[{ required: true }]}
+                  initialValue={labeledBatchList[0]}
+                >
+                  <Select
+                    placeholder={labeledBatchList[0]}
+                    defaultValue={labeledBatchList[0]}
                   >
-                    {item}
-                  </Select.Option>
-                ))}
-              </Select>
-            </Form.Item>
-          ) : null}
+                    {labeledBatchList?.map((item) => (
+                      <Select.Option
+                        key={item}
+                        label={item}
+                        value={item.substring(0, 14)}
+                      >
+                        {item}
+                      </Select.Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+              ) : null}
 
-          <Form.Item
-            label="Redirect Address"
-            name="redirectAddress"
-            rules={[{ type: "email" }]}
-          >
-            <Input placeholder="xxx@idoc.idaho.gov" />
-          </Form.Item>
-          <Form.Item label="cc" name="ccAddresses" rules={[{ type: "array" }]}>
-            <Select
-              mode="tags"
-              tokenSeparators={[",", " "]}
-              placeholder="cc1@domain.gov, cc2@domain.gov"
-            >
-              <option value="user@recidiviz.org">user@recidiviz.org</option>
-            </Select>
-          </Form.Item>
-          <Form.Item label="Subject Override" name="subjectOverride">
-            <Input />
-          </Form.Item>
-          <Form.Item
-            label="Email Allowlist"
-            name="emailAllowlist"
-            rules={[{ type: "array" }]}
-          >
-            <Select
-              mode="tags"
-              tokenSeparators={[",", " "]}
-              placeholder="cc1@domain.gov, cc2@domain.gov"
-            >
-              <option value="user@recidiviz.org">user@recidiviz.org</option>
-            </Select>
-          </Form.Item>
-          <Form.Item {...tailLayout}>
-            <Button type="primary" htmlType="submit">
-              Send Emails
-            </Button>
-          </Form.Item>
-          {showSpinner ? <Spin /> : null}
-        </Form>
+              <Form.Item
+                label="Redirect Address"
+                name="redirectAddress"
+                rules={[{ type: "email" }]}
+              >
+                <Input placeholder="xxx@idoc.idaho.gov" />
+              </Form.Item>
+              <Form.Item
+                label="cc"
+                name="ccAddresses"
+                rules={[{ type: "array" }]}
+              >
+                <Select
+                  mode="tags"
+                  tokenSeparators={[",", " "]}
+                  placeholder="cc1@domain.gov, cc2@domain.gov"
+                >
+                  <option value="user@recidiviz.org">user@recidiviz.org</option>
+                </Select>
+              </Form.Item>
+              <Form.Item label="Subject Override" name="subjectOverride">
+                <Input />
+              </Form.Item>
+              <Form.Item
+                label="Email Allowlist"
+                name="emailAllowlist"
+                rules={[{ type: "array" }]}
+              >
+                <Select
+                  mode="tags"
+                  tokenSeparators={[",", " "]}
+                  placeholder="cc1@domain.gov, cc2@domain.gov"
+                >
+                  <option value="user@recidiviz.org">user@recidiviz.org</option>
+                </Select>
+              </Form.Item>
+              <Form.Item {...tailLayout}>
+                <Button type="primary" htmlType="submit">
+                  Send Emails
+                </Button>
+              </Form.Item>
+              {showSpinner ? <Spin /> : null}
+            </Form>
+          </>
+        ) : (
+          <Empty />
+        )}
       </Card>
       {stateInfo && formData?.batchId ? (
         <ActionRegionConfirmationForm
