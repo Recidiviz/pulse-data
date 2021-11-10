@@ -38,5 +38,6 @@ export type BatchInfoType = {
 };
 
 export interface POEmailsFormProps {
-  stateInfo: StateCodeInfo;
+  stateInfo: StateCodeInfo | undefined;
+  reportType: string | undefined;
 }

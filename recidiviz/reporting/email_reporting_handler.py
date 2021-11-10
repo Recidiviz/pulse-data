@@ -20,6 +20,7 @@ import datetime
 import json
 from typing import Any, Dict, List
 
+from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
@@ -40,6 +41,13 @@ class EmailMetadataReportDateError(ValueError):
 
 class InvalidReportTypeError(ValueError):
     pass
+
+
+def _metadata_matches_report_type(
+    report_type: ReportType, path_to_json: GcsfsFilePath, gcs_fs: GCSFileSystem
+) -> bool:
+    metadata_contents = json.loads(gcs_fs.download_as_string(path_to_json))
+    return metadata_contents.get("report_type") == report_type.value
 
 
 class EmailReportingHandler:
@@ -115,7 +123,7 @@ class EmailReportingHandler:
     def get_batch_info(
         self,
         state_code: StateCode,
-        report_type: ReportType = ReportType.POMonthlyReport,
+        report_type: ReportType,
     ) -> List[Dict[str, Any]]:
         """Returns a sorted list of batch id numbers from the a specific state bucket from GCS"""
         buckets = self.monthly_reports_gcsfs.ls_with_blob_prefix(
@@ -123,7 +131,21 @@ class EmailReportingHandler:
             blob_prefix=state_code.value,
         )
         files = [file for file in buckets if isinstance(file, GcsfsFilePath)]
-        batch_ids = list({batch_id.blob_name.split("/")[1] for batch_id in files})
+
+        batch_metadata_files = [
+            file for file in files if file.blob_name.endswith("metadata.json")
+        ]
+        report_batch_metadata_files = [
+            file
+            for file in batch_metadata_files
+            if _metadata_matches_report_type(
+                report_type, file, self.monthly_reports_gcsfs
+            )
+        ]
+
+        batch_ids = [
+            file.blob_name.split("/")[1] for file in report_batch_metadata_files
+        ]
         batch_ids.sort(reverse=True)
         return self._get_email_batch_info(
             [

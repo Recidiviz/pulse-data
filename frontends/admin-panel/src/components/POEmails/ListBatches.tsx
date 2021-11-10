@@ -16,13 +16,16 @@
 // =============================================================================
 
 import { SyncOutlined } from "@ant-design/icons";
-import { Button, Card, Space, Spin, Table } from "antd";
+import { Button, Card, Empty, Space, Spin, Table } from "antd";
 import moment from "moment";
 import * as React from "react";
 import { getListBatchInfo } from "../../AdminPanelAPI/LineStaffTools";
 import { BatchInfoType, POEmailsFormProps } from "./constants";
 
-const ListBatches: React.FC<POEmailsFormProps> = ({ stateInfo }) => {
+const ListBatches: React.FC<POEmailsFormProps> = ({
+  stateInfo,
+  reportType,
+}) => {
   interface TableData {
     batchId: string | undefined;
     dateGenerated: string | undefined;
@@ -60,15 +63,17 @@ const ListBatches: React.FC<POEmailsFormProps> = ({ stateInfo }) => {
   }, []);
 
   const refreshBatches = React.useCallback(() => {
+    if (!stateInfo?.code || !reportType) return;
+
     setShowSpinner(true);
     const getBatches = async () => {
-      const r = await getListBatchInfo(stateInfo.code);
+      const r = await getListBatchInfo(stateInfo.code, reportType);
       const json = await r.json();
       formatTableData(json.batchInfo);
       setShowSpinner(false);
     };
     getBatches();
-  }, [stateInfo.code, formatTableData]);
+  }, [stateInfo?.code, reportType, formatTableData]);
 
   React.useEffect(() => {
     refreshBatches();
@@ -117,7 +122,9 @@ const ListBatches: React.FC<POEmailsFormProps> = ({ stateInfo }) => {
 
   return (
     <Card
-      title={`${stateInfo?.name} Previously Generated Batches`}
+      title={`Previously Generated ${stateInfo?.name || ""} ${
+        reportType || ""
+      } Batches`}
       extra={
         <Button
           type="primary"
@@ -128,15 +135,21 @@ const ListBatches: React.FC<POEmailsFormProps> = ({ stateInfo }) => {
         />
       }
     >
-      {showSpinner ? (
-        <Spin />
+      {stateInfo && reportType ? (
+        <>
+          {showSpinner ? (
+            <Spin />
+          ) : (
+            <Table
+              columns={columns}
+              dataSource={tableData}
+              rowKey="batchId"
+              pagination={{ pageSize: 5, size: "small", simple: true }}
+            />
+          )}
+        </>
       ) : (
-        <Table
-          columns={columns}
-          dataSource={tableData}
-          rowKey="batchId"
-          pagination={{ pageSize: 5, size: "small", simple: true }}
-        />
+        <Empty />
       )}
     </Card>
   );
