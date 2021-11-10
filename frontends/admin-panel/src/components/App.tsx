@@ -119,10 +119,8 @@ const App = (): JSX.Element => {
             <Menu.Item key={LineStaffTools.PO_FEEDBACK_ROUTE}>
               <Link to={LineStaffTools.PO_FEEDBACK_ROUTE}>PO Feedback</Link>
             </Menu.Item>
-            <Menu.Item key={LineStaffTools.PO_MONTHLY_REPORTS_ROUTE}>
-              <Link to={LineStaffTools.PO_MONTHLY_REPORTS_ROUTE}>
-                PO Monthly Reports
-              </Link>
+            <Menu.Item key={LineStaffTools.EMAIL_REPORTS_ROUTE}>
+              <Link to={LineStaffTools.EMAIL_REPORTS_ROUTE}>Email Reports</Link>
             </Menu.Item>
             <Menu.Item key={LineStaffTools.UPLOAD_ROSTERS_ROUTE}>
               <Link to={LineStaffTools.UPLOAD_ROSTERS_ROUTE}>
@@ -186,7 +184,7 @@ const App = (): JSX.Element => {
             component={POFeedbackView}
           />
           <Route
-            path={LineStaffTools.PO_MONTHLY_REPORTS_ROUTE}
+            path={LineStaffTools.EMAIL_REPORTS_ROUTE}
             component={POEmailsView}
           />
           <Route
@@ -238,8 +236,8 @@ function selectedMenuKeys(pathname: string): string[] {
   if (pathname.startsWith(LineStaffTools.PO_FEEDBACK_ROUTE)) {
     return [LineStaffTools.PO_FEEDBACK_ROUTE];
   }
-  if (pathname.startsWith(LineStaffTools.PO_MONTHLY_REPORTS_ROUTE)) {
-    return [LineStaffTools.PO_MONTHLY_REPORTS_ROUTE];
+  if (pathname.startsWith(LineStaffTools.EMAIL_REPORTS_ROUTE)) {
+    return [LineStaffTools.EMAIL_REPORTS_ROUTE];
   }
   if (pathname.startsWith(DatasetMetadata.DATA_DISCOVERY_ROUTE)) {
     return [DatasetMetadata.DATA_DISCOVERY_ROUTE];
