@@ -10,8 +10,8 @@ state_codes=("US_ID" "US_ME" "US_MI" "US_MO" "US_ND" "US_PA" "US_TN")
 
 for state_code in "${state_codes[@]}"
 do
-  terraform_mv module.state_direct_ingest_buckets_and_accounts["$state_code"].google_bigquery_dataset.state_specific_scratch_dataset[0] \
-    module.state_direct_ingest_buckets_and_accounts["$state_code"].module.state-specific-scratch-dataset[0].google_bigquery_dataset.dataset
+  terraform_mv module.state_direct_ingest_buckets_and_accounts[\"$state_code\"].google_bigquery_dataset.state_specific_scratch_dataset[0] \
+    module.state_direct_ingest_buckets_and_accounts[\"$state_code\"].module.state-specific-scratch-dataset[0].google_bigquery_dataset.dataset
 done
 
 # Move validation_results dataset
