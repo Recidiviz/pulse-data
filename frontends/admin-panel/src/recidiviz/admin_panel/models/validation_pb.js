@@ -1383,7 +1383,10 @@ proto.recidiviz.admin_panel.models.ValidationStatusRecord.toObject = function(in
     failureDescription: (f = jspb.Message.getField(msg, 14)) == null ? undefined : f,
     existence: (f = msg.getExistence()) && proto.recidiviz.admin_panel.models.ExistenceValidationResultDetails.toObject(includeInstance, f),
     samenessPerRow: (f = msg.getSamenessPerRow()) && proto.recidiviz.admin_panel.models.SamenessPerRowValidationResultDetails.toObject(includeInstance, f),
-    samenessPerView: (f = msg.getSamenessPerView()) && proto.recidiviz.admin_panel.models.SamenessPerViewValidationResultDetails.toObject(includeInstance, f)
+    samenessPerView: (f = msg.getSamenessPerView()) && proto.recidiviz.admin_panel.models.SamenessPerViewValidationResultDetails.toObject(includeInstance, f),
+    lastBetterStatusRunId: (f = jspb.Message.getField(msg, 18)) == null ? undefined : f,
+    lastBetterStatusRunDatetime: (f = msg.getLastBetterStatusRunDatetime()) && google_protobuf_timestamp_pb.Timestamp.toObject(includeInstance, f),
+    lastBetterStatusRunResultStatus: (f = jspb.Message.getField(msg, 20)) == null ? undefined : f
   };
 
   if (includeInstance) {
@@ -1491,6 +1494,19 @@ proto.recidiviz.admin_panel.models.ValidationStatusRecord.deserializeBinaryFromR
       var value = new proto.recidiviz.admin_panel.models.SamenessPerViewValidationResultDetails;
       reader.readMessage(value,proto.recidiviz.admin_panel.models.SamenessPerViewValidationResultDetails.deserializeBinaryFromReader);
       msg.setSamenessPerView(value);
+      break;
+    case 18:
+      var value = /** @type {string} */ (reader.readString());
+      msg.setLastBetterStatusRunId(value);
+      break;
+    case 19:
+      var value = new google_protobuf_timestamp_pb.Timestamp;
+      reader.readMessage(value,google_protobuf_timestamp_pb.Timestamp.deserializeBinaryFromReader);
+      msg.setLastBetterStatusRunDatetime(value);
+      break;
+    case 20:
+      var value = /** @type {!proto.recidiviz.admin_panel.models.ValidationStatusRecord.ValidationResultStatus} */ (reader.readEnum());
+      msg.setLastBetterStatusRunResultStatus(value);
       break;
     default:
       reader.skipField();
@@ -1642,6 +1658,28 @@ proto.recidiviz.admin_panel.models.ValidationStatusRecord.serializeBinaryToWrite
       17,
       f,
       proto.recidiviz.admin_panel.models.SamenessPerViewValidationResultDetails.serializeBinaryToWriter
+    );
+  }
+  f = /** @type {string} */ (jspb.Message.getField(message, 18));
+  if (f != null) {
+    writer.writeString(
+      18,
+      f
+    );
+  }
+  f = message.getLastBetterStatusRunDatetime();
+  if (f != null) {
+    writer.writeMessage(
+      19,
+      f,
+      google_protobuf_timestamp_pb.Timestamp.serializeBinaryToWriter
+    );
+  }
+  f = /** @type {!proto.recidiviz.admin_panel.models.ValidationStatusRecord.ValidationResultStatus} */ (jspb.Message.getField(message, 20));
+  if (f != null) {
+    writer.writeEnum(
+      20,
+      f
     );
   }
 };
@@ -2280,6 +2318,115 @@ proto.recidiviz.admin_panel.models.ValidationStatusRecord.prototype.clearSamenes
  */
 proto.recidiviz.admin_panel.models.ValidationStatusRecord.prototype.hasSamenessPerView = function() {
   return jspb.Message.getField(this, 17) != null;
+};
+
+
+/**
+ * optional string last_better_status_run_id = 18;
+ * @return {string}
+ */
+proto.recidiviz.admin_panel.models.ValidationStatusRecord.prototype.getLastBetterStatusRunId = function() {
+  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 18, ""));
+};
+
+
+/**
+ * @param {string} value
+ * @return {!proto.recidiviz.admin_panel.models.ValidationStatusRecord} returns this
+ */
+proto.recidiviz.admin_panel.models.ValidationStatusRecord.prototype.setLastBetterStatusRunId = function(value) {
+  return jspb.Message.setField(this, 18, value);
+};
+
+
+/**
+ * Clears the field making it undefined.
+ * @return {!proto.recidiviz.admin_panel.models.ValidationStatusRecord} returns this
+ */
+proto.recidiviz.admin_panel.models.ValidationStatusRecord.prototype.clearLastBetterStatusRunId = function() {
+  return jspb.Message.setField(this, 18, undefined);
+};
+
+
+/**
+ * Returns whether this field is set.
+ * @return {boolean}
+ */
+proto.recidiviz.admin_panel.models.ValidationStatusRecord.prototype.hasLastBetterStatusRunId = function() {
+  return jspb.Message.getField(this, 18) != null;
+};
+
+
+/**
+ * optional google.protobuf.Timestamp last_better_status_run_datetime = 19;
+ * @return {?proto.google.protobuf.Timestamp}
+ */
+proto.recidiviz.admin_panel.models.ValidationStatusRecord.prototype.getLastBetterStatusRunDatetime = function() {
+  return /** @type{?proto.google.protobuf.Timestamp} */ (
+    jspb.Message.getWrapperField(this, google_protobuf_timestamp_pb.Timestamp, 19));
+};
+
+
+/**
+ * @param {?proto.google.protobuf.Timestamp|undefined} value
+ * @return {!proto.recidiviz.admin_panel.models.ValidationStatusRecord} returns this
+*/
+proto.recidiviz.admin_panel.models.ValidationStatusRecord.prototype.setLastBetterStatusRunDatetime = function(value) {
+  return jspb.Message.setWrapperField(this, 19, value);
+};
+
+
+/**
+ * Clears the message field making it undefined.
+ * @return {!proto.recidiviz.admin_panel.models.ValidationStatusRecord} returns this
+ */
+proto.recidiviz.admin_panel.models.ValidationStatusRecord.prototype.clearLastBetterStatusRunDatetime = function() {
+  return this.setLastBetterStatusRunDatetime(undefined);
+};
+
+
+/**
+ * Returns whether this field is set.
+ * @return {boolean}
+ */
+proto.recidiviz.admin_panel.models.ValidationStatusRecord.prototype.hasLastBetterStatusRunDatetime = function() {
+  return jspb.Message.getField(this, 19) != null;
+};
+
+
+/**
+ * optional ValidationResultStatus last_better_status_run_result_status = 20;
+ * @return {!proto.recidiviz.admin_panel.models.ValidationStatusRecord.ValidationResultStatus}
+ */
+proto.recidiviz.admin_panel.models.ValidationStatusRecord.prototype.getLastBetterStatusRunResultStatus = function() {
+  return /** @type {!proto.recidiviz.admin_panel.models.ValidationStatusRecord.ValidationResultStatus} */ (jspb.Message.getFieldWithDefault(this, 20, 0));
+};
+
+
+/**
+ * @param {!proto.recidiviz.admin_panel.models.ValidationStatusRecord.ValidationResultStatus} value
+ * @return {!proto.recidiviz.admin_panel.models.ValidationStatusRecord} returns this
+ */
+proto.recidiviz.admin_panel.models.ValidationStatusRecord.prototype.setLastBetterStatusRunResultStatus = function(value) {
+  return jspb.Message.setField(this, 20, value);
+};
+
+
+/**
+ * Clears the field making it undefined.
+ * @return {!proto.recidiviz.admin_panel.models.ValidationStatusRecord} returns this
+ */
+proto.recidiviz.admin_panel.models.ValidationStatusRecord.prototype.clearLastBetterStatusRunResultStatus = function() {
+  return jspb.Message.setField(this, 20, undefined);
+};
+
+
+/**
+ * Returns whether this field is set.
+ * @return {boolean}
+ */
+proto.recidiviz.admin_panel.models.ValidationStatusRecord.prototype.hasLastBetterStatusRunResultStatus = function() {
+  return jspb.Message.getField(this, 20) != null;
 };
 
 

@@ -123,6 +123,16 @@ message ValidationStatusRecord {
         SamenessPerRowValidationResultDetails sameness_per_row = 16;
         SamenessPerViewValidationResultDetails sameness_per_view = 17;
     }
+
+    // These describe the most recent run that had a better result status than this run.
+    // - If this is a hard failure, the last run that was a soft failure or success
+    // - If this is a soft failure, the last run that was a success
+    // - If this is a success, this run
+    // If no prior run meets the above criteria (a failure with no prior, better status)
+    // then the fields will be null.
+    optional string last_better_status_run_id = 18;
+    optional google.protobuf.Timestamp last_better_status_run_datetime = 19;
+    optional ValidationResultStatus last_better_status_run_result_status = 20;
 }
 
 message ValidationStatusRecords {

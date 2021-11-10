@@ -19,6 +19,27 @@ import { PresetStatusColorType } from "antd/lib/_util/colors";
 import { ValidationStatusRecord } from "../../recidiviz/admin_panel/models/validation_pb";
 import { RecordStatus } from "./constants";
 
+export const replaceInfinity = <T>(x: number, replacement: T): number | T => {
+  return Number.isFinite(x) ? x : replacement;
+};
+
+export const daysBetweenDates = (date1: Date, date2: Date): number => {
+  const delta = Math.abs(date1.getTime() - date2.getTime());
+  return Math.ceil(delta / (1000 * 3600 * 24));
+};
+
+export const getDaysActive = (record: ValidationStatusRecord): number => {
+  const runDate = record.getRunDatetime()?.toDate();
+  const lastSuccessDate = record.getLastBetterStatusRunDatetime()?.toDate();
+  if (runDate === undefined) {
+    return 0;
+  }
+  if (lastSuccessDate === undefined) {
+    return Infinity;
+  }
+  return daysBetweenDates(runDate, lastSuccessDate);
+};
+
 export const formatStatusAmount = (
   amount: number | null | undefined,
   isPercent: boolean | undefined
@@ -45,7 +66,11 @@ export const getRecordStatus = (
     return RecordStatus.NEED_DATA;
   }
 
-  switch (record.getResultStatus()) {
+  return convertResultStatus(record.getResultStatus());
+};
+
+export const convertResultStatus = (resultStatus?: number): RecordStatus => {
+  switch (resultStatus) {
     case ValidationStatusRecord.ValidationResultStatus.FAIL_HARD:
       return RecordStatus.FAIL_HARD;
     case ValidationStatusRecord.ValidationResultStatus.FAIL_SOFT:
