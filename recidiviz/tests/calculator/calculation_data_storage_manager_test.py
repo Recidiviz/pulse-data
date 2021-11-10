@@ -19,6 +19,7 @@ import datetime
 import os
 import unittest
 from enum import Enum
+from typing import Dict, Optional
 from unittest import mock
 
 from flask import Flask
@@ -62,6 +63,7 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
                 "datasetId": self.mock_view_dataset_name,
             },
         }
+
         self.mock_table_resource = {
             "tableReference": {
                 "projectId": self.project_id,
@@ -256,6 +258,31 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
         self.mock_client.list_datasets.assert_called()
         self.mock_client.delete_dataset.assert_not_called()
 
+    # pylint: disable=protected-access
+    @freeze_time("2020-01-03 00:30")
+    def test_delete_empty_datasets_terraform_managed_dataset(self) -> None:
+        """Test that _delete_empty_datasets does not delete an empty dataset if it has a label identifying it as a
+        Terraform managed dataset."""
+        terraform_managed_dataset = MockDataset(
+            dataset_id=self.mock_view_dataset_name,
+            created=datetime.datetime(
+                2020, 1, 1, 0, 0, 0, tzinfo=datetime.timezone.utc
+            ),
+            labels={"managed_by_terraform": "true"},
+        )
+
+        self.mock_client.list_datasets.return_value = [
+            bigquery.dataset.DatasetListItem(self.mock_dataset_resource)
+        ]
+        self.mock_client.dataset_ref_for_id.return_value = self.mock_dataset
+        self.mock_client.get_dataset.return_value = terraform_managed_dataset
+        self.mock_client.list_tables.return_value = []
+
+        calculation_data_storage_manager._delete_empty_datasets()
+
+        self.mock_client.list_datasets.assert_called()
+        self.mock_client.delete_dataset.assert_not_called()
+
     @patch(
         "recidiviz.calculator.calculation_data_storage_manager._delete_empty_datasets"
     )
@@ -288,6 +315,14 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
 class MockDataset:
     """Class for mocking bigquery.Dataset."""
 
-    def __init__(self, dataset_id: str, created: datetime.datetime) -> None:
+    def __init__(
+        self,
+        dataset_id: str,
+        created: datetime.datetime,
+        labels: Optional[Dict[str, str]] = None,
+    ) -> None:
+        if labels is None:
+            labels = {}
         self.dataset_id = dataset_id
         self.created = created
+        self.labels = labels
