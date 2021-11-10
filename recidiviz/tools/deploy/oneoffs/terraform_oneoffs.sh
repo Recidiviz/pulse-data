@@ -33,8 +33,5 @@ function terraform_mv {
   OLD_RESOURCE_ADDR=$1
   UPDATED_RESOURCE_ADDR=$2
   terraform -chdir=./recidiviz/tools/deploy/terraform state mv \
-    -var=project_id=$PROJECT_ID \
-    -var=docker_image_tag=$DOCKER_TAG \
-    -var=git_hash=$GIT_HASH \
     "$OLD_RESOURCE_ADDR" "$UPDATED_RESOURCE_ADDR"
 }
