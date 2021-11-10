@@ -172,7 +172,7 @@ class TestDemoUser(TestCase):
                 + num_assessment_upcoming,
                 OpportunityType.CONTACT: num_contact_overdue + num_contact_upcoming,
                 OpportunityType.NEW_TO_CASELOAD: 11,
-                OpportunityType.HOME_VISIT: 6,
+                OpportunityType.HOME_VISIT: 8,
             }
 
             expected_opportunity_count = len(self.demo_opportunities) + sum(
