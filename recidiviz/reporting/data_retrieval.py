@@ -24,7 +24,7 @@ for use in the emails.
 import json
 import logging
 from datetime import date, timedelta
-from typing import Any, Dict, Generator, List, Optional
+from typing import Dict, List, Optional
 
 import dateutil.parser
 
@@ -51,7 +51,6 @@ from recidiviz.reporting import email_generation
 from recidiviz.reporting.context.available_context import get_report_context
 from recidiviz.reporting.context.po_monthly_report.constants import (
     OFFICER_GIVEN_NAME,
-    Batch,
     ReportType,
 )
 from recidiviz.reporting.email_reporting_utils import gcsfs_path_for_batch_metadata
@@ -88,7 +87,7 @@ def filter_recipients(
 
 
 def start(
-    batch: Batch,
+    batch: utils.Batch,
     test_address: Optional[str] = None,
     region_code: Optional[str] = None,
     email_allowlist: Optional[List[str]] = None,
@@ -109,6 +108,7 @@ def start(
         region_code: Optional region code which specifies the sub-region of the state in which to
             generate reports. If empty, this generates reports for all regions.
         email_allowlist: Optional list of email_addresses to generate for; all other recipients are skipped
+        recipient_emails: Optional list of email_addresses to generate for; all other recipients are skipped
         message_body_override: Optional override for the message body in the email.
 
     Returns: A MultiRequestResult containing the email addresses for which reports were successfully generated for
@@ -161,7 +161,7 @@ def start(
     for recipient in recipients:
         try:
             report_context = get_report_context(batch, recipient)
-            email_generation.generate(batch, recipient, report_context)
+            email_generation.generate(batch, report_context)
         except Exception:
             failed_email_addresses.append(recipient.email_address)
             logging.error(
@@ -169,8 +169,9 @@ def start(
             )
         else:
             succeeded_email_addresses.append(recipient.email_address)
-            metadata["review_year"] = recipient.data["review_year"]
-            metadata["review_month"] = recipient.data["review_month"]
+            if batch.report_type == ReportType.POMonthlyReport and len(metadata) == 0:
+                metadata["review_year"] = recipient.data["review_year"]
+                metadata["review_month"] = recipient.data["review_month"]
 
     _write_batch_metadata(
         batch=batch,
@@ -182,7 +183,7 @@ def start(
 
 
 def retrieve_data(
-    batch: Batch,
+    batch: utils.Batch,
 ) -> List[Recipient]:
     """Retrieves the data for email generation of the given report type for the given state.
 
@@ -194,59 +195,18 @@ def retrieve_data(
         batch: The identifier for this batch
 
     Returns:
-        A list of recipients
+        A list of recipient data dictionaries
 
     Raises:
         Non-recoverable errors that should stop execution. Attempts to catch and handle errors that are recoverable.
         Provides logging for debug purposes whenever possible.
     """
+    if batch.report_type == ReportType.POMonthlyReport:
+        return _retrieve_data_for_po_monthly_report(batch)
     if batch.report_type == ReportType.TopOpportunities:
         return _retrieve_data_for_top_opportunities(batch)
 
-    report_json = _retrieve_report_json(batch)
-    _create_report_json_archive(batch, report_json)
-
-    if batch.report_type == ReportType.POMonthlyReport:
-        return _retrieve_data_for_po_monthly_report(report_json)
-
-    if batch.report_type == ReportType.OverdueDischargeAlert:
-        return _retrieve_data_for_overdue_discharge_alert(report_json)
-
     raise ValueError("unexpected report type for retrieving data")
-
-
-def _retrieve_report_json(batch: Batch) -> str:
-    data_bucket = utils.get_data_storage_bucket_name()
-    data_filename = ""
-    gcs_file_system = GcsfsFactory.build()
-    try:
-        data_filename = utils.get_data_filename(batch)
-        path = GcsfsFilePath.from_absolute_path(f"gs://{data_bucket}/{data_filename}")
-        file_contents = gcs_file_system.download_as_string(path)
-    except BaseException:
-        logging.info("Unable to load data file %s/%s", data_bucket, data_filename)
-        raise
-
-    return file_contents
-
-
-def _create_report_json_archive(batch: Batch, report_json: str) -> None:
-    gcs_file_system = GcsfsFactory.build()
-    archive_bucket = utils.get_data_archive_bucket_name()
-    archive_filename = utils.get_data_archive_filename(batch)
-
-    try:
-        archive_path = GcsfsFilePath.from_absolute_path(
-            f"gs://{archive_bucket}/{archive_filename}"
-        )
-        gcs_file_system.upload_from_string(
-            path=archive_path, contents=report_json, content_type="text/json"
-        )
-    except Exception:
-        logging.error(
-            "Unable to archive the data file to %s/%s", archive_bucket, archive_filename
-        )
-        raise
 
 
 def _top_opps_email_recipient_addresses() -> List[str]:
@@ -343,7 +303,7 @@ def _get_mismatch_data_for_officer(
         return mismatches
 
 
-def _retrieve_data_for_top_opportunities(batch: Batch) -> List[Recipient]:
+def _retrieve_data_for_top_opportunities(batch: utils.Batch) -> List[Recipient]:
     """Fetches list of recipients from the Case Triage backend where we store information
     about which opportunities are active via the OpportunityPresenter."""
     recipients = []
@@ -370,45 +330,75 @@ def _retrieve_data_for_top_opportunities(batch: Batch) -> List[Recipient]:
     return recipients
 
 
-def _json_lines(json_file: str) -> Generator[Dict[str, Any], None, None]:
-    for json_str in json_file.splitlines():
+def _retrieve_data_for_po_monthly_report(
+    batch: utils.Batch,
+) -> List[Recipient]:
+    """Retrieves the data if the report type is POMonthlyReport."""
+    data_bucket = utils.get_data_storage_bucket_name()
+    data_filename = ""
+    gcs_file_system = GcsfsFactory.build()
+    try:
+        data_filename = utils.get_data_filename(batch)
+        path = GcsfsFilePath.from_absolute_path(f"gs://{data_bucket}/{data_filename}")
+        file_contents = gcs_file_system.download_as_string(path)
+    except BaseException:
+        logging.info("Unable to load data file %s/%s", data_bucket, data_filename)
+        raise
+
+    archive_bucket = utils.get_data_archive_bucket_name()
+    archive_filename = ""
+    try:
+        archive_filename = utils.get_data_archive_filename(batch)
+        archive_path = GcsfsFilePath.from_absolute_path(
+            f"gs://{archive_bucket}/{archive_filename}"
+        )
+        gcs_file_system.upload_from_string(
+            path=archive_path, contents=file_contents, content_type="text/json"
+        )
+    except Exception:
+        logging.error(
+            "Unable to archive the data file to %s/%s", archive_bucket, archive_filename
+        )
+        raise
+
+    json_list = file_contents.splitlines()
+
+    recipient_data: List[dict] = []
+    for json_str in json_list:
         try:
-            yield json.loads(json_str)
+            item = json.loads(json_str)
         except Exception as err:
             logging.error(
-                "Unable to parse JSON. Offending json string is: '%s'. <%s> %s",
+                "Unable to parse JSON found in the file %s. Offending json string is: '%s'. <%s> %s",
+                data_filename,
                 json_str,
                 type(err).__name__,
                 err,
             )
+        else:
+            if email := item.get("email_address"):
+                mismatches = _get_mismatch_data_for_officer(email)
+                if mismatches is not None:
+                    item["mismatches"] = mismatches
+            recipient_data.append(item)
 
-
-def _retrieve_data_for_po_monthly_report(report_json: str) -> List[Recipient]:
-    """Post-processes the monthly report data into `Recipient`s"""
-
-    recipients: List[Recipient] = []
-
-    for item in _json_lines(report_json):
-        if email := item.get("email_address"):
-            mismatches = _get_mismatch_data_for_officer(email)
-            if mismatches is not None:
-                item["mismatches"] = mismatches
-
-        recipients.append(Recipient.from_report_json(item))
-
-    logging.info("Retrieved %s recipients", len(recipients))
-
-    return recipients
-
-
-def _retrieve_data_for_overdue_discharge_alert(report_json: str) -> List[Recipient]:
-    """Post-processes the overdue discharge alert into `Recipient`s"""
-    return [Recipient.from_report_json(item) for item in _json_lines(report_json)]
+    logging.info(
+        "Retrieved %s recipients from data file %s", len(recipient_data), data_filename
+    )
+    return [
+        Recipient.from_report_json(
+            {
+                **recipient,
+                utils.KEY_BATCH_ID: batch.batch_id,
+            }
+        )
+        for recipient in recipient_data
+    ]
 
 
 def _write_batch_metadata(
     *,
-    batch: Batch,
+    batch: utils.Batch,
     **metadata_fields: str,
 ) -> None:
     gcsfs = GcsfsFactory.build()

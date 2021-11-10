@@ -24,7 +24,7 @@ from unittest.mock import MagicMock, Mock, patch
 import recidiviz.reporting.email_reporting_utils as utils
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
-from recidiviz.reporting.context.po_monthly_report.constants import Batch, ReportType
+from recidiviz.reporting.context.po_monthly_report.constants import ReportType
 from recidiviz.reporting.email_reporting_handler import EmailReportingHandler
 from recidiviz.reporting.email_sent_metadata import EmailSentMetadata
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
@@ -39,7 +39,7 @@ class EmailReportingUtilsTests(TestCase):
         self.eru = utils
         self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
         self.project_id_patcher.start().return_value = "fake-project"
-        self.batch = Batch(
+        self.batch = utils.Batch(
             state_code=StateCode.US_XX,
             batch_id="batch-1",
             report_type=ReportType.POMonthlyReport,
@@ -296,7 +296,7 @@ class TestGCSEmails(TestCase):
             batch_id = metadata["batchId"]
             # initializing email_sent_metadata here since it is called like this when calling
             # add_new_email_send_result()
-            batch = Batch(
+            batch = utils.Batch(
                 state_code=StateCode(self.STATE_CODE_STR),
                 batch_id=batch_id,
                 report_type=ReportType.POMonthlyReport,
@@ -350,7 +350,7 @@ class TestGCSEmails(TestCase):
             batch_info,
         )
 
-        batch = Batch(
+        batch = utils.Batch(
             state_code=StateCode(self.STATE_CODE_STR),
             batch_id="20210701202022",
             report_type=ReportType.POMonthlyReport,

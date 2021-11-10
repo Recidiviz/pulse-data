@@ -50,7 +50,6 @@ GROUP BY state_code, external_id
 id_roster AS (
     SELECT
         external_id,
-        SPLIT(employee_name, ",") AS name,
         LOWER(email_address) AS email_address,
         TO_BASE64(SHA256(LOWER(email_address))) AS hashed_email_address,
         'US_ID' AS state_code

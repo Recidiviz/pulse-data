@@ -89,11 +89,11 @@ class PoMonthlyReportContextTests(TestCase):
             "state_code": StateCode.US_ID,
             "email_address": "letter@kenny.ca",
         }
-        self.assertTrue(len(required_fields.items()) <= len(id_prepared.items()))
+        self.assertTrue(required_fields.items() <= id_prepared.items())
 
         pa_prepared = self._get_prepared_data({"state_code": StateCode.US_PA})
         required_fields["state_code"] = StateCode.US_PA
-        self.assertTrue(len(required_fields.items()) <= len(pa_prepared.items()))
+        self.assertTrue(required_fields.items() <= pa_prepared.items())
 
     def test_message_body_override(self) -> None:
         """Test that the message body is overridden by the message_body_override"""

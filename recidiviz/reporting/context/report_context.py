@@ -16,18 +16,17 @@
 # =============================================================================
 
 """Abstract base class that encapsulates report-specific context."""
-import inspect
 import json
 import os
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List
+from typing import List
 
 from bs4 import BeautifulSoup
-from jinja2 import Environment, FileSystemLoader, Template
+from jinja2 import Template
 
+import recidiviz.reporting.email_reporting_utils as utils
 from recidiviz.reporting.context.po_monthly_report.constants import (
     BRAND_STYLES,
-    Batch,
     ReportType,
 )
 from recidiviz.reporting.recipient import Recipient
@@ -37,11 +36,10 @@ class ReportContext(ABC):
     """Defines the context for generation and delivery of a single email report to a single recipient,
     for a particular report type."""
 
-    def __init__(self, batch: Batch, recipient: Recipient):
+    def __init__(self, batch: utils.Batch, recipient: Recipient):
         self.batch = batch
         self.state_code = batch.state_code
         self.recipient = recipient
-        self.recipient_data = recipient.data
         self.prepared_data: dict = {}
 
         self._validate_recipient_has_expected_fields(recipient)
@@ -49,20 +47,9 @@ class ReportContext(ABC):
         with open(self.get_properties_filepath(), encoding="utf-8") as properties_file:
             self.properties = json.loads(properties_file.read())
 
-        self.jinja_env = Environment(
-            loader=FileSystemLoader(self._get_context_templates_folder()),
-            **self.jinja_options,
-        )
-
-    @property
-    def jinja_options(self) -> Dict[str, Any]:
-        return {}
-
+    @abstractmethod
     def get_properties_filepath(self) -> str:
         """Returns the filepath to the context's properties.json file"""
-        return os.path.join(
-            os.path.dirname(inspect.getfile(self.__class__)), "properties.json"
-        )
 
     @abstractmethod
     def get_required_recipient_data_fields(self) -> List[str]:
@@ -77,7 +64,7 @@ class ReportContext(ABC):
 
         if missing_keys:
             raise KeyError(
-                f"Missing key(s) {missing_keys} not found in recipient.", recipient
+                f"Missing key(s) [{missing_keys}] not found in recipient.", recipient
             )
 
     @abstractmethod
