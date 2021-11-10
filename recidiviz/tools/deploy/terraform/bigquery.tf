@@ -23,14 +23,14 @@ resource "google_project_service" "bigquery_connection_api" {
 }
 
 # Storing validation results
-resource "google_bigquery_dataset" "validation_results" {
+module "validation_results_dataset" {
+  source      = "./modules/big_query_dataset"
   dataset_id  = "validation_results"
   description = "This dataset contains raw results from data validation runs as well as any views over them."
-  location    = "US"
 }
 
 resource "google_bigquery_table" "validation_results" {
-  dataset_id  = google_bigquery_dataset.validation_results.dataset_id
+  dataset_id  = module.validation_results_dataset.dataset_id
   table_id    = "validation_results"
   description = "This table contains the results from data validation runs."
 
