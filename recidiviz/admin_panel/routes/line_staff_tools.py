@@ -58,7 +58,7 @@ from recidiviz.persistence.database.schema_utils import (
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.reporting import data_retrieval, email_delivery
-from recidiviz.reporting.context.po_monthly_report.constants import ReportType
+from recidiviz.reporting.context.po_monthly_report.constants import Batch, ReportType
 from recidiviz.reporting.email_reporting_handler import (
     EmailMetadataReportDateError,
     EmailReportingHandler,
@@ -243,7 +243,10 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
                 raise ValueError("State code is invalid for PO monthly reports")
             # TODO(#7790): Support more email types.
             report_type = ReportType(data.get("reportType"))
-            if report_type != ReportType.POMonthlyReport:
+            if report_type not in [
+                ReportType.POMonthlyReport,
+                ReportType.OverdueDischargeAlert,
+            ]:
                 raise ValueError(f"{report_type.value} is not a valid ReportType")
             test_address = data.get("testAddress")
             region_code = data.get("regionCode")
@@ -380,7 +383,10 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
 
         # TODO(#7790): Support more email types.
         try:
-            if report_type != ReportType.POMonthlyReport:
+            if report_type not in [
+                ReportType.POMonthlyReport,
+                ReportType.OverdueDischargeAlert,
+            ]:
                 raise InvalidReportTypeError(
                     f"Invalid report type: Sending emails with {report_type} is not implemented yet."
                 )
@@ -394,6 +400,7 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
             logging.error(error)
             return str(error), HTTPStatus.BAD_REQUEST
 
+        batch = Batch(batch_id=batch_id, state_code=state_code, report_type=report_type)
         result = email_delivery.deliver(
             batch=batch,
             redirect_address=redirect_address,

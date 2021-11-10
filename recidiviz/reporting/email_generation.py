@@ -28,10 +28,12 @@ from google.cloud import pubsub_v1
 import recidiviz.reporting.email_reporting_utils as utils
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.reporting.context.po_monthly_report.constants import Batch
 from recidiviz.reporting.context.report_context import ReportContext
+from recidiviz.reporting.recipient import Recipient
 
 
-def generate(batch: utils.Batch, report_context: ReportContext) -> None:
+def generate(batch: Batch, recipient: Recipient, report_context: ReportContext) -> None:
     """Generates and uploads the HTML file and the file attachment for the identified recipient's email.
 
     Receives the full user data, applies it to the HTML template and stores the result in Cloud Storage.
@@ -39,7 +41,9 @@ def generate(batch: utils.Batch, report_context: ReportContext) -> None:
     Uploads the attachment content to Cloud Storage as a .txt file.
 
     Args:
-        report_context: The context for a single recipient
+        batch: Dataclass containing information about the batch
+        recipient: The recipient we're generating this email for
+        report_context: The report context for this email
     """
 
     prepared_data = report_context.get_prepared_data()
@@ -49,7 +53,7 @@ def generate(batch: utils.Batch, report_context: ReportContext) -> None:
 
     html_path = utils.get_html_filepath(
         batch,
-        prepared_data[utils.KEY_EMAIL_ADDRESS],
+        recipient.email_address,
     )
     upload_file_contents_to_gcs(
         file_path=html_path, file_contents=html_content, content_type="text/html"
@@ -58,7 +62,7 @@ def generate(batch: utils.Batch, report_context: ReportContext) -> None:
     if attachment_content:
         attachment_path = utils.get_attachment_filepath(
             batch,
-            prepared_data[utils.KEY_EMAIL_ADDRESS],
+            recipient.email_address,
         )
 
         upload_file_contents_to_gcs(
