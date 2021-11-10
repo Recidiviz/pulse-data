@@ -28,7 +28,7 @@ and conform to the following:
 import logging
 import re
 from datetime import date, datetime
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 import recidiviz.reporting.email_reporting_utils as utils
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
@@ -36,15 +36,13 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.results import MultiRequestResult
 from recidiviz.reporting.context.po_monthly_report.constants import (
     DEFAULT_EMAIL_SUBJECT,
-    Batch,
-    ReportType,
 )
 from recidiviz.reporting.email_sent_metadata import EmailSentMetadata
 from recidiviz.reporting.sendgrid_client_wrapper import SendGridClientWrapper
 
 
 def deliver(
-    batch: Batch,
+    batch: utils.Batch,
     report_date: date,
     redirect_address: Optional[str] = None,
     cc_addresses: Optional[List[str]] = None,
@@ -89,7 +87,15 @@ def deliver(
             ",".join(address for address in cc_addresses),
         )
 
-    from_email_name, from_email_address = get_sender_info(batch.report_type)
+    try:
+        from_email_address = utils.get_env_var("FROM_EMAIL_ADDRESS")
+        from_email_name = utils.get_env_var("FROM_EMAIL_NAME")
+    except KeyError:
+        logging.error(
+            "Unable to get a required environment variables `FROM_EMAIL_ADDRESS` or `FROM_EMAIL_NAME`. "
+            "Exiting."
+        )
+        raise
 
     content_bucket = utils.get_email_content_bucket_name()
     html_files = load_files_from_storage(content_bucket, utils.get_html_folder(batch))
@@ -217,28 +223,3 @@ def load_files_from_storage(bucket_name: str, batch_id_path: str) -> Dict[str, s
             files[email_address] = body
 
     return files
-
-
-def get_sender_info(report_type: ReportType) -> Tuple[str, str]:
-    if report_type == ReportType.POMonthlyReport:
-        try:
-            from_email_address = utils.get_env_var("FROM_EMAIL_ADDRESS")
-            from_email_name = utils.get_env_var("FROM_EMAIL_NAME")
-        except KeyError:
-            logging.error(
-                "Unable to get a required environment variables `FROM_EMAIL_ADDRESS` or `FROM_EMAIL_NAME`. "
-                "Exiting."
-            )
-            raise
-    elif report_type == ReportType.OverdueDischargeAlert:
-        try:
-            from_email_address = utils.get_env_var("ALERTS_FROM_EMAIL_ADDRESS")
-            from_email_name = utils.get_env_var("ALERTS_FROM_EMAIL_NAME")
-        except KeyError:
-            logging.error(
-                "Unable to get a required environment variables `FROM_EMAIL_ADDRESS` or `FROM_EMAIL_NAME`. "
-                "Exiting."
-            )
-            raise
-
-    return from_email_name, from_email_address

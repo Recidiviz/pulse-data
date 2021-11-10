@@ -22,8 +22,11 @@ import os
 import re
 from typing import Optional
 
+import attr
+
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.reporting.context.po_monthly_report.constants import Batch, ReportType
+from recidiviz.common.constants.states import StateCode
+from recidiviz.reporting.context.po_monthly_report.constants import ReportType
 from recidiviz.utils import environment, metadata, secrets
 
 _PO_REPORT_CDN_STATIC_IP_KEY = "po_report_cdn_static_IP"
@@ -48,10 +51,18 @@ def get_env_var(key: str) -> str:
 
 
 # Keys used to identify elements in dictionaries
+KEY_BATCH_ID = "batch_id"
 KEY_DISTRICT = "district"
 KEY_REPORT_TYPE = "report_type"
 KEY_EMAIL_ADDRESS = "email_address"
 KEY_STATE_CODE = "state_code"
+
+
+@attr.s(auto_attribs=True)
+class Batch:
+    state_code: StateCode
+    batch_id: str
+    report_type: ReportType
 
 
 def format_test_address(test_address: str, recipient_email_address: str) -> str:
