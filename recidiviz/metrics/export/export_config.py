@@ -44,6 +44,9 @@ from recidiviz.calculator.query.state.views.dashboard.population_projections.pop
 from recidiviz.calculator.query.state.views.dashboard.vitals_summaries.vitals_views import (
     VITALS_VIEW_BUILDERS,
 )
+from recidiviz.calculator.query.state.views.overdue_discharge_alert.overdue_discharge_alert_data_views import (
+    OVERDUE_DISCHARGE_ALERT_DATA_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.po_report.po_monthly_report_data import (
     PO_MONTHLY_REPORT_DATA_VIEW_BUILDER,
 )
@@ -332,6 +335,9 @@ DASHBOARD_USER_RESTRICTIONS_OUTPUT_DIRECTORY_URI = (
     "gs://{project_id}-dashboard-user-restrictions"
 )
 JUSTICE_COUNTS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-justice-counts-data"
+OVERDUE_DISCHARGE_ALERT_OUTPUT_DIRECTORY_URI = (
+    "gs://{project_id}-report-data/overdue_discharge_alert"
+)
 PO_REPORT_OUTPUT_DIRECTORY_URI = "gs://{project_id}-report-data/po_monthly_report"
 PUBLIC_DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-public-dashboard-data"
 INGEST_METADATA_OUTPUT_DIRECTORY_URI = "gs://{project_id}-ingest-metadata"
@@ -344,6 +350,13 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         view_builders_to_export=[PO_MONTHLY_REPORT_DATA_VIEW_BUILDER],
         output_directory_uri_template=PO_REPORT_OUTPUT_DIRECTORY_URI,
         export_name="PO_MONTHLY",
+        bq_view_namespace=BigQueryViewNamespace.STATE,
+    ),
+    # Overdue Discharge Report views
+    ExportViewCollectionConfig(
+        view_builders_to_export=[OVERDUE_DISCHARGE_ALERT_DATA_VIEW_BUILDER],
+        output_directory_uri_template=OVERDUE_DISCHARGE_ALERT_OUTPUT_DIRECTORY_URI,
+        export_name="OVERDUE_DISCHARGE",
         bq_view_namespace=BigQueryViewNamespace.STATE,
     ),
     # COVID Dashboard views

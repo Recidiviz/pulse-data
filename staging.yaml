@@ -27,6 +27,8 @@ env_variables:
   RECIDIVIZ_SERVICE: default
   FROM_EMAIL_ADDRESS: reports@recidiviz.org
   FROM_EMAIL_NAME: Recidiviz Reports
+  ALERTS_FROM_EMAIL_ADDRESS: serena@recidiviz.org
+  ALERTS_FROM_EMAIL_NAME: Serena Chang
 
 # Per zenhub-tasks#358, our app engine needs egress traffic to be issued on a static IP address:
 # Reference doc: https://cloud.google.com/appengine/docs/standard/python/outbound-ip-addresses#static-ip
