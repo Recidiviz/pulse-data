@@ -1,0 +1,22 @@
+file_tag: CIS_3140_TRANSFER_TYPE
+file_description: |-
+  This is a code table with one row per code and description. The transfer type code is used in the
+  Cis_3140_Transfer_Type_Cd field on the CIS_314_TRANSFER table.
+primary_key_cols:
+  - Transfer_Type_Cd
+columns:
+  - name : Created_By_Tx
+  - name : Created_On_Date
+  - name : E_Trans_Type_Desc
+    description : |-
+      The value for the Cis_3140_Transfer_Type_Cd code. See CIS_314_TRANSFER config for all possible values.
+  - name : Locking_Tsp
+  - name : Logical_Delete_Ind
+  - name : Modified_By_Tx
+  - name : Modified_On_Date
+  - name : Non_Custody_Ind
+  - name : System_Ref_Comments_Tx
+  - name : System_Ref_Tx
+  - name : Transfer_Type_Cd
+    description : |-
+      Primary key field and transfer type code used in CIS_314_TRANSFER table
