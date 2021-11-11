@@ -31,10 +31,6 @@ class StateSupervisionContactType(EntityEnum, metaclass=EntityEnumMeta):
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
     INTERNAL_UNKNOWN = enum_strings.internal_unknown
 
-    FACE_TO_FACE = state_enum_strings.state_supervision_contact_type_face_to_face
-    TELEPHONE = state_enum_strings.state_supervision_contact_type_telephone
-    WRITTEN_MESSAGE = state_enum_strings.state_supervision_contact_type_written_message
-    VIRTUAL = state_enum_strings.state_supervision_contact_type_virtual
     COLLATERAL = state_enum_strings.state_supervision_contact_type_collateral
     DIRECT = state_enum_strings.state_supervision_contact_type_direct
     BOTH_COLLATERAL_AND_DIRECT = (
@@ -168,10 +164,6 @@ _STATE_SUPERVISION_CONTACT_REASON_MAP = {
 _STATE_SUPERVISION_CONTACT_TYPE_MAP = {
     "EXTERNAL UNKNOWN": StateSupervisionContactType.EXTERNAL_UNKNOWN,
     "INTERNAL UNKNOWN": StateSupervisionContactType.INTERNAL_UNKNOWN,
-    "FACE TO FACE": StateSupervisionContactType.FACE_TO_FACE,
-    "TELEPHONE": StateSupervisionContactType.TELEPHONE,
-    "WRITTEN MESSAGE": StateSupervisionContactType.WRITTEN_MESSAGE,
-    "VIRTUAL": StateSupervisionContactType.VIRTUAL,
     "COLLATERAL": StateSupervisionContactType.COLLATERAL,
     "DIRECT": StateSupervisionContactType.DIRECT,
     "BOTH COLLATERAL AND DIRECT": StateSupervisionContactType.BOTH_COLLATERAL_AND_DIRECT,
