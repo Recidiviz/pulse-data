@@ -20,6 +20,12 @@ from typing import Type
 
 from recidiviz.common.constants.person_characteristics import Ethnicity, Gender, Race
 from recidiviz.common.constants.state.external_id_types import US_ME_DOC
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateIncarcerationPeriodAdmissionReason,
+    StateIncarcerationPeriodReleaseReason,
+    StateIncarcerationPeriodStatus,
+    StateSpecializedPurposeForIncarceration,
+)
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
 )
@@ -28,7 +34,11 @@ from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.tests.ingest.direct.regions.base_direct_ingest_controller_tests import (
     BaseDirectIngestControllerTests,
 )
-from recidiviz.tests.ingest.direct.regions.utils import build_state_person_entity
+from recidiviz.tests.ingest.direct.regions.utils import (
+    add_incarceration_period_to_person,
+    add_sentence_group_to_person_and_build_incarceration_sentence,
+    build_state_person_entity,
+)
 
 _REGION_CODE_UPPER = "US_ME"
 
@@ -49,6 +59,9 @@ class TestUsMeController(BaseDirectIngestControllerTests):
         return SchemaType.STATE
 
     def test_run_full_ingest_all_files_specific_order(self) -> None:
+        ######################################
+        # CLIENT
+        ######################################
         # Arrange
         person_1 = build_state_person_entity(
             state_code=_REGION_CODE_UPPER,
@@ -174,6 +187,88 @@ class TestUsMeController(BaseDirectIngestControllerTests):
         ]
         # Act
         self._run_ingest_job_for_filename("CLIENT")
+
+        # Assert
+        self.assert_expected_db_people(expected_people)
+
+        ######################################
+        # CURRENT_STATUS_incarceration_period
+        ######################################
+
+        incarceration_sentence = (
+            add_sentence_group_to_person_and_build_incarceration_sentence(
+                _REGION_CODE_UPPER, person_1
+            )
+        )
+
+        # Person 1 starts new period and is released to SCCP
+        add_incarceration_period_to_person(
+            person=person_1,
+            state_code=_REGION_CODE_UPPER,
+            incarceration_sentence=incarceration_sentence,
+            external_id="00000001-1",
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=datetime.date(year=2014, month=10, day=12),
+            release_date=datetime.date(year=2015, month=8, day=20),
+            facility="MAINE STATE PRISON",
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            admission_reason_raw_text="NULL@@INCARCERATED@@SENTENCE/DISPOSITION@@SOCIETY IN@@SENTENCE/DISPOSITION@@2",
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_TO_SUPERVISION,
+            release_reason_raw_text="INCARCERATED@@SCCP@@TRANSFER@@SENTENCE/DISPOSITION@@2@@4",
+            specialized_purpose_for_incarceration_raw_text="INCARCERATED@@SENTENCE/DISPOSITION@@2",
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            incarceration_type_raw_text="2",
+        )
+        # Person 1 re-enters from SCCP.
+        add_incarceration_period_to_person(
+            person=person_1,
+            state_code=_REGION_CODE_UPPER,
+            incarceration_sentence=incarceration_sentence,
+            external_id="00000001-2",
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=datetime.date(year=2015, month=9, day=20),
+            release_date=datetime.date(year=2016, month=4, day=1),
+            facility="MAINE CORRECTIONAL CENTER",
+            admission_reason=StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
+            admission_reason_raw_text="SCCP@@INCARCERATED@@TRANSFER@@DOC TRANSFER@@VIOLATION OF SCCP@@2",
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+            release_reason_raw_text="INCARCERATED@@INCARCERATED@@TRANSFER@@VIOLATION OF SCCP@@2@@2",
+            specialized_purpose_for_incarceration_raw_text="INCARCERATED@@VIOLATION OF SCCP@@2",
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            incarceration_type_raw_text="2",
+        )
+        # Person 1 transfers from different facility and next status is Escape
+        add_incarceration_period_to_person(
+            person=person_1,
+            state_code=_REGION_CODE_UPPER,
+            incarceration_sentence=incarceration_sentence,
+            external_id="00000001-3",
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=datetime.date(year=2016, month=9, day=20),
+            release_date=datetime.date(year=2017, month=12, day=1),
+            facility="MAINE STATE PRISON",
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            admission_reason_raw_text="INCARCERATED@@INCARCERATED@@TRANSFER@@DOC TRANSFER@@POPULATION DISTRIBUTION@@2",
+            release_reason=StateIncarcerationPeriodReleaseReason.ESCAPE,
+            release_reason_raw_text="INCARCERATED@@ESCAPE@@ESCAPE@@POPULATION DISTRIBUTION@@2@@2",
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            specialized_purpose_for_incarceration_raw_text="INCARCERATED@@POPULATION DISTRIBUTION@@2",
+            incarceration_type_raw_text="2",
+        )
+
+        expected_people = [
+            person_1,
+            person_2,
+            person_3,
+            person_4,
+            person_5,
+            person_6,
+            person_7,
+            person_8,
+        ]
+
+        # Act
+        self._run_ingest_job_for_filename("CURRENT_STATUS_incarceration_periods")
 
         # Assert
         self.assert_expected_db_people(expected_people)

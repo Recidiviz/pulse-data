@@ -1,0 +1,86 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_CURRENT_STATUS_incarceration_periods` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - client_id
+  - previous_status
+  - current_status
+  - next_status
+  - current_status_location
+  - location_type
+  - next_location_type
+  - start_date
+  - end_date
+  - previous_movement_type
+  - movement_type
+  - next_movement_type
+  - transfer_type
+  - transfer_reason
+  - incarceration_period_id
+unused_columns:
+  - previous_movement_type
+output:
+  # TODO(#9969): Populate additional fields: [county_code,housing_unit,custodial_authority]
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: client_id
+          id_type: $literal("US_ME_DOC")
+    sentence_groups:
+      - StateSentenceGroup:
+          incarceration_sentences:
+            - StateIncarcerationSentence:
+                incarceration_periods:
+                  - StateIncarcerationPeriod:
+                      external_id:
+                        $concat:
+                          $values:
+                            - client_id
+                            - incarceration_period_id
+                      admission_date: start_date
+                      release_date: end_date
+                      facility: current_status_location
+                      incarceration_type:
+                        $enum_mapping:
+                          $raw_text: location_type
+                          $custom_parser: us_me_custom_enum_parsers.parse_incarceration_type
+                      specialized_purpose_for_incarceration:
+                        $enum_mapping:
+                          $raw_text:
+                            $concat:
+                              $separator: "@@"
+                              $values:
+                                - current_status
+                                - transfer_reason
+                                - location_type
+                              $include_nulls: True
+                          $custom_parser: us_me_custom_enum_parsers.parse_specialized_purpose_for_incarceration
+                      admission_reason:
+                        $enum_mapping:
+                          $raw_text:
+                            $concat:
+                              $separator: "@@"
+                              $values:
+                                - previous_status
+                                - current_status
+                                - movement_type
+                                - transfer_type
+                                - transfer_reason
+                                - location_type
+                              $include_nulls: True
+                          $custom_parser: us_me_custom_enum_parsers.parse_admission_reason
+                      release_reason:
+                        $enum_mapping:
+                          $raw_text:
+                            $concat:
+                              $separator: "@@"
+                              $values:
+                                - current_status
+                                - next_status
+                                - next_movement_type
+                                - transfer_reason
+                                - location_type
+                                - next_location_type
+                              $include_nulls: True
+                          $custom_parser: us_me_custom_enum_parsers.parse_release_reason

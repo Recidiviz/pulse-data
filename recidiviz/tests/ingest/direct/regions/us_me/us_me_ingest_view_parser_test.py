@@ -17,15 +17,32 @@
 """Ingest view parser tests for US_ME direct ingest."""
 import unittest
 from datetime import date
+from typing import Optional
 
 from recidiviz.common.constants.person_characteristics import Ethnicity, Gender, Race
+from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateIncarcerationPeriodAdmissionReason,
+    StateIncarcerationPeriodReleaseReason,
+    StateIncarcerationPeriodStatus,
+    StateSpecializedPurposeForIncarceration,
+)
+from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.regions.us_me.us_me_custom_enum_parsers import (
+    DOC_FACILITY_LOCATION_TYPES,
+    parse_admission_reason,
+    parse_release_reason,
+)
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.entity.state.entities import (
+    StateIncarcerationPeriod,
+    StateIncarcerationSentence,
     StatePerson,
     StatePersonEthnicity,
     StatePersonExternalId,
     StatePersonRace,
+    StateSentenceGroup,
 )
 from recidiviz.tests.ingest.direct.regions.state_ingest_view_parser_test_base import (
     StateIngestViewParserTestBase,
@@ -275,3 +292,392 @@ class UsMeIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
             ),
         ]
         self._run_parse_ingest_view_test("CLIENT", expected_output)
+
+    def test_parse_CURRENT_STATUS_incarceration_periods(self) -> None:
+        expected_output = [
+            # # Person 1 is released to supervision
+            StatePerson(
+                state_code="US_ME",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_ME", external_id="00000001", id_type="US_ME_DOC"
+                    )
+                ],
+                sentence_groups=[
+                    StateSentenceGroup(
+                        state_code="US_ME",
+                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                        incarceration_sentences=[
+                            StateIncarcerationSentence(
+                                state_code="US_ME",
+                                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                                incarceration_periods=[
+                                    StateIncarcerationPeriod(
+                                        external_id="00000001-1",
+                                        state_code="US_ME",
+                                        status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                                        status_raw_text=None,
+                                        incarceration_type=StateIncarcerationType.STATE_PRISON,
+                                        incarceration_type_raw_text="2",
+                                        specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+                                        specialized_purpose_for_incarceration_raw_text="INCARCERATED@@SENTENCE/DISPOSITION@@2",
+                                        admission_date=date(2014, 10, 12),
+                                        release_date=date(2015, 8, 20),
+                                        county_code=None,
+                                        facility="MAINE STATE PRISON",
+                                        admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+                                        admission_reason_raw_text="NULL@@INCARCERATED@@SENTENCE/DISPOSITION@@SOCIETY IN@@SENTENCE/DISPOSITION@@2",
+                                        release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_TO_SUPERVISION,
+                                        release_reason_raw_text="INCARCERATED@@SCCP@@TRANSFER@@SENTENCE/DISPOSITION@@2@@4",
+                                    )
+                                ],
+                            )
+                        ],
+                    )
+                ],
+            ),
+            # Person 1 returns from supervision and transfers out to different facility
+            StatePerson(
+                state_code="US_ME",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_ME", external_id="00000001", id_type="US_ME_DOC"
+                    )
+                ],
+                sentence_groups=[
+                    StateSentenceGroup(
+                        state_code="US_ME",
+                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                        incarceration_sentences=[
+                            StateIncarcerationSentence(
+                                state_code="US_ME",
+                                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                                incarceration_periods=[
+                                    StateIncarcerationPeriod(
+                                        external_id="00000001-2",
+                                        state_code="US_ME",
+                                        status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                                        status_raw_text=None,
+                                        incarceration_type=StateIncarcerationType.STATE_PRISON,
+                                        specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+                                        specialized_purpose_for_incarceration_raw_text="INCARCERATED@@VIOLATION OF SCCP@@2",
+                                        incarceration_type_raw_text="2",
+                                        admission_date=date(2015, 9, 20),
+                                        release_date=date(2016, 4, 1),
+                                        county_code=None,
+                                        facility="MAINE CORRECTIONAL CENTER",
+                                        admission_reason=StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
+                                        admission_reason_raw_text="SCCP@@INCARCERATED@@TRANSFER@@DOC TRANSFER@@VIOLATION OF SCCP@@2",
+                                        release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+                                        release_reason_raw_text="INCARCERATED@@INCARCERATED@@TRANSFER@@VIOLATION OF SCCP@@2@@2",
+                                    )
+                                ],
+                            )
+                        ],
+                    )
+                ],
+            ),
+            # Person 1 release reason is Escape
+            StatePerson(
+                state_code="US_ME",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_ME", external_id="00000001", id_type="US_ME_DOC"
+                    )
+                ],
+                sentence_groups=[
+                    StateSentenceGroup(
+                        state_code="US_ME",
+                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                        incarceration_sentences=[
+                            StateIncarcerationSentence(
+                                state_code="US_ME",
+                                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                                incarceration_periods=[
+                                    StateIncarcerationPeriod(
+                                        external_id="00000001-3",
+                                        state_code="US_ME",
+                                        status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                                        status_raw_text=None,
+                                        incarceration_type=StateIncarcerationType.STATE_PRISON,
+                                        specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+                                        specialized_purpose_for_incarceration_raw_text="INCARCERATED@@POPULATION DISTRIBUTION@@2",
+                                        incarceration_type_raw_text="2",
+                                        admission_date=date(2016, 9, 20),
+                                        release_date=date(2017, 12, 1),
+                                        county_code=None,
+                                        facility="MAINE STATE PRISON",
+                                        admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+                                        admission_reason_raw_text="INCARCERATED@@INCARCERATED@@TRANSFER@@DOC TRANSFER@@POPULATION DISTRIBUTION@@2",
+                                        release_reason=StateIncarcerationPeriodReleaseReason.ESCAPE,
+                                        release_reason_raw_text="INCARCERATED@@ESCAPE@@ESCAPE@@POPULATION DISTRIBUTION@@2@@2",
+                                    )
+                                ],
+                            )
+                        ],
+                    )
+                ],
+            ),
+        ]
+        self._run_parse_ingest_view_test(
+            "CURRENT_STATUS_incarceration_periods", expected_output
+        )
+
+    ######################################
+    # Release Reasons Custom Parser
+    ######################################
+    @staticmethod
+    def _build_release_reason_raw_text(
+        current_status: Optional[str] = "NULL",
+        next_status: Optional[str] = "NULL",
+        next_movement_type: Optional[str] = "NULL",
+        transfer_reason: Optional[str] = "NULL",
+        location_type: Optional[str] = "NULL",
+        next_location_type: Optional[str] = "NULL",
+    ) -> str:
+        return (
+            f"{current_status}@@{next_status}@@{next_movement_type}"
+            f"@@{transfer_reason}@@{location_type}@@{next_location_type}"
+        )
+
+    def test_parse_release_reason_sentence_served(self) -> None:
+        # Next movement type is Discharge
+        release_reason_raw_text = self._build_release_reason_raw_text(
+            next_movement_type="Discharge"
+        )
+        self.assertEqual(
+            parse_release_reason(release_reason_raw_text),
+            StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+        )
+
+    def test_parse_release_reason_escape(self) -> None:
+        # Next status is Escape
+        release_reason_raw_text = self._build_release_reason_raw_text(
+            next_status="Escape"
+        )
+        self.assertEqual(
+            parse_release_reason(release_reason_raw_text),
+            StateIncarcerationPeriodReleaseReason.ESCAPE,
+        )
+
+        # Next movement type is Escape
+        release_reason_raw_text = self._build_release_reason_raw_text(
+            next_movement_type="Escape"
+        )
+        self.assertEqual(
+            parse_release_reason(release_reason_raw_text),
+            StateIncarcerationPeriodReleaseReason.ESCAPE,
+        )
+
+    def test_parse_release_reason_temporary_custody(self) -> None:
+        # Current status is County Jail and location type is a DOC Facility
+        for location_type in DOC_FACILITY_LOCATION_TYPES:
+            release_reason_raw_text = self._build_release_reason_raw_text(
+                current_status="County Jail", location_type=location_type
+            )
+            self.assertEqual(
+                parse_release_reason(release_reason_raw_text),
+                StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+            )
+
+        # Current status is County Jail and location type is not a DOC Facility
+        release_reason_raw_text = self._build_release_reason_raw_text(
+            current_status="County Jail", location_type="9"
+        )
+        self.assertEqual(
+            parse_release_reason(release_reason_raw_text),
+            StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN,
+        )
+
+        # Transfer reason is temporary custody
+        release_reason_raw_text = self._build_release_reason_raw_text(
+            transfer_reason="Safe Keepers",
+        )
+        self.assertEqual(
+            parse_release_reason(release_reason_raw_text),
+            StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+        )
+
+    def test_parse_release_reason_transfer_jurisdiction(self) -> None:
+        # Next status is incarceration and next location is not a DOC Facility
+        release_reason_raw_text = self._build_release_reason_raw_text(
+            next_status="County Jail", location_type="9"
+        )
+        self.assertEqual(
+            parse_release_reason(release_reason_raw_text),
+            StateIncarcerationPeriodReleaseReason.TRANSFER_TO_OTHER_JURISDICTION,
+        )
+
+    def test_parse_release_reason_temporary_release(self) -> None:
+        # Next movement type is Furlough or Furlough Hospital
+        for next_movement_type in ["Furlough", "Furlough Hospital"]:
+            release_reason_raw_text = self._build_release_reason_raw_text(
+                next_movement_type=next_movement_type
+            )
+            self.assertEqual(
+                parse_release_reason(release_reason_raw_text),
+                StateIncarcerationPeriodReleaseReason.TEMPORARY_RELEASE,
+            )
+
+    def test_parse_release_reason_transfer(self) -> None:
+        # Next movement type is Transfer
+        release_reason_raw_text = self._build_release_reason_raw_text(
+            next_movement_type="Transfer"
+        )
+        self.assertEqual(
+            parse_release_reason(release_reason_raw_text),
+            StateIncarcerationPeriodReleaseReason.TRANSFER,
+        )
+
+    ######################################
+    # Admission Reasons Custom Parser
+    ######################################
+    @staticmethod
+    def _build_admission_reason_raw_text(
+        previous_status: Optional[str] = "NULL",
+        current_status: Optional[str] = "NULL",
+        movement_type: Optional[str] = "NULL",
+        transfer_type: Optional[str] = "NULL",
+        transfer_reason: Optional[str] = "NULL",
+        location_type: Optional[str] = "NULL",
+    ) -> str:
+        return (
+            f"{previous_status}@@{current_status}@@{movement_type}@@{transfer_type}"
+            f"@@{transfer_reason}@@{location_type}"
+        )
+
+    def test_parse_admission_reason_new_admission(self) -> None:
+        # Transfer reason is Sentence/Disposition
+        admission_reason_raw_text = self._build_admission_reason_raw_text(
+            transfer_reason="Sentence/Disposition"
+        )
+        self.assertEqual(
+            parse_admission_reason(admission_reason_raw_text),
+            StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+        )
+
+    def test_parse_admission_reason_admitted_from_supervision(self) -> None:
+        # Transfer reason is Sentence/Disposition
+        admission_reason_raw_text = self._build_admission_reason_raw_text(
+            transfer_reason="Sentence/Disposition", previous_status="Probation"
+        )
+        self.assertEqual(
+            parse_admission_reason(admission_reason_raw_text),
+            StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
+        )
+
+        # Next status is supervision
+        admission_reason_raw_text = self._build_admission_reason_raw_text(
+            transfer_reason="DOC Transfer", previous_status="Probation"
+        )
+        self.assertEqual(
+            parse_admission_reason(admission_reason_raw_text),
+            StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
+        )
+
+    def test_parse_admission_reason_temporary_custody(self) -> None:
+        # Current status is County Jail and location type is a DOC Facility
+        for location_type in DOC_FACILITY_LOCATION_TYPES:
+            admission_reason_raw_text = self._build_admission_reason_raw_text(
+                current_status="County Jail", location_type=location_type
+            )
+            self.assertEqual(
+                parse_admission_reason(admission_reason_raw_text),
+                StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            )
+
+        # Transfer reason is temporary custody
+        admission_reason_raw_text = self._build_admission_reason_raw_text(
+            transfer_reason="Safe Keepers",
+        )
+        self.assertEqual(
+            parse_admission_reason(admission_reason_raw_text),
+            StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+        )
+
+    def test_parse_admission_reason_transfer_jurisdiction(self) -> None:
+        # Transfer type is out of other jurisdiction transfer type
+        admission_reason_raw_text = self._build_admission_reason_raw_text(
+            transfer_type="Non-DOC In"
+        )
+        self.assertEqual(
+            parse_admission_reason(admission_reason_raw_text),
+            StateIncarcerationPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION,
+        )
+
+        # Transfer reason is Other Jurisdiction
+        admission_reason_raw_text = self._build_admission_reason_raw_text(
+            transfer_reason="Other Jurisdiction"
+        )
+        self.assertEqual(
+            parse_admission_reason(admission_reason_raw_text),
+            StateIncarcerationPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION,
+        )
+
+    def test_parse_admission_reason_temporary_release(self) -> None:
+        # Movement type is Furlough or Furlough Hospital
+        for movement_type in ["Furlough", "Furlough Hospital"]:
+            admission_reason_raw_text = self._build_admission_reason_raw_text(
+                movement_type=movement_type
+            )
+            self.assertEqual(
+                parse_admission_reason(admission_reason_raw_text),
+                StateIncarcerationPeriodAdmissionReason.RETURN_FROM_TEMPORARY_RELEASE,
+            )
+
+    def test_parse_admission_reason_escape(self) -> None:
+        # Previous status or movement type is Escape
+        admission_reason_raw_text = self._build_admission_reason_raw_text(
+            movement_type="Escape"
+        )
+        self.assertEqual(
+            parse_admission_reason(admission_reason_raw_text),
+            StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE,
+        )
+
+        admission_reason_raw_text = self._build_admission_reason_raw_text(
+            previous_status="Escape"
+        )
+        self.assertEqual(
+            parse_admission_reason(admission_reason_raw_text),
+            StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE,
+        )
+
+    def test_parse_admission_reason_probation_revocation(self) -> None:
+        admission_reason_raw_text = self._build_admission_reason_raw_text(
+            transfer_reason="Violation of Probation"
+        )
+        self.assertEqual(
+            parse_admission_reason(admission_reason_raw_text),
+            StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+        )
+
+        admission_reason_raw_text = self._build_admission_reason_raw_text(
+            current_status="Partial Revocation - incarcerated"
+        )
+        self.assertEqual(
+            parse_admission_reason(admission_reason_raw_text),
+            StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+        )
+
+    def test_parse_admission_reason_parole_revocation(self) -> None:
+        admission_reason_raw_text = self._build_admission_reason_raw_text(
+            transfer_reason="Violation of Parole"
+        )
+        self.assertEqual(
+            parse_admission_reason(admission_reason_raw_text),
+            StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+        )
+
+    def test_parse_admission_reason_transfer(self) -> None:
+        # Next movement type is Transfer
+        admission_reason_raw_text = self._build_admission_reason_raw_text(
+            movement_type="Transfer"
+        )
+        self.assertEqual(
+            parse_admission_reason(admission_reason_raw_text),
+            StateIncarcerationPeriodAdmissionReason.TRANSFER,
+        )

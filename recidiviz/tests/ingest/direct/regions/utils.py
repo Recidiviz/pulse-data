@@ -23,12 +23,15 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
     StateIncarcerationPeriodStatus,
+    StateSpecializedPurposeForIncarceration,
 )
+from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
     get_all_entities_from_tree,
 )
 from recidiviz.persistence.entity.state import entities
+from recidiviz.persistence.entity.state.entities import StateIncarcerationSentence
 
 
 def populate_person_backedges(persons: List[entities.StatePerson]) -> None:
@@ -88,6 +91,29 @@ def build_state_person_entity(
         )
 
     return state_person
+
+
+def add_sentence_group_to_person_and_build_incarceration_sentence(
+    state_code: str, person: entities.StatePerson
+) -> StateIncarcerationSentence:
+    """Append sentence group to person and return incarceration_sentence"""
+    sentence_group = entities.StateSentenceGroup.new_with_defaults(
+        state_code=state_code,
+        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+        person=person,
+    )
+
+    incarceration_sentence = entities.StateIncarcerationSentence.new_with_defaults(
+        state_code=state_code,
+        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+        incarceration_type=StateIncarcerationType.STATE_PRISON,
+        person=person,
+        sentence_group=sentence_group,
+    )
+    sentence_group.incarceration_sentences.append(incarceration_sentence)
+
+    person.sentence_groups.append(sentence_group)
+    return incarceration_sentence
 
 
 def add_race_to_person(
@@ -152,6 +178,11 @@ def add_incarceration_period_to_person(
     admission_reason_raw_text: str,
     release_reason: Optional[StateIncarcerationPeriodReleaseReason],
     release_reason_raw_text: str,
+    specialized_purpose_for_incarceration: Optional[
+        StateSpecializedPurposeForIncarceration
+    ] = None,
+    incarceration_type_raw_text: Optional[str] = None,
+    specialized_purpose_for_incarceration_raw_text: Optional[str] = None,
 ) -> None:
     """Append an incarceration period to the person (updates the person entity in place)."""
 
@@ -170,6 +201,9 @@ def add_incarceration_period_to_person(
         release_reason_raw_text=release_reason_raw_text,
         person=person,
         incarceration_sentences=[incarceration_sentence],
+        incarceration_type_raw_text=incarceration_type_raw_text,
+        specialized_purpose_for_incarceration=specialized_purpose_for_incarceration,
+        specialized_purpose_for_incarceration_raw_text=specialized_purpose_for_incarceration_raw_text,
     )
 
     incarceration_sentence.incarceration_periods.append(incarceration_period)
