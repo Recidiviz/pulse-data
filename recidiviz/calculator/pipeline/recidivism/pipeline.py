@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2019 Recidiviz, Inc.
+# Copyright (C) 2021 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -29,6 +29,8 @@ from apache_beam.typehints import with_input_types, with_output_types
 from more_itertools import one
 
 from recidiviz.calculator.pipeline.base_pipeline import (
+    HYDRATED_ENTITIES_KEY,
+    AugmentHydratedEntitiesWithSideInputs,
     BasePipeline,
     ClassifyEvents,
     GetMetrics,
@@ -41,7 +43,9 @@ from recidiviz.calculator.pipeline.utils.beam_utils import (
     ImportTable,
     ImportTableAsKVTuples,
 )
-from recidiviz.calculator.pipeline.utils.extractor_utils import BuildRootEntity
+from recidiviz.calculator.pipeline.utils.extractor_utils import (
+    ExtractEntitiesForPipeline,
+)
 from recidiviz.calculator.pipeline.utils.person_utils import (
     BuildPersonMetadata,
     PersonMetadata,
@@ -90,6 +94,14 @@ class RecidivismPipeline(BasePipeline):
             pipeline_type=PipelineType.RECIDIVISM,
             identifier=identifier.RecidivismIdentifier(),
             metric_producer=metric_producer.RecidivismMetricProducer(),
+            required_entities=[
+                entities.StatePerson,
+                entities.StatePersonRace,
+                entities.StatePersonEthnicity,
+                entities.StateIncarcerationPeriod,
+                entities.StateSupervisionPeriod,
+                entities.StatePersonExternalId,
+            ],
         )
         self.include_calculation_limit_args = False
 
@@ -106,38 +118,21 @@ class RecidivismPipeline(BasePipeline):
         calculation_month_count: int = -1,
         calculation_end_month: Optional[str] = None,
     ) -> beam.Pipeline:
-        # TODO(#2769): Migrate the recidivism pipeline to v2 entity hydration
-        persons = pipeline | "Load Persons" >> BuildRootEntity(
-            dataset=input_dataset,
-            root_entity_class=entities.StatePerson,
-            unifying_id_field=entities.StatePerson.get_class_id_name(),
-            build_related_entities=True,
-            unifying_id_field_filter_set=person_id_filter_set,
-            state_code=state_code,
-        )
+        # TODO(#2769): Remove this once required_entities is non-optional
+        if not self.pipeline_config.required_entities:
+            raise ValueError("Must set required_entities arg on PipelineConfig.")
 
-        # Get StateIncarcerationPeriods
-        incarceration_periods = (
+        # Get all required entities
+        hydrated_required_entities = (
             pipeline
-            | "Load IncarcerationPeriods"
-            >> BuildRootEntity(
-                dataset=input_dataset,
-                root_entity_class=entities.StateIncarcerationPeriod,
-                unifying_id_field=entities.StatePerson.get_class_id_name(),
-                build_related_entities=False,
-                unifying_id_field_filter_set=person_id_filter_set,
+            | "Load required entities"
+            >> ExtractEntitiesForPipeline(
                 state_code=state_code,
+                dataset=input_dataset,
+                required_entity_classes=self.pipeline_config.required_entities,
+                unifying_class=entities.StatePerson,
+                unifying_id_field_filter_set=person_id_filter_set,
             )
-        )
-
-        # Get StateSupervisionPeriods
-        supervision_periods = pipeline | "Load SupervisionPeriods" >> BuildRootEntity(
-            dataset=input_dataset,
-            root_entity_class=entities.StateSupervisionPeriod,
-            unifying_id_field=entities.StatePerson.get_class_id_name(),
-            build_related_entities=False,
-            unifying_id_field_filter_set=person_id_filter_set,
-            state_code=state_code,
         )
 
         # Bring in the table that associates people and their county of residence
@@ -153,13 +148,16 @@ class RecidivismPipeline(BasePipeline):
             )
         )
 
-        # Group each StatePerson with their StateIncarcerationPeriods
-        person_entities = {
-            "persons": persons,
-            "incarceration_periods": incarceration_periods,
-            "supervision_periods": supervision_periods,
-            "persons_to_recent_county_of_residence": person_id_to_county_kv,
-        } | "Group StatePerson to StateIncarcerationPeriods" >> beam.CoGroupByKey()
+        persons_entities = (
+            {
+                HYDRATED_ENTITIES_KEY: hydrated_required_entities,
+                PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME: person_id_to_county_kv,
+            }
+            | "Group hydrated entities to person-specific side inputs"
+            >> beam.CoGroupByKey()
+            | "Augment hydrated entities dict with person-level side input information"
+            >> beam.ParDo(AugmentHydratedEntitiesWithSideInputs())
+        )
 
         state_race_ethnicity_population_counts = (
             pipeline
@@ -173,12 +171,14 @@ class RecidivismPipeline(BasePipeline):
         )
 
         # Identify ReleaseEvents events from the StatePerson's StateIncarcerationPeriods
-        person_release_events = person_entities | "ClassifyReleaseEvents" >> beam.ParDo(
-            ClassifyEvents(), identifier=self.pipeline_config.identifier
+        person_release_events = (
+            persons_entities
+            | "ClassifyReleaseEvents"
+            >> beam.ParDo(ClassifyEvents(), identifier=self.pipeline_config.identifier)
         )
 
         person_metadata = (
-            person_entities
+            hydrated_required_entities
             | "Build the person_metadata dictionary"
             >> beam.ParDo(
                 BuildPersonMetadata(),
