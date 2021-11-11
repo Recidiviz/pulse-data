@@ -46,3 +46,9 @@ repos:
         files: ^recidiviz/calculator/|^recidiviz/metrics/|^recidiviz/.*/views/|^recidiviz/big_query/
         exclude: ^recidiviz/tests/|^recidiviz/calculator/modeling/
         require_serial: true
+      - id: generate_ingest_mappings_schema_documentation
+        name: generate_ingest_mappings_schema_documentation
+        entry: pipenv run python -m recidiviz.tools.docs.ingest_mappings_schema_documentation_generator
+        language: system
+        files: ^recidiviz/ingest/direct/ingest_mappings/yaml_schema/|^docs/engineering/ingest_mapping_schema/
+        require_serial: true

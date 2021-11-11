@@ -27,6 +27,8 @@ def persist_file_contents(documentation: str, markdown_path: str) -> bool:
             prior_documentation = md_file.read()
 
     if prior_documentation != documentation:
+        path_dir, _ = os.path.split(markdown_path)
+        os.makedirs(path_dir, exist_ok=True)
         with open(markdown_path, "w", encoding="utf-8") as md_file:
             md_file.write(documentation)
             return True
