@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "title": "String literal",
+  "description": "Expression that evaluates to the same string value for every input CSV row, regardless of the CSV's contents.",
+  "type": "string",
+  "pattern": "^\\$literal\\(\\\"(.+)\\\"\\)$",
+  "examples": [
+    "$literal(\"US_XX_ID_TYPE\")"
+  ],
+  "#contextualized_examples": [
+    {
+      "$equal": [
+        "drug_related",
+        "$literal(\"Y\")"
+      ]
+    },
+    {
+      "StatePersonExternalId": {
+        "external_id": "DOC_NUM",
+        "id_type": "$literal(\"US_XX_ID_TYPE\")"
+      }
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "title": "List column reference",
+  "description": "A reference to a column in the input CSV which contains a delimiter-separated list. Can be used in the context of a `$foreach` expression to generate a list of string values.",
+  "type": "string",
+  "pattern": "^[^$]",
+  "examples": [
+    "MY_IDS_LIST_COL"
+  ],
+  "#contextualized_examples": [
+    {
+      "StatePerson": {
+        "external_ids": [
+          {
+            "$foreach": {
+              "$iterable": "MY_IDS_LIST_COL",
+              "$result": {
+                "StatePersonExternalId": {
+                  "external_id": "$iter_item",
+                  "id_type": "$literal(\"US_XX_CONTROL\")"
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

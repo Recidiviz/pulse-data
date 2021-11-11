@@ -1,0 +1,20 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "title": "Enum literal",
+  "description": "Expression that evaluates to the same enum value for every input CSV row, regardless of the CSV's contents. Can only be used for enum fields. When this expression is used, the *_raw_text field for the enum will not be hydrated (e.g. `agent_type` is set to `StateAgentType.SUPERVISION_OFFICER` while the `agent_type_raw_text` field remains `None`).",
+  "type": "string",
+  "pattern": "^\\$literal_enum\\(([^.]+)\\.([^.]+)\\)$",
+  "examples": [
+    "$literal_enum(StateAgentType.SUPERVISION_OFFICER)"
+  ],
+  "#contextualized_examples": [
+    {
+      "StateSupervisionViolationResponse": {
+        "external_id": "BOARD_ACTION_ID",
+        "response_type": "$literal_enum(StateSupervisionViolationResponseType.PERMANENT_DECISION)",
+        "deciding_body_type": "$literal_enum(StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD)",
+        "response_date": "BOARD_ACTION_DATE"
+      }
+    }
+  ]
+}

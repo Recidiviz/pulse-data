@@ -1965,7 +1965,7 @@ class IngestViewFileParserTest(unittest.TestCase):
     def test_input_cols_do_not_start_with_dollar_sign(self) -> None:
         with self.assertRaisesRegex(
             jsonschema.exceptions.ValidationError,
-            r"'\$DOB' does not match",
+            r"'\$DOB' is not of type",
         ):
             _ = self._run_parse_manifest_for_tag("column_starts_with_dollar_sign")
 

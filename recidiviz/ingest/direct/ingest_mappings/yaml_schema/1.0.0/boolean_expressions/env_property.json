@@ -1,0 +1,38 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "description": "Expression that returns a boolean value of an environment property. Will evaluate to the same value for every input CSV row, regardless of the CSV's contents. This can be used to gate new ingest mappings logic that we want to test in a staging environment first before shipping it to production.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "$env": {
+      "type": "string"
+    }
+  },
+  "required": ["$env"],
+  "examples": [
+    {
+      "$env": "is_production"
+    },
+    {
+      "$env": "is_primary_instance"
+    },
+    {
+      "$env": "is_secondary_instance"
+    }
+  ],
+  "#contextualized_examples": [
+    {
+      "$conditional": [
+        {
+          "$if": {
+            "$env": "is_secondary_instance"
+          },
+          "$then": "$literal(\"NEW VALUE\")"
+        },
+        {
+          "$else": "$literal(\"OLD DEPRECATED VALUE\")"
+        }
+      ]
+    }
+  ]
+}

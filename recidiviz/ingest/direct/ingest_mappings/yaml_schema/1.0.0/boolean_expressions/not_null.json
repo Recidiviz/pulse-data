@@ -1,0 +1,45 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "description": "An expression that returns true if the evaluated string expression is not null.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "$not_null": {
+      "$ref": "../string_expressions/index.json"
+    }
+  },
+  "required": ["$not_null"],
+  "examples": [
+    {
+      "$not_null": "TERM_DATE"
+    },
+    {
+      "$not_null": "sparsely_populated_column"
+    }
+  ],
+  "#contextualized_examples": [
+    {
+      "$and": [
+        {
+          "$is_null": "TERM_DATE"
+        },
+        {
+          "$not_null": "recent_officer_id"
+        }
+      ]
+    },
+    {
+      "$conditional": [
+        {
+          "$if": {
+            "$not_null": "DOB"
+          },
+          "$then": "DOB"
+        },
+        {
+          "$else": "$literal(\"19700101\")"
+        }
+      ]
+    }
+  ]
+}

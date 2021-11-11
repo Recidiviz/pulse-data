@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "description": "YAML expressions that can be used to generate a boolean value.",
+  "oneOf": [
+    {
+      "$ref": "and.json"
+    },
+    {
+      "$ref": "../generic_expressions/conditional.json"
+    },
+    {
+      "$ref": "env_property.json"
+    },
+    {
+      "$ref": "equal.json"
+    },
+    {
+      "$ref": "in.json"
+    },
+    {
+      "$ref": "is_null.json"
+    },
+    {
+      "$ref": "not_in.json"
+    },
+    {
+      "$ref": "not_null.json"
+    },
+    {
+      "$ref": "or.json"
+    },
+    {
+      "$ref": "../generic_expressions/custom_function.json"
+    }
+  ]
+}

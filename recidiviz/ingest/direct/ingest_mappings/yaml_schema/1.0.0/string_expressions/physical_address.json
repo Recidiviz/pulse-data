@@ -1,0 +1,62 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "description": "An expression that builds a physical address string from parts. Example result: \"123 Main St, Apt 100, Everytown, CA 12345\"",
+  "type": "object",
+  "required": ["$physical_address"],
+  "additionalProperties": false,
+  "properties": {
+    "$physical_address": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["$address_1", "$city", "$state", "$zip"],
+      "properties": {
+        "$address_1": {
+          "description": "The first line of the address.",
+          "$ref": "index.json"
+        },
+        "$address_2": {
+          "description": "The second line of the address.",
+          "$ref": "index.json"
+        },
+        "$city": {
+          "description": "The city name of the address.",
+          "$ref": "index.json"
+        },
+        "$state": {
+          "description": "A two-letter US state code.",
+          "$ref": "index.json"
+        },
+        "$zip": {
+          "description": "The zip code of the address.",
+          "$ref": "index.json"
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "$physical_address": {
+        "$address_1": "legal_address_1",
+        "$address_2": "legal_address_2",
+        "$city": "legal_city",
+        "$state": "legal_state",
+        "$zip": "legal_zip_code"
+      }
+    }
+  ],
+  "#contextualized_examples": [
+    {
+      "StatePerson": {
+        "current_address": {
+          "$physical_address": {
+            "$address_1": "legal_address_1",
+            "$address_2": "legal_address_2",
+            "$city": "legal_city",
+            "$state": "legal_state",
+            "$zip": "legal_zip_code"
+          }
+        }
+      }
+    }
+  ]
+}

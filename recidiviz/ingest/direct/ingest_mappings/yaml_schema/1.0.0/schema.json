@@ -19,7 +19,7 @@
       }
     },
     "unused_columns": {
-      "description": "The columns that appear in the input file but are not used to populate the entity tree. This should be a subset of `input_columns`.",
+      "description": "The columns that appear in the input file but are not used to populate the entity tree. This should be a subset of `input_columns`. This field exists only for backwards compatibility with old ingest views that select more columns than we actually need. It should generally be empty for new ingest view mappings files.",
       "type": "array",
       "items": {
         "type": "string"
@@ -28,9 +28,41 @@
     },
     "output": {
       "description": "The entity tree to generate for each row in the input file.",
-      "type": "object",
-      "$ref": "entity_nodes/entity_tree.json#/definitions/manifest"
+      "$ref": "entity_expressions/entity_tree.json"
     }
   },
-  "required": ["manifest_language", "input_columns", "unused_columns", "output"]
+  "required": ["manifest_language", "input_columns", "unused_columns", "output"],
+  "examples": [
+    {
+      "manifest_language": "1.0.0",
+      "input_columns": [
+        "DOC_NUM",
+        "FIRST",
+        "LAST",
+        "DOB"
+      ],
+      "unused_columns": [
+        "SSN"
+      ],
+      "output": {
+        "StatePerson": {
+          "dob": "DOB",
+          "external_ids": [
+            {
+              "StatePersonExternalId": {
+                "external_id": "DOC_NUM",
+                "id_type": "$literal(\"US_XX_DOC\")"
+              }
+            }
+          ],
+          "full_name": {
+            "$person_name": {
+              "$given_names": "FIRST",
+              "$surname": "LAST"
+            }
+          }
+        }
+      }
+    }
+  ]
 }
