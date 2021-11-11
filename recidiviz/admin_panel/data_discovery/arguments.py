@@ -28,7 +28,7 @@ from recidiviz.admin_panel.data_discovery.utils import get_data_discovery_cache
 from recidiviz.cloud_memorystore.redis_communicator import RedisCommunicator
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
 from recidiviz.common.ingest_metadata import SystemLevel
-from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
+from recidiviz.ingest.direct.types.direct_ingest_instance import (
     DirectIngestInstance,
 )
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (

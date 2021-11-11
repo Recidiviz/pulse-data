@@ -41,16 +41,12 @@ from recidiviz.ingest.direct.controllers.direct_ingest_controller_factory import
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
 )
-from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
-    DirectIngestInstance,
-)
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_data_table_latest_view_updater import (
     DirectIngestRawDataTableLatestViewUpdater,
 )
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_update_cloud_task_manager import (
     DirectIngestRawUpdateCloudTaskManager,
 )
-from recidiviz.ingest.direct.controllers.direct_ingest_types import CloudTaskArgs
 from recidiviz.ingest.direct.controllers.download_files_from_sftp import (
     DownloadFilesFromSftpController,
 )
@@ -73,6 +69,8 @@ from recidiviz.ingest.direct.errors import (
     DirectIngestErrorType,
     DirectIngestInstanceError,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.types.direct_ingest_types import CloudTaskArgs
 from recidiviz.utils import metadata, monitoring, regions
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.monitoring import TagKey

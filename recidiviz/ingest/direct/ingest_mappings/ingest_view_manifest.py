@@ -52,10 +52,10 @@ from recidiviz.common.constants.strict_enum_parser import (
     LiteralEnumParser,
     StrictEnumParser,
 )
-from recidiviz.ingest.direct.controllers.custom_function_registry import (
+from recidiviz.ingest.direct.ingest_mappings.custom_function_registry import (
     CustomFunctionRegistry,
 )
-from recidiviz.ingest.direct.controllers.ingest_view_file_parser_delegate import (
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_file_parser_delegate import (
     IngestViewFileParserDelegate,
 )
 from recidiviz.persistence.entity.base_entity import Entity, EnumEntity

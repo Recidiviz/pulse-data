@@ -17,7 +17,7 @@
 """Helpers for server setup."""
 from typing import List
 
-from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
+from recidiviz.ingest.direct.types.direct_ingest_instance import (
     DirectIngestInstance,
 )
 from recidiviz.ingest.direct.direct_ingest_region_utils import (

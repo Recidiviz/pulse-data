@@ -31,6 +31,15 @@ from more_itertools import one
 
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.big_query.big_query_utils import normalize_column_name_for_bq
+from recidiviz.cloud_storage.gcsfs_csv_reader import (
+    COMMON_RAW_FILE_ENCODINGS,
+    UTF_8_ENCODING,
+    GcsfsCsvReader,
+)
+from recidiviz.cloud_storage.gcsfs_csv_reader_delegates import (
+    ReadOneGcsfsCsvReaderDelegate,
+    SplittingGcsfsCsvReaderDelegate,
+)
 from recidiviz.cloud_storage.gcsfs_path import (
     GcsfsBucketPath,
     GcsfsDirectoryPath,
@@ -38,28 +47,19 @@ from recidiviz.cloud_storage.gcsfs_path import (
 )
 from recidiviz.common import attr_validators
 from recidiviz.ingest.direct import regions
-from recidiviz.ingest.direct.controllers.direct_ingest_constants import (
-    FILE_ID_COL_NAME,
-    UPDATE_DATETIME_COL_NAME,
-)
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
 )
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_table_migration_collector import (
     DirectIngestRawTableMigrationCollector,
 )
-from recidiviz.ingest.direct.controllers.gcsfs_csv_reader import (
-    COMMON_RAW_FILE_ENCODINGS,
-    UTF_8_ENCODING,
-    GcsfsCsvReader,
-)
-from recidiviz.ingest.direct.controllers.gcsfs_csv_reader_delegates import (
-    ReadOneGcsfsCsvReaderDelegate,
-    SplittingGcsfsCsvReaderDelegate,
-)
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsDirectIngestFileType,
     filename_parts_from_path,
+)
+from recidiviz.ingest.direct.types.direct_ingest_constants import (
+    FILE_ID_COL_NAME,
+    UPDATE_DATETIME_COL_NAME,
 )
 from recidiviz.persistence.entity.operations.entities import DirectIngestRawFileMetadata
 from recidiviz.utils.regions import Region

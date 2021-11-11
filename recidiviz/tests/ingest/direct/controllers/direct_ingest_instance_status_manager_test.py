@@ -20,7 +20,7 @@ from unittest.case import TestCase
 
 import pytest
 
-from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
+from recidiviz.ingest.direct.types.direct_ingest_instance import (
     DirectIngestInstance,
 )
 from recidiviz.ingest.direct.controllers.direct_ingest_instance_status_manager import (

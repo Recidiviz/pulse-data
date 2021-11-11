@@ -24,10 +24,8 @@ import pandas
 import pandas as pd
 import redis
 
+from recidiviz.cloud_storage.gcsfs_csv_reader import GcsfsCsvReaderDelegate
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.ingest.direct.controllers.gcsfs_csv_reader import (
-    GcsfsCsvReaderDelegate,
-)
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     filename_parts_from_path,
 )

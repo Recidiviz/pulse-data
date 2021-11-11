@@ -24,7 +24,7 @@ import pandas as pd
 
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.ingest.direct.controllers.read_only_csv_normalizing_stream import (
+from recidiviz.cloud_storage.read_only_csv_normalizing_stream import (
     ReadOnlyCsvNormalizingStream,
 )
 

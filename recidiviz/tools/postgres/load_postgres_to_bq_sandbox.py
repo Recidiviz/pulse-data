@@ -39,7 +39,7 @@ import sys
 from typing import List, Optional, Tuple
 from unittest import mock
 
-from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
+from recidiviz.ingest.direct.types.direct_ingest_instance import (
     DirectIngestInstance,
 )
 from recidiviz.persistence.database.bq_refresh import cloud_sql_to_bq_refresh_config

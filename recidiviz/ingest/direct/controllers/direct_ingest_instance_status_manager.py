@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """A class that manages reading and updating DirectIngestInstanceStatuses."""
-from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
+from recidiviz.ingest.direct.types.direct_ingest_instance import (
     DirectIngestInstance,
 )
 from recidiviz.persistence.database.schema.operations.schema import (

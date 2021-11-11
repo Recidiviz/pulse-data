@@ -32,7 +32,7 @@ from recidiviz.big_query.view_update_manager import (
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants import states
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
+from recidiviz.ingest.direct.types.direct_ingest_instance import (
     DirectIngestInstance,
 )
 from recidiviz.persistence.database.base_schema import JailsBase, StateBase

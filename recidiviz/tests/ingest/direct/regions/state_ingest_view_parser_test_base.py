@@ -24,21 +24,19 @@ from typing import List, Sequence
 
 from recidiviz.cloud_storage.gcs_file_system import GcsfsFileContentsHandle
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
-    DirectIngestInstance,
-)
-from recidiviz.ingest.direct.controllers.ingest_view_file_parser import (
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_file_parser import (
     FileFormat,
     IngestViewFileParser,
 )
-from recidiviz.ingest.direct.controllers.ingest_view_file_parser_delegate import (
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_file_parser_delegate import (
     IngestViewFileParserDelegateImpl,
     ingest_view_manifest_dir,
 )
-from recidiviz.ingest.direct.controllers.ingest_view_manifest import (
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest import (
     EntityTreeManifest,
     EnumMappingManifest,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import print_entity_trees

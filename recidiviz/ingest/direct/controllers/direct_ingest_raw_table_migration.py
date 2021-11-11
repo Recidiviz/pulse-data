@@ -21,7 +21,7 @@ import os
 import re
 from typing import List, Optional, Tuple
 
-from recidiviz.ingest.direct.controllers.direct_ingest_constants import (
+from recidiviz.ingest.direct.types.direct_ingest_constants import (
     UPDATE_DATETIME_COL_NAME,
 )
 from recidiviz.utils import metadata
