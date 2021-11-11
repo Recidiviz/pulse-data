@@ -335,9 +335,11 @@ class UsPaSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
                 "Supervision level not provided and therefore cannot calculate collateral visit contact frequency"
             )
 
-        # No collateral contacts are required for these supervision levels
+        # No collateral contacts are required for supervision levels not designated in
+        # the map
         if (
-            self.supervision_period.supervision_level == StateSupervisionLevel.LIMITED
+            self.supervision_period.supervision_level
+            not in SUPERVISION_COLLATERAL_VISIT_FREQUENCY_REQUIREMENTS
             or self._can_skip_contact_or_reassessment(compliance_evaluation_date)
         ):
             return None
