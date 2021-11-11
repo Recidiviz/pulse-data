@@ -36,7 +36,11 @@ from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
     is_placeholder,
 )
-from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
+from recidiviz.persistence.entity.state.entities import (
+    StateIncarcerationSentence,
+    StateSupervisionPeriod,
+    StateSupervisionSentence,
+)
 
 
 # pylint: disable=unused-argument
@@ -54,6 +58,25 @@ class StateSpecificSupervisionPreProcessingDelegate(abc.ABC):
         By default, uses the one on the supervision period as ingested."""
         return supervision_period.admission_reason
 
+    def split_periods_based_on_sentences(
+        self,
+        supervision_periods: List[StateSupervisionPeriod],
+        incarceration_sentences: Optional[List[StateIncarcerationSentence]],
+        supervision_sentences: Optional[List[StateSupervisionSentence]],
+    ) -> List[StateSupervisionPeriod]:
+        """Some states may use sentence information to split a period of supervision
+        into multiple distinct periods with specific attributes. For example, if the
+        supervision type can change over the duration of a given supervision period,
+        a state may implement logic here that splits the period into discrete periods of
+        time on each supervision type."""
+        return supervision_periods
+
+    def pre_processing_relies_on_sentences(self) -> bool:
+        """State-specific implementations of this class should return whether the SP
+        pre-processing logic for the state relies on information in
+        StateIncarcerationSentence and StateSupervisionSentence entities."""
+        return False
+
 
 class SupervisionPreProcessingManager:
     """Handles the pre-processing of StateSupervisionPeriods for use in calculations."""
@@ -62,6 +85,8 @@ class SupervisionPreProcessingManager:
         self,
         supervision_periods: List[StateSupervisionPeriod],
         delegate: StateSpecificSupervisionPreProcessingDelegate,
+        incarceration_sentences: Optional[List[StateIncarcerationSentence]],
+        supervision_sentences: Optional[List[StateSupervisionSentence]],
         earliest_death_date: Optional[datetime.date] = None,
     ):
         self._supervision_periods = deepcopy(supervision_periods)
@@ -70,6 +95,17 @@ class SupervisionPreProcessingManager:
         ] = None
 
         self.delegate = delegate
+
+        self._incarceration_sentences: Optional[List[StateIncarcerationSentence]] = (
+            incarceration_sentences
+            if self.delegate.pre_processing_relies_on_sentences()
+            else None
+        )
+        self._supervision_sentences: Optional[List[StateSupervisionSentence]] = (
+            supervision_sentences
+            if self.delegate.pre_processing_relies_on_sentences()
+            else None
+        )
 
         # The end date of the earliest incarceration or supervision period ending in
         # death. None if no periods end in death.
@@ -113,6 +149,12 @@ class SupervisionPreProcessingManager:
                         mid_processing_periods
                     )
                 )
+
+            mid_processing_periods = self.delegate.split_periods_based_on_sentences(
+                mid_processing_periods,
+                self._incarceration_sentences,
+                self._supervision_sentences,
+            )
 
             # Process fields on final supervision period set
             mid_processing_periods = (
@@ -259,8 +301,9 @@ class SupervisionPreProcessingManager:
     def _process_fields_on_final_supervision_period_set(
         self, supervision_periods: List[StateSupervisionPeriod]
     ) -> List[StateSupervisionPeriod]:
-        """After all supervision periods are sorted and dropped as necessary, continue to
-        update fields of remaining supervision periods prior to adding to the index by
+        """After all supervision periods are sorted, dropped and split as necessary,
+        continue to update fields of remaining supervision periods prior to adding to
+        the index by
             - Updating any admission reasons based on state-specific logic."""
         updated_periods: List[StateSupervisionPeriod] = []
 

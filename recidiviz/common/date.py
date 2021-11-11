@@ -18,7 +18,7 @@
 import datetime
 import re
 from abc import ABCMeta, abstractmethod
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, TypeVar
 
 import attr
 
@@ -275,6 +275,9 @@ class DurationMixin(metaclass=ABCMeta):
     @abstractmethod
     def duration(self) -> DateRange:
         """The object's duration, returned as a DateRange"""
+
+
+DurationMixinT = TypeVar("DurationMixinT", bound=DurationMixin)
 
 
 def is_date_str(potential_date_str: str) -> bool:

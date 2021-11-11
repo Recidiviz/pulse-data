@@ -54,7 +54,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_com
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_delegate import (
     UsIdSupervisionDelegate,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_pre_processing_delegate import (
+from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_period_pre_processing_delegate import (
     UsIdSupervisionPreProcessingDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_utils import (
@@ -82,8 +82,6 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_supervision_per
     UsMoSupervisionPreProcessingDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_supervision_utils import (
-    us_mo_get_month_supervision_type,
-    us_mo_get_most_recent_supervision_type_before_upper_bound_day,
     us_mo_get_post_incarceration_supervision_type,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_violation_response_preprocessing_delegate import (
@@ -107,7 +105,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_com
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_delegate import (
     UsNdSupervisionDelegate,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_pre_processing_delegate import (
+from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_period_pre_processing_delegate import (
     UsNdSupervisionPreProcessingDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_utils import (
@@ -190,15 +188,7 @@ def get_month_supervision_type(
     supervision_sentences: (List[StateSupervisionSentence]) All supervision sentences for a given person.
     """
 
-    if supervision_period.state_code.upper() == "US_MO":
-        return us_mo_get_month_supervision_type(
-            any_date_in_month,
-            supervision_sentences,
-            incarceration_sentences,
-            supervision_period,
-        )
-
-    if supervision_period.state_code.upper() in ("US_ID", "US_PA"):
+    if supervision_period.state_code.upper() in ("US_ID", "US_PA", "US_MO"):
         return (
             supervision_period.supervision_type
             if supervision_period.supervision_type
@@ -267,23 +257,7 @@ def terminating_supervision_period_supervision_type(
             f"[{supervision_period.supervision_period_id}]"
         )
 
-    if supervision_period.state_code.upper() == "US_MO":
-        supervision_type = (
-            us_mo_get_most_recent_supervision_type_before_upper_bound_day(
-                upper_bound_exclusive_date=supervision_period.termination_date,
-                lower_bound_inclusive_date=supervision_period.start_date,
-                incarceration_sentences=incarceration_sentences,
-                supervision_sentences=supervision_sentences,
-            )
-        )
-
-        return (
-            supervision_type
-            if supervision_type
-            else StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
-        )
-
-    if supervision_period.state_code.upper() in ("US_ID", "US_PA"):
+    if supervision_period.state_code.upper() in ("US_ID", "US_PA", "US_MO"):
         return (
             supervision_period.supervision_type
             if supervision_period.supervision_type

@@ -185,6 +185,8 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
             supervision_periods=supervision_periods,
             pre_processed_violation_responses=pre_processed_violation_responses,
             field_index=self.field_index,
+            incarceration_sentences=incarceration_sentences,
+            supervision_sentences=supervision_sentences,
         )
 
         if not ip_pre_processing_manager or not sp_pre_processing_manager:
@@ -225,7 +227,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         )
 
         supervision_events.extend(projected_supervision_completion_events)
-
         for supervision_period in supervision_period_index.supervision_periods:
             if supervision_delegate.should_produce_supervision_event_for_period(
                 supervision_period, incarceration_sentences, supervision_sentences

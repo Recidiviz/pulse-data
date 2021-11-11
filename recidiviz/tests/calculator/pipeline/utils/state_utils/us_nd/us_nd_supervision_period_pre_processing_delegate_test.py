@@ -19,7 +19,7 @@ import unittest
 from datetime import date
 from typing import Optional
 
-from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_pre_processing_delegate import (
+from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_period_pre_processing_delegate import (
     UsNdSupervisionPreProcessingDelegate,
 )
 from recidiviz.common.constants.state.state_supervision_period import (

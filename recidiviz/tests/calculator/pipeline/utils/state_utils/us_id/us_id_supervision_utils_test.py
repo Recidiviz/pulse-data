@@ -21,7 +21,7 @@ from datetime import date
 from dateutil.relativedelta import relativedelta
 from freezegun import freeze_time
 
-from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_pre_processing_delegate import (
+from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_period_pre_processing_delegate import (
     SUPERVISION_TYPE_LOOKBACK_MONTH_LIMIT,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_utils import (

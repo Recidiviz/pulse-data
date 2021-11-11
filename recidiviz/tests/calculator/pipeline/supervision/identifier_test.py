@@ -60,6 +60,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_del
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_sentence_classification import (
     SupervisionTypeSpan,
+    UsMoSentenceStatus,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_supervision_delegate import (
     UsMoSupervisionDelegate,
@@ -2840,11 +2841,39 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     start_date=supervision_period_start_date,
                     end_date=supervision_period_termination_date,
                     supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
+                    start_critical_statuses=[
+                        UsMoSentenceStatus(
+                            sentence_external_id="123",
+                            sentence_status_external_id="test-status-2",
+                            status_date=supervision_period_start_date,
+                            status_code="15I1000",
+                            status_description="New Court Probation",
+                        )
+                    ],
+                    end_critical_statuses=[
+                        UsMoSentenceStatus(
+                            sentence_external_id="123",
+                            sentence_status_external_id="test-status-2",
+                            status_date=supervision_period_termination_date,
+                            status_code="99O1000",
+                            status_description="Court Probation Discharge",
+                        )
+                    ],
                 ),
                 SupervisionTypeSpan(
                     start_date=supervision_period_termination_date,
                     end_date=None,
                     supervision_type=None,
+                    start_critical_statuses=[
+                        UsMoSentenceStatus(
+                            sentence_external_id="123",
+                            sentence_status_external_id="test-status-2",
+                            status_date=supervision_period_termination_date,
+                            status_code="99O1000",
+                            status_description="Court Probation Discharge",
+                        )
+                    ],
+                    end_critical_statuses=None,
                 ),
             ],
         )
@@ -2865,11 +2894,39 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                         start_date=supervision_period_start_date,
                         end_date=supervision_period_termination_date,
                         supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
+                        start_critical_statuses=[
+                            UsMoSentenceStatus(
+                                sentence_external_id="123",
+                                sentence_status_external_id="test-status-2",
+                                status_date=supervision_period_start_date,
+                                status_code="40O1010",
+                                status_description="Parole Release",
+                            )
+                        ],
+                        end_critical_statuses=[
+                            UsMoSentenceStatus(
+                                sentence_external_id="123",
+                                sentence_status_external_id="test-status-2",
+                                status_date=supervision_period_termination_date,
+                                status_code="99O2010",
+                                status_description="Parole Discharge",
+                            )
+                        ],
                     ),
                     SupervisionTypeSpan(
                         start_date=supervision_period_termination_date,
                         end_date=None,
                         supervision_type=None,
+                        start_critical_statuses=[
+                            UsMoSentenceStatus(
+                                sentence_external_id="123",
+                                sentence_status_external_id="test-status-2",
+                                status_date=supervision_period_termination_date,
+                                status_code="99O2010",
+                                status_description="Parole Discharge",
+                            )
+                        ],
+                        end_critical_statuses=None,
                     ),
                 ],
             )
@@ -2903,11 +2960,15 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
                 termination_reason=supervision_period.termination_reason,
                 in_supervision_population_on_date=True,
+                supervising_officer_external_id="XXX",
             ),
             create_start_event_from_period(
                 supervision_period,
                 UsMoSupervisionDelegate(),
                 case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
+                supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
+                admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+                supervising_officer_external_id="XXX",
             ),
         ]
 
@@ -2919,6 +2980,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 assessment_score=assessment.assessment_score,
                 assessment_level=assessment.assessment_level,
                 assessment_type=assessment.assessment_type,
+                supervising_officer_external_id="XXX",
             )
         )
 
@@ -2931,7 +2993,15 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             assessments,
             violation_responses,
             supervision_contacts,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
+            [
+                {
+                    "agent_id": 000,
+                    "agent_external_id": "XXX",
+                    "supervision_period_id": supervision_period.supervision_period_id,
+                    "agent_start_date": supervision_period_start_date,
+                    "agent_end_date": supervision_period_termination_date,
+                }
+            ],
             DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_LIST,
         )
 
@@ -2977,11 +3047,39 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     start_date=supervision_period_start_date,
                     end_date=supervision_period_termination_date,
                     supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
+                    start_critical_statuses=[
+                        UsMoSentenceStatus(
+                            sentence_external_id="123",
+                            sentence_status_external_id="test-status-2",
+                            status_date=supervision_period_start_date,
+                            status_code="15I1000",
+                            status_description="New Court Probation",
+                        )
+                    ],
+                    end_critical_statuses=[
+                        UsMoSentenceStatus(
+                            sentence_external_id="123",
+                            sentence_status_external_id="test-status-2",
+                            status_date=supervision_period_termination_date,
+                            status_code="99O1000",
+                            status_description="Court Probation Discharge",
+                        )
+                    ],
                 ),
                 SupervisionTypeSpan(
                     start_date=supervision_period_termination_date,
                     end_date=None,
                     supervision_type=None,
+                    start_critical_statuses=[
+                        UsMoSentenceStatus(
+                            sentence_external_id="123",
+                            sentence_status_external_id="test-status-2",
+                            status_date=supervision_period_termination_date,
+                            status_code="99O1000",
+                            status_description="Court Probation Discharge",
+                        )
+                    ],
+                    end_critical_statuses=None,
                 ),
             ],
         )
@@ -3001,11 +3099,39 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     start_date=supervision_period_start_date,
                     end_date=supervision_period_termination_date,
                     supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
+                    start_critical_statuses=[
+                        UsMoSentenceStatus(
+                            sentence_external_id="123",
+                            sentence_status_external_id="test-status-2",
+                            status_date=supervision_period_start_date,
+                            status_code="15I1000",
+                            status_description="New Court Probation",
+                        )
+                    ],
+                    end_critical_statuses=[
+                        UsMoSentenceStatus(
+                            sentence_external_id="123",
+                            sentence_status_external_id="test-status-2",
+                            status_date=supervision_period_termination_date,
+                            status_code="99O1000",
+                            status_description="Court Probation Discharge",
+                        )
+                    ],
                 ),
                 SupervisionTypeSpan(
                     start_date=supervision_period_termination_date,
                     end_date=None,
                     supervision_type=None,
+                    start_critical_statuses=[
+                        UsMoSentenceStatus(
+                            sentence_external_id="123",
+                            sentence_status_external_id="test-status-2",
+                            status_date=supervision_period_termination_date,
+                            status_code="99O1000",
+                            status_description="Court Probation Discharge",
+                        )
+                    ],
+                    end_critical_statuses=None,
                 ),
             ],
         )
@@ -3029,7 +3155,15 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             assessments,
             violation_responses,
             supervision_contacts,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
+            [
+                {
+                    "agent_id": 000,
+                    "agent_external_id": None,
+                    "supervision_period_id": supervision_period.supervision_period_id,
+                    "agent_start_date": supervision_period_start_date,
+                    "agent_end_date": supervision_period_termination_date,
+                }
+            ],
             DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_LIST,
         )
         for event in supervision_events:
@@ -3695,6 +3829,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         self._stop_state_specific_delegate_patchers()
 
         start_date = date(2019, 10, 3)
+        end_date = date(2019, 10, 9)
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp2",
@@ -3702,7 +3837,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             supervision_site="DISTRICTX",
             supervising_officer="AGENTX",
             start_date=start_date,
-            termination_date=date(2019, 10, 9),
+            termination_date=end_date,
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
@@ -3721,6 +3856,16 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     start_date=start_date,
                     end_date=None,
                     supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
+                    start_critical_statuses=[
+                        UsMoSentenceStatus(
+                            sentence_external_id="123",
+                            sentence_status_external_id="test-status-2",
+                            status_date=start_date,
+                            status_code="40O9010",
+                            status_description="Release to Probation",
+                        )
+                    ],
+                    end_critical_statuses=None,
                 )
             ],
         )
@@ -3741,9 +3886,25 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 level_1_supervision_location_external_id=supervision_period.supervision_site,
                 level_2_supervision_location_external_id=None,
                 in_supervision_population_on_date=True,
+                termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
+                supervising_officer_external_id="XXX",
             ),
             create_start_event_from_period(
-                supervision_period, UsMoSupervisionDelegate()
+                supervision_period,
+                UsMoSupervisionDelegate(),
+                admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
+                supervising_officer_external_id="XXX",
+            ),
+            SupervisionStartEvent(
+                state_code="US_MO",
+                year=2019,
+                month=10,
+                event_date=end_date,
+                admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
+                in_incarceration_population_on_date=False,
+                in_supervision_population_on_date=False,
+                case_type=StateSupervisionCaseType.GENERAL,
+                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             ),
         ]
 
@@ -3753,6 +3914,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 StateSupervisionPeriodSupervisionType.PROBATION,
                 level_1_supervision_location_external_id=supervision_period.supervision_site,
                 level_2_supervision_location_external_id=None,
+                supervising_officer_external_id="XXX",
             )
         )
 
@@ -3765,7 +3927,15 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             assessments,
             violation_responses,
             supervision_contacts,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
+            [
+                {
+                    "agent_id": 000,
+                    "agent_external_id": "XXX",
+                    "supervision_period_id": supervision_period.supervision_period_id,
+                    "agent_start_date": start_date,
+                    "agent_end_date": end_date,
+                }
+            ],
             DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_LIST,
         )
 
@@ -3803,16 +3973,62 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     start_date=start_date,
                     end_date=date(2019, 10, 6),
                     supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
+                    start_critical_statuses=[
+                        UsMoSentenceStatus(
+                            sentence_external_id="123",
+                            sentence_status_external_id="test-status-2",
+                            status_date=start_date,
+                            status_code="15I1000",
+                            status_description="New Court Probation",
+                        )
+                    ],
+                    end_critical_statuses=[
+                        UsMoSentenceStatus(
+                            sentence_external_id="123",
+                            sentence_status_external_id="test-status-2",
+                            status_date=date(2019, 10, 6),
+                            status_code="65L9999",
+                            status_description="DOC Warrant/Detainer Issued",
+                        )
+                    ],
                 ),
                 SupervisionTypeSpan(
                     start_date=date(2019, 10, 6),
                     end_date=date(2019, 11, 6),
                     supervision_type=None,
+                    start_critical_statuses=[
+                        UsMoSentenceStatus(
+                            sentence_external_id="123",
+                            sentence_status_external_id="test-status-2",
+                            status_date=date(2019, 10, 6),
+                            status_code="65L9999",
+                            status_description="DOC Warrant/Detainer Issued",
+                        )
+                    ],
+                    end_critical_statuses=[
+                        UsMoSentenceStatus(
+                            sentence_external_id="123",
+                            sentence_status_external_id="test-status-2",
+                            status_date=date(2019, 11, 6),
+                            status_code="65N9999",
+                            status_description="DOC Warrant/Detainer Cancelled",
+                        )
+                    ],
                 ),
                 SupervisionTypeSpan(
                     start_date=date(2019, 11, 6),
                     end_date=None,
                     supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
+                    start_critical_statuses=[
+                        UsMoSentenceStatus(
+                            sentence_external_id="123",
+                            sentence_status_external_id="test-status-2",
+                            status_date=date(2019, 11, 6),
+                            status_code="65N9999",
+                            status_description="DOC Warrant/Detainer Cancelled",
+                        )
+                    ],
+                    end_critical_statuses=None,
                 ),
             ],
         )
@@ -3825,7 +4041,10 @@ class TestClassifySupervisionEvents(unittest.TestCase):
 
         expected_events = [
             create_start_event_from_period(
-                supervision_period, UsMoSupervisionDelegate()
+                supervision_period,
+                UsMoSupervisionDelegate(),
+                admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+                supervising_officer_external_id="XXX",
             ),
             create_termination_event_from_period(
                 supervision_period,
@@ -3836,6 +4055,33 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 level_1_supervision_location_external_id=supervision_period.supervision_site,
                 level_2_supervision_location_external_id=None,
                 in_supervision_population_on_date=True,
+                termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
+                supervising_officer_external_id="XXX",
+            ),
+            create_termination_event_from_period(
+                attr.evolve(supervision_period, termination_date=date(2019, 10, 6)),
+                UsMoSupervisionDelegate(),
+                in_supervision_population_on_date=True,
+                supervising_officer_external_id="XXX",
+            ),
+            create_start_event_from_period(
+                attr.evolve(
+                    supervision_period,
+                    start_date=date(2019, 11, 6),
+                    termination_date=date(2019, 11, 9),
+                ),
+                UsMoSupervisionDelegate(),
+                supervising_officer_external_id="XXX",
+            ),
+            create_start_event_from_period(
+                attr.evolve(
+                    supervision_period,
+                    start_date=date(2019, 11, 9),
+                    supervision_site=None,
+                ),
+                UsMoSupervisionDelegate(),
+                in_supervision_population_on_date=False,
+                admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
             ),
         ]
 
@@ -3846,6 +4092,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 end_date=date(2019, 10, 6),
                 level_1_supervision_location_external_id=supervision_period.supervision_site,
                 level_2_supervision_location_external_id=None,
+                supervising_officer_external_id="XXX",
             )
         )
 
@@ -3855,6 +4102,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 StateSupervisionPeriodSupervisionType.PROBATION,
                 level_1_supervision_location_external_id=supervision_period.supervision_site,
                 level_2_supervision_location_external_id=None,
+                supervising_officer_external_id="XXX",
             )
         )
 
@@ -3867,7 +4115,15 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             assessments,
             violation_responses,
             supervision_contacts,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
+            [
+                {
+                    "agent_id": 000,
+                    "agent_external_id": "XXX",
+                    "supervision_period_id": supervision_period.supervision_period_id,
+                    "agent_start_date": start_date,
+                    "agent_end_date": date(2019, 11, 9),
+                }
+            ],
             DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_LIST,
         )
 
@@ -3904,16 +4160,62 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     start_date=date(2019, 9, 6),
                     end_date=date(2019, 10, 3),
                     supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
+                    start_critical_statuses=[
+                        UsMoSentenceStatus(
+                            sentence_external_id="123",
+                            sentence_status_external_id="test-status-2",
+                            status_date=date(2019, 9, 6),
+                            status_code="15I1000",
+                            status_description="New Court Probation",
+                        )
+                    ],
+                    end_critical_statuses=[
+                        UsMoSentenceStatus(
+                            sentence_external_id="123",
+                            sentence_status_external_id="test-status-2",
+                            status_date=date(2019, 10, 3),
+                            status_code="65L9999",
+                            status_description="DOC Warrant/Detainer Issued",
+                        )
+                    ],
                 ),
                 SupervisionTypeSpan(
                     start_date=date(2019, 10, 3),
                     end_date=date(2019, 11, 6),
                     supervision_type=None,
+                    start_critical_statuses=[
+                        UsMoSentenceStatus(
+                            sentence_external_id="123",
+                            sentence_status_external_id="test-status-2",
+                            status_date=date(2019, 10, 3),
+                            status_code="65L9999",
+                            status_description="DOC Warrant/Detainer Issued",
+                        )
+                    ],
+                    end_critical_statuses=[
+                        UsMoSentenceStatus(
+                            sentence_external_id="123",
+                            sentence_status_external_id="test-status-2",
+                            status_date=date(2019, 11, 6),
+                            status_code="65N9999",
+                            status_description="DOC Warrant/Detainer Cancelled",
+                        )
+                    ],
                 ),
                 SupervisionTypeSpan(
                     start_date=date(2019, 11, 6),
                     end_date=None,
                     supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
+                    start_critical_statuses=[
+                        UsMoSentenceStatus(
+                            sentence_external_id="123",
+                            sentence_status_external_id="test-status-2",
+                            status_date=date(2019, 11, 6),
+                            status_code="65N9999",
+                            status_description="DOC Warrant/Detainer Cancelled",
+                        )
+                    ],
+                    end_critical_statuses=[],
                 ),
             ],
         )
@@ -3934,14 +4236,46 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 level_1_supervision_location_external_id=supervision_period.supervision_site,
                 level_2_supervision_location_external_id=None,
                 in_supervision_population_on_date=True,
+                termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
+                supervising_officer_external_id="XXX",
             ),
-            # in_supervision_population_on_date=False because the lack of an overlapping
-            # supervision span means they are not counted in the supervision population
-            # for US_MO
             create_start_event_from_period(
-                supervision_period,
+                attr.evolve(
+                    supervision_period,
+                    start_date=date(2019, 9, 6),
+                    supervision_site=None,
+                ),
                 UsMoSupervisionDelegate(),
                 in_supervision_population_on_date=False,
+                admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            ),
+            create_termination_event_from_period(
+                attr.evolve(
+                    supervision_period,
+                    start_date=date(2019, 9, 6),
+                    termination_date=date(2019, 10, 3),
+                    supervision_site=None,
+                ),
+                UsMoSupervisionDelegate(),
+            ),
+            create_start_event_from_period(
+                attr.evolve(
+                    supervision_period,
+                    start_date=date(2019, 11, 6),
+                    termination_date=date(2019, 11, 9),
+                ),
+                UsMoSupervisionDelegate(),
+                supervising_officer_external_id="XXX",
+            ),
+            create_start_event_from_period(
+                attr.evolve(
+                    supervision_period,
+                    start_date=date(2019, 11, 9),
+                    supervision_site=None,
+                ),
+                UsMoSupervisionDelegate(),
+                in_supervision_population_on_date=False,
+                admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
             ),
         ]
 
@@ -3951,6 +4285,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 StateSupervisionPeriodSupervisionType.PROBATION,
                 level_1_supervision_location_external_id=supervision_period.supervision_site,
                 level_2_supervision_location_external_id=None,
+                supervising_officer_external_id="XXX",
             )
         )
 
@@ -3963,7 +4298,15 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             assessments,
             violation_responses,
             supervision_contacts,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
+            [
+                {
+                    "agent_id": 000,
+                    "agent_external_id": "XXX",
+                    "supervision_period_id": supervision_period.supervision_period_id,
+                    "agent_start_date": date(2019, 10, 3),
+                    "agent_end_date": date(2019, 11, 9),
+                }
+            ],
             DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_LIST,
         )
 
@@ -3998,16 +4341,62 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     start_date=date(2019, 9, 6),
                     end_date=date(2019, 10, 3),
                     supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
+                    start_critical_statuses=[
+                        UsMoSentenceStatus(
+                            sentence_external_id="123",
+                            sentence_status_external_id="test-status-2",
+                            status_date=date(2019, 9, 6),
+                            status_code="99O1000",
+                            status_description="Court Probation Discharge",
+                        )
+                    ],
+                    end_critical_statuses=[
+                        UsMoSentenceStatus(
+                            sentence_external_id="123",
+                            sentence_status_external_id="test-status-2",
+                            status_date=date(2019, 10, 3),
+                            status_code="60L6999",
+                            status_description="DOC Warrant/Detainer Issued",
+                        )
+                    ],
                 ),
                 SupervisionTypeSpan(
                     start_date=date(2019, 10, 3),
                     end_date=date(2019, 11, 9),
                     supervision_type=None,
+                    start_critical_statuses=[
+                        UsMoSentenceStatus(
+                            sentence_external_id="123",
+                            sentence_status_external_id="test-status-2",
+                            status_date=date(2019, 10, 3),
+                            status_code="60L6999",
+                            status_description="DOC Warrant/Detainer Issued",
+                        )
+                    ],
+                    end_critical_statuses=[
+                        UsMoSentenceStatus(
+                            sentence_external_id="123",
+                            sentence_status_external_id="test-status-2",
+                            status_date=date(2019, 11, 9),
+                            status_code="60N6999",
+                            status_description="DOC Warrant/Detainer Cancelled",
+                        )
+                    ],
                 ),
                 SupervisionTypeSpan(
                     start_date=date(2019, 11, 9),
                     end_date=None,
                     supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
+                    start_critical_statuses=[
+                        UsMoSentenceStatus(
+                            sentence_external_id="123",
+                            sentence_status_external_id="test-status-2",
+                            status_date=date(2019, 11, 9),
+                            status_code="60N6999",
+                            status_description="DOC Warrant/Detainer Cancelled",
+                        )
+                    ],
+                    end_critical_statuses=None,
                 ),
             ],
         )
@@ -4018,6 +4407,34 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         incarceration_sentences: List[StateIncarcerationSentence] = []
         incarceration_periods: List[StateIncarcerationPeriod] = []
 
+        expected_events = [
+            create_start_event_from_period(
+                attr.evolve(
+                    supervision_period,
+                    start_date=date(2019, 9, 6),
+                    termination_date=date(2019, 10, 3),
+                    supervision_site=None,
+                ),
+                in_supervision_population_on_date=False,
+            ),
+            create_termination_event_from_period(
+                attr.evolve(
+                    supervision_period,
+                    start_date=date(2019, 9, 6),
+                    termination_date=date(2019, 10, 3),
+                    supervision_site=None,
+                ),
+            ),
+            create_start_event_from_period(
+                attr.evolve(
+                    supervision_period,
+                    start_date=date(2019, 11, 9),
+                    supervision_site=None,
+                ),
+                in_supervision_population_on_date=False,
+            ),
+        ]
+
         supervision_events = self.identifier._find_supervision_events(
             self.person,
             [supervision_sentence],
@@ -4027,11 +4444,19 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             assessments,
             violation_responses,
             supervision_contacts,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
+            [
+                {
+                    "agent_id": 000,
+                    "agent_external_id": "XXX",
+                    "supervision_period_id": supervision_period.supervision_period_id,
+                    "agent_start_date": date(2019, 10, 3),
+                    "agent_end_date": date(2019, 11, 9),
+                }
+            ],
             DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_LIST,
         )
 
-        self.assertCountEqual([], supervision_events)
+        self.assertCountEqual(expected_events, supervision_events)
 
     def test_supervision_period_mid_month_us_mo_supervision_span_shows_supervision_eom(
         self,
@@ -4064,11 +4489,39 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     start_date=date(2019, 9, 6),
                     end_date=date(2019, 10, 15),
                     supervision_type=None,
+                    start_critical_statuses=[
+                        UsMoSentenceStatus(
+                            sentence_external_id="123",
+                            sentence_status_external_id="test-status-2",
+                            status_date=date(2019, 9, 6),
+                            status_code="15I1000",
+                            status_description="New Court Probation",
+                        )
+                    ],
+                    end_critical_statuses=[
+                        UsMoSentenceStatus(
+                            sentence_external_id="123",
+                            sentence_status_external_id="test-status-2",
+                            status_date=date(2019, 10, 15),
+                            status_code="99O1000",
+                            status_description="Court Probation Discharge",
+                        )
+                    ],
                 ),
                 SupervisionTypeSpan(
                     start_date=date(2019, 10, 15),
                     end_date=None,
                     supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
+                    start_critical_statuses=[
+                        UsMoSentenceStatus(
+                            sentence_external_id="123",
+                            sentence_status_external_id="test-status-2",
+                            status_date=date(2019, 10, 15),
+                            status_code="99O1000",
+                            status_description="Court Probation Discharge",
+                        )
+                    ],
+                    end_critical_statuses=None,
                 ),
             ],
         )
@@ -4089,14 +4542,24 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 level_1_supervision_location_external_id=supervision_period.supervision_site,
                 level_2_supervision_location_external_id=None,
                 in_supervision_population_on_date=True,
+                termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
+                supervising_officer_external_id="XXX",
             ),
-            # in_supervision_population_on_date=False because the lack of an overlapping
-            # supervision span means they are not counted in the supervision population
-            # for US_MO
             create_start_event_from_period(
-                supervision_period,
+                attr.evolve(supervision_period, start_date=date(2019, 10, 15)),
+                UsMoSupervisionDelegate(),
+                supervising_officer_external_id="XXX",
+            ),
+            create_start_event_from_period(
+                attr.evolve(
+                    supervision_period,
+                    start_date=date(2019, 10, 20),
+                    supervision_site=None,
+                    supervising_officer=None,
+                ),
                 UsMoSupervisionDelegate(),
                 in_supervision_population_on_date=False,
+                admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
             ),
         ]
 
@@ -4106,6 +4569,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 StateSupervisionPeriodSupervisionType.PROBATION,
                 level_1_supervision_location_external_id=supervision_period.supervision_site,
                 level_2_supervision_location_external_id=None,
+                supervising_officer_external_id="XXX",
             )
         )
 
@@ -4118,7 +4582,15 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             assessments,
             violation_responses,
             supervision_contacts,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
+            [
+                {
+                    "agent_id": 000,
+                    "agent_external_id": "XXX",
+                    "supervision_period_id": supervision_period.supervision_period_id,
+                    "agent_start_date": date(2019, 10, 3),
+                    "agent_end_date": date(2019, 10, 20),
+                }
+            ],
             DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_LIST,
         )
 
