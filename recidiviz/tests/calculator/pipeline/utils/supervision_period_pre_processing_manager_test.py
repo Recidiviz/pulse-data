@@ -49,6 +49,8 @@ class TestPreProcessedSupervisionPeriodsForCalculations(unittest.TestCase):
             supervision_periods=supervision_periods,
             delegate=UsXxSupervisionPreProcessingDelegate(),
             earliest_death_date=earliest_death_date,
+            incarceration_sentences=None,
+            supervision_sentences=None,
         )
 
         return (

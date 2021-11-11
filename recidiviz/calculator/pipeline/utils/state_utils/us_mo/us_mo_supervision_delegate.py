@@ -15,7 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """US_MO implementation of the supervision delegate"""
-from typing import List, Optional
+from datetime import date
+from typing import Any, Dict, List, Optional
 
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_delegate import (
     StateSpecificSupervisionDelegate,
@@ -100,3 +101,26 @@ class UsMoSupervisionDelegate(StateSpecificSupervisionDelegate):
             )
             is not None
         )
+
+    def get_supervising_officer_external_id_for_supervision_period(
+        self,
+        supervision_period: StateSupervisionPeriod,
+        supervision_period_to_agent_associations: Dict[int, Dict[str, Any]],
+    ) -> Optional[str]:
+        """In US_MO, because supervision periods may not necessarily have persisted
+        supervision period ids, we do a date-range based mapping back to original
+        ingested periods."""
+        for agent_dict in supervision_period_to_agent_associations.values():
+            start_date: Optional[date] = agent_dict["agent_start_date"]
+            end_date: Optional[date] = agent_dict["agent_end_date"]
+
+            if not start_date:
+                continue
+
+            if DateRangeDiff(
+                supervision_period.duration,
+                DateRange.from_maybe_open_range(start_date, end_date),
+            ).overlapping_range:
+                return agent_dict["agent_external_id"]
+
+        return None

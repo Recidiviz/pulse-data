@@ -20,7 +20,7 @@ from datetime import date
 
 from dateutil.relativedelta import relativedelta
 
-from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_pre_processing_delegate import (
+from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_period_pre_processing_delegate import (
     UsIdSupervisionPreProcessingDelegate,
 )
 from recidiviz.common.constants.state.state_supervision_period import (

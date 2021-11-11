@@ -168,15 +168,11 @@ def supervising_officer_and_location_info(
         supervision_period.supervision_site
     )
 
-    if not supervision_period.supervision_period_id:
-        raise ValueError("Unexpected null supervision_period_id")
-
-    agent_info = supervision_period_to_agent_associations.get(
-        supervision_period.supervision_period_id
+    supervising_officer_external_id = (
+        supervision_delegate.get_supervising_officer_external_id_for_supervision_period(
+            supervision_period, supervision_period_to_agent_associations
+        )
     )
-
-    if agent_info is not None:
-        supervising_officer_external_id = agent_info["agent_external_id"]
 
     return (
         supervising_officer_external_id,

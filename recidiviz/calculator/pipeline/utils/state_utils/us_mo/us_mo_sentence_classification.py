@@ -27,6 +27,7 @@ from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.common.constants.state.state_supervision_sentence import (
     StateSupervisionSentenceSupervisionType,
 )
+from recidiviz.common.date import DateRange, DurationMixin
 from recidiviz.persistence.entity.state.entities import (
     SentenceType,
     StateIncarcerationSentence,
@@ -229,7 +230,10 @@ class UsMoSentenceStatus(BuildableAttr):
 
 
 @attr.s(frozen=True)
-class SupervisionTypeSpan:
+class SupervisionTypeSpan(DurationMixin):
+    """Represents a duration in which there is a specific supervision type associated
+    derived from critical statuses and sentences."""
+
     # Sentence supervision type to associate with this time span, or None if the person was not on supervision at this
     # time.
     supervision_type: Optional[StateSupervisionSentenceSupervisionType] = attr.ib()
@@ -240,6 +244,26 @@ class SupervisionTypeSpan:
     # Last day where the sentence has the given supervision type, exclusive. None if the sentence has that status up
     # until present day.
     end_date: Optional[date] = attr.ib()
+
+    # Critical sentence statuses associated with the supervision_type start date
+    start_critical_statuses: List[UsMoSentenceStatus] = attr.ib()
+
+    # Critical sentence statuses associated with the supervision_type end date
+    end_critical_statuses: Optional[List[UsMoSentenceStatus]] = attr.ib()
+
+    @property
+    def duration(self) -> DateRange:
+        return DateRange.from_maybe_open_range(
+            start_date=self.start_date, end_date=self.end_date
+        )
+
+    @property
+    def start_date_inclusive(self) -> Optional[date]:
+        return self.start_date
+
+    @property
+    def end_date_exclusive(self) -> Optional[date]:
+        return self.end_date
 
 
 @attr.s
@@ -306,6 +330,10 @@ class UsMoSentenceMixin(Generic[SentenceType]):
                     start_date=start_date,
                     end_date=end_date,
                     supervision_type=supervision_type,
+                    start_critical_statuses=critical_statuses_by_day[start_date],
+                    end_critical_statuses=critical_statuses_by_day[end_date]
+                    if end_date
+                    else None,
                 )
             )
 

@@ -77,6 +77,8 @@ class TestUsMoCommitmentFromSupervisionDelegate(unittest.TestCase):
                         start_date=datetime.date(2017, 2, 1),
                         end_date=None,
                         supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
+                        start_critical_statuses=[],
+                        end_critical_statuses=[],
                     )
                 ],
             )
@@ -121,6 +123,8 @@ class TestUsMoCommitmentFromSupervisionDelegate(unittest.TestCase):
                         start_date=datetime.date(2017, 2, 1),
                         end_date=None,
                         supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
+                        start_critical_statuses=[],
+                        end_critical_statuses=[],
                     )
                 ],
             )
@@ -141,11 +145,15 @@ class TestUsMoCommitmentFromSupervisionDelegate(unittest.TestCase):
                         start_date=datetime.date(2017, 2, 1),
                         end_date=datetime.date(2017, 3, 4),
                         supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
+                        start_critical_statuses=[],
+                        end_critical_statuses=[],
                     ),
                     SupervisionTypeSpan(
                         start_date=datetime.date(2017, 3, 4),
                         end_date=None,
                         supervision_type=None,
+                        start_critical_statuses=[],
+                        end_critical_statuses=None,
                     ),
                 ],  # Terminated by revocation date
             )

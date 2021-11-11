@@ -118,6 +118,8 @@ DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS = {
         "agent_id": 123,
         "agent_external_id": "agent_external_id_1",
         "supervision_period_id": 111,
+        "agent_start_date": date(2017, 3, 5),
+        "agent_end_date": date(2017, 5, 9),
     }
 }
 

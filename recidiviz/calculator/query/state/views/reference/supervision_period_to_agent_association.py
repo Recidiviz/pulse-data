@@ -36,6 +36,8 @@ SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_QUERY_TEMPLATE = """
       sup.supervision_period_id,
       agents.agent_id,
       CAST(agents.external_id AS STRING) as agent_external_id,
+      sup.start_date AS agent_start_date,
+      sup.termination_date AS agent_end_date
     FROM
       `{project_id}.{base_dataset}.state_supervision_period` sup
     LEFT JOIN
