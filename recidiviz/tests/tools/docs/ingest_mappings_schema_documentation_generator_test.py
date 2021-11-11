@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2019 Recidiviz, Inc.
+# Copyright (C) 2021 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,22 +14,21 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Utils for documentation generation."""
+"""Tests for ingest_mappings_schema_documentation_generator.py"""
 import os
+import unittest
+
+from recidiviz.tools.docs.ingest_mappings_schema_documentation_generator import (
+    generate_documentation,
+)
 
 
-def persist_file_contents(documentation: str, markdown_path: str) -> bool:
-    """Persists contents to the provided path. Returns whether contents at that path
-    changed."""
-    prior_documentation = None
-    if os.path.exists(markdown_path):
-        with open(markdown_path, "r", encoding="utf-8") as md_file:
-            prior_documentation = md_file.read()
+@unittest.skipIf(os.environ.get("TRAVIS") == "true", "docs/ does not exist in Travis")
+class IngestMappingsSchemaDocumentationGeneratorTest(unittest.TestCase):
+    """Tests for ingest_mappings_schema_documentation_generator.py"""
 
-    if prior_documentation != documentation:
-        path_dir, _ = os.path.split(markdown_path)
-        os.makedirs(path_dir, exist_ok=True)
-        with open(markdown_path, "w", encoding="utf-8") as md_file:
-            md_file.write(documentation)
-            return True
-    return False
+    def test_generate_entity_documentation_matches_current_markdown_file(self) -> None:
+        """Asserts that no one forgets to run the
+        ingest_mappings_schema_documentation_generator script.
+        """
+        self.assertFalse(generate_documentation())
