@@ -1642,17 +1642,6 @@ class StateEarlyDischarge(ExternalIdEntity, BuildableAttr, DefaultableAttr):
 class StateSupervisionContact(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     """Models a person's contact with their supervising officer."""
 
-    def __attrs_post_init__(self) -> None:
-        if self.contact_type in (
-            StateSupervisionContactType.FACE_TO_FACE,
-            StateSupervisionContactType.TELEPHONE,
-            StateSupervisionContactType.WRITTEN_MESSAGE,
-            StateSupervisionContactType.VIRTUAL,
-        ):
-            raise ValueError(
-                f"{self.contact_type} is deprecated for state_code: {self.state_code}. This value should not be used."
-            )
-
     # State Code
     state_code: str = attr.ib(validator=attr_validators.is_str)
 
