@@ -73,7 +73,9 @@ class ViolationIdentifier(BaseIdentifier[List[ViolationEvent]]):
     def find_events(
         self, _person: StatePerson, identifier_context: IdentifierContextT
     ) -> List[ViolationEvent]:
-        return self._find_violation_events(**identifier_context)
+        return self._find_violation_events(
+            violations=identifier_context[StateSupervisionViolation.__name__]
+        )
 
     def _find_violation_events(
         self,

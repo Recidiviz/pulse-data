@@ -31,10 +31,9 @@ from recidiviz.calculator.pipeline.base_pipeline import (
 )
 from recidiviz.calculator.pipeline.pipeline_type import PipelineType
 from recidiviz.calculator.pipeline.utils.beam_utils import ImportTable
-from recidiviz.calculator.pipeline.utils.entity_hydration_utils import (
-    SetViolationResponsesOntoViolations,
+from recidiviz.calculator.pipeline.utils.extractor_utils import (
+    ExtractEntitiesForPipeline,
 )
-from recidiviz.calculator.pipeline.utils.extractor_utils import BuildRootEntity
 from recidiviz.calculator.pipeline.utils.person_utils import (
     BuildPersonMetadata,
     ExtractPersonEventsMetadata,
@@ -51,6 +50,16 @@ class ViolationPipeline(BasePipeline):
             pipeline_type=PipelineType.VIOLATION,
             identifier=identifier.ViolationIdentifier(),
             metric_producer=metric_producer.ViolationMetricProducer(),
+            required_entities=[
+                entities.StatePerson,
+                entities.StatePersonRace,
+                entities.StatePersonEthnicity,
+                entities.StateSupervisionViolation,
+                entities.StateSupervisionViolationTypeEntry,
+                entities.StateSupervisionViolatedConditionEntry,
+                entities.StateSupervisionViolationResponse,
+                entities.StateSupervisionViolationResponseDecisionEntry,
+            ],
         )
         self.include_calculation_limit_args = True
 
@@ -67,43 +76,27 @@ class ViolationPipeline(BasePipeline):
         calculation_month_count: int = -1,
         calculation_end_month: Optional[str] = None,
     ) -> beam.Pipeline:
-        # TODO(#2769): Migrate the violation pipeline to v2 entity hydration
-        # Get StatePersons
-        persons = pipeline | "Load Persons" >> BuildRootEntity(
-            dataset=input_dataset,
-            root_entity_class=entities.StatePerson,
-            unifying_id_field=entities.StatePerson.get_class_id_name(),
-            build_related_entities=True,
-            unifying_id_field_filter_set=person_id_filter_set,
-            state_code=state_code,
-        )
+        # TODO(#2769): Remove this once required_entities is non-optional
+        if not self.pipeline_config.required_entities:
+            raise ValueError("Must set required_entities arg on PipelineConfig.")
 
-        # Get StateSupervisionViolations
-        supervision_violations = (
+        # Get all required entities
+        hydrated_required_entities = (
             pipeline
-            | "Load SupervisionViolations"
-            >> BuildRootEntity(
-                dataset=input_dataset,
-                root_entity_class=entities.StateSupervisionViolation,
-                unifying_id_field=entities.StatePerson.get_class_id_name(),
-                build_related_entities=True,
-                unifying_id_field_filter_set=person_id_filter_set,
+            | "Load required entities"
+            >> ExtractEntitiesForPipeline(
                 state_code=state_code,
+                dataset=input_dataset,
+                required_entity_classes=self.pipeline_config.required_entities,
+                unifying_class=entities.StatePerson,
+                unifying_id_field_filter_set=person_id_filter_set,
             )
         )
 
-        # Get StateSupervisionViolationResponses
-        supervision_violation_responses = (
-            pipeline
-            | "Load SupervisionViolationResponses"
-            >> BuildRootEntity(
-                dataset=input_dataset,
-                root_entity_class=entities.StateSupervisionViolationResponse,
-                unifying_id_field=entities.StatePerson.get_class_id_name(),
-                build_related_entities=True,
-                unifying_id_field_filter_set=person_id_filter_set,
-                state_code=state_code,
-            )
+        person_violation_events = (
+            hydrated_required_entities
+            | "Get ViolationEvents"
+            >> beam.ParDo(ClassifyEvents(), identifier=self.pipeline_config.identifier)
         )
 
         state_race_ethnicity_population_counts = (
@@ -117,33 +110,8 @@ class ViolationPipeline(BasePipeline):
             )
         )
 
-        # Group StateSupervisionViolationResponses and StateSupervisionViolations by person_id
-        supervision_violations_and_responses = (
-            {
-                "violations": supervision_violations,
-                "violation_responses": supervision_violation_responses,
-            }
-            | "Group StateSupervisionViolationResponses to StateSupervisionViolations"
-            >> beam.CoGroupByKey()
-        )
-
-        violations_with_hydrated_violation_responses = (
-            supervision_violations_and_responses
-            | "Set hydrated StateSupervisionViolationResponses on the StateSupervisionViolations"
-            >> beam.ParDo(SetViolationResponsesOntoViolations())
-        )
-
-        person_entities = {
-            "persons": persons,
-            "violations": violations_with_hydrated_violation_responses,
-        } | "Group StatePerson to violation entities" >> beam.CoGroupByKey()
-
-        person_violation_events = person_entities | "Get ViolationEvents" >> beam.ParDo(
-            ClassifyEvents(), identifier=self.pipeline_config.identifier
-        )
-
         person_metadata = (
-            person_entities
+            hydrated_required_entities
             | "Build the person_metadata dictionary"
             >> beam.ParDo(
                 BuildPersonMetadata(),
