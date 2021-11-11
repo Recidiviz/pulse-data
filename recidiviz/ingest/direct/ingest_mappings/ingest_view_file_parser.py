@@ -26,10 +26,10 @@ from more_itertools import one
 
 from recidiviz.cloud_storage.gcs_file_system import GcsfsFileContentsHandle
 from recidiviz.common.common_utils import bidirectional_set_difference
-from recidiviz.ingest.direct.controllers.ingest_view_file_parser_delegate import (
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_file_parser_delegate import (
     IngestViewFileParserDelegate,
 )
-from recidiviz.ingest.direct.controllers.ingest_view_manifest import (
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest import (
     EntityTreeManifest,
     EntityTreeManifestFactory,
 )

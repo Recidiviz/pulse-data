@@ -16,7 +16,7 @@
 # =============================================================================
 """Custom enum parser functions for use in ingest_view_file_parser_test.py."""
 
-from recidiviz.tests.ingest.direct.controllers.fixtures.ingest_view_file_parser.fake_schema.entities import (
+from recidiviz.tests.ingest.direct.ingest_mappings.fixtures.ingest_view_file_parser.fake_schema.entities import (
     FakeRace,
 )
 

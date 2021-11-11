@@ -32,6 +32,11 @@ from recidiviz.cloud_storage.gcs_file_system import (
     GcsfsFileContentsHandle,
 )
 from recidiviz.cloud_storage.gcs_pseudo_lock_manager import GCSPseudoLockAlreadyExists
+from recidiviz.cloud_storage.gcsfs_csv_reader import GcsfsCsvReader
+from recidiviz.cloud_storage.gcsfs_csv_reader_delegates import (
+    ReadOneGcsfsCsvReaderDelegate,
+    SplittingGcsfsCsvReaderDelegate,
+)
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import (
     GcsfsBucketPath,
@@ -48,9 +53,6 @@ from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
 from recidiviz.ingest.direct.controllers.direct_ingest_ingest_view_export_manager import (
     DirectIngestIngestViewExportManager,
 )
-from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
-    DirectIngestInstance,
-)
 from recidiviz.ingest.direct.controllers.direct_ingest_instance_status_manager import (
     DirectIngestInstanceStatusManager,
 )
@@ -63,11 +65,6 @@ from recidiviz.ingest.direct.controllers.direct_ingest_region_lock_manager impor
 from recidiviz.ingest.direct.controllers.direct_ingest_view_collector import (
     DirectIngestPreProcessedIngestViewCollector,
 )
-from recidiviz.ingest.direct.controllers.gcsfs_csv_reader import GcsfsCsvReader
-from recidiviz.ingest.direct.controllers.gcsfs_csv_reader_delegates import (
-    ReadOneGcsfsCsvReaderDelegate,
-    SplittingGcsfsCsvReaderDelegate,
-)
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_job_prioritizer import (
     GcsfsDirectIngestJobPrioritizer,
 )
@@ -79,14 +76,6 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     filename_parts_from_path,
     gcsfs_direct_ingest_storage_directory_path_for_region,
     gcsfs_direct_ingest_temporary_output_directory_path,
-)
-from recidiviz.ingest.direct.controllers.ingest_view_file_parser import (
-    MANIFEST_LANGUAGE_VERSION_KEY,
-    IngestViewFileParser,
-)
-from recidiviz.ingest.direct.controllers.ingest_view_file_parser_delegate import (
-    IngestViewFileParserDelegateImpl,
-    yaml_mappings_filepath,
 )
 from recidiviz.ingest.direct.controllers.ingest_view_processor import (
     IngestViewProcessor,
@@ -106,6 +95,15 @@ from recidiviz.ingest.direct.direct_ingest_controller_utils import (
     check_is_region_launched_in_env,
 )
 from recidiviz.ingest.direct.errors import DirectIngestError, DirectIngestErrorType
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_file_parser import (
+    MANIFEST_LANGUAGE_VERSION_KEY,
+    IngestViewFileParser,
+)
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_file_parser_delegate import (
+    IngestViewFileParserDelegateImpl,
+    yaml_mappings_filepath,
+)
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.ingestor import Ingestor
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey

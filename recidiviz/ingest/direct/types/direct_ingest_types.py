@@ -16,7 +16,7 @@
 # =============================================================================
 """Defines types used for direct ingest."""
 import abc
-from typing import Optional, Type, Dict, Any
+from typing import Any, Dict, Optional, Type
 
 import attr
 import cattr

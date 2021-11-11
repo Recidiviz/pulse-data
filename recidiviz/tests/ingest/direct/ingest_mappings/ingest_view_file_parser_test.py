@@ -26,31 +26,31 @@ import jsonschema
 from recidiviz.cloud_storage.gcs_file_system import GcsfsFileContentsHandle
 from recidiviz.common.constants.enum_parser import EnumParser, EnumParsingError
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.controllers.custom_function_registry import (
+from recidiviz.ingest.direct.ingest_mappings.custom_function_registry import (
     CustomFunctionRegistry,
 )
-from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
-    DirectIngestInstance,
-)
-from recidiviz.ingest.direct.controllers.ingest_view_file_parser import (
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_file_parser import (
     FileFormat,
     IngestViewFileParser,
 )
-from recidiviz.ingest.direct.controllers.ingest_view_file_parser_delegate import (
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_file_parser_delegate import (
     IngestViewFileParserDelegate,
 )
-from recidiviz.ingest.direct.controllers.ingest_view_manifest import EntityTreeManifest
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest import (
+    EntityTreeManifest,
+)
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_deserialize import (
     EntityFactory,
     entity_deserialize,
 )
-from recidiviz.tests.ingest.direct.controllers.fixtures.ingest_view_file_parser import (
+from recidiviz.tests.ingest.direct.ingest_mappings.fixtures.ingest_view_file_parser import (
     custom_python,
     ingest_view_files,
     manifests,
 )
-from recidiviz.tests.ingest.direct.controllers.fixtures.ingest_view_file_parser.fake_schema.entities import (
+from recidiviz.tests.ingest.direct.ingest_mappings.fixtures.ingest_view_file_parser.fake_schema.entities import (
     FakeAgent,
     FakeCharge,
     FakeGender,

@@ -21,12 +21,12 @@ from typing import List, Optional
 
 import pandas as pd
 
-from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.ingest.direct.controllers.gcsfs_csv_reader import (
+from recidiviz.cloud_storage.gcsfs_csv_reader import (
     COMMON_RAW_FILE_ENCODINGS,
     GcsfsCsvReader,
     GcsfsCsvReaderDelegate,
 )
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.ingest import fixtures
 

@@ -20,7 +20,7 @@ import unittest
 from unittest.mock import Mock, patch
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
+from recidiviz.ingest.direct.types.direct_ingest_instance import (
     DirectIngestInstance,
 )
 from recidiviz.ingest.direct.controllers.direct_ingest_region_lock_manager import (

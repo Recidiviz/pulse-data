@@ -26,7 +26,7 @@ from typing import Optional
 import attr
 
 from recidiviz.common.attr_mixins import BuildableAttr, DefaultableAttr
-from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
+from recidiviz.ingest.direct.types.direct_ingest_instance import (
     DirectIngestInstance,
 )
 from recidiviz.persistence.entity.base_entity import entity_graph_eq

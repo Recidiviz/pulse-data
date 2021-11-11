@@ -42,7 +42,7 @@ import sys
 import alembic.config
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
+from recidiviz.ingest.direct.types.direct_ingest_instance import (
     DirectIngestInstance,
 )
 from recidiviz.persistence.database.schema.state.schema import StateAgent, StatePerson

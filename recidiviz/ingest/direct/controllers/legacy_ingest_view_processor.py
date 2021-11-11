@@ -25,13 +25,13 @@ from typing import Callable, Dict, List, Optional
 
 from recidiviz.cloud_storage.gcs_file_system import GcsfsFileContentsHandle
 from recidiviz.common.ingest_metadata import IngestMetadata
-from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
+from recidiviz.ingest.direct.types.direct_ingest_instance import (
     DirectIngestInstance,
 )
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsIngestArgs,
 )
-from recidiviz.ingest.direct.controllers.ingest_view_file_parser_delegate import (
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_file_parser_delegate import (
     yaml_mappings_filepath,
 )
 from recidiviz.ingest.direct.controllers.ingest_view_processor import (

@@ -19,14 +19,12 @@
 import abc
 import csv
 import logging
-from typing import List, Tuple, Optional
+from typing import List, Optional, Tuple
 
 import pandas as pd
 
-from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
-    DirectIngestGCSFileSystem,
-)
-from recidiviz.ingest.direct.controllers.gcsfs_csv_reader import GcsfsCsvReaderDelegate
+from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
+from recidiviz.cloud_storage.gcsfs_csv_reader import GcsfsCsvReaderDelegate
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 
 
@@ -76,9 +74,7 @@ class SplittingGcsfsCsvReaderDelegate(GcsfsCsvReaderDelegate):
     path.
     """
 
-    def __init__(
-        self, path: GcsfsFilePath, fs: DirectIngestGCSFileSystem, include_header: bool
-    ):
+    def __init__(self, path: GcsfsFilePath, fs: GCSFileSystem, include_header: bool):
         self.path = path
         self.fs = fs
         self.include_header = include_header

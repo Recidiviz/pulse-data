@@ -24,7 +24,7 @@ from recidiviz.common.results import MultiRequestResultWithSkipped
 from recidiviz.ingest.direct.controllers.base_upload_state_files_to_ingest_bucket_controller import (
     UploadStateFilesToIngestBucketController,
 )
-from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
+from recidiviz.ingest.direct.types.direct_ingest_instance import (
     DirectIngestInstance,
 )
 from recidiviz.ingest.direct.controllers.direct_ingest_instance_status_manager import (
