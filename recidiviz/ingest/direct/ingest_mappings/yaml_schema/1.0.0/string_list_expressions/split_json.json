@@ -1,0 +1,43 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "description": "An expression that takes a serialized JSON list and splits it into a list of component JSON string items. Can be used in the context of a `$foreach` expression to generate a list of string values.",
+  "type": "object",
+  "required": ["$split_json"],
+  "additionalProperties": false,
+  "properties": {
+    "$split_json": {
+      "$ref": "../string_expressions/index.json"
+    }
+  },
+  "examples": [
+    {
+      "$split_json": "violation_types"
+    }
+  ],
+  "#contextualized_examples": [
+    {
+      "$foreach": {
+        "$iterable": {
+          "$split_json": "violation_types"
+        },
+        "$result": {
+          "StateSupervisionViolatedConditionEntry": {
+            "condition": {
+              "$custom": {
+                "$function": "us_pa_custom_parsers.violated_condition_from_violation_code",
+                "$args": {
+                  "violation_code": {
+                    "$json_extract": {
+                      "$key": "violation_code",
+                      "$json": "$iter_item"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,148 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "description": "An expression that returns one of N expressions based on the result of one or more boolean expressions. May return None if no branch evaluates to true.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "$conditional": {
+      "type": "array",
+      "items": [
+        {
+          "$ref": "#/definitions/$if"
+        }
+      ],
+      "additionalItems": {
+        "oneOf": [
+          {
+            "$ref": "#/definitions/$else_if"
+          },
+          {
+            "$ref": "#/definitions/$else"
+          }
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "$if": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "$if": {
+          "$ref": "../boolean_expressions/index.json"
+        },
+        "$then": {
+          "$ref": "#/definitions/branch_result_type"
+        }
+      },
+      "required": ["$if", "$then"]
+    },
+    "$else_if": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "$else_if": {
+          "$ref": "../boolean_expressions/index.json"
+        },
+        "$then": {
+          "$ref": "#/definitions/branch_result_type"
+        }
+      },
+      "required": ["$else_if", "$then"]
+    },
+    "$else": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "$else": {
+          "$ref": "#/definitions/branch_result_type"
+        }
+      },
+      "required": ["$else"]
+    },
+    "branch_result_type": {
+      "anyOf": [
+        {
+          "$ref": "../boolean_expressions/index.json"
+        },
+        {
+          "$ref": "../entity_expressions/index.json"
+        },
+        {
+          "$ref": "../enum_expressions/index.json"
+        },
+        {
+          "$ref": "../string_expressions/index.json"
+        }
+      ]
+    }
+  },
+  "examples": [
+    {
+      "$conditional": [
+        {
+          "$if": {
+            "$not_null": "PERSONNAME"
+          },
+          "$then": "PERSONNAME"
+        },
+        {
+          "$else_if": {
+            "$not_null": "NICKNAME"
+          },
+          "$then": "NICKNAME"
+        }
+      ]
+    },
+    {
+      "$conditional": [
+        {
+          "$if": {
+            "$is_null": "DOB"
+          },
+          "$then": "$literal(\"19700101\")"
+        },
+        {
+          "$else": "DOB"
+        }
+      ]
+    },
+    {
+      "$conditional": [
+        {
+          "$if": {
+            "$custom": {
+              "$args": {
+                "ssn": "SSN"
+              },
+              "$function": "fake_custom_conditionals.should_include_ssn"
+            }
+          },
+          "$then": "SSN"
+        }
+      ]
+    }
+  ],
+  "#contextualized_examples": [
+    {
+      "StateIncarcerationIncident": {
+        "incident_type":     {
+          "$conditional": [
+            {
+              "$if": {
+                "$equal": [
+                  "drug_related",
+                  "$literal(\"Y\")"
+                ]
+              },
+              "$then": "$literal_enum(StateIncarcerationIncidentType.CONTRABAND)"
+            },
+            {
+              "$else": "$literal_enum(StateIncarcerationIncidentType.REPORT)"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

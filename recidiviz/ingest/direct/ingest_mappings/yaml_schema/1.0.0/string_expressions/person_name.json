@@ -1,0 +1,56 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "description": "An expression that returns a JSON-serialized person name.",
+  "type": "object",
+  "required": ["$person_name"],
+  "additionalProperties": false,
+  "properties": {
+    "$person_name": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["$given_names", "$surname"],
+      "properties": {
+        "$given_names": {
+          "description": "The person's given (first) names. Will populate the \"given_names\" JSON key.",
+          "$ref": "index.json"
+        },
+        "$middle_names": {
+          "description": "The person's middle names. Will populate the \"middle_names\" JSON key.",
+          "$ref": "index.json"
+        },
+        "$surname": {
+          "description": "The person's last name. Will populate the \"surname\" JSON key.",
+          "$ref": "index.json"
+        },
+        "$name_suffix": {
+          "description": "The person's name suffix (e.g. Jr, III, etc). Will populate the \"name_suffix\" JSON key",
+          "$ref": "index.json"
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "$person_name": {
+        "$given_names": "Frst_Nm",
+        "$middle_names": "Mid_Nm",
+        "$surname": "Lst_Nm",
+        "$name_suffix": "Nm_Suff"
+      }
+    }
+  ],
+  "#contextualized_examples": [
+    {
+      "StatePerson": {
+        "full_name": {
+          "$person_name": {
+            "$given_names": "Frst_Nm",
+            "$middle_names": "Mid_Nm",
+            "$surname": "Lst_Nm",
+            "$name_suffix": "Nm_Suff"
+          }
+        }
+      }
+    }
+  ]
+}

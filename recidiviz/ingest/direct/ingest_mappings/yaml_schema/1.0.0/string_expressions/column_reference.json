@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "title": "Column reference",
+  "description": "The value must be a reference to a column in the input CSV.",
+  "type": "string",
+  "pattern": "^[^$]",
+  "examples": [
+    "MY_COL",
+    "DOC_ID"
+  ],
+  "#contextualized_examples": [
+    {
+      "$in": {
+        "$value": "MY_COL",
+        "$options": [
+          "$literal(\"A\")",
+          "$literal(\"B\")"
+        ]
+      }
+    },
+    {
+      "$json_dict": {
+        "my_json_key": "MY_COL",
+        "my_json_key_2": "MY_COL_2"
+      }
+    },
+    {
+      "StateIncarcerationPeriod": {
+        "external_id": "MY_COL",
+        "admission_date": "MY_COL_2",
+        "release_date": "MY_COL_3",
+        "facility": "MY_COL_4"
+      }
+    }
+  ]
+}

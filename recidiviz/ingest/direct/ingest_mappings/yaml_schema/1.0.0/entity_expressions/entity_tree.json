@@ -1,0 +1,170 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "type": "object",
+  "title": "Entity tree",
+  "description": "Describes how we use some or all of the columns in an ingest view row to hydrate a schema entity (and its child entities).",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^([A-Z][a-z]+)+$": {
+      "type": "object",
+      "description": "Describes the map of all entity field names to their values.",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^([a-z][a-z_]+)+$": {
+          "description": "Describes how we use some or all of the columns in an ingest view row to hydrate a single field on a schema entity.",
+          "anyOf": [
+            {
+              "$ref": "index.json"
+            },
+            {
+              "$ref": "../string_expressions/index.json"
+            },
+            {
+              "$ref": "../boolean_expressions/index.json"
+            },
+            {
+              "$ref": "../enum_expressions/index.json"
+            },
+            {
+              "$ref": "#/definitions/child_entity_list"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "StateSupervisionViolationResponse": {
+        "external_id": {
+          "$concat": {
+            "$values": [
+              "$literal(\"BOARD\")",
+              "ParoleNumber",
+              "ParoleCountID",
+              "BdActionID"
+            ]
+          }
+        },
+        "response_type": "$literal_enum(StateSupervisionViolationResponseType.PERMANENT_DECISION)",
+        "deciding_body_type": "$literal_enum(StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD)",
+        "response_date": "ActionDate",
+        "supervision_violation_response_decisions": [
+          {
+            "StateSupervisionViolationResponseDecisionEntry": {
+              "decision": {
+                "$enum_mapping": {
+                  "$raw_text": "CndConditionCode",
+                  "$mappings": {
+                    "StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION": [
+                      "RESCR",
+                      "RESCR6",
+                      "RESCR9",
+                      "RESCR12"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "StatePerson": {
+        "external_ids": [
+          {
+            "$foreach": {
+              "$iterable": "control_numbers",
+              "$result": {
+                "StatePersonExternalId": {
+                  "external_id": "$iter_item",
+                  "id_type": "$literal(\"US_XX_CONTROL\")"
+                }
+              }
+            }
+          },
+          {
+            "$foreach": {
+              "$iterable": "inmate_numbers",
+              "$result": {
+                "StatePersonExternalId": {
+                  "external_id": "$iter_item",
+                  "id_type": "$literal(\"US_XX_INMATE\")"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "StateIncarcerationPeriod": {
+        "external_id": {
+          "$concat": {
+            "$values": [
+              "OffenderID",
+              "IncarcerationPeriodSequenceNumber"
+            ]
+          }
+        },
+        "admission_date": "StartDateTime",
+        "release_date": "EndDateTime",
+        "facility": "Site",
+        "admission_reason": {
+          "$enum_mapping": {
+            "$raw_text": {
+              "$concat": {
+                "$values": [
+                  "StartMovementType",
+                  "StartMovementReason"
+                ]
+              }
+            },
+            "$mappings": {
+              "StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN": [
+                "ABCD-1234",
+                "ABCD-7890"
+              ]
+            }
+          }
+        },
+        "release_reason": {
+          "$enum_mapping": {
+            "$raw_text": {
+              "$concat": {
+                "$values": [
+                  "EndMovementType",
+                  "EndMovementReason"
+                ]
+              }
+            },
+            "$mappings": {
+              "StateIncarcerationPeriodReleaseReason.RELEASED_TO_SUPERVISION": [
+                "EFGH-0000",
+                "EFGH-1111",
+                "EFGH-2222"
+              ]
+            }
+          }
+        }
+      }
+    }
+  ],
+  "definitions": {
+    "child_entity_list": {
+      "description": "A list that we can use to hydrate a list field on an entity, where each value is defined by the nodes in this list.",
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "$ref": "index.json"
+          },
+          {
+            "$ref": "expandable_entity_list.json"
+          }
+        ]
+      }
+    }
+  }
+}

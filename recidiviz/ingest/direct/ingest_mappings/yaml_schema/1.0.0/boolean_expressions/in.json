@@ -1,0 +1,65 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "description": "An expression that returns true if a value matches any of the provided options.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "$in": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["$value", "$options"],
+      "properties": {
+        "$value": {
+          "description": "The single value that is checked against the `$options` list.",
+          "$ref": "../string_expressions/index.json"
+        },
+        "$options": {
+          "description": "A list of values that the input `$value` will be checked against.",
+          "type": "array",
+          "items": {
+            "$ref": "../string_expressions/index.json"
+          }
+        }
+      }
+    }
+  },
+  "required": ["$in"],
+  "examples": [
+    {
+      "$in": {
+        "$value": "MY_COL",
+        "$options": [
+          "$literal(\"A\")",
+          "$literal(\"B\")"
+        ]
+      }
+    },
+    {
+      "$in": {
+        "$value": "$literal(\"A\")",
+        "$options": [
+          "MY_COL",
+          "MY_OTHER_COL"
+        ]
+      }
+    }
+  ],
+  "#contextualized_examples": [
+    {
+      "$conditional": [
+        {
+          "$if": {
+            "$in": {
+              "$value": "confinement",
+              "$options": [
+                "$literal(\"Y\")",
+                "$literal(\"C\")"
+              ]
+            }
+          },
+          "$then": "confinement_date"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "description": "YAML expressions that can be used to generate a single entity tree.",
+  "oneOf": [
+    {
+      "$ref": "../generic_expressions/conditional.json"
+    },
+    {
+      "$ref": "entity_tree.json"
+    }
+  ]
+}

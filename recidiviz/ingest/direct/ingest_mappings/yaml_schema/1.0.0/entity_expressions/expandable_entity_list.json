@@ -1,0 +1,116 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "description": "An expression that will be expanded into 0 - N separate entities, depending on the size of the input `$iterable`. Can only be used in the context of a entity list field on an entity tree.",
+  "type": "object",
+  "required": ["$foreach"],
+  "additionalProperties": false,
+  "properties": {
+    "$foreach": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["$iterable", "$result"],
+      "properties": {
+        "$iterable": {
+          "description": "An expression that produces a list of strings to iterate over. The value for the current iteration can be accessed via the `$iter_item` expression.",
+          "$ref": "../string_list_expressions/index.json"
+        },
+        "$result": {
+          "description": "An expression that will produce one entity in the resulting entity list.",
+          "$ref": "index.json"
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "$foreach": {
+        "$iterable": "CHARGES",
+        "$result": {
+          "FakeCharge": {
+            "external_id": "$iter_item",
+            "statute": "STATUTE"
+          }
+        }
+      }
+    },
+    {
+      "$foreach": {
+        "$iterable": "races_ethnicities_list",
+        "$result": {
+          "StatePersonEthnicity": {
+            "ethnicity": {
+              "$enum_mapping": {
+                "$raw_text": "$iter_item",
+                "$mappings": {
+                  "Ethnicity.HISPANIC": "H"
+                },
+                "$ignore": [
+                  "A",
+                  "B",
+                  "I",
+                  "N",
+                  "W",
+                  "M"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "$foreach": {
+        "$iterable": {
+          "$split_json": "violation_types"
+        },
+        "$result": {
+          "StateSupervisionViolatedConditionEntry": {
+            "condition": {
+              "$custom": {
+                "$function": "us_pa_custom_parsers.violated_condition_from_violation_code",
+                "$args": {
+                  "violation_code": {
+                    "$json_extract": {
+                      "$key": "violation_code",
+                      "$json": "$iter_item"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "#contextualized_examples": [
+    {
+      "StatePerson": {
+        "external_ids": [
+          {
+            "$foreach": {
+              "$iterable": "control_numbers",
+              "$result": {
+                "StatePersonExternalId": {
+                  "external_id": "$iter_item",
+                  "id_type": "$literal(\"US_XX_CONTROL\")"
+                }
+              }
+            }
+          },
+          {
+            "$foreach": {
+              "$iterable": "inmate_numbers",
+              "$result": {
+                "StatePersonExternalId": {
+                  "external_id": "$iter_item",
+                  "id_type": "$literal(\"US_XX_INMATE\")"
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
