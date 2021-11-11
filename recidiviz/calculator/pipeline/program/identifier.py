@@ -135,6 +135,11 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
             # StateSupervisionViolationResponse entities in IP pre-processing
             pre_processed_violation_responses=None,
             field_index=self.field_index,
+            # Note: This pipeline cannot be run for any state that relies on
+            # StateIncarcerationSentence and StateSupervisionSentence entities
+            # in SP pre-processing
+            incarceration_sentences=None,
+            supervision_sentences=None,
         )
 
         if not sp_pre_processing_manager:

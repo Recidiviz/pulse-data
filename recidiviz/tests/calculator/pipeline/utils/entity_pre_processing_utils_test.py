@@ -32,6 +32,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 )
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
+    StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
@@ -52,6 +53,11 @@ class TestIncarcerationPreProcessingDelegate(UsXxIncarcerationPreProcessingDeleg
         return True
 
     def pre_processing_relies_on_violation_responses(self) -> bool:
+        return True
+
+
+class TestSupervisionPreProcessingDelegate(UsXxSupervisionPreProcessingDelegate):
+    def pre_processing_relies_on_sentences(self) -> bool:
         return True
 
 
@@ -119,6 +125,8 @@ class TestPreProcessingManagersForCalculations(unittest.TestCase):
             supervision_periods=[supervision_period],
             pre_processed_violation_responses=None,
             field_index=self.field_index,
+            incarceration_sentences=None,
+            supervision_sentences=None,
         )
 
         assert ip_pre_processing_manager is not None
@@ -159,6 +167,8 @@ class TestPreProcessingManagersForCalculations(unittest.TestCase):
             supervision_periods=None,
             pre_processed_violation_responses=None,
             field_index=self.field_index,
+            incarceration_sentences=None,
+            supervision_sentences=None,
         )
 
         assert ip_pre_processing_manager is not None
@@ -199,6 +209,8 @@ class TestPreProcessingManagersForCalculations(unittest.TestCase):
                 supervision_periods=None,
                 pre_processed_violation_responses=[],
                 field_index=self.field_index,
+                incarceration_sentences=None,
+                supervision_sentences=None,
             )
 
     def test_pre_processing_managers_for_calculations_no_violation_responses_state_requires(
@@ -229,6 +241,39 @@ class TestPreProcessingManagersForCalculations(unittest.TestCase):
                 supervision_periods=[],
                 pre_processed_violation_responses=None,
                 field_index=self.field_index,
+                incarceration_sentences=None,
+                supervision_sentences=None,
+            )
+
+    def test_pre_processing_managers_for_calculations_no_sentences_state_requires(
+        self,
+    ) -> None:
+        self.mock_supervision_pre_processing_delegate.return_value = (
+            TestSupervisionPreProcessingDelegate()
+        )
+        state_code = "US_XX"
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            state_code="US_XX",
+            start_date=datetime.date(2017, 5, 1),
+            termination_date=datetime.date(2018, 2, 1),
+            admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
+            termination_reason=StateSupervisionPeriodTerminationReason.RETURN_TO_INCARCERATION,
+        )
+
+        with self.assertRaises(ValueError):
+            # Assert an error is raised if either sentences arg is None for a state
+            # that relies on sentences for SP pre-processing
+            (_, _) = pre_processing_managers_for_calculations(
+                state_code=state_code,
+                incarceration_periods=[],
+                supervision_periods=[supervision_period],
+                pre_processed_violation_responses=None,
+                field_index=self.field_index,
+                incarceration_sentences=None,
+                supervision_sentences=None,
             )
 
     def test_pre_processing_managers_for_calculations_no_ips(self) -> None:
@@ -252,6 +297,8 @@ class TestPreProcessingManagersForCalculations(unittest.TestCase):
             supervision_periods=[supervision_period],
             pre_processed_violation_responses=None,
             field_index=self.field_index,
+            incarceration_sentences=None,
+            supervision_sentences=None,
         )
 
         self.assertIsNone(ip_pre_processing_manager)
@@ -273,6 +320,8 @@ class TestPreProcessingManagersForCalculations(unittest.TestCase):
             supervision_periods=[],
             pre_processed_violation_responses=[],
             field_index=self.field_index,
+            incarceration_sentences=None,
+            supervision_sentences=None,
         )
 
         assert ip_pre_processing_manager is not None

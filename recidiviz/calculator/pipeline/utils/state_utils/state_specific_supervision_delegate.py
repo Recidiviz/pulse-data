@@ -19,7 +19,7 @@ for state-specific decisions involved in categorizing various attributes of
 supervision."""
 # pylint: disable=unused-argument
 import abc
-from typing import List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from recidiviz.calculator.pipeline.supervision.events import SupervisionPopulationEvent
 from recidiviz.common.constants.state.state_supervision_period import (
@@ -126,3 +126,18 @@ class StateSpecificSupervisionDelegate(abc.ABC):
         Default behavior is to return 1, the index of the second assessment."""
         # TODO(#2782): Investigate whether to update this logic
         return 1
+
+    def get_supervising_officer_external_id_for_supervision_period(
+        self,
+        supervision_period: StateSupervisionPeriod,
+        supervision_period_to_agent_associations: Dict[int, Dict[str, Any]],
+    ) -> Optional[str]:
+        """Retrieves the supervising officer associated with the supervision period."""
+        if not supervision_period.supervision_period_id:
+            raise ValueError("Unexpected null supervision period id")
+
+        agent_info = supervision_period_to_agent_associations.get(
+            supervision_period.supervision_period_id
+        )
+
+        return agent_info["agent_external_id"] if agent_info is not None else None

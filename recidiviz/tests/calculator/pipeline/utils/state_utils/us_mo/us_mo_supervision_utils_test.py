@@ -78,6 +78,8 @@ class UsMoGetPostIncarcerationSupervisionTypeTest(unittest.TestCase):
                         start_date=datetime.date(year=2020, month=1, day=11),
                         end_date=None,
                         supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
+                        start_critical_statuses=[],
+                        end_critical_statuses=[],
                     )
                 ],
             )
@@ -122,6 +124,8 @@ class UsMoGetPostIncarcerationSupervisionTypeTest(unittest.TestCase):
                         start_date=datetime.date(2020, 1, 13),
                         end_date=None,
                         supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
+                        start_critical_statuses=[],
+                        end_critical_statuses=[],
                     )
                 ],
             )
@@ -142,11 +146,15 @@ class UsMoGetPostIncarcerationSupervisionTypeTest(unittest.TestCase):
                         start_date=datetime.date(2017, 2, 1),
                         end_date=datetime.date(2017, 3, 4),
                         supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
+                        start_critical_statuses=[],
+                        end_critical_statuses=[],
                     ),
                     SupervisionTypeSpan(
                         start_date=datetime.date(2017, 3, 4),
                         end_date=None,
                         supervision_type=None,
+                        start_critical_statuses=[],
+                        end_critical_statuses=None,
                     ),
                 ],
             )
@@ -215,6 +223,8 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
                     start_date=supervision_start,
                     end_date=None,
                     supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
+                    start_critical_statuses=[],
+                    end_critical_statuses=[],
                 )
             ],
         )
@@ -255,12 +265,16 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
                     start_date=supervision_start,
                     end_date=self.start_of_month_date,
                     supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
+                    start_critical_statuses=[],
+                    end_critical_statuses=[],
                 ),
                 # Incarcerated / suspended since start of month
                 SupervisionTypeSpan(
                     start_date=self.start_of_month_date,
                     end_date=None,
                     supervision_type=None,
+                    start_critical_statuses=[],
+                    end_critical_statuses=None,
                 ),
             ],
         )
@@ -304,12 +318,16 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
                     start_date=supervision_start,
                     end_date=supervision_end_date_middle_of_month,
                     supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
+                    start_critical_statuses=[],
+                    end_critical_statuses=[],
                 ),
                 # Incarcerated / suspended since middle of month
                 SupervisionTypeSpan(
                     start_date=supervision_end_date_middle_of_month,
                     end_date=None,
                     supervision_type=None,
+                    start_critical_statuses=[],
+                    end_critical_statuses=None,
                 ),
             ],
         )
@@ -353,12 +371,16 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
                     start_date=start_date,
                     end_date=parole_end_date_middle_of_month,
                     supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
+                    start_critical_statuses=[],
+                    end_critical_statuses=[],
                 ),
                 # Parole finishes middle of month
                 SupervisionTypeSpan(
                     start_date=parole_end_date_middle_of_month,
                     end_date=None,
                     supervision_type=None,
+                    start_critical_statuses=[],
+                    end_critical_statuses=None,
                 ),
             ],
         )
@@ -376,6 +398,8 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
                     start_date=parole_end_date_middle_of_month,
                     end_date=None,
                     supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
+                    start_critical_statuses=[],
+                    end_critical_statuses=[],
                 )
             ],
         )
@@ -417,11 +441,15 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
                         start_date=supervision_start,
                         end_date=self.start_of_next_month_date,
                         supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
+                        start_critical_statuses=[],
+                        end_critical_statuses=[],
                     ),
                     SupervisionTypeSpan(
                         start_date=self.start_of_next_month_date,
                         end_date=None,
                         supervision_type=None,
+                        start_critical_statuses=[],
+                        end_critical_statuses=None,
                     ),
                 ],
             )
@@ -439,11 +467,15 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
                     start_date=supervision_start,
                     end_date=self.start_of_next_month_date,
                     supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
+                    start_critical_statuses=[],
+                    end_critical_statuses=[],
                 ),
                 SupervisionTypeSpan(
                     start_date=self.start_of_next_month_date,
                     end_date=None,
                     supervision_type=None,
+                    start_critical_statuses=[],
+                    end_critical_statuses=None,
                 ),
             ],
         )
@@ -486,11 +518,15 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
                         start_date=supervision_start,
                         end_date=second_to_last_month_date,
                         supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
+                        start_critical_statuses=[],
+                        end_critical_statuses=[],
                     ),
                     SupervisionTypeSpan(
                         start_date=second_to_last_month_date,
                         end_date=None,
                         supervision_type=None,
+                        start_critical_statuses=[],
+                        end_critical_statuses=None,
                     ),
                 ],
             )
@@ -509,11 +545,15 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
                     start_date=supervision_start,
                     end_date=second_to_last_month_date,
                     supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
+                    start_critical_statuses=[],
+                    end_critical_statuses=[],
                 ),
                 SupervisionTypeSpan(
                     start_date=second_to_last_month_date,
                     end_date=None,
                     supervision_type=None,
+                    start_critical_statuses=[],
+                    end_critical_statuses=None,
                 ),
             ],
         )
@@ -561,11 +601,15 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
                         start_date=supervision_start,
                         end_date=second_to_last_month_date,
                         supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
+                        start_critical_statuses=[],
+                        end_critical_statuses=[],
                     ),
                     SupervisionTypeSpan(
                         start_date=second_to_last_month_date,
                         end_date=None,
                         supervision_type=None,
+                        start_critical_statuses=[],
+                        end_critical_statuses=None,
                     ),
                 ],
             )
@@ -584,9 +628,15 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
                     start_date=supervision_start,
                     end_date=mid_month_date,
                     supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
+                    start_critical_statuses=[],
+                    end_critical_statuses=[],
                 ),
                 SupervisionTypeSpan(
-                    start_date=mid_month_date, end_date=None, supervision_type=None
+                    start_date=mid_month_date,
+                    end_date=None,
+                    supervision_type=None,
+                    start_critical_statuses=[],
+                    end_critical_statuses=None,
                 ),
             ],
         )
@@ -666,11 +716,15 @@ class UsMoGetMostRecentSupervisionPeriodSupervisionTypeBeforeUpperBoundDayTest(
                         start_date=start_date,
                         end_date=transition_date_2,
                         supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
+                        start_critical_statuses=[],
+                        end_critical_statuses=[],
                     ),
                     SupervisionTypeSpan(
                         start_date=transition_date_2,
                         end_date=None,
                         supervision_type=None,
+                        start_critical_statuses=[],
+                        end_critical_statuses=None,
                     ),
                 ],
             )
@@ -688,11 +742,15 @@ class UsMoGetMostRecentSupervisionPeriodSupervisionTypeBeforeUpperBoundDayTest(
                     start_date=start_date,
                     end_date=transition_date_1,
                     supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
+                    start_critical_statuses=[],
+                    end_critical_statuses=[],
                 ),
                 SupervisionTypeSpan(
                     start_date=transition_date_1,
                     end_date=None,
                     supervision_type=None,
+                    start_critical_statuses=[],
+                    end_critical_statuses=None,
                 ),
             ],
         )
@@ -709,11 +767,15 @@ class UsMoGetMostRecentSupervisionPeriodSupervisionTypeBeforeUpperBoundDayTest(
                     start_date=start_date,
                     end_date=transition_date_2,
                     supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
+                    start_critical_statuses=[],
+                    end_critical_statuses=[],
                 ),
                 SupervisionTypeSpan(
                     start_date=transition_date_2,
                     end_date=None,
                     supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
+                    start_critical_statuses=[],
+                    end_critical_statuses=[],
                 ),
             ],
         )

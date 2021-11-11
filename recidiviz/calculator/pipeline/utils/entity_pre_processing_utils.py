@@ -41,7 +41,9 @@ from recidiviz.calculator.pipeline.utils.supervision_violation_responses_pre_pro
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
+    StateIncarcerationSentence,
     StateSupervisionPeriod,
+    StateSupervisionSentence,
     StateSupervisionViolationResponse,
 )
 
@@ -54,6 +56,8 @@ def pre_processing_managers_for_calculations(
         List[StateSupervisionViolationResponse]
     ],
     field_index: CoreEntityFieldIndex,
+    incarceration_sentences: Optional[List[StateIncarcerationSentence]],
+    supervision_sentences: Optional[List[StateSupervisionSentence]],
 ) -> Tuple[
     Optional[IncarcerationPreProcessingManager],
     Optional[SupervisionPreProcessingManager],
@@ -93,6 +97,18 @@ def pre_processing_managers_for_calculations(
                 "provide violation_responses to be run on this state."
             )
 
+    if supervision_periods is not None and (
+        incarceration_sentences is None or supervision_sentences is None
+    ):
+        if (
+            state_sp_pre_processing_manager_delegate.pre_processing_relies_on_sentences()
+        ):
+            raise ValueError(
+                f"SP pre-processing for {state_code} relies on "
+                "StateIncarcerationSentence and StateSupevisionSentence entities."
+                "This pipeline must provide sentences to be run on this state."
+            )
+
     all_periods: List[Union[StateIncarcerationPeriod, StateSupervisionPeriod]] = []
     all_periods.extend(supervision_periods or [])
     all_periods.extend(incarceration_periods or [])
@@ -112,6 +128,8 @@ def pre_processing_managers_for_calculations(
             supervision_periods=supervision_periods,
             delegate=state_sp_pre_processing_manager_delegate,
             earliest_death_date=earliest_death_date,
+            incarceration_sentences=incarceration_sentences,
+            supervision_sentences=supervision_sentences,
         )
 
         supervision_period_index = (
