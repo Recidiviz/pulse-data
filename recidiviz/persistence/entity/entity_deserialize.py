@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Provides a decorator for augmenting Entity classes with a deserialization constructor."""
+import datetime
 from abc import abstractmethod
 from typing import Any, Callable, Dict, Generic, Optional, Type, TypeVar, Union
 
@@ -119,6 +120,14 @@ def entity_deserialize(
                 return parse_int(field_value)
             if is_bool(field):
                 return parse_bool(field_value)
+
+        if isinstance(field_value, datetime.date):
+            if is_date(field):
+                return field_value
+
+        if isinstance(field_value, int):
+            if is_int(field):
+                return field_value
 
         if isinstance(field_value, bool):
             if is_bool(field):

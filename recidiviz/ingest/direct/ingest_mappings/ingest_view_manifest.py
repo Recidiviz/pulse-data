@@ -304,7 +304,6 @@ class EntityTreeManifestFactory:
             filter_predicate=cls._get_filter_predicate(entity_cls, field_manifests),
         )
 
-    # TODO(##9099): Make sure to add documentation about what gets filtered out.
     # TODO(#8905): Consider using more general logic to build a filter predicate, like
     #  building a @required field annotation for fields that must be hydrated, otherwise
     #  the whole entity is filtered out.
