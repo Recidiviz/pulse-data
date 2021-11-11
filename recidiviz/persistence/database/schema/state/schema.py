@@ -555,10 +555,6 @@ state_supervision_contact_reason = Enum(
 state_supervision_contact_type = Enum(
     enum_strings.internal_unknown,
     enum_strings.external_unknown,
-    state_enum_strings.state_supervision_contact_type_face_to_face,
-    state_enum_strings.state_supervision_contact_type_telephone,
-    state_enum_strings.state_supervision_contact_type_written_message,
-    state_enum_strings.state_supervision_contact_type_virtual,
     state_enum_strings.state_supervision_contact_type_collateral,
     state_enum_strings.state_supervision_contact_type_direct,
     state_enum_strings.state_supervision_contact_type_both_collateral_and_direct,

@@ -364,11 +364,6 @@ state_early_discharge_decision_status_invalid = "INVALID"
 state_supervision_contact_type_direct = "DIRECT"
 state_supervision_contact_type_collateral = "COLLATERAL"
 state_supervision_contact_type_both_collateral_and_direct = "BOTH_COLLATERAL_AND_DIRECT"
-# TODO(#8811): Deprecate these fields for contact type
-state_supervision_contact_type_face_to_face = "FACE_TO_FACE"
-state_supervision_contact_type_telephone = "TELEPHONE"
-state_supervision_contact_type_written_message = "WRITTEN_MESSAGE"
-state_supervision_contact_type_virtual = "VIRTUAL"
 
 state_supervision_contact_method_telephone = "TELEPHONE"
 state_supervision_contact_method_written_message = "WRITTEN_MESSAGE"
