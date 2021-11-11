@@ -33,13 +33,16 @@ from typing import (
 )
 
 import apache_beam as beam
-from apache_beam import PCollection
+from apache_beam import PCollection, Pipeline
 from apache_beam.pvalue import PBegin
 from apache_beam.typehints import with_input_types, with_output_types
 from more_itertools import one
 from sqlalchemy.orm.relationships import RelationshipProperty
 
-from recidiviz.calculator.pipeline.utils.beam_utils import ReadFromBigQuery
+from recidiviz.calculator.pipeline.utils.beam_utils import (
+    ConvertDictToKVTuple,
+    ReadFromBigQuery,
+)
 from recidiviz.calculator.pipeline.utils.execution_utils import select_query
 from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.persistence.database import schema_utils
@@ -76,6 +79,9 @@ EntityClassName = str
 # eg. StateSupervisionSentence.StateCharge
 EntityRelationshipKey = str
 
+# The name of a reference table, e.g. supervision_period_to_agent_association
+TableName = str
+
 # The unifying id that can be used to group related objects together (e.g. person_id)
 UnifyingId = int
 
@@ -84,16 +90,23 @@ UnifyingId = int
 EntityAssociation = Tuple[int, int]
 
 
-class ExtractEntitiesForPipeline(beam.PTransform):
-    """Builds all of the required entities for a pipeline. Hydrates all existing
-    connections between required entities.
+# The structure of table rows loaded from BigQuery
+TableRow = Dict[str, str]
+
+
+class ExtractDataForPipeline(beam.PTransform):
+    """Builds all of the required entities for a pipeline, and pulls in any
+    required reference tables. Hydrates all existing connections between required
+    entities.
     """
 
     def __init__(
         self,
         state_code: str,
         dataset: str,
+        reference_dataset: str,
         required_entity_classes: List[Type[Entity]],
+        required_reference_tables: Optional[List[str]],
         unifying_class: Type[Entity],
         unifying_id_field_filter_set: Optional[Set[UnifyingId]] = None,
     ):
@@ -120,6 +133,11 @@ class ExtractEntitiesForPipeline(beam.PTransform):
         if not dataset:
             raise ValueError("No valid data source passed to the pipeline.")
         self._dataset = dataset
+
+        if not reference_dataset:
+            raise ValueError("No valid data reference source passed to the pipeline.")
+        self._reference_dataset = reference_dataset
+        self._required_reference_tables = required_reference_tables or []
 
         if not required_entity_classes:
             raise ValueError(
@@ -360,27 +378,38 @@ class ExtractEntitiesForPipeline(beam.PTransform):
             relationships_to_hydrate=relationships_to_hydrate,
         )
 
+        reference_data: Dict[TableName, PCollection[Tuple[UnifyingId, TableRow]]] = {}
+
+        for table_id in self._required_reference_tables:
+            reference_data[
+                table_id
+            ] = input_or_inputs | f"Load {table_id}" >> ImportTableAsKVTuples(
+                dataset_id=self._reference_dataset,
+                table_id=table_id,
+                table_key=self._unifying_id_field,
+                state_code_filter=self._state_code,
+                unifying_id_field=self._unifying_id_field,
+                unifying_id_filter_set=self._unifying_id_field_filter_set,
+            )
+
         entities_and_associations: Dict[
-            EntityClassName,
-            PCollection[Tuple[UnifyingId, Union[EntityAssociation, Entity]]],
-        ] = {
-            **shallow_hydrated_entities,
-            **hydrated_association_info,
-        }
+            Union[EntityClassName, EntityRelationshipKey, TableName],
+            PCollection[Tuple[UnifyingId, Union[EntityAssociation, Entity, TableRow]]],
+        ] = {**shallow_hydrated_entities, **hydrated_association_info, **reference_data}
 
         # Group all entities and association tuples by the unifying_id
         entities_and_association_info_by_unifying_id: PCollection[
             Tuple[
                 UnifyingId,
                 Dict[
-                    Union[EntityClassName, EntityRelationshipKey],
-                    Union[List[Entity], List[EntityAssociation]],
+                    Union[EntityClassName, EntityRelationshipKey, TableName],
+                    Union[List[Entity], List[EntityAssociation], List[TableRow]],
                 ],
             ]
         ] = (
             entities_and_associations
-            | f"Group entities and associations by {self._unifying_id_field}"
-            >> beam.CoGroupByKey()
+            | f"Group entities, associations, and reference tables by"
+            f" {self._unifying_id_field}" >> beam.CoGroupByKey()
         )
 
         fully_connected_hydrated_entities = (
@@ -400,8 +429,8 @@ class ExtractEntitiesForPipeline(beam.PTransform):
     beam.typehints.Tuple[
         UnifyingId,
         Dict[
-            Union[EntityClassName, EntityRelationshipKey],
-            Union[List[Entity], List[EntityAssociation]],
+            Union[EntityClassName, EntityRelationshipKey, TableName],
+            Union[List[Entity], List[EntityAssociation], List[TableRow]],
         ],
     ],
     beam.typehints.Optional[Type[Entity]],
@@ -527,34 +556,36 @@ class _ConnectHydratedRelatedEntities(beam.DoFn):
 
         return entity_list
 
-    # pylint: disable=arguments-differ
-    def process(
-        self,
-        element: Tuple[
-            UnifyingId,
-            Dict[
-                Union[EntityClassName, EntityRelationshipKey],
-                Union[List[Entity], List[EntityAssociation]],
-            ],
+    @staticmethod
+    def _split_element_data(
+        element_data: Dict[
+            Union[EntityClassName, EntityRelationshipKey, TableName],
+            Union[List[Entity], List[EntityAssociation], List[TableRow]],
         ],
-        unifying_class: Type[Entity],
         relationships_to_hydrate: Dict[
             EntityClassName, List[EntityRelationshipDetails]
         ],
-    ) -> Iterable[Tuple[UnifyingId, Dict[EntityClassName, List[Entity]]]]:
-
-        fully_connected_hydrated_entities: Dict[EntityClassName, List[Entity]] = {}
-
-        unifying_id, persons_entities_associations = element
-
-        # TODO(#2769): Split this into a helper function
+    ) -> Tuple[
+        Dict[EntityClassName, List[Entity]],
+        Dict[EntityRelationshipKey, List[EntityAssociation]],
+        Dict[TableName, List[TableRow]],
+    ]:
+        """Splits the |element_data| into three distinct dictionaries with consistent
+        value types."""
         entities: Dict[EntityClassName, List[Entity]] = {}
         associations: Dict[EntityRelationshipKey, List[EntityAssociation]] = {}
+        reference_table_data: Dict[TableName, List[TableRow]] = {}
 
-        for key, value in persons_entities_associations.items():
+        for key, value in element_data.items():
             list_elements = list(value)
 
-            if "." in key:
+            if key in relationships_to_hydrate:
+                # The key is an EntityClassName, assert all list items are Entities
+                entities[key] = []
+                for list_element in list_elements:
+                    assert isinstance(list_element, Entity)
+                    entities[key].append(list_element)
+            elif "." in key:
                 # All EntityRelationshipKeys are formatted as EntityName.OtherEntityName
                 # Assert all list items are of type Tuple[int, int]
                 associations[key] = []
@@ -571,15 +602,48 @@ class _ConnectHydratedRelatedEntities(beam.DoFn):
                         )
                     associations[key].append((value_1, value_2))
             else:
-                # The key is an EntityClassName, assert all list items are Entities
-                entities[key] = []
+                # The key is a TableName, assert all list items are TableRows (of
+                # type Dict[str, str])
+                reference_table_data[key] = []
                 for list_element in list_elements:
-                    if not isinstance(list_element, Entity):
+                    if not isinstance(list_element, Dict):
                         raise ValueError(
                             "Expected list to contain all elements of "
-                            f"type Entity. Found: {list_element}."
+                            f"type Dict[str, str]. Found: {list_element}."
                         )
-                    entities[key].append(list_element)
+                    reference_table_data[key].append(list_element)
+
+        return entities, associations, reference_table_data
+
+    # pylint: disable=arguments-differ
+    def process(
+        self,
+        element: Tuple[
+            UnifyingId,
+            Dict[
+                Union[EntityClassName, EntityRelationshipKey, TableName],
+                Union[List[Entity], List[EntityAssociation], List[TableRow]],
+            ],
+        ],
+        unifying_class: Type[Entity],
+        relationships_to_hydrate: Dict[
+            EntityClassName, List[EntityRelationshipDetails]
+        ],
+    ) -> Iterable[
+        Tuple[
+            UnifyingId,
+            Dict[
+                Union[EntityClassName, TableName], Union[List[Entity], List[TableRow]]
+            ],
+        ]
+    ]:
+        fully_connected_hydrated_entities: Dict[EntityClassName, List[Entity]] = {}
+
+        unifying_id, element_data = element
+
+        entities, associations, reference_table_data = self._split_element_data(
+            element_data=element_data, relationships_to_hydrate=relationships_to_hydrate
+        )
 
         for root_entity_class_name, relationships in relationships_to_hydrate.items():
             fully_connected_hydrated_entities[
@@ -592,7 +656,11 @@ class _ConnectHydratedRelatedEntities(beam.DoFn):
                 associations=associations,
             )
 
-        yield unifying_id, fully_connected_hydrated_entities
+        all_pipeline_data: Dict[
+            Union[EntityClassName, TableName], Union[List[Entity], List[TableRow]]
+        ] = {**fully_connected_hydrated_entities, **reference_table_data}
+
+        yield unifying_id, all_pipeline_data
 
     def to_runner_api_parameter(self, _):
         pass  # Passing unused abstract method.
@@ -915,6 +983,97 @@ class _ExtractEntity(_ExtractEntityBase):
             | f"Hydrate {self._entity_class.__name__} instances"
             >> beam.ParDo(_HydrateEntity(), **hydrate_kwargs)
         )
+
+
+@with_input_types(beam.typehints.Any)
+@with_output_types(beam.typehints.Dict[str, Any])
+class ImportTable(beam.PTransform):
+    """Reads in rows from the given dataset_id.table_id table in BigQuery. Returns each
+    row as a dict."""
+
+    def __init__(
+        self,
+        dataset_id: str,
+        table_id: str,
+        state_code_filter: str,
+        unifying_id_field: Optional[str] = None,
+        unifying_id_filter_set: Optional[Set[int]] = None,
+    ):
+        super().__init__()
+        self.dataset_id = dataset_id
+        self.table_id = table_id
+        self.state_code_filter = state_code_filter
+        self.unifying_id_field = unifying_id_field
+        self.unifying_id_filter_set = unifying_id_filter_set
+
+    # pylint: disable=arguments-renamed
+    def expand(self, pipeline: Pipeline):
+        # Bring in the table from BigQuery
+        table_query = select_query(
+            dataset=self.dataset_id,
+            table=self.table_id,
+            state_code_filter=self.state_code_filter,
+            unifying_id_field=self.unifying_id_field,
+            unifying_id_field_filter_set=self.unifying_id_filter_set,
+        )
+
+        table_contents = (
+            pipeline
+            | f"Read {self.dataset_id}.{self.table_id} table from BigQuery"
+            >> ReadFromBigQuery(query=table_query)
+        )
+
+        return table_contents
+
+
+@with_input_types(beam.typehints.Any)
+@with_output_types(beam.typehints.Tuple[Any, Dict[str, Any]])
+class ImportTableAsKVTuples(beam.PTransform):
+    """Reads in rows from the given dataset_id.table_id table in BigQuery. Converts the
+    output rows into key-value tuples, where the keys are the values for the
+    self.table_key column in the table."""
+
+    def __init__(
+        self,
+        dataset_id: str,
+        table_id: str,
+        table_key: str,
+        state_code_filter: str,
+        unifying_id_field: Optional[str] = None,
+        unifying_id_filter_set: Optional[Set[int]] = None,
+    ):
+        super().__init__()
+        self.dataset_id = dataset_id
+        self.table_id = table_id
+        self.table_key = table_key
+        self.state_code_filter = state_code_filter
+        self.unifying_id_field = unifying_id_field
+        self.unifying_id_filter_set = unifying_id_filter_set
+
+    # pylint: disable=arguments-renamed
+    def expand(self, pipeline: Pipeline):
+        # Read in the table from BigQuery
+        table_contents = (
+            pipeline
+            | f"Read {self.dataset_id}.{self.table_id} from BigQuery"
+            >> ImportTable(
+                dataset_id=self.dataset_id,
+                table_id=self.table_id,
+                state_code_filter=self.state_code_filter,
+                unifying_id_field=self.unifying_id_field,
+                unifying_id_filter_set=self.unifying_id_filter_set,
+            )
+        )
+
+        # Convert the table rows into key-value tuples with the value for the
+        # self.table_key column as the key
+        table_contents_as_kv = (
+            table_contents
+            | f"Convert {self.dataset_id}.{self.table_id} table to KV tuples"
+            >> beam.ParDo(ConvertDictToKVTuple(), self.table_key)
+        )
+
+        return table_contents_as_kv
 
 
 class _ExtractAssociationValues(_ExtractEntityBase):
@@ -1278,7 +1437,7 @@ class _ExtractEntityWithAssociationTable(_ExtractEntityBase):
 class _ShallowHydrateEntity(beam.DoFn):
     """Hydrates a BuildableAttr Entity."""
 
-    def process(self, element: Dict[str, str], *_args, **kwargs):
+    def process(self, element: TableRow, *_args, **kwargs):
         """Builds an entity from key-value pairs.
 
         Args:
@@ -1300,7 +1459,7 @@ class _ShallowHydrateEntity(beam.DoFn):
 
         hydrated_entity = entity_class.build_from_dictionary(element)
 
-        unifying_id = _get_value_from_element(element, unifying_id_field)
+        unifying_id = _get_value_from_table_row(element, unifying_id_field)
 
         if not unifying_id:
             raise ValueError(f"Invalid unifying_id_field: {unifying_id_field}")
@@ -1383,7 +1542,7 @@ class _HydrateEntity(beam.DoFn):
             )
             return
 
-        outer_connection_id = _get_value_from_element(
+        outer_connection_id = _get_value_from_table_row(
             element, outer_connection_id_field
         )
 
@@ -1398,7 +1557,7 @@ class _HydrateEntity(beam.DoFn):
             )
             return
 
-        inner_connection_id = _get_value_from_element(
+        inner_connection_id = _get_value_from_table_row(
             element, inner_connection_id_field
         )
 
@@ -1577,8 +1736,8 @@ class _FormAssociationIDTuples(beam.DoFn):
         pass
 
 
-def _get_value_from_element(element: Dict[str, Any], field: str) -> Any:
-    value = element.get(field)
+def _get_value_from_table_row(table_row: TableRow, field: str) -> Any:
+    value = table_row.get(field)
 
     return value
 
