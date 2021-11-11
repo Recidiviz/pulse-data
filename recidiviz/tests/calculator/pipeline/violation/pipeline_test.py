@@ -138,17 +138,27 @@ class TestViolationPipeline(unittest.TestCase):
 
         ethnicity_data = normalized_database_base_dict_list([ethnicity])
 
-        violation_type = schema.StateSupervisionViolationTypeEntry(
+        violation_decision = schema.StateSupervisionViolationResponseDecisionEntry(
             state_code="US_XX",
-            violation_type=StateSupervisionViolationType.FELONY,
+            decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
             person_id=fake_person_id,
+            supervision_violation_response_decision_entry_id=234,
+            supervision_violation_response_id=1234,
         )
-        incomplete_response = schema.StateSupervisionViolationResponse(
+        violation_response = schema.StateSupervisionViolationResponse(
             state_code="US_XX",
             supervision_violation_response_id=1234,
             response_type=entities.StateSupervisionViolationResponseType.VIOLATION_REPORT,
             response_date=date(2021, 1, 4),
             is_draft=False,
+            supervision_violation_response_decisions=[violation_decision],
+            person_id=fake_person_id,
+        )
+
+        violation_type = schema.StateSupervisionViolationTypeEntry(
+            supervision_violation_type_entry_id=123,
+            state_code="US_XX",
+            violation_type=StateSupervisionViolationType.FELONY,
             person_id=fake_person_id,
         )
         violation = schema.StateSupervisionViolation(
@@ -158,36 +168,14 @@ class TestViolationPipeline(unittest.TestCase):
             is_violent=False,
             is_sex_offense=False,
             supervision_violation_types=[violation_type],
-            supervision_violation_responses=[incomplete_response],
+            supervision_violation_responses=[violation_response],
             person_id=fake_person_id,
         )
-        incomplete_response.supervision_violation_id = fake_supervision_violation_id
         violation_type.supervision_violation_id = fake_supervision_violation_id
-
-        violation_decision = schema.StateSupervisionViolationResponseDecisionEntry(
-            state_code="US_XX",
-            decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
-            person_id=fake_person_id,
-            supervision_violation_response_decision_entry_id=234,
-            supervision_violation_response_id=1234,
-        )
-        complete_violation_response = schema.StateSupervisionViolationResponse(
-            state_code="US_XX",
-            supervision_violation_response_id=1234,
-            response_type=entities.StateSupervisionViolationResponseType.VIOLATION_REPORT,
-            response_date=date(2021, 1, 4),
-            is_draft=False,
-            supervision_violation_response_decisions=[violation_decision],
-            person_id=fake_person_id,
-        )
-        complete_violation_response.supervision_violation_id = (
-            fake_supervision_violation_id
-        )
+        violation_response.supervision_violation_id = fake_supervision_violation_id
 
         violations_data = [normalized_database_base_dict(violation)]
-        violation_responses_data = [
-            normalized_database_base_dict(complete_violation_response)
-        ]
+        violation_responses_data = [normalized_database_base_dict(violation_response)]
         violation_types_data = [normalized_database_base_dict(violation_type)]
         violation_decisions_data = [normalized_database_base_dict(violation_decision)]
 
@@ -381,7 +369,10 @@ class TestClassifyViolationEvents(unittest.TestCase):
             Tuple[int, Tuple[entities.StatePerson, List[ViolationWithResponseEvent]]]
         ] = [(self.fake_person_id, (self.fake_person, violation_events))]
 
-        person_violations = {"persons": [self.fake_person], "violations": [violation]}
+        person_violations = {
+            entities.StatePerson.__name__: [self.fake_person],
+            entities.StateSupervisionViolation.__name__: [violation],
+        }
         test_pipeline = TestPipeline()
         output = (
             test_pipeline
@@ -400,7 +391,10 @@ class TestClassifyViolationEvents(unittest.TestCase):
             Tuple[int, Tuple[entities.StatePerson, List[ViolationWithResponseEvent]]]
         ] = []
 
-        person_violations = {"persons": [self.fake_person], "violations": []}
+        person_violations = {
+            entities.StatePerson.__name__: [self.fake_person],
+            entities.StateSupervisionViolation.__name__: [],
+        }
         test_pipeline = TestPipeline()
         output = (
             test_pipeline
@@ -431,7 +425,10 @@ class TestClassifyViolationEvents(unittest.TestCase):
             Tuple[int, Tuple[entities.StatePerson, List[ViolationWithResponseEvent]]]
         ] = []
 
-        person_violations = {"persons": [self.fake_person], "violations": [violation]}
+        person_violations = {
+            entities.StatePerson.__name__: [self.fake_person],
+            entities.StateSupervisionViolation.__name__: [violation],
+        }
         test_pipeline = TestPipeline()
         output = (
             test_pipeline
