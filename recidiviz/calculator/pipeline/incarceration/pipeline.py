@@ -36,8 +36,6 @@ from recidiviz.calculator.pipeline.incarceration import identifier, metric_produ
 from recidiviz.calculator.pipeline.pipeline_type import PipelineType
 from recidiviz.calculator.pipeline.utils.beam_utils import (
     ConvertDictToKVTuple,
-    ImportTable,
-    ImportTableAsKVTuples,
     ReadFromBigQuery,
 )
 from recidiviz.calculator.pipeline.utils.entity_hydration_utils import (
@@ -49,7 +47,11 @@ from recidiviz.calculator.pipeline.utils.entity_hydration_utils import (
 from recidiviz.calculator.pipeline.utils.execution_utils import (
     select_all_by_person_query,
 )
-from recidiviz.calculator.pipeline.utils.extractor_utils import BuildRootEntity
+from recidiviz.calculator.pipeline.utils.extractor_utils import (
+    BuildRootEntity,
+    ImportTable,
+    ImportTableAsKVTuples,
+)
 from recidiviz.calculator.pipeline.utils.person_utils import (
     BuildPersonMetadata,
     ExtractPersonEventsMetadata,
@@ -282,9 +284,10 @@ class IncarcerationPipeline(BasePipeline):
             >> ImportTableAsKVTuples(
                 dataset_id=reference_dataset,
                 table_id=PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME,
-                table_key="person_id",
+                table_key=entities.StatePerson.get_class_id_name(),
                 state_code_filter=state_code,
-                person_id_filter_set=person_id_filter_set,
+                unifying_id_field=entities.StatePerson.get_class_id_name(),
+                unifying_id_filter_set=person_id_filter_set,
             )
         )
 
@@ -294,9 +297,10 @@ class IncarcerationPipeline(BasePipeline):
             >> ImportTableAsKVTuples(
                 dataset_id=reference_dataset,
                 table_id=INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME,
-                table_key="person_id",
+                table_key=entities.StatePerson.get_class_id_name(),
                 state_code_filter=state_code,
-                person_id_filter_set=person_id_filter_set,
+                unifying_id_field=entities.StatePerson.get_class_id_name(),
+                unifying_id_filter_set=person_id_filter_set,
             )
         )
 
@@ -306,9 +310,10 @@ class IncarcerationPipeline(BasePipeline):
             >> ImportTableAsKVTuples(
                 dataset_id=reference_dataset,
                 table_id=SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME,
-                table_key="person_id",
+                table_key=entities.StatePerson.get_class_id_name(),
                 state_code_filter=state_code,
-                person_id_filter_set=person_id_filter_set,
+                unifying_id_field=entities.StatePerson.get_class_id_name(),
+                unifying_id_filter_set=person_id_filter_set,
             )
         )
 
@@ -319,7 +324,6 @@ class IncarcerationPipeline(BasePipeline):
                 dataset_id=static_reference_dataset,
                 table_id="state_race_ethnicity_population_counts",
                 state_code_filter=state_code,
-                person_id_filter_set=None,
             )
         )
 

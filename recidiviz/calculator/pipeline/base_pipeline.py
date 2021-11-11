@@ -36,7 +36,6 @@ import attr
 from apache_beam.options.pipeline_options import PipelineOptions, SetupOptions
 from apache_beam.runners.pipeline_context import PipelineContext
 from apache_beam.typehints.decorators import with_input_types, with_output_types
-from more_itertools import one
 
 from recidiviz.calculator.dataflow_config import (
     DATAFLOW_METRICS_TO_TABLES,
@@ -103,6 +102,8 @@ class PipelineConfig:
     # TODO(#2769): Make non-optional and remove default value once all pipelines are
     #  using v2 entity hydration
     required_entities: Optional[List[Type[Entity]]] = attr.ib(default=None)
+
+    required_reference_tables: Optional[List[str]] = attr.ib(default=None)
 
 
 @with_input_types(
@@ -269,74 +270,6 @@ class ClassifyEvents(beam.DoFn):
             )
         else:
             yield person.person_id, (person, events)
-
-    def to_runner_api_parameter(
-        self, _unused_context: PipelineContext
-    ) -> Tuple[str, Any]:
-        pass
-
-
-@with_input_types(
-    beam.typehints.Tuple[int, Dict[str, Iterable[Any]]],
-)
-@with_output_types(beam.typehints.Tuple[int, Dict[str, Iterable[Any]]])
-class AugmentHydratedEntitiesWithSideInputs(beam.DoFn):
-    """Augments a dictionary storing all of a person's hydrated entities with side
-    input data that is relevant to the person.
-
-    For example, when provided with the following:
-        (123,
-            {
-                "hydrated_entities": {
-                    "persons": [StatePerson()],
-                    "person_races": [StatePersonRace(), StatePersonRace()]
-                },
-                "supervision_period_to_agent_association": [
-                    {
-                        "state_code": "US_XX",
-                        "agent_id": 1010,
-                        "person_id": 123,
-                        "agent_external_id": "OFFICER0009",
-                        "supervision_period_id": 567,
-                    }
-                ]
-            }
-        )
-    This function will return:
-        (123,
-            {
-                "persons": [StatePerson()],
-                "person_races": [StatePersonRace(), StatePersonRace()],
-                "supervision_period_to_agent_association": [
-                    {
-                        "state_code": "US_XX",
-                        "agent_id": 1010,
-                        "person_id": 123,
-                        "agent_external_id": "OFFICER0009",
-                        "supervision_period_id": 567,
-                    }
-                ]
-            }
-        )
-    """
-
-    # pylint: disable=arguments-differ
-    def process(
-        self, element: Tuple[int, Dict[str, List[Any]]]
-    ) -> Iterable[Tuple[int, Dict[str, Iterable[Any]]]]:
-        """Adds all person-level side input values to the dictionary storing hydrated
-        entities."""
-        unifying_id, all_inputs = element
-
-        hydrated_entities: Dict[str, Iterable[Any]] = one(
-            list(all_inputs.pop(HYDRATED_ENTITIES_KEY))
-        )
-
-        # Adds each of the side inputs to the entities dict
-        for key, value in all_inputs.items():
-            hydrated_entities[key] = list(value)
-
-        yield unifying_id, hydrated_entities
 
     def to_runner_api_parameter(
         self, _unused_context: PipelineContext

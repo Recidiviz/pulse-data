@@ -24,8 +24,6 @@ import apache_beam as beam
 from apache_beam.pvalue import AsList
 
 from recidiviz.calculator.pipeline.base_pipeline import (
-    HYDRATED_ENTITIES_KEY,
-    AugmentHydratedEntitiesWithSideInputs,
     BasePipeline,
     ClassifyEvents,
     GetMetrics,
@@ -33,12 +31,9 @@ from recidiviz.calculator.pipeline.base_pipeline import (
 )
 from recidiviz.calculator.pipeline.pipeline_type import PipelineType
 from recidiviz.calculator.pipeline.program import identifier, metric_producer
-from recidiviz.calculator.pipeline.utils.beam_utils import (
-    ImportTable,
-    ImportTableAsKVTuples,
-)
 from recidiviz.calculator.pipeline.utils.extractor_utils import (
-    ExtractEntitiesForPipeline,
+    ExtractDataForPipeline,
+    ImportTable,
 )
 from recidiviz.calculator.pipeline.utils.person_utils import (
     BuildPersonMetadata,
@@ -66,6 +61,9 @@ class ProgramPipeline(BasePipeline):
                 entities.StateAssessment,
                 entities.StateSupervisionPeriod,
             ],
+            required_reference_tables=[
+                SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME
+            ],
         )
         self.include_calculation_limit_args = True
 
@@ -86,29 +84,15 @@ class ProgramPipeline(BasePipeline):
         if not self.pipeline_config.required_entities:
             raise ValueError("Must set required_entities arg on PipelineConfig.")
 
-        # Get all required entities
-        hydrated_required_entities = (
-            pipeline
-            | "Load required entities"
-            >> ExtractEntitiesForPipeline(
-                state_code=state_code,
-                dataset=input_dataset,
-                required_entity_classes=self.pipeline_config.required_entities,
-                unifying_class=entities.StatePerson,
-                unifying_id_field_filter_set=person_id_filter_set,
-            )
-        )
-
-        supervision_period_to_agent_associations_as_kv = (
-            pipeline
-            | "Load supervision_period_to_agent_associations_as_kv"
-            >> ImportTableAsKVTuples(
-                dataset_id=reference_dataset,
-                table_id=SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME,
-                table_key="person_id",
-                state_code_filter=state_code,
-                person_id_filter_set=person_id_filter_set,
-            )
+        # Get all required entities and reference data
+        pipeline_data = pipeline | "Load required data" >> ExtractDataForPipeline(
+            state_code=state_code,
+            dataset=input_dataset,
+            required_entity_classes=self.pipeline_config.required_entities,
+            unifying_class=entities.StatePerson,
+            reference_dataset=reference_dataset,
+            required_reference_tables=self.pipeline_config.required_reference_tables,
+            unifying_id_field_filter_set=person_id_filter_set,
         )
 
         state_race_ethnicity_population_counts = (
@@ -118,30 +102,17 @@ class ProgramPipeline(BasePipeline):
                 dataset_id=static_reference_dataset,
                 table_id="state_race_ethnicity_population_counts",
                 state_code_filter=state_code,
-                person_id_filter_set=None,
+                unifying_id_filter_set=None,
             )
         )
 
-        persons_entities = (
-            {
-                HYDRATED_ENTITIES_KEY: hydrated_required_entities,
-                SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME: supervision_period_to_agent_associations_as_kv,
-            }
-            | "Group hydrated entities to person-specific side inputs"
-            >> beam.CoGroupByKey()
-            | "Augment hydrated entities dict with person-level side input information"
-            >> beam.ParDo(AugmentHydratedEntitiesWithSideInputs())
-        )
-
         # Identify ProgramEvents from the StatePerson's StateProgramAssignments
-        person_program_events = (
-            persons_entities
-            | "Identify program events"
-            >> beam.ParDo(ClassifyEvents(), identifier=self.pipeline_config.identifier)
+        person_program_events = pipeline_data | "Identify program events" >> beam.ParDo(
+            ClassifyEvents(), identifier=self.pipeline_config.identifier
         )
 
         person_metadata = (
-            hydrated_required_entities
+            pipeline_data
             | "Build the person_metadata dictionary"
             >> beam.ParDo(
                 BuildPersonMetadata(),
