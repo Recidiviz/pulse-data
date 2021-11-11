@@ -30,9 +30,9 @@ from recidiviz.calculator.pipeline.base_pipeline import (
     PipelineConfig,
 )
 from recidiviz.calculator.pipeline.pipeline_type import PipelineType
-from recidiviz.calculator.pipeline.utils.beam_utils import ImportTable
 from recidiviz.calculator.pipeline.utils.extractor_utils import (
-    ExtractEntitiesForPipeline,
+    ExtractDataForPipeline,
+    ImportTable,
 )
 from recidiviz.calculator.pipeline.utils.person_utils import (
     BuildPersonMetadata,
@@ -69,7 +69,7 @@ class ViolationPipeline(BasePipeline):
         all_pipeline_options: Dict[str, Any],
         state_code: str,
         input_dataset: str,
-        _reference_dataset: str,
+        reference_dataset: str,
         static_reference_dataset: str,
         metric_types: List[str],
         person_id_filter_set: Optional[Set[int]],
@@ -80,23 +80,19 @@ class ViolationPipeline(BasePipeline):
         if not self.pipeline_config.required_entities:
             raise ValueError("Must set required_entities arg on PipelineConfig.")
 
-        # Get all required entities
-        hydrated_required_entities = (
-            pipeline
-            | "Load required entities"
-            >> ExtractEntitiesForPipeline(
-                state_code=state_code,
-                dataset=input_dataset,
-                required_entity_classes=self.pipeline_config.required_entities,
-                unifying_class=entities.StatePerson,
-                unifying_id_field_filter_set=person_id_filter_set,
-            )
+        # Get all required entities and reference data
+        pipeline_data = pipeline | "Load required data" >> ExtractDataForPipeline(
+            state_code=state_code,
+            dataset=input_dataset,
+            reference_dataset=reference_dataset,
+            required_entity_classes=self.pipeline_config.required_entities,
+            required_reference_tables=self.pipeline_config.required_reference_tables,
+            unifying_class=entities.StatePerson,
+            unifying_id_field_filter_set=person_id_filter_set,
         )
 
-        person_violation_events = (
-            hydrated_required_entities
-            | "Get ViolationEvents"
-            >> beam.ParDo(ClassifyEvents(), identifier=self.pipeline_config.identifier)
+        person_violation_events = pipeline_data | "Get ViolationEvents" >> beam.ParDo(
+            ClassifyEvents(), identifier=self.pipeline_config.identifier
         )
 
         state_race_ethnicity_population_counts = (
@@ -106,12 +102,11 @@ class ViolationPipeline(BasePipeline):
                 dataset_id=static_reference_dataset,
                 table_id="state_race_ethnicity_population_counts",
                 state_code_filter=state_code,
-                person_id_filter_set=None,
             )
         )
 
         person_metadata = (
-            hydrated_required_entities
+            pipeline_data
             | "Build the person_metadata dictionary"
             >> beam.ParDo(
                 BuildPersonMetadata(),

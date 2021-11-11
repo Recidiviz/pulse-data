@@ -29,8 +29,6 @@ from apache_beam.typehints import with_input_types, with_output_types
 from more_itertools import one
 
 from recidiviz.calculator.pipeline.base_pipeline import (
-    HYDRATED_ENTITIES_KEY,
-    AugmentHydratedEntitiesWithSideInputs,
     BasePipeline,
     ClassifyEvents,
     GetMetrics,
@@ -39,12 +37,9 @@ from recidiviz.calculator.pipeline.base_pipeline import (
 from recidiviz.calculator.pipeline.pipeline_type import PipelineType
 from recidiviz.calculator.pipeline.recidivism import identifier, metric_producer
 from recidiviz.calculator.pipeline.recidivism.events import ReleaseEvent
-from recidiviz.calculator.pipeline.utils.beam_utils import (
-    ImportTable,
-    ImportTableAsKVTuples,
-)
 from recidiviz.calculator.pipeline.utils.extractor_utils import (
-    ExtractEntitiesForPipeline,
+    ExtractDataForPipeline,
+    ImportTable,
 )
 from recidiviz.calculator.pipeline.utils.person_utils import (
     BuildPersonMetadata,
@@ -102,6 +97,7 @@ class RecidivismPipeline(BasePipeline):
                 entities.StateSupervisionPeriod,
                 entities.StatePersonExternalId,
             ],
+            required_reference_tables=[PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME],
         )
         self.include_calculation_limit_args = False
 
@@ -122,41 +118,15 @@ class RecidivismPipeline(BasePipeline):
         if not self.pipeline_config.required_entities:
             raise ValueError("Must set required_entities arg on PipelineConfig.")
 
-        # Get all required entities
-        hydrated_required_entities = (
-            pipeline
-            | "Load required entities"
-            >> ExtractEntitiesForPipeline(
-                state_code=state_code,
-                dataset=input_dataset,
-                required_entity_classes=self.pipeline_config.required_entities,
-                unifying_class=entities.StatePerson,
-                unifying_id_field_filter_set=person_id_filter_set,
-            )
-        )
-
-        # Bring in the table that associates people and their county of residence
-        person_id_to_county_kv = (
-            pipeline
-            | "Load person_id_to_county_kv"
-            >> ImportTableAsKVTuples(
-                dataset_id=reference_dataset,
-                table_id=PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME,
-                table_key="person_id",
-                state_code_filter=state_code,
-                person_id_filter_set=person_id_filter_set,
-            )
-        )
-
-        persons_entities = (
-            {
-                HYDRATED_ENTITIES_KEY: hydrated_required_entities,
-                PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME: person_id_to_county_kv,
-            }
-            | "Group hydrated entities to person-specific side inputs"
-            >> beam.CoGroupByKey()
-            | "Augment hydrated entities dict with person-level side input information"
-            >> beam.ParDo(AugmentHydratedEntitiesWithSideInputs())
+        # Get all required entities and reference data
+        pipeline_data = pipeline | "Load required data" >> ExtractDataForPipeline(
+            state_code=state_code,
+            dataset=input_dataset,
+            reference_dataset=reference_dataset,
+            required_entity_classes=self.pipeline_config.required_entities,
+            required_reference_tables=self.pipeline_config.required_reference_tables,
+            unifying_class=entities.StatePerson,
+            unifying_id_field_filter_set=person_id_filter_set,
         )
 
         state_race_ethnicity_population_counts = (
@@ -166,19 +136,16 @@ class RecidivismPipeline(BasePipeline):
                 dataset_id=static_reference_dataset,
                 table_id="state_race_ethnicity_population_counts",
                 state_code_filter=state_code,
-                person_id_filter_set=None,
             )
         )
 
         # Identify ReleaseEvents events from the StatePerson's StateIncarcerationPeriods
-        person_release_events = (
-            persons_entities
-            | "ClassifyReleaseEvents"
-            >> beam.ParDo(ClassifyEvents(), identifier=self.pipeline_config.identifier)
+        person_release_events = pipeline_data | "ClassifyReleaseEvents" >> beam.ParDo(
+            ClassifyEvents(), identifier=self.pipeline_config.identifier
         )
 
         person_metadata = (
-            hydrated_required_entities
+            pipeline_data
             | "Build the person_metadata dictionary"
             >> beam.ParDo(
                 BuildPersonMetadata(),

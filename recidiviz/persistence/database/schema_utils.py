@@ -145,6 +145,11 @@ def get_state_table_classes() -> Iterator[Table]:
     yield from get_all_table_classes_in_module(state_schema)
 
 
+def get_state_entity_names() -> Iterator[str]:
+    for state_table_class in get_all_table_classes_in_module(state_schema):
+        yield state_table_class.name
+
+
 def get_operations_table_classes() -> Iterator[Table]:
     yield from get_all_table_classes_in_module(operations_schema)
 
