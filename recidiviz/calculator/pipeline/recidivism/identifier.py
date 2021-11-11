@@ -42,6 +42,9 @@ from recidiviz.calculator.pipeline.utils.entity_pre_processing_utils import (
 from recidiviz.calculator.pipeline.utils.execution_utils import (
     extract_county_of_residence_from_rows,
 )
+from recidiviz.calculator.query.state.views.reference.persons_to_recent_county_of_residence import (
+    PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME,
+)
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason as AdmissionReason,
 )
@@ -74,7 +77,13 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
     def find_events(
         self, _person: StatePerson, identifier_context: IdentifierContextT
     ) -> Dict[int, List[ReleaseEvent]]:
-        return self._find_release_events(**identifier_context)
+        return self._find_release_events(
+            incarceration_periods=identifier_context[StateIncarcerationPeriod.__name__],
+            supervision_periods=identifier_context[StateSupervisionPeriod.__name__],
+            persons_to_recent_county_of_residence=identifier_context[
+                PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME
+            ],
+        )
 
     def _find_release_events(
         self,

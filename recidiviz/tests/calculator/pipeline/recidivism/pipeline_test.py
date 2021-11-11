@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2019 Recidiviz, Inc.
+# Copyright (C) 2021 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -602,9 +602,9 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         }
 
         person_incarceration_periods = {
-            "persons": [fake_person],
-            "supervision_periods": [],
-            "incarceration_periods": [
+            entities.StatePerson.__name__: [fake_person],
+            entities.StateSupervisionPeriod.__name__: [],
+            entities.StateIncarcerationPeriod.__name__: [
                 initial_incarceration,
                 first_reincarceration,
                 subsequent_reincarceration,
@@ -700,9 +700,9 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         }
 
         person_incarceration_periods = {
-            "persons": [fake_person],
-            "supervision_periods": [],
-            "incarceration_periods": [only_incarceration],
+            entities.StatePerson.__name__: [fake_person],
+            entities.StateSupervisionPeriod.__name__: [],
+            entities.StateIncarcerationPeriod.__name__: [only_incarceration],
             "persons_to_recent_county_of_residence": [
                 fake_person_id_to_county_query_result
             ],
@@ -766,9 +766,9 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         }
 
         person_incarceration_periods = {
-            "persons": [fake_person],
-            "supervision_periods": [],
-            "incarceration_periods": [],
+            entities.StatePerson.__name__: [fake_person],
+            entities.StateSupervisionPeriod.__name__: [],
+            entities.StateIncarcerationPeriod.__name__: [],
             "persons_to_recent_county_of_residence": [
                 fake_person_id_to_county_query_result
             ],
@@ -840,9 +840,9 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         }
 
         person_incarceration_periods = {
-            "persons": [fake_person],
-            "supervision_periods": [],
-            "incarceration_periods": [
+            entities.StatePerson.__name__: [fake_person],
+            entities.StateSupervisionPeriod.__name__: [],
+            entities.StateIncarcerationPeriod.__name__: [
                 initial_incarceration,
                 first_reincarceration,
                 subsequent_reincarceration,
@@ -958,9 +958,9 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         }
 
         person_incarceration_periods = {
-            "persons": [fake_person],
-            "supervision_periods": [],
-            "incarceration_periods": [
+            entities.StatePerson.__name__: [fake_person],
+            entities.StateSupervisionPeriod.__name__: [],
+            entities.StateIncarcerationPeriod.__name__: [
                 subsequent_reincarceration,
                 initial_incarceration,
                 first_reincarceration,
