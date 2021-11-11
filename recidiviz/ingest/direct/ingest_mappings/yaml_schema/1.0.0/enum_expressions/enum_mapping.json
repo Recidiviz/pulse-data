@@ -1,0 +1,113 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "description": "An expression that can hydrate an enum field and its associated raw text field based on a single input string.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$enum_mapping"],
+  "properties": {
+    "$enum_mapping": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["$raw_text"],
+      "properties": {
+        "$raw_text": {
+          "description": "A string expression that generates the raw text value that will be mapped to an enum value. The `*_raw_text` field associated with the enum field will be set to this value.",
+          "$ref": "../string_expressions/index.json"
+        },
+        "$mappings": {
+          "description": "A map of enums to the raw text values that map to that enum value. If there is only one raw text value, that maps to this enum, the value may be a string. Otherwise, it is a list. Can only be used if a `$custom_parser` is not provided.",
+          "type": "object",
+          "patternProperties": {
+            "[A-Z][A-Za-z]+\\.[A-Z][A-Z_]+": {
+              "oneOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        "$custom_parser": {
+          "description": "A reference for a custom function that should be used to map the `$raw_text` to an enum value. The reference will be interpreted based on which context this mappings file is being used in. In the case of state ingest, this should have the structure `us_xx_custom_enum_parsers.my_function_name`. Can only be used if `$mappings` is not provided.",
+          "type": "string",
+          "pattern": "([a-z][a-z_]+\\.)+([a-z][a-z_]+)"
+        },
+        "$ignore": {
+          "description": "A list of `$raw_text` values that should be ignored. If an ignored `$raw_text` value is encountered, the resulting enum value will be None, but the `*_raw_text` field will still be populated with this value. If this is used with `$custom_parser`, these values will never be passed to the custom parser function.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "oneOf": [
+        {
+          "required": ["$mappings"]
+        },
+        {
+          "required": ["$custom_parser"]
+        }
+      ]
+    }
+  },
+  "examples": [
+    {
+      "$enum_mapping": {
+        "$raw_text": "RACE",
+        "$mappings": {
+          "FakeRace.BLACK": "B",
+          "FakeRace.WHITE": "W"
+        },
+        "$ignore": [
+          "X"
+        ]
+      }
+    },
+    {
+      "$enum_mapping": {
+        "$raw_text": "RACE",
+        "$custom_parser": "us_xx_enum_parsers.flip_black_and_white",
+        "$ignore": [
+          "X"
+        ]
+      }
+    },
+    {
+      "$enum_mapping": {
+        "$raw_text": "CndConditionCode",
+        "$mappings": {
+          "StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION": [
+            "RESCR",
+            "RESCR6",
+            "RESCR9",
+            "RESCR12"
+          ]
+        }
+      }
+    }
+  ],
+  "#contextualized_examples": [
+    {
+      "StatePersonRace": {
+        "race": {
+          "$enum_mapping": {
+            "$raw_text": "RACE",
+            "$mappings": {
+              "FakeRace.BLACK": "B",
+              "FakeRace.WHITE": "W"
+            },
+            "$ignore": [
+              "X"
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "description": "An expression that returns true if any of the listed sub-expressions return true.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "$or": {
+      "type": "array",
+      "items": {
+        "$ref": "index.json"
+      }
+    }
+  },
+  "required": ["$or"],
+  "examples": [
+    {
+      "$or": [
+        {
+          "$is_null": "TERM_DATE"
+        },
+        {
+          "$not_null": "recent_officer_id"
+        }
+      ]
+    },
+    {
+      "$or": [
+        {
+          "$is_null": "NICKNAME"
+        },
+        {
+          "$equal": [
+            "NICKNAME",
+            "PERSONNAME"
+          ]
+        }
+      ]
+    }
+  ],
+  "#contextualized_examples": [
+    {
+      "$conditional": [
+        {
+          "$if": {
+            "$or": [
+              {
+                "$is_null": "NICKNAME"
+              },
+              {
+                "$not_null": "PERSONNAME"
+              }
+            ]
+          },
+          "$then": "PERSONNAME"
+        },
+        {
+          "$else": "NICKNAME"
+        }
+      ]
+    }
+  ]
+}

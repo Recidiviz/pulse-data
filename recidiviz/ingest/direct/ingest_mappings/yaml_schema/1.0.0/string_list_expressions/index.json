@@ -1,0 +1,12 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "description": "YAML expressions that can be used to generate a list of strings.",
+  "oneOf": [
+    {
+      "$ref": "list_column_reference.json"
+    },
+    {
+      "$ref": "split_json.json"
+    }
+  ]
+}

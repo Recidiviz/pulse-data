@@ -1,0 +1,29 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "title": "Iterator item reference",
+  "description": "The value must be a reference to a column in the input CSV.",
+  "type": "string",
+  "const": "$iter_item",
+  "examples": [
+    "$iter_item"
+  ],
+  "#contextualized_examples": [
+    {
+      "StatePerson": {
+        "external_ids": [
+          {
+            "$foreach": {
+              "$iterable": "MY_IDS_LIST_COL",
+              "$result": {
+                "StatePersonExternalId": {
+                  "external_id": "$iter_item",
+                  "id_type": "$literal(\"US_XX_CONTROL\")"
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

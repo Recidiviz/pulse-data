@@ -1,0 +1,92 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "description": "An expression which calls a custom function to generate a value.",
+  "type": "object",
+  "required": ["$custom"],
+  "additionalProperties": false,
+  "properties": {
+    "$custom": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["$function", "$args"],
+      "properties": {
+        "$function": {
+          "description": "A reference to the function to call. The reference will be interpreted based on which context this mappings file is being used in. In the case of state ingest, this should have the structure `us_xx_custom_parsers.my_function_name`.",
+          "type": "string",
+          "pattern": "([a-z][a-z_]+\\.)+([a-z][a-z_]+)"
+        },
+        "$args": {
+          "description": "Expressions that will be passed as keyword args to the function.",
+          "type": "object",
+          "minProperties": 1,
+          "patternProperties": {
+            ".*": {
+              "anyOf": [
+                {
+                  "$ref": "../string_expressions/index.json"
+                },
+                {
+                  "$ref": "../boolean_expressions/index.json"
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "$custom": {
+        "$function": "us_nd_custom_parsers.parse_supervision_sentence_max_length",
+        "$args": {
+          "effective_date": "PAROLE_FR",
+          "months": "SENT_MM",
+          "years": "SENT_YY"
+        }
+      }
+    },
+    {
+      "$custom": {
+        "$function": "us_xx_custom_parsers.normalize_address_roads",
+        "$args": {
+          "full_address": "ADDRESS",
+          "is_valid_address": {
+            "$not_in": {
+              "$options": [
+                "$literal(\"N\")"
+              ],
+              "$value": "IS_VALID_ADDR"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "#contextualized_examples": [
+    {
+      "$foreach": {
+        "$iterable": {
+          "$split_json": "violation_types"
+        },
+        "$result": {
+          "StateSupervisionViolatedConditionEntry": {
+            "condition": {
+              "$custom": {
+                "$function": "us_pa_custom_parsers.violated_condition_from_violation_code",
+                "$args": {
+                  "violation_code": {
+                    "$json_extract": {
+                      "$key": "violation_code",
+                      "$json": "$iter_item"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

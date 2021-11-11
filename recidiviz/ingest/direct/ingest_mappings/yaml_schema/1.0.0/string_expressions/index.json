@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "description": "YAML expressions that can be used to generate a string value.",
+  "oneOf": [
+    {
+      "$ref": "../generic_expressions/custom_function.json"
+    },
+    {
+      "$ref": "column_reference.json"
+    },
+    {
+      "$ref": "concat.json"
+    },
+    {
+      "$ref": "iter_item_reference.json"
+    },
+    {
+      "$ref": "json_dict.json"
+    },
+    {
+      "$ref": "json_extract.json"
+    },
+    {
+      "$ref": "person_name.json"
+    },
+    {
+      "$ref": "physical_address.json"
+    },
+    {
+      "$ref": "../generic_expressions/conditional.json"
+    },
+    {
+      "$ref": "string_literal.json"
+    }
+  ]
+}

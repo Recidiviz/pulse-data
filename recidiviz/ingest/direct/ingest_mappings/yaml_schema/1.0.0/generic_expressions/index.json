@@ -1,0 +1,12 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "description": "YAML expressions whose return type depends on the inputs.",
+  "oneOf": [
+    {
+      "$ref": "conditional.json"
+    },
+    {
+      "$ref": "custom_function.json"
+    }
+  ]
+}
