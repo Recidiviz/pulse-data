@@ -76,7 +76,7 @@ class UsMeController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
     ENUM_IGNORE_PREDICATES: Dict[Type[Enum], EnumIgnorePredicate] = {}
 
     def get_file_tag_rank_list(self) -> List[str]:
-        return ["CLIENT"]
+        return ["CLIENT", "CURRENT_STATUS_incarceration_periods"]
 
     def generate_enum_overrides(self) -> EnumOverrides:
         """Provides US_ME-specific overrides for enum mappings."""
