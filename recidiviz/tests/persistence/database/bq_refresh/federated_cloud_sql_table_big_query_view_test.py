@@ -23,7 +23,7 @@ from more_itertools import one
 
 from recidiviz.big_query.big_query_view import BigQueryAddress
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
+from recidiviz.ingest.direct.types.direct_ingest_instance import (
     DirectIngestInstance,
 )
 from recidiviz.persistence.database.base_schema import JailsBase, StateBase

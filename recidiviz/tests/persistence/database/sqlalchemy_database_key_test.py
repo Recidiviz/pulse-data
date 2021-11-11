@@ -20,7 +20,7 @@ from unittest import TestCase
 from unittest.mock import Mock, patch
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
+from recidiviz.ingest.direct.types.direct_ingest_instance import (
     DirectIngestInstance,
 )
 from recidiviz.persistence.database.base_schema import CaseTriageBase, StateBase

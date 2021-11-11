@@ -26,7 +26,7 @@ from recidiviz.cloud_storage.gcs_pseudo_lock_manager import (
     postgres_to_bq_lock_name_for_schema,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
+from recidiviz.ingest.direct.types.direct_ingest_instance import (
     DirectIngestInstance,
 )
 from recidiviz.persistence.database.schema_utils import (

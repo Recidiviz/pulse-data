@@ -25,10 +25,10 @@ from typing import Dict, Optional, Type, Union
 
 from recidiviz.common.constants.enum_parser import EnumParser
 from recidiviz.common.module_collector_mixin import ModuleCollectorMixin
-from recidiviz.ingest.direct.controllers.custom_function_registry import (
+from recidiviz.ingest.direct.ingest_mappings.custom_function_registry import (
     CustomFunctionRegistry,
 )
-from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
+from recidiviz.ingest.direct.types.direct_ingest_instance import (
     DirectIngestInstance,
 )
 from recidiviz.persistence.database.schema_utils import SchemaType

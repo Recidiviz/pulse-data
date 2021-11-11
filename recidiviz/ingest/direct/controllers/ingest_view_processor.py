@@ -27,7 +27,7 @@ from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsIngestArgs,
 )
-from recidiviz.ingest.direct.controllers.ingest_view_file_parser import (
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_file_parser import (
     FileFormat,
     IngestViewFileParser,
 )

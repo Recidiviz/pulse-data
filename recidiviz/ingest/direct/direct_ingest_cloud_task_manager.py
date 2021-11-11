@@ -38,10 +38,6 @@ from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import (
     DIRECT_INGEST_SCHEDULER_QUEUE_V2,
 )
 from recidiviz.common.ingest_metadata import SystemLevel
-from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
-    DirectIngestInstance,
-)
-from recidiviz.ingest.direct.controllers.direct_ingest_types import CloudTaskArgs
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsIngestArgs,
     GcsfsIngestViewExportArgs,
@@ -50,6 +46,8 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
 from recidiviz.ingest.direct.direct_ingest_region_utils import (
     get_direct_ingest_states_with_sftp_queue,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.types.direct_ingest_types import CloudTaskArgs
 from recidiviz.utils.regions import Region
 
 

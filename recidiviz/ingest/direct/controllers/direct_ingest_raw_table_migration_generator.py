@@ -20,13 +20,13 @@ on a given raw table."""
 from collections import defaultdict
 from typing import Dict, List, Sequence, Tuple, Type, cast
 
-from recidiviz.ingest.direct.controllers.direct_ingest_constants import (
-    UPDATE_DATETIME_COL_NAME,
-)
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_table_migration import (
     DeleteFromRawTableMigration,
     RawTableMigration,
     UpdateRawTableMigration,
+)
+from recidiviz.ingest.direct.types.direct_ingest_constants import (
+    UPDATE_DATETIME_COL_NAME,
 )
 from recidiviz.utils import metadata
 from recidiviz.utils.string import StrictStringFormatter

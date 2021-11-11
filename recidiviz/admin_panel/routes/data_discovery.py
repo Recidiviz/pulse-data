@@ -46,14 +46,14 @@ from recidiviz.admin_panel.data_discovery.utils import (
     get_data_discovery_cache,
     get_data_discovery_communicator,
 )
+from recidiviz.cloud_storage.gcsfs_csv_reader import (
+    COMMON_RAW_FILE_ENCODINGS,
+    GcsfsCsvReader,
+)
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.google_cloud.cloud_task_queue_manager import (
     get_cloud_task_json_body,
-)
-from recidiviz.ingest.direct.controllers.gcsfs_csv_reader import (
-    COMMON_RAW_FILE_ENCODINGS,
-    GcsfsCsvReader,
 )
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsDirectIngestFileType,
