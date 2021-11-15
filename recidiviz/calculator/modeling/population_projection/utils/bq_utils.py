@@ -15,12 +15,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """BigQuery Methods for both Spark and Ignite population projection simulations"""
-from typing import List, Dict
 import datetime
+from typing import Dict, List
 
 import pandas as pd
 from pytz import timezone
-
 
 # Constants for the Policy Simulation Output data
 SPARK_OUTPUT_DATASET = "population_projection_output_data"
@@ -57,9 +56,9 @@ POPULATION_SCHEMA = [
 
 
 # Constants for the baseline simulation data
-BASELINE_DATASET = "population_projection_output_data"
-BASELINE_TABLE_NAME = "microsim_projection_raw"
-BASELINE_SCHEMA = [
+BASELINE_PROJECTED_POPULATION_TABLE_NAME = "microsim_projection_raw"
+BASELINE_PROJECTED_POPULATION_SCHEMA = [
+    # TODO(#9719): migrate `simulation_tag` to `state_code`
     {"name": "simulation_tag", "type": "STRING", "mode": "REQUIRED"},
     {"name": "simulation_date", "type": "DATE", "mode": "REQUIRED"},
     {"name": "simulation_group", "type": "STRING", "mode": "REQUIRED"},
@@ -67,6 +66,17 @@ BASELINE_SCHEMA = [
     {"name": "total_population", "type": "FLOAT", "mode": "REQUIRED"},
     {"name": "total_population_min", "type": "FLOAT", "mode": "REQUIRED"},
     {"name": "total_population_max", "type": "FLOAT", "mode": "REQUIRED"},
+    {"name": "date_created", "type": "TIMESTAMP", "mode": "REQUIRED"},
+]
+
+BASELINE_PROJECTED_OUTFLOWS_TABLE_NAME = "microsim_projected_outflows_raw"
+BASELINE_PROJECTED_OUTFLOWS_SCHEMA = [
+    {"name": "state_code", "type": "STRING", "mode": "REQUIRED"},
+    {"name": "simulation_date", "type": "DATE", "mode": "REQUIRED"},
+    {"name": "simulation_group", "type": "STRING", "mode": "REQUIRED"},
+    {"name": "compartment", "type": "STRING", "mode": "REQUIRED"},
+    {"name": "outflow_to", "type": "STRING", "mode": "REQUIRED"},
+    {"name": "total_population", "type": "INT64", "mode": "REQUIRED"},
     {"name": "date_created", "type": "TIMESTAMP", "mode": "REQUIRED"},
 ]
 
@@ -211,23 +221,38 @@ def _format_policy_simulation_results(
 
 
 def upload_baseline_simulation_results(
-    project_id: str, microsim_population_df: pd.DataFrame, state_code: str
+    project_id: str,
+    microsim_population_df: pd.DataFrame,
+    microsim_outflows_df: pd.DataFrame,
+    state_code: str,
 ) -> None:
     """Reformat the simulation results to match the table schema and upload them to BigQuery"""
 
     # Set the upload timestamp for the population output to the current time in PST
     upload_time = datetime.datetime.now(tz=timezone("US/Pacific"))
 
+    # Add metadata columns to the output tables
     microsim_population_df = add_simulation_date_column(microsim_population_df)
-
-    # Add metadata columns to the output table
+    # TODO(#9719): migrate `simulation_tag` to `state_code`
     microsim_population_df["simulation_tag"] = state_code
     microsim_population_df["date_created"] = upload_time
 
+    microsim_outflows_df = add_simulation_date_column(microsim_outflows_df)
+    microsim_outflows_df["state_code"] = state_code
+    microsim_outflows_df["date_created"] = upload_time
+
     store_simulation_results(
         project_id,
-        BASELINE_DATASET,
-        BASELINE_TABLE_NAME,
-        BASELINE_SCHEMA,
+        SPARK_OUTPUT_DATASET,
+        BASELINE_PROJECTED_POPULATION_TABLE_NAME,
+        BASELINE_PROJECTED_POPULATION_SCHEMA,
         microsim_population_df,
+    )
+
+    store_simulation_results(
+        project_id,
+        SPARK_OUTPUT_DATASET,
+        BASELINE_PROJECTED_OUTFLOWS_TABLE_NAME,
+        BASELINE_PROJECTED_OUTFLOWS_SCHEMA,
+        microsim_outflows_df,
     )

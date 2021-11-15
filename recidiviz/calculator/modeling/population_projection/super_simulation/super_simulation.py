@@ -16,11 +16,19 @@
 # =============================================================================
 """Highest level simulation object -- runs various comparative scenarios"""
 
-from typing import Dict, List, Optional, Tuple, Callable
 from datetime import datetime
+from typing import Callable, Dict, List, Optional, Tuple
+
 import matplotlib.pyplot as plt
 import pandas as pd
 
+from recidiviz.calculator.modeling.population_projection.population_simulation.population_simulation import (
+    PopulationSimulation,
+)
+from recidiviz.calculator.modeling.population_projection.spark_policy import SparkPolicy
+from recidiviz.calculator.modeling.population_projection.super_simulation.exporter import (
+    Exporter,
+)
 from recidiviz.calculator.modeling.population_projection.super_simulation.initializer import (
     Initializer,
 )
@@ -30,10 +38,6 @@ from recidiviz.calculator.modeling.population_projection.super_simulation.simula
 from recidiviz.calculator.modeling.population_projection.super_simulation.validator import (
     Validator,
 )
-from recidiviz.calculator.modeling.population_projection.super_simulation.exporter import (
-    Exporter,
-)
-from recidiviz.calculator.modeling.population_projection.spark_policy import SparkPolicy
 
 
 class SuperSimulation:
@@ -53,7 +57,10 @@ class SuperSimulation:
         self.exporter = exporter
 
     def simulate_baseline(
-        self, display_compartments: List[str], first_relevant_ts: Optional[int] = None
+        self,
+        display_compartments: List[str],
+        first_relevant_ts: Optional[int] = None,
+        reset: bool = True,
     ) -> None:
         """
         Calculates a baseline projection.
@@ -63,12 +70,8 @@ class SuperSimulation:
         first_relevant_ts = self.initializer.get_first_relevant_ts(first_relevant_ts)
         data_inputs = self.initializer.get_data_inputs()
         user_inputs = self.initializer.get_user_inputs()
-
         self.simulator.simulate_baseline(
-            user_inputs,
-            data_inputs,
-            display_compartments,
-            first_relevant_ts,
+            user_inputs, data_inputs, display_compartments, first_relevant_ts, reset
         )
         self.validator.reset(self.simulator.get_population_simulations())
 
@@ -92,36 +95,91 @@ class SuperSimulation:
         )
         return simulation_output
 
-    def microsim_baseline_over_time(self, start_run_dates: List[datetime]) -> None:
+    def microsim_baseline_over_time(
+        self,
+        start_run_dates: List[datetime],
+        projection_time_steps_override: Optional[int] = None,
+    ) -> None:
         """
         Run a microsim at many different run_dates.
         `start_run_dates` should be a list of datetime at which to run the simulation
         """
-        user_inputs = self.initializer.get_user_inputs()
+        user_inputs = self.initializer.get_user_inputs().copy()
         (
             data_inputs_dict,
             first_relevant_ts_dict,
         ) = self.initializer.get_inputs_for_microsim_baseline_over_time(start_run_dates)
 
         self.simulator.microsim_baseline_over_time(
-            user_inputs, data_inputs_dict, first_relevant_ts_dict
+            user_inputs,
+            data_inputs_dict,
+            first_relevant_ts_dict,
+            projection_time_steps_override,
         )
         self.validator.reset(self.simulator.get_population_simulations())
 
     def upload_baseline_simulation_results_to_bq(
         self,
         simulation_tag: Optional[str] = None,
+        override_population_data: Optional[pd.DataFrame] = None,
     ) -> Dict[str, pd.DataFrame]:
-        output_data = self.validator.get_output_data_for_upload()
+        """Upload the baseline (no-policy) simulation results to BigQuery.
+
+        If `override_population_data` data is provided (in the case when there are
+        projection intervals created separately), use that instead of the output data
+        from the Validator object.
+        """
+
+        if override_population_data is None:
+            output_data_dict = self.validator.get_output_data_for_upload()
+            output_data = output_data_dict["baseline_projections"]
+        else:
+            output_data = override_population_data
+
         data_inputs = self.initializer.get_data_inputs()
         excluded_pop_data = self.initializer.get_excluded_pop_data()
+        user_inputs = self.initializer.get_user_inputs()
+
+        total_population_data = data_inputs["total_population_data"]
+        total_population_data = total_population_data[
+            total_population_data.time_step == user_inputs["start_time_step"]
+        ]
+
+        output_outflows_per_pop_sim = self.simulator.pop_simulations[
+            "baseline_projections"
+        ].get_outflows()
+        # Drop transitions where the compartment and outflow are the same
+        output_outflows_per_pop_sim = output_outflows_per_pop_sim[
+            output_outflows_per_pop_sim.index.get_level_values("outflow_to")
+            != output_outflows_per_pop_sim["compartment"]
+        ].copy()
+
+        output_outflows_per_pop_sim[
+            "year"
+        ] = self.initializer.time_converter.convert_time_steps_to_year(
+            output_outflows_per_pop_sim.index.get_level_values("time_step")
+        )
+        output_outflows_per_pop_sim.reset_index(
+            level="time_step", drop=True, inplace=True
+        )
+        output_outflows_per_pop_sim["total_population"] = output_outflows_per_pop_sim[
+            "total_population"
+        ].round(0)
+        output_outflows_per_pop_sim = output_outflows_per_pop_sim.groupby(
+            ["simulation_group", "compartment", "outflow_to", "year"]
+        ).sum()
+
+        output_outflows_per_pop_sim = output_outflows_per_pop_sim.reset_index(
+            drop=False
+        )
 
         return self.exporter.upload_baseline_simulation_results_to_bq(
-            "recidiviz-staging",
-            simulation_tag,
-            output_data,
-            excluded_pop_data,
-            data_inputs["total_population_data"],
+            project_id="recidiviz-staging",
+            simulation_tag=simulation_tag,
+            output_population_data=output_data,
+            output_outflows_data=output_outflows_per_pop_sim,
+            excluded_pop=excluded_pop_data,
+            total_pop=total_population_data,
         )
 
     def upload_policy_simulation_results_to_bq(
@@ -142,6 +200,9 @@ class SuperSimulation:
             sub_group_ids_dict,
             disaggregation_axes,
         )
+
+    def get_population_simulations(self) -> Dict[str, PopulationSimulation]:
+        return self.simulator.get_population_simulations()
 
     def get_arima_output_df(self, simulation_title: str) -> pd.DataFrame:
         return self.validator.gen_arima_output_df(simulation_title)

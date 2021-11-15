@@ -17,13 +17,14 @@
 """Simulate multiple demographic/age groups"""
 
 from typing import Dict
+
 import pandas as pd
 
-from recidiviz.calculator.modeling.population_projection.shell_compartment import (
-    ShellCompartment,
-)
 from recidiviz.calculator.modeling.population_projection.full_compartment import (
     FullCompartment,
+)
+from recidiviz.calculator.modeling.population_projection.shell_compartment import (
+    ShellCompartment,
 )
 from recidiviz.calculator.modeling.population_projection.spark_compartment import (
     SparkCompartment,

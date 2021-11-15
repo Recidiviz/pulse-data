@@ -16,8 +16,8 @@
 # =============================================================================
 """BigQuery Methods for running the Ignite population projection simulation"""
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 import pandas_gbq
 
 
@@ -38,16 +38,23 @@ def add_transition_rows(transition_data: pd.DataFrame) -> pd.DataFrame:
     """Add rows for the RELEASE compartment transitions"""
     complete_transitions = transition_data.copy()
     for run_date in transition_data.run_date.unique():
-        extra_rows_release = pd.DataFrame(
-            {
-                "compartment": ["RELEASE - RELEASE"] * 2,
-                "outflow_to": ["RELEASE - RELEASE"] * 2,
-                "gender": ["FEMALE", "MALE"],
-                "total_population": [1] * 2,
-                "compartment_duration": [1] * 2,
-                "run_date": [run_date] * 2,
-            }
-        )
+        extra_rows_release = []
+        for terminal_compartment in [
+            "RELEASE - RELEASE",
+            "DEATH - DEATH",
+        ]:
+            for gender in ["FEMALE", "MALE"]:
+                extra_rows_release.append(
+                    {
+                        "compartment": terminal_compartment,
+                        "outflow_to": terminal_compartment,
+                        "gender": gender,
+                        "total_population": 1,
+                        "compartment_duration": 1,
+                        "run_date": run_date,
+                    }
+                )
+        extra_rows_release = pd.DataFrame(extra_rows_release)
         long_sentences = 1 - np.round(
             transition_data[transition_data.run_date == run_date]
             .groupby(["compartment", "gender"])
@@ -57,47 +64,76 @@ def add_transition_rows(transition_data: pd.DataFrame) -> pd.DataFrame:
         )
         broken_data = long_sentences[long_sentences < 0]
         if len(broken_data) > 0:
-            raise RuntimeError(f"broken transitions data: {broken_data}")
+            raise RuntimeError(
+                f"broken transitions data for run_date {run_date}:\n" f"{broken_data}"
+            )
 
-        extra_rows_long_sentence = pd.DataFrame(
-            {
-                "compartment": long_sentences.index.get_level_values(
-                    level="compartment"
-                ),
-                "outflow_to": ["RELEASE - RELEASE"] * len(long_sentences),
-                "gender": long_sentences.index.get_level_values(level="gender"),
-                "total_population": long_sentences,
-                "run_date": [run_date] * len(long_sentences),
-                "compartment_duration": [48]
-                * len(long_sentences),  # hard coded for now
-            }
-        )
         complete_transitions = pd.concat(
             [
                 complete_transitions,
                 extra_rows_release,
-                extra_rows_long_sentence.reset_index(drop=True),
             ]
         )
     return complete_transitions
 
 
 def add_remaining_sentence_rows(remaining_sentence_data: pd.DataFrame) -> pd.DataFrame:
-    """Add rows for the RELEASE compartment sentences and set the remaining_duration column to True"""
+    """
+    Append remaining sentence rows so there is at least 1 row per compartment
+    and simulation group (gender).
+    """
     complete_remaining = remaining_sentence_data.copy()
     for run_date in remaining_sentence_data.run_date.unique():
-        extra_rows = pd.DataFrame(
-            {
-                "compartment": ["RELEASE - RELEASE"] * 2,
-                "outflow_to": ["RELEASE - RELEASE"] * 2,
-                "gender": ["FEMALE", "MALE"],
-                "total_population": [1] * 2,
-                "compartment_duration": [1] * 2,
-                "run_date": [run_date] * 2,
-                "remaining_duration": True,
-            }
-        )
+        extra_rows = []
+        for terminal_compartment in [
+            "RELEASE - RELEASE",
+            "DEATH - DEATH",
+        ]:
+            for gender in ["FEMALE", "MALE"]:
+                extra_rows.append(
+                    {
+                        "compartment": terminal_compartment,
+                        "outflow_to": terminal_compartment,
+                        "gender": gender,
+                        "total_population": 1,
+                        "compartment_duration": 1,
+                        "run_date": run_date,
+                    }
+                )
 
-        remaining_sentence_data["remaining_duration"] = True
-        complete_remaining = pd.concat([complete_remaining, extra_rows])
+        complete_remaining = pd.concat([complete_remaining, pd.DataFrame(extra_rows)])
+
+        # Add a row to the `remaining_sentence_data` if it does not exist for the
+        # infrequent compartment so that the sub-sim initialization does not fail
+        for infrequent_compartment in [
+            "PENDING_CUSTODY - PENDING_CUSTODY",
+            "SUPERVISION_OUT_OF_STATE - INFORMAL_PROBATION",
+        ]:
+            infrequent_sentences = complete_remaining[
+                (complete_remaining["run_date"] == run_date)
+                & complete_remaining["compartment"]
+                == infrequent_compartment
+            ]
+            # Only add rows for the unrepresented simulation groups
+            if infrequent_sentences["gender"].nunique() < 2:
+                missing_gender = [
+                    gender
+                    for gender in complete_remaining["gender"].unique()
+                    if gender not in infrequent_sentences["gender"].unique()
+                ]
+                num_rows = len(missing_gender)
+                infrequent_sentences_rows = pd.DataFrame(
+                    {
+                        "compartment": [infrequent_compartment] * num_rows,
+                        "outflow_to": [infrequent_compartment] * num_rows,
+                        "gender": missing_gender,
+                        "total_population": [1] * num_rows,
+                        "compartment_duration": [1] * num_rows,
+                        "run_date": [run_date] * num_rows,
+                    }
+                )
+                complete_remaining = pd.concat(
+                    [complete_remaining, infrequent_sentences_rows]
+                )
+
     return complete_remaining

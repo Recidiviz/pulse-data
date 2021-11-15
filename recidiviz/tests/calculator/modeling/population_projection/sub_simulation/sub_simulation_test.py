@@ -157,7 +157,7 @@ class TestSubSimulation(unittest.TestCase):
             mock.assert_called_once()
             self.assertEqual(
                 mock.mock_calls[0].args[0],
-                "Some transitions data not fed to a compartment: %s",
+                "Some transitions data not fed to a compartment:\n%s",
             )
 
     def test_scale_cohorts_passes_scale_factors_down(self) -> None:
