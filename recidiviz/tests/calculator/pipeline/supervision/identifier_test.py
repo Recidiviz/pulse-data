@@ -65,9 +65,6 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_sentence_classi
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_supervision_delegate import (
     UsMoSupervisionDelegate,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_delegate import (
-    UsNdSupervisionDelegate,
-)
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_supervision_delegate import (
     UsPaSupervisionDelegate,
 )
@@ -686,7 +683,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         incarceration_sentences: List[StateIncarcerationSentence] = []
 
         first_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
-        overlapping_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
+        second_supervision_type = StateSupervisionPeriodSupervisionType.PAROLE
 
         expected_events = [
             create_termination_event_from_period(
@@ -696,7 +693,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             ),
             create_termination_event_from_period(
                 second_supervision_period,
-                supervision_type=overlapping_supervision_type,
+                supervision_type=second_supervision_type,
                 in_supervision_population_on_date=True,
             ),
             create_start_event_from_period(
@@ -724,7 +721,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         expected_events.extend(
             expected_population_events(
                 second_supervision_period,
-                overlapping_supervision_type,
+                second_supervision_type,
                 case_compliances=_generate_case_compliances(
                     person=self.person,
                     start_date=first_supervision_period.start_date,
@@ -1471,7 +1468,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         supervision_contacts: List[StateSupervisionContact] = []
         incarceration_sentences: List[StateIncarcerationSentence] = []
 
-        first_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
+        first_supervision_type = StateSupervisionPeriodSupervisionType.PAROLE
         second_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
 
         expected_events = [
@@ -1558,7 +1555,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         supervision_contacts: List[StateSupervisionContact] = []
         incarceration_sentences: List[StateIncarcerationSentence] = []
 
-        first_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
+        first_supervision_type = StateSupervisionPeriodSupervisionType.PAROLE
         second_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
 
         expected_events = [
@@ -2570,231 +2567,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
 
         self.assertCountEqual(expected_events, supervision_events)
 
-    def test_find_supervision_events_infer_supervision_type(self) -> None:
-        """Tests the find_supervision_events function where the supervision type needs to be inferred from the
-        sentence attached to the supervision period."""
-        supervision_period_termination_date = date(2018, 5, 19)
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=111,
-            external_id="sp1",
-            case_type_entries=[
-                StateSupervisionCaseTypeEntry.new_with_defaults(
-                    state_code="US_XX",
-                    case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
-                )
-            ],
-            state_code="US_XX",
-            start_date=date(2018, 3, 5),
-            termination_date=supervision_period_termination_date,
-            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-        )
-
-        supervision_sentence_completion_date = date(2018, 12, 19)
-        supervision_sentence_start_date = date(2017, 1, 1)
-        supervision_sentence_projected_completion_date = date(2018, 5, 19)
-        supervision_sentence = StateSupervisionSentence.new_with_defaults(
-            state_code="US_XX",
-            supervision_sentence_id=111,
-            start_date=supervision_sentence_start_date,
-            external_id="ss1",
-            status=StateSentenceStatus.COMPLETED,
-            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
-            completion_date=supervision_sentence_completion_date,
-            projected_completion_date=supervision_sentence_projected_completion_date,
-            supervision_periods=[supervision_period],
-        )
-
-        assessment = StateAssessment.new_with_defaults(
-            state_code="US_XX",
-            assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
-            assessment_score=33,
-            assessment_level=StateAssessmentLevel.HIGH,
-            assessment_date=date(2018, 2, 10),
-        )
-
-        supervision_sentences = [supervision_sentence]
-        supervision_periods = [supervision_period]
-        incarceration_periods: List[StateIncarcerationPeriod] = []
-        assessments = [assessment]
-        violation_responses: List[StateSupervisionViolationResponse] = []
-        supervision_contacts: List[StateSupervisionContact] = []
-        incarceration_sentences: List[StateIncarcerationSentence] = []
-
-        expected_events = [
-            ProjectedSupervisionCompletionEvent(
-                state_code=supervision_period.state_code,
-                year=2018,
-                month=5,
-                event_date=last_day_of_month(
-                    supervision_sentence_projected_completion_date
-                ),
-                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-                case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
-                successful_completion=True,
-                incarcerated_during_sentence=False,
-                sentence_days_served=(
-                    supervision_sentence_completion_date
-                    - supervision_sentence_start_date
-                ).days,
-            ),
-            SupervisionTerminationEvent(
-                state_code=supervision_period.state_code,
-                year=supervision_period_termination_date.year,
-                month=supervision_period_termination_date.month,
-                event_date=supervision_period_termination_date,
-                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-                case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
-                termination_reason=supervision_period.termination_reason,
-                in_supervision_population_on_date=True,
-            ),
-            create_start_event_from_period(
-                supervision_period,
-                case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
-                admission_reason=StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN,
-            ),
-        ]
-
-        expected_events.extend(
-            expected_population_events(
-                supervision_period,
-                StateSupervisionPeriodSupervisionType.PROBATION,
-                case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
-                assessment_score=assessment.assessment_score,
-                assessment_level=assessment.assessment_level,
-                assessment_type=assessment.assessment_type,
-                case_compliances=_generate_case_compliances(
-                    person=self.person,
-                    start_date=supervision_period.start_date,
-                    supervision_period=supervision_period,
-                    assessments=assessments,
-                ),
-                projected_supervision_completion_date=supervision_sentence.projected_completion_date,
-            )
-        )
-
-        supervision_events = self.identifier._find_supervision_events(
-            self.person,
-            supervision_sentences,
-            incarceration_sentences,
-            supervision_periods,
-            incarceration_periods,
-            assessments,
-            violation_responses,
-            supervision_contacts,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
-            DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_LIST,
-        )
-
-        self.assertCountEqual(expected_events, supervision_events)
-
-    def test_find_supervision_events_infer_supervision_type_parole(self) -> None:
-        """Tests the find_supervision_events function where the supervision type needs to be inferred, the
-        but the supervision period is not attached to any sentences, so the inferred type should be PAROLE."""
-        supervision_period_termination_date = date(2018, 5, 19)
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=111,
-            external_id="sp1",
-            case_type_entries=[
-                StateSupervisionCaseTypeEntry.new_with_defaults(
-                    state_code="US_XX",
-                    case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
-                )
-            ],
-            state_code="US_XX",
-            start_date=date(2018, 3, 5),
-            termination_date=supervision_period_termination_date,
-            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-        )
-
-        supervision_sentence = StateSupervisionSentence.new_with_defaults(
-            state_code="US_XX",
-            supervision_sentence_id=111,
-            start_date=date(2017, 1, 1),
-            external_id="ss1",
-            status=StateSentenceStatus.COMPLETED,
-            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
-            projected_completion_date=date(2018, 5, 19),
-            supervision_periods=[],
-        )
-
-        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
-            state_code="US_XX",
-            incarceration_sentence_id=123,
-            external_id="is1",
-            start_date=date(2017, 1, 1),
-            supervision_periods=[supervision_period],
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-        )
-
-        assessment = StateAssessment.new_with_defaults(
-            state_code="US_CA",
-            assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
-            assessment_score=33,
-            assessment_level=StateAssessmentLevel.HIGH,
-            assessment_date=date(2018, 3, 1),
-        )
-
-        supervision_sentences = [supervision_sentence]
-        supervision_periods = [supervision_period]
-        incarceration_periods: List[StateIncarcerationPeriod] = []
-        assessments = [assessment]
-        violation_responses: List[StateSupervisionViolationResponse] = []
-        supervision_contacts: List[StateSupervisionContact] = []
-        incarceration_sentences: List[StateIncarcerationSentence] = [
-            incarceration_sentence
-        ]
-
-        expected_events = [
-            create_start_event_from_period(
-                supervision_period,
-                case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
-                admission_reason=StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN,
-            ),
-            SupervisionTerminationEvent(
-                state_code=supervision_period.state_code,
-                year=supervision_period_termination_date.year,
-                month=supervision_period_termination_date.month,
-                event_date=supervision_period_termination_date,
-                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
-                termination_reason=supervision_period.termination_reason,
-                in_supervision_population_on_date=True,
-            ),
-        ]
-
-        expected_events.extend(
-            expected_population_events(
-                supervision_period,
-                StateSupervisionPeriodSupervisionType.PAROLE,
-                case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
-                assessment_score=assessment.assessment_score,
-                assessment_level=assessment.assessment_level,
-                assessment_type=assessment.assessment_type,
-                case_compliances=_generate_case_compliances(
-                    person=self.person,
-                    start_date=supervision_period.start_date,
-                    supervision_period=supervision_period,
-                    assessments=assessments,
-                ),
-                projected_supervision_completion_date=supervision_sentence.projected_completion_date,
-            )
-        )
-
-        supervision_events = self.identifier._find_supervision_events(
-            self.person,
-            supervision_sentences,
-            incarceration_sentences,
-            supervision_periods,
-            incarceration_periods,
-            assessments,
-            violation_responses,
-            supervision_contacts,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
-            DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_LIST,
-        )
-
-        self.assertCountEqual(expected_events, supervision_events)
-
     def test_find_supervision_events_infer_supervision_type_dual_us_mo(
         self,
     ) -> None:
@@ -3230,174 +3002,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             expected_population_events(
                 supervision_period,
                 StateSupervisionPeriodSupervisionType.DUAL,
-                assessment_score=assessment.assessment_score,
-                assessment_level=assessment.assessment_level,
-                assessment_type=assessment.assessment_type,
-                case_compliances=_generate_case_compliances(
-                    person=self.person,
-                    start_date=supervision_period.start_date,
-                    supervision_period=supervision_period,
-                    assessments=assessments,
-                ),
-            )
-        )
-
-        supervision_events = self.identifier._find_supervision_events(
-            self.person,
-            supervision_sentences,
-            incarceration_sentences,
-            supervision_periods,
-            incarceration_periods,
-            assessments,
-            violation_responses,
-            supervision_contacts,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
-            DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_LIST,
-        )
-
-        self.assertCountEqual(expected_events, supervision_events)
-
-    def test_find_supervision_events_infer_supervision_type_dual_us_nd(
-        self,
-    ) -> None:
-        """Tests the find_supervision_events function where the supervision type needs to be inferred, the
-        but the supervision period is attached to both a supervision sentence of type PROBATION and an incarceration
-        sentence, so the inferred type should be DUAL. Also asserts that the DUAL events are expanded to have PAROLE,
-        PROBATION, and DUAL events."""
-        self._stop_state_specific_delegate_patchers()
-
-        supervision_period_termination_date = date(2018, 5, 19)
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=111,
-            external_id="sp1",
-            case_type_entries=[
-                StateSupervisionCaseTypeEntry.new_with_defaults(
-                    state_code="US_ND",
-                    case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
-                )
-            ],
-            state_code="US_ND",
-            start_date=date(2018, 3, 5),
-            termination_date=supervision_period_termination_date,
-            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-        )
-
-        supervision_sentence = StateSupervisionSentence.new_with_defaults(
-            state_code="US_ND",
-            supervision_sentence_id=111,
-            start_date=date(2017, 1, 1),
-            external_id="ss1",
-            status=StateSentenceStatus.COMPLETED,
-            supervision_periods=[supervision_period],
-            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
-        )
-
-        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
-            state_code="US_ND",
-            incarceration_sentence_id=123,
-            external_id="is1",
-            start_date=date(2017, 1, 1),
-            supervision_periods=[supervision_period],
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-        )
-
-        assessment = StateAssessment.new_with_defaults(
-            state_code="US_ND",
-            assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
-            assessment_score=33,
-            assessment_level=StateAssessmentLevel.HIGH,
-            assessment_date=date(2018, 3, 1),
-        )
-
-        supervision_sentences = [supervision_sentence]
-        supervision_periods = [supervision_period]
-        incarceration_periods: List[StateIncarcerationPeriod] = []
-        assessments = [assessment]
-        violation_responses: List[StateSupervisionViolationResponse] = []
-        supervision_contacts: List[StateSupervisionContact] = []
-        incarceration_sentences: List[StateIncarcerationSentence] = [
-            incarceration_sentence
-        ]
-
-        expected_events = [
-            SupervisionTerminationEvent(
-                state_code=supervision_period.state_code,
-                year=supervision_period_termination_date.year,
-                month=supervision_period_termination_date.month,
-                event_date=supervision_period_termination_date,
-                supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
-                case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
-                termination_reason=supervision_period.termination_reason,
-                in_supervision_population_on_date=True,
-            ),
-            SupervisionTerminationEvent(
-                state_code=supervision_period.state_code,
-                year=supervision_period_termination_date.year,
-                month=supervision_period_termination_date.month,
-                event_date=supervision_period_termination_date,
-                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
-                termination_reason=supervision_period.termination_reason,
-                in_supervision_population_on_date=True,
-            ),
-            SupervisionTerminationEvent(
-                state_code=supervision_period.state_code,
-                year=supervision_period_termination_date.year,
-                month=supervision_period_termination_date.month,
-                event_date=supervision_period_termination_date,
-                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-                supervision_level=supervision_period.supervision_level,
-                case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
-                termination_reason=supervision_period.termination_reason,
-                in_supervision_population_on_date=True,
-            ),
-            create_start_event_from_period(
-                supervision_period,
-                UsNdSupervisionDelegate(),
-                case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
-                admission_reason=None,
-            ),
-        ]
-
-        expected_events.extend(
-            expected_population_events(
-                supervision_period,
-                StateSupervisionPeriodSupervisionType.DUAL,
-                case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
-                assessment_score=assessment.assessment_score,
-                assessment_level=assessment.assessment_level,
-                assessment_type=assessment.assessment_type,
-                case_compliances=_generate_case_compliances(
-                    person=self.person,
-                    start_date=supervision_period.start_date,
-                    supervision_period=supervision_period,
-                    assessments=assessments,
-                ),
-            )
-        )
-
-        expected_events.extend(
-            expected_population_events(
-                supervision_period,
-                StateSupervisionPeriodSupervisionType.PAROLE,
-                case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
-                assessment_score=assessment.assessment_score,
-                assessment_level=assessment.assessment_level,
-                assessment_type=assessment.assessment_type,
-                case_compliances=_generate_case_compliances(
-                    person=self.person,
-                    start_date=supervision_period.start_date,
-                    supervision_period=supervision_period,
-                    assessments=assessments,
-                ),
-            )
-        )
-
-        expected_events.extend(
-            expected_population_events(
-                supervision_period,
-                StateSupervisionPeriodSupervisionType.PROBATION,
-                case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
                 assessment_score=assessment.assessment_score,
                 assessment_level=assessment.assessment_level,
                 assessment_type=assessment.assessment_type,
@@ -7029,17 +6633,6 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             assessment_date=date(2019, 5, 10),
         )
 
-        supervision_sentence = StateSupervisionSentence.new_with_defaults(
-            state_code="US_XX",
-            supervision_sentence_id=111,
-            start_date=date(2017, 1, 1),
-            external_id="ss1",
-            status=StateSentenceStatus.COMPLETED,
-            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
-            completion_date=date(2019, 5, 19),
-            supervision_periods=[supervision_period],
-        )
-
         assessments = [first_assessment, first_reassessment, last_assessment]
 
         supervision_period_index = PreProcessedSupervisionPeriodIndex(
@@ -7050,13 +6643,9 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             incarceration_periods=[], ip_id_to_pfi_subtype={}
         )
 
-        incarceration_sentences: List[StateIncarcerationSentence] = []
-        supervision_sentences = [supervision_sentence]
         violation_responses: List[StateSupervisionViolationResponse] = []
 
         termination_event = self.identifier._find_supervision_termination_event(
-            supervision_sentences,
-            incarceration_sentences,
             supervision_period,
             supervision_period_index,
             incarceration_period_index,
@@ -7099,17 +6688,6 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
-        supervision_sentence = StateSupervisionSentence.new_with_defaults(
-            state_code="US_XX",
-            supervision_sentence_id=111,
-            start_date=date(2017, 1, 1),
-            external_id="ss1",
-            status=StateSentenceStatus.COMPLETED,
-            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
-            completion_date=date(2019, 5, 19),
-            supervision_periods=[supervision_period],
-        )
-
         assessments: List[StateAssessment] = []
 
         supervision_period_index = PreProcessedSupervisionPeriodIndex(
@@ -7120,13 +6698,9 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             incarceration_periods=[], ip_id_to_pfi_subtype={}
         )
 
-        incarceration_sentences: List[StateIncarcerationSentence] = []
-        supervision_sentences = [supervision_sentence]
         violation_responses: List[StateSupervisionViolationResponse] = []
 
         termination_event = self.identifier._find_supervision_termination_event(
-            supervision_sentences,
-            incarceration_sentences,
             supervision_period,
             supervision_period_index,
             incarceration_period_index,
@@ -7174,17 +6748,6 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             assessment_date=date(2018, 3, 10),
         )
 
-        supervision_sentence = StateSupervisionSentence.new_with_defaults(
-            state_code="US_XX",
-            supervision_sentence_id=111,
-            start_date=date(2017, 1, 1),
-            external_id="ss1",
-            status=StateSentenceStatus.COMPLETED,
-            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
-            completion_date=date(2019, 5, 19),
-            supervision_periods=[supervision_period],
-        )
-
         assessments = [first_assessment]
 
         supervision_period_index = PreProcessedSupervisionPeriodIndex(
@@ -7195,13 +6758,9 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             incarceration_periods=[], ip_id_to_pfi_subtype={}
         )
 
-        incarceration_sentences: List[StateIncarcerationSentence] = []
-        supervision_sentences = [supervision_sentence]
         violation_responses: List[StateSupervisionViolationResponse] = []
 
         termination_event = self.identifier._find_supervision_termination_event(
-            supervision_sentences,
-            incarceration_sentences,
             supervision_period,
             supervision_period_index,
             incarceration_period_index,
@@ -7239,16 +6798,6 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
-        supervision_sentence = StateSupervisionSentence.new_with_defaults(
-            state_code="US_XX",
-            supervision_sentence_id=111,
-            start_date=date(2017, 1, 1),
-            external_id="ss1",
-            status=StateSentenceStatus.COMPLETED,
-            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
-            supervision_periods=[supervision_period],
-        )
-
         assessments: List[StateAssessment] = []
 
         supervision_period_index = PreProcessedSupervisionPeriodIndex(
@@ -7259,13 +6808,9 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             incarceration_periods=[], ip_id_to_pfi_subtype={}
         )
 
-        incarceration_sentences: List[StateIncarcerationSentence] = []
-        supervision_sentences = [supervision_sentence]
         violation_responses: List[StateSupervisionViolationResponse] = []
 
         termination_event = self.identifier._find_supervision_termination_event(
-            supervision_sentences,
-            incarceration_sentences,
             supervision_period,
             supervision_period_index,
             incarceration_period_index,
@@ -7331,17 +6876,6 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             assessment_date=date(2019, 11, 21),
         )
 
-        supervision_sentence = StateSupervisionSentence.new_with_defaults(
-            state_code="US_XX",
-            supervision_sentence_id=111,
-            start_date=date(2017, 1, 1),
-            external_id="ss1",
-            status=StateSentenceStatus.COMPLETED,
-            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
-            completion_date=date(2019, 12, 23),
-            supervision_periods=[first_supervision_period, second_supervision_period],
-        )
-
         assessments = [too_early_assessment, assessment_1, assessment_2, assessment_3]
 
         supervision_period_index = PreProcessedSupervisionPeriodIndex(
@@ -7352,13 +6886,9 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             incarceration_periods=[], ip_id_to_pfi_subtype={}
         )
 
-        incarceration_sentences: List[StateIncarcerationSentence] = []
-        supervision_sentences = [supervision_sentence]
         violation_responses: List[StateSupervisionViolationResponse] = []
 
         termination_event = self.identifier._find_supervision_termination_event(
-            supervision_sentences,
-            incarceration_sentences,
             first_supervision_period,
             supervision_period_index,
             incarceration_period_index,
@@ -7402,17 +6932,6 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
-        supervision_sentence = StateSupervisionSentence.new_with_defaults(
-            state_code="US_XX",
-            supervision_sentence_id=111,
-            start_date=date(2017, 1, 1),
-            external_id="ss1",
-            status=StateSentenceStatus.COMPLETED,
-            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
-            completion_date=date(2019, 12, 23),
-            supervision_periods=[supervision_period],
-        )
-
         supervision_period_index = PreProcessedSupervisionPeriodIndex(
             supervision_periods=[supervision_period]
         )
@@ -7422,8 +6941,6 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
         )
 
         termination_event = self.identifier._find_supervision_termination_event(
-            supervision_sentences=[supervision_sentence],
-            incarceration_sentences=[],
             supervision_period=supervision_period,
             supervision_period_index=supervision_period_index,
             incarceration_period_index=incarceration_period_index,
@@ -7538,17 +7055,6 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
-        supervision_sentence = StateSupervisionSentence.new_with_defaults(
-            state_code="US_XX",
-            supervision_sentence_id=111,
-            start_date=date(2017, 1, 1),
-            external_id="ss1",
-            status=StateSentenceStatus.COMPLETED,
-            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
-            completion_date=date(2020, 5, 18),
-            supervision_periods=[first_supervision_period, second_supervision_period],
-        )
-
         assessments: List[StateAssessment] = []
 
         supervision_period_index = PreProcessedSupervisionPeriodIndex(
@@ -7559,13 +7065,9 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             incarceration_periods=[], ip_id_to_pfi_subtype={}
         )
 
-        incarceration_sentences: List[StateIncarcerationSentence] = []
-        supervision_sentences = [supervision_sentence]
         violation_responses: List[StateSupervisionViolationResponse] = []
 
         termination_event = self.identifier._find_supervision_termination_event(
-            supervision_sentences,
-            incarceration_sentences,
             first_supervision_period,
             supervision_period_index,
             incarceration_period_index,
@@ -7647,17 +7149,6 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
-        supervision_sentence = StateSupervisionSentence.new_with_defaults(
-            state_code="US_XX",
-            supervision_sentence_id=111,
-            start_date=date(2017, 1, 1),
-            external_id="ss1",
-            status=StateSentenceStatus.COMPLETED,
-            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
-            completion_date=date(2020, 5, 18),
-            supervision_periods=[first_supervision_period, second_supervision_period],
-        )
-
         assessments: List[StateAssessment] = []
 
         supervision_period_index = PreProcessedSupervisionPeriodIndex(
@@ -7668,13 +7159,9 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             incarceration_periods=[], ip_id_to_pfi_subtype={}
         )
 
-        incarceration_sentences: List[StateIncarcerationSentence] = []
-        supervision_sentences = [supervision_sentence]
         violation_responses: List[StateSupervisionViolationResponse] = []
 
         termination_event = self.identifier._find_supervision_termination_event(
-            supervision_sentences,
-            incarceration_sentences,
             first_supervision_period,
             supervision_period_index,
             incarceration_period_index,
@@ -7729,17 +7216,6 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
-        supervision_sentence = StateSupervisionSentence.new_with_defaults(
-            state_code="US_XX",
-            supervision_sentence_id=111,
-            start_date=date(2017, 1, 1),
-            external_id="ss1",
-            status=StateSentenceStatus.COMPLETED,
-            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
-            completion_date=date(2020, 5, 19),
-            supervision_periods=[supervision_period],
-        )
-
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
             external_id="ip1",
@@ -7766,13 +7242,9 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             ),
         )
 
-        incarceration_sentences: List[StateIncarcerationSentence] = []
-        supervision_sentences = [supervision_sentence]
         violation_responses: List[StateSupervisionViolationResponse] = []
 
         termination_event = self.identifier._find_supervision_termination_event(
-            supervision_sentences,
-            incarceration_sentences,
             supervision_period,
             supervision_period_index,
             incarceration_period_index,

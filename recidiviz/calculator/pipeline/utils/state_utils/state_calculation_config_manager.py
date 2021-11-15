@@ -147,9 +147,6 @@ from recidiviz.calculator.pipeline.utils.supervision_case_compliance_manager imp
 from recidiviz.calculator.pipeline.utils.supervision_period_pre_processing_manager import (
     StateSpecificSupervisionPreProcessingDelegate,
 )
-from recidiviz.calculator.pipeline.utils.supervision_type_identification import (
-    get_month_supervision_type_default,
-)
 from recidiviz.calculator.pipeline.utils.supervision_violation_responses_pre_processing_manager import (
     StateSpecificViolationResponsePreProcessingDelegate,
 )
@@ -158,7 +155,6 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.state.entities import (
     StateAssessment,
     StateIncarcerationPeriod,
@@ -169,40 +165,6 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionSentence,
     StateSupervisionViolationResponse,
 )
-
-
-# TODO(#2995): Remove usage when all logic is in state-specific delegates
-def get_month_supervision_type(
-    any_date_in_month: date,
-    supervision_sentences: List[StateSupervisionSentence],
-    incarceration_sentences: List[StateIncarcerationSentence],
-    supervision_period: StateSupervisionPeriod,
-    field_index: CoreEntityFieldIndex,
-) -> StateSupervisionPeriodSupervisionType:
-    """Supervision type can change over time even if the period does not change. This function calculates the
-    supervision type that a given supervision period represents during the month that |any_date_in_month| falls in. The
-    objects / info we use to determine supervision type may be state-specific.
-
-    Args:
-    any_date_in_month: (date) Any day in the month to consider
-    supervision_period: (StateSupervisionPeriod) The supervision period we want to associate a supervision type with
-    supervision_sentences: (List[StateSupervisionSentence]) All supervision sentences for a given person.
-    """
-
-    if supervision_period.state_code.upper() in ("US_ID", "US_PA", "US_MO"):
-        return (
-            supervision_period.supervision_type
-            if supervision_period.supervision_type
-            else StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
-        )
-
-    return get_month_supervision_type_default(
-        any_date_in_month,
-        supervision_sentences,
-        incarceration_sentences,
-        supervision_period,
-        field_index,
-    )
 
 
 # TODO(#2995): Remove usage when all logic is in state-specific delegates
@@ -239,41 +201,6 @@ def get_post_incarceration_supervision_type(
         state_code,
     )
     return None
-
-
-# TODO(#2995): Remove usage when all logic is in state-specific delegates
-def terminating_supervision_period_supervision_type(
-    supervision_period: StateSupervisionPeriod,
-    supervision_sentences: List[StateSupervisionSentence],
-    incarceration_sentences: List[StateIncarcerationSentence],
-    field_index: CoreEntityFieldIndex,
-) -> StateSupervisionPeriodSupervisionType:
-    """Calculates the supervision type that should be associated with a terminated supervision period. In some cases,
-    the supervision period will be terminated long after the person has been incarcerated (e.g. in the case of a board
-    hold, someone might remain assigned to a PO until their parole is revoked), so we do a lookback to see the most
-    recent supervision period supervision type we can associate with this termination.
-    """
-
-    if not supervision_period.termination_date:
-        raise ValueError(
-            f"Expected a terminated supervision period for period "
-            f"[{supervision_period.supervision_period_id}]"
-        )
-
-    if supervision_period.state_code.upper() in ("US_ID", "US_PA", "US_MO"):
-        return (
-            supervision_period.supervision_type
-            if supervision_period.supervision_type
-            else StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
-        )
-
-    return get_month_supervision_type_default(
-        supervision_period.termination_date,
-        supervision_sentences,
-        incarceration_sentences,
-        supervision_period,
-        field_index=field_index,
-    )
 
 
 def get_state_specific_case_compliance_manager(
