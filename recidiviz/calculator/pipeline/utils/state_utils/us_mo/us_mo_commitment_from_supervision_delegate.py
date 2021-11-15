@@ -16,22 +16,9 @@
 # =============================================================================
 """Utils for state-specific logic related to incarceration commitments from supervision
 in US_MO."""
-from typing import List, Optional
 
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_commitment_from_supervision_delegate import (
     StateSpecificCommitmentFromSupervisionDelegate,
-)
-from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_supervision_utils import (
-    us_mo_get_most_recent_supervision_type_before_upper_bound_day,
-)
-from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionPeriodSupervisionType,
-)
-from recidiviz.persistence.entity.state.entities import (
-    StateIncarcerationPeriod,
-    StateIncarcerationSentence,
-    StateSupervisionPeriod,
-    StateSupervisionSentence,
 )
 
 
@@ -39,25 +26,3 @@ class UsMoCommitmentFromSupervisionDelegate(
     StateSpecificCommitmentFromSupervisionDelegate
 ):
     """US_MO implementation of the StateSpecificCommitmentFromSupervisionDelegate."""
-
-    def get_commitment_from_supervision_supervision_type(
-        self,
-        incarceration_sentences: List[StateIncarcerationSentence],
-        supervision_sentences: List[StateSupervisionSentence],
-        incarceration_period: StateIncarcerationPeriod,
-        previous_supervision_period: Optional[StateSupervisionPeriod],
-    ) -> Optional[StateSupervisionPeriodSupervisionType]:
-        """In US_MO we calculate the pre-incarceration supervision type by
-        determining the most recent type of supervision a given person was on using
-        the overlapping sentences."""
-        if not incarceration_period.admission_date:
-            raise ValueError(
-                f"No admission date for incarceration period {incarceration_period.incarceration_period_id}"
-            )
-
-        return us_mo_get_most_recent_supervision_type_before_upper_bound_day(
-            upper_bound_exclusive_date=incarceration_period.admission_date,
-            lower_bound_inclusive_date=None,
-            incarceration_sentences=incarceration_sentences,
-            supervision_sentences=supervision_sentences,
-        )

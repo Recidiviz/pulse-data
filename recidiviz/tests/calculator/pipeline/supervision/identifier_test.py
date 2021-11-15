@@ -7923,23 +7923,7 @@ class TestFindSupervisionStartEvent(unittest.TestCase):
             incarceration_periods=[], ip_id_to_pfi_subtype={}
         )
 
-        supervision_sentence = StateSupervisionSentence.new_with_defaults(
-            state_code="US_XX",
-            supervision_sentence_id=111,
-            start_date=date(2018, 3, 5),
-            external_id="ss1",
-            status=StateSentenceStatus.COMPLETED,
-            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
-            completion_date=date(2020, 5, 18),
-            supervision_periods=[first_supervision_period, second_supervision_period],
-        )
-
-        supervision_sentences: List[StateSupervisionSentence] = [supervision_sentence]
-        incarceration_sentences: List[StateIncarcerationSentence] = []
-
         start_event = self.identifier._find_supervision_start_event(
-            supervision_sentences,
-            incarceration_sentences,
             first_supervision_period,
             supervision_period_index,
             incarceration_period_index,
@@ -8023,23 +8007,7 @@ class TestFindSupervisionStartEvent(unittest.TestCase):
             incarceration_periods=[], ip_id_to_pfi_subtype={}
         )
 
-        supervision_sentence = StateSupervisionSentence.new_with_defaults(
-            state_code="US_XX",
-            supervision_sentence_id=111,
-            start_date=date(2018, 3, 5),
-            external_id="ss1",
-            status=StateSentenceStatus.COMPLETED,
-            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
-            completion_date=date(2018, 5, 18),
-            supervision_periods=[first_supervision_period, second_supervision_period],
-        )
-
-        supervision_sentences: List[StateSupervisionSentence] = [supervision_sentence]
-        incarceration_sentences: List[StateIncarcerationSentence] = []
-
         start_event = self.identifier._find_supervision_start_event(
-            supervision_sentences,
-            incarceration_sentences,
             first_supervision_period,
             supervision_period_index,
             incarceration_period_index,
@@ -8114,23 +8082,7 @@ class TestFindSupervisionStartEvent(unittest.TestCase):
             ),
         )
 
-        supervision_sentence = StateSupervisionSentence.new_with_defaults(
-            state_code="US_XX",
-            supervision_sentence_id=111,
-            start_date=date(2017, 1, 1),
-            external_id="ss1",
-            status=StateSentenceStatus.COMPLETED,
-            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
-            completion_date=date(2020, 5, 19),
-            supervision_periods=[supervision_period],
-        )
-
-        supervision_sentences: List[StateSupervisionSentence] = [supervision_sentence]
-        incarceration_sentences: List[StateIncarcerationSentence] = []
-
         start_event = self.identifier._find_supervision_start_event(
-            supervision_sentences,
-            incarceration_sentences,
             supervision_period,
             supervision_period_index,
             incarceration_period_index,
