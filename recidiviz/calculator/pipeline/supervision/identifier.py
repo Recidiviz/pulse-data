@@ -54,11 +54,9 @@ from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index 
     PreProcessedSupervisionPeriodIndex,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
-    get_month_supervision_type,
     get_state_specific_case_compliance_manager,
     get_state_specific_supervision_delegate,
     get_state_specific_violation_delegate,
-    terminating_supervision_period_supervision_type,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_delegate import (
     StateSpecificSupervisionDelegate,
@@ -254,8 +252,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                 )
 
                 supervision_termination_event = self._find_supervision_termination_event(
-                    supervision_sentences=supervision_sentences,
-                    incarceration_sentences=incarceration_sentences,
                     supervision_period=supervision_period,
                     supervision_period_index=supervision_period_index,
                     incarceration_period_index=incarceration_period_index,
@@ -396,12 +392,10 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                 supervising_officer_external_id,
             ):
 
-                supervision_type = get_month_supervision_type(
-                    event_date,
-                    supervision_sentences,
-                    incarceration_sentences,
-                    supervision_period,
-                    self.field_index,
+                supervision_type = (
+                    supervision_period.supervision_type
+                    if supervision_period.supervision_type
+                    else StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
                 )
 
                 assessment_score = None
@@ -645,8 +639,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
 
     def _find_supervision_termination_event(
         self,
-        supervision_sentences: List[StateSupervisionSentence],
-        incarceration_sentences: List[StateIncarcerationSentence],
         supervision_period: StateSupervisionPeriod,
         supervision_period_index: PreProcessedSupervisionPeriodIndex,
         incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
@@ -737,11 +729,10 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
 
             case_type = identify_most_severe_case_type(supervision_period)
 
-            supervision_type = terminating_supervision_period_supervision_type(
-                supervision_period,
-                supervision_sentences,
-                incarceration_sentences,
-                field_index=self.field_index,
+            supervision_type = (
+                supervision_period.supervision_type
+                if supervision_period.supervision_type
+                else StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
             )
 
             deprecated_supervising_district_external_id = (
