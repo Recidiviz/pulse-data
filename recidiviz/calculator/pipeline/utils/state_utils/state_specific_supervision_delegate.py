@@ -19,18 +19,10 @@ for state-specific decisions involved in categorizing various attributes of
 supervision."""
 # pylint: disable=unused-argument
 import abc
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 from recidiviz.calculator.pipeline.supervision.events import SupervisionPopulationEvent
-from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionPeriodSupervisionType,
-)
-from recidiviz.common.date import DateRange
-from recidiviz.persistence.entity.state.entities import (
-    StateIncarcerationSentence,
-    StateSupervisionPeriod,
-    StateSupervisionSentence,
-)
+from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
 
 
 class StateSpecificSupervisionDelegate(abc.ABC):
@@ -72,9 +64,6 @@ class StateSpecificSupervisionDelegate(abc.ABC):
 
     def supervision_period_in_supervision_population_in_non_excluded_date_range(
         self,
-        date_range: DateRange,
-        supervision_sentences: List[StateSupervisionSentence],
-        incarceration_sentences: List[StateIncarcerationSentence],
         supervision_period: StateSupervisionPeriod,
         supervising_officer_external_id: Optional[str],
     ) -> bool:
@@ -86,37 +75,6 @@ class StateSpecificSupervisionDelegate(abc.ABC):
 
         By default returns True.
         """
-        return True
-
-    def should_produce_supervision_event_for_period(
-        self,
-        supervision_period: StateSupervisionPeriod,
-        incarceration_sentences: List[StateIncarcerationSentence],
-        supervision_sentences: List[StateSupervisionSentence],
-    ) -> bool:
-        """Whether or not any SupervisionEvents should be created using the
-        supervision_period. In some cases, supervision period pre-processing will not drop
-        periods entirely because we need them for context in some of the calculations,
-        but we do not want to create metrics using the periods.
-
-        If this returns True, it does not necessarily mean they should be counted towards
-        the supervision population for any part of this period. It just means that a
-        person was actively assigned to supervision at this time and various
-        characteristics of this period may be relevant for generating metrics (such as the
-        termination reason / date) even if we may not count this person towards the
-        supervision population during the period time span (e.g. if they are incarcerated
-        the whole time).
-
-        Default behavior is to not produce any supervision events associated with investigation
-        or pre-confinement supervision. Currenlty, there should be no supervision events associated
-        with investigation or pre-confinement supervision.
-        """
-        if (
-            supervision_period.supervision_type
-            == StateSupervisionPeriodSupervisionType.INVESTIGATION
-        ):
-            return False
-
         return True
 
     def get_index_of_first_reliable_supervision_assessment(self) -> int:

@@ -192,3 +192,29 @@ def supervision_period_is_out_of_state(
             supervision_population_event
         )
     )
+
+
+def should_produce_supervision_event_for_period(
+    supervision_period: StateSupervisionPeriod,
+) -> bool:
+    """Whether or not any SupervisionEvents should be created using the
+    supervision_period. In some cases, supervision period pre-processing will not drop
+    periods entirely because we need them for context in some of the calculations,
+    but we do not want to create metrics using the periods.
+
+    If this returns True, it does not necessarily mean they should be counted towards
+    the supervision population for any part of this period. It just means that a
+    person was actively assigned to supervision at this time and various
+    characteristics of this period may be relevant for generating metrics (such as the
+    termination reason / date) even if we may not count this person towards the
+    supervision population during the period time span (e.g. if they are incarcerated
+    the whole time).
+
+    Default behavior is to not produce any supervision events associated with investigation
+    or pre-confinement supervision. Currenlty, there should be no supervision events associated
+    with investigation or pre-confinement supervision.
+    """
+    return (
+        supervision_period.supervision_type
+        != StateSupervisionPeriodSupervisionType.INVESTIGATION
+    )
