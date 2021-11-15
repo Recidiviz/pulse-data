@@ -171,6 +171,7 @@ from recidiviz.persistence.entity.state.entities import (
 )
 
 
+# TODO(#2995): Remove usage when all logic is in state-specific delegates
 def get_month_supervision_type(
     any_date_in_month: date,
     supervision_sentences: List[StateSupervisionSentence],
@@ -204,6 +205,7 @@ def get_month_supervision_type(
     )
 
 
+# TODO(#2995): Remove usage when all logic is in state-specific delegates
 def get_post_incarceration_supervision_type(
     incarceration_sentences: List[StateIncarcerationSentence],
     supervision_sentences: List[StateSupervisionSentence],
@@ -239,6 +241,7 @@ def get_post_incarceration_supervision_type(
     return None
 
 
+# TODO(#2995): Remove usage when all logic is in state-specific delegates
 def terminating_supervision_period_supervision_type(
     supervision_period: StateSupervisionPeriod,
     supervision_sentences: List[StateSupervisionSentence],

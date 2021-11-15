@@ -34,11 +34,9 @@ from recidiviz.common.constants.state.state_supervision_period import (
 from recidiviz.common.constants.state.state_supervision_sentence import (
     StateSupervisionSentenceSupervisionType,
 )
-from recidiviz.common.date import first_day_of_month, last_day_of_month
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
     StateIncarcerationSentence,
-    StateSupervisionPeriod,
     StateSupervisionSentence,
 )
 
@@ -105,43 +103,3 @@ def us_mo_get_most_recent_supervision_type_before_upper_bound_day(
     return sentence_supervision_types_to_supervision_period_supervision_type(
         supervision_types_by_end_date[max_end_date]
     )
-
-
-def us_mo_get_month_supervision_type(
-    any_date_in_month: datetime.date,
-    supervision_sentences: List[StateSupervisionSentence],
-    incarceration_sentences: List[StateIncarcerationSentence],
-    supervision_period: StateSupervisionPeriod,
-) -> StateSupervisionPeriodSupervisionType:
-    """Calculates the supervision period supervision type that should be attributed to a US_MO supervision period
-    on a given month.
-
-    The date used to calculate the supervision period supervision type is either the last day of the month, or
-    the last day of supervision, whichever comes first.
-    """
-    start_of_month = first_day_of_month(any_date_in_month)
-    end_of_month = last_day_of_month(any_date_in_month)
-    first_of_next_month = end_of_month + datetime.timedelta(days=1)
-
-    if supervision_period.termination_date is None:
-        upper_bound_exclusive_date = first_of_next_month
-    else:
-        upper_bound_exclusive_date = min(
-            first_of_next_month, supervision_period.termination_date
-        )
-
-    lower_bound_inclusive = max(
-        start_of_month, supervision_period.start_date or datetime.date.min
-    )
-
-    supervision_type = us_mo_get_most_recent_supervision_type_before_upper_bound_day(
-        upper_bound_exclusive_date=upper_bound_exclusive_date,
-        lower_bound_inclusive_date=lower_bound_inclusive,
-        supervision_sentences=supervision_sentences,
-        incarceration_sentences=incarceration_sentences,
-    )
-
-    if not supervision_type:
-        return StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
-
-    return supervision_type
