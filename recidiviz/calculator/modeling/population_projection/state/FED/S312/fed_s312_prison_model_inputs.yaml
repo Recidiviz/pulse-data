@@ -1,0 +1,27 @@
+---
+user_inputs:
+  start_year: 2020.6666666666666666
+  projection_years: 10.0
+  speed_run: true
+  constant_admissions: true
+
+compartments_architecture:
+    pretrial: shell
+    prison: full
+    release: full
+    home_detent: full
+
+reference_date: 2020.6666666666666666
+
+time_step: .083333333333
+
+disaggregation_axes:
+  - age
+
+data_inputs:
+  big_query_simulation_tag: fed_s213
+
+per_year_costs:
+  prison: 37449.0
+  release: 0.0
+  home_detent: 15147.5

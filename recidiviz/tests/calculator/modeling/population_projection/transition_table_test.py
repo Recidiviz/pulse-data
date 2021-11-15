@@ -19,6 +19,7 @@
 import unittest
 from functools import partial
 import pandas as pd
+import numpy as np
 from pandas.testing import assert_frame_equal, assert_series_equal, assert_index_equal
 
 from recidiviz.calculator.modeling.population_projection.transition_table import (
@@ -232,7 +233,7 @@ class TestPolicyFunctions(TestTransitionTable):
     ) -> None:
 
         policy_mul = partial(
-            TransitionTable.apply_reduction,
+            TransitionTable.apply_reductions,
             reduction_df=pd.DataFrame(
                 {
                     "outflow": ["prison"] * 2,
@@ -245,7 +246,7 @@ class TestPolicyFunctions(TestTransitionTable):
         )
 
         policy_add = partial(
-            TransitionTable.apply_reduction,
+            TransitionTable.apply_reductions,
             reduction_df=pd.DataFrame(
                 {
                     "outflow": ["prison"] * 2,
@@ -285,11 +286,11 @@ class TestPolicyFunctions(TestTransitionTable):
             transition_table.transition_dfs[TransitionTableType.AFTER],
         )
 
-    def test_apply_reduction_matches_example_by_hand(self) -> None:
+    def test_apply_reductions_matches_example_by_hand(self) -> None:
         compartment_policy = [
             SparkPolicy(
                 policy_fn=partial(
-                    TransitionTable.apply_reduction,
+                    TransitionTable.apply_reductions,
                     reduction_df=pd.DataFrame(
                         {
                             "outflow": ["prison"],
@@ -329,6 +330,48 @@ class TestPolicyFunctions(TestTransitionTable):
                 transition_table.transition_dfs[TransitionTableType.BEFORE], SIG_FIGS
             ),
             round(expected_result, SIG_FIGS),
+        )
+
+    def test_constrained_apply_reductions_doesnt_affect_above_affected_LOS(
+        self,
+    ) -> None:
+        compartment_policy = [
+            SparkPolicy(
+                policy_fn=partial(
+                    TransitionTable.apply_reductions,
+                    reduction_df=pd.DataFrame(
+                        {
+                            "outflow": ["prison"],
+                            "affected_fraction": [0.25],
+                            "reduction_size": [0.5],
+                        }
+                    ),
+                    reduction_type="+",
+                    affected_LOS=[None, 5],
+                    retroactive=False,
+                ),
+                sub_population={"sub_group": "test_population"},
+                spark_compartment="test_compartment",
+                policy_ts=5,
+                apply_retroactive=False,
+            )
+        ]
+
+        transition_table = TransitionTable(
+            5,
+            compartment_policy,
+            self.prev_table.get_table(TransitionTableType.AFTER),
+        )
+
+        assert_frame_equal(
+            round(
+                transition_table.transition_dfs[TransitionTableType.AFTER].loc[6:],
+                SIG_FIGS,
+            ),
+            round(
+                self.prev_table.transition_dfs[TransitionTableType.AFTER].loc[6:],
+                SIG_FIGS,
+            ),
         )
 
     def test_reallocate_outflow_preserves_total_population(self) -> None:
@@ -447,3 +490,49 @@ class TestPolicyFunctions(TestTransitionTable):
             transition_table.transition_dfs[TransitionTableType.AFTER].loc[1, "prison"]
             != 0
         )
+
+    def test_abolish_mandatory_minimum_matches_example_by_hand(self) -> None:
+        normal_data = pd.DataFrame(
+            {
+                "compartment_duration": np.random.normal(10, 2, 5000).clip(0).round(),
+                "total_population": [1] * 5000,
+            }
+        )
+        normal_data = normal_data.groupby("compartment_duration").sum().reset_index()
+        normal_data["outflow_to"] = "release"
+
+        normal_prev_table = TransitionTable(-9999, [])
+        normal_prev_table.generate_transition_table(
+            TransitionTableType.AFTER, normal_data
+        )
+
+        compartment_policies = [
+            SparkPolicy(
+                policy_fn=partial(
+                    TransitionTable.abolish_mandatory_minimum,
+                    historical_outflows=normal_data,
+                    outflow="release",
+                    affected_fraction=0.5,
+                    retroactive=False,
+                ),
+                sub_population={"sub_group": "test_population"},
+                spark_compartment="test_compartment",
+                policy_ts=5,
+                apply_retroactive=False,
+            )
+        ]
+
+        transition_table = TransitionTable(
+            5,
+            compartment_policies,
+            normal_prev_table.get_table(TransitionTableType.AFTER),
+        )
+
+        expected_mean = 10 - 2 * 0.5 / 2
+        calculated_mean = np.average(
+            transition_table.transition_dfs[TransitionTableType.AFTER].release.index,
+            weights=transition_table.transition_dfs[
+                TransitionTableType.AFTER
+            ].release.values,
+        )
+        self.assertEqual(np.round(expected_mean, 1), np.round(calculated_mean, 1))
