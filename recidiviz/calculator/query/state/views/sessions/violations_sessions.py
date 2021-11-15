@@ -51,52 +51,63 @@ Finally, `revocation_sessions` are associated with violations by associating a r
 |	most_serious_violation_sub_type	|	The most serious violation sub type for a given person on a given day. Determined using state specific logic	|
 |	most_severe_response_decision	|	The most severe recommendation from a PO for the most severe violation type for a given person/day	|
 |	session_id	|	Session id	|
+|	violation_date	|	Date the violation occurred	|
 |	response_date	|	Date the violation was recorded	|
-|	distinct_violations_per_day	|	A given person-day can have multiple distinct violation IDs. While we keep the most severe violation type on a given day, we keep track of the distinct violation IDs on a person-day.	|
+|	earliest_available_date	|	Takes the earliest of violation and response date	|
+|	violations_per_day	|	A given person-day can have multiple distinct violation IDs. While we keep the most severe violation type on a given day, we keep track of the distinct violation IDs on a person-day.	|
 |	is_violent	|	A flag for whether a violation involved a violent action - only available in some states	|
 |	is_sex_offense	|	A flag for whether a violation involved a sex offense - only available in some states	|
 |	supervision_super_session_id	|	An ID that groups together continuous stays on supervision, in cases where an individual may go on PAROLE_BOARD_HOLD and back to Parole several times before being revoked.	|
-|	revocation_session_id	|	The session ID when an individual returns to incarceration. Can be used to join back onto `revocation_sessions_materialized` but cannot be used to count total revocations	|
-|	revocation_date	|	Date of revocation if there is a revocation associated with that violation	|
 
 ## Methodology
 
-Takes the output of the dataflow violations pipeline and integrates it with other sessions views including `compartment_sessions`, `revocation_sessions`, and `supervision_super_sessions`. This view also deduplicates to one violation per person per day by doing the following:
+Takes the output of the dataflow violations pipeline and integrates it with other sessions views including `compartment_sessions` and `supervision_super_sessions`. This view also deduplicates to one violation per person per day by doing the following:
 
 1. keeping the most severe violation type for a given `person_id`, `violation_id`
-2. keeping the most severe violation type across all `violation_id`s for a given `person_id` and `response_date`
-3. keeping the most severe response decision across all `violation_id`s for a given `person_id` and `response_date` if they have the same `most_severe_violation_type` and `most_severe_violation_type_subtype`
+2. keeping the most severe violation type across all `violation_id`s for a given `person_id` and `earliest_available_date` (`violation_date` or `response_date`)
+3. keeping the most severe response decision across all `violation_id`s for a given `person_id` and `earliest_available_date` (`violation_date` or `response_date`) if they have the same `most_severe_violation_type` and `most_severe_violation_type_subtype`
 """
 
 VIOLATIONS_SESSIONS_QUERY_TEMPLATE = """
     /*{description}*/
     WITH violations_cte AS (
         SELECT 
-        violations.state_code,
-        violations.person_id,
-        violations.supervision_violation_id,
-        violations.violation_type as most_serious_violation_type,
-        violations.violation_type_subtype as most_serious_violation_sub_type,
-        violations.response_date,
-        violations.most_severe_response_decision,
-        violations.is_violent,
-        violations.is_sex_offense,
-        priority,  
-        COUNT(DISTINCT  supervision_violation_id) OVER(PARTITION BY person_id, state_code, response_date) AS distinct_violations_per_day,
-        ROW_NUMBER() OVER(PARTITION BY person_id, state_code, response_date ORDER BY 
-        CASE WHEN is_most_severe_violation_type_of_all_violations = TRUE THEN 0 ELSE 1 END,
-        CASE WHEN is_most_severe_response_decision_of_all_violations = TRUE THEN 0 ELSE 1 END) AS rn
-        FROM `{project_id}.{dataflow_dataset}.most_recent_violation_with_response_metrics_materialized` violations
-        LEFT JOIN `{project_id}.{sessions_dataset}.violation_type_dedup_priority`
-                USING(state_code, violation_type, violation_type_subtype)
+            violations.state_code,
+            violations.person_id,
+            violations.supervision_violation_id,
+            violations.violation_type AS most_serious_violation_type,
+            violations.violation_type_subtype AS most_serious_violation_sub_type,
+            violations.violation_date,
+            violations.response_date,
+            COALESCE(violations.violation_date, violations.response_date) AS earliest_available_date,
+            violations.most_severe_response_decision,
+            violations.is_violent,
+            violations.is_sex_offense,
+            COUNT(DISTINCT supervision_violation_id) 
+                OVER(PARTITION BY person_id, state_code,
+                COALESCE(violation_date, response_date)) AS violations_per_day,
+            ROW_NUMBER() OVER(
+                PARTITION BY person_id, state_code, COALESCE(violation_date, response_date) 
+                ORDER BY 
+                    COALESCE(is_most_severe_violation_type_of_all_violations, FALSE) DESC,
+                    COALESCE(is_most_severe_response_decision_of_all_violations, FALSE) DESC,
+                    response_date DESC
+            ) AS rn,
+        FROM 
+            `{project_id}.{dataflow_dataset}.most_recent_violation_with_response_metrics_materialized` violations
         /* This keeps most severe violation type associated with a given supervision_violation_id. There may still be 
-        multiple supervision_violation_id's on the same response_date, so there are duplicates on person_id, 
-        response_date after this step which are dealt with above in the ordering logic */ 
+        multiple supervision_violation_id's on the same violation_date (or response_date when violation_date is unavailable), 
+        so there are duplicates on person_id, violation_date/response_date after this step which are dealt with above in the ordering logic.
+        The ORDER BY clause prioritizes most_severe_violation_type, then most_servere_response_decision, then latest response_date */ 
         WHERE is_most_severe_violation_type
         QUALIFY rn = 1
     ),
+    #TODO(#9832) Move state-specific logic to query violations from docstars_contacts out of violations_sessions and further upstream
+    -- US_ND is not currently in the violations pipeline because they don't record violations systematically
+    -- However, we've been told that we can identify violations from supervision contact information, which is
+    -- what the following CTE does
     us_nd_contacts_violations as (
-        SELECT
+        SELECT DISTINCT
             person_id,
             'US_ND' AS state_code,
             EXTRACT(date FROM PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S%p',CONTACT_DATE) ) AS response_date_ND
@@ -117,40 +128,32 @@ VIOLATIONS_SESSIONS_QUERY_TEMPLATE = """
             OR C6 = 'VI'
     ), 
     violations_combine AS (
-        SELECT * EXCEPT(response_date, response_date_ND), 
-        COALESCE(response_date_ND,response_date) AS response_date
-        FROM violations_cte 
+        SELECT 
+            * EXCEPT(response_date, response_date_ND, earliest_available_date), 
+            -- In ND we only currently have the date a violation was recorded in the supervision contact data,
+            -- which is most likely closest to a response date (rather than violation date). This COALESCE
+            -- uses the response_date in ND if the other dates are not available, which would change if ND
+            -- data becomes available in most_recent_violation_with_response_metrics
+            COALESCE(response_date, response_date_ND) AS response_date,
+            COALESCE(earliest_available_date, response_date_ND) AS earliest_available_date,
+        FROM 
+            violations_cte 
         FULL OUTER JOIN us_nd_contacts_violations USING(person_id,state_code)
-    ),
-    violations_sessions_info AS (
-        SELECT violations.*,
-        COALESCE(sessions.session_id,1) as session_id,
-        /* Where the same violation is associated with multiple revocations, choose the earliest revocation date */
-        ROW_NUMBER() OVER(PARTITION BY violations.person_id, violations.response_date 
-            ORDER BY revocations.revocation_date ASC) as same_violation_multiple_revocations_rn,
+    )
+    SELECT 
+        violations.* EXCEPT(rn),
+        session_id,
         super_sessions.supervision_super_session_id,
-        /* Where the same revocation is associated with multiple violations, choose the most severe of the violations
-        and then choose the most recent violation if the severity is the same */
-        CASE WHEN ROW_NUMBER() OVER(PARTITION BY violations.person_id, revocations.revocation_session_id 
-            ORDER BY CASE WHEN priority IS null THEN 1 ELSE 0 END, priority ASC, response_date DESC) = 1 THEN revocation_session_id END AS revocation_session_id,
-        CASE WHEN ROW_NUMBER() OVER(PARTITION BY violations.person_id, revocations.revocation_session_id 
-            ORDER BY CASE WHEN priority IS null THEN 1 ELSE 0 END, priority ASC, response_date DESC) = 1 THEN revocation_date END AS revocation_date
-        FROM violations_combine violations
-        /* left join because there is a very small number of observations that dont get a session_id - if the violation
-        is recorded before they show up in population metrics and therefore in sessions */
-        LEFT JOIN `{project_id}.{sessions_dataset}.compartment_sessions_materialized` sessions
-            ON sessions.person_id = violations.person_id
-            AND violations.response_date BETWEEN sessions.start_date AND COALESCE(sessions.end_date, '9999-01-01')
-        LEFT JOIN `{project_id}.{sessions_dataset}.supervision_super_sessions_materialized` super_sessions
-            ON sessions.person_id = super_sessions.person_id
-            AND sessions.session_id BETWEEN super_sessions.session_id_start AND super_sessions.session_id_end
-        LEFT JOIN `{project_id}.{sessions_dataset}.revocation_sessions_materialized` revocations
-            ON revocations.person_id = violations.person_id
-            AND revocations.revocation_date BETWEEN violations.response_date AND DATE_ADD(violations.response_date, INTERVAL 365 DAY)        
-    )   
-    SELECT * EXCEPT(same_violation_multiple_revocations_rn, priority)
-    FROM violations_sessions_info 
-    WHERE same_violation_multiple_revocations_rn = 1
+    FROM 
+        violations_combine violations
+    /* left join because there are a very small number of observations that dont get a session_id - if the violation
+    is recorded before they show up in population metrics and therefore in sessions */
+    LEFT JOIN `{project_id}.{sessions_dataset}.compartment_sessions_materialized` sessions
+        ON sessions.person_id = violations.person_id
+        AND violations.earliest_available_date BETWEEN sessions.start_date AND COALESCE(sessions.end_date, '9999-01-01')
+    LEFT JOIN `{project_id}.{sessions_dataset}.supervision_super_sessions_materialized` super_sessions
+        ON sessions.person_id = super_sessions.person_id
+        AND sessions.session_id BETWEEN super_sessions.session_id_start AND super_sessions.session_id_end
     """
 
 VIOLATIONS_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
