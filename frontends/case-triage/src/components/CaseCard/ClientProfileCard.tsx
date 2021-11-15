@@ -68,7 +68,7 @@ const SummaryItem: React.FC<SummaryItemProps> = ({ children, icon }) => {
 const DetailsPanelContents: React.FC<CaseCardProps> = ({ client }) => {
   const {
     policyStore,
-    userStore: { canSeeExtendedProfile, canSeeClientTimeline, canSeeHomeVisit },
+    userStore: { canSeeClientTimeline },
   } = useRootStore();
 
   const contactText = getContactFrequencyText(
@@ -92,7 +92,7 @@ const DetailsPanelContents: React.FC<CaseCardProps> = ({ client }) => {
             {client.projectedEndDate.from(moment().startOf("day"))})
           </SummaryItem>
         ) : null}
-        {canSeeExtendedProfile && client.milestones.violationFree && (
+        {client.milestones.violationFree && (
           <SummaryItem>
             Milestone: {client.milestones.violationFree} without a violation
           </SummaryItem>
@@ -110,7 +110,7 @@ const DetailsPanelContents: React.FC<CaseCardProps> = ({ client }) => {
             : "Unemployed"}{" "}
           / <ReceivingSSIOrDisabilityIncomeSelector client={client} />
         </SummaryItem>
-        {canSeeExtendedProfile && client.milestones.employment && (
+        {client.milestones.employment && (
           <SummaryItem>
             Milestone: {client.milestones.employment} employed here
           </SummaryItem>
@@ -153,22 +153,19 @@ const DetailsPanelContents: React.FC<CaseCardProps> = ({ client }) => {
               "Never"}
           </Caption>
         </DetailsLineItem>
-        {/* // TODO(#9807) remove feature flag when ready to release home visit */}
-        {canSeeHomeVisit && (
-          <DetailsLineItem>
-            Next home visit
-            {client.nextHomeVisitDate
-              ? ` recommended on ${client.nextHomeVisitDate.format(
-                  LONG_DATE_FORMAT
-                )}`
-              : ": Never"}
-            <Caption style={{ marginLeft: spacing.sm }}>
-              Previous:{" "}
-              {client.mostRecentHomeVisitDate?.format(LONG_DATE_FORMAT) ||
-                "Never"}
-            </Caption>
-          </DetailsLineItem>
-        )}
+        <DetailsLineItem>
+          Next home visit
+          {client.nextHomeVisitDate
+            ? ` recommended on ${client.nextHomeVisitDate.format(
+                LONG_DATE_FORMAT
+              )}`
+            : ": Never"}
+          <Caption style={{ marginLeft: spacing.sm }}>
+            Previous:{" "}
+            {client.mostRecentHomeVisitDate?.format(LONG_DATE_FORMAT) ||
+              "Never"}
+          </Caption>
+        </DetailsLineItem>
         <DetailsLineItem>
           Next assessment
           {client.nextAssessmentDate

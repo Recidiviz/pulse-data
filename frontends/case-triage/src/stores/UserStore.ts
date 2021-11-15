@@ -34,9 +34,7 @@ interface UserStoreProps {
 }
 
 export enum KNOWN_EXPERIMENTS {
-  ExtendedProfile = "can-see-extended-profile",
   ClientTimeline = "can-see-client-timeline",
-  HomeVisit = "can-see-home-visit",
 }
 
 export interface FeatureVariants {
@@ -223,17 +221,8 @@ export default class UserStore {
     return !!this.featureVariants[experiment];
   }
 
-  get canSeeExtendedProfile(): boolean {
-    return this.isInExperiment(KNOWN_EXPERIMENTS.ExtendedProfile);
-  }
-
   get canSeeClientTimeline(): boolean {
     return this.isInExperiment(KNOWN_EXPERIMENTS.ClientTimeline);
-  }
-
-  // TODO(#9807) remove feature flag when ready to release home visit
-  get canSeeHomeVisit(): boolean {
-    return this.isInExperiment(KNOWN_EXPERIMENTS.HomeVisit);
   }
 
   setShouldSeeOnboarding(shouldSeeOnboarding: boolean): void {

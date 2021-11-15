@@ -137,9 +137,8 @@ class ClientsStore {
 
     // fetch events for the active client (including after a refetch)
     autorun(() => {
-      const { canSeeExtendedProfile } = this.userStore;
       const { activeClient } = this;
-      if (canSeeExtendedProfile && activeClient?.needsTimelineHydration) {
+      if (activeClient?.needsTimelineHydration) {
         activeClient.hydrateTimeline();
       }
     });

@@ -128,18 +128,10 @@ const SORT_ORDER_OPTIONS = SortOrderList.map((id) => ({
 }));
 
 const SortControl = observer(() => {
-  const { clientsStore, userStore } = useRootStore();
+  const { clientsStore } = useRootStore();
   const { sortOrder } = clientsStore;
 
-  let options = SORT_ORDER_OPTIONS;
-
-  if (!userStore.canSeeExtendedProfile) {
-    options = options.filter(({ id }) => id !== "DAYS_WITH_PO");
-  }
-  // TODO(#9807) remove feature flag when ready to release home visit
-  if (!userStore.canSeeHomeVisit) {
-    options = options.filter(({ id }) => id !== "HOME_VISIT_DATE");
-  }
+  const options = SORT_ORDER_OPTIONS;
 
   return (
     <Dropdown>
