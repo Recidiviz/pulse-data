@@ -17,17 +17,17 @@
 """SparkCompartment that tracks cohorts internally to determine population size and outflows"""
 
 from typing import Dict
-import pandas as pd
+
 import numpy as np
+import pandas as pd
 
 from recidiviz.calculator.modeling.population_projection.cohort_table import CohortTable
-from recidiviz.calculator.modeling.population_projection.spark_compartment import (
-    SparkCompartment,
-)
 from recidiviz.calculator.modeling.population_projection.compartment_transitions import (
     CompartmentTransitions,
 )
-
+from recidiviz.calculator.modeling.population_projection.spark_compartment import (
+    SparkCompartment,
+)
 from recidiviz.calculator.modeling.population_projection.utils.transitions_utils import (
     SIG_FIGS,
 )
@@ -138,7 +138,10 @@ class FullCompartment(SparkCompartment):
         """Simulate one time step in the projection"""
         super().step_forward()
         outflow_dict = self._generate_outflow_dict()
-        self.outflows[self.current_ts] = pd.Series(outflow_dict, dtype=float)
+
+        # Store the outflows with the previous time step since transitions from the last
+        # time step get us the total population for this time step
+        self.outflows.loc[:, self.current_ts - 1] = pd.Series(outflow_dict, dtype=float)
 
         # if historical data available, use that instead
         if self.current_ts in self.outflows_data.columns:

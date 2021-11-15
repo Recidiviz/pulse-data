@@ -100,7 +100,8 @@ class PopulationSimulationFactory:
         )
         if should_initialize_compartment_populations:
 
-            # add to `policy_list to switch from remaining sentences data to transitions data
+            # add to `policy_list` to switch from remaining sentences data to transitions data
+            alternate_transition_policies = []
             for group_attributes in sub_group_ids_dict.values():
                 disaggregated_microsim_data = microsim_data[
                     (
@@ -115,21 +116,37 @@ class PopulationSimulationFactory:
                     for i in compartments_architecture
                     if compartments_architecture[i] != "shell"
                 ]:
-                    policy_list.append(
-                        SparkPolicy(
-                            policy_fn=partial(
-                                TransitionTable.use_alternate_transitions_data,
-                                alternate_historical_transitions=disaggregated_microsim_data[
-                                    disaggregated_microsim_data.compartment == full_comp
-                                ],
-                                retroactive=False,
-                            ),
-                            spark_compartment=full_comp,
-                            sub_population=group_attributes,
-                            policy_ts=user_inputs["start_time_step"] + 1,
-                            apply_retroactive=False,
+                    alternate_transitions = disaggregated_microsim_data[
+                        disaggregated_microsim_data.compartment == full_comp
+                    ]
+                    # Only apply the alternate transitions to this compartment
+                    # if they were provided
+                    if not alternate_transitions.empty:
+
+                        alternate_transition_policies.append(
+                            SparkPolicy(
+                                policy_fn=partial(
+                                    TransitionTable.use_alternate_transitions_data,
+                                    alternate_historical_transitions=alternate_transitions,
+                                    retroactive=False,
+                                ),
+                                spark_compartment=full_comp,
+                                sub_population=group_attributes,
+                                policy_ts=user_inputs["start_time_step"] + 1,
+                                apply_retroactive=False,
+                            )
                         )
-                    )
+
+                    else:
+                        logging.warning(
+                            "No alternate transition data for %s %s",
+                            group_attributes,
+                            full_comp,
+                        )
+
+            # Insert the microsim "policies" first in the policy_list so they are
+            # applied before other policies on the same time step
+            policy_list = alternate_transition_policies + policy_list
 
         sub_simulations = cls._build_sub_simulations(
             outflows_data,

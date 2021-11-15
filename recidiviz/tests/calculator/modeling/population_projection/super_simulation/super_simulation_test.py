@@ -16,25 +16,26 @@
 # =============================================================================
 """Test the SuperSimulation object"""
 
-from typing import Optional
+import os
 import unittest
 from datetime import datetime
-import os
 from functools import partial
-from mock import patch, MagicMock
+from typing import Optional
+
 import pandas as pd
+from mock import MagicMock, patch
 from pandas.testing import assert_frame_equal
 
-from recidiviz.calculator.modeling.population_projection.super_simulation.super_simulation_factory import (
-    SuperSimulationFactory,
-    SuperSimulation,
-)
-from recidiviz.calculator.modeling.population_projection.spark_policy import SparkPolicy
-from recidiviz.calculator.modeling.population_projection.transition_table import (
-    TransitionTable,
-)
 from recidiviz.calculator.modeling.population_projection.population_simulation.population_simulation import (
     PopulationSimulation,
+)
+from recidiviz.calculator.modeling.population_projection.spark_policy import SparkPolicy
+from recidiviz.calculator.modeling.population_projection.super_simulation.super_simulation_factory import (
+    SuperSimulation,
+    SuperSimulationFactory,
+)
+from recidiviz.calculator.modeling.population_projection.transition_table import (
+    TransitionTable,
 )
 
 # pylint: disable=unused-argument
@@ -159,7 +160,7 @@ data_dict_micro = {
     "test_transitions": transitions_data_micro,
     "test_total_population": total_population_data_micro,
     "test_remaining_sentences": remaining_sentence_data_micro,
-    "test_excluded_population": pd.DataFrame(columns=["state_code"]),
+    "test_excluded_population": pd.DataFrame(columns=["state_code", "time_step"]),
 }
 
 

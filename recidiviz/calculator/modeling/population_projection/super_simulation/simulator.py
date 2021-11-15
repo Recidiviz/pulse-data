@@ -17,7 +17,7 @@
 """SuperSimulation composed object for initializing simulations."""
 import logging
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -161,18 +161,23 @@ class Simulator:
         user_inputs: Dict[str, Any],
         run_date_data_inputs: Dict[datetime, Dict[str, Any]],
         run_date_first_relevant_ts: Dict[datetime, int],
+        projection_time_steps_override: Optional[int],
     ) -> None:
         self._reset_pop_simulations()
 
+        # Change some user_inputs for the validation loop
+        if projection_time_steps_override is not None:
+            user_inputs["projection_time_steps"] = projection_time_steps_override
+
         for start_date, data_inputs in run_date_data_inputs.items():
+            print(start_date)
             user_inputs["start_time_step"] = run_date_first_relevant_ts[start_date]
-            self.pop_simulations[
-                f"baseline_{start_date.date()}"
-            ] = self._build_population_simulation(
+            simulation_name = f"baseline_{start_date.date()}"
+            self.pop_simulations[simulation_name] = self._build_population_simulation(
                 user_inputs, data_inputs, [], run_date_first_relevant_ts[start_date]
             )
 
-            self.pop_simulations[f"baseline_{start_date.date()}"].simulate_policies()
+            self.pop_simulations[simulation_name].simulate_policies()
 
         # log warnings from ARIMA model
         self._log_predicted_admissions_warnings()
@@ -229,7 +234,7 @@ class Simulator:
             ],
         )
         plt.title(f"Policy Impact on {output_compartment} Population")
-        plt.ylabel(f"Estimated Year End {output_compartment} Population")
+        plt.ylabel(f"Estimated\n{output_compartment} Population")
         plt.legend(loc="lower left")
         plt.ylim([0, None])
 
