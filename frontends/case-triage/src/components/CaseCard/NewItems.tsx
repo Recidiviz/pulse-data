@@ -29,13 +29,8 @@ import {
 import { OpportunityAlert } from "./Alert/OpportunityAlert";
 import { AddNote, NoteInput, NoteRow } from "./Notes";
 import { CaseloadRemovalAlert } from "./Alert/CaseloadRemovalAlert";
-import { OpportunityType } from "../../stores/OpportunityStore/Opportunity";
-import { useRootStore } from "../../stores";
 
 export const NewItems = observer(({ client }: CaseCardProps): JSX.Element => {
-  const {
-    userStore: { canSeeHomeVisit },
-  } = useRootStore();
   const [noteInProgress, setNoteInProgress] = useState(false);
 
   const showEmptyState: boolean =
@@ -57,17 +52,11 @@ export const NewItems = observer(({ client }: CaseCardProps): JSX.Element => {
               />
             </Item>
           ) : (
-            client.activeOpportunities.map((opp) => {
-              // TODO(#9807) remove feature flag when ready to release home visit
-              return !canSeeHomeVisit &&
-                opp.opportunityType === OpportunityType.HOME_VISIT ? (
-                <div />
-              ) : (
-                <Item key={opp.opportunityType}>
-                  <OpportunityAlert client={client} opportunity={opp} />
-                </Item>
-              );
-            })
+            client.activeOpportunities.map((opp) => (
+              <Item key={opp.opportunityType}>
+                <OpportunityAlert client={client} opportunity={opp} />
+              </Item>
+            ))
           )}
           {client.activeNotes.map((note) => (
             <Item key={note.noteId}>
