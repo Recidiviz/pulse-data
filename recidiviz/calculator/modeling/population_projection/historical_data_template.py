@@ -14,22 +14,20 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
+# pylint: skip-file
 """
 Historical data to be ingested for a particular state x policy combination.
 
-File name should be `historical_data_{state_code}_{primary_compartment}.py`
- where state_code is of form NJ and primary compartment is the tag of the main
- compartment relevant to the policy.
+File name should be `historical_data_{state_code}_{policy name}.py`
+ where state_code is of form NJ.
 
 TODO(#99999): match naming convention for file name
 
 TODO(#99999): fill this out
 STATE: [state_code]
 POLICY: [one line policy description]
-VERSION: [version of model at time of implementation]
 DATA QUALITY: [pick one of MVP/reasonable/great]
 HIGHEST PRIORITY MISSING DATA: [one line data description(s)]
-ADDITIONAL NOTES: [fill long form as necessary]
 """
 
 # TODO(#99999): add whatever modules you need
@@ -65,7 +63,7 @@ total_population_data = pd.DataFrame(
 # TODO(#99999): populate total_population_data from raw data
 
 # STORE DATA
-# TODO(#99999): fill in `simulation_tag'
+# TODO(#99999): fill in `simulation_tag` and `path_to_your_yaml`
 simulation_tag = "TKTK"
 upload_spark_model_inputs(
     "recidiviz-staging",

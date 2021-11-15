@@ -1,27 +1,29 @@
 ---
 user_inputs:
-  start_year: 2020.0
-  projection_years: 7.5
-  speed_run: true
+  start_year: 2021.75
+  projection_years: 10.0
 
 compartments_architecture:
-    pre-trial: shell
+    pretrial: shell
     prison: full
+    med_parole: full
     release: full
     release_full: full
 
-reference_date: 2000.0
+
+reference_date: 2021.75
 
 time_step: .083333333333
 
 disaggregation_axes:
-  - crime_type
-  - race
+  - age
 
 data_inputs:
-  big_query_simulation_tag: NY_mms
+  big_query_simulation_tag: OR_835
 
 per_year_costs:
-  prison: 25962.45
+  prison: 42664.85
+  med_parole: 4405.55
   release: 0.0
   release_full: 0.0
+

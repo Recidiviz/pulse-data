@@ -1,0 +1,23 @@
+user_inputs:
+  start_year: 2020.0
+  projection_years: 10.0
+  constant_admissions: true
+
+compartments_architecture:
+    arraignment: shell
+    jail: full
+    posttrial: full
+
+reference_date: 2020.0
+
+time_step: 1.0
+
+disaggregation_axes:
+- age
+
+data_inputs:
+  big_query_simulation_tag: ky_pretrial
+
+per_year_costs:
+  jail: 13395.5
+  posttrial: 0.0

@@ -402,7 +402,7 @@ class TestSuperSimulation(unittest.TestCase):
         # test doubling multiplier doubles costs
         assert isinstance(self.macrosim, SuperSimulation)
         policy_function = partial(
-            TransitionTable.apply_reduction,
+            TransitionTable.apply_reductions,
             reduction_df=pd.DataFrame(
                 {
                     "outflow": ["RELEASE"],

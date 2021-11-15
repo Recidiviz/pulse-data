@@ -17,16 +17,15 @@
 """BigQuery Methods for the Spark population projection simulation"""
 
 import datetime
-from typing import List, Dict, Any
+from typing import Any, Dict, List
 
 import pandas as pd
 import pandas_gbq
 
-from recidiviz.utils.yaml_dict import YAMLDict
 from recidiviz.calculator.modeling.population_projection.utils.bq_utils import (
     store_simulation_results,
 )
-
+from recidiviz.utils.yaml_dict import YAMLDict
 
 # Constants for the Spark input data
 SPARK_INPUT_PROJECT_ID = "recidiviz-staging"
@@ -215,11 +214,11 @@ def upload_spark_model_inputs(
     for params in uploads:
         if params["data_df"].empty:
             continue
-        params["data_df"]["simulation_tag"] = simulation_tag
-        params["data_df"]["date_created"] = upload_time
+        params["data_df"].loc[:, "simulation_tag"] = simulation_tag
+        params["data_df"].loc[:, "date_created"] = upload_time
         for disaggregation_axis in ["crime", "crime_type", "age", "race"]:
             if disaggregation_axis not in params["data_df"].columns:
-                params["data_df"][disaggregation_axis] = None
+                params["data_df"].loc[:, disaggregation_axis] = None
 
         table_name = params["table"][: (len(params["table"]) - 4)]
         _validate_schema(params["schema"], params["data_df"], table_name)

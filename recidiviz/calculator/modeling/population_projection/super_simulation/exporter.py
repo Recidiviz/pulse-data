@@ -116,6 +116,7 @@ class Exporter:
             "spending_diff": spending_diff,
             "compartment_life_years_diff": compartment_life_years_diff,
             "spending_diff_non_cumulative": spending_diff_non_cumulative,
+            "population_diff": aggregate_output_data,
         }
 
     @classmethod

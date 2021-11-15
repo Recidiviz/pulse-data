@@ -57,7 +57,6 @@ class TransitionTable:
             TransitionTableType.AFTER: pd.DataFrame(),
             TransitionTableType.TRANSITORY: pd.DataFrame(),
         }
-
         self._initialize_tables()
 
     def _initialize_tables(self) -> None:
@@ -489,8 +488,12 @@ class TransitionTable:
         self.unnormalize_table(before_state)
         self.unnormalize_table(state)
 
-    def apply_reduction(
-        self, reduction_df: pd.DataFrame, reduction_type: str, retroactive: bool = False
+    def apply_reductions(
+        self,
+        reduction_df: pd.DataFrame,
+        reduction_type: str,
+        affected_LOS: Optional[List[Optional[int]]] = None,
+        retroactive: bool = False,
     ) -> None:
         """
         scale down outflow compartment_duration distributions either multiplicatively or additively
@@ -509,12 +512,24 @@ class TransitionTable:
         if self.max_sentence <= 0:
             raise ValueError("Max sentence length is not set")
 
+        if affected_LOS is None:
+            affected_LOS = [None, None]
+
+        if len(affected_LOS) != 2:
+            raise ValueError("affected_LOS must have exactly two elements.")
+
+        if (affected_LOS[0] is None) or (affected_LOS[0] < 1):
+            affected_LOS[0] = 1
+
+        if (affected_LOS[1] is None) or (affected_LOS[1] > self.max_sentence + 1):
+            affected_LOS[1] = self.max_sentence + 1
+
         df_name = self.get_df_name_from_retroactive(retroactive)
 
         self._check_table_invariant_before_normalization(df_name)
 
         for _, row in reduction_df.iterrows():
-            for sentence_length in range(1, self.max_sentence + 1):
+            for sentence_length in range(affected_LOS[0], affected_LOS[1]):  # type: ignore
                 # record population to re-distribute
                 sentence_count = (
                     self.transition_dfs[df_name].loc[sentence_length, row.outflow]
@@ -625,8 +640,17 @@ class TransitionTable:
             fraction of population sentenced at the mandatory minimum.
         affected_fraction is an optional input to restrict the shift (total magnitude preserved) to a subset of the
             distribution. Note that you must pass exactly one of current_mm, affected_fraction
+        To tell the method to assume the mode compartment_sentence is the current mm, set `current_mm`='auto'
         """
         if current_mm is not None:
+
+            if current_mm == "auto":
+                current_mm = (
+                    historical_outflows.sort_values("total_population")
+                    .iloc[-1]
+                    .compartment_duration
+                )
+
             mm_sentenced_group = historical_outflows[
                 historical_outflows.compartment_duration == current_mm
             ]
@@ -657,9 +681,9 @@ class TransitionTable:
         )
         std = np.sqrt(variance)
 
-        mm_factor = affected_ratio * std
+        mm_factor = affected_ratio * std / 2
 
-        self.apply_reduction(
+        self.apply_reductions(
             reduction_df=pd.DataFrame(
                 {
                     "outflow": [outflow],

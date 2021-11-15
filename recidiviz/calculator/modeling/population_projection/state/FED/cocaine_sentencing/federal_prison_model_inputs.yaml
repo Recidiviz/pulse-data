@@ -1,0 +1,28 @@
+---
+user_inputs:
+  start_year: 2020.0
+  projection_years: 10.0
+
+compartments_architecture:
+    prison: full
+    pretrial: shell
+    release: full
+    release_full: full
+
+reference_date: 2017.0
+
+time_step: .083333333333
+
+disaggregation_axes:
+  - crime_type
+
+data_inputs:
+  big_query_simulation_tag: federal_prison
+
+per_year_costs:
+  # https://www.federalregister.gov/documents/2019/11/19/2019-24942/annual-determination-of-average-cost-of-incarceration-fee-coif
+  # Based on FY 2018 data, $37,449.00 for people in Bureau facilities and $34,492.50 for people in Community Corrections Centers.
+  # Took average of above (?)
+  prison: 35970.75
+  release: 0.0
+  release_full: 0.0
