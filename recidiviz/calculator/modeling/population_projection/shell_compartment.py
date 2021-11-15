@@ -119,7 +119,7 @@ class ShellCompartment(SparkCompartment):
         ].get_time_step_estimate(self.current_ts)
 
         # Store the outflows
-        self.outflows[self.current_ts] = pd.Series(outflow_dict, dtype=float)
+        self.outflows.loc[:, self.current_ts] = pd.Series(outflow_dict, dtype=float)
 
         for edge in self.edges:
             edge.ingest_incoming_cohort(outflow_dict)

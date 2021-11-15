@@ -33,6 +33,7 @@ MICROSIM_PROJECTION_VIEW_DESCRIPTION = (
     """"The projected population for the simulated policy and the baseline"""
 )
 
+# TODO(#9488): include absconsion, bench warrant, and informal probation in the output
 MICROSIM_PROJECTION_VIEW_INCLUDED_TYPES = [
     StateSupervisionPeriodSupervisionType.DUAL,
     StateSupervisionPeriodSupervisionType.PAROLE,
@@ -74,7 +75,7 @@ MICROSIM_PROJECTION_QUERY_TEMPLATE = """
       GROUP BY state_code, date, compartment, legal_status, simulation_group
     ),
     historical_incarceration_population_output AS (
-      -- TODO(#7337): use `dataflow_sessions_materialized` directly once it has paid bed logic
+      -- TODO(#8623): use `dataflow_sessions_materialized` directly once it has paid bed logic
       SELECT
         state_code,
         report_month AS date,

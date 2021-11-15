@@ -18,13 +18,13 @@
 
 
 from typing import Dict, List
+
 import pandas as pd
 
+from recidiviz.calculator.modeling.population_projection.spark_policy import SparkPolicy
 from recidiviz.calculator.modeling.population_projection.transition_table import (
     TransitionTable,
 )
-from recidiviz.calculator.modeling.population_projection.spark_policy import SparkPolicy
-
 from recidiviz.calculator.modeling.population_projection.utils.transitions_utils import (
     MIN_POSSIBLE_POLICY_TS,
     TransitionTableType,
@@ -106,12 +106,13 @@ class CompartmentTransitions:
         policy_time_steps.sort()
 
         for ts_idx in range(1, len(policy_time_steps)):
+            previous_table = self.transition_tables[
+                policy_time_steps[ts_idx - 1]
+            ].get_table(TransitionTableType.AFTER)
             self.transition_tables[policy_time_steps[ts_idx]] = TransitionTable(
                 policy_time_steps[ts_idx],
                 SparkPolicy.get_ts_policies(policy_list, policy_time_steps[ts_idx]),
-                self.transition_tables[policy_time_steps[ts_idx - 1]].get_table(
-                    TransitionTableType.AFTER
-                ),
+                previous_table=previous_table,
             )
 
         # normalize all tables

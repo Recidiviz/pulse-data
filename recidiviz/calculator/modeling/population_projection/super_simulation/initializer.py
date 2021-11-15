@@ -140,7 +140,15 @@ class Initializer:
         return self.user_inputs["start_time_step"] - self.get_first_relevant_ts(None)
 
     def get_excluded_pop_data(self) -> pd.DataFrame:
-        return self.data_dict["excluded_population_data"]
+        """Return the size of the population that should be excluded per compartment"""
+        excluded_pop = self.data_dict["excluded_population_data"]
+        if self.microsim & (not excluded_pop.empty):
+            # Only return the excluded pop for the model run date and starting time step
+            excluded_pop = excluded_pop[
+                (excluded_pop["time_step"] == self.user_inputs["start_time_step"])
+                & (excluded_pop["run_date"] == self.user_inputs["run_date"])
+            ]
+        return excluded_pop
 
     def get_inputs_for_calculate_prep_scale_factor(
         self,

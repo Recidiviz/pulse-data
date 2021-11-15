@@ -17,8 +17,9 @@
 """Simulation object that models a given policy scenario"""
 # pylint: disable=unused-argument
 
-from typing import Dict, Any, Tuple, Optional, Callable
 from time import time
+from typing import Any, Callable, Dict, Optional, Tuple
+
 import pandas as pd
 
 from recidiviz.calculator.modeling.population_projection.sub_simulation.sub_simulation import (
@@ -132,6 +133,8 @@ class PopulationSimulation:
         cross_simulation_flows = self.cross_flow_function(
             cross_simulation_flows, self.current_ts
         )
+        if cross_simulation_flows.empty:
+            raise ValueError("Cross simulation flows cannot be empty")
 
         cross_simulation_flows = self._attributes_to_subgroup_id(cross_simulation_flows)
 
@@ -242,7 +245,7 @@ class PopulationSimulation:
                     index_locator = aggregated_results[
                         aggregated_results["time_step"] == ts
                     ]
-                    sub_group_id_dict = self.sub_group_ids_dict[sub_group_id]
+                    sub_group_id_dict = self.sub_group_ids_dict[sub_group_id].copy()
                     sub_group_id_dict["compartment"] = compartment_tag
                     for axis in sub_group_id_dict:
                         if axis in index_locator.columns:
@@ -262,6 +265,44 @@ class PopulationSimulation:
                             validation_indices[outflow], "count"
                         ] += compartment.outflows[ts][outflow]
         return aggregated_results
+
+    def get_outflows(self) -> pd.DataFrame:
+        """Return the projected outflows (transitions)"""
+
+        # Generate the outflows df by looping through each sub-simulation & compartment
+        outflows_df = pd.DataFrame()
+        for sub_group_id, sub_group_obj in self.sub_simulations.items():
+            for (
+                compartment_tag,
+                compartment,
+            ) in sub_group_obj.simulation_compartments.items():
+                # Copy the outflows df from the compartment and add the compartment and
+                # simulation group information
+                sub_group_id_dict = self.sub_group_ids_dict[sub_group_id]
+                compartment_outflows = compartment.outflows.copy()
+                compartment_outflows.columns.name = "time_step"
+                compartment_outflows = pd.DataFrame(
+                    compartment_outflows.stack("time_step"),
+                    columns=["total_population"],
+                )
+                compartment_outflows["compartment"] = compartment_tag
+
+                # Add a column for the `simulation_group` from the id dict
+                group_name = [
+                    value
+                    for key, value in sub_group_id_dict.items()
+                    if key != "compartment"
+                ]
+                if len(group_name) != 1:
+                    raise ValueError(
+                        f"Cannot determine `simulation_group` name from {sub_group_id_dict}"
+                    )
+                compartment_outflows["simulation_group"] = group_name[0]
+
+                # Append the outflows for this simulation group/compartment
+                outflows_df = pd.concat([outflows_df, compartment_outflows])
+
+        return outflows_df
 
     def gen_arima_output_df(self) -> pd.DataFrame:
         arima_output_df = pd.DataFrame()
@@ -364,6 +405,12 @@ class PopulationSimulation:
                 historical_population = None
             else:
                 historical_population = historical_population.total_population.sum()
+
+            # Skip compartments that do not have any population data
+            if (simulation_population == 0) & (
+                (historical_population == 0) | (historical_population is None)
+            ):
+                continue
 
             if simulation_population == 0:
                 raise ValueError(

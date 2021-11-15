@@ -99,6 +99,8 @@ class SubSimulationFactory:
             )
 
             if compartment_duration_data.empty:
+                # Do not throw an error if this compartment has no current transitions
+                # but does have an applied policy
                 if compartment_type != "shell":
                     raise ValueError(
                         f"Transition data missing for compartment {compartment}. Data is required for all "
@@ -122,8 +124,10 @@ class SubSimulationFactory:
 
         if len(unused_transitions_data) > 0:
             logging.warning(
-                "Some transitions data not fed to a compartment: %s",
-                unused_transitions_data,
+                "Some transitions data not fed to a compartment:\n%s",
+                unused_transitions_data.groupby("compartment").sum()[
+                    "total_population"
+                ],
             )
 
         # Create a transition object for each compartment and year with policies applied and store shell policies
@@ -213,7 +217,7 @@ class SubSimulationFactory:
                     tag=compartment,
                     policy_list=shell_policies[compartment],
                 )
-            else:
+            elif compartment in transition_tables_by_compartment:
                 simulation_compartments[compartment] = FullCompartment(
                     outflow_data=outflows_data,
                     compartment_transitions=transition_tables_by_compartment[
@@ -222,6 +226,8 @@ class SubSimulationFactory:
                     starting_ts=first_relevant_ts,
                     tag=compartment,
                 )
+            else:
+                logging.warning("Not initializing a compartment for %s", compartment)
 
         cls._initialize_edges_and_cohorts(
             simulation_compartments,

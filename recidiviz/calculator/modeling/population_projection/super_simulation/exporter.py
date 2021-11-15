@@ -44,45 +44,36 @@ class Exporter:
         self,
         project_id: str,
         simulation_tag: Optional[str],
-        output_data: Dict[str, pd.DataFrame],
+        output_population_data: pd.DataFrame,
+        output_outflows_data: pd.DataFrame,
         excluded_pop: pd.DataFrame,
         total_pop: pd.DataFrame,
     ) -> Dict[str, pd.DataFrame]:
         """Format then upload baseline simulation results to Big Query."""
-        required_keys = ["baseline_projections"]
-        missing_keys = [key for key in required_keys if key not in output_data.keys()]
-        if len(missing_keys) != 0:
-            raise ValueError(
-                f"Baseline output data is missing the required columns {missing_keys}"
-            )
 
-        # join the output data to itself as a placeholder for prediction intervals to be added later
-        # TODO(#6577) add prediction intervals here instead of placeholder
-        join_cols = ["time_step", "compartment", "simulation_group"]
-        formatted_data = (
-            output_data["baseline_projections"]
-            .merge(
-                output_data["baseline_projections"], on=join_cols, suffixes=["", "_min"]
-            )
-            .merge(
-                output_data["baseline_projections"], on=join_cols, suffixes=["", "_max"]
-            )
-        )
-
-        formatted_data["year"] = self.time_converter.convert_time_steps_to_year(
-            formatted_data["time_step"]
-        )
-        formatted_data = formatted_data.drop("time_step", axis=1)
+        microsim_population_df = output_population_data.copy()
+        microsim_outflows_df = output_outflows_data.copy()
+        for df in [microsim_population_df, microsim_outflows_df]:
+            if "time_step" in df.columns:
+                df["year"] = self.time_converter.convert_time_steps_to_year(
+                    df["time_step"]
+                )
+                df.drop("time_step", axis=1, inplace=True)
         if not excluded_pop.empty:
-            formatted_data = self._prep_for_upload(
-                formatted_data, excluded_pop, total_pop
+            microsim_population_df = self._prep_for_upload(
+                microsim_population_df, excluded_pop, total_pop
             )
+
         bq_utils.upload_baseline_simulation_results(
             project_id,
-            formatted_data,
+            microsim_population_df,
+            microsim_outflows_df,
             simulation_tag if simulation_tag else self.simulation_tag,
         )
-        return {"baseline_output_data": formatted_data}
+        return {
+            "baseline_output_data": microsim_population_df,
+            "baseline_transition_data": microsim_outflows_df,
+        }
 
     def upload_policy_simulation_results_to_bq(
         self,
@@ -175,11 +166,58 @@ class Exporter:
                 f"Excluded population has duplicate rows for compartments: {excluded_pop}"
             )
 
+        # Calculate the scale factor for each compartment that is in the `excluded_pop`
+        # by dividing the total excluded pop by the total pop on the `run_date`
         scale_factors = {}
-        for _index, row in excluded_pop:
-            compartment_total_pop = total_pop[
-                total_pop.compartment == row.compartment
-            ].total_population.sum()
+        for _index, row in excluded_pop.iterrows():
+            # TODO(#9720): make this more generalized/customizable for other states
+            if row.compartment == "INCARCERATION - ALL":
+                compartment_total_pop = total_pop[
+                    total_pop.compartment.isin(
+                        [
+                            "INCARCERATION - GENERAL",
+                            "INCARCERATION - RE-INCARCERATION",
+                            "INCARCERATION - TREATMENT_IN_PRISON",
+                            "INCARCERATION - PAROLE_BOARD_HOLD",
+                        ]
+                    )
+                ].total_population.sum()
+            elif row.compartment == "INCARCERATION - GENERAL":
+                compartment_total_pop = total_pop[
+                    total_pop.compartment.isin(
+                        [
+                            "INCARCERATION - GENERAL",
+                            "INCARCERATION - RE-INCARCERATION",
+                        ]
+                    )
+                ].total_population.sum()
+                excluded_general_pop = excluded_pop = excluded_pop[
+                    excluded_pop.compartment.isin(
+                        [
+                            "INCARCERATION - GENERAL",
+                            "INCARCERATION - RE-INCARCERATION",
+                        ]
+                    )
+                ].total_population.sum()
+                scale_factors[row.compartment] = (
+                    1 - excluded_general_pop / compartment_total_pop
+                )
+                continue
+            elif row.compartment == "SUPERVISION - ALL":
+                compartment_total_pop = total_pop[
+                    total_pop.compartment.isin(
+                        ["SUPERVISION - PROBATION", "SUPERVISION - PAROLE"]
+                    )
+                ].total_population.sum()
+            elif row.compartment == "SUPERVISION - INTERNAL_UNKNOWN":
+                compartment_total_pop = row.total_population
+            else:
+                compartment_total_pop = total_pop[
+                    total_pop.compartment == row.compartment
+                ].total_population.sum()
+
+            if compartment_total_pop == 0:
+                raise ValueError(f"Total population for {row.compartment} cannot be 0")
             scale_factors[row.compartment] = (
                 1 - row.total_population / compartment_total_pop
             )
