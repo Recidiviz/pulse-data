@@ -113,7 +113,7 @@ class FullCompartment(SparkCompartment):
         outflow_dict = {
             outflow: latest_ts_pop_short.sum(axis=0)[outflow]
             for outflow in latest_ts_pop_short.columns
-            if outflow not in ["death", "remaining"]
+            if outflow != "remaining"
         }
         return outflow_dict
 
@@ -138,6 +138,16 @@ class FullCompartment(SparkCompartment):
         """Simulate one time step in the projection"""
         super().step_forward()
         outflow_dict = self._generate_outflow_dict()
+
+        # If there is a new outflow compartment then create a new index in the outflows df
+        missing_keys = [
+            key for key in outflow_dict.keys() if key not in self.outflows.index
+        ]
+        if len(missing_keys) > 0:
+            new_rows = pd.DataFrame(
+                0, index=missing_keys, columns=self.outflows.columns
+            )
+            self.outflows = self.outflows.append(new_rows).sort_index()
 
         # Store the outflows with the previous time step since transitions from the last
         # time step get us the total population for this time step

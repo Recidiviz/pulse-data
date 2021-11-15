@@ -30,6 +30,9 @@ import pandas as pd
 from scipy.optimize import minimize
 from scipy.stats import lognorm
 
+from recidiviz.calculator.modeling.population_projection.super_simulation.time_converter import (
+    TimeConverter,
+)
 from recidiviz.calculator.modeling.population_projection.utils.transitions_utils import (
     SIG_FIGS,
 )
@@ -609,3 +612,31 @@ def transitions_interpolation(
         plt.legend(loc="center left", bbox_to_anchor=[1, 0.5])
 
     return df
+
+
+def yearly_to_monthly_data(
+    df: pd.DataFrame, split_total_population: bool = True
+) -> pd.DataFrame:
+    """
+    Convert yearly outflows or total_population data to monthly granularity.
+    Same as transitions_interpolation with `uniform`=True, but takes a df instead of raw data.
+    `df` should be the df of yearly data. Must include `total_population` and `time_step` as columns.
+    `split_total_population` tells the method whether to divide up the `total_population` column by month.
+        Generally, this should be true for outflows_data and false for total_population_data.
+    """
+    final_df = pd.DataFrame()
+    for ts_original in df.time_step.unique():
+        df_ts = df[df.time_step == ts_original]
+        for ts_month in range(12):
+            month_df = df_ts.copy()
+            month_df.time_step = 12 * month_df.time_step + ts_month
+            if split_total_population:
+                month_df.total_population /= 12
+            final_df = pd.concat([final_df, month_df])
+    return final_df
+
+
+def convert_dates(converter: TimeConverter, column: pd.Series) -> pd.DataFrame:
+    """Convert a date column to the relative time_step values"""
+    column = pd.to_datetime(column)
+    return column.apply(converter.convert_timestamp_to_time_step)

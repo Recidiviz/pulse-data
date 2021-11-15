@@ -224,19 +224,24 @@ class Simulator:
             user_inputs, collapse_compartments=True
         )
 
-        simulation_results[
+        display_results = simulation_results[
             simulation_results["compartment"] == output_compartment
-        ].plot(
+        ]
+        y_columns = [
+            f"{simulation_name}_total_population"
+            for simulation_name in simulations.keys()
+        ]
+        display_results.plot(
             x="year",
-            y=[
-                f"{simulation_name}_total_population"
-                for simulation_name in simulations.keys()
-            ],
+            y=y_columns,
         )
         plt.title(f"Policy Impact on {output_compartment} Population")
         plt.ylabel(f"Estimated\n{output_compartment} Population")
         plt.legend(loc="lower left")
-        plt.ylim([0, None])
+
+        y_max = 1.1 * display_results[y_columns].max().max()
+        print(y_max)
+        plt.ylim([0, y_max])
 
     def _format_simulation_results(
         self,
