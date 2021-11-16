@@ -24,7 +24,10 @@ import flask
 from mock import Mock, patch
 
 from recidiviz.common.constants.enum_overrides import EnumOverrides
-from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
+from recidiviz.common.ingest_metadata import (
+    LegacyStateAndJailsIngestMetadata,
+    SystemLevel,
+)
 from recidiviz.ingest.models.ingest_info import IngestInfo
 from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.ingest.models.serialization import convert_ingest_info_to_proto
@@ -365,7 +368,7 @@ class TestBaseScraper(TestCase):
         self.assertEqual(mock_populate.call_count, 2)
         self.assertEqual(mock_write.call_count, 1)
 
-        expected_metadata = IngestMetadata(
+        expected_metadata = LegacyStateAndJailsIngestMetadata(
             region=scraper.region.region_code,
             jurisdiction_id=scraper.region.jurisdiction_id,
             ingest_time=start_time,
@@ -413,7 +416,7 @@ class TestBaseScraper(TestCase):
                 scraper_start_time=start_time,
             )
         ]
-        expected_metadata = IngestMetadata(
+        expected_metadata = LegacyStateAndJailsIngestMetadata(
             region=scraper.region.region_code,
             jurisdiction_id=scraper.region.jurisdiction_id,
             ingest_time=start_time,
@@ -457,7 +460,7 @@ class TestBaseScraper(TestCase):
         scraper.BATCH_WRITES = False
         scraper._generic_scrape(req)
 
-        expected_metadata = IngestMetadata(
+        expected_metadata = LegacyStateAndJailsIngestMetadata(
             region=scraper.region.region_code,
             jurisdiction_id=scraper.region.jurisdiction_id,
             ingest_time=start_time,

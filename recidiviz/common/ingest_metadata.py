@@ -80,10 +80,6 @@ class IngestMetadata:
     # e.g. us_nd or us_ca or us_va_prince_william or us_ny_westchester
     region: str = attr.ib()
 
-    # The jurisdiction id for the region that this ingest_info was ingested
-    # from.
-    jurisdiction_id: str = attr.ib()
-
     # The time the given ingest work started. In the normal scraping pipeline,
     # for example, this is the scraper_start_time.
     ingest_time: datetime = attr.ib()
@@ -93,6 +89,15 @@ class IngestMetadata:
 
     # The key for the database that ingest data should be written to.
     database_key: SQLAlchemyDatabaseKey = attr.ib()
+
+
+# TODO(#8905): Move this to a scraper specific package once we have migrated all
+#  direct ingest states to ingest mappings v2.
+@attr.s(frozen=True, kw_only=True)
+class LegacyStateAndJailsIngestMetadata(IngestMetadata):
+    # The jurisdiction id for the region that this ingest_info was ingested
+    # from.
+    jurisdiction_id: str = attr.ib()
 
     # Region specific mapping which takes precedence over the global mapping.
     enum_overrides: EnumOverrides = attr.ib(factory=EnumOverrides.empty)

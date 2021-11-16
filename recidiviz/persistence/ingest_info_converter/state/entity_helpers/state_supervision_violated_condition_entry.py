@@ -17,7 +17,7 @@
 """Converts an ingest_info proto StateSupervisionViolatedConditionEntry to a
 persistence entity."""
 
-from recidiviz.common.ingest_metadata import IngestMetadata
+from recidiviz.common.ingest_metadata import LegacyStateAndJailsIngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import (
     StateSupervisionViolatedConditionEntry,
 )
@@ -31,7 +31,8 @@ from recidiviz.persistence.entity.state.deserialize_entity_factories import (
 
 
 def convert(
-    proto: StateSupervisionViolatedConditionEntry, metadata: IngestMetadata
+    proto: StateSupervisionViolatedConditionEntry,
+    metadata: LegacyStateAndJailsIngestMetadata,
 ) -> entities.StateSupervisionViolatedConditionEntry:
     """Converts an ingest_info proto StateSupervisionViolatedConditionEntry to a
     persistence entity."""

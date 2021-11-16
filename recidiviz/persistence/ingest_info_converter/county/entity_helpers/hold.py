@@ -16,7 +16,7 @@
 # ============================================================================
 """Converts an ingest_info proto Hold to a persistence entity."""
 from recidiviz.common.constants.county.hold import HoldStatus
-from recidiviz.common.ingest_metadata import IngestMetadata
+from recidiviz.common.ingest_metadata import LegacyStateAndJailsIngestMetadata
 from recidiviz.common.str_field_utils import normalize
 from recidiviz.persistence.entity.county import entities
 from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
@@ -28,7 +28,7 @@ from recidiviz.persistence.ingest_info_converter.utils.ingest_info_proto_enum_ma
 )
 
 
-def convert(proto, metadata: IngestMetadata) -> entities.Hold:
+def convert(proto, metadata: LegacyStateAndJailsIngestMetadata) -> entities.Hold:
     """Converts an ingest_info proto Hold to a persistence entity."""
     new = entities.Hold.builder()
 

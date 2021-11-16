@@ -17,7 +17,7 @@
 """Converts an ingest_info proto Charge to a persistence entity."""
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.county.charge import ChargeClass, ChargeDegree
-from recidiviz.common.ingest_metadata import IngestMetadata
+from recidiviz.common.ingest_metadata import LegacyStateAndJailsIngestMetadata
 from recidiviz.common.str_field_utils import (
     normalize,
     parse_bool,
@@ -35,7 +35,7 @@ from recidiviz.persistence.ingest_info_converter.utils.ingest_info_proto_enum_ma
 
 
 def copy_fields_to_builder(
-    new: entities.Charge.Builder, proto, metadata: IngestMetadata
+    new: entities.Charge.Builder, proto, metadata: LegacyStateAndJailsIngestMetadata
 ) -> None:
     """Mutates the provided |charge_builder| by converting an ingest_info proto
     Charge.

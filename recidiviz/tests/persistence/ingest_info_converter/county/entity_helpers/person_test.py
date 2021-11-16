@@ -30,7 +30,9 @@ from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.ingest.scrape.base_scraper import BaseScraper
 from recidiviz.persistence.entity.county import entities
 from recidiviz.persistence.ingest_info_converter.county.entity_helpers import person
-from recidiviz.tests.persistence.database.database_test_utils import FakeIngestMetadata
+from recidiviz.tests.persistence.database.database_test_utils import (
+    FakeLegacyStateAndJailsIngestMetadata,
+)
 
 _NOW = datetime(2000, 5, 15)
 
@@ -43,7 +45,7 @@ class PersonConverterTest(unittest.TestCase):
 
     def testParsesPerson(self):
         # Arrange
-        metadata = FakeIngestMetadata.for_county(
+        metadata = FakeLegacyStateAndJailsIngestMetadata.for_county(
             region="REGION", jurisdiction_id="JURISDICTION_ID"
         )
         ingest_person = ingest_info_pb2.Person(
@@ -79,7 +81,7 @@ class PersonConverterTest(unittest.TestCase):
 
     def testParsePerson_WithSurnameAndFullname_ThrowsException(self):
         # Arrange
-        metadata = FakeIngestMetadata.for_county(region="REGION")
+        metadata = FakeLegacyStateAndJailsIngestMetadata.for_county(region="REGION")
         ingest_person = ingest_info_pb2.Person(full_name="LAST,FIRST", surname="LAST")
 
         # Arrange + Act
@@ -88,7 +90,7 @@ class PersonConverterTest(unittest.TestCase):
 
     def testParsePerson_WithSurnameAndGivenNames_UsesFullNameAsJson(self):
         # Arrange
-        metadata = FakeIngestMetadata.for_county(
+        metadata = FakeLegacyStateAndJailsIngestMetadata.for_county(
             region="REGION", jurisdiction_id="JURISDICTION_ID"
         )
         ingest_person = ingest_info_pb2.Person(
@@ -113,7 +115,7 @@ class PersonConverterTest(unittest.TestCase):
 
     def testParsePerson_NoNames_FullNameIsNone(self):
         # Arrange
-        metadata = FakeIngestMetadata.for_county(
+        metadata = FakeLegacyStateAndJailsIngestMetadata.for_county(
             region="REGION", jurisdiction_id="JURISDICTION_ID"
         )
         ingest_person = ingest_info_pb2.Person(person_id="1234")
@@ -136,7 +138,7 @@ class PersonConverterTest(unittest.TestCase):
     def testParsePerson_InfersBirthdateFromAge(self, mock_datetime):
         # Arrange
         mock_datetime.now.return_value = _NOW
-        metadata = FakeIngestMetadata.for_county(
+        metadata = FakeLegacyStateAndJailsIngestMetadata.for_county(
             region="REGION", jurisdiction_id="JURISDICTION_ID"
         )
         ingest_person = ingest_info_pb2.Person(age="27")
@@ -166,7 +168,7 @@ class PersonConverterTest(unittest.TestCase):
                 pass
 
         # Arrange
-        metadata = FakeIngestMetadata.for_county(
+        metadata = FakeLegacyStateAndJailsIngestMetadata.for_county(
             region="REGION",
             jurisdiction_id="JURISDICTION_ID",
             enum_overrides=ScraperWithDefaultOverrides().get_enum_overrides(),
@@ -189,7 +191,7 @@ class PersonConverterTest(unittest.TestCase):
 
     def testParsePerson_ResidentOfCounty(self):
         # Arrange
-        metadata = FakeIngestMetadata.for_county(
+        metadata = FakeLegacyStateAndJailsIngestMetadata.for_county(
             region="us_ky_allen", jurisdiction_id="JURISDICTION_ID"
         )
         # 42164 is in Allen
@@ -211,7 +213,7 @@ class PersonConverterTest(unittest.TestCase):
 
     def testParsePerson_NotResidentOfCounty(self):
         # Arrange
-        metadata = FakeIngestMetadata.for_county(
+        metadata = FakeLegacyStateAndJailsIngestMetadata.for_county(
             region="us_ky_allen", jurisdiction_id="JURISDICTION_ID"
         )
         # 40601 is in Frankfort
@@ -233,7 +235,7 @@ class PersonConverterTest(unittest.TestCase):
 
     def testParsePerson_ResidentOfState(self):
         # Arrange
-        metadata = FakeIngestMetadata.for_county(
+        metadata = FakeLegacyStateAndJailsIngestMetadata.for_county(
             region="us_ky", jurisdiction_id="JURISDICTION_ID"
         )
         # 42164 is in Allen
@@ -255,7 +257,7 @@ class PersonConverterTest(unittest.TestCase):
 
     def testParsePerson_NotResidentOfState(self):
         # Arrange
-        metadata = FakeIngestMetadata.for_county(
+        metadata = FakeLegacyStateAndJailsIngestMetadata.for_county(
             region="us_ky", jurisdiction_id="JURISDICTION_ID"
         )
         # 10011 is in New York
@@ -277,7 +279,7 @@ class PersonConverterTest(unittest.TestCase):
 
     def testParsePerson_TakesLastZipCodeMatch(self):
         # Arrange
-        metadata = FakeIngestMetadata.for_county(
+        metadata = FakeLegacyStateAndJailsIngestMetadata.for_county(
             region="us_ky_allen", jurisdiction_id="JURISDICTION_ID"
         )
         # 5-digit address could be mistaken for a zip code
@@ -299,7 +301,7 @@ class PersonConverterTest(unittest.TestCase):
 
     def testParsePerson_NoiseInPlaceOfResidence_ParsesResidencyStatus(self):
         # Arrange
-        metadata = FakeIngestMetadata.for_county(
+        metadata = FakeLegacyStateAndJailsIngestMetadata.for_county(
             region="us_ky_allen", jurisdiction_id="JURISDICTION_ID"
         )
         ingest_person = ingest_info_pb2.Person(
@@ -321,7 +323,7 @@ class PersonConverterTest(unittest.TestCase):
 
     def testParsePerson_ResidenceAndStatusCombined(self):
         # Arrange
-        metadata = FakeIngestMetadata.for_county(
+        metadata = FakeLegacyStateAndJailsIngestMetadata.for_county(
             region="us_ky_allen", jurisdiction_id="JURISDICTION_ID"
         )
         ingest_person = ingest_info_pb2.Person(place_of_residence="42164 homeless")

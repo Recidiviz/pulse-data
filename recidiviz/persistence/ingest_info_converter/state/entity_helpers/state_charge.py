@@ -21,7 +21,7 @@ from recidiviz.common.constants.defaulting_and_normalizing_enum_parser import (
     DefaultingAndNormalizingEnumParser,
 )
 from recidiviz.common.constants.state.state_charge import StateChargeClassificationType
-from recidiviz.common.ingest_metadata import IngestMetadata
+from recidiviz.common.ingest_metadata import LegacyStateAndJailsIngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import StateCharge
 from recidiviz.persistence.entity.state import entities
 
@@ -29,7 +29,9 @@ from recidiviz.persistence.entity.state import entities
 # TODO(#8905): Delete this file once all states have been migrated to v2 ingest
 #  mappings.
 def copy_fields_to_builder(
-    new: entities.StateCharge.Builder, proto: StateCharge, metadata: IngestMetadata
+    new: entities.StateCharge.Builder,
+    proto: StateCharge,
+    metadata: LegacyStateAndJailsIngestMetadata,
 ) -> None:
     """Mutates the provided |charge_builder| by converting an ingest_info proto
     StateCharge.

@@ -30,7 +30,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodStatus,
     StateSpecializedPurposeForIncarceration,
 )
-from recidiviz.common.ingest_metadata import IngestMetadata
+from recidiviz.common.ingest_metadata import LegacyStateAndJailsIngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import StateIncarcerationPeriod
 from recidiviz.persistence.entity.state import entities
 
@@ -40,7 +40,7 @@ from recidiviz.persistence.entity.state import entities
 def copy_fields_to_builder(
     incarceration_period_builder: entities.StateIncarcerationPeriod.Builder,
     proto: StateIncarcerationPeriod,
-    metadata: IngestMetadata,
+    metadata: LegacyStateAndJailsIngestMetadata,
 ) -> None:
     """Mutates the provided |incarceration_period_builder| by converting an ingest_info proto StateIncarcerationPeriod.
 

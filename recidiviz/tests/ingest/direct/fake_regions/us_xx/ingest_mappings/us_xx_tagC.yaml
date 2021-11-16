@@ -1,7 +1,17 @@
-key_mappings:
-  COL1: state_person.state_person_id
-  COL2: state_person.surname
-  COL3: state_person.given_names
-
-primary_key:
-  COL1: state_person.state_person_id
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+- "COL1 "
+- COL2
+- COL3
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: "COL1 "
+          id_type: $literal("US_XX_ID_TYPE")
+    full_name:
+      $person_name:
+        $given_names: COL3
+        $surname: COL2

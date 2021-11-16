@@ -25,7 +25,6 @@ from mock import Mock, patch
 
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
-from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo
 from recidiviz.persistence import persistence
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.state import dao, schema
@@ -35,6 +34,7 @@ from recidiviz.persistence.database.schema_entity_converter import (
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state.entities import (
     StatePerson,
     StatePersonExternalId,
@@ -51,6 +51,9 @@ from recidiviz.persistence.entity_matching.state.state_matching_delegate_factory
     StateMatchingDelegateFactory,
 )
 from recidiviz.persistence.errors import EntityMatchingError
+from recidiviz.persistence.ingest_info_converter.base_converter import (
+    EntityDeserializationResult,
+)
 from recidiviz.persistence.persistence import (
     DATABASE_INVARIANT_THRESHOLD,
     ENTITY_MATCHING_THRESHOLD,
@@ -66,7 +69,6 @@ STATE_CODE = "US_ND"
 COUNTY_CODE = "COUNTY"
 DEFAULT_METADATA = IngestMetadata(
     region="us_nd",
-    jurisdiction_id="12345678",
     system_level=SystemLevel.STATE,
     ingest_time=datetime(year=1000, month=1, day=1),
     database_key=SQLAlchemyDatabaseKey.canonical_for_schema(
@@ -214,26 +216,39 @@ class TestStatePersistence(TestCase):
         )
 
         # Arrange
-        ingest_info = IngestInfo()
-        ingest_info.state_people.add(
-            state_person_id="1_GENERATE",
-            state_sentence_group_ids=[SENTENCE_GROUP_ID, SENTENCE_GROUP_ID_2],
+        person_1 = entities.StatePerson.new_with_defaults(
+            state_code=STATE_CODE,
+            sentence_groups=[
+                entities.StateSentenceGroup.new_with_defaults(
+                    state_code=STATE_CODE,
+                    external_id=SENTENCE_GROUP_ID,
+                    county_code=COUNTY_CODE,
+                    status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                ),
+                entities.StateSentenceGroup.new_with_defaults(
+                    state_code=STATE_CODE,
+                    external_id=SENTENCE_GROUP_ID_2,
+                    county_code=COUNTY_CODE,
+                    status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                ),
+            ],
         )
-        ingest_info.state_people.add(
-            state_person_id="2_GENERATE",
-            state_sentence_group_ids=[SENTENCE_GROUP_ID_3, SENTENCE_GROUP_ID_4],
-        )
-        ingest_info.state_sentence_groups.add(
-            state_sentence_group_id=SENTENCE_GROUP_ID, county_code=COUNTY_CODE
-        )
-        ingest_info.state_sentence_groups.add(
-            state_sentence_group_id=SENTENCE_GROUP_ID_2, county_code=COUNTY_CODE
-        )
-        ingest_info.state_sentence_groups.add(
-            state_sentence_group_id=SENTENCE_GROUP_ID_3, county_code=COUNTY_CODE
-        )
-        ingest_info.state_sentence_groups.add(
-            state_sentence_group_id=SENTENCE_GROUP_ID_4, county_code=COUNTY_CODE
+        person_2 = entities.StatePerson.new_with_defaults(
+            state_code=STATE_CODE,
+            sentence_groups=[
+                entities.StateSentenceGroup.new_with_defaults(
+                    state_code=STATE_CODE,
+                    external_id=SENTENCE_GROUP_ID_3,
+                    county_code=COUNTY_CODE,
+                    status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                ),
+                entities.StateSentenceGroup(
+                    state_code=STATE_CODE,
+                    external_id=SENTENCE_GROUP_ID_4,
+                    county_code=COUNTY_CODE,
+                    status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                ),
+            ],
         )
 
         db_person = schema.StatePerson(
@@ -286,8 +301,18 @@ class TestStatePersistence(TestCase):
             session.add(db_person)
             session.add(db_person_2)
 
+        parsed_entities = [person_1, person_2]
         # Act
-        persistence.write_ingest_info(ingest_info, DEFAULT_METADATA)
+        persistence.write_entities(
+            conversion_result=EntityDeserializationResult(
+                people=parsed_entities,
+                enum_parsing_errors=0,
+                general_parsing_errors=0,
+                protected_class_errors=0,
+            ),
+            ingest_metadata=DEFAULT_METADATA,
+            total_people=len(parsed_entities),
+        )
 
         with SessionFactory.using_database(
             self.database_key, autocommit=False
@@ -325,22 +350,28 @@ class TestStatePersistence(TestCase):
         STATE_ERROR_THRESHOLDS_WITH_FORTY_PERCENT_RATIOS[ENTITY_MATCHING_THRESHOLD] = 0
 
         # Arrange
-        ingest_info = IngestInfo()
-        ingest_info.state_people.add(
-            state_person_id="1_GENERATE",
-            state_sentence_group_ids=[SENTENCE_GROUP_ID, SENTENCE_GROUP_ID_2],
-        )
-        ingest_info.state_people.add(
-            state_person_id="2_GENERATE", state_sentence_group_ids=[SENTENCE_GROUP_ID_3]
-        )
-        ingest_info.state_sentence_groups.add(
-            state_sentence_group_id=SENTENCE_GROUP_ID, county_code=COUNTY_CODE
-        )
-        ingest_info.state_sentence_groups.add(
-            state_sentence_group_id=SENTENCE_GROUP_ID_2, county_code=COUNTY_CODE
-        )
-        ingest_info.state_sentence_groups.add(
-            state_sentence_group_id=SENTENCE_GROUP_ID_3, county_code=COUNTY_CODE
+        person = entities.StatePerson.new_with_defaults(
+            state_code=STATE_CODE,
+            sentence_groups=[
+                entities.StateSentenceGroup(
+                    state_code=STATE_CODE,
+                    external_id=SENTENCE_GROUP_ID,
+                    county_code=COUNTY_CODE,
+                    status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                ),
+                entities.StateSentenceGroup(
+                    state_code=STATE_CODE,
+                    external_id=SENTENCE_GROUP_ID_2,
+                    county_code=COUNTY_CODE,
+                    status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                ),
+                entities.StateSentenceGroup(
+                    state_code=STATE_CODE,
+                    external_id=SENTENCE_GROUP_ID_3,
+                    county_code=COUNTY_CODE,
+                    status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                ),
+            ],
         )
 
         db_person = schema.StatePerson(
@@ -446,8 +477,18 @@ class TestStatePersistence(TestCase):
         expected_person_2.sentence_groups = [expected_sentence_group_3]
         expected_person_2.external_ids = [expected_external_id_2]
 
+        parsed_entities = [person]
         # Act
-        persistence.write_ingest_info(ingest_info, DEFAULT_METADATA)
+        persistence.write_entities(
+            conversion_result=EntityDeserializationResult(
+                people=parsed_entities,
+                enum_parsing_errors=0,
+                general_parsing_errors=0,
+                protected_class_errors=0,
+            ),
+            ingest_metadata=DEFAULT_METADATA,
+            total_people=len(parsed_entities),
+        )
 
         with SessionFactory.using_database(
             self.database_key, autocommit=False

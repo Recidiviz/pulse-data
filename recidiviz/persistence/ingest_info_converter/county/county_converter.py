@@ -23,7 +23,7 @@ from typing import List
 import more_itertools
 
 from recidiviz.common.constants.charge import ChargeStatus
-from recidiviz.common.ingest_metadata import IngestMetadata
+from recidiviz.common.ingest_metadata import LegacyStateAndJailsIngestMetadata
 from recidiviz.common.str_field_utils import parse_int
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo, Person
@@ -48,7 +48,9 @@ from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
 class CountyConverter(BaseConverter[entities.Person]):
     """Converts between ingest_info objects and persistence layer entity."""
 
-    def __init__(self, ingest_info: IngestInfo, metadata: IngestMetadata):
+    def __init__(
+        self, ingest_info: IngestInfo, metadata: LegacyStateAndJailsIngestMetadata
+    ):
         super().__init__(ingest_info, metadata)
 
         self.bookings = {b.booking_id: b for b in ingest_info.bookings}

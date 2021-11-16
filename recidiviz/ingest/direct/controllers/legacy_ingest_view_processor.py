@@ -24,21 +24,20 @@ import logging
 from typing import Callable, Dict, List, Optional
 
 from recidiviz.cloud_storage.gcs_file_system import GcsfsFileContentsHandle
+from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.ingest_metadata import IngestMetadata
-from recidiviz.ingest.direct.types.direct_ingest_instance import (
-    DirectIngestInstance,
-)
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsIngestArgs,
-)
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_file_parser_delegate import (
-    yaml_mappings_filepath,
 )
 from recidiviz.ingest.direct.controllers.ingest_view_processor import (
     IngestViewProcessor,
 )
 from recidiviz.ingest.direct.errors import DirectIngestError, DirectIngestErrorType
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_file_parser_delegate import (
+    yaml_mappings_filepath,
+)
 from recidiviz.ingest.direct.state_shared_row_posthooks import IngestGatingContext
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.extractor.csv_data_extractor import (
     CsvDataExtractor,
     IngestFieldCoordinates,
@@ -69,6 +68,10 @@ class LegacyIngestViewProcessorDelegate(metaclass=abc.ABCMeta):
     """Legacy implementation of the ingest view file parser, which uses intermediate ingest
     info objects and legacy ingest mappings files.
     """
+
+    @abc.abstractmethod
+    def get_enum_overrides(self) -> EnumOverrides:
+        """Returns global enum overrides for legacy ingest mappings."""
 
     @abc.abstractmethod
     def get_row_pre_processors_for_file(
