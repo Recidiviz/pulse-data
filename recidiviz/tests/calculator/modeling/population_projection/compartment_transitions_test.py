@@ -18,6 +18,7 @@
 
 import unittest
 from functools import partial
+import logging
 
 import pandas as pd
 from pandas.testing import assert_frame_equal
@@ -107,6 +108,102 @@ class TestCompartmentTransitions(unittest.TestCase):
                 transitions.get_per_ts_transition_table(ts),
                 split_transitions.get_per_ts_transition_table(ts),
             )
+
+    def test_multiple_policies(self) -> None:
+        """Ensure get_per_ts_transition_table returns the correct transistion
+        table when there are multiple SparkPolicies that are applied at
+        different time steps.
+
+        See https://github.com/Recidiviz/pulse-data/issues/9284.
+        """
+
+        # Generates historical_outflows such that initial_ratio goes to the moon
+        # at releast_ts and the rest (1 - initial_ratio) goes to the moon at
+        # releast_ts + 1
+        def test_data_n(release_ts: int, initial_ratio: float) -> pd.DataFrame:
+            return pd.DataFrame(
+                {
+                    "compartment_duration": [release_ts, release_ts + 1],
+                    "total_population": [initial_ratio, (1 - initial_ratio)],
+                    "outflow_to": ["moon"] * 2,
+                    "compartment": ["test_compartment"] * 2,
+                }
+            )
+
+        def policy_from_data(test_data: pd.DataFrame, start_ts: int) -> SparkPolicy:
+            return SparkPolicy(
+                policy_fn=partial(
+                    TransitionTable.use_alternate_transitions_data,
+                    alternate_historical_transitions=test_data,
+                    retroactive=False,
+                ),
+                sub_population={"compartment": "test_compartment"},
+                spark_compartment="test_compartment",
+                policy_ts=start_ts,
+                apply_retroactive=False,
+            )
+
+        # Half of everyone goes to the moon after 7 years and the remaining
+        # go the next year.
+        test_data_7 = test_data_n(7, 0.5)
+        # A quarter of everyone goes to the moon after 4 years and the remaining
+        # go the next year.
+        test_data_4 = test_data_n(4, 0.25)
+        # An eighth of everyone goes to the moon after 1 year and the remaining
+        # go the next year.
+        test_data_1 = test_data_n(1, 0.125)
+
+        # Testing the default: no policies.
+        transitions = CompartmentTransitions(test_data_7)
+        transitions.initialize_transition_tables([])
+        tt = transitions.get_per_ts_transition_table(8)
+        logging.debug("Default (no policies) transition table:\n%s\n", tt)
+        self.assertListEqual(list(tt["moon"]), [0, 0, 0, 0, 0, 0, 0.5, 1])
+
+        # Testing one policy.
+        transitions = CompartmentTransitions(test_data_7)
+        transitions.initialize_transition_tables(
+            [
+                policy_from_data(test_data_4, start_ts=3),
+            ]
+        )
+        tt = transitions.get_per_ts_transition_table(8)
+        logging.debug("First policy only transition table:\n%s\n", tt)
+        self.assertListEqual(list(tt["moon"]), [0, 0, 0, 0.25, 1, 0, 0.5, 1])
+
+        # Testing one policy.
+        transitions = CompartmentTransitions(test_data_7)
+        transitions.initialize_transition_tables(
+            [
+                policy_from_data(test_data_1, start_ts=6),
+            ]
+        )
+        tt = transitions.get_per_ts_transition_table(8)
+        logging.debug("Second policy only transition table:\n%s\n", tt)
+        self.assertListEqual(list(tt["moon"]), [0.125, 1, 0, 0, 0, 0, 0.5, 1])
+
+        # Test two combined policies.
+        # This is the "real" test!
+        transitions = CompartmentTransitions(test_data_7)
+        transitions.initialize_transition_tables(
+            [
+                policy_from_data(test_data_4, start_ts=3),
+                policy_from_data(test_data_1, start_ts=6),
+            ]
+        )
+        tt = transitions.get_per_ts_transition_table(8)
+        logging.debug("Both policies transition table:\n%s\n", tt)
+        self.assertListEqual(list(tt["moon"]), [0.125, 1, 0, 0.25, 1, 0, 0.5, 1])
+
+        tt = transitions.get_per_ts_transition_table(10)
+        logging.debug(
+            "Transition table just before old policies have aged out:\n%s\n", tt
+        )
+        self.assertListEqual(list(tt["moon"]), [0.125, 1, 0, 0, 1, 0, 0, 1])
+
+        tt = transitions.get_per_ts_transition_table(11)
+        logging.debug("Transition table after old policies have aged out:\n%s\n", tt)
+        self.assertListEqual(list(tt["moon"]), [0.125, 1, 0, 0, 0, 0, 0, 0])
 
     def test_retroactive_policy(self) -> None:
 
