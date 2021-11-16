@@ -54,8 +54,14 @@ _APP_ENGINE_IMPORT_CASE_TRIAGE_ETL_CSV_TO_SQL_PATH = (
 )
 
 
-def _build_url(project_id: str, path: str, params: Optional[Dict[str, Any]]) -> str:
-    url = f"http://{project_id}.appspot.com{path}"
+def _build_url(
+    project_id: str,
+    path: str,
+    params: Optional[Dict[str, Any]],
+    use_https: bool = False,
+) -> str:
+    scheme = "https" if use_https else "http"
+    url = f"{scheme}://{project_id}.appspot.com{path}"
     if params is not None:
         url += f"?{urlencode(params)}"
     return url
@@ -182,6 +188,7 @@ def handle_new_case_triage_etl(
         project_id,
         _APP_ENGINE_IMPORT_CASE_TRIAGE_ETL_CSV_TO_SQL_PATH,
         {"filename": filename},
+        use_https=True,
     )
     import_response = make_iap_request(import_url, IAP_CLIENT_ID[project_id])
     return "", HTTPStatus(import_response.status_code)
@@ -225,6 +232,7 @@ def handle_state_dashboard_user_restrictions_file(
             project_id,
             _APP_ENGINE_IMPORT_USER_RESTRICTIONS_CSV_TO_SQL_PATH,
             {"region_code": region_code},
+            use_https=True,
         )
         logging.info("Calling URL: %s", import_user_restrictions_url)
 
@@ -243,6 +251,7 @@ def handle_state_dashboard_user_restrictions_file(
                 project_id,
                 _APP_ENGINE_UPDATE_AUTH0_USER_METADATA_PATH,
                 {"region_code": region_code},
+                use_https=True,
             )
             # Hit the App Engine endpoint `auth/update_auth0_user_metadata`.
             response = make_iap_request(update_users_url, IAP_CLIENT_ID[project_id])
@@ -393,6 +402,7 @@ def trigger_post_deploy_cloudsql_to_bq_refresh(
         project_id,
         f"/cloud_sql_to_bq/create_refresh_bq_schema_task/{schema}",
         params=None,
+        use_https=True,
     )
 
     data = {"pipeline_run_type": "historical"} if schema.upper() == "STATE" else {}
