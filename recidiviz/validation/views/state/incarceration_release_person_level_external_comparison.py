@@ -46,7 +46,7 @@ WITH external_data AS (
     LEFT JOIN `{project_id}.{state_base_dataset}.state_person_external_id` all_state_person_ids
     ON region_code = all_state_person_ids.state_code AND external_data.person_external_id = all_state_person_ids.external_id
     -- Limit to 'US_PA_CONT' id_type for US_PA
-    WHERE region_code != 'US_PA' or id_type = 'US_PA_CONT'
+    AND (region_code != 'US_PA' OR id_type = 'US_PA_CONT')
 ), internal_data AS (
   SELECT internal.state_code as region_code, internal.person_external_id, internal.person_id, release_date
   FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_release_metrics_included_in_state_population_materialized` internal
