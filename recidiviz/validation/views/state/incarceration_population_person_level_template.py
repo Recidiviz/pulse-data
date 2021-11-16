@@ -21,12 +21,20 @@ from typing import Set
 from recidiviz.calculator.query.bq_utils import exclude_rows_with_missing_fields
 from recidiviz.utils.string import StrictStringFormatter
 
+# TODO(#10054): Remove facility normalization once handled in ingest.
 INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_QUERY_TEMPLATE = """
 WITH 
 external_data AS (
   -- NOTE: You can replace this part of the query with your own query to test the SELECT query you will use to generate
   -- data to insert into the `incarceration_population_person_level` table.
-  SELECT region_code, person_external_id, date_of_stay, facility
+  SELECT
+    region_code,
+    person_external_id,
+    date_of_stay,
+    CASE state_code
+      WHEN 'US_PA' THEN UPPER(LEFT(facility, 3))
+      ELSE facility
+    END AS facility
   FROM `{{project_id}}.{{external_accuracy_dataset}}.incarceration_population_person_level`
 ), external_data_with_ids AS (
     -- Find the internal person_id for the people in the external data
@@ -35,7 +43,7 @@ external_data AS (
     LEFT JOIN `{{project_id}}.{{state_base_dataset}}.state_person_external_id` all_state_person_ids
     ON region_code = all_state_person_ids.state_code AND external_data.person_external_id = all_state_person_ids.external_id
     -- Limit to 'US_PA_CONT' id_type for US_PA
-    WHERE region_code != 'US_PA' or id_type = 'US_PA_CONT'
+    AND (region_code != 'US_PA' OR id_type = 'US_PA_CONT')
 ),
 sanitized_internal_metrics AS (
   SELECT
@@ -43,7 +51,10 @@ sanitized_internal_metrics AS (
       date_of_stay, 
       person_external_id, 
       person_id,
-      facility,
+      CASE state_code
+        WHEN 'US_PA' THEN UPPER(LEFT(facility, 3))
+        ELSE facility
+      END AS facility,
    FROM `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_incarceration_population_metrics_included_in_state_population_materialized`
 ),
 internal_metrics_for_valid_regions_and_dates AS (
