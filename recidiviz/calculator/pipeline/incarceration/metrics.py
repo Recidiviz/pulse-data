@@ -131,14 +131,6 @@ When pre-processing the `StateIncarcerationPeriod` entities to create this metri
 
     # Optional characteristics
 
-    # The most serious offense NCIC code connected to the sentence group of the incarceration period from which
-    # this stay event is derived
-    most_serious_offense_ncic_code: Optional[str] = attr.ib(default=None)
-
-    # The most serious offense statute connected to the sentence group of the incarceration period from which
-    # this stay event is derived
-    most_serious_offense_statute: Optional[str] = attr.ib(default=None)
-
     # The most recent "official" admission reason for this time of incarceration
     admission_reason: Optional[StateIncarcerationPeriodAdmissionReason] = attr.ib(
         default=None

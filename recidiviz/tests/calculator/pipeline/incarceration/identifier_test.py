@@ -80,7 +80,6 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_violations_dele
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_incarceration_period_pre_processing_delegate import (
     SHOCK_INCARCERATION_9_MONTHS,
 )
-from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentLevel,
     StateAssessmentType,
@@ -112,7 +111,6 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
 )
 from recidiviz.persistence.entity.state.entities import (
     StateAssessment,
-    StateCharge,
     StateIncarcerationPeriod,
     StateIncarcerationSentence,
     StateSentenceGroup,
@@ -295,15 +293,6 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             start_date=date(2008, 10, 11),
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             incarceration_periods=[incarceration_period],
-            charges=[
-                StateCharge.new_with_defaults(
-                    state_code="US_XX",
-                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
-                    offense_date=date(2007, 12, 11),
-                    ncic_code="0901",
-                    statute="9999",
-                )
-            ],
         )
 
         sentence_group = StateSentenceGroup.new_with_defaults(
@@ -323,8 +312,6 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         expected_events = [
             *expected_incarceration_stay_events(
                 incarceration_period,
-                most_serious_offense_ncic_code="0901",
-                most_serious_offense_statute="9999",
                 judicial_district_code="NW",
             ),
             IncarcerationStandardAdmissionEvent(
@@ -384,15 +371,6 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             start_date=date(2008, 1, 11),
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             incarceration_periods=[incarceration_period_1, incarceration_period_2],
-            charges=[
-                StateCharge.new_with_defaults(
-                    state_code="US_XX",
-                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
-                    offense_date=date(2007, 12, 11),
-                    ncic_code="5511",
-                    statute="9999",
-                )
-            ],
         )
 
         sentence_group = StateSentenceGroup.new_with_defaults(
@@ -414,16 +392,12 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         expected_events = [
             *expected_incarceration_stay_events(
                 incarceration_period_1,
-                most_serious_offense_ncic_code="5511",
-                most_serious_offense_statute="9999",
                 judicial_district_code="NW",
             ),
             *expected_incarceration_stay_events(
                 incarceration_period_2,
                 original_admission_reason=incarceration_period_1.admission_reason,
                 original_admission_reason_raw_text=incarceration_period_1.admission_reason_raw_text,
-                most_serious_offense_ncic_code="5511",
-                most_serious_offense_statute="9999",
             ),
             IncarcerationStandardAdmissionEvent(
                 state_code=incarceration_period_1.state_code,
@@ -765,15 +739,6 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                 treatment_incarceration_period,
                 general_incarceration_period,
             ],
-            charges=[
-                StateCharge.new_with_defaults(
-                    state_code="US_ID",
-                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
-                    offense_date=date(2007, 12, 11),
-                    ncic_code="5511",
-                    statute="9999",
-                )
-            ],
         )
 
         sentence_group = StateSentenceGroup.new_with_defaults(
@@ -800,16 +765,12 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         expected_events: List[IncarcerationEvent] = [
             *expected_incarceration_stay_events(
                 treatment_incarceration_period,
-                most_serious_offense_ncic_code="5511",
-                most_serious_offense_statute="9999",
                 judicial_district_code="NW",
             ),
             *expected_incarceration_stay_events(
                 general_incarceration_period,
                 original_admission_reason=treatment_incarceration_period.admission_reason,
                 original_admission_reason_raw_text=treatment_incarceration_period.admission_reason_raw_text,
-                most_serious_offense_ncic_code="5511",
-                most_serious_offense_statute="9999",
             ),
             IncarcerationStandardAdmissionEvent(
                 state_code=treatment_incarceration_period.state_code,
@@ -898,15 +859,6 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                 incarceration_period,
                 incarceration_period_in_future,
             ],
-            charges=[
-                StateCharge.new_with_defaults(
-                    state_code="US_XX",
-                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
-                    offense_date=date(1989, 11, 1),
-                    ncic_code="0901",
-                    statute="9999",
-                )
-            ],
         )
 
         sentence_group = StateSentenceGroup.new_with_defaults(
@@ -925,8 +877,6 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         expected_events = [
             *expected_incarceration_stay_events(
                 incarceration_period,
-                most_serious_offense_ncic_code="0901",
-                most_serious_offense_statute="9999",
                 judicial_district_code="NW",
             ),
             IncarcerationStandardAdmissionEvent(
@@ -1074,15 +1024,6 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             incarceration_periods=[temp_custody_period, revocation_period],
             supervision_periods=[revoked_supervision_period],
-            charges=[
-                StateCharge.new_with_defaults(
-                    state_code="US_ND",
-                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
-                    offense_date=date(2007, 12, 11),
-                    ncic_code="0901",
-                    statute="9999",
-                )
-            ],
         )
 
         sentence_group = StateSentenceGroup.new_with_defaults(
@@ -1113,8 +1054,6 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                     event_date=revocation_period.admission_date,
                     facility=revocation_period.facility,
                     county_of_residence=_COUNTY_OF_RESIDENCE,
-                    most_serious_offense_ncic_code="0901",
-                    most_serious_offense_statute="9999",
                     judicial_district_code="NW",
                     specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
                 ),
@@ -1212,15 +1151,6 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                     incarceration_periods=[temp_custody_period, revocation_period],
                     supervision_periods=[supervision_period],
                     start_date=date(2008, 1, 1),
-                    charges=[
-                        StateCharge.new_with_defaults(
-                            state_code="US_MO",
-                            status=ChargeStatus.PRESENT_WITHOUT_INFO,
-                            offense_date=date(2007, 12, 11),
-                            ncic_code="0901",
-                            statute="9999",
-                        )
-                    ],
                 ),
                 supervision_type_spans=[
                     SupervisionTypeSpan(
@@ -1502,8 +1432,6 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                     event_date=temp_custody_period.admission_date,
                     facility=temp_custody_period.facility,
                     county_of_residence=_COUNTY_OF_RESIDENCE,
-                    most_serious_offense_ncic_code="0901",
-                    most_serious_offense_statute="9999",
                     specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
                 ),
                 IncarcerationStayEvent(
@@ -1513,8 +1441,6 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                     event_date=revocation_period.admission_date,
                     facility=revocation_period.facility,
                     county_of_residence=_COUNTY_OF_RESIDENCE,
-                    most_serious_offense_ncic_code="0901",
-                    most_serious_offense_statute="9999",
                     specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
                 ),
                 IncarcerationStandardAdmissionEvent(
@@ -1600,15 +1526,6 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                 incarceration_periods=[temp_custody_period],
                 supervision_periods=[],
                 start_date=date(2008, 1, 1),
-                charges=[
-                    StateCharge.new_with_defaults(
-                        state_code="US_MO",
-                        status=ChargeStatus.PRESENT_WITHOUT_INFO,
-                        offense_date=date(2007, 12, 11),
-                        ncic_code="0901",
-                        statute="9999",
-                    )
-                ],
             ),
             supervision_type_spans=[
                 SupervisionTypeSpan(
@@ -1767,8 +1684,6 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                     event_date=temp_custody_period.admission_date,
                     facility=temp_custody_period.facility,
                     county_of_residence=_COUNTY_OF_RESIDENCE,
-                    most_serious_offense_ncic_code="0901",
-                    most_serious_offense_statute="9999",
                     specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
                 ),
                 IncarcerationStandardAdmissionEvent(
@@ -4452,554 +4367,10 @@ class TestGetUniquePeriodsFromSentenceGroupAndAddBackedges(unittest.TestCase):
         self.assertEqual(expected_supervision_periods, supervision_periods)
 
 
-class TestFindMostSeriousOffenseStatuteInSentenceGroup(unittest.TestCase):
-    """Tests the find_most_serious_prior_charge_in_sentence_group function,"""
-
-    def setUp(self) -> None:
-        self.identifier = identifier.IncarcerationIdentifier()
-
-    def test_find_most_serious_prior_charge_in_sentence_group(self) -> None:
-        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=1111,
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code="US_XX",
-            facility="PRISON3",
-            admission_date=date(2008, 11, 20),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-            release_date=date(2009, 1, 4),
-            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
-        )
-
-        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
-            state_code="US_XX",
-            start_date=date(2007, 12, 10),
-            incarceration_periods=[incarceration_period],
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            charges=[
-                StateCharge.new_with_defaults(
-                    state_code="US_XX",
-                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
-                    offense_date=date(2007, 12, 11),
-                    ncic_code="2703",
-                    statute="9999",
-                ),
-                StateCharge.new_with_defaults(
-                    state_code="US_XX",
-                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
-                    offense_date=date(2007, 12, 11),
-                    ncic_code="1316",
-                    statute="8888",
-                ),
-                StateCharge.new_with_defaults(
-                    state_code="US_XX",
-                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
-                    offense_date=date(2007, 12, 11),
-                    ncic_code="3619",
-                    statute="7777",
-                ),
-            ],
-        )
-
-        sentence_group = StateSentenceGroup.new_with_defaults(
-            state_code="US_XX",
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            incarceration_sentences=[incarceration_sentence],
-        )
-
-        most_serious_charge = (
-            self.identifier._find_most_serious_prior_charge_in_sentence_group(
-                sentence_group, date(2008, 12, 31)
-            )
-        )
-
-        assert most_serious_charge is not None
-        self.assertEqual(most_serious_charge.statute, "8888")
-
-    def test_find_most_serious_prior_charge_in_sentence_group_multiple_sentences(
-        self,
-    ) -> None:
-        incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=1111,
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code="US_XX",
-            facility="PRISON3",
-            admission_date=date(2008, 11, 20),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-            release_date=date(2009, 1, 4),
-            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
-        )
-
-        incarceration_sentence_1 = StateIncarcerationSentence.new_with_defaults(
-            state_code="US_XX",
-            start_date=date(2007, 12, 10),
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            incarceration_periods=[incarceration_period_1],
-            charges=[
-                StateCharge.new_with_defaults(
-                    state_code="US_XX",
-                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
-                    offense_date=date(2007, 12, 11),
-                    ncic_code="3606",
-                    statute="3606",
-                ),
-                StateCharge.new_with_defaults(
-                    state_code="US_XX",
-                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
-                    offense_date=date(2007, 12, 11),
-                    ncic_code="3611",
-                    statute="3611",
-                ),
-                StateCharge.new_with_defaults(
-                    state_code="US_XX",
-                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
-                    offense_date=date(2007, 12, 11),
-                    ncic_code="3623",
-                    statute="3623",
-                ),
-            ],
-        )
-
-        incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=2222,
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code="US_XX",
-            facility="PRISON3",
-            admission_date=date(2003, 1, 20),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-            release_date=date(2009, 1, 4),
-            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
-        )
-
-        incarceration_sentence_2 = StateIncarcerationSentence.new_with_defaults(
-            state_code="US_XX",
-            start_date=date(2007, 12, 10),
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            incarceration_periods=[incarceration_period_2],
-            charges=[
-                StateCharge.new_with_defaults(
-                    state_code="US_XX",
-                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
-                    offense_date=date(2001, 12, 11),
-                    ncic_code="3907",
-                    statute="3907",
-                ),
-                StateCharge.new_with_defaults(
-                    state_code="US_XX",
-                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
-                    offense_date=date(2001, 12, 11),
-                    ncic_code="3909",
-                    statute="3909",
-                ),
-                StateCharge.new_with_defaults(
-                    state_code="US_XX",
-                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
-                    offense_date=date(2001, 12, 11),
-                    ncic_code="3912",
-                    statute="3912",
-                ),
-            ],
-        )
-
-        sentence_group = StateSentenceGroup.new_with_defaults(
-            state_code="US_XX",
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            incarceration_sentences=[
-                incarceration_sentence_1,
-                incarceration_sentence_2,
-            ],
-        )
-
-        most_serious_charge = (
-            self.identifier._find_most_serious_prior_charge_in_sentence_group(
-                sentence_group, date(2008, 12, 31)
-            )
-        )
-
-        assert most_serious_charge is not None
-        self.assertEqual(most_serious_charge.statute, "3606")
-
-    def test_find_most_serious_prior_charge_in_sentence_group_offense_after_date(
-        self,
-    ) -> None:
-        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=1111,
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code="US_XX",
-            facility="PRISON3",
-            admission_date=date(2008, 11, 20),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-            release_date=date(2009, 1, 4),
-            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
-        )
-
-        incarceration_sentence_1 = StateIncarcerationSentence.new_with_defaults(
-            state_code="US_XX",
-            start_date=date(2007, 12, 10),
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            incarceration_periods=[incarceration_period],
-            charges=[
-                StateCharge.new_with_defaults(
-                    state_code="US_XX",
-                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
-                    offense_date=date(2007, 12, 11),
-                    ncic_code="3611",
-                    statute="1111",
-                ),
-                StateCharge.new_with_defaults(
-                    state_code="US_XX",
-                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
-                    offense_date=date(2007, 12, 11),
-                    ncic_code="3623",
-                    statute="3333",
-                ),
-            ],
-        )
-
-        incarceration_sentence_2 = StateIncarcerationSentence.new_with_defaults(
-            state_code="US_XX",
-            start_date=date(2010, 12, 10),
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            incarceration_periods=[incarceration_period],
-            charges=[
-                StateCharge.new_with_defaults(
-                    state_code="US_XX",
-                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
-                    offense_date=date(2010, 12, 11),
-                    ncic_code="3606",
-                    statute="9999",
-                ),
-            ],
-        )
-
-        sentence_group = StateSentenceGroup.new_with_defaults(
-            state_code="US_XX",
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            incarceration_sentences=[
-                incarceration_sentence_1,
-                incarceration_sentence_2,
-            ],
-        )
-
-        most_serious_charge = (
-            self.identifier._find_most_serious_prior_charge_in_sentence_group(
-                sentence_group, date(2008, 12, 31)
-            )
-        )
-
-        assert most_serious_charge is not None
-        self.assertEqual(most_serious_charge.statute, "1111")
-
-    def test_find_most_serious_prior_charge_in_sentence_group_charges_no_ncic(
-        self,
-    ) -> None:
-        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=1111,
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code="US_XX",
-            facility="PRISON3",
-            admission_date=date(2008, 11, 20),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-            release_date=date(2009, 1, 4),
-            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
-        )
-
-        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
-            state_code="US_XX",
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            incarceration_periods=[incarceration_period],
-            charges=[
-                StateCharge.new_with_defaults(
-                    state_code="US_XX",
-                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
-                    offense_date=date(2010, 12, 11),
-                    statute="9999",
-                ),
-                StateCharge.new_with_defaults(
-                    state_code="US_XX",
-                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
-                    offense_date=date(2007, 12, 11),
-                    statute="1111",
-                ),
-                StateCharge.new_with_defaults(
-                    state_code="US_XX",
-                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
-                    offense_date=date(2007, 12, 11),
-                    statute="3333",
-                ),
-            ],
-        )
-
-        sentence_group = StateSentenceGroup.new_with_defaults(
-            state_code="US_XX",
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            incarceration_sentences=[incarceration_sentence],
-        )
-
-        most_serious_charge = (
-            self.identifier._find_most_serious_prior_charge_in_sentence_group(
-                sentence_group, date(2008, 12, 31)
-            )
-        )
-
-        self.assertIsNone(most_serious_charge)
-
-    def test_find_most_serious_prior_charge_in_sentence_group_includes_chars(
-        self,
-    ) -> None:
-        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=1111,
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code="US_XX",
-            facility="PRISON3",
-            admission_date=date(2008, 11, 20),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-            release_date=date(2009, 1, 4),
-            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
-        )
-
-        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
-            state_code="US_XX",
-            start_date=date(2007, 12, 10),
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            incarceration_periods=[incarceration_period],
-            charges=[
-                StateCharge.new_with_defaults(
-                    state_code="US_XX",
-                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
-                    offense_date=date(2007, 12, 11),
-                    ncic_code="040A",
-                    statute="xxxx",
-                ),
-                StateCharge.new_with_defaults(
-                    state_code="US_XX",
-                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
-                    offense_date=date(2007, 12, 11),
-                    ncic_code="0101",
-                    statute="9999",
-                ),
-                StateCharge.new_with_defaults(
-                    state_code="US_XX",
-                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
-                    offense_date=date(2007, 12, 11),
-                    ncic_code="5301",
-                    statute="1111",
-                ),
-            ],
-        )
-
-        sentence_group = StateSentenceGroup.new_with_defaults(
-            state_code="US_XX",
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            incarceration_sentences=[incarceration_sentence],
-        )
-
-        most_serious_charge = (
-            self.identifier._find_most_serious_prior_charge_in_sentence_group(
-                sentence_group, date(2008, 12, 31)
-            )
-        )
-
-        assert most_serious_charge is not None
-        self.assertEqual(most_serious_charge.statute, "9999")
-
-    def test_find_most_serious_prior_offense_statute_no_offense_dates(self) -> None:
-        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=1111,
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code="US_XX",
-            facility="PRISON3",
-            admission_date=date(2008, 11, 20),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-            release_date=date(2009, 1, 4),
-            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
-        )
-
-        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
-            state_code="US_XX",
-            start_date=date(2007, 12, 10),
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            incarceration_periods=[incarceration_period],
-            charges=[
-                StateCharge.new_with_defaults(
-                    state_code="US_XX",
-                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
-                    ncic_code="2703",
-                    statute="9999",
-                ),
-                StateCharge.new_with_defaults(
-                    state_code="US_XX",
-                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
-                    ncic_code="1316",
-                    statute="8888",
-                ),
-                StateCharge.new_with_defaults(
-                    state_code="US_XX",
-                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
-                    ncic_code="3619",
-                    statute="7777",
-                ),
-            ],
-        )
-
-        sentence_group = StateSentenceGroup.new_with_defaults(
-            state_code="US_XX",
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            incarceration_sentences=[incarceration_sentence],
-        )
-
-        incarceration_period.incarceration_sentences = [incarceration_sentence]
-        incarceration_sentence.sentence_group = sentence_group
-
-        most_serious_charge = (
-            self.identifier._find_most_serious_prior_charge_in_sentence_group(
-                sentence_group, date(2008, 12, 31)
-            )
-        )
-
-        assert most_serious_charge is not None
-        self.assertEqual(most_serious_charge.statute, "8888")
-
-    def test_find_most_serious_prior_offense_statute_offense_but_not_sentence_dates_before_cutoff(
-        self,
-    ) -> None:
-        """We only look at the sentence date to determine the cutoff for most serious offense calculations."""
-        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=1111,
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code="US_XX",
-            facility="PRISON3",
-            admission_date=date(2008, 11, 20),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-            release_date=date(2009, 1, 4),
-            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
-        )
-
-        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
-            state_code="US_XX",
-            start_date=date(2009, 12, 10),
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            incarceration_periods=[incarceration_period],
-            charges=[
-                StateCharge.new_with_defaults(
-                    state_code="US_XX",
-                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
-                    offense_date=date(2007, 12, 10),
-                    ncic_code="2703",
-                    statute="9999",
-                ),
-                StateCharge.new_with_defaults(
-                    state_code="US_XX",
-                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
-                    offense_date=date(2007, 12, 10),
-                    ncic_code="1316",
-                    statute="8888",
-                ),
-                StateCharge.new_with_defaults(
-                    state_code="US_XX",
-                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
-                    offense_date=date(2007, 12, 10),
-                    ncic_code="3619",
-                    statute="7777",
-                ),
-            ],
-        )
-
-        sentence_group = StateSentenceGroup.new_with_defaults(
-            state_code="US_XX",
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            incarceration_sentences=[incarceration_sentence],
-        )
-
-        incarceration_period.incarceration_sentences = [incarceration_sentence]
-        incarceration_sentence.sentence_group = sentence_group
-
-        most_serious_charge = (
-            self.identifier._find_most_serious_prior_charge_in_sentence_group(
-                sentence_group, date(2008, 12, 31)
-            )
-        )
-
-        self.assertIsNone(most_serious_charge)
-
-    def test_find_most_serious_prior_offense_statute_sentence_but_not_offense_dates_before_cutoff(
-        self,
-    ) -> None:
-        """We only look at the sentence date to determine the cutoff for most serious offense calculations."""
-        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=1111,
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code="US_XX",
-            facility="PRISON3",
-            admission_date=date(2008, 11, 20),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-            release_date=date(2009, 1, 4),
-            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
-        )
-
-        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
-            state_code="US_XX",
-            start_date=date(2007, 12, 10),
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            incarceration_periods=[incarceration_period],
-            charges=[
-                StateCharge.new_with_defaults(
-                    state_code="US_XX",
-                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
-                    offense_date=date(2009, 12, 10),
-                    ncic_code="2703",
-                    statute="9999",
-                ),
-                StateCharge.new_with_defaults(
-                    state_code="US_XX",
-                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
-                    offense_date=date(2009, 12, 10),
-                    ncic_code="1316",
-                    statute="8888",
-                ),
-                StateCharge.new_with_defaults(
-                    state_code="US_XX",
-                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
-                    offense_date=date(2009, 12, 10),
-                    ncic_code="3619",
-                    statute="7777",
-                ),
-            ],
-        )
-
-        sentence_group = StateSentenceGroup.new_with_defaults(
-            state_code="US_XX",
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            incarceration_sentences=[incarceration_sentence],
-        )
-
-        incarceration_period.incarceration_sentences = [incarceration_sentence]
-        incarceration_sentence.sentence_group = sentence_group
-
-        most_serious_charge = (
-            self.identifier._find_most_serious_prior_charge_in_sentence_group(
-                sentence_group, date(2008, 12, 31)
-            )
-        )
-
-        assert most_serious_charge is not None
-        self.assertEqual(most_serious_charge.statute, "8888")
-
-
 def expected_incarceration_stay_events(
     incarceration_period: StateIncarcerationPeriod,
     original_admission_reason: Optional[StateIncarcerationPeriodAdmissionReason] = None,
     original_admission_reason_raw_text: Optional[str] = None,
-    most_serious_offense_statute: Optional[str] = None,
-    most_serious_offense_ncic_code: Optional[str] = None,
     judicial_district_code: Optional[str] = None,
 ) -> List[IncarcerationStayEvent]:
     """Returns the expected incarceration stay events based on the provided |incarceration_period|."""
@@ -5046,8 +4417,6 @@ def expected_incarceration_stay_events(
                 facility=incarceration_period.facility,
                 county_of_residence=_COUNTY_OF_RESIDENCE,
                 event_date=stay_date,
-                most_serious_offense_statute=most_serious_offense_statute,
-                most_serious_offense_ncic_code=most_serious_offense_ncic_code,
                 judicial_district_code=judicial_district_code,
                 specialized_purpose_for_incarceration=purpose_for_incarceration,
             )

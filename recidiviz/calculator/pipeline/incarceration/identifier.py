@@ -103,7 +103,6 @@ from recidiviz.persistence.entity.entity_utils import (
 from recidiviz.persistence.entity.state.entities import (
     PeriodType,
     StateAssessment,
-    StateCharge,
     StateIncarcerationPeriod,
     StateIncarcerationSentence,
     StatePerson,
@@ -367,9 +366,6 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
         if admission_date is None:
             return incarceration_stay_events
 
-        sentence_group: StateSentenceGroup = (
-            self._get_sentence_group_for_incarceration_period(incarceration_period)
-        )
         judicial_district_code: Optional[str] = self._get_judicial_district_code(
             incarceration_period, incarceration_period_to_judicial_district
         )
@@ -395,18 +391,6 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
         ) = original_admission_reasons_by_period_id[incarceration_period_id]
 
         while stay_date < release_date:
-            most_serious_charge: Optional[
-                StateCharge
-            ] = self._find_most_serious_prior_charge_in_sentence_group(
-                sentence_group, stay_date
-            )
-            most_serious_offense_ncic_code: Optional[str] = (
-                most_serious_charge.ncic_code if most_serious_charge else None
-            )
-            most_serious_offense_statute: Optional[str] = (
-                most_serious_charge.statute if most_serious_charge else None
-            )
-
             incarceration_stay_events.append(
                 IncarcerationStayEvent(
                     state_code=incarceration_period.state_code,
@@ -416,8 +400,6 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
                     event_date=stay_date,
                     facility=incarceration_period.facility,
                     county_of_residence=county_of_residence,
-                    most_serious_offense_ncic_code=most_serious_offense_ncic_code,
-                    most_serious_offense_statute=most_serious_offense_statute,
                     admission_reason=original_admission_reason,
                     admission_reason_raw_text=original_admission_reason_raw_text,
                     judicial_district_code=judicial_district_code,
@@ -448,83 +430,6 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
 
         if ip_info is not None:
             return ip_info.get("judicial_district_code")
-
-        return None
-
-    def _get_sentence_group_for_incarceration_period(
-        self,
-        incarceration_period: StateIncarcerationPeriod,
-    ) -> StateSentenceGroup:
-        sentence_groups: List[StateSentenceGroup] = [
-            incarceration_sentence.sentence_group
-            for incarceration_sentence in incarceration_period.incarceration_sentences
-            if incarceration_sentence.sentence_group
-        ]
-
-        sentence_groups.extend(
-            [
-                supervision_sentence.sentence_group
-                for supervision_sentence in incarceration_period.supervision_sentences
-                if supervision_sentence.sentence_group
-            ]
-        )
-
-        sentence_group_ids: Set[Optional[int]] = {
-            sentence_group.sentence_group_id for sentence_group in sentence_groups
-        }
-
-        if len(sentence_group_ids) != 1:
-            raise ValueError(
-                f"Found unexpected number of sentence groups attached to incarceration_period "
-                f"[{incarceration_period.incarceration_period_id}]. Ids: [{str(sentence_group_ids)}]."
-            )
-
-        return sentence_groups[0]
-
-    def _find_most_serious_prior_charge_in_sentence_group(
-        self, sentence_group: StateSentenceGroup, sentence_start_upper_bound: date
-    ) -> Optional[StateCharge]:
-        """Finds the most serious offense associated with a sentence that started prior to the cutoff date and is within the
-        same sentence group as the incarceration period.
-        StateCharges have an optional `ncic_code` field that contains the identifying NCIC code for the offense, as well as
-        a `statute` field that describes the offense. NCIC codes decrease in severity as the code increases. E.g. '1010' is
-        a more serious offense than '5599'. Therefore, this returns the statute associated with the lowest ranked NCIC code
-        attached to the charges in the sentence groups that this incarceration period is attached to. Although most NCIC
-        codes are numbers, some may contain characters such as the letter 'A', so the codes are sorted alphabetically.
-        """
-
-        relevant_charges: List[StateCharge] = []
-
-        def is_relevant_charge(
-            sentence_start_date: Optional[date], charge: StateCharge
-        ) -> bool:
-            return (
-                charge.ncic_code is not None
-                and sentence_start_date is not None
-                and sentence_start_date < sentence_start_upper_bound
-            )
-
-        for incarceration_sentence in sentence_group.incarceration_sentences:
-            relevant_charges_in_sentence = [
-                charge
-                for charge in incarceration_sentence.charges
-                if is_relevant_charge(incarceration_sentence.start_date, charge)
-            ]
-            relevant_charges.extend(relevant_charges_in_sentence)
-
-        for supervision_sentence in sentence_group.supervision_sentences:
-            relevant_charges_in_sentence = [
-                charge
-                for charge in supervision_sentence.charges
-                if is_relevant_charge(supervision_sentence.start_date, charge)
-            ]
-            relevant_charges.extend(relevant_charges_in_sentence)
-
-        if relevant_charges:
-            return min(
-                relevant_charges,
-                key=lambda b: b.ncic_code if b.ncic_code is not None else "",
-            )
 
         return None
 
@@ -808,6 +713,7 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
 
         return None
 
+    # TODO(#2769): Remove once we get all required entities sent to the identifier
     def _get_unique_periods_from_sentence_groups_and_add_backedges(
         self,
         sentence_groups: List[StateSentenceGroup],
@@ -860,6 +766,8 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
 
         return unique_incarceration_periods, unique_supervision_periods
 
+    # TODO(#2769): Remove once all required relationships are hydrated at extraction
+    #  time
     def _set_backedges_and_return_unique_periods(
         self,
         sentences_and_periods: List[
@@ -872,8 +780,8 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
 
         unique_periods = []
         for sentence, period in sentences_and_periods:
-            # TODO(#2888): Remove this once these bi-directional relationships are hydrated properly
-            # Setting this manually because this direction of hydration doesn't happen in the hydration steps
+            # Setting this manually because this direction of hydration doesn't happen
+            # in the hydration steps
             if isinstance(sentence, StateSupervisionSentence):
                 period.supervision_sentences.append(sentence)
             if isinstance(sentence, StateIncarcerationSentence):
