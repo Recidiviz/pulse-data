@@ -19,18 +19,16 @@
 
 To generate a sample output for the Top Opps email template, just run:
 
-python -m recidiviz.reporting.context.top_opportunities.context
+python -m recidiviz.reporting.context.overdue_discharge_alert.context
 """
 
-import copy
-from typing import List
+from typing import Any, Dict, List
 
 from jinja2 import Template
 
 import recidiviz.reporting.email_reporting_utils as utils
 from recidiviz.common.constants.states import StateCode
 from recidiviz.reporting.context.po_monthly_report.constants import (
-    DEFAULT_MESSAGE_BODY_KEY,
     OFFICER_GIVEN_NAME,
     Batch,
     ReportType,
@@ -40,51 +38,50 @@ from recidiviz.reporting.recipient import Recipient
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
+STATE_SPECIFIC_LANGUAGE = {
+    StateCode.US_ID: {
+        "expiration_date": "full term release date",
+        "parole_agents": "POs",
+        "partnership": "Recidiviz is working with IDOC",
+    }
+}
 
-class TopOpportunitiesReportContext(ReportContext):
+
+class OverdueDischargeAlertContext(ReportContext):
     """Report context for the Top Opportunities email."""
 
-    def __init__(self, batch: Batch, recipient: Recipient):
-        super().__init__(batch, recipient)
-        self.recipient_data = recipient.data
+    @property
+    def jinja_options(self) -> Dict[str, Any]:
+        return {"trim_blocks": True}
 
     def get_required_recipient_data_fields(self) -> List[str]:
-        return [OFFICER_GIVEN_NAME, "mismatches"]
+        return [
+            OFFICER_GIVEN_NAME,
+            "overdue_discharges",
+            "upcoming_discharges",
+        ]
 
     def get_report_type(self) -> ReportType:
-        return ReportType.TopOpportunities
+        return ReportType.OverdueDischargeAlert
 
     @property
     def html_template(self) -> Template:
-        return self.jinja_env.get_template("top_opportunities/email.html.jinja2")
+        return self.jinja_env.get_template("overdue_discharge_alert/email.html.jinja2")
 
     def _prepare_for_generation(self) -> dict:
         """Executes PO Monthly Report data preparation."""
-        self.prepared_data = copy.deepcopy(self.recipient_data)
-
-        self.prepared_data["static_image_path"] = utils.get_static_image_path(
-            self.get_report_type()
-        )
-        self.prepared_data[
-            "greeting"
-        ] = f'Hi {self.recipient_data["officer_given_name"]}:'
-
-        if message_override := self.recipient_data.get("message_body_override"):
-            self.prepared_data["message_body"] = message_override
-        else:
-            self.prepared_data["message_body"] = self.properties[
-                DEFAULT_MESSAGE_BODY_KEY
-            ]
-
-        return self.prepared_data
+        return {
+            **self.recipient_data,
+            "l10n": STATE_SPECIFIC_LANGUAGE[self.state_code],
+        }
 
 
 if __name__ == "__main__":
-    context = TopOpportunitiesReportContext(
+    context = OverdueDischargeAlertContext(
         Batch(
             state_code=StateCode.US_ID,
             batch_id="test",
-            report_type=ReportType.TopOpportunities,
+            report_type=ReportType.OverdueDischargeAlert,
         ),
         Recipient.from_report_json(
             {
@@ -92,39 +89,28 @@ if __name__ == "__main__":
                 utils.KEY_STATE_CODE: "US_ID",
                 utils.KEY_DISTRICT: "US_ID_D3",
                 OFFICER_GIVEN_NAME: "Alex",
-                "assessment_name": "LSI-R",
-                "mismatches": [
+                "overdue_discharges": [
                     {
-                        "name": "Tonye Thompson",
-                        "person_external_id": "189472",
-                        "last_score": 14,
-                        "last_assessment_date": "10/12/20",
-                        "current_supervision_level": "Medium",
-                        "recommended_level": "Low",
+                        "full_name": "Dan",
+                        "person_external_id": "123",
+                        "expiration_date": "123",
                     },
                     {
-                        "name": "Linet Hansen",
-                        "person_external_id": "47228",
-                        "last_assessment_date": "1/12/21",
-                        "last_score": 8,
-                        "current_supervision_level": "Medium",
-                        "recommended_level": "Low",
+                        "full_name": "Dan",
+                        "person_external_id": "123",
+                        "expiration_date": "123",
+                    },
+                ],
+                "upcoming_discharges": [
+                    {
+                        "full_name": "Dan",
+                        "person_external_id": "123",
+                        "expiration_date": "123",
                     },
                     {
-                        "name": "Rebekah Cortes",
-                        "person_external_id": "132878",
-                        "last_assessment_date": "3/14/20",
-                        "last_score": 10,
-                        "current_supervision_level": "High",
-                        "recommended_level": "Medium",
-                    },
-                    {
-                        "name": "Taryn Berry",
-                        "person_external_id": "147872",
-                        "last_assessment_date": "3/13/20",
-                        "last_score": 4,
-                        "current_supervision_level": "High",
-                        "recommended_level": "Low",
+                        "full_name": "Dan",
+                        "person_external_id": "123",
+                        "expiration_date": "123",
                     },
                 ],
             }

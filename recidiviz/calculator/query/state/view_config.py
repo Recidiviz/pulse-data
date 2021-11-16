@@ -31,6 +31,9 @@ from recidiviz.calculator.query.state.views.dashboard.dashboard_views import (
 from recidiviz.calculator.query.state.views.dataflow_metrics_materialized.dataflow_metrics_materialized_views import (
     DATAFLOW_METRICS_MATERIALIZED_VIEW_BUILDERS,
 )
+from recidiviz.calculator.query.state.views.overdue_discharge_alert.overdue_discharge_alert_data_views import (
+    OVERDUE_DISCHARGE_ALERT_VIEW_BUILDERS,
+)
 from recidiviz.calculator.query.state.views.po_report.po_report_views import (
     PO_REPORT_VIEW_BUILDERS,
 )
@@ -57,6 +60,7 @@ VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = list(
             COVID_DASHBOARD_VIEW_BUILDERS,
             DASHBOARD_VIEW_BUILDERS,
             DATAFLOW_METRICS_MATERIALIZED_VIEW_BUILDERS,
+            OVERDUE_DISCHARGE_ALERT_VIEW_BUILDERS,
             PO_REPORT_VIEW_BUILDERS,
             POPULATION_PROJECTION_VIEW_BUILDERS,
             PUBLIC_DASHBOARD_VIEW_BUILDERS,
