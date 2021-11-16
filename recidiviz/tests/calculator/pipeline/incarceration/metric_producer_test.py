@@ -69,8 +69,6 @@ ALL_METRICS_INCLUSIONS_DICT = {
 }
 
 _COUNTY_OF_RESIDENCE = "county"
-_STATUTE = "XXXX"
-_NCIC_CODE = "1234"
 
 _DEFAULT_PERSON_METADATA = PersonMetadata(prioritized_race_or_ethnicity="BLACK")
 PIPELINE_JOB_ID = "TEST_JOB_ID"
@@ -156,8 +154,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
                 event_date=date(2000, 3, 31),
                 facility="FACILITY X",
                 county_of_residence=_COUNTY_OF_RESIDENCE,
-                most_serious_offense_ncic_code=_NCIC_CODE,
-                most_serious_offense_statute=_STATUTE,
                 specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
             ),
             IncarcerationStandardAdmissionEvent(
@@ -383,8 +379,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
                 event_date=date(2010, 3, 31),
                 facility="FACILITY 33",
                 county_of_residence=_COUNTY_OF_RESIDENCE,
-                most_serious_offense_ncic_code=_NCIC_CODE,
-                most_serious_offense_statute=_STATUTE,
                 admission_reason=AdmissionReason.PAROLE_REVOCATION,
                 admission_reason_raw_text="PAROLE_REVOCATION",
                 specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
@@ -394,8 +388,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
                 event_date=date(2010, 3, 31),
                 facility="FACILITY 33",
                 county_of_residence=_COUNTY_OF_RESIDENCE,
-                most_serious_offense_ncic_code=_NCIC_CODE,
-                most_serious_offense_statute=_STATUTE,
                 admission_reason=AdmissionReason.PAROLE_REVOCATION,
                 admission_reason_raw_text="PAROLE_REVOCATION",
                 specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
@@ -441,8 +433,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
                 event_date=date(2010, 3, 31),
                 facility="FACILITY 33",
                 county_of_residence=_COUNTY_OF_RESIDENCE,
-                most_serious_offense_ncic_code=_NCIC_CODE,
-                most_serious_offense_statute=_STATUTE,
                 admission_reason=AdmissionReason.PAROLE_REVOCATION,
                 admission_reason_raw_text="PAROLE_REVOCATION",
                 specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
@@ -838,76 +828,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
 
         for metric in metrics:
             assert metric.year == 2007
-
-    def test_produce_incarceration_metrics_includes_statute_output(self) -> None:
-        person = StatePerson.new_with_defaults(
-            state_code="US_XX",
-            person_id=12345,
-            birthdate=date(1984, 8, 31),
-            gender=Gender.FEMALE,
-        )
-
-        race = StatePersonRace.new_with_defaults(state_code="US_XX", race=Race.WHITE)
-
-        person.races = [race]
-
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=Ethnicity.NOT_HISPANIC
-        )
-
-        person.ethnicities = [ethnicity]
-
-        incarceration_events = [
-            IncarcerationStayEvent(
-                state_code="US_XX",
-                event_date=date(2010, 3, 31),
-                facility="FACILITY 33",
-                county_of_residence=_COUNTY_OF_RESIDENCE,
-                most_serious_offense_ncic_code=_NCIC_CODE,
-                most_serious_offense_statute=_STATUTE,
-                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
-            ),
-            IncarcerationStayEvent(
-                state_code="US_XX",
-                event_date=date(2010, 4, 30),
-                facility="FACILITY 33",
-                county_of_residence=_COUNTY_OF_RESIDENCE,
-                most_serious_offense_ncic_code=_NCIC_CODE,
-                most_serious_offense_statute=_STATUTE,
-                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
-            ),
-            IncarcerationStayEvent(
-                state_code="US_XX",
-                event_date=date(2010, 5, 31),
-                facility="FACILITY 33",
-                county_of_residence=_COUNTY_OF_RESIDENCE,
-                most_serious_offense_ncic_code=_NCIC_CODE,
-                most_serious_offense_statute=_STATUTE,
-                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
-            ),
-        ]
-
-        metrics = self.metric_producer.produce_metrics(
-            person=person,
-            identifier_events=incarceration_events,
-            metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
-            calculation_end_month=None,
-            calculation_month_count=-1,
-            person_metadata=_DEFAULT_PERSON_METADATA,
-            pipeline_job_id=PIPELINE_JOB_ID,
-            pipeline_type=self.pipeline_config.pipeline_type,
-        )
-
-        expected_count = self.expected_metrics_count(incarceration_events)
-
-        self.assertEqual(expected_count, len(metrics))
-
-        assert all(
-            isinstance(metric, IncarcerationPopulationMetric)
-            and metric.most_serious_offense_statute is not None
-            for metric in metrics
-            if metric.person_id is not None
-        )
 
     @mock.patch(
         "recidiviz.calculator.pipeline.utils.calculator_utils"
