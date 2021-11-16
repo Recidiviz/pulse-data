@@ -551,6 +551,10 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         StateIncarcerationType: [
             "'"  # The dbo_Senrec table has several rows where the value type_of_sent is a single quotation mark
         ],
+        StateSentenceStatus: [
+            # TODO(#10053): Need to determine the actual mapping for PC
+            "PC",  # This is a new unknown status code, that needs to be mapped properly
+        ],
     }
     ENUM_IGNORE_PREDICATES: Dict[Type[Enum], EnumIgnorePredicate] = {}
 
