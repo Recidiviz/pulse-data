@@ -15,14 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """constants used in handling transition probabilities in population projection modeling"""
-from enum import Enum, auto
 
 SIG_FIGS = 7
 MIN_POSSIBLE_POLICY_TS = -9999
-
-
-class TransitionTableType(Enum):
-    PREVIOUS = auto()
-    BEFORE = auto()
-    TRANSITORY = auto()
-    AFTER = auto()

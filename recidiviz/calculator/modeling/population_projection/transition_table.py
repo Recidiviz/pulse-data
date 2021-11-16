@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """table containing probabilities of transition to other FullCompartments used by CompartmentTransitions object"""
+import collections
 from copy import deepcopy
 from typing import Any, Dict, List, Optional
 
@@ -24,7 +25,6 @@ import pandas as pd
 from recidiviz.calculator.modeling.population_projection.spark_policy import SparkPolicy
 from recidiviz.calculator.modeling.population_projection.utils.transitions_utils import (
     SIG_FIGS,
-    TransitionTableType,
 )
 
 
@@ -35,55 +35,63 @@ class TransitionTable:
         self,
         policy_ts: int,
         policy_list: List[SparkPolicy],
-        previous_table: Optional[pd.DataFrame] = None,
+        previous_tables: Optional[Dict[int, pd.DataFrame]] = None,
     ):
         """
         policy_ts: ts at which the related policy is enacted
         policy_list: list of SparkPolicy that apply on policy_ts
         max_sentence: length of transition tables
-        previous_table: preceding TransitionTable. Should only be None for chronologically first table
+        previous_tables: preceding TransitionTable. Should only be None (or empty dict) for chronologically first table
         """
-        self.previous_table = previous_table
+        if previous_tables is None:
+            previous_tables = {}
+        elif not isinstance(previous_tables, Dict):
+            raise TypeError(
+                f"previous_tables is not a Dict[int, pd.DataFrame]: {previous_tables!r}"
+            )
+        self.previous_tables: Dict[int, pd.DataFrame] = previous_tables
         self.policy_ts = policy_ts
         self.policy_list = policy_list
 
-        if previous_table is not None:
-            self.max_sentence = int(np.ceil(previous_table.index.max()))
-        else:
-            self.max_sentence = 0
+        self.max_sentence = max(
+            (int(np.ceil(t.index.max())) for t in self.previous_tables.values()),
+            default=0,
+        )
 
-        self.transition_dfs: Dict[TransitionTableType, pd.DataFrame] = {
-            TransitionTableType.BEFORE: pd.DataFrame(),
-            TransitionTableType.AFTER: pd.DataFrame(),
-            TransitionTableType.TRANSITORY: pd.DataFrame(),
-        }
+        self.tables: Dict[int, pd.DataFrame] = collections.OrderedDict()
+
         self._initialize_tables()
 
     def _initialize_tables(self) -> None:
         """Generate `before`, `transitory`, and `after` transition tables."""
 
         # if chronologically first table, no policies and only 'after' needs to be populated, which is handled elsewhere
-        if self.previous_table is None:
+        if not self.previous_tables:
             return
 
-        if "remaining" in self.previous_table:
-            raise ValueError(
-                "Cannot create a transition table from a normalized previous table"
-            )
+        for previous_table in self.previous_tables.values():
+            if "remaining" in previous_table:
+                raise ValueError(
+                    "Cannot create a transition table from a normalized previous table"
+                )
 
         # Apply all the non-retroactive policy functions to the 'before' table
-        self.transition_dfs[TransitionTableType.BEFORE] = self.previous_table.copy()
+        for ts, prev_table in sorted(self.previous_tables.items()):
+            self.tables[ts] = prev_table.copy()
+            if ts >= self.policy_ts:
+                raise ValueError(
+                    f"Time step {ts} in previous_tables ({self.previous_tables.keys()}) is greater than policy time step {self.policy_ts}!"
+                )
+
         for policy in self.policy_list:
             if policy.apply_retroactive:
                 policy.policy_fn(self)
 
-        before_table_invariance_under_non_retroactive_policies_checker = (
-            self.transition_dfs[TransitionTableType.BEFORE].copy()
-        )
+        before_table_invariance_under_non_retroactive_policies_checker = {
+            ts: t.copy() for ts, t in self.tables.items()
+        }
 
-        self.transition_dfs[TransitionTableType.AFTER] = self.transition_dfs[
-            TransitionTableType.BEFORE
-        ].copy()
+        self.tables[self.policy_ts] = self.tables[max(self.tables)].copy()
         # Add on the retroactive policy functions to the 'after' table
         for policy in self.policy_list:
             if not policy.apply_retroactive:
@@ -91,81 +99,81 @@ class TransitionTable:
 
         # make sure policy affects correct transition table
         if any(
-            list(before_table_invariance_under_non_retroactive_policies_checker[i])
-            != list(self.transition_dfs[TransitionTableType.BEFORE][i])[
-                : len(before_table_invariance_under_non_retroactive_policies_checker[i])
+            list(before_table_invariance_under_non_retroactive_policies_checker[ts][i])
+            != list(t[i])[
+                : len(
+                    before_table_invariance_under_non_retroactive_policies_checker[ts][
+                        i
+                    ]
+                )
             ]
-            for i in self.transition_dfs[TransitionTableType.BEFORE]
+            for ts, t in self.tables.items()
+            if ts != self.policy_ts
+            for i in t
         ):
             raise ValueError(
-                "Policy function was applied to the wrong transition state"
+                "Policy function was applied to the wrong transition time_step."
             )
 
-        self.transition_dfs[TransitionTableType.TRANSITORY] = self.transition_dfs[
-            TransitionTableType.BEFORE
-        ].copy()
+        self.transitory_table = self._collapse_tables(self.tables, self.policy_ts)
 
-    def _normalize_table(
-        self, state: TransitionTableType, before_table: Optional[pd.DataFrame] = None
+    def normalize_table(
+        self, ts: int, before_table: Optional[pd.DataFrame] = None
     ) -> None:
-        """Convert the per-ts population counts into normalized probabilities.
+        self.tables[ts] = self.normalized_table(
+            self.tables[ts], self.max_sentence, before_table
+        )
 
-        If a `before_table` is provided, use that to modify the transition probabilities
-        to account for the transitory period.
-        """
-        # if first table, skip before and transitory states
-        if self.previous_table is None and state in [
-            TransitionTableType.BEFORE,
-            TransitionTableType.TRANSITORY,
-        ]:
-            return
+    def normalize_previous_tables(
+        self, before_table: Optional[pd.DataFrame] = None
+    ) -> None:
+        for ts, prev_table in self.previous_tables.items():
+            self.previous_tables[ts] = self.normalized_table(
+                prev_table, self.max_sentence, before_table
+            )
 
-        if state == TransitionTableType.PREVIOUS:
-            after_table = self.previous_table
-        else:
-            after_table = self.transition_dfs[state]
-
-        self._check_table_exists(state)
-
-        # Just here to satisfy mypy
-        if after_table is None:
-            raise ValueError
-
-        if after_table.empty:
+    @staticmethod
+    def normalized_table(
+        table: pd.DataFrame,
+        max_sentence: int,
+        before_table: Optional[pd.DataFrame] = None,
+    ) -> pd.DataFrame:
+        """Convert the per-ts population counts into normalized probabilities"""
+        if table.empty:
             raise ValueError(
                 "Cannot normalize transition tables before they are initialized"
             )
 
-        if "remaining" in after_table:
+        if "remaining" in table:
             raise ValueError(
-                f"Trying to normalize a transition table that is already normalized: {after_table}"
+                f"Trying to normalize a transition table that is already normalized: {table}"
             )
 
         if before_table is None:
-            before_table = after_table.copy()
+            before_table = table.copy()
 
-        if len(before_table) < len(after_table):
-            before_table = before_table.reindex(after_table.index, fill_value=0)
+        if len(before_table) < len(table):
+            before_table = before_table.reindex(table.index, fill_value=0)
 
         if "remaining" in before_table:
             raise ValueError(
                 "`normalize_transitions` cannot be called with a normalized `before_table`"
             )
 
-        normalized_df = deepcopy(after_table)
+        normalized_df = deepcopy(table)
 
         before_totals = before_table.sum()
-        after_totals = after_table.sum()
+        after_totals = table.sum()
 
         before_counteds = before_totals * 0
         after_counteds = after_totals * 0
 
         outflow_ratios = after_totals / after_totals.sum()
 
-        for sentence_len in range(1, self.max_sentence + 1):
+        for sentence_len in range(1, max_sentence + 1):
             # want to release number of people X that causes (before_counteds at time t) + X to equal
             # (after_counteds at time t+1), so we start by stepping forward after_counteds to t+1
-            ts_released = after_table.loc[sentence_len]
+            ts_released = table.loc[sentence_len]
             after_counteds += ts_released
 
             # calculate the fraction of each outflow remaining at this time step
@@ -209,33 +217,30 @@ class TransitionTable:
                     (transition_df < 0) | (transition_df > 1)
                 ]
                 raise ValueError(
-                    f"'{compartment}' transition has probabilities out of bounds for state '{state}':\n"
+                    f"'{compartment}' transition has probabilities out of bounds:\n"
                     f"{erroneous_values}"
                 )
 
-        max_sentence = min(
-            self.max_sentence, min(normalized_df[full_release_times].index)
-        )
+        max_sentence = min(max_sentence, min(normalized_df[full_release_times].index))
         normalized_df.loc[max_sentence, "remaining"] = 0
 
-        if state == TransitionTableType.PREVIOUS:
-            self.previous_table = normalized_df
-        else:
-            self.transition_dfs[state] = normalized_df
+        return normalized_df
 
     def normalize_transitions(self) -> None:
         """standardize the transition probabilities for all transition tables"""
-        self._normalize_table(
-            TransitionTableType.TRANSITORY, before_table=self.previous_table
-        )
-        self._normalize_table(TransitionTableType.BEFORE)
-        self._normalize_table(TransitionTableType.AFTER)
+        if self.previous_tables:
+            before_table = self._collapse_tables(self.previous_tables, self.policy_ts)
+            self.transitory_table = TransitionTable.normalized_table(
+                self.transitory_table, self.max_sentence, before_table=before_table
+            )
+        for ts, table in self.tables.items():
+            self.tables[ts] = TransitionTable.normalized_table(table, self.max_sentence)
 
-    def generate_transition_table(
-        self, state: TransitionTableType, historical_outflows: pd.DataFrame
+    def generate_transition_tables(
+        self, time_steps: List[int], historical_outflows: pd.DataFrame
     ) -> None:
         """
-        Accepts a state for which to populate transition probabilities
+        Accepts time_steps for which to populate transition probabilities
         Accepts a DataFrame with transition data to use
         Should only be called for chronologically first TransitionTable in a baseline simulation
         """
@@ -247,31 +252,24 @@ class TransitionTable:
 
         self.max_sentence = max(self.max_sentence, int(sentence_length.max()))
 
-        self.transition_dfs[state] = (
-            grouped_outflows["total_population"]
-            .sum()
-            .unstack()
-            .reindex(range(1, self.max_sentence + 1))
-            .fillna(0)
-        )
+        for ts in time_steps:
+            self.tables[ts] = (
+                grouped_outflows["total_population"]
+                .sum()
+                .unstack()
+                .reindex(range(1, self.max_sentence + 1))
+                .fillna(0)
+            )
 
-    def get_table(self, state: TransitionTableType) -> pd.DataFrame:
-        """Return a transition_df"""
-        if state == TransitionTableType.PREVIOUS:
-            return self.previous_table
-        return self.transition_dfs[state]
+    def get_after_table(self) -> pd.DataFrame:
+        return self.tables[self.policy_ts]
 
     def get_per_ts_table(self, current_ts: int) -> pd.DataFrame:
         """Returns a combination of transition_dfs for the given ts"""
-
-        if self.previous_table is None:
-            populated_states = [TransitionTableType.AFTER]
-        else:
-            populated_states = list(self.transition_dfs.keys())
-        for state in populated_states:
-            if "remaining" not in self.transition_dfs[state].columns:
+        for ts, table in self.tables.items():
+            if "remaining" not in table.columns:
                 raise ValueError(
-                    f"Transition table for the '{state}' has not been normalized"
+                    f"Transition table for time_step '{ts}' has not been normalized"
                 )
 
         if current_ts < self.policy_ts:
@@ -281,72 +279,65 @@ class TransitionTable:
 
         # first ts of policy, need to transition from one table to the other
         if current_ts == self.policy_ts:
-            return self.transition_dfs[TransitionTableType.TRANSITORY]
+            return self.transitory_table
 
-        # post policy implementation
-        ts_since_policy = current_ts - self.policy_ts
-        if ts_since_policy >= self.max_sentence:
-            return self.transition_dfs[TransitionTableType.AFTER]
-        # from 'after' table, take indices corresponding to LOS in compartment up until those as old as the policy
-        #   then take those with LOS longer than years since policy from 'before' table
-        return pd.concat(
-            [
-                self.transition_dfs[TransitionTableType.AFTER].loc[:ts_since_policy, :],
-                self.transition_dfs[TransitionTableType.BEFORE].loc[
-                    ts_since_policy + 1 :, :
-                ],
-            ]
-        )
+        return self._collapse_tables(self.tables, current_ts)
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, TransitionTable):
             return False
-        for state, frame in self.transition_dfs.items():
-            if set(frame.columns) != set(other.transition_dfs[state].columns):
+        for ts, table in self.tables.items():
+            if set(table.columns) != set(other.tables[ts].columns):
                 return False
-            matching_order_self = frame[other.transition_dfs[state].columns]
-            if (matching_order_self != other.transition_dfs[state]).all().all():
+            matching_order_self = table[other.tables[ts].columns]
+            if (matching_order_self != other.tables[ts]).all().all():
                 return False
         return True
 
-    def _check_table_invariant_before_normalization(
-        self, state: TransitionTableType
-    ) -> None:
+    def _check_table_invariant_before_normalization(self, ts: int) -> None:
         """Raise an exception if the underlying transition table has been normalized before applying a policy"""
-        self._check_table_exists(state)
-        if state == TransitionTableType.PREVIOUS:
-            table = self.previous_table
-        else:
-            table = self.transition_dfs[state]
+        self._check_table_exists(ts)
+        table = self.tables[ts]
         if (table is None) or "remaining" in table:
             raise ValueError(
                 "Policy method cannot be applied after the transition table is normalized"
             )
 
-    def _check_table_exists(self, state: TransitionTableType) -> None:
+    def _check_table_exists(self, ts: int) -> None:
         """Make sure table is not null"""
-        if state == TransitionTableType.PREVIOUS:
-            table = self.previous_table
-        else:
-            table = self.transition_dfs[state]
-
+        table = self.tables.get(ts)
         if table is None:
             raise ValueError(
-                f"Cannot normalize {state} table for first TransitionTable of CompartmentTransitions object"
+                f"Cannot normalize time_step {ts} table for first TransitionTable of CompartmentTransitions object"
             )
 
     @staticmethod
-    def get_df_name_from_retroactive(retroactive: bool) -> TransitionTableType:
-        if retroactive:
-            return TransitionTableType.BEFORE
+    def _collapse_tables(
+        tables: Dict[int, pd.DataFrame], current_ts: int
+    ) -> pd.DataFrame:
+        """Concatenate the pieces of historical tables that apply to the different cohorts in a given ts `current_ts`"""
+        partial_tables = []
+        prev_ts_since_policy_plus_1 = None
+        for ts, table in sorted(tables.items(), reverse=True):
+            ts_since_policy = current_ts - ts
+            partial_tables.append(
+                table.loc[prev_ts_since_policy_plus_1:ts_since_policy]
+            )
+            prev_ts_since_policy_plus_1 = ts_since_policy + 1
+        return pd.concat(partial_tables)
 
-        return TransitionTableType.AFTER
+    def get_time_steps_from_retroactive(self, retroactive: bool) -> List[int]:
+        if retroactive:
+            return [ts for ts in self.tables if ts != self.policy_ts]
+        return [self.policy_ts]
 
     def test_non_retroactive_policy(self) -> None:
-        self.transition_dfs[TransitionTableType.AFTER]["jail"] = 0
+        for ts in self.get_time_steps_from_retroactive(False):
+            self.tables[ts]["jail"] = 0
 
     def test_retroactive_policy(self) -> None:
-        self.transition_dfs[TransitionTableType.BEFORE]["jail"] = 0
+        for ts in self.get_time_steps_from_retroactive(True):
+            self.tables[ts]["jail"] = 0
 
     def extend_tables(self, new_max_sentence: int) -> None:
         """
@@ -355,40 +346,31 @@ class TransitionTable:
         doesn't shorten max sentence if new_max_sentence is smaller than self.max_sentence
         """
         # Ensure none of the transition tables have been normalized before they are extended
-        for state, frame in self.transition_dfs.items():
-            if not frame.empty:
-                self._check_table_invariant_before_normalization(state)
+        for ts, table in self.tables.items():
+            if not table.empty:
+                self._check_table_invariant_before_normalization(ts)
 
         if new_max_sentence <= self.max_sentence:
             return
 
-        for state, frame in self.transition_dfs.items():
+        for ts, table in self.tables.items():
             # Extend the populated transition tables
-            if not frame.empty:
+            if not table.empty:
                 extended_index = pd.Index(
                     data=range(self.max_sentence + 1, new_max_sentence + 1),
-                    name=frame.index.name,
+                    name=table.index.name,
                 )
                 extended_df = pd.DataFrame(
                     index=extended_index,
-                    columns=frame.columns,
+                    columns=table.columns,
                 )
-                self.transition_dfs[state] = frame.append(extended_df).fillna(0)
+                self.tables[ts] = table.append(extended_df).fillna(0)
 
         self.max_sentence = new_max_sentence
 
-    def unnormalize_table(self, state: TransitionTableType) -> None:
+    @staticmethod
+    def _unnormalized_table(table: pd.DataFrame) -> pd.DataFrame:
         """revert a normalized table back to an un-normalized df. sum of all total populations will be 1"""
-        if state == TransitionTableType.PREVIOUS:
-            table = self.previous_table
-        else:
-            table = self.transition_dfs[state]
-
-        self._check_table_exists(state)
-        # Just here to satisfy mypy
-        if table is None:
-            raise ValueError
-
         if "remaining" not in table:
             raise ValueError("trying to unnormalize a table that isn't normalized")
 
@@ -398,12 +380,19 @@ class TransitionTable:
                     1 - table.loc[shorter_sentence].drop("remaining").sum()
                 )
 
-        table = table.drop("remaining", axis=1)
+        return table.drop("remaining", axis=1)
 
-        if state == TransitionTableType.PREVIOUS:
-            self.previous_table = table
-        else:
-            self.transition_dfs[state] = table
+    def unnormalize_previous_tables(self) -> None:
+        """revert all normalized previous table back to an un-normalized df. sum of all total populations will be 1"""
+        if not self.previous_tables:
+            raise ValueError("There are no previous_tables to unnormalize!")
+        for ts, table in self.previous_tables.items():
+            self.previous_tables[ts] = TransitionTable._unnormalized_table(table)
+
+    def unnormalize_table(self, ts: int) -> None:
+        """revert a normalized table back to an un-normalized df. sum of all total populations will be 1"""
+        self._check_table_exists(ts)
+        self.tables[ts] = TransitionTable._unnormalized_table(self.tables[ts])
 
     def use_alternate_transitions_data(
         self, alternate_historical_transitions: pd.DataFrame, retroactive: bool
@@ -413,54 +402,50 @@ class TransitionTable:
         self.extend_tables(
             int(alternate_historical_transitions.compartment_duration.max())
         )
-        df_name = self.get_df_name_from_retroactive(retroactive)
-        self.generate_transition_table(df_name, alternate_historical_transitions)
+        tss = self.get_time_steps_from_retroactive(retroactive)
+        self.generate_transition_tables(tss, alternate_historical_transitions)
 
     def preserve_normalized_outflow_behavior(
         self,
         outflows: List[str],
-        state: TransitionTableType,
-        before_state: TransitionTableType = TransitionTableType.PREVIOUS,
+        ts: int,
+        before_ts: Optional[int] = None,
     ) -> None:
         """
         change the transition probabilities for outflows so the yearly (normalized) percentage of those outflows per
             year match 'before' state
         `outflows` should be a list of outflows to affect
-        `state` should be the transition table for which to affect them
-        `before_state` should be the transition table to copy normalized behavior from
+        `ts` transition table time step for which to affect them
+        `before_ts` transition table time step to copy normalized behavior from
+            xor None to use the most recent table in self.previous_tables
         """
-        self._check_table_exists(state)
-        self._check_table_invariant_before_normalization(state)
+        self._check_table_exists(ts)
+        self._check_table_invariant_before_normalization(ts)
 
-        if state == before_state:
-            raise ValueError("matching state to itself")
+        if ts == before_ts:
+            raise ValueError(f"matching time_step to itself ({ts=}, {before_ts=})")
 
-        self._normalize_table(before_state)
-        self._normalize_table(state)
-
-        if before_state == TransitionTableType.PREVIOUS:
-            before_table = self.previous_table
+        if before_ts is None:
+            self.normalize_previous_tables()
+            # Use the latest previous_table before policy_ts for normalization
+            before_table = self.previous_tables[
+                max(ts for ts in self.previous_tables if ts != self.policy_ts)
+            ]
         else:
-            before_table = self.transition_dfs[before_state]
-
-        # Just here to satisfy mypy
-        if before_table is None:
-            raise ValueError
+            self.normalize_table(before_ts)
+            before_table = self.tables[before_ts]
+        self.normalize_table(ts)
 
         if self.max_sentence <= 0:
-            raise ValueError("Max sentence length is not set")
+            raise ValueError(f"Max sentence length is not set: {self.max_sentence=}")
 
-        old_total_outflows = (
-            self.transition_dfs[state].drop("remaining", axis=1).sum(axis=1)
-        )
+        old_total_outflows = self.tables[ts].drop("remaining", axis=1).sum(axis=1)
         old_total_remaining = (1 - old_total_outflows).cumprod()
 
         # set normalized probabilities equal to 'before' for desired outflows
-        self.transition_dfs[state].loc[:, outflows] = before_table.loc[:, outflows]
+        self.tables[ts].loc[:, outflows] = before_table.loc[:, outflows]
 
-        new_total_outflows = (
-            self.transition_dfs[state].drop("remaining", axis=1).sum(axis=1)
-        )
+        new_total_outflows = self.tables[ts].drop("remaining", axis=1).sum(axis=1)
         # will change as we go, so can't cumprod all at once
         new_total_remaining = 1 - new_total_outflows
 
@@ -477,16 +462,19 @@ class TransitionTable:
             ]
 
             # re-normalize un-affected outflows for this row
-            self.transition_dfs[state].loc[
-                sentence_length, ~self.transition_dfs[state].columns.isin(outflows)
+            self.tables[ts].loc[
+                sentence_length, ~self.tables[ts].columns.isin(outflows)
             ] *= (
                 old_total_remaining[sentence_length - 1]
                 / new_total_remaining[sentence_length - 1]
             )
 
         # revert altered table back to un-normalized
-        self.unnormalize_table(before_state)
-        self.unnormalize_table(state)
+        if before_ts is None:
+            self.unnormalize_previous_tables()
+        else:
+            self.unnormalize_table(before_ts)
+        self.unnormalize_table(ts)
 
     def apply_reductions(
         self,
@@ -524,48 +512,52 @@ class TransitionTable:
         if (affected_LOS[1] is None) or (affected_LOS[1] > self.max_sentence + 1):
             affected_LOS[1] = self.max_sentence + 1
 
-        df_name = self.get_df_name_from_retroactive(retroactive)
+        time_steps = self.get_time_steps_from_retroactive(retroactive)
 
-        self._check_table_invariant_before_normalization(df_name)
+        for ts in time_steps:
+            self._check_table_invariant_before_normalization(ts)
 
         for _, row in reduction_df.iterrows():
             for sentence_length in range(affected_LOS[0], affected_LOS[1]):  # type: ignore
-                # record population to re-distribute
-                sentence_count = (
-                    self.transition_dfs[df_name].loc[sentence_length, row.outflow]
-                    * row.affected_fraction
-                )
-
-                # start by clearing df entry that's getting re-distributed
-                self.transition_dfs[df_name].loc[sentence_length, row.outflow] *= (
-                    1 - row.affected_fraction
-                )
-
-                # calculate new sentence length
-                if reduction_type == "*":
-                    new_sentence_length = max(
-                        [sentence_length * (1 - row.reduction_size), 1]
-                    )
-                elif reduction_type == "+":
-                    new_sentence_length = max([sentence_length - row.reduction_size, 1])
-                else:
-                    raise RuntimeError(
-                        f"reduction type {reduction_type} not recognized (must be '*' or '+')"
+                for ts in time_steps:
+                    # record population to re-distribute
+                    sentence_count = (
+                        self.tables[ts].loc[sentence_length, row.outflow]
+                        * row.affected_fraction
                     )
 
-                # separate out non-integer sentence length into one chunk rounded up and one chunk rounded down,
-                #   weighted by where in the middle actual sentence falls
-                longer_bit = (new_sentence_length % 1) * sentence_count
-                shorter_bit = sentence_count - longer_bit
+                    # start by clearing df entry that's getting re-distributed
+                    self.tables[ts].loc[sentence_length, row.outflow] *= (
+                        1 - row.affected_fraction
+                    )
 
-                # add in new sentence length probabilities to the df
-                self.transition_dfs[df_name].loc[
-                    int(new_sentence_length), row.outflow
-                ] += shorter_bit
-                if longer_bit > 0:
-                    self.transition_dfs[df_name].loc[
-                        int(new_sentence_length) + 1, row.outflow
-                    ] += longer_bit
+                    # calculate new sentence length
+                    if reduction_type == "*":
+                        new_sentence_length = max(
+                            [sentence_length * (1 - row.reduction_size), 1]
+                        )
+                    elif reduction_type == "+":
+                        new_sentence_length = max(
+                            [sentence_length - row.reduction_size, 1]
+                        )
+                    else:
+                        raise RuntimeError(
+                            f"reduction type {reduction_type} not recognized (must be '*' or '+')"
+                        )
+
+                    # separate out non-integer sentence length into one chunk rounded up and one chunk rounded down,
+                    #   weighted by where in the middle actual sentence falls
+                    longer_bit = (new_sentence_length % 1) * sentence_count
+                    shorter_bit = sentence_count - longer_bit
+
+                    # add in new sentence length probabilities to the df
+                    self.tables[ts].loc[
+                        int(new_sentence_length), row.outflow
+                    ] += shorter_bit
+                    if longer_bit > 0:
+                        self.tables[ts].loc[
+                            int(new_sentence_length) + 1, row.outflow
+                        ] += longer_bit
 
     def reallocate_outflow(
         self,
@@ -582,49 +574,49 @@ class TransitionTable:
         If `new_outflow` doesn't exist, create a new column for it. If null, just scale down (BE VERY USING NULL,
             EASY TO MESS UP NORMALIZATION)
         """
-        df_name = self.get_df_name_from_retroactive(retroactive)
+        time_steps = self.get_time_steps_from_retroactive(retroactive)
         # ensure tables haven't been normalized already
-        self._check_table_invariant_before_normalization(df_name)
+        for ts in time_steps:
+            self._check_table_invariant_before_normalization(ts)
 
-        if (
-            reallocation_type == "*"
-            and not reallocation_df.new_outflow.isin(self.transition_dfs[df_name]).all()
-        ):
-            raise ValueError(
-                "Cannot use scaling methodology if new_outflow not already in transition table"
-            )
+            if (
+                reallocation_type == "*"
+                and not reallocation_df.new_outflow.isin(self.tables[ts]).all()
+            ):
+                raise ValueError(
+                    "Cannot use scaling methodology if new_outflow not already in transition table"
+                )
 
-        for _, row in reallocation_df.iterrows():
-            before_outflow = np.array(self.transition_dfs[df_name][row.outflow])
-            self.transition_dfs[df_name][row.outflow] = list(
-                before_outflow * (1 - row.affected_fraction)
-            )
+            for _, row in reallocation_df.iterrows():
+                before_outflow = np.array(self.tables[ts][row.outflow])
+                self.tables[ts][row.outflow] = list(
+                    before_outflow * (1 - row.affected_fraction)
+                )
 
-            if not row.isnull().new_outflow:
-                if reallocation_type == "+":
-                    new_outflow_value = list(
-                        np.array(self.transition_dfs[df_name].get(row.new_outflow, 0))
-                        + before_outflow * row.affected_fraction
-                    )
-                    self.transition_dfs[df_name][row.new_outflow] = new_outflow_value
-                elif reallocation_type == "*":
-                    reallocated_population = sum(before_outflow) * row.affected_fraction
-                    new_outflow_population = sum(
-                        self.transition_dfs[df_name][row.new_outflow]
-                    )
-                    scale_factor = 1 + reallocated_population / new_outflow_population
-                    updated_new_outflow = (
-                        np.array(self.transition_dfs[df_name][row.new_outflow])
-                        * scale_factor
-                    )
-                    self.transition_dfs[df_name][row.new_outflow] = list(
-                        updated_new_outflow
-                    )
+                if not row.isnull().new_outflow:
+                    if reallocation_type == "+":
+                        new_outflow_value = list(
+                            np.array(self.tables[ts].get(row.new_outflow, 0))
+                            + before_outflow * row.affected_fraction
+                        )
+                        self.tables[ts][row.new_outflow] = new_outflow_value
+                    elif reallocation_type == "*":
+                        reallocated_population = (
+                            sum(before_outflow) * row.affected_fraction
+                        )
+                        new_outflow_population = sum(self.tables[ts][row.new_outflow])
+                        scale_factor = (
+                            1 + reallocated_population / new_outflow_population
+                        )
+                        updated_new_outflow = (
+                            np.array(self.tables[ts][row.new_outflow]) * scale_factor
+                        )
+                        self.tables[ts][row.new_outflow] = list(updated_new_outflow)
 
-                else:
-                    raise RuntimeError(
-                        f"reallocation type {reallocation_type} not recognized (must be '*' or '+')"
-                    )
+                    else:
+                        raise RuntimeError(
+                            f"reallocation type {reallocation_type} not recognized (must be '*' or '+')"
+                        )
 
     def abolish_mandatory_minimum(
         self,
@@ -702,21 +694,24 @@ class TransitionTable:
         retroactive: bool = False,
     ) -> None:
         """Remove all technical revocations that happen after the latest completion duration."""
-        df_name = self.get_df_name_from_retroactive(retroactive)
-        technical_transitions = self.transition_dfs[df_name][technical_outflow]
-        release_transitions = self.transition_dfs[df_name][release_outflow]
+        time_steps = self.get_time_steps_from_retroactive(retroactive)
+        for ts in time_steps:
+            technical_transitions = self.tables[ts][technical_outflow]
+            release_transitions = self.tables[ts][release_outflow]
 
-        # get max completion duration
-        max_release_duration = release_transitions[release_transitions > 0].index.max()
-        chopped_indices = technical_transitions.index > max_release_duration
+            # get max completion duration
+            max_release_duration = release_transitions[
+                release_transitions > 0
+            ].index.max()
+            chopped_indices = technical_transitions.index > max_release_duration
 
-        # get population to reallocate
-        chopped_population = technical_transitions[chopped_indices].sum()
+            # get population to reallocate
+            chopped_population = technical_transitions[chopped_indices].sum()
 
-        # chop technicals
-        self.transition_dfs[df_name].loc[chopped_indices, technical_outflow] = 0
+            # chop technicals
+            self.tables[ts].loc[chopped_indices, technical_outflow] = 0
 
-        # reallocate to release
-        self.transition_dfs[df_name].loc[
-            max_release_duration, release_outflow
-        ] += chopped_population
+            # reallocate to release
+            self.tables[ts].loc[
+                max_release_duration, release_outflow
+            ] += chopped_population

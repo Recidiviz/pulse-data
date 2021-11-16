@@ -18,20 +18,19 @@
 
 import unittest
 from functools import partial
-import pandas as pd
-import numpy as np
-from pandas.testing import assert_frame_equal, assert_series_equal, assert_index_equal
 
+import numpy as np
+import pandas as pd
+from pandas.testing import assert_frame_equal, assert_index_equal, assert_series_equal
+
+from recidiviz.calculator.modeling.population_projection.spark_policy import SparkPolicy
 from recidiviz.calculator.modeling.population_projection.transition_table import (
     TransitionTable,
 )
-
 from recidiviz.calculator.modeling.population_projection.utils.transitions_utils import (
+    MIN_POSSIBLE_POLICY_TS,
     SIG_FIGS,
-    TransitionTableType,
 )
-
-from recidiviz.calculator.modeling.population_projection.spark_policy import SparkPolicy
 
 
 class TestTransitionTable(unittest.TestCase):
@@ -46,9 +45,9 @@ class TestTransitionTable(unittest.TestCase):
                 "compartment": ["test_compartment"] * 5,
             }
         )
-        self.prev_table = TransitionTable(-9999, [])
-        self.prev_table.generate_transition_table(
-            TransitionTableType.AFTER, self.test_data
+        self.prev_table = TransitionTable(MIN_POSSIBLE_POLICY_TS, [])
+        self.prev_table.generate_transition_tables(
+            [MIN_POSSIBLE_POLICY_TS], self.test_data
         )
 
 
@@ -58,15 +57,15 @@ class TestInitialization(TestTransitionTable):
     def test_normalize_transitions_requires_non_normalized_before_table(self) -> None:
         """Tests that transitory transitions table rejects a pre-normalized 'previous' table"""
         # uses its own prev_table because we don't want to normalize the general-use one
-        prev_table = TransitionTable(-9999, [])
-        prev_table.generate_transition_table(TransitionTableType.AFTER, self.test_data)
+        prev_table = TransitionTable(MIN_POSSIBLE_POLICY_TS, [])
+        prev_table.generate_transition_tables([MIN_POSSIBLE_POLICY_TS], self.test_data)
         prev_table.normalize_transitions()
 
         with self.assertRaises(ValueError):
             TransitionTable(
                 0,
                 [],
-                prev_table.get_table(TransitionTableType.AFTER),
+                {MIN_POSSIBLE_POLICY_TS: prev_table.get_after_table()},
             )
 
     def test_results_independent_of_data_order(self) -> None:
@@ -90,12 +89,16 @@ class TestInitialization(TestTransitionTable):
         transition_table_default = TransitionTable(
             5,
             compartment_policies,
-            self.prev_table.get_table(TransitionTableType.AFTER),
+            {MIN_POSSIBLE_POLICY_TS: self.prev_table.get_after_table()},
         )
         transition_table_shuffled = TransitionTable(
             5,
             compartment_policies,
-            self.prev_table.get_table(TransitionTableType.AFTER).sample(frac=1, axis=1),
+            {
+                MIN_POSSIBLE_POLICY_TS: self.prev_table.get_after_table().sample(
+                    frac=1, axis=1
+                )
+            },
         )
 
         self.assertEqual(transition_table_default, transition_table_shuffled)
@@ -119,28 +122,24 @@ class TestPolicyFunctions(TestTransitionTable):
             TransitionTable(
                 5,
                 compartment_policies,
-                self.prev_table.get_table(TransitionTableType.AFTER),
+                {MIN_POSSIBLE_POLICY_TS: self.prev_table.get_after_table()},
             )
 
     def test_unnormalized_table_inverse_of_normalize_table(self) -> None:
         transition_table = TransitionTable(
             5,
             [],
-            self.prev_table.get_table(TransitionTableType.AFTER),
+            {MIN_POSSIBLE_POLICY_TS: self.prev_table.get_after_table()},
         )
-        original_before_table = transition_table.transition_dfs[
-            TransitionTableType.BEFORE
-        ].copy()
+        original_before_table = transition_table.tables[MIN_POSSIBLE_POLICY_TS].copy()
         # 'normalize' table (in the classical, mathematical sense) to match scale of unnormalized table
         original_before_table /= original_before_table.sum().sum()
 
-        transition_table._normalize_table(  # pylint: disable=protected-access
-            TransitionTableType.BEFORE
-        )
-        transition_table.unnormalize_table(TransitionTableType.BEFORE)
+        transition_table.normalize_table(MIN_POSSIBLE_POLICY_TS)
+        transition_table.unnormalize_table(MIN_POSSIBLE_POLICY_TS)
         assert_frame_equal(
             pd.DataFrame(original_before_table),
-            pd.DataFrame(transition_table.transition_dfs[TransitionTableType.BEFORE]),
+            pd.DataFrame(transition_table.tables[MIN_POSSIBLE_POLICY_TS]),
         )
 
     def test_alternate_transitions_data_equal_to_differently_instantiated_transition_table(
@@ -165,23 +164,23 @@ class TestPolicyFunctions(TestTransitionTable):
         transition_table = TransitionTable(
             5,
             [policy_function],
-            self.prev_table.get_table(TransitionTableType.AFTER),
+            {MIN_POSSIBLE_POLICY_TS: self.prev_table.get_after_table()},
         )
 
-        alternate_prev_table = TransitionTable(-9999, [])
-        alternate_prev_table.generate_transition_table(
-            TransitionTableType.AFTER, alternate_data
+        alternate_prev_table = TransitionTable(MIN_POSSIBLE_POLICY_TS, [])
+        alternate_prev_table.generate_transition_tables(
+            [MIN_POSSIBLE_POLICY_TS], alternate_data
         )
 
         alternate_data_table = TransitionTable(
             5,
             [],
-            alternate_prev_table.get_table(TransitionTableType.AFTER),
+            {MIN_POSSIBLE_POLICY_TS: alternate_prev_table.get_after_table()},
         )
 
         assert_frame_equal(
-            transition_table.transition_dfs[TransitionTableType.AFTER],
-            alternate_data_table.transition_dfs[TransitionTableType.AFTER],
+            transition_table.tables[5],
+            alternate_data_table.tables[5],
         )
 
     def test_preserve_normalized_outflow_behavior_preserves_normalized_outflow_behavior(
@@ -199,7 +198,7 @@ class TestPolicyFunctions(TestTransitionTable):
                 policy_fn=partial(
                     TransitionTable.preserve_normalized_outflow_behavior,
                     outflows=["prison"],
-                    state=TransitionTableType.BEFORE,
+                    ts=MIN_POSSIBLE_POLICY_TS,
                 ),
                 sub_population={"compartment": "test_compartment"},
                 spark_compartment="test_compartment",
@@ -211,21 +210,21 @@ class TestPolicyFunctions(TestTransitionTable):
         transition_table = TransitionTable(
             5,
             compartment_policies,
-            self.prev_table.get_table(TransitionTableType.AFTER),
+            {MIN_POSSIBLE_POLICY_TS: self.prev_table.get_after_table()},
         )
 
         baseline_transitions = TransitionTable(
             5,
             [],
-            self.prev_table.get_table(TransitionTableType.AFTER),
+            {MIN_POSSIBLE_POLICY_TS: self.prev_table.get_after_table()},
         )
 
         transition_table.normalize_transitions()
         baseline_transitions.normalize_transitions()
 
         assert_series_equal(
-            baseline_transitions.transition_dfs[TransitionTableType.BEFORE]["prison"],
-            transition_table.transition_dfs[TransitionTableType.BEFORE]["prison"],
+            baseline_transitions.tables[MIN_POSSIBLE_POLICY_TS]["prison"],
+            transition_table.tables[MIN_POSSIBLE_POLICY_TS]["prison"],
         )
 
     def test_apply_reduction_with_trivial_reductions_doesnt_change_transition_table(
@@ -278,12 +277,12 @@ class TestPolicyFunctions(TestTransitionTable):
         transition_table = TransitionTable(
             5,
             compartment_policies,
-            self.prev_table.get_table(TransitionTableType.AFTER),
+            {MIN_POSSIBLE_POLICY_TS: self.prev_table.get_after_table()},
         )
 
         assert_frame_equal(
-            transition_table.previous_table,
-            transition_table.transition_dfs[TransitionTableType.AFTER],
+            transition_table.previous_tables[MIN_POSSIBLE_POLICY_TS],
+            transition_table.tables[5],
         )
 
     def test_apply_reductions_matches_example_by_hand(self) -> None:
@@ -311,7 +310,7 @@ class TestPolicyFunctions(TestTransitionTable):
         transition_table = TransitionTable(
             5,
             compartment_policy,
-            self.prev_table.get_table(TransitionTableType.AFTER),
+            {MIN_POSSIBLE_POLICY_TS: self.prev_table.get_after_table()},
         )
 
         expected_result = pd.DataFrame(
@@ -326,9 +325,7 @@ class TestPolicyFunctions(TestTransitionTable):
         expected_result.columns.name = "outflow_to"
 
         assert_frame_equal(
-            round(
-                transition_table.transition_dfs[TransitionTableType.BEFORE], SIG_FIGS
-            ),
+            round(transition_table.tables[MIN_POSSIBLE_POLICY_TS], SIG_FIGS),
             round(expected_result, SIG_FIGS),
         )
 
@@ -360,18 +357,12 @@ class TestPolicyFunctions(TestTransitionTable):
         transition_table = TransitionTable(
             5,
             compartment_policy,
-            self.prev_table.get_table(TransitionTableType.AFTER),
+            {MIN_POSSIBLE_POLICY_TS: self.prev_table.get_after_table()},
         )
 
         assert_frame_equal(
-            round(
-                transition_table.transition_dfs[TransitionTableType.AFTER].loc[6:],
-                SIG_FIGS,
-            ),
-            round(
-                self.prev_table.transition_dfs[TransitionTableType.AFTER].loc[6:],
-                SIG_FIGS,
-            ),
+            round(transition_table.tables[5].loc[6:], SIG_FIGS),
+            round(self.prev_table.tables[MIN_POSSIBLE_POLICY_TS].loc[6:], SIG_FIGS),
         )
 
     def test_reallocate_outflow_preserves_total_population(self) -> None:
@@ -399,39 +390,40 @@ class TestPolicyFunctions(TestTransitionTable):
         transition_table = TransitionTable(
             5,
             compartment_policies,
-            self.prev_table.get_table(TransitionTableType.AFTER),
+            {MIN_POSSIBLE_POLICY_TS: self.prev_table.get_after_table()},
         )
 
-        if transition_table.previous_table is None:
-            raise ValueError("previous table is not populated")
+        if not transition_table.previous_tables:
+            raise ValueError("previous tables are not populated")
 
         assert_series_equal(
-            transition_table.transition_dfs[TransitionTableType.BEFORE].sum(axis=1),
-            transition_table.previous_table.sum(axis=1),
+            transition_table.tables[MIN_POSSIBLE_POLICY_TS].sum(axis=1),
+            transition_table.previous_tables[MIN_POSSIBLE_POLICY_TS].sum(axis=1),
         )
 
     def test_extend_table_extends_table(self) -> None:
         """make sure CompartmentTransitions.extend_table is actually adding empty rows"""
-        state = TransitionTableType.BEFORE
         transition_table = TransitionTable(
             5,
             [],
-            self.prev_table.get_table(TransitionTableType.AFTER),
+            {MIN_POSSIBLE_POLICY_TS: self.prev_table.get_after_table()},
         )
-        expected_df_columns = transition_table.transition_dfs[state].columns
-        expected_df_index_name = transition_table.transition_dfs[state].index.name
+        expected_df_columns = transition_table.tables[MIN_POSSIBLE_POLICY_TS].columns
+        expected_df_index_name = transition_table.tables[
+            MIN_POSSIBLE_POLICY_TS
+        ].index.name
         transition_table.extend_tables(15)
         self.assertEqual(
-            set(transition_table.transition_dfs[state].index),
+            set(transition_table.tables[MIN_POSSIBLE_POLICY_TS].index),
             set(range(1, 16)),
         )
         # Test the DataFrame multi-index was not changed during the extend
         assert_index_equal(
-            transition_table.transition_dfs[state].columns,
+            transition_table.tables[MIN_POSSIBLE_POLICY_TS].columns,
             expected_df_columns,
         )
         self.assertEqual(
-            transition_table.transition_dfs[state].index.name,
+            transition_table.tables[MIN_POSSIBLE_POLICY_TS].index.name,
             expected_df_index_name,
         )
 
@@ -458,13 +450,13 @@ class TestPolicyFunctions(TestTransitionTable):
         transition_table = TransitionTable(
             5,
             compartment_policies,
-            self.prev_table.get_table(TransitionTableType.AFTER),
+            {MIN_POSSIBLE_POLICY_TS: self.prev_table.get_after_table()},
         )
 
         baseline_transitions = TransitionTable(
             5,
             [],
-            self.prev_table.get_table(TransitionTableType.AFTER),
+            {MIN_POSSIBLE_POLICY_TS: self.prev_table.get_after_table()},
         )
 
         transition_table.normalize_transitions()
@@ -472,38 +464,27 @@ class TestPolicyFunctions(TestTransitionTable):
 
         # check total population was preserved
         assert_series_equal(
-            transition_table.transition_dfs[TransitionTableType.AFTER].iloc[0],
-            baseline_transitions.transition_dfs[TransitionTableType.AFTER].iloc[0],
+            transition_table.tables[5].iloc[0],
+            baseline_transitions.tables[5].iloc[0],
         )
 
         # check technicals chopped
-        transition_table.unnormalize_table(TransitionTableType.AFTER)
-        self.assertTrue(
-            (
-                transition_table.transition_dfs[TransitionTableType.AFTER].loc[
-                    3:, "prison"
-                ]
-                == 0
-            ).all()
-        )
-        self.assertTrue(
-            transition_table.transition_dfs[TransitionTableType.AFTER].loc[1, "prison"]
-            != 0
-        )
+        transition_table.unnormalize_table(5)
+        self.assertTrue((transition_table.tables[5].loc[3:, "prison"] == 0).all())
+        self.assertTrue(transition_table.tables[5].loc[1, "prison"] != 0)
 
     def test_abolish_mandatory_minimum_matches_example_by_hand(self) -> None:
         normal_data = pd.DataFrame(
             {
-                "compartment_duration": np.random.normal(10, 2, 5000).clip(0).round(),
-                "total_population": [1] * 5000,
+                "compartment_duration": range(4, 17),
+                "total_population": [1, 4, 9, 16, 25, 36, 100, 36, 25, 16, 9, 4, 1],
             }
         )
-        normal_data = normal_data.groupby("compartment_duration").sum().reset_index()
         normal_data["outflow_to"] = "release"
 
         normal_prev_table = TransitionTable(-9999, [])
-        normal_prev_table.generate_transition_table(
-            TransitionTableType.AFTER, normal_data
+        normal_prev_table.generate_transition_tables(
+            [MIN_POSSIBLE_POLICY_TS], normal_data
         )
 
         compartment_policies = [
@@ -525,14 +506,12 @@ class TestPolicyFunctions(TestTransitionTable):
         transition_table = TransitionTable(
             5,
             compartment_policies,
-            normal_prev_table.get_table(TransitionTableType.AFTER),
+            {MIN_POSSIBLE_POLICY_TS: normal_prev_table.get_after_table()},
         )
 
         expected_mean = 10 - 2 * 0.5 / 2
         calculated_mean = np.average(
-            transition_table.transition_dfs[TransitionTableType.AFTER].release.index,
-            weights=transition_table.transition_dfs[
-                TransitionTableType.AFTER
-            ].release.values,
+            transition_table.tables[5].release.index,
+            weights=transition_table.tables[5].release.values,
         )
         self.assertEqual(np.round(expected_mean, 1), np.round(calculated_mean, 1))
