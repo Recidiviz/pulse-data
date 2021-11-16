@@ -25,6 +25,9 @@ from unittest.mock import patch
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
+from recidiviz.reporting.context.overdue_discharge_alert.context import (
+    OverdueDischargeAlertContext,
+)
 from recidiviz.reporting.context.po_monthly_report.constants import ReportType
 from recidiviz.reporting.context.po_monthly_report.context import PoMonthlyReportContext
 from recidiviz.reporting.context.report_context import ReportContext
@@ -74,9 +77,22 @@ class EmailGenerationTests(TestCase):
     def report_type(self) -> ReportType:
         raise NotImplementedError
 
+    @classmethod
     @abstractmethod
-    def fixture_file_path(self) -> str:
+    def fixture_file_path(cls) -> str:
         raise NotImplementedError
+
+    @staticmethod
+    def fixture_for_report_type(report_type: ReportType) -> str:
+        subclasses: List[
+            Type[EmailGenerationTests]
+        ] = EmailGenerationTests.__subclasses__()
+
+        for subclass in subclasses:
+            if subclass().report_type == report_type:
+                return subclass.fixture_file_path()
+
+        raise ValueError(f"Could not find subclass for report type {report_type}")
 
     @property
     @abstractmethod
@@ -86,7 +102,6 @@ class EmailGenerationTests(TestCase):
     def test_generate(self) -> None:
         """Test that the prepared html is added to Google Cloud Storage with the correct bucket name, filepath,
         and prepared html template for the report context."""
-
         with open(self.fixture_file_path(), encoding="utf-8") as fixture_file:
             fixture_data = json.loads(fixture_file.read())
 
@@ -107,7 +122,7 @@ class EmailGenerationTests(TestCase):
             report_context = self.report_context_type(batch, recipient)
 
             prepared_html = report_context.render_html()
-            generate(batch, report_context)
+            generate(batch, recipient, report_context)
 
             bucket_name = "recidiviz-test-report-html"
             bucket_filepath = f"{state_code.value}/{self.mock_batch_id}/html/{recipient.email_address}.html"
@@ -139,7 +154,7 @@ class EmailGenerationTests(TestCase):
                 )
 
                 report_context = self.report_context_type(batch, recipient)
-                generate(batch, report_context)
+                generate(batch, recipient, report_context)
 
             self.assertEqual(self.gcs_file_system.all_paths, [])
 
@@ -161,7 +176,8 @@ class POMonthlyReportGenerationTest(EmailGenerationTests):
     def report_type(self) -> ReportType:
         return ReportType.POMonthlyReport
 
-    def fixture_file_path(self) -> str:
+    @classmethod
+    def fixture_file_path(cls) -> str:
         return os.path.join(
             f"{os.path.dirname(__file__)}/context/po_monthly_report/po_monthly_report_data_fixture.json"
         )
@@ -184,7 +200,30 @@ class TopOpportunityGenerationTest(EmailGenerationTests):
     def report_type(self) -> ReportType:
         return ReportType.TopOpportunities
 
-    def fixture_file_path(self) -> str:
+    @classmethod
+    def fixture_file_path(cls) -> str:
         return os.path.join(
             f"{os.path.dirname(__file__)}/context/top_opportunities/fixtures.json"
+        )
+
+
+class OverdueDischargeAlertGenerationTest(EmailGenerationTests):
+    __test__ = True
+
+    @property
+    def report_context_type(self) -> Type[ReportContext]:
+        return OverdueDischargeAlertContext
+
+    @property
+    def report_type(self) -> ReportType:
+        return ReportType.OverdueDischargeAlert
+
+    @property
+    def supported_states(self) -> List[StateCode]:
+        return [StateCode.US_ID]
+
+    @classmethod
+    def fixture_file_path(cls) -> str:
+        return os.path.join(
+            f"{os.path.dirname(__file__)}/context/overdue_discharge_alert/overdue_discharge_alert_data_fixture.json"
         )

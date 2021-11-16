@@ -17,6 +17,10 @@
 """Include constants for use by PO Monthly Reports."""
 from enum import Enum
 
+import attr
+
+from recidiviz.common.constants.states import StateCode
+
 DEFAULT_EMAIL_SUBJECT = "Your monthly Recidiviz report"
 
 DEFAULT_MESSAGE_BODY_KEY = "default_message_body"
@@ -54,6 +58,14 @@ class OfficerHighlightComparison(Enum):
 class ReportType(Enum):
     POMonthlyReport = "po_monthly_report"
     TopOpportunities = "top_opportunities"
+    OverdueDischargeAlert = "overdue_discharge_alert"
+
+
+@attr.s(auto_attribs=True)
+class Batch:
+    state_code: StateCode
+    report_type: ReportType
+    batch_id: str
 
 
 BRAND_STYLES = {
