@@ -45,7 +45,6 @@ from recidiviz.calculator.pipeline.utils.person_utils import (
     ExtractPersonEventsMetadata,
     PersonMetadata,
 )
-from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
@@ -70,7 +69,6 @@ from recidiviz.persistence.entity.state.entities import (
     Gender,
     Race,
     ResidencyStatus,
-    StateCharge,
     StateIncarcerationPeriod,
     StateIncarcerationSentence,
     StatePerson,
@@ -880,15 +878,6 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
             incarceration_periods=[incarceration_period],
             supervision_periods=[supervision_period],
             start_date=date(2009, 2, 9),
-            charges=[
-                StateCharge.new_with_defaults(
-                    state_code="US_XX",
-                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
-                    ncic_code="5699",
-                    statute="30A123",
-                    offense_date=date(2009, 1, 9),
-                )
-            ],
         )
 
         sentence_group = StateSentenceGroup.new_with_defaults(
@@ -932,8 +921,6 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
                 event_date=incarceration_period.admission_date,
                 facility=incarceration_period.facility,
                 county_of_residence=_COUNTY_OF_RESIDENCE,
-                most_serious_offense_ncic_code="5699",
-                most_serious_offense_statute="30A123",
                 specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             ),
             IncarcerationCommitmentFromSupervisionAdmissionEvent(
@@ -1078,15 +1065,6 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
                 post_mortem_incarceration_period_2,
             ],
             start_date=date(2009, 2, 9),
-            charges=[
-                StateCharge.new_with_defaults(
-                    state_code="US_XX",
-                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
-                    ncic_code="5699",
-                    statute="30A123",
-                    offense_date=date(2009, 1, 9),
-                )
-            ],
         )
 
         sentence_group = StateSentenceGroup.new_with_defaults(
@@ -1131,8 +1109,6 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
                 event_date=incarceration_period_with_death.admission_date,
                 facility=incarceration_period_with_death.facility,
                 county_of_residence=_COUNTY_OF_RESIDENCE,
-                most_serious_offense_ncic_code="5699",
-                most_serious_offense_statute="30A123",
                 specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             ),
             IncarcerationCommitmentFromSupervisionAdmissionEvent(
