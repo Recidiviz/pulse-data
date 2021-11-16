@@ -16,7 +16,10 @@
 # ============================================================================
 """Converts scraped IngestInfo data to the persistence layer entity."""
 
-from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
+from recidiviz.common.ingest_metadata import (
+    LegacyStateAndJailsIngestMetadata,
+    SystemLevel,
+)
 from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo
 from recidiviz.persistence.ingest_info_converter.base_converter import (
     BaseConverter,
@@ -33,13 +36,15 @@ from recidiviz.utils import trace
 
 @trace.span
 def convert_to_persistence_entities(
-    ingest_info: IngestInfo, metadata: IngestMetadata
+    ingest_info: IngestInfo, metadata: LegacyStateAndJailsIngestMetadata
 ) -> EntityDeserializationResult:
     converter = _get_converter(ingest_info, metadata)
     return converter.run_convert()
 
 
-def _get_converter(ingest_info: IngestInfo, metadata: IngestMetadata) -> BaseConverter:
+def _get_converter(
+    ingest_info: IngestInfo, metadata: LegacyStateAndJailsIngestMetadata
+) -> BaseConverter:
     system_level = metadata.system_level
 
     if system_level == SystemLevel.COUNTY:

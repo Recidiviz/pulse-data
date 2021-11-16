@@ -25,7 +25,7 @@ from recidiviz.common.constants.county.booking import (
     ReleaseReason,
 )
 from recidiviz.common.fid import validate_fid
-from recidiviz.common.ingest_metadata import IngestMetadata
+from recidiviz.common.ingest_metadata import LegacyStateAndJailsIngestMetadata
 from recidiviz.common.str_field_utils import normalize, parse_date
 from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
     fn,
@@ -97,7 +97,7 @@ def _set_custody_status_if_needed(new):
 
 
 def _parse_release_date(
-    proto, metadata: IngestMetadata
+    proto, metadata: LegacyStateAndJailsIngestMetadata
 ) -> Tuple[Optional[date], Optional[date], Optional[bool]]:
     """Reads release_date and projected_release_date from |proto|.
 

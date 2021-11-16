@@ -25,7 +25,7 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
     StateSupervisionViolationResponseDecidingBodyType,
     StateSupervisionViolationResponseType,
 )
-from recidiviz.common.ingest_metadata import IngestMetadata
+from recidiviz.common.ingest_metadata import LegacyStateAndJailsIngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import StateSupervisionViolationResponse
 from recidiviz.persistence.entity.state import entities
 
@@ -35,7 +35,7 @@ from recidiviz.persistence.entity.state import entities
 def copy_fields_to_builder(
     supervision_violation_response_builder: entities.StateSupervisionViolationResponse.Builder,
     proto: StateSupervisionViolationResponse,
-    metadata: IngestMetadata,
+    metadata: LegacyStateAndJailsIngestMetadata,
 ) -> None:
     """Converts an ingest_info proto StateSupervisionViolationResponse to a
     persistence entity."""

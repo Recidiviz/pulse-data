@@ -22,7 +22,7 @@ from recidiviz.common.constants.defaulting_and_normalizing_enum_parser import (
     DefaultingAndNormalizingEnumParser,
 )
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
-from recidiviz.common.ingest_metadata import IngestMetadata
+from recidiviz.common.ingest_metadata import LegacyStateAndJailsIngestMetadata
 from recidiviz.ingest.models.ingest_info import StateSupervisionCaseTypeEntry
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state.deserialize_entity_factories import (
@@ -33,7 +33,7 @@ from recidiviz.persistence.entity.state.deserialize_entity_factories import (
 # TODO(#8905): Delete this file once all states have been migrated to v2 ingest
 #  mappings.
 def convert(
-    proto: StateSupervisionCaseTypeEntry, metadata: IngestMetadata
+    proto: StateSupervisionCaseTypeEntry, metadata: LegacyStateAndJailsIngestMetadata
 ) -> entities.StateSupervisionCaseTypeEntry:
     """Converts an ingest_info proto StateSupervisionCaseTypeEntry to a
     persistence entity.

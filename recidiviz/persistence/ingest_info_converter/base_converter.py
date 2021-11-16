@@ -26,7 +26,7 @@ import attr
 
 from recidiviz.common.constants.entity_enum import EnumParsingError
 from recidiviz.common.constants.person_characteristics import PROTECTED_CLASSES
-from recidiviz.common.ingest_metadata import IngestMetadata
+from recidiviz.common.ingest_metadata import LegacyStateAndJailsIngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo
 from recidiviz.persistence.entity.entities import EntityPersonType
 
@@ -42,7 +42,9 @@ class EntityDeserializationResult(Generic[EntityPersonType]):
 class BaseConverter(Generic[EntityPersonType]):
     """Base class for all data converters of IngestInfo proto objects."""
 
-    def __init__(self, ingest_info: IngestInfo, metadata: IngestMetadata):
+    def __init__(
+        self, ingest_info: IngestInfo, metadata: LegacyStateAndJailsIngestMetadata
+    ):
         self.ingest_info = copy.deepcopy(ingest_info)
         self.metadata = metadata
 

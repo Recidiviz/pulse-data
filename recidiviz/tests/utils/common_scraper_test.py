@@ -28,7 +28,10 @@ from recidiviz.common.constants.person_characteristics import (
     Ethnicity,
     Race,
 )
-from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
+from recidiviz.common.ingest_metadata import (
+    LegacyStateAndJailsIngestMetadata,
+    SystemLevel,
+)
 from recidiviz.ingest.models import ingest_info
 from recidiviz.ingest.models.ingest_info import IngestInfo
 from recidiviz.ingest.models.single_count import SingleCount
@@ -211,13 +214,15 @@ class CommonScraperTest(Generic[ScraperT], IndividualIngestTest):
                 diff = set(expected_single_counts) ^ set(scrape_data.single_counts)
                 assert not diff
 
-            metadata: IngestMetadata = IngestMetadata(
-                region=self.scraper.region.region_code,
-                jurisdiction_id=self.scraper.region.jurisdiction_id,
-                ingest_time=_FAKE_SCRAPER_START_TIME,
-                enum_overrides=self.scraper.get_enum_overrides(),
-                system_level=SystemLevel.COUNTY,
-                database_key=SQLAlchemyDatabaseKey.for_schema(SchemaType.JAILS),
+            metadata: LegacyStateAndJailsIngestMetadata = (
+                LegacyStateAndJailsIngestMetadata(
+                    region=self.scraper.region.region_code,
+                    jurisdiction_id=self.scraper.region.jurisdiction_id,
+                    ingest_time=_FAKE_SCRAPER_START_TIME,
+                    enum_overrides=self.scraper.get_enum_overrides(),
+                    system_level=SystemLevel.COUNTY,
+                    database_key=SQLAlchemyDatabaseKey.for_schema(SchemaType.JAILS),
+                )
             )
 
             if scrape_data.ingest_info and expected_ingest_info:

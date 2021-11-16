@@ -27,7 +27,7 @@ from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactStatus,
     StateSupervisionContactType,
 )
-from recidiviz.common.ingest_metadata import IngestMetadata
+from recidiviz.common.ingest_metadata import LegacyStateAndJailsIngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import StateSupervisionContact
 from recidiviz.persistence.entity.state import entities
 
@@ -37,7 +37,7 @@ from recidiviz.persistence.entity.state import entities
 def copy_fields_to_builder(
     supervision_contact_builder: entities.StateSupervisionContact.Builder,
     proto: StateSupervisionContact,
-    metadata: IngestMetadata,
+    metadata: LegacyStateAndJailsIngestMetadata,
 ) -> None:
     """Mutates the provided |supervision_contact_builder| by converting an ingest_info proto StateSupervisionContact.
 

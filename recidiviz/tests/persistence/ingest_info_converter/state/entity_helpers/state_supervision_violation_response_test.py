@@ -31,9 +31,11 @@ from recidiviz.persistence.entity.state.deserialize_entity_factories import (
 from recidiviz.persistence.ingest_info_converter.state.entity_helpers import (
     state_supervision_violation_response,
 )
-from recidiviz.tests.persistence.database.database_test_utils import FakeIngestMetadata
+from recidiviz.tests.persistence.database.database_test_utils import (
+    FakeLegacyStateAndJailsIngestMetadata,
+)
 
-_EMPTY_METADATA = FakeIngestMetadata.for_state("US_XX")
+_EMPTY_METADATA = FakeLegacyStateAndJailsIngestMetadata.for_state("US_XX")
 
 
 class StateSupervisionViolationResponseConverterTest(unittest.TestCase):

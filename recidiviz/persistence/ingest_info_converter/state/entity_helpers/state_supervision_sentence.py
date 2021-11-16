@@ -25,7 +25,7 @@ from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_sentence import (
     StateSupervisionSentenceSupervisionType,
 )
-from recidiviz.common.ingest_metadata import IngestMetadata
+from recidiviz.common.ingest_metadata import LegacyStateAndJailsIngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import StateSupervisionSentence
 from recidiviz.persistence.entity.state import entities
 
@@ -35,7 +35,7 @@ from recidiviz.persistence.entity.state import entities
 def copy_fields_to_builder(
     supervision_sentence_builder: entities.StateSupervisionSentence.Builder,
     proto: StateSupervisionSentence,
-    metadata: IngestMetadata,
+    metadata: LegacyStateAndJailsIngestMetadata,
 ) -> None:
     """Mutates the provided |supervision_sentence_builder| by converting an
     ingest_info proto StateSupervisionSentence.

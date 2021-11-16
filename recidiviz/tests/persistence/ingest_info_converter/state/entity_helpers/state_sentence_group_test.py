@@ -29,9 +29,11 @@ from recidiviz.persistence.entity.state.deserialize_entity_factories import (
 from recidiviz.persistence.ingest_info_converter.state.entity_helpers import (
     state_sentence_group,
 )
-from recidiviz.tests.persistence.database.database_test_utils import FakeIngestMetadata
+from recidiviz.tests.persistence.database.database_test_utils import (
+    FakeLegacyStateAndJailsIngestMetadata,
+)
 
-METADATA = FakeIngestMetadata.for_state("us_nd")
+METADATA = FakeLegacyStateAndJailsIngestMetadata.for_state("us_nd")
 
 
 class StateSentenceGroupConverterTest(unittest.TestCase):

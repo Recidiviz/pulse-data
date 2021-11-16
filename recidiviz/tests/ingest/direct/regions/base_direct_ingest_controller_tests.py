@@ -35,9 +35,6 @@ from recidiviz.ingest.direct import regions
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
 )
-from recidiviz.ingest.direct.types.direct_ingest_instance import (
-    DirectIngestInstance,
-)
 from recidiviz.ingest.direct.controllers.direct_ingest_instance_status_manager import (
     DirectIngestInstanceStatusManager,
 )
@@ -47,6 +44,7 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
 from recidiviz.ingest.direct.controllers.legacy_ingest_view_processor import (
     LegacyIngestViewProcessor,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.models.ingest_info import IngestInfo
 from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.database.schema.operations import schema as operations_schema
@@ -290,7 +288,9 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
 
         # pylint:disable=protected-access
         final_info = processor._parse_ingest_info(
-            args, fixture_contents_handle, self.controller._get_ingest_metadata(args)
+            args,
+            fixture_contents_handle,
+            self.controller._get_ingest_metadata(args),
         )
 
         print_visible_header_label("FINAL")

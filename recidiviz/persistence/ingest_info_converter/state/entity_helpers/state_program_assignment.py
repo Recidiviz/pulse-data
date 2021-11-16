@@ -26,7 +26,7 @@ from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentDischargeReason,
     StateProgramAssignmentParticipationStatus,
 )
-from recidiviz.common.ingest_metadata import IngestMetadata
+from recidiviz.common.ingest_metadata import LegacyStateAndJailsIngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import StateProgramAssignment
 from recidiviz.persistence.entity.state import entities
 
@@ -36,7 +36,7 @@ from recidiviz.persistence.entity.state import entities
 def copy_fields_to_builder(
     state_program_assignment_builder: entities.StateProgramAssignment.Builder,
     proto: StateProgramAssignment,
-    metadata: IngestMetadata,
+    metadata: LegacyStateAndJailsIngestMetadata,
 ) -> None:
     """Mutates the provided |state_program_assignment_builder| by converting an
     ingest_info proto StateProgramAssignment.

@@ -23,7 +23,7 @@ from recidiviz.common.constants.defaulting_and_normalizing_enum_parser import (
 from recidiviz.common.constants.state.state_parole_decision import (
     StateParoleDecisionOutcome,
 )
-from recidiviz.common.ingest_metadata import IngestMetadata
+from recidiviz.common.ingest_metadata import LegacyStateAndJailsIngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import StateParoleDecision
 from recidiviz.persistence.entity.state import entities
 
@@ -33,7 +33,7 @@ from recidiviz.persistence.entity.state import entities
 def copy_fields_to_builder(
     state_parole_decision_builder: entities.StateParoleDecision.Builder,
     proto: StateParoleDecision,
-    metadata: IngestMetadata,
+    metadata: LegacyStateAndJailsIngestMetadata,
 ) -> None:
     """Mutates the provided |state_parole_decision_builder| by converting an
     ingest_info proto StateParoleDecision.

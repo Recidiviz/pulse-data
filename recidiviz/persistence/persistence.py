@@ -30,7 +30,11 @@ from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.county.booking import CustodyStatus
 from recidiviz.common.constants.county.hold import HoldStatus
 from recidiviz.common.constants.county.sentence import SentenceStatus
-from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
+from recidiviz.common.ingest_metadata import (
+    IngestMetadata,
+    LegacyStateAndJailsIngestMetadata,
+    SystemLevel,
+)
 from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo
 from recidiviz.persistence import persistence_utils
 from recidiviz.persistence.database import database
@@ -179,7 +183,7 @@ def infer_release_on_open_bookings(
         database.write_people(
             session,
             db_people,
-            IngestMetadata(
+            LegacyStateAndJailsIngestMetadata(
                 region=region_code,
                 jurisdiction_id="",
                 ingest_time=last_ingest_time,
@@ -417,7 +421,7 @@ def retry_transaction(
 @trace.span
 def write_ingest_info(
     ingest_info: IngestInfo,
-    ingest_metadata: IngestMetadata,
+    ingest_metadata: LegacyStateAndJailsIngestMetadata,
     run_txn_fn: Callable[
         [Session, MeasurementMap, Callable[[Session], bool], Optional[int]], bool
     ] = retry_transaction,
@@ -608,7 +612,9 @@ def write_entities(
         return True
 
 
-def _get_total_people(ingest_info: IngestInfo, ingest_metadata: IngestMetadata) -> int:
+def _get_total_people(
+    ingest_info: IngestInfo, ingest_metadata: LegacyStateAndJailsIngestMetadata
+) -> int:
     if ingest_metadata.system_level == SystemLevel.COUNTY:
         return len(ingest_info.people)
     return len(ingest_info.state_people)

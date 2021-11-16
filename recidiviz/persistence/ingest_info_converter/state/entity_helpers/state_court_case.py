@@ -24,7 +24,7 @@ from recidiviz.common.constants.state.state_court_case import (
     StateCourtCaseStatus,
     StateCourtType,
 )
-from recidiviz.common.ingest_metadata import IngestMetadata
+from recidiviz.common.ingest_metadata import LegacyStateAndJailsIngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import StateCourtCase
 from recidiviz.persistence.entity.state import entities
 
@@ -34,7 +34,7 @@ from recidiviz.persistence.entity.state import entities
 def copy_fields_to_builder(
     court_case_builder: entities.StateCourtCase.Builder,
     proto: StateCourtCase,
-    metadata: IngestMetadata,
+    metadata: LegacyStateAndJailsIngestMetadata,
 ) -> None:
 
     """Mutates the provided |court_case_builder| by converting an ingest_info

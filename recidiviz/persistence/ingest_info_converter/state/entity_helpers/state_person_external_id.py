@@ -18,7 +18,7 @@
 """Converts an ingest_info proto StatePersonExternalId to a persistence
 entity."""
 from recidiviz.common.common_utils import get_external_id
-from recidiviz.common.ingest_metadata import IngestMetadata
+from recidiviz.common.ingest_metadata import LegacyStateAndJailsIngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import StatePersonExternalId
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state.deserialize_entity_factories import (
@@ -29,7 +29,7 @@ from recidiviz.persistence.entity.state.deserialize_entity_factories import (
 # TODO(#8905): Delete this file once all states have been migrated to v2 ingest
 #  mappings.
 def convert(
-    proto: StatePersonExternalId, metadata: IngestMetadata
+    proto: StatePersonExternalId, metadata: LegacyStateAndJailsIngestMetadata
 ) -> entities.StatePersonExternalId:
     """Converts an ingest_info proto Hold to a persistence entity."""
     new = entities.StatePersonExternalId.builder()

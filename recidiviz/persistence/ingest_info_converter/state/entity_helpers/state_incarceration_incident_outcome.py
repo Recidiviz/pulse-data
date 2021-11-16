@@ -24,7 +24,7 @@ from recidiviz.common.constants.defaulting_and_normalizing_enum_parser import (
 from recidiviz.common.constants.state.state_incarceration_incident import (
     StateIncarcerationIncidentOutcomeType,
 )
-from recidiviz.common.ingest_metadata import IngestMetadata
+from recidiviz.common.ingest_metadata import LegacyStateAndJailsIngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import StateIncarcerationIncidentOutcome
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state.deserialize_entity_factories import (
@@ -35,7 +35,8 @@ from recidiviz.persistence.entity.state.deserialize_entity_factories import (
 # TODO(#8905): Delete this file once all states have been migrated to v2 ingest
 #  mappings.
 def convert(
-    proto: StateIncarcerationIncidentOutcome, metadata: IngestMetadata
+    proto: StateIncarcerationIncidentOutcome,
+    metadata: LegacyStateAndJailsIngestMetadata,
 ) -> entities.StateIncarcerationIncidentOutcome:
     """Converts an ingest_info proto StateIncarcerationIncidentOutcome to a
     persistence entity.

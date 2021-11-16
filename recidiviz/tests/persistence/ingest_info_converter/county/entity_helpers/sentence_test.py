@@ -22,7 +22,9 @@ from recidiviz.common.constants.county.sentence import SentenceStatus
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.county import entities
 from recidiviz.persistence.ingest_info_converter.county.entity_helpers import sentence
-from recidiviz.tests.persistence.database.database_test_utils import FakeIngestMetadata
+from recidiviz.tests.persistence.database.database_test_utils import (
+    FakeLegacyStateAndJailsIngestMetadata,
+)
 
 
 class SentenceConverterTest(unittest.TestCase):
@@ -42,7 +44,7 @@ class SentenceConverterTest(unittest.TestCase):
         sentence.copy_fields_to_builder(
             sentence_builder,
             ingest_sentence,
-            FakeIngestMetadata.for_county(
+            FakeLegacyStateAndJailsIngestMetadata.for_county(
                 region="REGION",
                 ingest_time=datetime.datetime(year=2018, month=6, day=8),
             ),
@@ -72,7 +74,7 @@ class SentenceConverterTest(unittest.TestCase):
         sentence.copy_fields_to_builder(
             sentence_builder,
             ingest_sentence,
-            FakeIngestMetadata.for_county(
+            FakeLegacyStateAndJailsIngestMetadata.for_county(
                 region="REGION",
                 ingest_time=datetime.datetime(year=2018, month=6, day=8),
             ),
@@ -101,7 +103,7 @@ class SentenceConverterTest(unittest.TestCase):
         sentence.copy_fields_to_builder(
             sentence_builder,
             ingest_sentence,
-            FakeIngestMetadata.for_county(
+            FakeLegacyStateAndJailsIngestMetadata.for_county(
                 region="REGION",
                 ingest_time=datetime.datetime(year=2018, month=6, day=8),
             ),
