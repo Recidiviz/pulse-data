@@ -1,0 +1,34 @@
+file_tag: DoPro_Participant
+file_description: |-
+  A list of all participants in the dosage probation pilot program, including their start date and treatment group. Contains one row for each participant.
+primary_key_cols:
+  - ofndr_num
+columns:
+  - name: ofndr_num
+    description: |-
+      Identifier of the person
+  - name: prgrm_strt_dt
+    is_datetime: True
+    description: |-
+      Start date for this person
+  - name: dsg_asgnmt
+    description: |-
+      Treatment arm assigned at random conditional on LSI-R score.
+    known_values:
+      - value: NULL
+        description: Dosage group, but awaiting results from LSI/GAIN assessment before being assigned to A, B, or C
+      - value: A
+        description: Dosage group, 100 total hours
+      - value: B
+        description: Dosage group, 200 total hours
+      - value: C
+        description: Dosage group, 300 total hours
+      - value: D
+        description: Control group
+  - name: updt_username
+    description: |-
+      The user who last updated this record
+  - name: updt_date
+    is_datetime: True
+    description: |-
+      Date the record was last updated
