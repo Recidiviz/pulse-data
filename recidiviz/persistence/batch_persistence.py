@@ -24,7 +24,10 @@ from typing import Dict, List, Optional, Set, Tuple
 from flask import Blueprint, request, url_for
 from opencensus.stats import aggregation, measure, view
 
-from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
+from recidiviz.common.ingest_metadata import (
+    LegacyStateAndJailsIngestMetadata,
+    SystemLevel,
+)
 from recidiviz.ingest.models import ingest_info_pb2, serialization
 from recidiviz.ingest.models.ingest_info import IngestInfo, Person
 from recidiviz.ingest.models.scrape_key import ScrapeKey
@@ -220,7 +223,7 @@ def persist_to_database(
             )
             return False
 
-        metadata = IngestMetadata(
+        metadata = LegacyStateAndJailsIngestMetadata(
             region=region_code,
             jurisdiction_id=region.jurisdiction_id,
             ingest_time=session_start_time,

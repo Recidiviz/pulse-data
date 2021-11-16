@@ -27,7 +27,10 @@ from datetime import datetime
 import requests
 import urllib3
 
-from recidiviz.ingest.ingestor import Ingestor
+from recidiviz.common.constants.enum_overrides import EnumOverrides
+from recidiviz.common.constants.standard_enum_overrides import (
+    get_standard_enum_overrides,
+)
 from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.ingest.scrape import constants, scraper_utils, sessions, tracker
 from recidiviz.ingest.scrape.constants import BATCH_PUBSUB_TYPE
@@ -57,7 +60,7 @@ class FetchPageError(Exception):
         super().__init__(msg)
 
 
-class Scraper(Ingestor, metaclass=abc.ABCMeta):
+class Scraper(metaclass=abc.ABCMeta):
     """The base for all scraper objects. It handles basic setup, scrape
     process control (start, resume, stop), web requests, task
     queueing, state tracking, and a bunch of static convenience
@@ -97,6 +100,9 @@ class Scraper(Ingestor, metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def get_initial_task(self) -> Task:
         """Returns the initial task to use for the first call."""
+
+    def get_enum_overrides(self) -> EnumOverrides:
+        return get_standard_enum_overrides()
 
     def get_region(self) -> regions.Region:
         """Retrieve the region object associated with this scraper.

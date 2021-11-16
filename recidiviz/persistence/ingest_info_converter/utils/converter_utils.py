@@ -33,7 +33,7 @@ from recidiviz.common.constants.person_characteristics import (
     RESIDENCY_STATUS_SUBSTRING_MAP,
     ResidencyStatus,
 )
-from recidiviz.common.ingest_metadata import IngestMetadata
+from recidiviz.common.ingest_metadata import LegacyStateAndJailsIngestMetadata
 from recidiviz.common.str_field_utils import normalize, parse_date, parse_dollars
 
 locale.setlocale(locale.LC_ALL, "en_US.UTF-8")
@@ -102,7 +102,7 @@ def parse_birthdate(proto, birthdate_field: str, age_field: str):
 
 
 def parse_completion_date(
-    proto, metadata: IngestMetadata
+    proto, metadata: LegacyStateAndJailsIngestMetadata
 ) -> Tuple[Optional[datetime.date], Optional[datetime.date]]:
     """Reads completion_date and projected_completion_date from |proto|.
 
@@ -176,7 +176,7 @@ def parse_residency_status(place_of_residence: str) -> ResidencyStatus:
 
 
 def parse_region_code_with_override(
-    proto, region_field_name: str, metadata: IngestMetadata
+    proto, region_field_name: str, metadata: LegacyStateAndJailsIngestMetadata
 ):
     """Returns a normalized form of the region code living on the |proto|.
 

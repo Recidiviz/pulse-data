@@ -64,7 +64,6 @@ class BaseHistoricalSnapshotUpdaterTest(TestCase):
 
             metadata = IngestMetadata(
                 region="somewhere",
-                jurisdiction_id="12345",
                 ingest_time=ingest_time,
                 system_level=system_level,
                 database_key=db_key,

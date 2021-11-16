@@ -50,7 +50,9 @@ from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.entity.county import entities as county_entities
-from recidiviz.tests.persistence.database.database_test_utils import FakeIngestMetadata
+from recidiviz.tests.persistence.database.database_test_utils import (
+    FakeLegacyStateAndJailsIngestMetadata,
+)
 from recidiviz.tests.utils import fakes
 
 _REGION = "region"
@@ -61,7 +63,7 @@ _EXTERNAL_ID = "external_id"
 _BIRTHDATE = datetime.date(year=2012, month=1, day=2)
 _INGEST_TIME = datetime.datetime(year=2020, month=7, day=4)
 _FACILITY = "facility"
-_DEFAULT_METADATA = FakeIngestMetadata.for_county(
+_DEFAULT_METADATA = FakeLegacyStateAndJailsIngestMetadata.for_county(
     region="default_region",
     jurisdiction_id="jid",
     ingest_time=_INGEST_TIME,
@@ -516,7 +518,7 @@ class TestDatabase(TestCase):
                 database.write_people(
                     assert_session,
                     converter.convert_entity_people_to_schema_people([ingest_person]),
-                    FakeIngestMetadata.for_county(
+                    FakeLegacyStateAndJailsIngestMetadata.for_county(
                         region=_REGION,
                         jurisdiction_id=_JURISDICTION_ID,
                         ingest_time=datetime.datetime(year=2020, month=7, day=8),
@@ -568,7 +570,7 @@ class TestDatabase(TestCase):
             persisted_person = database.write_person(
                 arrange_session,
                 person,
-                FakeIngestMetadata.for_county(
+                FakeLegacyStateAndJailsIngestMetadata.for_county(
                     region=_REGION,
                     jurisdiction_id=_JURISDICTION_ID,
                     ingest_time=person_scrape_time,
@@ -597,7 +599,7 @@ class TestDatabase(TestCase):
             updated_person = database.write_person(
                 act_session,
                 converter.convert_entity_people_to_schema_people([queried_person])[0],
-                FakeIngestMetadata.for_county(
+                FakeLegacyStateAndJailsIngestMetadata.for_county(
                     region=_REGION,
                     jurisdiction_id=_JURISDICTION_ID,
                     ingest_time=booking_scrape_time,
@@ -647,7 +649,7 @@ class TestDatabase(TestCase):
             persisted_person = database.write_person(
                 act_session,
                 person,
-                FakeIngestMetadata.for_county(
+                FakeLegacyStateAndJailsIngestMetadata.for_county(
                     region=_REGION,
                     jurisdiction_id=_JURISDICTION_ID,
                     ingest_time=scrape_time,
@@ -705,7 +707,7 @@ class TestDatabase(TestCase):
             persisted_person = database.write_person(
                 act_session,
                 person,
-                FakeIngestMetadata.for_county(
+                FakeLegacyStateAndJailsIngestMetadata.for_county(
                     region=_REGION,
                     jurisdiction_id=_JURISDICTION_ID,
                     ingest_time=scrape_time,
@@ -766,7 +768,7 @@ class TestDatabase(TestCase):
             persisted_person = database.write_person(
                 act_session,
                 person,
-                FakeIngestMetadata.for_county(
+                FakeLegacyStateAndJailsIngestMetadata.for_county(
                     region=_REGION,
                     jurisdiction_id=_JURISDICTION_ID,
                     ingest_time=scrape_time,
@@ -844,7 +846,7 @@ class TestDatabase(TestCase):
             persisted_person = database.write_person(
                 act_session,
                 person,
-                FakeIngestMetadata.for_county(
+                FakeLegacyStateAndJailsIngestMetadata.for_county(
                     region=_REGION,
                     jurisdiction_id=_JURISDICTION_ID,
                     ingest_time=scrape_time,
@@ -929,7 +931,7 @@ class TestDatabase(TestCase):
             persisted_person = database.write_person(
                 act_session,
                 person,
-                FakeIngestMetadata.for_county(
+                FakeLegacyStateAndJailsIngestMetadata.for_county(
                     region=_REGION,
                     jurisdiction_id=_JURISDICTION_ID,
                     ingest_time=scrape_time,
@@ -993,7 +995,7 @@ class TestDatabase(TestCase):
             persisted_person = database.write_person(
                 arrange_session,
                 person,
-                FakeIngestMetadata.for_county(
+                FakeLegacyStateAndJailsIngestMetadata.for_county(
                     region=_REGION,
                     jurisdiction_id=_JURISDICTION_ID,
                     ingest_time=initial_scrape_time,
@@ -1015,7 +1017,7 @@ class TestDatabase(TestCase):
             database.write_people(
                 act_session,
                 converter.convert_entity_people_to_schema_people([queried_person]),
-                FakeIngestMetadata.for_county(
+                FakeLegacyStateAndJailsIngestMetadata.for_county(
                     region=_REGION,
                     jurisdiction_id=_JURISDICTION_ID,
                     ingest_time=update_scrape_time,
@@ -1058,7 +1060,7 @@ class TestDatabase(TestCase):
             persisted_person = database.write_person(
                 act_session,
                 person,
-                FakeIngestMetadata.for_county(
+                FakeLegacyStateAndJailsIngestMetadata.for_county(
                     region=_REGION,
                     jurisdiction_id=_JURISDICTION_ID,
                     ingest_time=scrape_time,
@@ -1113,7 +1115,7 @@ class TestDatabase(TestCase):
             persisted_person = database.write_person(
                 act_session,
                 person,
-                FakeIngestMetadata.for_county(
+                FakeLegacyStateAndJailsIngestMetadata.for_county(
                     region=_REGION,
                     jurisdiction_id=_JURISDICTION_ID,
                     ingest_time=scrape_time,
@@ -1165,7 +1167,7 @@ class TestDatabase(TestCase):
             persisted_person = database.write_person(
                 arrange_session,
                 person,
-                FakeIngestMetadata.for_county(
+                FakeLegacyStateAndJailsIngestMetadata.for_county(
                     region=_REGION,
                     jurisdiction_id=_JURISDICTION_ID,
                     ingest_time=initial_scrape_time,
@@ -1194,7 +1196,7 @@ class TestDatabase(TestCase):
             updated_person = database.write_person(
                 act_session,
                 converter.convert_entity_people_to_schema_people([queried_person])[0],
-                FakeIngestMetadata.for_county(
+                FakeLegacyStateAndJailsIngestMetadata.for_county(
                     region=_REGION,
                     jurisdiction_id=_JURISDICTION_ID,
                     ingest_time=update_scrape_time,
@@ -1266,7 +1268,7 @@ class TestDatabase(TestCase):
             persisted_person = database.write_person(
                 act_session,
                 person,
-                FakeIngestMetadata.for_county(
+                FakeLegacyStateAndJailsIngestMetadata.for_county(
                     region=_REGION,
                     jurisdiction_id=_JURISDICTION_ID,
                     ingest_time=scrape_time,
@@ -1314,7 +1316,7 @@ class TestDatabase(TestCase):
             persisted_person = database.write_person(
                 arrange_session,
                 person,
-                FakeIngestMetadata.for_county(
+                FakeLegacyStateAndJailsIngestMetadata.for_county(
                     region="default_region",
                     ingest_time=datetime.datetime(year=2020, month=7, day=6),
                 ),
@@ -1335,7 +1337,7 @@ class TestDatabase(TestCase):
             database.write_person(
                 act_session,
                 fetched_person,
-                FakeIngestMetadata.for_county(
+                FakeLegacyStateAndJailsIngestMetadata.for_county(
                     region="default_region",
                     ingest_time=datetime.datetime(year=2020, month=7, day=7),
                 ),
@@ -1377,7 +1379,7 @@ class TestDatabase(TestCase):
             persisted_person = database.write_person(
                 arrange_session,
                 person,
-                FakeIngestMetadata.for_county(
+                FakeLegacyStateAndJailsIngestMetadata.for_county(
                     region="default_region",
                     ingest_time=datetime.datetime(year=2020, month=7, day=6),
                 ),
@@ -1398,7 +1400,7 @@ class TestDatabase(TestCase):
             database.write_person(
                 act_session,
                 fetched_person,
-                FakeIngestMetadata.for_county(
+                FakeLegacyStateAndJailsIngestMetadata.for_county(
                     region="default_region",
                     ingest_time=datetime.datetime(year=2020, month=7, day=7),
                 ),
@@ -1442,7 +1444,7 @@ class TestDatabase(TestCase):
             persisted_person = database.write_person(
                 arrange_session,
                 person,
-                FakeIngestMetadata.for_county(
+                FakeLegacyStateAndJailsIngestMetadata.for_county(
                     region="default_region",
                     ingest_time=datetime.datetime(year=2020, month=7, day=6),
                 ),
@@ -1467,7 +1469,7 @@ class TestDatabase(TestCase):
             database.write_person(
                 act_session,
                 fetched_person,
-                FakeIngestMetadata.for_county(
+                FakeLegacyStateAndJailsIngestMetadata.for_county(
                     region="default_region", ingest_time=orphan_scrape_time
                 ),
                 orphaned_entities=[fetched_sentence],
@@ -1509,7 +1511,7 @@ class TestDatabase(TestCase):
             persisted_person = database.write_person(
                 arrange_session,
                 person,
-                FakeIngestMetadata.for_county(
+                FakeLegacyStateAndJailsIngestMetadata.for_county(
                     region="default_region",
                     ingest_time=datetime.datetime(year=2020, month=7, day=6),
                 ),
@@ -1529,7 +1531,7 @@ class TestDatabase(TestCase):
             database.write_person(
                 act_session,
                 fetched_person,
-                FakeIngestMetadata.for_county(
+                FakeLegacyStateAndJailsIngestMetadata.for_county(
                     region="default_region",
                     ingest_time=datetime.datetime(year=2020, month=7, day=7),
                 ),

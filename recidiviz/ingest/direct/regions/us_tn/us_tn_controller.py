@@ -15,30 +15,16 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Direct ingest controller implementation for US_TN."""
-from typing import Dict, List, Optional
+from typing import List
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
-from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
 )
-from recidiviz.ingest.direct.controllers.legacy_ingest_view_processor import (
-    IngestAncestorChainOverridesCallable,
-    IngestFilePostprocessorCallable,
-    IngestPrimaryKeyOverrideCallable,
-    IngestRowPosthookCallable,
-    IngestRowPrehookCallable,
-    LegacyIngestViewProcessorDelegate,
-)
-from recidiviz.ingest.direct.regions.us_tn.us_tn_legacy_enum_helpers import (
-    generate_enum_overrides,
-)
 
 
-# TODO(#8903): Delete LegacyIngestViewProcessorDelegate superclass when we have fully
-#  migrated this state to new ingest mappings version.
-class UsTnController(BaseDirectIngestController, LegacyIngestViewProcessorDelegate):
+class UsTnController(BaseDirectIngestController):
     """Direct ingest controller implementation for US_TN."""
 
     @classmethod
@@ -47,56 +33,6 @@ class UsTnController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
 
     def __init__(self, ingest_bucket_path: GcsfsBucketPath):
         super().__init__(ingest_bucket_path)
-        self.enum_overrides = generate_enum_overrides()
-
-        self.row_post_processors_by_file: Dict[
-            str, List[IngestRowPosthookCallable]
-        ] = {}
-
-        self.file_post_processors_by_file: Dict[
-            str, List[IngestFilePostprocessorCallable]
-        ] = {}
-
-        self.primary_key_override_hook_by_file: Dict[
-            str, IngestPrimaryKeyOverrideCallable
-        ] = {}
-
-        self.ancestor_chain_overrides_callback_by_file: Dict[
-            str, IngestAncestorChainOverridesCallable
-        ] = {}
 
     def get_file_tag_rank_list(self) -> List[str]:
         return ["OffenderName", "OffenderMovementIncarcerationPeriod"]
-
-    def get_enum_overrides(self) -> EnumOverrides:
-        return self.enum_overrides
-
-    # TODO(#8903): Delete LegacyIngestViewProcessorDelegate methods when we have fully
-    #  migrated this state to new ingest mappings version.
-    def get_row_post_processors_for_file(
-        self, file_tag: str
-    ) -> List[IngestRowPosthookCallable]:
-        return self.row_post_processors_by_file.get(file_tag, [])
-
-    def get_file_post_processors_for_file(
-        self, file_tag: str
-    ) -> List[IngestFilePostprocessorCallable]:
-        return self.file_post_processors_by_file.get(file_tag, [])
-
-    def get_primary_key_override_for_file(
-        self, file: str
-    ) -> Optional[IngestPrimaryKeyOverrideCallable]:
-        return self.primary_key_override_hook_by_file.get(file, None)
-
-    def get_ancestor_chain_overrides_callback_for_file(
-        self, file: str
-    ) -> Optional[IngestAncestorChainOverridesCallable]:
-        return self.ancestor_chain_overrides_callback_by_file.get(file, None)
-
-    def get_row_pre_processors_for_file(
-        self, _file_tag: str
-    ) -> List[IngestRowPrehookCallable]:
-        return []
-
-    def get_files_to_set_with_empty_values(self) -> List[str]:
-        return []

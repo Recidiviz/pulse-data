@@ -20,7 +20,7 @@ from recidiviz.common.constants.defaulting_and_normalizing_enum_parser import (
     DefaultingAndNormalizingEnumParser,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
-from recidiviz.common.ingest_metadata import IngestMetadata
+from recidiviz.common.ingest_metadata import LegacyStateAndJailsIngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import StateSentenceGroup
 from recidiviz.persistence.entity.state import entities
 
@@ -30,7 +30,7 @@ from recidiviz.persistence.entity.state import entities
 def copy_fields_to_builder(
     sentence_group_builder: entities.StateSentenceGroup.Builder,
     proto: StateSentenceGroup,
-    metadata: IngestMetadata,
+    metadata: LegacyStateAndJailsIngestMetadata,
 ) -> None:
     """Mutates the provided |sentence_group_builder| by converting an
     ingest_info proto StateSentenceGroup.

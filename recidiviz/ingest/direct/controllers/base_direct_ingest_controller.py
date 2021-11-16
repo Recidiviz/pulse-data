@@ -44,7 +44,11 @@ from recidiviz.cloud_storage.gcsfs_path import (
     GcsfsFilePath,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
+from recidiviz.common.ingest_metadata import (
+    IngestMetadata,
+    LegacyStateAndJailsIngestMetadata,
+    SystemLevel,
+)
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
     SPLIT_FILE_SUFFIX,
     DirectIngestGCSFileSystem,
@@ -104,7 +108,6 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_file_parser_delegate im
     yaml_mappings_filepath,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.ingest.ingestor import Ingestor
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.entity.operations.entities import (
@@ -136,7 +139,7 @@ class DirectIngestFileSplittingGcsfsCsvReaderDelegate(SplittingGcsfsCsvReaderDel
         )
 
 
-class BaseDirectIngestController(Ingestor):
+class BaseDirectIngestController:
     """Parses and persists individual-level info from direct ingest partners."""
 
     _INGEST_FILE_SPLIT_LINE_LIMIT = 2500
@@ -634,11 +637,26 @@ class BaseDirectIngestController(Ingestor):
         logging.info("Successfully persisted for ingest run [%s]", args.job_tag())
 
     def _get_ingest_metadata(self, args: GcsfsIngestArgs) -> IngestMetadata:
+        if isinstance(self, LegacyIngestViewProcessorDelegate):
+            # TODO(#8905): Remove this block once we have migrated all direct ingest
+            #  states to ingest mappings v2.
+            enum_overrides = self.get_enum_overrides()
+            if not isinstance(self, BaseDirectIngestController):
+                raise ValueError(
+                    f"Expected LegacyIngestViewProcessorDelegate to also be a "
+                    f"BaseDirectIngestController, found [{type(self)}]."
+                )
+            return LegacyStateAndJailsIngestMetadata(
+                region=self.region.region_code,
+                jurisdiction_id=self.region.jurisdiction_id,
+                ingest_time=args.ingest_time,
+                enum_overrides=enum_overrides,
+                system_level=self.system_level,
+                database_key=self.ingest_database_key,
+            )
         return IngestMetadata(
             region=self.region.region_code,
-            jurisdiction_id=self.region.jurisdiction_id,
             ingest_time=args.ingest_time,
-            enum_overrides=self.get_enum_overrides(),
             system_level=self.system_level,
             database_key=self.ingest_database_key,
         )

@@ -46,9 +46,6 @@ from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
     SPLIT_FILE_STORAGE_SUBDIR,
 )
-from recidiviz.ingest.direct.types.direct_ingest_instance import (
-    DirectIngestInstance,
-)
 from recidiviz.ingest.direct.controllers.direct_ingest_instance_status_manager import (
     DirectIngestInstanceStatusManager,
 )
@@ -58,18 +55,11 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsIngestViewExportArgs,
     filename_parts_from_path,
 )
-from recidiviz.ingest.direct.controllers.legacy_ingest_view_processor import (
-    IngestAncestorChainOverridesCallable,
-    IngestFilePostprocessorCallable,
-    IngestPrimaryKeyOverrideCallable,
-    IngestRowPosthookCallable,
-    IngestRowPrehookCallable,
-    LegacyIngestViewProcessorDelegate,
-)
 from recidiviz.ingest.direct.controllers.postgres_direct_ingest_file_metadata_manager import (
     PostgresDirectIngestFileMetadataManager,
 )
 from recidiviz.ingest.direct.errors import DirectIngestError
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_lock_manager import (
     postgres_to_bq_lock_name_for_schema,
 )
@@ -105,11 +95,7 @@ DirectIngestControllerT = TypeVar(
 )
 
 
-# TODO(#8908): Delete LegacyIngestViewProcessorDelegate superclass once ingest
-#   mappings overhaul is ready for new states going forward.
-class BaseDirectIngestControllerForTests(
-    BaseDirectIngestController, LegacyIngestViewProcessorDelegate
-):
+class BaseDirectIngestControllerForTests(BaseDirectIngestController):
     """Base class for test direct ingest controllers used in this file."""
 
     def __init__(self, ingest_bucket_path: GcsfsBucketPath):
@@ -133,36 +119,6 @@ class BaseDirectIngestControllerForTests(
             if os.path.exists(path):
                 return True
         return False
-
-    # TODO(#8908): Delete LegacyIngestViewProcessorDelegate methods once ingest
-    #   mappings overhaul is ready for new states going forward.
-    def get_row_pre_processors_for_file(
-        self, _file_tag: str
-    ) -> List[IngestRowPrehookCallable]:
-        return []
-
-    def get_row_post_processors_for_file(
-        self, _file_tag: str
-    ) -> List[IngestRowPosthookCallable]:
-        return []
-
-    def get_file_post_processors_for_file(
-        self, _file_tag: str
-    ) -> List[IngestFilePostprocessorCallable]:
-        return []
-
-    def get_ancestor_chain_overrides_callback_for_file(
-        self, _file_tag: str
-    ) -> Optional[IngestAncestorChainOverridesCallable]:
-        return None
-
-    def get_primary_key_override_for_file(
-        self, _file_tag: str
-    ) -> Optional[IngestPrimaryKeyOverrideCallable]:
-        return None
-
-    def get_files_to_set_with_empty_values(self) -> List[str]:
-        return []
 
 
 class StateTestDirectIngestController(BaseDirectIngestControllerForTests):

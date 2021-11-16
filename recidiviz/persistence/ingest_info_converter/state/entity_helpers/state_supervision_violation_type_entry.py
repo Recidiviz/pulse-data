@@ -22,7 +22,7 @@ from recidiviz.common.constants.defaulting_and_normalizing_enum_parser import (
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
-from recidiviz.common.ingest_metadata import IngestMetadata
+from recidiviz.common.ingest_metadata import LegacyStateAndJailsIngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import StateSupervisionViolationTypeEntry
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state.deserialize_entity_factories import (
@@ -33,7 +33,8 @@ from recidiviz.persistence.entity.state.deserialize_entity_factories import (
 # TODO(#8905): Delete this file once all states have been migrated to v2 ingest
 #  mappings.
 def convert(
-    proto: StateSupervisionViolationTypeEntry, metadata: IngestMetadata
+    proto: StateSupervisionViolationTypeEntry,
+    metadata: LegacyStateAndJailsIngestMetadata,
 ) -> entities.StateSupervisionViolationTypeEntry:
     """Converts an ingest_info proto StateSupervisionViolationTypeEntry to a
     persistence entity."""

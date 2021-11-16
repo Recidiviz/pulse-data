@@ -1969,11 +1969,6 @@ class IngestViewFileParserTest(unittest.TestCase):
         ):
             _ = self._run_parse_manifest_for_tag("column_starts_with_dollar_sign")
 
-    def test_multiple_rows_same_person(self) -> None:
-        # TODO(#8908): Fill this out - should pass,
-        #  but not merge trees.
-        pass
-
     def test_throws_if_primary_key_set(self) -> None:
         with self.assertRaisesRegex(
             ValueError,

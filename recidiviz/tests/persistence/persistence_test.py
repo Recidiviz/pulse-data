@@ -21,127 +21,50 @@ import logging
 import threading
 import time
 from copy import deepcopy
-from datetime import date, datetime, timedelta
-from typing import Callable, Dict, Optional
+from datetime import date, datetime
+from typing import Callable, Dict, List, Optional
 from unittest import TestCase
 
-import attr
-import mock
-import psycopg2
 import pytest
 import sqlalchemy
-from mock import Mock, call, create_autospec, patch
+from mock import Mock, patch
 from opencensus.stats.measurement_map import MeasurementMap
-from psycopg2.errorcodes import NOT_NULL_VIOLATION, SERIALIZATION_FAILURE
 
-from recidiviz.common.constants.bond import BondStatus
-from recidiviz.common.constants.charge import ChargeStatus
-from recidiviz.common.constants.county.booking import CustodyStatus
-from recidiviz.common.constants.county.hold import HoldStatus
-from recidiviz.common.constants.county.sentence import SentenceStatus
+from recidiviz.common.constants.person_characteristics import Gender, Race
 from recidiviz.common.constants.state.external_id_types import US_MO_DOC, US_ND_ELITE
-from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
-from recidiviz.ingest.models.ingest_info import (
-    IngestInfo,
-    StateAlias,
-    StatePerson,
-    StatePersonExternalId,
-    StatePersonRace,
-    StateSentenceGroup,
+from recidiviz.common.constants.state.state_assessment import StateAssessmentClass
+from recidiviz.common.constants.state.state_person_alias import StatePersonAliasType
+from recidiviz.common.constants.state.state_program_assignment import (
+    StateProgramAssignmentParticipationStatus,
 )
-from recidiviz.ingest.models.ingest_info_pb2 import Charge
-from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo as IngestInfoProto
-from recidiviz.ingest.models.ingest_info_pb2 import Sentence
-from recidiviz.ingest.models.serialization import convert_ingest_info_to_proto
+from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
+from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
 from recidiviz.persistence import persistence
-from recidiviz.persistence.database import database
-from recidiviz.persistence.database.schema.county import dao as county_dao
-from recidiviz.persistence.database.schema.county import schema as county_schema
 from recidiviz.persistence.database.schema.state import dao as state_dao
 from recidiviz.persistence.database.schema.state import schema as state_schema
-from recidiviz.persistence.database.schema_entity_converter import (
-    schema_entity_converter as converter,
-)
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.persistence.entity.county import entities as county_entities
-from recidiviz.persistence.entity_matching.entity_matching_types import MatchedEntities
+from recidiviz.persistence.entity.state import entities as state_entities
+from recidiviz.persistence.entity.state.entities import (
+    StateAssessment,
+    StatePerson,
+    StatePersonAlias,
+    StatePersonExternalId,
+    StatePersonRace,
+    StateProgramAssignment,
+    StateSentenceGroup,
+)
 from recidiviz.persistence.ingest_info_converter.base_converter import (
     EntityDeserializationResult,
 )
-from recidiviz.persistence.persistence import (
-    DATABASE_INVARIANT_THRESHOLD,
-    ENTITY_MATCHING_THRESHOLD,
-    ENUM_THRESHOLD,
-    OVERALL_THRESHOLD,
-)
-from recidiviz.tests.persistence.database.database_test_utils import FakeIngestMetadata
-from recidiviz.tests.utils import fakes
 from recidiviz.tools.postgres import local_postgres_helpers
 
-ARREST_ID = "ARREST_ID_1"
-BIRTHDATE_1 = "11/15/1993"
-BIRTHDATE_1_DATE = date(year=1993, month=11, day=15)
-BIRTHDATE_2 = "11-2-1996"
-BOND_TYPE = "Cash"
-BOND_STATUS = "Active"
-BOOKING_CUSTODY_STATUS = "In Custody"
-BOOKING_ID = 19
-CHARGE_NAME_1 = "TEST_CHARGE_1"
-CHARGE_NAME_2 = "TEST_CHARGE_2"
-CHARGE_STATUS = "Pending"
-DATE_RAW = "1/1/2011"
 DATE = date(year=2019, day=1, month=2)
 DATETIME = datetime(DATE.year, DATE.month, DATE.day)
 DATE_2 = date(year=2020, day=1, month=2)
 DATETIME_2 = datetime(DATE_2.year, DATE_2.month, DATE_2.day)
-EXTERNAL_PERSON_ID = "EXTERNAL_PERSON_ID"
-EXTERNAL_BOOKING_ID = "EXTERNAL_BOOKING_ID"
-EXTERNAL_ID = "EXTERNAL_ID"
-FACILITY = "TEST_FACILITY"
-FINE_1 = "$1,500.25"
-FINE_1_INT = 1500
-FINE_2 = " "
-FINE_2_INT = 0
-OFFICER_NAME = "TEST_OFFICER_NAME"
-OFFICER_NAME_ANOTHER = "SECOND_OFFICER_NAME"
-PERSON_ID = 9
-PLACE_1 = "TEST_PLACE_1"
-PLACE_2 = "TEST_PLACE_2"
-REGION_1 = "REGION_1"
-REGION_2 = "REGION_2"
-SCRAPER_START_DATETIME = datetime(year=2018, month=8, day=6)
-SENTENCE_STATUS = "SERVING"
-FULL_NAME_1 = "TEST_FULL_NAME_1"
-FULL_NAME_2 = "TEST_FULL_NAME_2"
-FULL_NAME_3 = "TEST_FULL_NAME_3"
-JURISDICTION_ID = "12345678"
-DEFAULT_METADATA = FakeIngestMetadata.for_county(
-    region="region_code",
-    jurisdiction_id="12345678",
-    ingest_time=datetime(year=1000, month=1, day=1),
-)
-ID = 1
-ID_2 = 2
-ID_3 = 3
-
-
-ERROR_THRESHOLDS_WITH_FORTY_PERCENT_RATIOS = {
-    SystemLevel.STATE: {
-        OVERALL_THRESHOLD: 0.4,
-        ENUM_THRESHOLD: 0.4,
-        ENTITY_MATCHING_THRESHOLD: 0.4,
-        DATABASE_INVARIANT_THRESHOLD: 0,
-    },
-    SystemLevel.COUNTY: {
-        OVERALL_THRESHOLD: 0.4,
-        ENUM_THRESHOLD: 0.4,
-        ENTITY_MATCHING_THRESHOLD: 0.4,
-        DATABASE_INVARIANT_THRESHOLD: 0,
-    },
-}
 
 FAKE_PROJECT_ID = "test-project"
 STATE_CODE_TO_ENTITY_MATCHING_THRESHOLD_OVERRIDE_FAKE_PROJECT: Dict[
@@ -152,907 +75,70 @@ STATE_CODE_TO_ENTITY_MATCHING_THRESHOLD_OVERRIDE_FAKE_PROJECT: Dict[
     }
 }
 
+PERSON_1_FULL_NAME = '{"given_names": "JON", "surname": "HOPKINS"}'
 
-@patch("recidiviz.utils.metadata.project_id", Mock(return_value=FAKE_PROJECT_ID))
-@patch("recidiviz.utils.environment.in_gcp", Mock(return_value=True))
-@patch.dict("os.environ", {"PERSIST_LOCALLY": "false"})
-@patch(
-    "recidiviz.persistence.persistence.STATE_CODE_TO_ENTITY_MATCHING_THRESHOLD_OVERRIDE",
-    STATE_CODE_TO_ENTITY_MATCHING_THRESHOLD_OVERRIDE_FAKE_PROJECT,
-)
-class TestPersistence(TestCase):
-    """Test that the persistence layer correctly writes to the SQL database."""
-
-    def setUp(self) -> None:
-        self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.JAILS)
-        fakes.use_in_memory_sqlite_database(self.database_key)
-
-    def tearDown(self) -> None:
-        fakes.teardown_in_memory_sqlite_databases()
-
-    def test_localRun(self):
-        with patch("recidiviz.utils.environment.in_gcp", Mock(return_value=False)):
-            # Arrange
-            ingest_info = IngestInfoProto()
-            ingest_info.people.add(full_name=FULL_NAME_1)
-
-            # Act
-            persistence.write_ingest_info(ingest_info, DEFAULT_METADATA)
-            with SessionFactory.using_database(
-                self.database_key, autocommit=False
-            ) as session:
-                result = county_dao.read_people(session)
-
-            # Assert
-            assert not result
-
-    def test_persistLocally(self):
-        # Arrange
-        with patch(
-            "recidiviz.utils.environment.in_gcp", Mock(return_value=False)
-        ) and patch.dict("os.environ", {"PERSIST_LOCALLY": "true"}):
-            ingest_info = IngestInfoProto()
-            ingest_info.people.add(full_name=FULL_NAME_1)
-
-            # Act
-            persistence.write_ingest_info(ingest_info, DEFAULT_METADATA)
-            with SessionFactory.using_database(
-                self.database_key, autocommit=False
-            ) as session:
-                result = county_dao.read_people(session)
-
-            # Assert
-            assert len(result) == 1
-            assert result[0].full_name == _format_full_name(FULL_NAME_1)
-
-    @patch.object(sqlalchemy.orm.Session, "close")
-    @patch.object(sqlalchemy.orm.Session, "commit")
-    def test_retryableError_retries(self, mock_commit, mock_close):
-        # Arrange
-        ingest_info = IngestInfoProto()
-        ingest_info.people.add(full_name=FULL_NAME_1)
-
-        inner_error = create_autospec(psycopg2.OperationalError)
-        # Serialization Failure is retryable
-        inner_error.pgcode = SERIALIZATION_FAILURE
-        error = sqlalchemy.exc.DatabaseError(
-            statement=None, params=None, orig=inner_error
+PERSON_STATE_1_ENTITY = StatePerson(
+    state_code="US_ND",
+    full_name=PERSON_1_FULL_NAME,
+    birthdate=datetime(1979, 8, 15),
+    gender=Gender.MALE,
+    external_ids=[
+        StatePersonExternalId(
+            state_code="US_ND", external_id="39768", id_type=US_ND_ELITE
         )
-        # 5 retries is allowed
-        mock_commit.side_effect = [error] * 5 + [mock.DEFAULT]
-
-        # Act
-        persistence.write_ingest_info(ingest_info, DEFAULT_METADATA)
-
-        # Assert
-        assert mock_commit.call_args_list == [call()] * 6
-        mock_close.assert_called_once()
-
-    @patch.object(sqlalchemy.orm.Session, "close")
-    @patch.object(sqlalchemy.orm.Session, "commit")
-    def test_retryableError_exceedsMaxRetries(self, mock_commit, mock_close):
-        # Arrange
-        ingest_info = IngestInfoProto()
-        ingest_info.people.add(full_name=FULL_NAME_1)
-
-        inner_error = create_autospec(psycopg2.OperationalError)
-        # Serialization Failure is retryable
-        inner_error.pgcode = SERIALIZATION_FAILURE
-        error = sqlalchemy.exc.DatabaseError(
-            statement=None, params=None, orig=inner_error
+    ],
+    races=[
+        StatePersonRace(state_code="US_ND", race=Race.WHITE, race_raw_text="CAUCASIAN")
+    ],
+    aliases=[
+        StatePersonAlias(
+            state_code="US_ND",
+            full_name=PERSON_1_FULL_NAME,
+            alias_type=StatePersonAliasType.GIVEN_NAME,
+            alias_type_raw_text="GIVEN_NAME",
         )
-        # 6 retries is too many
-        mock_commit.side_effect = [error] * 6 + [mock.DEFAULT]
-
-        # Act / Assert
-        with self.assertRaises(sqlalchemy.exc.DatabaseError):
-            persistence.write_ingest_info(ingest_info, DEFAULT_METADATA)
-
-        # Assert
-        assert mock_commit.call_args_list == [call()] * 6
-        mock_close.assert_called_once()
-
-    @patch.object(sqlalchemy.orm.Session, "close")
-    @patch.object(sqlalchemy.orm.Session, "commit")
-    def test_nonRetryableError_failsImmediately(self, mock_commit, mock_close):
-        # Arrange
-        ingest_info = IngestInfoProto()
-        ingest_info.people.add(full_name=FULL_NAME_1)
-
-        inner_error = create_autospec(psycopg2.OperationalError)
-        # Not Null Violation is not retryable
-        inner_error.pgcode = NOT_NULL_VIOLATION
-        error = sqlalchemy.exc.DatabaseError(
-            statement=None, params=None, orig=inner_error
-        )
-        mock_commit.side_effect = [error, mock.DEFAULT]
-
-        # Act / Assert
-        with self.assertRaises(sqlalchemy.exc.DatabaseError):
-            persistence.write_ingest_info(ingest_info, DEFAULT_METADATA)
-
-        # Assert
-        assert mock_commit.call_args_list == [call()]
-        mock_close.assert_called_once()
-
-    def test_twoDifferentPeople_persistsBoth(self):
-        # Arrange
-        ingest_info = IngestInfoProto()
-        ingest_info.people.add(person_id="1_GENERATE", full_name=FULL_NAME_1)
-        ingest_info.people.add(person_id="2_GENERATE", full_name=FULL_NAME_2)
-
-        # Act
-        persistence.write_ingest_info(ingest_info, DEFAULT_METADATA)
-        with SessionFactory.using_database(
-            self.database_key, autocommit=False
-        ) as session:
-            result = county_dao.read_people(session)
-
-        # Assert
-        assert len(result) == 2
-
-        assert result[0].full_name == _format_full_name(FULL_NAME_2)
-        assert result[1].full_name == _format_full_name(FULL_NAME_1)
-
-    def test_twoDifferentPeople_persistsNone(self):
-        # Arrange
-        ingest_info = IngestInfoProto()
-        ingest_info.people.add(person_id="1", full_name=FULL_NAME_1)
-        ingest_info.people.add(person_id="2", full_name=FULL_NAME_2, gender="X")
-
-        # Act
-        self.assertFalse(persistence.write_ingest_info(ingest_info, DEFAULT_METADATA))
-        with SessionFactory.using_database(
-            self.database_key, autocommit=False
-        ) as session:
-            result = county_dao.read_people(session)
-
-        # Assert
-        assert not result
-
-    @patch(
-        "recidiviz.persistence.persistence.SYSTEM_TYPE_TO_ERROR_THRESHOLD",
-        ERROR_THRESHOLDS_WITH_FORTY_PERCENT_RATIOS,
-    )
-    def test_twoDifferentPeopleWithBooking_persistsNone(self):
-        # Arrange
-        ingest_info = IngestInfoProto()
-        ingest_info.people.add(full_name=FULL_NAME_2)
-        ingest_info.people.add(
-            full_name=FULL_NAME_1,
-            person_id=EXTERNAL_PERSON_ID,
-            booking_ids=[EXTERNAL_BOOKING_ID],
-        )
-        ingest_info.bookings.add(
-            booking_id=EXTERNAL_BOOKING_ID,
-            custody_status="NO EXIST",
-        )
-
-        # Act
-        self.assertFalse(persistence.write_ingest_info(ingest_info, DEFAULT_METADATA))
-        with SessionFactory.using_database(
-            self.database_key, autocommit=False
-        ) as session:
-            result = county_dao.read_people(session)
-
-        # Assert
-        assert not result
-
-    @patch(
-        "recidiviz.persistence.ingest_info_converter.ingest_info_converter.convert_to_persistence_entities"
-    )
-    @patch("recidiviz.persistence.entity_validator.entity_validator.validate")
-    @patch(
-        "recidiviz.persistence.persistence.SYSTEM_TYPE_TO_ERROR_THRESHOLD",
-        ERROR_THRESHOLDS_WITH_FORTY_PERCENT_RATIOS,
-    )
-    def test_enum_error_threshold_should_abort_persistsNone(
-        self, validator, entity_converter
-    ):
-        # Arrange
-        ingest_info = IngestInfoProto()
-        ingest_info.people.add(full_name=FULL_NAME_2)
-        ingest_info.people.add(full_name=FULL_NAME_1, person_id=EXTERNAL_PERSON_ID)
-
-        # Mock out 1 enum error, and no others
-        entity_converter.return_value = EntityDeserializationResult(
-            enum_parsing_errors=1,
-            general_parsing_errors=0,
-            protected_class_errors=0,
-            people=ingest_info.people,
-        )
-        validator.return_value = ingest_info.people, 0
-
-        # Act
-        self.assertFalse(persistence.write_ingest_info(ingest_info, DEFAULT_METADATA))
-        with SessionFactory.using_database(
-            self.database_key, autocommit=False
-        ) as session:
-            result = county_dao.read_people(session)
-
-        # Assert
-        assert not result
-
-    @patch("recidiviz.persistence.persistence.database_invariant_validator")
-    def test_abort_from_database_invariant_error_persistsNone(
-        self, mock_database_invariant_validator
-    ):
-        # Arrange
-        ingest_info = IngestInfoProto()
-        ingest_info.people.add(full_name=FULL_NAME_2)
-        ingest_info.people.add(full_name=FULL_NAME_1, person_id=EXTERNAL_PERSON_ID)
-
-        mock_database_invariant_validator.validate_invariants.return_value = 1
-
-        # Act
-        self.assertFalse(persistence.write_ingest_info(ingest_info, DEFAULT_METADATA))
-        with SessionFactory.using_database(
-            self.database_key, autocommit=False
-        ) as session:
-            result = county_dao.read_people(session)
-
-        # Assert
-        assert not result
-
-    @patch("recidiviz.persistence.entity_matching.entity_matching.match")
-    @patch(
-        "recidiviz.persistence.persistence.SYSTEM_TYPE_TO_ERROR_THRESHOLD",
-        ERROR_THRESHOLDS_WITH_FORTY_PERCENT_RATIOS,
-    )
-    def test_entity_match_error_threshold_should_abort_persistsNone(
-        self, mock_entity_match
-    ):
-        # Mock out 1 entity matching error, and no others
-        mock_entity_match.return_value = MatchedEntities(
-            people=[], orphaned_entities=[], error_count=1, total_root_entities=0
-        )
-
-        # Arrange
-        ingest_info = IngestInfoProto()
-        ingest_info.people.add(person_id="2_GENERATE", full_name=FULL_NAME_2)
-        ingest_info.people.add(person_id="3_GENERATE", full_name=FULL_NAME_3)
-
-        # Act
-        self.assertFalse(persistence.write_ingest_info(ingest_info, DEFAULT_METADATA))
-        with SessionFactory.using_database(
-            self.database_key, autocommit=False
-        ) as session:
-            result = county_dao.read_people(session)
-
-        # Assert
-        assert not result
-
-    @patch(
-        "recidiviz.persistence.persistence.SYSTEM_TYPE_TO_ERROR_THRESHOLD",
-        ERROR_THRESHOLDS_WITH_FORTY_PERCENT_RATIOS,
-    )
-    def test_threeDifferentPeople_persistsTwoBelowThreshold(self):
-        # Arrange
-        ingest_info = IngestInfoProto()
-        ingest_info.people.add(person_id="1_GENERATE", full_name=FULL_NAME_2)
-        ingest_info.people.add(person_id="2_GENERATE", full_name=FULL_NAME_3)
-        ingest_info.people.add(
-            person_id=EXTERNAL_PERSON_ID,
-            full_name=FULL_NAME_1,
-            booking_ids=[EXTERNAL_BOOKING_ID],
-        )
-        ingest_info.bookings.add(
-            booking_id=EXTERNAL_BOOKING_ID,
-            custody_status="NO EXIST",
-        )
-
-        # Act
-        persistence.write_ingest_info(ingest_info, DEFAULT_METADATA)
-        with SessionFactory.using_database(
-            self.database_key, autocommit=False
-        ) as session:
-            result = county_dao.read_people(session)
-
-        # Assert
-        assert len(result) == 2
-        assert result[0].full_name == _format_full_name(FULL_NAME_3)
-        assert result[1].full_name == _format_full_name(FULL_NAME_2)
-
-    # TODO(#4135): test entity matching end to end
-
-    def test_readSinglePersonByName(self):
-        # Arrange
-        ingest_info = IngestInfoProto()
-        ingest_info.people.add(
-            person_id="1_GENERATE", full_name=FULL_NAME_1, birthdate=BIRTHDATE_1
-        )
-        ingest_info.people.add(
-            person_id="2_GENERATE", full_name=FULL_NAME_2, birthdate=BIRTHDATE_2
-        )
-
-        # Act
-        persistence.write_ingest_info(ingest_info, DEFAULT_METADATA)
-        with SessionFactory.using_database(
-            self.database_key, autocommit=False
-        ) as session:
-            result = county_dao.read_people(
-                session, full_name=_format_full_name(FULL_NAME_1)
-            )
-
-        # Assert
-        assert len(result) == 1
-        assert result[0].full_name == _format_full_name(FULL_NAME_1)
-        assert result[0].birthdate == BIRTHDATE_1_DATE
-
-    # TODO(#4135): Rewrite this test to directly test __eq__ between the two People
-    def test_readPersonAndAllRelationships(self):
-        # Arrange
-        metadata = FakeIngestMetadata.for_county(
-            region=REGION_1,
-            jurisdiction_id=JURISDICTION_ID,
-            ingest_time=SCRAPER_START_DATETIME,
-        )
-
-        ingest_info = IngestInfoProto()
-        ingest_info.people.add(full_name=FULL_NAME_1, booking_ids=["BOOKING_ID"])
-        ingest_info.bookings.add(
-            booking_id="BOOKING_ID",
-            facility=FACILITY,
-            custody_status=BOOKING_CUSTODY_STATUS,
-            arrest_id="ARREST_ID",
-            charge_ids=["CHARGE_ID_1", "CHARGE_ID_2"],
-        )
-        ingest_info.arrests.add(arrest_id="ARREST_ID", officer_name=OFFICER_NAME)
-
-        ingest_info.bonds.add(
-            bond_id="SHARED_BOND_ID", bond_type=BOND_TYPE, status=BOND_STATUS
-        )
-
-        ingest_info.charges.extend(
-            [
-                Charge(
-                    charge_id="CHARGE_ID_1",
-                    name=CHARGE_NAME_1,
-                    status=CHARGE_STATUS,
-                    bond_id="SHARED_BOND_ID",
-                    sentence_id="SENTENCE_ID_1",
-                ),
-                Charge(
-                    charge_id="CHARGE_ID_2",
-                    name=CHARGE_NAME_2,
-                    status=CHARGE_STATUS,
-                    bond_id="SHARED_BOND_ID",
-                    sentence_id="SENTENCE_ID_2",
-                ),
-            ]
-        )
-
-        ingest_info.sentences.extend(
-            [
-                Sentence(
-                    sentence_id="SENTENCE_ID_1",
-                    fine_dollars=FINE_1,
-                    status=SENTENCE_STATUS,
-                ),
-                Sentence(
-                    sentence_id="SENTENCE_ID_2",
-                    fine_dollars=FINE_2,
-                    status=SENTENCE_STATUS,
-                ),
-            ]
-        )
-
-        # Act
-        persistence.write_ingest_info(ingest_info, metadata)
-        with SessionFactory.using_database(
-            self.database_key, autocommit=False
-        ) as session:
-            result = county_dao.read_people(session)
-
-        # Assert
-        assert len(result) == 1
-        result_person = result[0]
-        assert result_person.full_name == _format_full_name(FULL_NAME_1)
-
-        assert len(result_person.bookings) == 1
-        result_booking = result_person.bookings[0]
-        assert result_booking.facility == FACILITY
-        assert result_booking.last_seen_time == SCRAPER_START_DATETIME
-
-        result_arrest = result_booking.arrest
-        assert result_arrest.officer_name == OFFICER_NAME
-
-        result_charges = result_booking.charges
-        assert len(result_charges) == 2
-        assert result_charges[0].name == CHARGE_NAME_1
-        assert result_charges[1].name == CHARGE_NAME_2
-
-        bond_1 = result_charges[0].bond
-        bond_2 = result_charges[1].bond
-        assert bond_1.bond_type == bond_2.bond_type
-
-        sentence_1 = result_charges[0].sentence
-        sentence_2 = result_charges[1].sentence
-        assert sentence_1.fine_dollars == FINE_1_INT
-        assert sentence_2.fine_dollars == FINE_2_INT
-
-    def test_write_preexisting_person(self):
-        # Arrange
-        most_recent_scrape_time = SCRAPER_START_DATETIME + timedelta(days=1)
-        metadata = FakeIngestMetadata.for_county(
-            region=REGION_1,
-            jurisdiction_id=JURISDICTION_ID,
-            ingest_time=most_recent_scrape_time,
-        )
-
-        schema_booking = county_schema.Booking(
-            booking_id=BOOKING_ID,
-            external_id=EXTERNAL_BOOKING_ID,
-            admission_date_inferred=True,
-            custody_status=CustodyStatus.IN_CUSTODY.value,
-            last_seen_time=SCRAPER_START_DATETIME,
-            first_seen_time=SCRAPER_START_DATETIME,
-        )
-        schema_person = county_schema.Person(
-            person_id=PERSON_ID,
-            jurisdiction_id=JURISDICTION_ID,
-            external_id=EXTERNAL_PERSON_ID,
-            region=REGION_1,
-            bookings=[schema_booking],
-        )
-
-        with SessionFactory.using_database(self.database_key) as session:
-            session.add(schema_person)
-
-        ingest_info = IngestInfoProto()
-        ingest_info.people.add(
-            full_name=FULL_NAME_1,
-            person_id=EXTERNAL_PERSON_ID,
-            booking_ids=[EXTERNAL_BOOKING_ID],
-        )
-        ingest_info.bookings.add(
-            booking_id=EXTERNAL_BOOKING_ID,
-            custody_status="IN CUSTODY",
-        )
-
-        # Act
-        persistence.write_ingest_info(ingest_info, metadata)
-
-        # Assert
-        expected_booking = county_entities.Booking.new_with_defaults(
-            booking_id=BOOKING_ID,
-            external_id=EXTERNAL_BOOKING_ID,
-            admission_date_inferred=True,
-            custody_status=CustodyStatus.IN_CUSTODY,
-            custody_status_raw_text=BOOKING_CUSTODY_STATUS.upper(),
-            last_seen_time=most_recent_scrape_time,
-            first_seen_time=SCRAPER_START_DATETIME,
-        )
-        expected_person = county_entities.Person.new_with_defaults(
-            person_id=PERSON_ID,
-            external_id=EXTERNAL_PERSON_ID,
-            region=REGION_1,
-            jurisdiction_id=JURISDICTION_ID,
-            bookings=[expected_booking],
-        )
-        with SessionFactory.using_database(
-            self.database_key, autocommit=False
-        ) as session:
-            self.assertEqual(
-                [expected_person],
-                county_dao.read_people(session),
-            )
-
-    def test_write_preexisting_person_duplicate_charges(self):
-        # Arrange
-        most_recent_scrape_time = SCRAPER_START_DATETIME + timedelta(days=1)
-        metadata = FakeIngestMetadata.for_county(
-            region=REGION_1,
-            jurisdiction_id=JURISDICTION_ID,
-            ingest_time=most_recent_scrape_time,
-        )
-
-        schema_charge = county_schema.Charge(
-            charge_id=ID,
-            external_id=EXTERNAL_ID + "_COUNT_1",
-            status=ChargeStatus.PRESENT_WITHOUT_INFO.value,
-        )
-        schema_charge_another = county_schema.Charge(
-            charge_id=ID_2,
-            external_id=EXTERNAL_ID + "_COUNT_2",
-            status=ChargeStatus.PRESENT_WITHOUT_INFO.value,
-        )
-        schema_booking = county_schema.Booking(
-            booking_id=BOOKING_ID,
-            external_id=EXTERNAL_BOOKING_ID,
-            admission_date_inferred=True,
-            custody_status=CustodyStatus.IN_CUSTODY.value,
-            last_seen_time=SCRAPER_START_DATETIME,
-            first_seen_time=SCRAPER_START_DATETIME,
-            charges=[schema_charge, schema_charge_another],
-        )
-        schema_person = county_schema.Person(
-            person_id=PERSON_ID,
-            jurisdiction_id=JURISDICTION_ID,
-            external_id=EXTERNAL_PERSON_ID,
-            region=REGION_1,
-            bookings=[schema_booking],
-        )
-
-        with SessionFactory.using_database(self.database_key) as session:
-            session.add(schema_person)
-
-        ingest_info = IngestInfoProto()
-        ingest_info.people.add(
-            full_name=FULL_NAME_1,
-            person_id=EXTERNAL_PERSON_ID,
-            booking_ids=[EXTERNAL_BOOKING_ID],
-        )
-        ingest_info.bookings.add(
-            booking_id=EXTERNAL_BOOKING_ID,
-            custody_status="IN CUSTODY",
-            charge_ids=[EXTERNAL_ID],
-        )
-        ingest_info.charges.add(charge_id=EXTERNAL_ID, number_of_counts="2")
-
-        # Act
-        persistence.write_ingest_info(ingest_info, metadata)
-
-        # Assert
-        expected_charge = county_entities.Charge.new_with_defaults(
-            charge_id=ID,
-            external_id=EXTERNAL_ID + "_COUNT_1",
-            status=ChargeStatus.PRESENT_WITHOUT_INFO,
-        )
-        expected_charge_another = attr.evolve(
-            expected_charge, charge_id=ID_2, external_id=EXTERNAL_ID + "_COUNT_2"
-        )
-        expected_booking = county_entities.Booking.new_with_defaults(
-            booking_id=BOOKING_ID,
-            external_id=EXTERNAL_BOOKING_ID,
-            admission_date_inferred=True,
-            custody_status=CustodyStatus.IN_CUSTODY,
-            custody_status_raw_text=BOOKING_CUSTODY_STATUS.upper(),
-            last_seen_time=most_recent_scrape_time,
-            first_seen_time=SCRAPER_START_DATETIME,
-            charges=[expected_charge, expected_charge_another],
-        )
-        expected_person = county_entities.Person.new_with_defaults(
-            person_id=PERSON_ID,
-            external_id=EXTERNAL_PERSON_ID,
-            region=REGION_1,
-            jurisdiction_id=JURISDICTION_ID,
-            bookings=[expected_booking],
-        )
-        with SessionFactory.using_database(
-            self.database_key, autocommit=False
-        ) as session:
-            self.assertEqual(
-                [expected_person],
-                county_dao.read_people(session),
-            )
-
-    def test_write_noPeople(self):
-        # Arrange
-        most_recent_scrape_time = SCRAPER_START_DATETIME + timedelta(days=1)
-        metadata = FakeIngestMetadata.for_county(
-            region=REGION_1,
-            jurisdiction_id=JURISDICTION_ID,
-            ingest_time=most_recent_scrape_time,
-        )
-
-        ingest_info = IngestInfoProto()
-
-        # Act
-        persistence.write_ingest_info(ingest_info, metadata)
-
-        # Assert
-        with SessionFactory.using_database(
-            self.database_key, autocommit=False
-        ) as session:
-            people = county_dao.read_people(session)
-            self.assertFalse(people)
-
-    def test_inferReleaseDateOnOpenBookings(self):
-        # Arrange
-        hold = county_entities.Hold.new_with_defaults(
-            hold_id=ID, status=HoldStatus.ACTIVE, status_raw_text="ACTIVE"
-        )
-        sentence = county_entities.Sentence.new_with_defaults(
-            sentence_id=ID,
-            status=SentenceStatus.SERVING,
+    ],
+    sentence_groups=[
+        StateSentenceGroup(
+            state_code="US_ND",
+            external_id="123",
+            status=StateSentenceStatus.SERVING,
             status_raw_text="SERVING",
-            booking_id=ID,
         )
-        bond = county_entities.Bond.new_with_defaults(
-            bond_id=ID,
-            status=BondStatus.SET,
-            status_raw_text="NOT_REQUIRED",
-            booking_id=ID,
-        )
-        charge = county_entities.Charge.new_with_defaults(
-            charge_id=ID,
-            status=ChargeStatus.PENDING,
-            status_raw_text="PENDING",
-            sentence=sentence,
-            bond=bond,
-        )
-        booking_open = county_entities.Booking.new_with_defaults(
-            booking_id=ID,
-            custody_status=CustodyStatus.IN_CUSTODY,
-            custody_status_raw_text="IN CUSTODY",
-            admission_date=DATE,
-            last_seen_time=SCRAPER_START_DATETIME - timedelta(days=1),
-            first_seen_time=SCRAPER_START_DATETIME - timedelta(days=1),
-            charges=[charge],
-            holds=[hold],
-        )
-        booking_resolved = attr.evolve(
-            booking_open,
-            booking_id=ID_2,
-            custody_status=CustodyStatus.RELEASED,
-            custody_status_raw_text="RELEASED",
-            release_date=DATE_2,
-            charges=[],
-            holds=[],
-        )
-        booking_open_most_recent_scrape = attr.evolve(
-            booking_open,
-            booking_id=ID_3,
-            last_seen_time=SCRAPER_START_DATETIME,
-            charges=[],
-            holds=[],
-        )
-
-        person = county_entities.Person.new_with_defaults(
-            person_id=ID,
-            region=REGION_1,
-            jurisdiction_id=JURISDICTION_ID,
-            bookings=[booking_open, booking_resolved],
-        )
-        person_unmatched = county_entities.Person.new_with_defaults(
-            person_id=ID_2,
-            region=REGION_1,
-            jurisdiction_id=JURISDICTION_ID,
-            bookings=[booking_open_most_recent_scrape],
-        )
-
-        with SessionFactory.using_database(self.database_key) as session:
-            database.write_people(
-                session,
-                converter.convert_entity_people_to_schema_people(
-                    [person, person_unmatched]
-                ),
-                DEFAULT_METADATA,
-            )
-
-        expected_hold = attr.evolve(
-            hold, status=HoldStatus.REMOVED_WITHOUT_INFO, status_raw_text=None
-        )
-        expected_sentence = attr.evolve(
-            sentence, status=SentenceStatus.REMOVED_WITHOUT_INFO, status_raw_text=None
-        )
-        expected_bond = attr.evolve(
-            bond, status=BondStatus.REMOVED_WITHOUT_INFO, status_raw_text=None
-        )
-        expected_charge = attr.evolve(
-            charge,
-            status=ChargeStatus.REMOVED_WITHOUT_INFO,
-            status_raw_text=None,
-            bond=expected_bond,
-            sentence=expected_sentence,
-        )
-        expected_resolved_booking = attr.evolve(
-            booking_open,
-            custody_status=CustodyStatus.INFERRED_RELEASE,
-            custody_status_raw_text=None,
-            release_date=SCRAPER_START_DATETIME.date(),
-            release_date_inferred=True,
-            charges=[expected_charge],
-            holds=[expected_hold],
-        )
-        expected_person = attr.evolve(
-            person, bookings=[expected_resolved_booking, booking_resolved]
-        )
-
-        # Act
-        persistence.infer_release_on_open_bookings(
-            REGION_1, SCRAPER_START_DATETIME, CustodyStatus.INFERRED_RELEASE
-        )
-
-        # Assert
-        with SessionFactory.using_database(
-            self.database_key, autocommit=False
-        ) as session:
-            people = county_dao.read_people(session)
-        self.assertCountEqual(people, [expected_person, person_unmatched])
-
-    def test_write_different_arrest(self):
-        # Arrange
-        most_recent_scrape_time = SCRAPER_START_DATETIME + timedelta(days=1)
-        metadata = FakeIngestMetadata.for_county(
-            region=REGION_1,
-            jurisdiction_id=JURISDICTION_ID,
-            ingest_time=most_recent_scrape_time,
-        )
-
-        schema_arrest = county_schema.Arrest(
-            external_id=ARREST_ID, officer_name=OFFICER_NAME
-        )
-        schema_booking = county_schema.Booking(
-            booking_id=BOOKING_ID,
-            external_id=EXTERNAL_BOOKING_ID,
-            admission_date_inferred=True,
-            custody_status=CustodyStatus.IN_CUSTODY.value,
-            arrest=schema_arrest,
-            last_seen_time=SCRAPER_START_DATETIME,
-            first_seen_time=SCRAPER_START_DATETIME,
-        )
-        schema_person = county_schema.Person(
-            person_id=PERSON_ID,
-            jurisdiction_id=JURISDICTION_ID,
-            external_id=EXTERNAL_PERSON_ID,
-            region=REGION_1,
-            bookings=[schema_booking],
-        )
-
-        with SessionFactory.using_database(self.database_key) as session:
-            session.add(schema_person)
-
-        ingest_info = IngestInfoProto()
-        ingest_info.people.add(
-            full_name=FULL_NAME_1,
-            person_id=EXTERNAL_PERSON_ID,
-            booking_ids=[EXTERNAL_BOOKING_ID],
-        )
-        ingest_info.bookings.add(
-            booking_id=EXTERNAL_BOOKING_ID,
-            custody_status="IN CUSTODY",
-            arrest_id=ARREST_ID,
-        )
-        ingest_info.arrests.add(arrest_id=ARREST_ID, officer_name=OFFICER_NAME_ANOTHER)
-
-        # Act
-        persistence.write_ingest_info(ingest_info, metadata)
-
-        # Assert
-        expected_arrest = county_entities.Arrest.new_with_defaults(
-            external_id=ARREST_ID, arrest_id=1, officer_name=OFFICER_NAME_ANOTHER
-        )
-        expected_booking = county_entities.Booking.new_with_defaults(
-            booking_id=BOOKING_ID,
-            external_id=EXTERNAL_BOOKING_ID,
-            admission_date_inferred=True,
-            custody_status=CustodyStatus.IN_CUSTODY,
-            custody_status_raw_text=BOOKING_CUSTODY_STATUS.upper(),
-            arrest=expected_arrest,
-            last_seen_time=most_recent_scrape_time,
-            first_seen_time=SCRAPER_START_DATETIME,
-        )
-        expected_person = county_entities.Person.new_with_defaults(
-            person_id=PERSON_ID,
-            external_id=EXTERNAL_PERSON_ID,
-            region=REGION_1,
-            jurisdiction_id=JURISDICTION_ID,
-            bookings=[expected_booking],
-        )
-
-        with SessionFactory.using_database(
-            self.database_key, autocommit=False
-        ) as session:
-            self.assertEqual([expected_person], county_dao.read_people(session))
-
-    def test_write_new_empty_arrest(self):
-        # Arrange
-        most_recent_scrape_time = SCRAPER_START_DATETIME + timedelta(days=1)
-        metadata = FakeIngestMetadata.for_county(
-            region=REGION_1,
-            jurisdiction_id=JURISDICTION_ID,
-            ingest_time=most_recent_scrape_time,
-        )
-
-        schema_arrest = county_schema.Arrest(
-            external_id=ARREST_ID, officer_name=OFFICER_NAME
-        )
-        schema_booking = county_schema.Booking(
-            booking_id=BOOKING_ID,
-            external_id=EXTERNAL_BOOKING_ID,
-            admission_date_inferred=True,
-            custody_status=CustodyStatus.IN_CUSTODY.value,
-            arrest=schema_arrest,
-            last_seen_time=SCRAPER_START_DATETIME,
-            first_seen_time=SCRAPER_START_DATETIME,
-        )
-        schema_person = county_schema.Person(
-            person_id=PERSON_ID,
-            jurisdiction_id=JURISDICTION_ID,
-            external_id=EXTERNAL_PERSON_ID,
-            region=REGION_1,
-            bookings=[schema_booking],
-        )
-
-        with SessionFactory.using_database(self.database_key) as session:
-            session.add(schema_person)
-
-        ingest_info = IngestInfoProto()
-        ingest_info.people.add(
-            full_name=FULL_NAME_1,
-            person_id=EXTERNAL_PERSON_ID,
-            booking_ids=[EXTERNAL_BOOKING_ID],
-        )
-        ingest_info.bookings.add(
-            booking_id=EXTERNAL_BOOKING_ID,
-            custody_status="IN CUSTODY",
-        )
-
-        # Act
-        persistence.write_ingest_info(ingest_info, metadata)
-
-        # Assert
-        expected_arrest = county_entities.Arrest.new_with_defaults(
-            arrest_id=1,
-        )
-        expected_booking = county_entities.Booking.new_with_defaults(
-            booking_id=BOOKING_ID,
-            external_id=EXTERNAL_BOOKING_ID,
-            admission_date_inferred=True,
-            custody_status=CustodyStatus.IN_CUSTODY,
-            custody_status_raw_text=BOOKING_CUSTODY_STATUS.upper(),
-            arrest=expected_arrest,
-            last_seen_time=most_recent_scrape_time,
-            first_seen_time=SCRAPER_START_DATETIME,
-        )
-        expected_person = county_entities.Person.new_with_defaults(
-            person_id=PERSON_ID,
-            external_id=EXTERNAL_PERSON_ID,
-            region=REGION_1,
-            jurisdiction_id=JURISDICTION_ID,
-            bookings=[expected_booking],
-        )
-
-        self.maxDiff = None
-        with SessionFactory.using_database(
-            self.database_key, autocommit=False
-        ) as session:
-            self.assertEqual([expected_person], county_dao.read_people(session))
-
-
-def _format_full_name(full_name: str) -> str:
-    return f'{{"full_name": "{full_name}"}}'
-
-
-PERSON_STATE_1_BASE_INGEST_INFO = StatePerson(
-    state_person_id="39768",
-    surname="HOPKINS",
-    given_names="JON",
-    birthdate="8/15/1979",
-    gender="M",
-    state_person_external_ids=[
-        StatePersonExternalId(state_person_external_id_id="39768", id_type=US_ND_ELITE)
-    ],
-    state_person_races=[StatePersonRace(race="CAUCASIAN")],
-    state_aliases=[
-        StateAlias(surname="HOPKINS", given_names="JON", alias_type="GIVEN_NAME")
-    ],
-    state_sentence_groups=[
-        StateSentenceGroup(state_sentence_group_id="123", status="SERVING")
     ],
 )
-PERSON_STATE_2_BASE_INGEST_INFO = StatePerson(
-    state_person_id="52163",
-    surname="KNOWLES",
-    given_names="SOLANGE",
-    birthdate="6/24/1986",
-    gender="F",
-    state_person_external_ids=[
-        StatePersonExternalId(state_person_external_id_id="52163", id_type=US_MO_DOC)
+
+PERSON_2_FULL_NAME = '{"given_names": "SOLANGE", "surname": "KNOWLES"}'
+PERSON_STATE_2_ENTITY = StatePerson(
+    state_code="US_MO",
+    full_name=PERSON_2_FULL_NAME,
+    birthdate=datetime(1986, 6, 24),
+    gender=Gender.FEMALE,
+    external_ids=[
+        StatePersonExternalId(
+            state_code="US_MO", external_id="52163", id_type=US_MO_DOC
+        )
     ],
-    state_person_races=[StatePersonRace(race="BLACK")],
-    state_aliases=[
-        StateAlias(surname="KNOWLES", given_names="SOLANGE", alias_type="GIVEN_NAME")
+    races=[StatePersonRace(state_code="US_MO", race=Race.BLACK, race_raw_text="BLACK")],
+    aliases=[
+        StatePersonAlias(
+            state_code="US_MO",
+            full_name=PERSON_2_FULL_NAME,
+            alias_type=StatePersonAliasType.GIVEN_NAME,
+            alias_type_raw_text="GIVEN_NAME",
+        )
     ],
-    state_sentence_groups=[
-        StateSentenceGroup(state_sentence_group_id="123", status="SERVING")
+    sentence_groups=[
+        StateSentenceGroup(
+            state_code="US_MO",
+            external_id="123",
+            status=StateSentenceStatus.SERVING,
+            status_raw_text="SERVING",
+        )
     ],
 )
 INGEST_METADATA_STATE_1_INSERT = IngestMetadata(
     region="US_ND",
-    jurisdiction_id=JURISDICTION_ID,
     ingest_time=DATETIME,
     system_level=SystemLevel.STATE,
     database_key=SQLAlchemyDatabaseKey.canonical_for_schema(
@@ -1061,7 +147,6 @@ INGEST_METADATA_STATE_1_INSERT = IngestMetadata(
 )
 INGEST_METADATA_STATE_1_UPDATE = IngestMetadata(
     region="US_ND",
-    jurisdiction_id=JURISDICTION_ID,
     ingest_time=DATETIME_2,
     system_level=SystemLevel.STATE,
     database_key=SQLAlchemyDatabaseKey.canonical_for_schema(
@@ -1070,7 +155,6 @@ INGEST_METADATA_STATE_1_UPDATE = IngestMetadata(
 )
 INGEST_METADATA_STATE_2_INSERT = IngestMetadata(
     region="US_MO",
-    jurisdiction_id=JURISDICTION_ID,
     ingest_time=DATETIME,
     system_level=SystemLevel.STATE,
     database_key=SQLAlchemyDatabaseKey.canonical_for_schema(
@@ -1079,7 +163,6 @@ INGEST_METADATA_STATE_2_INSERT = IngestMetadata(
 )
 INGEST_METADATA_STATE_2_UPDATE = IngestMetadata(
     region="US_MO",
-    jurisdiction_id=JURISDICTION_ID,
     ingest_time=DATETIME_2,
     system_level=SystemLevel.STATE,
     database_key=SQLAlchemyDatabaseKey.canonical_for_schema(
@@ -1095,8 +178,26 @@ class MultipleStateTestMixin:
     """
 
     @abc.abstractmethod
-    def run_transactions(self, state_1_ingest_info, state_2_ingest_info):
+    def run_transactions(
+        self,
+        state_1_entities: List[state_entities.StatePerson],
+        state_2_entities: List[state_entities.StatePerson],
+    ):
         """Writes the given ingest infos in separate transactions"""
+
+    def write_entities(
+        self, entities: List[StatePerson], metadata: IngestMetadata
+    ) -> None:
+        persistence.write_entities(
+            conversion_result=EntityDeserializationResult(
+                people=entities,
+                enum_parsing_errors=0,
+                general_parsing_errors=0,
+                protected_class_errors=0,
+            ),
+            ingest_metadata=metadata,
+            total_people=len(entities),
+        )
 
     def test_insertRootEntities_succeeds(self):
         # Arrange
@@ -1107,8 +208,7 @@ class MultipleStateTestMixin:
 
         # Act
         self.run_transactions(
-            IngestInfo(state_people=[deepcopy(PERSON_STATE_1_BASE_INGEST_INFO)]),
-            IngestInfo(state_people=[deepcopy(PERSON_STATE_2_BASE_INGEST_INFO)]),
+            [deepcopy(PERSON_STATE_1_ENTITY)], [deepcopy(PERSON_STATE_2_ENTITY)]
         )
 
         # Assert
@@ -1135,31 +235,34 @@ class MultipleStateTestMixin:
             session.add(placeholder_person)
 
         # Write persons to be updated
-        persistence.write_ingest_info(
-            convert_ingest_info_to_proto(
-                IngestInfo(state_people=[deepcopy(PERSON_STATE_1_BASE_INGEST_INFO)])
-            ),
-            INGEST_METADATA_STATE_1_INSERT,
+        self.write_entities(
+            [deepcopy(PERSON_STATE_1_ENTITY)], metadata=INGEST_METADATA_STATE_1_INSERT
         )
-        persistence.write_ingest_info(
-            convert_ingest_info_to_proto(
-                IngestInfo(state_people=[deepcopy(PERSON_STATE_2_BASE_INGEST_INFO)])
-            ),
-            INGEST_METADATA_STATE_2_INSERT,
+        self.write_entities(
+            [deepcopy(PERSON_STATE_2_ENTITY)], metadata=INGEST_METADATA_STATE_2_INSERT
         )
 
         # Act
         # Add risk assessment to both persons
-        person_state_1 = deepcopy(PERSON_STATE_1_BASE_INGEST_INFO)
-        person_state_1.create_state_assessment(assessment_class="RISK")
-
-        person_state_2 = deepcopy(PERSON_STATE_2_BASE_INGEST_INFO)
-        person_state_2.create_state_assessment(assessment_class="RISK")
-
-        self.run_transactions(
-            IngestInfo(state_people=[person_state_1]),
-            IngestInfo(state_people=[person_state_2]),
+        person_state_1 = deepcopy(PERSON_STATE_1_ENTITY)
+        person_state_1.assessments.append(
+            StateAssessment.new_with_defaults(
+                state_code="US_ND",
+                assessment_class=StateAssessmentClass.RISK,
+                assessment_class_raw_text="RISK",
+            )
         )
+
+        person_state_2 = deepcopy(PERSON_STATE_2_ENTITY)
+        person_state_2.assessments.append(
+            StateAssessment.new_with_defaults(
+                state_code="US_MO",
+                assessment_class=StateAssessmentClass.RISK,
+                assessment_class_raw_text="RISK",
+            )
+        )
+
+        self.run_transactions([person_state_1], [person_state_2])
 
         # Assert
         with SessionFactory.using_database(
@@ -1167,6 +270,7 @@ class MultipleStateTestMixin:
         ) as session:
             result = state_dao.read_people(session)
 
+        result = sorted(result, key=lambda p: p.person_id)
         assert len(result) == 3
         assert result[0].full_name is None
         assert result[1].full_name == '{"given_names": "JON", "surname": "HOPKINS"}'
@@ -1184,31 +288,34 @@ class MultipleStateTestMixin:
             session.add(placeholder_person)
 
         # Write persons to be updated
-        persistence.write_ingest_info(
-            convert_ingest_info_to_proto(
-                IngestInfo(state_people=[deepcopy(PERSON_STATE_1_BASE_INGEST_INFO)])
-            ),
-            INGEST_METADATA_STATE_1_INSERT,
+        self.write_entities(
+            [deepcopy(PERSON_STATE_1_ENTITY)], metadata=INGEST_METADATA_STATE_1_INSERT
         )
-        persistence.write_ingest_info(
-            convert_ingest_info_to_proto(
-                IngestInfo(state_people=[deepcopy(PERSON_STATE_2_BASE_INGEST_INFO)])
-            ),
-            INGEST_METADATA_STATE_2_INSERT,
+        self.write_entities(
+            [deepcopy(PERSON_STATE_2_ENTITY)], metadata=INGEST_METADATA_STATE_2_INSERT
         )
 
         # Act
         # Add risk assessment to person 1 and program assignment to person 2
-        person_state_1 = deepcopy(PERSON_STATE_1_BASE_INGEST_INFO)
-        person_state_1.create_state_assessment(assessment_class="RISK")
-
-        person_state_2 = deepcopy(PERSON_STATE_2_BASE_INGEST_INFO)
-        person_state_2.create_state_program_assignment(program_id="1234")
-
-        self.run_transactions(
-            IngestInfo(state_people=[person_state_1]),
-            IngestInfo(state_people=[person_state_2]),
+        person_state_1 = deepcopy(PERSON_STATE_1_ENTITY)
+        person_state_1.assessments.append(
+            StateAssessment.new_with_defaults(
+                state_code="US_ND",
+                assessment_class=StateAssessmentClass.RISK,
+                assessment_class_raw_text="RISK",
+            )
         )
+
+        person_state_2 = deepcopy(PERSON_STATE_2_ENTITY)
+        person_state_2.program_assignments.append(
+            StateProgramAssignment.new_with_defaults(
+                state_code="US_MO",
+                external_id="1234",
+                participation_status=StateProgramAssignmentParticipationStatus.PRESENT_WITHOUT_INFO,
+            )
+        )
+
+        self.run_transactions([person_state_1], [person_state_2])
 
         # Assert
         with SessionFactory.using_database(
@@ -1216,6 +323,7 @@ class MultipleStateTestMixin:
         ) as session:
             result = state_dao.read_people(session)
 
+        result = sorted(result, key=lambda p: p.person_id)
         assert len(result) == 3
         assert result[0].full_name is None
         assert result[1].full_name == '{"given_names": "JON", "surname": "HOPKINS"}'
@@ -1233,31 +341,22 @@ class MultipleStateTestMixin:
             session.add(placeholder_person)
 
         # Write persons to be updated
-        persistence.write_ingest_info(
-            convert_ingest_info_to_proto(
-                IngestInfo(state_people=[deepcopy(PERSON_STATE_1_BASE_INGEST_INFO)])
-            ),
-            INGEST_METADATA_STATE_1_INSERT,
+        self.write_entities(
+            [deepcopy(PERSON_STATE_1_ENTITY)], INGEST_METADATA_STATE_1_INSERT
         )
-        persistence.write_ingest_info(
-            convert_ingest_info_to_proto(
-                IngestInfo(state_people=[deepcopy(PERSON_STATE_2_BASE_INGEST_INFO)])
-            ),
-            INGEST_METADATA_STATE_2_INSERT,
+        self.write_entities(
+            [deepcopy(PERSON_STATE_2_ENTITY)], INGEST_METADATA_STATE_2_INSERT
         )
 
         # Act
         # Update existing sentence on both persons
-        person_state_1 = deepcopy(PERSON_STATE_1_BASE_INGEST_INFO)
-        person_state_1.state_sentence_groups[0].status = "COMPLETED"
+        person_state_1 = deepcopy(PERSON_STATE_1_ENTITY)
+        person_state_1.sentence_groups[0].status = StateSentenceStatus.COMPLETED
 
-        person_state_2 = deepcopy(PERSON_STATE_2_BASE_INGEST_INFO)
-        person_state_2.state_sentence_groups[0].status = "COMPLETED"
+        person_state_2 = deepcopy(PERSON_STATE_2_ENTITY)
+        person_state_2.sentence_groups[0].status = StateSentenceStatus.COMPLETED
 
-        self.run_transactions(
-            IngestInfo(state_people=[person_state_1]),
-            IngestInfo(state_people=[person_state_2]),
-        )
+        self.run_transactions([person_state_1], [person_state_2])
 
         # Assert
         with SessionFactory.using_database(
@@ -1265,6 +364,7 @@ class MultipleStateTestMixin:
         ) as session:
             result = state_dao.read_people(session)
 
+        result = sorted(result, key=lambda p: p.person_id)
         assert len(result) == 3
         assert result[0].full_name is None
         assert result[1].full_name == '{"given_names": "JON", "surname": "HOPKINS"}'
@@ -1272,6 +372,7 @@ class MultipleStateTestMixin:
         assert result[1].sentence_groups[0].status == "COMPLETED"
         assert result[2].full_name == '{"given_names": "SOLANGE", "surname": "KNOWLES"}'
         assert len(result[2].sentence_groups) == 1
+
         assert result[2].sentence_groups[0].status == "COMPLETED"
 
     def test_updateNonOverlappingTypes_succeeds(self):
@@ -1284,31 +385,22 @@ class MultipleStateTestMixin:
             session.add(placeholder_person)
 
         # Write persons to be updated
-        persistence.write_ingest_info(
-            convert_ingest_info_to_proto(
-                IngestInfo(state_people=[deepcopy(PERSON_STATE_1_BASE_INGEST_INFO)])
-            ),
-            INGEST_METADATA_STATE_1_INSERT,
+        self.write_entities(
+            [deepcopy(PERSON_STATE_1_ENTITY)], INGEST_METADATA_STATE_1_INSERT
         )
-        persistence.write_ingest_info(
-            convert_ingest_info_to_proto(
-                IngestInfo(state_people=[deepcopy(PERSON_STATE_2_BASE_INGEST_INFO)])
-            ),
-            INGEST_METADATA_STATE_2_INSERT,
+        self.write_entities(
+            [deepcopy(PERSON_STATE_2_ENTITY)], INGEST_METADATA_STATE_2_INSERT
         )
 
         # Act
         # Update race on person 1 and sentence on person 2
-        person_state_1 = deepcopy(PERSON_STATE_1_BASE_INGEST_INFO)
-        person_state_1.state_person_races[0].race = "WHITE"
+        person_state_1 = deepcopy(PERSON_STATE_1_ENTITY)
+        person_state_1.races[0].race = Race.WHITE
 
-        person_state_2 = deepcopy(PERSON_STATE_2_BASE_INGEST_INFO)
-        person_state_2.state_sentence_groups[0].status = "COMPLETED"
+        person_state_2 = deepcopy(PERSON_STATE_2_ENTITY)
+        person_state_2.sentence_groups[0].status = StateSentenceStatus.COMPLETED
 
-        self.run_transactions(
-            IngestInfo(state_people=[person_state_1]),
-            IngestInfo(state_people=[person_state_2]),
-        )
+        self.run_transactions([person_state_1], [person_state_2])
 
         # Assert
         with SessionFactory.using_database(
@@ -1316,6 +408,7 @@ class MultipleStateTestMixin:
         ) as session:
             result = state_dao.read_people(session)
 
+        result = sorted(result, key=lambda p: p.person_id)
         assert len(result) == 3
         assert result[0].full_name is None
         assert result[1].full_name == '{"given_names": "JON", "surname": "HOPKINS"}'
@@ -1378,11 +471,18 @@ class TestPersistenceMultipleThreadsOverlapping(TestCase, MultipleStateTestMixin
             cls.temp_db_dir
         )
 
-    def run_transactions(self, state_1_ingest_info, state_2_ingest_info):
-        return _run_transactions_overlapping(state_1_ingest_info, state_2_ingest_info)
+    def run_transactions(
+        self,
+        state_1_entities: List[state_entities.StatePerson],
+        state_2_entities: List[state_entities.StatePerson],
+    ):
+        return _run_transactions_overlapping(state_1_entities, state_2_entities)
 
 
-def _run_transactions_overlapping(state_1_ingest_info, state_2_ingest_info):
+def _run_transactions_overlapping(
+    state_1_entities: List[state_entities.StatePerson],
+    state_2_entities: List[state_entities.StatePerson],
+):
     """This coordinates two transactions such that they overlap
 
     - Runs T1
@@ -1394,18 +494,30 @@ def _run_transactions_overlapping(state_1_ingest_info, state_2_ingest_info):
     def transaction1(
         precommit_event: threading.Event, other_committed_event: threading.Event
     ):
-        persistence.write_ingest_info(
-            convert_ingest_info_to_proto(state_1_ingest_info),
-            INGEST_METADATA_STATE_1_UPDATE,
+        persistence.write_entities(
+            conversion_result=EntityDeserializationResult(
+                people=state_1_entities,
+                enum_parsing_errors=0,
+                general_parsing_errors=0,
+                protected_class_errors=0,
+            ),
+            ingest_metadata=INGEST_METADATA_STATE_1_UPDATE,
+            total_people=len(state_1_entities),
             run_txn_fn=_get_run_transaction_block_commit_fn(
                 precommit_event, other_committed_event
             ),
         )
 
     def transaction2(other_precommit_event, committed_event):
-        persistence.write_ingest_info(
-            convert_ingest_info_to_proto(state_2_ingest_info),
-            INGEST_METADATA_STATE_2_UPDATE,
+        persistence.write_entities(
+            conversion_result=EntityDeserializationResult(
+                people=state_2_entities,
+                enum_parsing_errors=0,
+                general_parsing_errors=0,
+                protected_class_errors=0,
+            ),
+            ingest_metadata=INGEST_METADATA_STATE_2_UPDATE,
+            total_people=len(state_2_entities),
             run_txn_fn=_get_run_transaction_after_other_fn(
                 other_precommit_event, committed_event
             ),
@@ -1543,14 +655,21 @@ class TestPersistenceMultipleThreadsInterleaved(TestCase, MultipleStateTestMixin
             cls.temp_db_dir
         )
 
-    def run_transactions(self, state_1_ingest_info, state_2_ingest_info):
-        return _run_transactions_interleaved(state_1_ingest_info, state_2_ingest_info)
+    def run_transactions(
+        self,
+        state_1_entities: List[state_entities.StatePerson],
+        state_2_entities: List[state_entities.StatePerson],
+    ):
+        return _run_transactions_interleaved(state_1_entities, state_2_entities)
 
 
 DELAY = 0.1
 
 
-def _run_transactions_interleaved(state_1_ingest_info, state_2_ingest_info):
+def _run_transactions_interleaved(
+    state_1_entities: List[state_entities.StatePerson],
+    state_2_entities: List[state_entities.StatePerson],
+):
     """Offset transactions and delay writes slightly so that transactions are interleaved
 
     Example execution timeline:
@@ -1565,26 +684,38 @@ def _run_transactions_interleaved(state_1_ingest_info, state_2_ingest_info):
     """
     orig_flush = sqlalchemy.orm.session.Session.flush
 
-    def delayed_flush(self):
+    def delayed_flush(self) -> None:
         time.sleep(DELAY)
         logging.info("Flushing")
         orig_flush(self)
 
     with patch.object(sqlalchemy.orm.session.Session, "flush", delayed_flush):
 
-        def transaction1():
-            persistence.write_ingest_info(
-                convert_ingest_info_to_proto(state_1_ingest_info),
-                INGEST_METADATA_STATE_1_UPDATE,
+        def transaction1() -> None:
+            persistence.write_entities(
+                conversion_result=EntityDeserializationResult(
+                    people=state_1_entities,
+                    enum_parsing_errors=0,
+                    general_parsing_errors=0,
+                    protected_class_errors=0,
+                ),
+                ingest_metadata=INGEST_METADATA_STATE_1_UPDATE,
+                total_people=len(state_1_entities),
                 run_txn_fn=_get_run_transaction_fn(1),
             )
 
-        def transaction2():
+        def transaction2() -> None:
             # Delay start of T2
             time.sleep(DELAY)
-            persistence.write_ingest_info(
-                convert_ingest_info_to_proto(state_2_ingest_info),
-                INGEST_METADATA_STATE_2_UPDATE,
+            persistence.write_entities(
+                conversion_result=EntityDeserializationResult(
+                    people=state_2_entities,
+                    enum_parsing_errors=0,
+                    general_parsing_errors=0,
+                    protected_class_errors=0,
+                ),
+                ingest_metadata=INGEST_METADATA_STATE_2_UPDATE,
+                total_people=len(state_1_entities),
                 run_txn_fn=_get_run_transaction_fn(2),
             )
 

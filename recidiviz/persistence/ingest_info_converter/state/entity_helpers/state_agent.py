@@ -21,7 +21,7 @@ from recidiviz.common.constants.defaulting_and_normalizing_enum_parser import (
     DefaultingAndNormalizingEnumParser,
 )
 from recidiviz.common.constants.state.state_agent import StateAgentType
-from recidiviz.common.ingest_metadata import IngestMetadata
+from recidiviz.common.ingest_metadata import LegacyStateAndJailsIngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import StateAgent
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state.deserialize_entity_factories import (
@@ -32,7 +32,9 @@ from recidiviz.persistence.ingest_info_converter.utils.names import parse_name
 
 # TODO(#8905): Delete this file once all states have been migrated to v2 ingest
 #  mappings.
-def convert(proto: StateAgent, metadata: IngestMetadata) -> entities.StateAgent:
+def convert(
+    proto: StateAgent, metadata: LegacyStateAndJailsIngestMetadata
+) -> entities.StateAgent:
     """Converts an ingest_info proto StateAgent to a persistence entity."""
     new = entities.StateAgent.builder()
 

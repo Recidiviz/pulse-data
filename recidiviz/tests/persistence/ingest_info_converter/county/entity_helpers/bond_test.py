@@ -19,14 +19,16 @@ import unittest
 
 import attr
 
-from recidiviz.common.constants.bond import BondType, BondStatus
+from recidiviz.common.constants.bond import BondStatus, BondType
 from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.county import entities
 from recidiviz.persistence.ingest_info_converter.county.entity_helpers import bond
-from recidiviz.tests.persistence.database.database_test_utils import FakeIngestMetadata
+from recidiviz.tests.persistence.database.database_test_utils import (
+    FakeLegacyStateAndJailsIngestMetadata,
+)
 
-_EMPTY_METADATA = FakeIngestMetadata.for_county("us_xx_county")
+_EMPTY_METADATA = FakeLegacyStateAndJailsIngestMetadata.for_county("us_xx_county")
 
 
 class BondConverterTest(unittest.TestCase):

@@ -17,20 +17,22 @@
 """Tests for converting bookings."""
 import unittest
 from datetime import date, datetime
-from mock import patch, Mock
 
+from mock import Mock, patch
 
 from recidiviz.common.constants.county.booking import (
-    ReleaseReason,
-    CustodyStatus,
-    Classification,
     AdmissionReason,
+    Classification,
+    CustodyStatus,
+    ReleaseReason,
 )
 from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.county import entities
 from recidiviz.persistence.ingest_info_converter.county.entity_helpers import booking
-from recidiviz.tests.persistence.database.database_test_utils import FakeIngestMetadata
+from recidiviz.tests.persistence.database.database_test_utils import (
+    FakeLegacyStateAndJailsIngestMetadata,
+)
 
 _INGEST_TIME = datetime(year=2019, month=2, day=18)
 
@@ -43,7 +45,7 @@ class BookingConverterTest(unittest.TestCase):
 
     def testParseBooking(self):
         # Arrange
-        metadata = FakeIngestMetadata.for_county(
+        metadata = FakeLegacyStateAndJailsIngestMetadata.for_county(
             region="REGION", ingest_time=_INGEST_TIME
         )
 
@@ -86,7 +88,7 @@ class BookingConverterTest(unittest.TestCase):
 
     def testParseBooking_SetsDefaults(self):
         # Arrange
-        metadata = FakeIngestMetadata.for_county(
+        metadata = FakeLegacyStateAndJailsIngestMetadata.for_county(
             region="REGION",
             ingest_time=_INGEST_TIME,
         )
@@ -109,7 +111,7 @@ class BookingConverterTest(unittest.TestCase):
 
     def testParseBooking_releaseDateWithoutStatus_marksAsReleased(self):
         # Arrange
-        metadata = FakeIngestMetadata.for_county(
+        metadata = FakeLegacyStateAndJailsIngestMetadata.for_county(
             region="REGION", ingest_time=_INGEST_TIME
         )
 
@@ -138,7 +140,7 @@ class BookingConverterTest(unittest.TestCase):
 
     def testParseBooking_releaseDateInFuture_setAsProjected(self):
         # Arrange
-        metadata = FakeIngestMetadata.for_county(
+        metadata = FakeLegacyStateAndJailsIngestMetadata.for_county(
             region="REGION", ingest_time=_INGEST_TIME
         )
 
@@ -174,7 +176,7 @@ class BookingConverterTest(unittest.TestCase):
             "WORK RELEASE", Classification.WORK_RELEASE, AdmissionReason
         )
         overrides_builder.add("transfer", AdmissionReason.TRANSFER, CustodyStatus)
-        metadata = FakeIngestMetadata.for_county(
+        metadata = FakeLegacyStateAndJailsIngestMetadata.for_county(
             region="REGION",
             ingest_time=_INGEST_TIME,
             enum_overrides=overrides_builder.build(),
@@ -204,7 +206,7 @@ class BookingConverterTest(unittest.TestCase):
     @patch("recidiviz.common.fid.fid_exists", Mock(return_value=True))
     def testParseBooking_facilityId(self):
         # Arrange
-        metadata = FakeIngestMetadata.for_county(
+        metadata = FakeLegacyStateAndJailsIngestMetadata.for_county(
             region="REGION",
             ingest_time=_INGEST_TIME,
         )
@@ -232,7 +234,7 @@ class BookingConverterTest(unittest.TestCase):
     @patch("recidiviz.common.fid.fid_exists", Mock(return_value=False))
     def testParseBooking_facilityId_doesNotExist(self):
         # Arrange
-        metadata = FakeIngestMetadata.for_county(
+        metadata = FakeLegacyStateAndJailsIngestMetadata.for_county(
             region="REGION",
             ingest_time=_INGEST_TIME,
         )

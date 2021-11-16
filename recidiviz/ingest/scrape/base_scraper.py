@@ -47,7 +47,10 @@ from lxml import html
 from lxml.etree import XMLSyntaxError  # pylint:disable=no-name-in-module
 
 from recidiviz.common.common_utils import get_trace_id_from_flask
-from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
+from recidiviz.common.ingest_metadata import (
+    LegacyStateAndJailsIngestMetadata,
+    SystemLevel,
+)
 from recidiviz.ingest.models import serialization
 from recidiviz.ingest.models.ingest_info import IngestInfo
 from recidiviz.ingest.models.scrape_key import ScrapeKey
@@ -296,7 +299,7 @@ class BaseScraper(Scraper):
                         "Last seen time of person being set as: [%s]",
                         request.scraper_start_time,
                     )
-                    metadata = IngestMetadata(
+                    metadata = LegacyStateAndJailsIngestMetadata(
                         region=self.region.region_code,
                         jurisdiction_id=self.region.jurisdiction_id,
                         ingest_time=request.scraper_start_time,

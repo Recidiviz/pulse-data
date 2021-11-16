@@ -18,7 +18,7 @@
 from typing import Optional, cast
 
 from recidiviz.common.constants.bond import BondStatus, BondType
-from recidiviz.common.ingest_metadata import IngestMetadata
+from recidiviz.common.ingest_metadata import LegacyStateAndJailsIngestMetadata
 from recidiviz.common.str_field_utils import normalize
 from recidiviz.persistence.entity.county import entities
 from recidiviz.persistence.ingest_info_converter.utils import converter_utils
@@ -31,7 +31,7 @@ from recidiviz.persistence.ingest_info_converter.utils.ingest_info_proto_enum_ma
 )
 
 
-def convert(proto, metadata: IngestMetadata) -> entities.Bond:
+def convert(proto, metadata: LegacyStateAndJailsIngestMetadata) -> entities.Bond:
     """Converts an ingest_info proto Bond to a persistence entity."""
     new = entities.Bond.builder()
 

@@ -37,21 +37,25 @@ from recidiviz.common.constants.state.state_supervision_violation import (
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseDecision,
 )
-from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
+from recidiviz.common.ingest_metadata import (
+    IngestMetadata,
+    LegacyStateAndJailsIngestMetadata,
+    SystemLevel,
+)
 from recidiviz.persistence.database.schema.state import schema as state_schema
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 
 
 @attr.s
-class FakeIngestMetadata(IngestMetadata):
+class FakeLegacyStateAndJailsIngestMetadata(IngestMetadata):
     @classmethod
     def for_state(
         cls,
         region: str,
         enum_overrides: Optional[EnumOverrides] = None,
-    ) -> IngestMetadata:
-        return IngestMetadata(
+    ) -> LegacyStateAndJailsIngestMetadata:
+        return LegacyStateAndJailsIngestMetadata(
             region=region,
             jurisdiction_id="",
             ingest_time=datetime.datetime(2020, 4, 14, 12, 31, 00),
@@ -68,8 +72,8 @@ class FakeIngestMetadata(IngestMetadata):
         ingest_time: Optional[datetime.datetime] = None,
         enum_overrides: Optional[EnumOverrides] = None,
         facility_id: Optional[str] = None,
-    ) -> IngestMetadata:
-        return IngestMetadata(
+    ) -> LegacyStateAndJailsIngestMetadata:
+        return LegacyStateAndJailsIngestMetadata(
             region=region,
             jurisdiction_id=jurisdiction_id or "jurisdiction_id",
             ingest_time=ingest_time or datetime.datetime(2020, 4, 14, 12, 31, 00),
