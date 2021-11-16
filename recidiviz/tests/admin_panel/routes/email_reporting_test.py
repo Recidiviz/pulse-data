@@ -23,15 +23,20 @@ from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
 import flask
+import pytest
 from flask import Blueprint, Flask
 
 from recidiviz.admin_panel.routes.line_staff_tools import add_line_staff_tools_routes
+from recidiviz.case_triage.scoped_sessions import setup_scoped_sessions
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.results import MultiRequestResult
+from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.reporting.context.po_monthly_report.constants import ReportType
 from recidiviz.reporting.email_reporting_utils import Batch
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
+from recidiviz.tools.postgres import local_postgres_helpers
 
 FIXTURE_FILE = "po_monthly_report_data_fixture.json"
 
@@ -42,8 +47,15 @@ FIXTURE_FILE = "po_monthly_report_data_fixture.json"
     "recidiviz.utils.validate_jwt.validate_iap_jwt_from_app_engine",
     MagicMock(return_value=("test-user", "test-user@recidiviz.org", None)),
 )
+@pytest.mark.uses_db
 class ReportingEndpointTests(TestCase):
     """Integration tests of our flask endpoints"""
+
+    temp_db_dir: str
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
 
     def setUp(self) -> None:
         self.gcs_file_system_patcher = patch(
@@ -59,6 +71,13 @@ class ReportingEndpointTests(TestCase):
         self.mock_gcs_file_system.return_value = self.gcs_file_system
 
         self.app = Flask(__name__)
+        self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE)
+        self.overridden_env_vars = (
+            local_postgres_helpers.update_local_sqlalchemy_postgres_env_vars()
+        )
+        db_url = local_postgres_helpers.postgres_db_url_from_env_vars()
+        engine = setup_scoped_sessions(self.app, db_url)
+        self.database_key.declarative_meta.metadata.create_all(engine)
 
         blueprint = Blueprint("email_reporting_test", __name__)
         self.app.config["TESTING"] = True
@@ -85,6 +104,16 @@ class ReportingEndpointTests(TestCase):
     def tearDown(self) -> None:
         self.requires_gae_auth_patcher.stop()
         self.gcs_file_system_patcher.stop()
+        local_postgres_helpers.restore_local_env_vars(self.overridden_env_vars)
+        local_postgres_helpers.teardown_on_disk_postgresql_database(
+            SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE)
+        )
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
+            cls.temp_db_dir
+        )
 
     def test_generate_emails_validation(self) -> None:
         with self.app.test_request_context():

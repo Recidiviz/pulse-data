@@ -116,6 +116,7 @@ DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED: Set[str] = {
     "justice_counts_corrections",
     "justice_counts_dashboard",
     "justice_counts_jails",
+    "overdue_discharge_alert",
     "partner_data_csg",
     "po_report_views",
     "population_projection_data",
