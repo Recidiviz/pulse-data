@@ -37,6 +37,7 @@ from recidiviz.persistence.entity.entity_utils import (
     is_placeholder,
 )
 from recidiviz.persistence.entity.state.entities import (
+    StateIncarcerationPeriod,
     StateIncarcerationSentence,
     StateSupervisionPeriod,
     StateSupervisionSentence,
@@ -71,10 +72,25 @@ class StateSpecificSupervisionPreProcessingDelegate(abc.ABC):
         time on each supervision type."""
         return supervision_periods
 
+    def infer_additional_periods(
+        self,
+        supervision_periods: List[StateSupervisionPeriod],
+        incarceration_periods: Optional[List[StateIncarcerationPeriod]],
+    ) -> List[StateSupervisionPeriod]:
+        """Some states may require additional supervision periods to be inserted
+        based on gaps in information. For instance, periods that represent active absconsions."""
+        return supervision_periods
+
     def pre_processing_relies_on_sentences(self) -> bool:
         """State-specific implementations of this class should return whether the SP
         pre-processing logic for the state relies on information in
         StateIncarcerationSentence and StateSupervisionSentence entities."""
+        return False
+
+    def pre_processing_relies_on_incarceration_periods(self) -> bool:
+        """State-specific implementations of this class should return whether the SP
+        pre-processing logic for the state relies on information in
+        StateIncarcerationPeriod entities."""
         return False
 
 
@@ -87,6 +103,7 @@ class SupervisionPreProcessingManager:
         delegate: StateSpecificSupervisionPreProcessingDelegate,
         incarceration_sentences: Optional[List[StateIncarcerationSentence]],
         supervision_sentences: Optional[List[StateSupervisionSentence]],
+        incarceration_periods: Optional[List[StateIncarcerationPeriod]],
         earliest_death_date: Optional[datetime.date] = None,
     ):
         self._supervision_periods = deepcopy(supervision_periods)
@@ -104,6 +121,11 @@ class SupervisionPreProcessingManager:
         self._supervision_sentences: Optional[List[StateSupervisionSentence]] = (
             supervision_sentences
             if self.delegate.pre_processing_relies_on_sentences()
+            else None
+        )
+        self._incarceration_periods: Optional[List[StateIncarcerationPeriod]] = (
+            incarceration_periods
+            if self.delegate.pre_processing_relies_on_incarceration_periods()
             else None
         )
 
@@ -154,6 +176,10 @@ class SupervisionPreProcessingManager:
                 mid_processing_periods,
                 self._incarceration_sentences,
                 self._supervision_sentences,
+            )
+
+            mid_processing_periods = self.delegate.infer_additional_periods(
+                mid_processing_periods, self._incarceration_periods
             )
 
             # Process fields on final supervision period set

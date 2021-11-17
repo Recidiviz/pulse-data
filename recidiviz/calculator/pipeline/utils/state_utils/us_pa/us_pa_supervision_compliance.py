@@ -39,6 +39,7 @@ from recidiviz.common.constants.state.state_supervision_contact import (
 )
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
+    StateSupervisionPeriodAdmissionReason,
 )
 from recidiviz.common.date import DateRange
 from recidiviz.persistence.entity.state.entities import StateSupervisionContact
@@ -206,18 +207,20 @@ class UsPaSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
                 and supervised_on_minimum_year_plus
                 and not incurred_medium_to_high_sanctions
             )
-            or self._can_skip_contact_or_reassessment(compliance_evaluation_date)
+            or self._is_incarcerated(compliance_evaluation_date)
+            or self._is_in_parole_board_hold(compliance_evaluation_date)
+            or self._is_past_max_date_of_supervision(compliance_evaluation_date)
+            or self._is_actively_absconding(compliance_evaluation_date)
             or self._is_within_max_date_of_supervision(compliance_evaluation_date)
         )
 
-    def _can_skip_contact_or_reassessment(
-        self, compliance_evaluation_date: date
-    ) -> bool:
+    def _can_skip_direct_contact(self, compliance_evaluation_date: date) -> bool:
         """Determines whether a contact can be skipped."""
         return (
             self._is_incarcerated(compliance_evaluation_date)
             or self._is_in_parole_board_hold(compliance_evaluation_date)
             or self._is_past_max_date_of_supervision(compliance_evaluation_date)
+            or self._is_actively_absconding(compliance_evaluation_date)
         )
 
     def _next_recommended_face_to_face_date(
@@ -233,7 +236,7 @@ class UsPaSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
                 StateSupervisionLevel.ELECTRONIC_MONITORING_ONLY,
                 StateSupervisionLevel.LIMITED,
             )
-            or self._can_skip_contact_or_reassessment(compliance_evaluation_date)
+            or self._can_skip_direct_contact(compliance_evaluation_date)
         ):
             return None
 
@@ -284,7 +287,7 @@ class UsPaSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
                 StateSupervisionLevel.LIMITED,
                 StateSupervisionLevel.MINIMUM,
             )
-            or self._can_skip_contact_or_reassessment(compliance_evaluation_date)
+            or self._can_skip_direct_contact(compliance_evaluation_date)
             or self.supervision_period.supervision_level
             not in SUPERVISION_HOME_VISIT_FREQUENCY_REQUIREMENTS
         ):
@@ -325,6 +328,16 @@ class UsPaSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
             and lower_bound_inclusive <= contact.contact_date <= upper_bound_inclusive
         ]
 
+    def _can_skip_collateral_contact_date(
+        self, compliance_evaluation_date: date
+    ) -> bool:
+        """Returns whether or not a collateral contact can be skipped."""
+        return (
+            self._is_incarcerated(compliance_evaluation_date)
+            or self._is_in_parole_board_hold(compliance_evaluation_date)
+            or self._is_past_max_date_of_supervision(compliance_evaluation_date)
+        )
+
     def _next_recommended_treatment_collateral_contact_date(
         self, compliance_evaluation_date: date
     ) -> Optional[date]:
@@ -340,7 +353,7 @@ class UsPaSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
         if (
             self.supervision_period.supervision_level
             not in SUPERVISION_COLLATERAL_VISIT_FREQUENCY_REQUIREMENTS
-            or self._can_skip_contact_or_reassessment(compliance_evaluation_date)
+            or self._can_skip_collateral_contact_date(compliance_evaluation_date)
         ):
             return None
 
@@ -442,4 +455,12 @@ class UsPaSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
             max_completion_date - relativedelta(days=DAYS_WITHIN_MAX_DATE)
             <= compliance_evaluation_date
             <= max_completion_date
+        )
+
+    def _is_actively_absconding(self, compliance_evaluation_date: date) -> bool:
+        """Returns whether this current supervision period indicates an active absconsion."""
+        return (
+            self.supervision_period.duration.contains_day(compliance_evaluation_date)
+            and self.supervision_period.admission_reason
+            == StateSupervisionPeriodAdmissionReason.ABSCONSION
         )
