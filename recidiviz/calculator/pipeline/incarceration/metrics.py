@@ -338,3 +338,8 @@ If a person was admitted to Facility X on 2021-01-01, was transferred out of Fac
 
     # The length, in days, of the continuous stay in prison.
     total_days_incarcerated: Optional[int] = attr.ib(default=None)
+
+    # Supervision type at the time of commitment from supervision to incarceration prior to release, if applicable.
+    commitment_from_supervision_supervision_type: Optional[
+        StateSupervisionPeriodSupervisionType
+    ] = attr.ib(default=None)
