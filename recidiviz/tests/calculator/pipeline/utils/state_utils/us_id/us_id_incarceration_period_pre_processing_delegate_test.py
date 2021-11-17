@@ -30,7 +30,6 @@ from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index 
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_incarceration_period_pre_processing_delegate import (
     UsIdIncarcerationPreProcessingDelegate,
-    get_commitment_admission_reason_from_preceding_supervision_period,
 )
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
@@ -223,7 +222,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         updated_period = attr.evolve(
             incarceration_period,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
         )
 
         validated_incarceration_periods = (
@@ -393,7 +392,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         expected_period = attr.evolve(
             incarceration_revocation_period,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
         )
 
         validated_incarceration_periods = (
@@ -520,7 +519,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         updated_revocation_period = attr.evolve(
             incarceration_revocation_period,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
         )
 
         validated_incarceration_periods = (
@@ -758,30 +757,3 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
         )
 
         self.assertEqual([expected_period], validated_incarceration_periods)
-
-
-class TestGetCommitmentAdmissionReasonFromPrecedingSupervisionPeriod(unittest.TestCase):
-    """Tests the get_commitment_admission_reason_from_preceding_supervision_period
-    function."""
-
-    def test_get_commitment_admission_reason_from_preceding_supervision_period(
-        self,
-    ) -> None:
-        for supervision_type in StateSupervisionPeriodSupervisionType:
-            supervision_period = StateSupervisionPeriod.new_with_defaults(
-                supervision_period_id=111,
-                external_id="sp1",
-                state_code="US_XX",
-                supervision_type=supervision_type,
-            )
-
-            if supervision_type == StateSupervisionPeriodSupervisionType.INVESTIGATION:
-                with self.assertRaises(ValueError):
-                    _ = get_commitment_admission_reason_from_preceding_supervision_period(
-                        supervision_period
-                    )
-            else:
-                # Assert none of them fail
-                _ = get_commitment_admission_reason_from_preceding_supervision_period(
-                    supervision_period
-                )

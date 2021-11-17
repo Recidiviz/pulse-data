@@ -1773,7 +1773,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         self.assertCountEqual(
             [
                 IncarcerationStayEvent(
-                    admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+                    admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
                     admission_reason_raw_text=revocation_period.admission_reason_raw_text,
                     state_code=revocation_period.state_code,
                     event_date=revocation_period.admission_date,
@@ -1786,7 +1786,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                     event_date=revocation_period.admission_date,
                     facility=revocation_period.facility,
                     county_of_residence=_COUNTY_OF_RESIDENCE,
-                    admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+                    admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
                     admission_reason_raw_text=revocation_period.admission_reason_raw_text,
                     supervision_type=supervision_period.supervision_type,
                     supervision_level=supervision_period.supervision_level,
@@ -1805,7 +1805,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                     county_of_residence=_COUNTY_OF_RESIDENCE,
                     release_reason=revocation_period.release_reason,
                     release_reason_raw_text=revocation_period.release_reason_raw_text,
-                    admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+                    admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
                     commitment_from_supervision_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                     total_days_incarcerated=(
                         revocation_period.release_date
