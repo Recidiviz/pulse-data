@@ -17,6 +17,12 @@
 """Utils for documentation generation."""
 import os
 
+import recidiviz
+
+DOCS_ROOT_PATH = os.path.normpath(
+    os.path.join(os.path.dirname(recidiviz.__file__), "..", "docs")
+)
+
 
 def persist_file_contents(documentation: str, markdown_path: str) -> bool:
     """Persists contents to the provided path. Returns whether contents at that path

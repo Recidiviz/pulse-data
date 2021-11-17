@@ -38,11 +38,11 @@ from recidiviz.ingest.direct.direct_ingest_documentation_generator import (
     DirectIngestDocumentationGenerator,
 )
 from recidiviz.tools.docs.summary_file_generator import update_summary_file
-from recidiviz.tools.docs.utils import persist_file_contents
+from recidiviz.tools.docs.utils import DOCS_ROOT_PATH, persist_file_contents
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_INGEST_CATALOG_ROOT = "docs/ingest"
+INGEST_CATALOG_ROOT = os.path.join(DOCS_ROOT_PATH, "ingest")
 
 
 def generate_raw_data_documentation_for_region(region_code: str) -> bool:
@@ -57,7 +57,7 @@ def generate_raw_data_documentation_for_region(region_code: str) -> bool:
     docs_per_file = documentation_generator.generate_raw_file_docs_for_region(
         region_code.lower()
     )
-    markdown_dir_path = os.path.join(_INGEST_CATALOG_ROOT, region_code.lower())
+    markdown_dir_path = os.path.join(INGEST_CATALOG_ROOT, region_code.lower())
     os.makedirs(os.path.join(markdown_dir_path, "raw_data"), exist_ok=True)
 
     anything_modified = False
@@ -77,8 +77,8 @@ def _create_ingest_catalog_summary() -> List[str]:
     ingest_catalog_states = sorted(
         [
             f.lower()
-            for f in listdir(_INGEST_CATALOG_ROOT)
-            if isdir(join(_INGEST_CATALOG_ROOT, f))
+            for f in listdir(INGEST_CATALOG_ROOT)
+            if isdir(join(INGEST_CATALOG_ROOT, f))
         ]
     )
 
@@ -90,7 +90,7 @@ def _create_ingest_catalog_summary() -> List[str]:
             state_name = state_code.get_state()
         else:
             raise ValueError(
-                f"Folder under {_INGEST_CATALOG_ROOT} named {state} is not a valid state code"
+                f"Folder under {INGEST_CATALOG_ROOT} named {state} is not a valid state code"
             )
 
         ingest_catalog_summary.extend(
@@ -101,7 +101,7 @@ def _create_ingest_catalog_summary() -> List[str]:
             ]
         )
 
-        raw_data_dir = join(_INGEST_CATALOG_ROOT, state, "raw_data")
+        raw_data_dir = join(INGEST_CATALOG_ROOT, state, "raw_data")
         if not isdir(raw_data_dir):
             continue
         raw_data_files = sorted(
