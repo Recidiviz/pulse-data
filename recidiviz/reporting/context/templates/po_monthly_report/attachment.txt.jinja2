@@ -37,9 +37,21 @@ Prepared on {{ prepared_on_date }}, for {{ officer_given_name }}
 
 {% endif -%}
 
+{% if clients['assessments_upcoming_clients'] -%}
+// Upcoming Risk Assessments //
+{{ clients['assessments_upcoming_clients'] }}
+
+{% endif -%}
+
 {% if clients['facetoface_out_of_date_clients'] -%}
 // Out of Date Face to Face Contacts //
 {{ clients['facetoface_out_of_date_clients'] }}
+
+{% endif -%}
+
+{% if clients['facetoface_upcoming_clients'] -%}
+// Upcoming Face to Face Contacts //
+{{ clients['facetoface_upcoming_clients'] }}
 
 {% endif -%}
 

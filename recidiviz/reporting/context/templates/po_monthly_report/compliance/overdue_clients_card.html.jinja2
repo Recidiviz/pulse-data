@@ -1,0 +1,45 @@
+{% extends "common/card.html.jinja2" %}
+{% block class %}TableCard{% endblock class %}
+{% block bgcolor %}#FFFCF0{% endblock bgcolor %}
+
+{% block children %}
+{{ components.layout_table_start() }}
+<tr>
+  <td class="TableCard__icon" style="width: 16px; padding: 4px 8px 4px 0;" valign="top">
+    <img width="16" height="16" alt="" src="{{static_image_path}}/error.png"/>
+  </td>
+  <td valign="top" style="
+    {{brand_styles.fonts.sans_serif}}
+    font-weight: 500;
+    font-size: 18px;
+    color: #003331;
+    "
+  >Out-of-date {{task.metric_label}}s</td>
+</tr>
+{{components.y_padding(16)}}
+<tr>
+  <td colspan="2" class="em_dm_txt_white" style="
+    {{brand_styles.fonts.sans_serif}}
+    font-weight: 500;
+    font-size: 18px;
+    color: rgba(53, 83, 98, 0.95);
+  ">
+    {{task.overdue_clients|map('first')|join(", ")}}
+  </td>
+</tr>
+{% if task.overdue_overflow_text %}
+{{components.y_padding(16)}}
+<tr>
+  <td colspan="2" class="em_dm_txt_white_80" style="
+    {{brand_styles.fonts.sans_serif}}
+    font-weight: 500;
+    font-size: 16px;
+    color: #A43939;
+;
+  ">
+    {{task.overdue_overflow_text}}
+  </td>
+</tr> 
+{% endif %}
+{{ components.layout_table_end() }}
+{% endblock children %}

@@ -120,3 +120,50 @@
   </table>
 {% endmacro %}
 
+{# for when we want a table that is actually for tabular data #}
+{% macro data_table(rows, highlight_column=None, color="green") %}
+  {# needs to be one gigantic line to avoid introducing unwanted white space #}
+  {% set arrow_image %}<span class="em_light_only"><img width="16" height="16" alt="&rarr;" class="TableCard__rarr" src="{{static_image_path}}/downgrade-arrow.png" /></span><span class="em_dark_only" style="display: none;"><img width="16" height="16" alt="&rarr;" class="TableCard__rarr" src="{{static_image_path}}/dark/downgrade-arrow.png" /></span>&nbsp;{% endset %}
+  {# green is the default color #}
+  {% set rule_color = "#C4E5D9" %}
+  {% set highlight_color = "#006C67" %}
+  {# yellow is also supported #}
+  {% if color == "yellow" %}
+    {% set rule_color = "#E5D8C4" %}
+    {% set highlight_color = "#B7873D" %}
+  {% endif %}
+  <table 
+    width="100%" 
+    style="color: #014C48; {{brand_styles.fonts.sans_serif}}" 
+    cellpadding="0" 
+    cellspacing="0"
+    role="table"
+  >
+    <tbody>
+      {% for row in rows %}
+      <tr>
+        {% for cell in row %}
+        <td valign="top" class="em_dm_border_30" style="
+          font-size: 18px; 
+          padding: 8px;
+          border-top: 1px solid {{rule_color}};
+          {% if loop.first %}
+          padding-left: 0;
+          {% endif %}
+          {% if loop.last %}
+          padding-right: 0;
+          {% if not loop.first %}text-align: right;{% endif %}
+          {% if loop.index == highlight_column %}color: {{highlight_color}};{% endif %}
+          {% endif %}
+          ">
+            {{ cell|replace(
+              '&rarr; ', 
+              arrow_image
+            )}}
+          </td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endmacro %}

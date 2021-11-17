@@ -2,9 +2,6 @@
 {% block class %}TableCard{% endblock class %}
 {% block bgcolor %}#F3FEFA{% endblock bgcolor %}
 
-{# needs to be one gigantic line to avoid introducing unwanted white space #}
-{% set arrow_image %}<span class="em_light_only"><img width="16" height="16" alt="&rarr;" class="TableCard__rarr" src="{{static_image_path}}/downgrade-arrow.png" /></span><span class="em_dark_only" style="display: none;"><img width="16" height="16" alt="&rarr;" class="TableCard__rarr" src="{{static_image_path}}/dark/downgrade-arrow.png" /></span>&nbsp;{% endset %}
-
 {% block children %}
 {{ components.layout_table_start() }}
 <tr>
@@ -22,40 +19,7 @@
 {{components.y_padding(16)}}
 <tr>
   <td colspan="2">
-    <table 
-      width="100%" 
-      style="color: #014C48; {{brand_styles.fonts.sans_serif}}" 
-      cellpadding="0" 
-      cellspacing="0"
-      role="table"
-    >
-      <tbody>
-        {% for row in outcome.action_table %}
-        <tr>
-          {% for cell in row %}
-          <td valign="top" class="em_dm_border_30" style="
-            font-size: 18px; 
-            padding: 8px;
-            border-top: 1px solid #C4E5D9;
-            {% if loop.first %}
-            padding-left: 0;
-            {% endif %}
-            {% if loop.last %}
-            color: #006C67;
-            padding-right: 0;
-            text-align: right;
-            {% endif %}
-            ">
-              {{ cell|replace(
-                '&rarr; ', 
-                arrow_image
-              )}}
-            </td>
-          {% endfor %}
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+    {{components.data_table(outcome.action_table, highlight_column=2, color='green')}}
   </td>
 </tr>
 {{ components.layout_table_end() }}

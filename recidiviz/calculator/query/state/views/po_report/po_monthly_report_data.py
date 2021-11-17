@@ -76,6 +76,15 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = """
           IF(next_recommended_assessment_date <= LAST_DAY(DATE(year, month, 1), MONTH), STRUCT(person_external_id, full_name), NULL)
           IGNORE NULLS
         ) AS assessments_out_of_date_clients,
+        ARRAY_AGG(
+          IF(
+            # next date falls within the subsequent month
+            (DATE_TRUNC(next_recommended_assessment_date, MONTH) = DATE_ADD(DATE(year, month, 1), INTERVAL 1 MONTH)),
+            STRUCT(person_external_id, full_name, next_recommended_assessment_date AS recommended_date),
+            NULL
+          ) 
+          IGNORE NULLS
+        ) AS assessments_upcoming_clients,
         SUM(face_to_face_count) AS facetoface,
         COUNT(DISTINCT IF(next_recommended_face_to_face_date IS NULL OR next_recommended_face_to_face_date > LAST_DAY(DATE(year, month, 1), MONTH),
           person_id,
@@ -84,6 +93,15 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = """
           IF(next_recommended_face_to_face_date <= LAST_DAY(DATE(year, month, 1), MONTH), STRUCT(person_external_id, full_name), NULL)
           IGNORE NULLS
         ) AS facetoface_out_of_date_clients,
+        ARRAY_AGG(
+          IF(
+            # next date falls within the subsequent month
+            (DATE_TRUNC(next_recommended_face_to_face_date, MONTH) = DATE_ADD(DATE(year, month, 1), INTERVAL 1 MONTH)),
+            STRUCT(person_external_id, full_name, next_recommended_face_to_face_date AS recommended_date),
+            NULL
+          ) 
+          IGNORE NULLS
+        ) AS facetoface_upcoming_clients,
         COUNT(DISTINCT person_id) AS caseload_count,
         ARRAY_AGG(
           IF(
@@ -272,10 +290,12 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = """
       district_agg.max_absconsions_zero_streak AS absconsions_zero_streak_district_max,
       state_agg.max_absconsions_zero_streak AS absconsions_zero_streak_state_max,
       report_month.assessments_out_of_date_clients,
+      report_month.assessments_upcoming_clients,
       report_month.assessments,
       report_month.caseload_count,
       report_month.assessments_up_to_date,
       report_month.facetoface_out_of_date_clients,
+      report_month.facetoface_upcoming_clients,
       report_month.facetoface,
       report_month.facetoface_frequencies_sufficient,
       overdue_assessments_goal,
