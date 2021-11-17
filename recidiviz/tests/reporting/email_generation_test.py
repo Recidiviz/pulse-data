@@ -60,7 +60,7 @@ class EmailGenerationTests(TestCase):
         self.gcs_file_system = FakeGCSFileSystem()
         self.mock_gcs_file_system = self.gcs_file_system_patcher.start()
         self.mock_gcs_file_system.return_value = self.gcs_file_system
-        self.mock_batch_id = "1"
+        self.mock_batch_id = "20211029135032"
 
     def tearDown(self) -> None:
         self.get_secret_patcher.stop()
@@ -181,6 +181,100 @@ class POMonthlyReportGenerationTest(EmailGenerationTests):
         return os.path.join(
             f"{os.path.dirname(__file__)}/context/po_monthly_report/po_monthly_report_data_fixture.json"
         )
+
+    def test_generate_missing_client_names(self) -> None:
+        """Test that generation succeeds even if clients are missing full_names.
+        TODO(#10073): once known PA issues with this are resolved, we don't want to support
+        missing names anymore and should fail generation instead.
+        """
+        with open(self.fixture_file_path(), encoding="utf-8") as fixture_file:
+            fixture_data = json.loads(fixture_file.read())
+
+        for state_code in self.supported_states:
+            recipient = Recipient.from_report_json(
+                {
+                    **fixture_data,
+                    **{
+                        "state_code": state_code.value,
+                        "batch_id": self.mock_batch_id,
+                        "pos_discharges_clients": [
+                            {
+                                "person_external_id": "123",
+                                "successful_completion_date": "2020-12-01",
+                            }
+                        ],
+                        "earned_discharges_clients": [
+                            {
+                                "person_external_id": "321",
+                                "earned_discharge_date": "2020-12-05",
+                            }
+                        ],
+                        "supervision_downgrades_clients": [
+                            {
+                                "person_external_id": "246",
+                                "latest_supervision_downgrade_date": "2020-12-07",
+                                "previous_supervision_level": "MEDIUM",
+                                "supervision_level": "MINIMUM",
+                            }
+                        ],
+                        "revocations_clients": [
+                            {
+                                "person_external_id": "456",
+                                "revocation_violation_type": "NEW_CRIME",
+                                "revocation_report_date": "2020-12-06",
+                            },
+                        ],
+                        "absconsions_clients": [
+                            {
+                                "person_external_id": "789",
+                                "absconsion_report_date": "2020-12-11",
+                            }
+                        ],
+                        "assessments_out_of_date_clients": [
+                            {
+                                "person_external_id": "987",
+                            }
+                        ],
+                        "facetoface_out_of_date_clients": [
+                            {
+                                "person_external_id": "654",
+                            }
+                        ],
+                        "facetoface_upcoming_clients": [
+                            {
+                                "person_external_id": "123",
+                                "recommended_date": "2021-06-12",
+                            },
+                        ],
+                        "assessments_upcoming_clients": [
+                            {
+                                "person_external_id": "987",
+                                "recommended_date": "2021-06-17",
+                            }
+                        ],
+                    },
+                }
+            )
+
+            batch = Batch(
+                state_code=state_code,
+                batch_id=self.mock_batch_id,
+                report_type=self.report_type,
+            )
+
+            report_context = self.report_context_type(batch, recipient)
+
+            prepared_html = report_context.render_html()
+            generate(batch, recipient, report_context)
+
+            bucket_name = "recidiviz-test-report-html"
+            bucket_filepath = f"{state_code.value}/{self.mock_batch_id}/html/{recipient.email_address}.html"
+            path = GcsfsFilePath.from_absolute_path(
+                f"gs://{bucket_name}/{bucket_filepath}"
+            )
+            self.assertEqual(
+                self.gcs_file_system.download_as_string(path), prepared_html
+            )
 
 
 class TopOpportunityGenerationTest(EmailGenerationTests):
