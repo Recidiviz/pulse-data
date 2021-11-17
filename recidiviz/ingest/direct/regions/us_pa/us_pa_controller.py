@@ -553,7 +553,7 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         ],
         StateSentenceStatus: [
             # TODO(#10053): Need to determine the actual mapping for PC
-            "PC",  # This is a new unknown status code, that needs to be mapped properly
+            "PC",  # This is a new unknown status code that needs to be mapped properly
         ],
     }
     ENUM_IGNORE_PREDICATES: Dict[Type[Enum], EnumIgnorePredicate] = {}
