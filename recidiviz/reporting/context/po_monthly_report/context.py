@@ -696,7 +696,6 @@ if __name__ == "__main__":
                 utils.KEY_EMAIL_ADDRESS: "test@recidiviz.org",
                 utils.KEY_STATE_CODE: demo_state_code.value,
                 utils.KEY_DISTRICT: None,
-                utils.KEY_BATCH_ID: "20211029135032",
                 # the data source may provide values for fields we don't intend to use
                 # for a given state; this fixture emulates that, including all fields
                 # defined on the view. States should ignore them as needed
