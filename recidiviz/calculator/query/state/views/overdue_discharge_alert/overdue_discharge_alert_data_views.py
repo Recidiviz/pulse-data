@@ -41,13 +41,26 @@ DISCHARGE_STRUCT_FRAGMENT = """STRUCT (
 OVERDUE_DISCHARGE_ALERT_DATA_QUERY_TEMPLATE = """
 /*{description}*/
 # TODO(#9988) Replace roster query with a recipients reference table
-WITH overdue_discharge_alert_recipients AS (
-    SELECT 'US_ID' AS state_code, * FROM `{project_id}.{static_reference_dataset}.us_id_roster`
+WITH base_recipients AS (
+    SELECT 'US_ID' AS state_code, external_id, email_address  FROM `{project_id}.{static_reference_dataset}.us_id_roster`
+    UNION ALL
+    SELECT state_code, officer_external_id AS external_id, email_address FROM `{project_id}.{static_reference_dataset}.po_report_recipients`
+    WHERE state_code = 'US_PA'
+), overdue_discharge_alert_recipients AS (
+    SELECT
+        state_code,
+        email_address,
+        external_id,
+        TRIM(SPLIT(ARRAY_AGG(given_names)[SAFE_OFFSET(0)], ' ')[SAFE_OFFSET(0)]) AS officer_given_name
+    FROM base_recipients
+    JOIN `{project_id}.{reference_views_dataset}.augmented_agent_info` USING (state_code, external_id)
+    GROUP BY state_code, email_address, external_id
 )
 SELECT
     EXTRACT(YEAR FROM CURRENT_DATE()) AS review_year,
     EXTRACT(MONTH FROM CURRENT_DATE()) AS review_month,
     overdue_discharge_alert_recipients.email_address,
+    overdue_discharge_alert_recipients.officer_given_name,
     ARRAY_AGG(
         IF(projected_end_date <= CURRENT_DATE(), {discharge_struct}, NULL)
         IGNORE NULLS
@@ -64,7 +77,7 @@ INNER JOIN overdue_discharge_alert_recipients
     ON overdue_discharge_alert_recipients.state_code = projected_discharges.state_code
     AND overdue_discharge_alert_recipients.external_id = projected_discharges.supervising_officer_external_id
 WHERE projected_end_date <= DATE_ADD(CURRENT_DATE(), INTERVAL 1 WEEK)
-GROUP BY overdue_discharge_alert_recipients.email_address
+GROUP BY overdue_discharge_alert_recipients.email_address, overdue_discharge_alert_recipients.officer_given_name
 ORDER BY overdue_discharge_alert_recipients.email_address;
 """
 
@@ -75,6 +88,7 @@ OVERDUE_DISCHARGE_ALERT_DATA_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     should_materialize=True,
     view_query_template=OVERDUE_DISCHARGE_ALERT_DATA_QUERY_TEMPLATE,
     analyst_dataset=dataset_config.ANALYST_VIEWS_DATASET,
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
     discharge_struct=DISCHARGE_STRUCT_FRAGMENT,
 )
