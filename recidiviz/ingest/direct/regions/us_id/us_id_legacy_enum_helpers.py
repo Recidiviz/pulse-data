@@ -79,7 +79,8 @@ def supervision_admission_reason_mapper(
 def supervision_termination_reason_mapper(
     label: str,
 ) -> Optional[StateSupervisionPeriodTerminationReason]:
-    # TODO(#2865): Update enum normalization so that we separate by -s instead of spaces
+    # TODO(#9383): Update to split on a dash instead of spaces when we migrate the view
+    #  that uses this function to ingest mappings v2.
     if label.startswith(
         f"{HISTORY_FACILITY_TYPE} "
     ):  # Going to history (completed all sentences)
@@ -103,7 +104,8 @@ def supervision_termination_reason_mapper(
 def _supervision_history_termination_reason_mapper(
     label: str,
 ) -> Optional[StateSupervisionPeriodTerminationReason]:
-    # TODO(#2865): Update enum normalization so that we separate by -s instead of spaces
+    # TODO(#9383): Update to split on a dash instead of spaces when we migrate the view
+    #  that uses this function to ingest mappings v2.
     _history_facility_typ, location_name = label.split(" ", 1)
     if location_name in COMMUTED_LOCATION_NAMES:
         return StateSupervisionPeriodTerminationReason.COMMUTED
@@ -146,7 +148,8 @@ def incarceration_admission_reason_mapper(
 def incarceration_release_reason_mapper(
     label: str,
 ) -> Optional[StateIncarcerationPeriodReleaseReason]:
-    # TODO(#2865): Update enum normalization so that we separate by -s instead of spaces
+    # TODO(#9389): Update to split on a dash instead of spaces when we migrate the view
+    #  that uses this function to ingest mappings v2.
     if label.startswith(
         f"{HISTORY_FACILITY_TYPE} "
     ):  # Going to history (completed all sentences)
@@ -167,7 +170,8 @@ def incarceration_release_reason_mapper(
 def _incarceration_history_release_reason_mapper(
     label: str,
 ) -> Optional[StateIncarcerationPeriodReleaseReason]:
-    # TODO(#2865): Update enum normalization so that we separate by -s instead of spaces
+    # TODO(#9389): Update to split on a dash instead of spaces when we migrate the view
+    #  that uses this function to ingest mappings v2.
     _history_facility_typ, location_name = label.split(" ", 1)
     if location_name in COMMUTED_LOCATION_NAMES:
         return StateIncarcerationPeriodReleaseReason.COMMUTED

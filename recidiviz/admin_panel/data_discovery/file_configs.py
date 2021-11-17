@@ -85,7 +85,8 @@ def get_ingest_view_configs(
     configs = []
     for view in views:
         try:
-            # TODO(#6925) Infer columns from the mapping file rather than the fixture csv
+            # TODO(#8905) Once all ingest views have migrated to v2 mappings, infer
+            #  columns from the mapping file rather than the fixture csv.
             fixture_path = os.path.join(
                 os.path.dirname(recidiviz.__file__),
                 f"tests/ingest/direct/direct_ingest_fixtures/{region_code}/{view.ingest_view_name}.csv",

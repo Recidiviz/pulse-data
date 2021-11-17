@@ -39,7 +39,7 @@ keys_to_ignore:
   - CZ_FSO  # Field Sentence Sequence Number - Handled manually in controller
   - FINAL_FORMED_CREATE_DATE  # Finally formed create date (E6_* cols) - Handled manually in controller
   - FINAL_FORMED_UPDATE_DATE  # Unused - Finally formed last update date (E6_* cols)
-  # TODO(#1883): Update to child mappings once data extractor is flexible
+  # TODO(#9376): This should be used in the v2 YAML mappings file when we migrate.
   - BDGNO   # Employee Id - Handled manually in the controller
   - LNAME   # Employee Last Name - Handled manually in the controller
   - FNAME   # Employee First Name - Handled manually in the controller

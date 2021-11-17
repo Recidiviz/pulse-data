@@ -29,10 +29,8 @@ import attr
 from recidiviz.common.constants.person_characteristics import Ethnicity
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_person_alias import StatePersonAliasType
-from recidiviz.ingest.direct.types.direct_ingest_instance import (
-    DirectIngestInstance,
-)
 from recidiviz.ingest.direct.direct_ingest_controller_utils import create_if_not_exists
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.extractor.csv_data_extractor import (
     FilePostprocessorCallable,
     RowPosthookCallable,
@@ -58,8 +56,8 @@ class IngestGatingContext:
     ingest_instance: DirectIngestInstance = attr.ib()
 
 
-# TODO(#1882): This should no-longer be necessary once you can map a column
-#  value to multiple fields on the ingested object.
+# TODO(#8905): This should no-longer be necessary once all ingest views are migrated
+# to v2 mappings.
 def copy_name_to_alias(
     _gating_context: IngestGatingContext,
     _row: Dict[str, str],
@@ -117,8 +115,8 @@ def gen_rationalize_race_and_ethnicity(
     return _rationalize_race_and_ethnicity
 
 
-# TODO(#1882): If yaml format supported raw values, this would no-longer be
-#  necessary.
+# TODO(#8905): This row post hook should not be necessary all views are migrated to
+# ingest mappings v2.
 def gen_label_single_external_id_hook(external_id_type: str) -> RowPosthookCallable:
     """Generates a row post-hook that will hydrate the id_type field on the
     singular StatePersonExternalId in the extracted objects. Will throw if
