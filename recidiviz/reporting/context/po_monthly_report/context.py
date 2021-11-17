@@ -78,8 +78,6 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.string import StrictStringFormatter
 
-_AVERAGE_VALUES_SIGNIFICANT_DIGITS = 3
-
 _METRIC_DISPLAY_TEXT = {
     POS_DISCHARGES: "successful completions",
     EARNED_DISCHARGES: "early discharges",
@@ -91,6 +89,9 @@ _METRIC_DISPLAY_TEXT = {
     f"{CRIME_REVOCATIONS}_zero_streak": "new crime revocations",
     f"{ABSCONSIONS}_zero_streak": "absconsions",
 }
+
+_UPCOMING_LIST_LIMIT = 3
+_OUT_OF_DATE_LIST_LIMIT = 4
 
 
 class PoMonthlyReportContext(ReportContext):
@@ -252,6 +253,44 @@ class PoMonthlyReportContext(ReportContext):
             show_goal = compliance_pct < threshold
             goal_met = not show_goal
 
+        upcoming_client_list = self.recipient_data[f"{metric}_upcoming_clients"]
+        upcoming_clients = (
+            [
+                [
+                    f'{format_full_name(client["full_name"])} ({client["person_external_id"]})',
+                    StrictStringFormatter().format(
+                        "{d:%B} {d.day}",
+                        d=date.fromisoformat(client["recommended_date"]),
+                    ),
+                ]
+                for client in upcoming_client_list[:_UPCOMING_LIST_LIMIT]
+            ]
+            if not self.metrics_delegate.has_case_triage
+            else None
+        )
+        upcoming_overflow_text = (
+            f"{len(upcoming_client_list) - _UPCOMING_LIST_LIMIT} more in attachment"
+            if len(upcoming_client_list) > _UPCOMING_LIST_LIMIT
+            else None
+        )
+
+        overdue_client_list = self.recipient_data[f"{metric}_out_of_date_clients"]
+        overdue_clients = (
+            [
+                [
+                    f'{format_full_name(client["full_name"])} ({client["person_external_id"]})',
+                ]
+                for client in overdue_client_list[:_OUT_OF_DATE_LIST_LIMIT]
+            ]
+            if not self.metrics_delegate.has_case_triage
+            else None
+        )
+        overdue_overflow_text = (
+            f"{len(overdue_client_list) - _OUT_OF_DATE_LIST_LIMIT} more in attachment"
+            if len(overdue_client_list) > _OUT_OF_DATE_LIST_LIMIT
+            else None
+        )
+
         return {
             "num_completed": int(self.recipient_data[metric]),
             "pct": compliance_pct,
@@ -261,6 +300,10 @@ class PoMonthlyReportContext(ReportContext):
             "show_goal": show_goal,
             "metric_label": metric_label,
             "metric": metric,
+            "upcoming_clients": upcoming_clients,
+            "upcoming_overflow_text": upcoming_overflow_text,
+            "overdue_clients": overdue_clients,
+            "overdue_overflow_text": overdue_overflow_text,
         }
 
     def _should_generate_attachment_section(self, clients_key: str) -> bool:
@@ -315,6 +358,14 @@ class PoMonthlyReportContext(ReportContext):
                         f'{format_violation_type(client["revocation_violation_type"])}',
                         f'Revocation recommendation staffed on {format_date(client["revocation_report_date"])}',
                     ]
+                elif clients_key == "assessments_upcoming_clients":
+                    additional_columns = [
+                        f'Due on {format_date(client["recommended_date"])}'
+                    ]
+                elif clients_key == "facetoface_upcoming_clients":
+                    additional_columns = [
+                        f'Recommended on {format_date(client["recommended_date"])}'
+                    ]
 
                 clients_by_type[clients_key].append(base_columns + additional_columns)
 
@@ -367,13 +418,13 @@ class PoMonthlyReportContext(ReportContext):
 
         action_table = (
             [
-                (
+                [
                     f'{format_full_name(client["full_name"])} ({client["person_external_id"]})',
                     StrictStringFormatter().format(
                         "{d:%B} {d.day}",
                         d=date.fromisoformat(client["projected_end_date"]),
                     ),
-                )
+                ]
                 for client in action_clients
             ]
             if len(action_clients)
@@ -423,10 +474,10 @@ class PoMonthlyReportContext(ReportContext):
 
         action_table = (
             [
-                (
+                [
                     f'{format_full_name(client["full_name"])} ({client["person_external_id"]})',
                     f"{client['current_supervision_level']} &rarr; {client['recommended_level']}",
-                )
+                ]
                 for client in action_clients
             ]
             if len(action_clients)
@@ -637,7 +688,7 @@ if __name__ == "__main__":
     context = PoMonthlyReportContext(
         Batch(
             state_code=demo_state_code,
-            batch_id="test",
+            batch_id="20211029135032",
             report_type=ReportType.POMonthlyReport,
         ),
         Recipient.from_report_json(
@@ -645,6 +696,7 @@ if __name__ == "__main__":
                 utils.KEY_EMAIL_ADDRESS: "test@recidiviz.org",
                 utils.KEY_STATE_CODE: demo_state_code.value,
                 utils.KEY_DISTRICT: None,
+                utils.KEY_BATCH_ID: "20211029135032",
                 # the data source may provide values for fields we don't intend to use
                 # for a given state; this fixture emulates that, including all fields
                 # defined on the view. States should ignore them as needed
@@ -697,8 +749,119 @@ if __name__ == "__main__":
                 "earned_discharges_clients": [],
                 "supervision_downgrades_clients": [],
                 "absconsions_clients": [],
-                "assessments_out_of_date_clients": [],
-                "facetoface_out_of_date_clients": [],
+                "assessments_upcoming_clients": [
+                    {
+                        "person_external_id": "112",
+                        "full_name": '{"given_names": "CONSUELO", "surname": "MEDINA"}',
+                        "recommended_date": "2021-05-03",
+                    },
+                    {
+                        "person_external_id": "121",
+                        "full_name": '{"given_names": "SONYA", "surname": "BAUTISTA"}',
+                        "recommended_date": "2021-05-07",
+                    },
+                    {
+                        "person_external_id": "124",
+                        "full_name": '{"given_names": "CRIN", "surname": "MCMAHON"}',
+                        "recommended_date": "2021-05-07",
+                    },
+                    {
+                        "person_external_id": "117",
+                        "full_name": '{"given_names": "MIRAN", "surname": "PENA"}',
+                        "recommended_date": "2021-05-11",
+                    },
+                    {
+                        "person_external_id": "138",
+                        "full_name": '{"given_names": "PEPI", "surname": "BAKER"}',
+                        "recommended_date": "2021-05-15",
+                    },
+                    {
+                        "person_external_id": "137",
+                        "full_name": '{"given_names": "FLORENCE", "surname": "GUTIERREZ"}',
+                        "recommended_date": "2021-05-29",
+                    },
+                ],
+                "assessments_out_of_date_clients": [
+                    {
+                        "person_external_id": "131",
+                        "full_name": '{"given_names": "PERIA", "surname": "HUANG"}',
+                    },
+                    {
+                        "person_external_id": "123",
+                        "full_name": '{"given_names": "LISSA", "surname": "MEZA"}',
+                    },
+                    {
+                        "person_external_id": "116",
+                        "full_name": '{"given_names": "DANIELE", "surname": "MORROW"}',
+                    },
+                ],
+                "facetoface_upcoming_clients": [
+                    {
+                        "person_external_id": "120",
+                        "full_name": '{"given_names": "MAGGEE", "surname": "FINLEY"}',
+                        "recommended_date": "2021-05-05",
+                    },
+                    {
+                        "person_external_id": "110",
+                        "full_name": '{"given_names": "TWILA", "surname": "LOWERY"}',
+                        "recommended_date": "2021-05-09",
+                    },
+                    {
+                        "person_external_id": "122",
+                        "full_name": '{"given_names": "EMILINE", "surname": "RICHMOND"}',
+                        "recommended_date": "2021-05-19",
+                    },
+                ],
+                "facetoface_out_of_date_clients": [
+                    {
+                        "person_external_id": "108",
+                        "full_name": '{"given_names": "KORE", "surname": "CHURCH"}',
+                    },
+                    {
+                        "person_external_id": "128",
+                        "full_name": '{"given_names": "BRIDGET", "surname": "NOVAK"}',
+                    },
+                    {
+                        "person_external_id": "106",
+                        "full_name": '{"given_names": "SHEILAH", "surname": "MARTINEZ"}',
+                    },
+                    {
+                        "person_external_id": "107",
+                        "full_name": '{"given_names": "CLARIBEL", "surname": "VELAZQUEZ"}',
+                    },
+                    {
+                        "person_external_id": "133",
+                        "full_name": '{"given_names": "ALMETA", "surname": "OWENS"}',
+                    },
+                    {
+                        "person_external_id": "118",
+                        "full_name": '{"given_names": "CHERY", "surname": "CURRY"}',
+                    },
+                    {
+                        "person_external_id": "119",
+                        "full_name": '{"given_names": "FLORINA", "surname": "ASHLEY"}',
+                    },
+                    {
+                        "person_external_id": "129",
+                        "full_name": '{"given_names": "BERT", "surname": "MELTON"}',
+                    },
+                    {
+                        "person_external_id": "132",
+                        "full_name": '{"given_names": "MARCY", "surname": "HATFIELD"}',
+                    },
+                    {
+                        "person_external_id": "115",
+                        "full_name": '{"given_names": "GAYLE", "surname": "CONWAY"}',
+                    },
+                    {
+                        "person_external_id": "139",
+                        "full_name": '{"given_names": "GEORGEANNE", "surname": "MCFADDEN"}',
+                    },
+                    {
+                        "person_external_id": "130",
+                        "full_name": '{"given_names": "ISADORA", "surname": "DONOVAN"}',
+                    },
+                ],
                 "revocations_clients": [],
                 "upcoming_release_date_clients": [
                     {

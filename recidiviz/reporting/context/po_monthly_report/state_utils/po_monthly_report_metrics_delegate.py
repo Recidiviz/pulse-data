@@ -187,6 +187,10 @@ class PoMonthlyReportMetricsDelegate(abc.ABC):
                 f"{compliance_action_metric}_out_of_date_clients"
                 for compliance_action_metric in self.compliance_action_metrics
             ]
+            + [
+                f"{compliance_action_metric}_upcoming_clients"
+                for compliance_action_metric in self.compliance_action_metrics
+            ]
             + [REVOCATIONS_CLIENTS]
         )
 

@@ -74,6 +74,7 @@ class PoMonthlyReportContextTests(TestCase):
         if recipient_data is None:
             recipient_data = {}
         recipient = self.recipient.create_derived_recipient(recipient_data)
+        self.batch.state_code = recipient.state_code
         context = PoMonthlyReportContext(self.batch, recipient)
         return context.get_prepared_data()
 
@@ -415,6 +416,25 @@ class PoMonthlyReportContextTests(TestCase):
                     "full_name": '{"surname": "DEGAS", "given_names": "EDGAR"}',
                 }
             ],
+            "facetoface_upcoming_clients": [
+                {
+                    "person_external_id": "123",
+                    "full_name": '{"surname": "KAHLO", "given_names": "FRIDA"}',
+                    "recommended_date": "2021-06-12",
+                },
+                {
+                    "person_external_id": "456",
+                    "full_name": '{"surname": "MUNCH", "given_names": "EDVARD"}',
+                    "recommended_date": "2021-06-25",
+                },
+            ],
+            "assessments_upcoming_clients": [
+                {
+                    "person_external_id": "987",
+                    "full_name": '{"surname": "MIRO", "given_names": "JOAN"}',
+                    "recommended_date": "2021-06-17",
+                }
+            ],
         }
 
         recipient = self.recipient.create_derived_recipient(recipient_data)
@@ -445,9 +465,16 @@ class PoMonthlyReportContextTests(TestCase):
             // Out of Date Risk Assessments //
             [987]     Kahlo, Frida    
             
+            // Upcoming Risk Assessments //
+            [987]     Miro, Joan     Due on 06/17/2021    
+            
             // Out of Date Face to Face Contacts //
             [654]     Degas, Edgar    
             
+            // Upcoming Face to Face Contacts //
+            [123]     Kahlo, Frida      Recommended on 06/12/2021    
+            [456]     Munch, Edvard     Recommended on 06/25/2021    
+
             Please send questions or data issues to feedback@recidiviz.org
 
             Please note: people on probation in custody who technically remain on your caseload are currently counted in your Key Supervision Task percentages, including contacts and risk assessments."""
@@ -527,6 +554,10 @@ class PoMonthlyReportContextTests(TestCase):
                 "goal_met": False,
                 "metric_label": "assessment",
                 "metric": "assessments",
+                "overdue_clients": None,
+                "overdue_overflow_text": None,
+                "upcoming_clients": None,
+                "upcoming_overflow_text": None,
             },
         )
 
@@ -541,6 +572,10 @@ class PoMonthlyReportContextTests(TestCase):
                 "goal_met": False,
                 "metric_label": "contact",
                 "metric": "facetoface",
+                "overdue_clients": None,
+                "overdue_overflow_text": None,
+                "upcoming_clients": None,
+                "upcoming_overflow_text": None,
             },
         )
 
@@ -565,6 +600,10 @@ class PoMonthlyReportContextTests(TestCase):
                 "goal_met": True,
                 "metric_label": "assessment",
                 "metric": "assessments",
+                "overdue_clients": None,
+                "upcoming_clients": None,
+                "overdue_overflow_text": None,
+                "upcoming_overflow_text": None,
             },
         )
 
@@ -579,6 +618,10 @@ class PoMonthlyReportContextTests(TestCase):
                 "goal_met": True,
                 "metric_label": "contact",
                 "metric": "facetoface",
+                "overdue_clients": None,
+                "upcoming_clients": None,
+                "overdue_overflow_text": None,
+                "upcoming_overflow_text": None,
             },
         )
 
@@ -605,6 +648,10 @@ class PoMonthlyReportContextTests(TestCase):
                 "goal_met": False,
                 "metric_label": "assessment",
                 "metric": "assessments",
+                "overdue_clients": None,
+                "upcoming_clients": None,
+                "overdue_overflow_text": None,
+                "upcoming_overflow_text": None,
             },
         )
 
@@ -619,6 +666,10 @@ class PoMonthlyReportContextTests(TestCase):
                 "goal_met": False,
                 "metric_label": "contact",
                 "metric": "facetoface",
+                "overdue_clients": None,
+                "upcoming_clients": None,
+                "overdue_overflow_text": None,
+                "upcoming_overflow_text": None,
             },
         )
 
@@ -638,7 +689,7 @@ class PoMonthlyReportContextTests(TestCase):
         )
         self.assertEqual(
             happy_path_data["action_table"],
-            [("Linet Hansen (105)", "June 7"), ("Rebekah Cortes (142)", "June 18")],
+            [["Linet Hansen (105)", "June 7"], ["Rebekah Cortes (142)", "June 18"]],
         )
 
         no_caseload_data = PoMonthlyReportContext(
@@ -683,10 +734,10 @@ class PoMonthlyReportContextTests(TestCase):
         self.assertEqual(
             happy_path_data["action_table"],
             [
-                ("Tonye Thompson (189472)", "Medium &rarr; Low"),
-                ("Linet Hansen (47228)", "Medium &rarr; Low"),
-                ("Rebekah Cortes (132878)", "High &rarr; Medium"),
-                ("Taryn Berry (147872)", "High &rarr; Low"),
+                ["Tonye Thompson (189472)", "Medium &rarr; Low"],
+                ["Linet Hansen (47228)", "Medium &rarr; Low"],
+                ["Rebekah Cortes (132878)", "High &rarr; Medium"],
+                ["Taryn Berry (147872)", "High &rarr; Low"],
             ],
         )
 
@@ -841,6 +892,76 @@ class PoMonthlyReportContextTests(TestCase):
         self, _: str, state_code: StateCode, expect_link: bool
     ) -> None:
         """Test that link to Case Triage is appropriately enabled/disabled per state."""
-        self.batch.state_code = state_code
         context = self._get_prepared_data({"state_code": state_code})
         self.assertEqual(context["show_case_triage_link"], expect_link)
+
+    def test_compliance_client_lists(self) -> None:
+        """Test that client lists are included in template context for a state without Case Triage."""
+
+        compliance_client_data = {
+            "assessments_out_of_date_clients": [
+                {
+                    "person_external_id": "987",
+                    "full_name": '{"surname": "KAHLO", "given_names": "FRIDA"}',
+                }
+            ],
+            "facetoface_upcoming_clients": [
+                {
+                    "person_external_id": "123",
+                    "full_name": '{"surname": "MIRO", "given_names": "JOAN"}',
+                    "recommended_date": "2021-06-12",
+                },
+                {
+                    "person_external_id": "456",
+                    "full_name": '{"surname": "MUNCH", "given_names": "EDVARD"}',
+                    "recommended_date": "2021-06-25",
+                },
+            ],
+            # still optional
+            "facetoface_out_of_date_clients": [],
+            "assessments_upcoming_clients": [],
+        }
+
+        context_with_case_triage = self._get_prepared_data(
+            {**compliance_client_data, **{"state_code": StateCode.US_ID}}
+        )
+        self.assertIsNone(
+            context_with_case_triage["compliance_tasks"][ASSESSMENTS][
+                "overdue_clients"
+            ],
+        )
+        self.assertIsNone(
+            context_with_case_triage["compliance_tasks"][FACE_TO_FACE][
+                "overdue_clients"
+            ],
+        )
+
+        # as we add more states we don't have to test them exhaustively;
+        # can assume they share this functionality
+        context_without_case_triage = self._get_prepared_data(
+            {**compliance_client_data, **{"state_code": StateCode.US_PA}}
+        )
+        self.assertEqual(
+            [["Frida Kahlo (987)"]],
+            context_without_case_triage["compliance_tasks"][ASSESSMENTS][
+                "overdue_clients"
+            ],
+        )
+        self.assertEqual(
+            [["Joan Miro (123)", "June 12"], ["Edvard Munch (456)", "June 25"]],
+            context_without_case_triage["compliance_tasks"][FACE_TO_FACE][
+                "upcoming_clients"
+            ],
+        )
+        self.assertEqual(
+            [],
+            context_without_case_triage["compliance_tasks"][FACE_TO_FACE][
+                "overdue_clients"
+            ],
+        )
+        self.assertEqual(
+            [],
+            context_without_case_triage["compliance_tasks"][ASSESSMENTS][
+                "upcoming_clients"
+            ],
+        )

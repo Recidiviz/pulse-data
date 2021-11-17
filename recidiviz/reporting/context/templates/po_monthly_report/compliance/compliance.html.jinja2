@@ -9,26 +9,74 @@
             {% include "po_monthly_report/compliance/success.html.jinja2" %}
           </td>
         </tr>
+        {% if task.upcoming_clients %}
+          {{ components.y_padding(2)}}
+          <tr>
+            <td>
+              {% include "po_monthly_report/compliance/upcoming_clients_card.html.jinja2" %}
+            </td>
+          </tr>
+        {% endif %}
+        {% if task.overdue_clients %}
+          {{ components.y_padding(2)}}
+          <tr>
+            <td>
+              {% include "po_monthly_report/compliance/overdue_clients_card.html.jinja2" %}
+            </td>
+          </tr>
+        {% endif %}
         {% endwith %}
         {% for task in goals_met[1:] %}
-          {{ components.y_padding(2)}}
+          {{ components.y_padding(8)}}
           <tr>
             <td>
               {% include "po_monthly_report/compliance/task_card.html.jinja2" %}
             </td>
           </tr>
+          {% if task.upcoming_clients %}
+          {{ components.y_padding(2)}}
+          <tr>
+            <td>
+              {% include "po_monthly_report/compliance/upcoming_clients_card.html.jinja2" %}
+            </td>
+          </tr>
+        {% endif %}
+          {% if task.overdue_clients %}
+          {{ components.y_padding(2)}}
+          <tr>
+            <td>
+              {% include "po_monthly_report/compliance/overdue_clients_card.html.jinja2" %}
+            </td>
+          </tr>
+        {% endif %}
         {% endfor %}
         {{ components.y_padding(8)}}
       {% endif %}
     {% endwith %}
     {# non-success cards, if any, follow the success cards, if any #}
     {% for task in compliance_tasks.values()|selectattr("goal_met", "false") %}
+        {{ components.y_padding(8)}}
         <tr>
           <td>
             {% include "po_monthly_report/compliance/task_card.html.jinja2" %}
           </td>
         </tr>
-        {{ components.y_padding(2)}}
+        {% if task.upcoming_clients %}
+          {{ components.y_padding(2)}}
+          <tr>
+            <td>
+              {% include "po_monthly_report/compliance/upcoming_clients_card.html.jinja2" %}
+            </td>
+          </tr>
+        {% endif %}
+        {% if task.overdue_clients %}
+          {{ components.y_padding(2)}}
+          <tr>
+            <td>
+              {% include "po_monthly_report/compliance/overdue_clients_card.html.jinja2" %}
+            </td>
+          </tr>
+        {% endif %}
     {% endfor %}
     {{ components.y_padding(40)}}
   {{ components.layout_table_end() }}

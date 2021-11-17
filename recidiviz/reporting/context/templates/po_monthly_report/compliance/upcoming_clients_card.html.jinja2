@@ -1,0 +1,39 @@
+{% extends "common/card.html.jinja2" %}
+{% block class %}TableCard{% endblock class %}
+{% block bgcolor %}#FFFCF0{% endblock bgcolor %}
+
+{% block children %}
+{{ components.layout_table_start() }}
+<tr>
+  <td class="TableCard__icon" style="width: 16px; padding: 4px 8px 4px 0;" valign="top">
+    <img width="16" height="16" alt="" src="{{static_image_path}}/warning.png"/>
+  </td>
+  <td valign="top" style="
+    {{brand_styles.fonts.sans_serif}}
+    font-weight: 500;
+    font-size: 18px;
+    color: #003331;
+    "
+  >Upcoming {{task.metric_label}}s</td>
+</tr>
+{{components.y_padding(16)}}
+<tr>
+  <td colspan="2">
+    {{components.data_table(task.upcoming_clients, highlight_column=2, color="yellow")}}
+  </td>
+</tr>
+{% if task.upcoming_overflow_text %}
+{{components.y_padding(16)}}
+<tr>
+  <td colspan="2" class="em_dm_txt_white_80" style="
+    {{brand_styles.fonts.sans_serif}}
+    font-weight: 500;
+    font-size: 16px;
+    color: #B7873D;
+  ">
+    {{task.upcoming_overflow_text}}
+  </td>
+</tr> 
+{% endif %}
+{{ components.layout_table_end() }}
+{% endblock children %}

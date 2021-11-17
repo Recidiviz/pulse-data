@@ -17,12 +17,15 @@
 """Types for PO Monthly Report context."""
 
 
-from typing import List, Literal, Optional, Tuple, TypedDict, Union
+from typing import List, Literal, Optional, TypedDict, Union
 
 from recidiviz.reporting.context.po_monthly_report.constants import (
     OfficerHighlightComparison,
     OfficerHighlightType,
 )
+
+# 2D array of rows > cells
+TableData = List[List[str]]
 
 DecarceralMetricContext = TypedDict(
     "DecarceralMetricContext",
@@ -33,7 +36,7 @@ DecarceralMetricContext = TypedDict(
         "total": int,
         "main_text": str,
         "supplemental_text": Optional[str],
-        "action_table": Optional[List[Tuple[str, str]]],
+        "action_table": Optional[TableData],
         "action_text": Optional[str],
     },
 )
@@ -80,3 +83,7 @@ class ComplianceTaskContext(TypedDict):
     goal_met: bool
     metric_label: str
     metric: str
+    upcoming_clients: Optional[TableData]
+    upcoming_overflow_text: Optional[str]
+    overdue_clients: Optional[TableData]
+    overdue_overflow_text: Optional[str]
