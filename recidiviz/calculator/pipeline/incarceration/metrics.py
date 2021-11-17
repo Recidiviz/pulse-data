@@ -139,6 +139,12 @@ When pre-processing the `StateIncarcerationPeriod` entities to create this metri
     # Raw text value of the most recent "official" admission reason for this time of incarceration
     admission_reason_raw_text: Optional[str] = attr.ib(default=None)
 
+    # Supervision type at the time of commitment from supervision to incarceration if the most recent "official"
+    # admission reason for this time of incarceration was a commitment from supervision.
+    commitment_from_supervision_supervision_type: Optional[
+        StateSupervisionPeriodSupervisionType
+    ] = attr.ib(default=None)
+
     # Area of jurisdictional coverage of the court that sentenced the person to this incarceration
     judicial_district_code: Optional[str] = attr.ib(default=None)
 
