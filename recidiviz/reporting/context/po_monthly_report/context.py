@@ -31,7 +31,7 @@ import json
 import sys
 from datetime import date
 from math import isnan
-from typing import Dict, List, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 from jinja2 import Template
 
@@ -92,6 +92,11 @@ _METRIC_DISPLAY_TEXT = {
 
 _UPCOMING_LIST_LIMIT = 3
 _OUT_OF_DATE_LIST_LIMIT = 4
+
+
+def _client_full_name(client: Dict[str, Any]) -> str:
+    # TODO(#10073) revert to bracket access once names are fully ingested
+    return format_full_name(client.get("full_name", "{}"))
 
 
 class PoMonthlyReportContext(ReportContext):
@@ -257,7 +262,7 @@ class PoMonthlyReportContext(ReportContext):
         upcoming_clients = (
             [
                 [
-                    f'{format_full_name(client["full_name"])} ({client["person_external_id"]})',
+                    f'{_client_full_name(client)} ({client["person_external_id"]})',
                     StrictStringFormatter().format(
                         "{d:%B} {d.day}",
                         d=date.fromisoformat(client["recommended_date"]),
@@ -278,7 +283,7 @@ class PoMonthlyReportContext(ReportContext):
         overdue_clients = (
             [
                 [
-                    f'{format_full_name(client["full_name"])} ({client["person_external_id"]})',
+                    f'{_client_full_name(client)} ({client["person_external_id"]})',
                 ]
                 for client in overdue_client_list[:_OUT_OF_DATE_LIST_LIMIT]
             ]
@@ -419,7 +424,7 @@ class PoMonthlyReportContext(ReportContext):
         action_table = (
             [
                 [
-                    f'{format_full_name(client["full_name"])} ({client["person_external_id"]})',
+                    f'{_client_full_name(client)} ({client["person_external_id"]})',
                     StrictStringFormatter().format(
                         "{d:%B} {d.day}",
                         d=date.fromisoformat(client["projected_end_date"]),
@@ -475,7 +480,7 @@ class PoMonthlyReportContext(ReportContext):
         action_table = (
             [
                 [
-                    f'{format_full_name(client["full_name"])} ({client["person_external_id"]})',
+                    f'{_client_full_name(client)} ({client["person_external_id"]})',
                     f"{client['current_supervision_level']} &rarr; {client['recommended_level']}",
                 ]
                 for client in action_clients
@@ -761,7 +766,6 @@ if __name__ == "__main__":
                     },
                     {
                         "person_external_id": "124",
-                        "full_name": '{"given_names": "CRIN", "surname": "MCMAHON"}',
                         "recommended_date": "2021-05-07",
                     },
                     {
@@ -783,7 +787,6 @@ if __name__ == "__main__":
                 "assessments_out_of_date_clients": [
                     {
                         "person_external_id": "131",
-                        "full_name": '{"given_names": "PERIA", "surname": "HUANG"}',
                     },
                     {
                         "person_external_id": "123",
@@ -802,7 +805,6 @@ if __name__ == "__main__":
                     },
                     {
                         "person_external_id": "110",
-                        "full_name": '{"given_names": "TWILA", "surname": "LOWERY"}',
                         "recommended_date": "2021-05-09",
                     },
                     {
@@ -818,7 +820,6 @@ if __name__ == "__main__":
                     },
                     {
                         "person_external_id": "128",
-                        "full_name": '{"given_names": "BRIDGET", "surname": "NOVAK"}',
                     },
                     {
                         "person_external_id": "106",
@@ -864,7 +865,6 @@ if __name__ == "__main__":
                 "revocations_clients": [],
                 "upcoming_release_date_clients": [
                     {
-                        "full_name": '{"given_names": "LINET", "surname": "HANSEN"}',
                         "person_external_id": "105",
                         "projected_end_date": "2021-05-07",
                     },
@@ -911,7 +911,6 @@ if __name__ == "__main__":
                         "recommended_level": "Medium",
                     },
                     {
-                        "full_name": '{"given_names": "TARYN", "surname": "BERRY"}',
                         "person_external_id": "147872",
                         "last_assessment_date": "3/13/20",
                         "last_score": 4,

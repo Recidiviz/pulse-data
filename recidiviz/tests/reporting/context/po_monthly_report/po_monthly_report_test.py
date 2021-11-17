@@ -519,6 +519,108 @@ class PoMonthlyReportContextTests(TestCase):
         )
         self.assertEqual(expected, actual["attachment_content"])
 
+    def test_attachment_content_missing_names(self) -> None:
+        recipient_data = {
+            "pos_discharges_clients": [
+                {
+                    "person_external_id": "123",
+                    "successful_completion_date": "2020-12-01",
+                }
+            ],
+            "earned_discharges_clients": [
+                {
+                    "person_external_id": "321",
+                    "earned_discharge_date": "2020-12-05",
+                }
+            ],
+            "supervision_downgrades_clients": [
+                {
+                    "person_external_id": "246",
+                    "latest_supervision_downgrade_date": "2020-12-07",
+                    "previous_supervision_level": "MEDIUM",
+                    "supervision_level": "MINIMUM",
+                }
+            ],
+            "revocations_clients": [
+                {
+                    "person_external_id": "456",
+                    "revocation_violation_type": "NEW_CRIME",
+                    "revocation_report_date": "2020-12-06",
+                },
+            ],
+            "absconsions_clients": [
+                {
+                    "person_external_id": "789",
+                    "absconsion_report_date": "2020-12-11",
+                }
+            ],
+            "assessments_out_of_date_clients": [
+                {
+                    "person_external_id": "987",
+                }
+            ],
+            "facetoface_out_of_date_clients": [
+                {
+                    "person_external_id": "654",
+                }
+            ],
+            "facetoface_upcoming_clients": [
+                {
+                    "person_external_id": "123",
+                    "recommended_date": "2021-06-12",
+                },
+            ],
+            "assessments_upcoming_clients": [
+                {
+                    "person_external_id": "987",
+                    "recommended_date": "2021-06-17",
+                }
+            ],
+        }
+
+        recipient = self.recipient.create_derived_recipient(recipient_data)
+
+        context = PoMonthlyReportContext(self.batch, recipient)
+        actual = context.get_prepared_data()
+        expected = textwrap.dedent(
+            """\
+            MONTHLY RECIDIVIZ REPORT
+            Prepared on 11/05/2020, for Christopher
+            
+            // Successful Case Completion //
+            [123]          Supervision completed on 12/01/2020    
+            
+            // Early Discharge //
+            [321]          Discharge granted on 12/05/2020    
+            
+            // Supervision Downgrades //
+            [246]          Supervision level downgraded on 12/07/2020    
+            
+            // Revocations //
+            [456]          New Crime     Revocation recommendation staffed on 12/06/2020    
+
+            // Absconsions //
+            [789]          Absconsion reported on 12/11/2020    
+            
+            // Out of Date Risk Assessments //
+            [987]         
+            
+            // Upcoming Risk Assessments //
+            [987]          Due on 06/17/2021    
+            
+            // Out of Date Face to Face Contacts //
+            [654]         
+            
+            // Upcoming Face to Face Contacts //
+            [123]          Recommended on 06/12/2021    
+
+            Please send questions or data issues to feedback@recidiviz.org
+
+            Please note: people on probation in custody who technically remain on your caseload are currently counted in your Key Supervision Task percentages, including contacts and risk assessments."""
+        )
+        self.maxDiff = None
+        self.assertEqual(expected, actual["attachment_content"])
+
     def test_faq(self) -> None:
         context = PoMonthlyReportContext(self.batch, self.recipient)
         self.assertEqual(context.get_prepared_data()["faq"], context.properties["faq"])
