@@ -423,6 +423,7 @@ Attributes specific to the `IncarcerationAdmissionMetric`:
 |admission_reason_raw_text            |STRING  |                                       |
 |specialized_purpose_for_incarceration|STRING  |StateSpecializedPurposeForIncarceration|
 |admission_date                       |DATE    |                                       |
+|supervision_type                     |STRING  |StateSupervisionPeriodSupervisionType  |
 
 
 Attributes on all metrics:
