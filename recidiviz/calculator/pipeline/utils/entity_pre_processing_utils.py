@@ -109,6 +109,15 @@ def pre_processing_managers_for_calculations(
                 "This pipeline must provide sentences to be run on this state."
             )
 
+    if supervision_periods is not None and incarceration_periods is None:
+        if (
+            state_sp_pre_processing_manager_delegate.pre_processing_relies_on_incarceration_periods()
+        ):
+            raise ValueError(
+                f"SP pre-processing for {state_code} relies on StateIncarcerationPeriod entities."
+                "This pipeline must provide incarceration periods to be run on this state."
+            )
+
     all_periods: List[Union[StateIncarcerationPeriod, StateSupervisionPeriod]] = []
     all_periods.extend(supervision_periods or [])
     all_periods.extend(incarceration_periods or [])
@@ -130,6 +139,7 @@ def pre_processing_managers_for_calculations(
             earliest_death_date=earliest_death_date,
             incarceration_sentences=incarceration_sentences,
             supervision_sentences=supervision_sentences,
+            incarceration_periods=incarceration_periods,
         )
 
         supervision_period_index = (
