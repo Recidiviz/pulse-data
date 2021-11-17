@@ -31,5 +31,5 @@ keys_to_ignore:
   - SPECIALIST_LAST_NAME
   - SPECIALIST_FIRST_NAME
   - SPECIALIST_INITIAL
-  - SUBMITTED_BY            # TODO(#1883): Add agent information when multiple ancestor paths supported
+  - SUBMITTED_BY
   - SUBMITTED_BY_NAME

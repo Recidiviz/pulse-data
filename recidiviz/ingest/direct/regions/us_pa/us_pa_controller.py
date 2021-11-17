@@ -642,8 +642,8 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         """Generates a row post-hook that will hydrate alternate external ids than the "main" external id in a row, for
         rows which have multiple external ids to be hydrated.
 
-        TODO(#1882): If yaml format supported raw values and multiple children of the same type,
-        then this would be no-longer necessary.
+        TODO(#8902): Delete this entirely once all US_PA ingest views are migrated to
+        ingest mappings v2.
         """
 
         def _hydrate_external_id(
@@ -1028,8 +1028,8 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         _cache: IngestObjectCache,
     ) -> None:
         """Sets the custodial_authority on the supervision period."""
-        # TODO(#1882): This row post hook should not be necessary once you can map a column value to multiple fields on
-        #  the ingested object.
+        # TODO(#8972): This row post hook should not be necessary once the supervision
+        #  periods view is migrated to v2 ingest mappings.
         supervision_types = row["supervision_types"]
 
         # For dual supervision types, the custodial authority will always be the supervision authority, so we

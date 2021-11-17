@@ -1,4 +1,4 @@
-# TODO(#1883): Combine this and us_id_early_discharge_supervision_sentence.yaml into one file once we can dynamically
+# TODO(#9391): Combine this and us_id_early_discharge_supervision_sentence.yaml into one file once we can dynamically
 #  choose ancestry types from YAML.
 key_mappings:
   ofndr_num: state_person.state_person_id
@@ -8,7 +8,7 @@ child_key_mappings:
 
   incrno: state_sentence_group.state_sentence_group_id
 
-  # TODO(#1883): We overwrite state_incarceration_sentence_id in the controller, but this is here because otherwise
+  # TODO(#9391): We overwrite state_incarceration_sentence_id in the controller, but this is here because otherwise
   #  the incarceration sentence isn't added to our extracted objects cache.
   sent_no: state_incarceration_sentence.state_incarceration_sentence_id
 

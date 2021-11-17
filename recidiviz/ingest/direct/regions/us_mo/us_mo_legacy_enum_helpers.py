@@ -721,7 +721,8 @@ def supervision_period_admission_reason_mapper(
     if label == "TRANSFER WITHIN STATE":
         return StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE
 
-    # TODO(#2865): Update enum normalization so that we separate by commas instead of spaces
+    # TODO(#9382): Update to split on a comma instead of spaces when we migrate the view
+    #  that uses this function to ingest mappings v2.
     statuses = sorted_list_from_str(label, " ")
 
     def status_rank(status: str) -> int:
@@ -774,7 +775,8 @@ def supervision_period_termination_reason_mapper(
     if label == "TRANSFER WITHIN STATE":
         return StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE
 
-    # TODO(#2865): Update enum normalization so that we separate by commas instead of spaces
+    # TODO(#9382): Update to split on a comma instead of spaces when we migrate the view
+    #  that uses this function to ingest mappings v2.
     statuses = sorted_list_from_str(label, " ")
 
     def status_rank(status: str) -> int:
@@ -988,7 +990,8 @@ def supervising_officer_mapper(label: str) -> Optional[StateAgentType]:
     """Maps |label|, a MO specific job title, to its corresponding StateAgentType."""
     if not label:
         return None
-    # TODO(#2865): Update enum normalization so that we separate by commas instead of spaces
+    # TODO(#9382): Update to split on a comma instead of spaces when we migrate the view
+    #  that uses this function to ingest mappings v2.
     if ("PROBATION" in label and "PAROLE" in label) or "P P" in label:
         return StateAgentType.SUPERVISION_OFFICER
     return StateAgentType.INTERNAL_UNKNOWN
