@@ -31,7 +31,7 @@ external_data AS (
     region_code,
     person_external_id,
     date_of_stay,
-    CASE state_code
+    CASE region_code
       WHEN 'US_PA' THEN UPPER(LEFT(facility, 3))
       ELSE facility
     END AS facility
