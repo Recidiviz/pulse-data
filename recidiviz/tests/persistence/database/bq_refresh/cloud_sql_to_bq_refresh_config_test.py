@@ -269,6 +269,13 @@ county_columns_to_exclude:
                 msg_prefix=f"Excluded columsn for {k}",
             )
 
+    def test_bq_schema_for_table(self) -> None:
+        for schema_type in self.enabled_schema_types:
+            config = CloudSqlToBQConfig.for_schema_type(schema_type)
+            for table in config.get_tables_to_export():
+                # Assert that all column types are supported for this table
+                _ = CloudSqlToBQConfig.bq_schema_for_table(table)
+
     def assertListsDistinctAndEqual(
         self, l1: List[str], l2: List[str], msg_prefix: str
     ) -> None:
