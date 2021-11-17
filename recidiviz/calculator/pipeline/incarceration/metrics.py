@@ -195,6 +195,11 @@ If a person was admitted to Facility X on 2021-01-01, was transferred out of Fac
     # Admission date
     admission_date: date = attr.ib(default=None)
 
+    # Type of supervision the person was committed from if the admission was a commitment from supervision
+    supervision_type: Optional[StateSupervisionPeriodSupervisionType] = attr.ib(
+        default=None
+    )
+
 
 @attr.s
 class IncarcerationCommitmentFromSupervisionMetric(
