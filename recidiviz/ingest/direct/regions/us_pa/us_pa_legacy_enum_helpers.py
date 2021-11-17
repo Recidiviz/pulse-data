@@ -176,6 +176,8 @@ INCARCERATION_PERIOD_RELEASE_REASON_TO_STR_MAPPINGS: Dict[
         "CS",  # Change Other Sentence
         "RTN",  # (Not in PA data dictionary, no instances after 1996)
         "W",  # Waiting
+        # TODO(#10053): Need to determine the actual mapping for PC
+        "PC",  # This is a new unknown status code that needs to be mapped properly
     ],
     StateIncarcerationPeriodReleaseReason.ESCAPE: [
         # CCIS CODES
