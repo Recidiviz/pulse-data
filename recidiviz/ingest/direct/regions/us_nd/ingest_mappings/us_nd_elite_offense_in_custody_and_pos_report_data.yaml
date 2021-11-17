@@ -16,8 +16,8 @@ child_key_mappings:
 # There is a primary key override in us_nd_controller for this file
 
 keys_to_ignore:
-  - LAST_NAME                                       # TODO(#1883): Handle once we can add non-id info to ancestor objects
-  - FIRST_NAME                                      # TODO(#1883): Handle once we can add non-id info to ancestor objects
+  - LAST_NAME                                       # Unused for now - Person last name
+  - FIRST_NAME                                      # Unused for now - Person first name
   - OIC_INCIDENT_ID                                 # Used in primary key override
   - AGENCY_INCIDENT_ID                              # Used in primary key override
   - INCIDENT_TYPE_DESC                              # Unused, maps 1:1 to INCIDENT_TYPE

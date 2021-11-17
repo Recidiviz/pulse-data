@@ -116,7 +116,7 @@ _HIERARCHY_MAP: Dict[
             },
         ),
     ),
-    # TODO(#1883): It's a hack that we assume the parent of a
+    # NOTE: It's a hack that we assume the parent of a
     #  state_incarceration_period is an state_incarceration_sentence
     #  here. In theory parent could be state_supervision_sentence that
     #  has a revocation edge into a state_incarceration_period.
@@ -145,7 +145,7 @@ _HIERARCHY_MAP: Dict[
         ),
         "state_charge",
     ),
-    # TODO(#1883): The entry here for |state_agent| is a hack. StateAgent
+    # NOTE: The entry here for |state_agent| is a hack. StateAgent
     #  can have multiple ancestor paths depending on what type of agent
     #  it is. We need to update the extractor code to just generate
     #  buckets of objects of a given type, with some encoding about

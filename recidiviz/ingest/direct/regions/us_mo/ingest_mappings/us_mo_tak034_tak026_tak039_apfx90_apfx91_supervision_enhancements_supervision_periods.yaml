@@ -21,7 +21,7 @@ keys_to_ignore:
   - FIELD_ASSIGNMENT_SEQ_NUM  # Field assignment sequence number - Handled manually in the controller
   - START_STATUS_SEQ_NUM      # Sub-sequence number - Handled manually in the controller
   - CASE_TYPE_LIST            # Case Type List - Handled manually in the controller
-  # TODO(#1883): Update to child mappings once data extractor is flexible
+  # TODO(#9382): This should be used in the v2 YAML mappings file when we migrate.
   - BDGNO   # Employee Id - Handled manually in the controller
   - DEPCLS  # Unused - Employee Job Code
   - LNAME   # Employee Last Name - Handled manually in the controller

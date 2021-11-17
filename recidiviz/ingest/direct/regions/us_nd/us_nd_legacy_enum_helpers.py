@@ -64,7 +64,8 @@ from recidiviz.ingest.direct.direct_ingest_controller_utils import (
 def incarceration_period_status_mapper(label: str) -> StateIncarcerationPeriodStatus:
     """Parses the custody status from a string containing the external movement edge direction and active flag."""
 
-    # TODO(#2865): Update enum normalization so that we separate by a dash instead of spaces
+    # TODO(#9369): Update to split on a dash instead of spaces when we migrate the view
+    #  that uses this function to ingest mappings v2.
     direction_code, active_flag = label.split(" ")
 
     if direction_code == "OUT":
@@ -84,7 +85,8 @@ def incarceration_period_status_mapper(label: str) -> StateIncarcerationPeriodSt
 def supervision_contact_type_mapper(raw_text: str) -> StateSupervisionContactType:
     """Parses the contact type from a string containing the contact codes."""
 
-    # TODO(#2865): Update enum normalization so that we separate by a dash instead of spaces
+    # TODO(#9365): Update to split on a dash instead of spaces when we migrate the view
+    #  that uses this function to ingest mappings v2.
     codes = raw_text.split(" ")
 
     # If collateral or face-to-face is explicitly set in the contact codes, we will use the
@@ -105,7 +107,8 @@ def supervision_contact_type_mapper(raw_text: str) -> StateSupervisionContactTyp
 def supervision_contact_method_mapper(raw_text: str) -> StateSupervisionContactMethod:
     """Parses the contact method from a string containing the contact codes."""
 
-    # TODO(#2865): Update enum normalization so that we separate by a dash instead of spaces
+    # TODO(#9365): Update to split on a dash instead of spaces when we migrate the view
+    #  that uses this function to ingest mappings v2.
     codes = raw_text.split(" ")
 
     # We assume that a visit is done in person. Otherwise, if we find a notion of communication, then
@@ -120,7 +123,8 @@ def supervision_contact_method_mapper(raw_text: str) -> StateSupervisionContactM
 def supervision_contact_status_mapper(raw_text: str) -> StateSupervisionContactStatus:
     """Parses the contact status from a string containing the contact codes."""
 
-    # TODO(#2865): Update enum normalization so that we separate by a dash instead of spaces
+    # TODO(#9365): Update to split on a dash instead of spaces when we migrate the view
+    #  that uses this function to ingest mappings v2.
     codes = raw_text.split(" ")
 
     # If explicitly set as attempted, we'll use the direct mapping.
@@ -136,7 +140,8 @@ def supervision_contact_location_mapper(
 ) -> StateSupervisionContactLocation:
     """Parses the contact location from a string containing the contact codes."""
 
-    # TODO(#2865): Update enum normalization so that we separate by a dash instead of spaces
+    # TODO(#9365): Update to split on a dash instead of spaces when we migrate the view
+    #  that uses this function to ingest mappings v2.
     codes = raw_text.split(" ")
 
     # There may multiple codes that indicate multiple locations.

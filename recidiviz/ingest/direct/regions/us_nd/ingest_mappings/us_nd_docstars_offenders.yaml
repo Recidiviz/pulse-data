@@ -18,10 +18,10 @@ primary_key:
   SID: state_person.state_person_id
 
 keys_to_ignore:
-  - SUP_LVL             # TODO(#1883) Add support for entity types with multiple parents
-  - SUPER_OVERRIDE      # TODO(#1883) Add support for entity types with multiple parents
+  - SUP_LVL             # Unused, for now.
+  - SUPER_OVERRIDE      # Unused, for now.
 
-  - AGENT                 # TODO(#1883) Setting as supervision officer on state_supervision_period
+  - AGENT                 # Handled manually in the controller
   - PREVIOUS_AGENT
   - RECORD_STATUS         # No apparent use for these at the moment
   - LAST_UPDATE           # No apparent use for these at the moment
