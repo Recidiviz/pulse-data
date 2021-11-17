@@ -263,6 +263,10 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
             sp_pre_processing_manager.pre_processed_supervision_period_index_for_calculations()
         )
 
+        commitments_from_supervision: Dict[
+            date, IncarcerationCommitmentFromSupervisionAdmissionEvent
+        ] = {}
+
         for (
             incarceration_period
         ) in incarceration_period_index_for_admissions.incarceration_periods:
@@ -281,6 +285,13 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
 
             if admission_event:
                 incarceration_events.append(admission_event)
+                if isinstance(
+                    admission_event,
+                    IncarcerationCommitmentFromSupervisionAdmissionEvent,
+                ):
+                    commitments_from_supervision[
+                        admission_event.admission_date
+                    ] = admission_event
 
         incarceration_period_index_for_releases = ip_pre_processing_manager.pre_processed_incarceration_period_index_for_calculations(
             collapse_transfers=True,
@@ -296,6 +307,7 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
                 incarceration_period=incarceration_period,
                 incarceration_period_index=incarceration_period_index_for_releases,
                 incarceration_delegate=incarceration_delegate,
+                commitments_from_supervision=commitments_from_supervision,
                 county_of_residence=county_of_residence,
             )
 
@@ -649,6 +661,9 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
         incarceration_period: StateIncarcerationPeriod,
         incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
         incarceration_delegate: StateSpecificIncarcerationDelegate,
+        commitments_from_supervision: Dict[
+            date, IncarcerationCommitmentFromSupervisionAdmissionEvent
+        ],
         county_of_residence: Optional[str],
     ) -> Optional[IncarcerationReleaseEvent]:
         """Returns an IncarcerationReleaseEvent if this incarceration period represents an release from incarceration."""
@@ -683,7 +698,23 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
 
             total_days_incarcerated: Optional[int] = None
 
+            commitment_from_supervision_supervision_type: Optional[
+                StateSupervisionPeriodSupervisionType
+            ] = None
             if incarceration_period.admission_date:
+                if is_commitment_from_supervision(admission_reason):
+                    associated_commitment = commitments_from_supervision[
+                        incarceration_period.admission_date
+                    ]
+                    if not associated_commitment:
+                        raise ValueError(
+                            f"There must be a commitment from supervision event associated with "
+                            f"incarceration period: {incarceration_period}"
+                        )
+                    commitment_from_supervision_supervision_type = (
+                        associated_commitment.supervision_type
+                    )
+
                 total_days_incarcerated = (
                     release_date - incarceration_period.admission_date
                 ).days
@@ -709,6 +740,7 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
                 supervision_type_at_release=supervision_type_at_release,
                 admission_reason=admission_reason,
                 total_days_incarcerated=total_days_incarcerated,
+                commitment_from_supervision_supervision_type=commitment_from_supervision_supervision_type,
             )
 
         return None
