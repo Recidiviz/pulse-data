@@ -51,6 +51,7 @@ class TestPreProcessedSupervisionPeriodsForCalculations(unittest.TestCase):
             earliest_death_date=earliest_death_date,
             incarceration_sentences=None,
             supervision_sentences=None,
+            incarceration_periods=None,
         )
 
         return (

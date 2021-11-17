@@ -20,6 +20,10 @@ from typing import Optional, Tuple
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_delegate import (
     StateSpecificSupervisionDelegate,
 )
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionPeriodAdmissionReason,
+)
+from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
 
 
 class UsPaSupervisionDelegate(StateSpecificSupervisionDelegate):
@@ -28,7 +32,8 @@ class UsPaSupervisionDelegate(StateSpecificSupervisionDelegate):
     def supervision_location_from_supervision_site(
         self, supervision_site: Optional[str]
     ) -> Tuple[Optional[str], Optional[str]]:
-        """In US_PA, supervision_site follows format {supervision district}|{supervision suboffice}|{supervision unit org code}"""
+        """In US_PA, supervision_site follows format
+        {supervision district}|{supervision suboffice}|{supervision unit org code}"""
         # TODO(#3829): Remove this helper once we've once we've built level 1/level 2 supervision
         #  location distinction directly into our schema.
         level_1_supervision_location = None
@@ -42,4 +47,17 @@ class UsPaSupervisionDelegate(StateSpecificSupervisionDelegate):
         return (
             level_1_supervision_location or None,
             level_2_supervision_location or None,
+        )
+
+    # pylint: disable=unused-argument
+    def supervision_period_in_supervision_population_in_non_excluded_date_range(
+        self,
+        supervision_period: StateSupervisionPeriod,
+        supervising_officer_external_id: Optional[str],
+    ) -> bool:
+        """In US_PA, a supervision period only counts towards the supervision population
+        if it is not a period indicating absconsion."""
+        return (
+            supervision_period.admission_reason
+            != StateSupervisionPeriodAdmissionReason.ABSCONSION
         )
