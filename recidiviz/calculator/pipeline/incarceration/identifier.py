@@ -210,26 +210,29 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
                 "Expected both pre-processed IPs and SPs for this pipeline."
             )
 
+        (
+            release_events,
+            commitments_from_supervision,
+        ) = self._find_all_admission_release_events(
+            incarceration_sentences=incarceration_sentences,
+            supervision_sentences=supervision_sentences,
+            ip_pre_processing_manager=ip_pre_processing_manager,
+            sp_pre_processing_manager=sp_pre_processing_manager,
+            assessments=assessments,
+            sorted_violation_responses=pre_processed_violation_responses,
+            supervision_period_to_agent_associations=supervision_period_to_agent_associations,
+            county_of_residence=county_of_residence,
+            incarceration_delegate=state_specific_incarceration_delegate,
+        )
+
+        incarceration_events.extend(release_events)
         incarceration_events.extend(
             self._find_all_stay_events(
                 ip_pre_processing_manager=ip_pre_processing_manager,
                 incarceration_period_to_judicial_district=incarceration_period_to_judicial_district,
                 incarceration_delegate=state_specific_incarceration_delegate,
                 county_of_residence=county_of_residence,
-            )
-        )
-
-        incarceration_events.extend(
-            self._find_all_admission_release_events(
-                incarceration_sentences=incarceration_sentences,
-                supervision_sentences=supervision_sentences,
-                ip_pre_processing_manager=ip_pre_processing_manager,
-                sp_pre_processing_manager=sp_pre_processing_manager,
-                assessments=assessments,
-                sorted_violation_responses=pre_processed_violation_responses,
-                supervision_period_to_agent_associations=supervision_period_to_agent_associations,
-                county_of_residence=county_of_residence,
-                incarceration_delegate=state_specific_incarceration_delegate,
+                commitments_from_supervision=commitments_from_supervision,
             )
         )
 
@@ -246,7 +249,10 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
         supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
         incarceration_delegate: StateSpecificIncarcerationDelegate,
         county_of_residence: Optional[str],
-    ) -> List[Union[IncarcerationAdmissionEvent, IncarcerationReleaseEvent]]:
+    ) -> Tuple[
+        List[Union[IncarcerationAdmissionEvent, IncarcerationReleaseEvent]],
+        Dict[date, IncarcerationCommitmentFromSupervisionAdmissionEvent],
+    ]:
         """Given the |original_incarceration_periods| generates and returns all IncarcerationAdmissionEvents and
         IncarcerationReleaseEvents.
         """
@@ -314,13 +320,16 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
             if release_event:
                 incarceration_events.append(release_event)
 
-        return incarceration_events
+        return incarceration_events, commitments_from_supervision
 
     def _find_all_stay_events(
         self,
         ip_pre_processing_manager: IncarcerationPreProcessingManager,
         incarceration_period_to_judicial_district: Dict[int, Dict[Any, Any]],
         incarceration_delegate: StateSpecificIncarcerationDelegate,
+        commitments_from_supervision: Dict[
+            date, IncarcerationCommitmentFromSupervisionAdmissionEvent
+        ],
         county_of_residence: Optional[str],
     ) -> List[IncarcerationStayEvent]:
         """Generates and returns all IncarcerationStayEvents for the
@@ -342,6 +351,7 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
                 incarceration_period_index,
                 incarceration_period_to_judicial_district,
                 incarceration_delegate,
+                commitments_from_supervision,
                 county_of_residence,
             )
 
@@ -356,6 +366,9 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
         incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
         incarceration_period_to_judicial_district: Dict[int, Dict[Any, Any]],
         incarceration_delegate: StateSpecificIncarcerationDelegate,
+        commitments_from_supervision: Dict[
+            date, IncarcerationCommitmentFromSupervisionAdmissionEvent
+        ],
         county_of_residence: Optional[str],
     ) -> List[IncarcerationStayEvent]:
         """Finds all days for which this person was incarcerated."""
@@ -394,13 +407,25 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
             )
 
         original_admission_reasons_by_period_id: Dict[
-            int, Tuple[StateIncarcerationPeriodAdmissionReason, Optional[str]]
+            int, Tuple[StateIncarcerationPeriodAdmissionReason, Optional[str], date]
         ] = incarceration_period_index.original_admission_reasons_by_period_id
 
         (
             original_admission_reason,
             original_admission_reason_raw_text,
+            original_admission_date,
         ) = original_admission_reasons_by_period_id[incarceration_period_id]
+
+        commitment_from_supervision_supervision_type: Optional[
+            StateSupervisionPeriodSupervisionType
+        ] = None
+        if is_commitment_from_supervision(original_admission_reason):
+            event: Optional[
+                IncarcerationCommitmentFromSupervisionAdmissionEvent
+            ] = commitments_from_supervision.get(original_admission_date)
+
+            if event:
+                commitment_from_supervision_supervision_type = event.supervision_type
 
         while stay_date < release_date:
             incarceration_stay_events.append(
@@ -416,6 +441,7 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
                     admission_reason_raw_text=original_admission_reason_raw_text,
                     judicial_district_code=judicial_district_code,
                     specialized_purpose_for_incarceration=incarceration_period.specialized_purpose_for_incarceration,
+                    commitment_from_supervision_supervision_type=commitment_from_supervision_supervision_type,
                 )
             )
 
@@ -682,10 +708,10 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
             )
 
         original_admission_reasons_by_period_id: Dict[
-            int, Tuple[StateIncarcerationPeriodAdmissionReason, Optional[str]]
+            int, Tuple[StateIncarcerationPeriodAdmissionReason, Optional[str], date]
         ] = incarceration_period_index.original_admission_reasons_by_period_id
 
-        admission_reason, _ = original_admission_reasons_by_period_id[
+        admission_reason, _, _ = original_admission_reasons_by_period_id[
             incarceration_period_id
         ]
 

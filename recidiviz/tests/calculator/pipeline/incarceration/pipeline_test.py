@@ -914,15 +914,6 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
         assert incarceration_period.release_date is not None
         assert incarceration_period.release_reason is not None
         incarceration_events = [
-            IncarcerationStayEvent(
-                admission_reason=incarceration_period.admission_reason,
-                admission_reason_raw_text=incarceration_period.admission_reason_raw_text,
-                state_code=incarceration_period.state_code,
-                event_date=incarceration_period.admission_date,
-                facility=incarceration_period.facility,
-                county_of_residence=_COUNTY_OF_RESIDENCE,
-                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
-            ),
             IncarcerationCommitmentFromSupervisionAdmissionEvent(
                 state_code=incarceration_period.state_code,
                 event_date=incarceration_period.admission_date,
@@ -952,6 +943,16 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
                     - incarceration_period.admission_date
                 ).days,
                 purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            ),
+            IncarcerationStayEvent(
+                admission_reason=incarceration_period.admission_reason,
+                admission_reason_raw_text=incarceration_period.admission_reason_raw_text,
+                state_code=incarceration_period.state_code,
+                event_date=incarceration_period.admission_date,
+                facility=incarceration_period.facility,
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+                commitment_from_supervision_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             ),
         ]
 
@@ -1103,15 +1104,6 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
         assert incarceration_period_with_death.admission_reason is not None
         assert incarceration_period_with_death.release_reason is not None
         incarceration_events = [
-            IncarcerationStayEvent(
-                admission_reason=incarceration_period_with_death.admission_reason,
-                admission_reason_raw_text=incarceration_period_with_death.admission_reason_raw_text,
-                state_code=incarceration_period_with_death.state_code,
-                event_date=incarceration_period_with_death.admission_date,
-                facility=incarceration_period_with_death.facility,
-                county_of_residence=_COUNTY_OF_RESIDENCE,
-                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
-            ),
             IncarcerationCommitmentFromSupervisionAdmissionEvent(
                 state_code=incarceration_period_with_death.state_code,
                 event_date=incarceration_period_with_death.admission_date,
@@ -1136,6 +1128,16 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
                     - incarceration_period_with_death.admission_date
                 ).days,
                 purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            ),
+            IncarcerationStayEvent(
+                admission_reason=incarceration_period_with_death.admission_reason,
+                admission_reason_raw_text=incarceration_period_with_death.admission_reason_raw_text,
+                state_code=incarceration_period_with_death.state_code,
+                event_date=incarceration_period_with_death.admission_date,
+                facility=incarceration_period_with_death.facility,
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+                commitment_from_supervision_supervision_type=StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN,
             ),
         ]
 

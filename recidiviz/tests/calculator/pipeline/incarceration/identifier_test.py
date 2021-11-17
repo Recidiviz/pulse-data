@@ -1056,6 +1056,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                     county_of_residence=_COUNTY_OF_RESIDENCE,
                     judicial_district_code="NW",
                     specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+                    commitment_from_supervision_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 ),
                 IncarcerationCommitmentFromSupervisionAdmissionEvent(
                     state_code=revoked_supervision_period.state_code,
@@ -1443,6 +1444,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                     facility=revocation_period.facility,
                     county_of_residence=_COUNTY_OF_RESIDENCE,
                     specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+                    commitment_from_supervision_supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
                 ),
                 IncarcerationStandardAdmissionEvent(
                     state_code=temp_custody_period.state_code,
@@ -1780,6 +1782,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                     facility=revocation_period.facility,
                     county_of_residence=_COUNTY_OF_RESIDENCE,
                     specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+                    commitment_from_supervision_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 ),
                 IncarcerationCommitmentFromSupervisionAdmissionEvent(
                     state_code=revocation_period.state_code,
@@ -2047,6 +2050,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         expected_shock_stay_events = expected_incarceration_stay_events(
             incarceration_period=shock_incarceration_period,
             original_admission_reason=StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
+            commitment_from_supervision_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         assert parole_board_hold.admission_date is not None
@@ -2170,6 +2174,7 @@ class TestFindIncarcerationStays(unittest.TestCase):
             incarceration_period_index,
             incarceration_period_judicial_district_association,
             incarceration_delegate,
+            {},  # commitments from supervision
             county_of_residence,
         )
 
@@ -2783,6 +2788,7 @@ class TestFindIncarcerationStays(unittest.TestCase):
             incarceration_period_index,
             incarceration_period_judicial_district_association,
             incarceration_delegate,
+            {},  # commitments from supervision
             _COUNTY_OF_RESIDENCE,
         )
 
@@ -2866,6 +2872,7 @@ class TestFindIncarcerationStays(unittest.TestCase):
             incarceration_period_index,
             incarceration_period_judicial_district_association,
             incarceration_delegate,
+            {},  # commitments from supervision
             _COUNTY_OF_RESIDENCE,
         )
 
@@ -4379,6 +4386,9 @@ def expected_incarceration_stay_events(
     original_admission_reason: Optional[StateIncarcerationPeriodAdmissionReason] = None,
     original_admission_reason_raw_text: Optional[str] = None,
     judicial_district_code: Optional[str] = None,
+    commitment_from_supervision_supervision_type: Optional[
+        StateSupervisionPeriodSupervisionType
+    ] = None,
 ) -> List[IncarcerationStayEvent]:
     """Returns the expected incarceration stay events based on the provided |incarceration_period|."""
 
@@ -4426,6 +4436,7 @@ def expected_incarceration_stay_events(
                 event_date=stay_date,
                 judicial_district_code=judicial_district_code,
                 specialized_purpose_for_incarceration=purpose_for_incarceration,
+                commitment_from_supervision_supervision_type=commitment_from_supervision_supervision_type,
             )
 
             expected_incarceration_events.append(event)

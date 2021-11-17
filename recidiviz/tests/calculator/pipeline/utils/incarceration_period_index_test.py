@@ -1186,6 +1186,7 @@ class TestOriginalAdmissionReasonsByPeriodID(unittest.TestCase):
         reason_tuple = (
             incarceration_period_1.admission_reason,
             incarceration_period_1.admission_reason_raw_text,
+            incarceration_period_1.admission_date,
         )
 
         expected_output = {
@@ -1252,10 +1253,12 @@ class TestOriginalAdmissionReasonsByPeriodID(unittest.TestCase):
         first_admission_tuple = (
             incarceration_period_1.admission_reason,
             incarceration_period_1.admission_reason_raw_text,
+            incarceration_period_1.admission_date,
         )
         second_admission_tuple = (
             incarceration_period_3.admission_reason,
             incarceration_period_3.admission_reason_raw_text,
+            incarceration_period_3.admission_date,
         )
 
         expected_output = {
@@ -1324,6 +1327,7 @@ class TestOriginalAdmissionReasonsByPeriodID(unittest.TestCase):
         admission_tuple = (
             incarceration_period_1.admission_reason,
             incarceration_period_1.admission_reason_raw_text,
+            incarceration_period_1.admission_date,
         )
 
         expected_output = {
@@ -1366,6 +1370,7 @@ class TestOriginalAdmissionReasonsByPeriodID(unittest.TestCase):
         admission_tuple = (
             incarceration_period_1.admission_reason,
             incarceration_period_1.admission_reason_raw_text,
+            incarceration_period_1.admission_date,
         )
 
         expected_output = {
@@ -1410,10 +1415,12 @@ class TestOriginalAdmissionReasonsByPeriodID(unittest.TestCase):
             incarceration_period_1.incarceration_period_id: (
                 incarceration_period_1.admission_reason,
                 incarceration_period_1.admission_reason_raw_text,
+                incarceration_period_1.admission_date,
             ),
             incarceration_period_2.incarceration_period_id: (
                 incarceration_period_2.admission_reason,
                 incarceration_period_2.admission_reason_raw_text,
+                incarceration_period_2.admission_date,
             ),
         }
 
@@ -1453,10 +1460,12 @@ class TestOriginalAdmissionReasonsByPeriodID(unittest.TestCase):
             incarceration_period_1.incarceration_period_id: (
                 incarceration_period_1.admission_reason,
                 incarceration_period_1.admission_reason_raw_text,
+                incarceration_period_1.admission_date,
             ),
             incarceration_period_2.incarceration_period_id: (
                 incarceration_period_1.admission_reason,
                 incarceration_period_1.admission_reason_raw_text,
+                incarceration_period_1.admission_date,
             ),
         }
 
