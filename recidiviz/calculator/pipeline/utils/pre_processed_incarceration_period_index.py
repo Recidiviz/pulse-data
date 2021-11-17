@@ -250,26 +250,27 @@ class PreProcessedIncarcerationPeriodIndex:
     # admission_reason and corresponding admission_reason_raw_text that started the
     # period of being incarcerated.
     original_admission_reasons_by_period_id: Dict[
-        int, Tuple[StateIncarcerationPeriodAdmissionReason, Optional[str]]
+        int, Tuple[StateIncarcerationPeriodAdmissionReason, Optional[str], date]
     ] = attr.ib()
 
     @original_admission_reasons_by_period_id.default
     def _original_admission_reasons_by_period_id(
         self,
-    ) -> Dict[int, Tuple[StateIncarcerationPeriodAdmissionReason, Optional[str]]]:
+    ) -> Dict[int, Tuple[StateIncarcerationPeriodAdmissionReason, Optional[str], date]]:
         """Determines the original admission reason of each period of incarceration. Returns a dictionary mapping
-        incarceration_period_id values to the original admission_reason and corresponding admission_reason_raw_text that
-        started the period of being incarcerated. People are often transferred between facilities during their time
-        incarcerated, so this in practice is the most recent non-transfer admission reason for the given incarceration
-        period."""
+        incarceration_period_id values to: the original admission_reason, corresponding admission_reason_raw_text, and
+        the admission_date that started the period of being incarcerated. People are often transferred between
+        facilities during their time incarcerated, so this in practice is the most recent non-transfer admission reason
+        for the given incarceration period."""
         original_admission_reasons_by_period_id: Dict[
-            int, Tuple[StateIncarcerationPeriodAdmissionReason, Optional[str]]
+            int, Tuple[StateIncarcerationPeriodAdmissionReason, Optional[str], date]
         ] = {}
 
         most_recent_official_admission_reason: Optional[
             StateIncarcerationPeriodAdmissionReason
         ] = None
         most_recent_official_admission_reason_raw_text: Optional[str] = None
+        most_recent_official_incarceration_admission_date: Optional[date] = None
 
         for index, incarceration_period in enumerate(self.incarceration_periods):
             incarceration_period_id = incarceration_period.incarceration_period_id
@@ -295,15 +296,34 @@ class PreProcessedIncarcerationPeriodIndex:
                     incarceration_period.admission_reason_raw_text
                 )
 
+                most_recent_official_incarceration_admission_date = (
+                    incarceration_period.admission_date
+                )
+
             if not most_recent_official_admission_reason:
+                if not incarceration_period.admission_date:
+                    raise ValueError(
+                        "Cannot have admission reason without admission date. Incarceration period does not have "
+                        f"associated admission date: {incarceration_period}"
+                    )
+
                 original_admission_reasons_by_period_id[incarceration_period_id] = (
                     incarceration_period.admission_reason,
                     incarceration_period.admission_reason_raw_text,
+                    incarceration_period.admission_date,
                 )
             else:
+                if not most_recent_official_incarceration_admission_date:
+                    raise ValueError(
+                        "Cannot have admission reason without admission date. Most recent admission"
+                        f" reason={most_recent_official_admission_reason} does not have associated"
+                        " admission date."
+                    )
+
                 original_admission_reasons_by_period_id[incarceration_period_id] = (
                     most_recent_official_admission_reason,
                     most_recent_official_admission_reason_raw_text,
+                    most_recent_official_incarceration_admission_date,
                 )
 
             if is_official_release(incarceration_period.release_reason):
@@ -311,6 +331,7 @@ class PreProcessedIncarcerationPeriodIndex:
                 # incarceration, then subsequent periods should not share the most recent admission reason.
                 most_recent_official_admission_reason = None
                 most_recent_official_admission_reason_raw_text = None
+                most_recent_official_incarceration_admission_date = None
 
         return original_admission_reasons_by_period_id
 
