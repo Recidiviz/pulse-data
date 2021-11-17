@@ -946,6 +946,7 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
                 county_of_residence=_COUNTY_OF_RESIDENCE,
                 release_reason=incarceration_period.release_reason,
                 admission_reason=incarceration_period.admission_reason,
+                commitment_from_supervision_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 total_days_incarcerated=(
                     incarceration_period.release_date
                     - incarceration_period.admission_date
@@ -1129,6 +1130,7 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
                 county_of_residence=_COUNTY_OF_RESIDENCE,
                 release_reason=incarceration_period_with_death.release_reason,
                 admission_reason=incarceration_period_with_death.admission_reason,
+                commitment_from_supervision_supervision_type=StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN,
                 total_days_incarcerated=(
                     incarceration_period_with_death.release_date
                     - incarceration_period_with_death.admission_date

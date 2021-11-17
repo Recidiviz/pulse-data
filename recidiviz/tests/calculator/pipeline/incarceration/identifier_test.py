@@ -1085,6 +1085,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                     release_reason=revocation_period.release_reason,
                     release_reason_raw_text=revocation_period.release_reason_raw_text,
                     supervision_type_at_release=StateSupervisionPeriodSupervisionType.PROBATION,
+                    commitment_from_supervision_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                     admission_reason=revocation_period.admission_reason,
                     total_days_incarcerated=(
                         revocation_period.release_date
@@ -1484,6 +1485,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                     county_of_residence=_COUNTY_OF_RESIDENCE,
                     release_reason=revocation_period.release_reason,
                     admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+                    commitment_from_supervision_supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
                     total_days_incarcerated=(
                         revocation_period.release_date
                         - revocation_period.admission_date
@@ -1804,6 +1806,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                     release_reason=revocation_period.release_reason,
                     release_reason_raw_text=revocation_period.release_reason_raw_text,
                     admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+                    commitment_from_supervision_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                     total_days_incarcerated=(
                         revocation_period.release_date
                         - revocation_period.admission_date
@@ -2105,6 +2108,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                 release_reason=shock_incarceration_period.release_reason,
                 release_reason_raw_text=shock_incarceration_period.release_reason_raw_text,
                 admission_reason=StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
+                commitment_from_supervision_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 total_days_incarcerated=(
                     shock_incarceration_period.release_date
                     - shock_incarceration_period.admission_date
@@ -3902,6 +3906,7 @@ class TestReleaseEventForPeriod(unittest.TestCase):
             incarceration_period,
             incarceration_period_index,
             incarceration_delegate,
+            {},  # commitments from supervision
             county_of_residence,
         )
 
@@ -4053,6 +4058,7 @@ class TestReleaseEventForPeriod(unittest.TestCase):
             incarceration_period=incarceration_period,
             incarceration_period_index=incarceration_period_index,
             incarceration_delegate=incarceration_delegate,
+            commitments_from_supervision={},
             county_of_residence=_COUNTY_OF_RESIDENCE,
         )
 
@@ -4151,6 +4157,7 @@ class TestReleaseEventForPeriod(unittest.TestCase):
             incarceration_period=incarceration_period,
             incarceration_period_index=incarceration_period_index,
             incarceration_delegate=incarceration_delegate,
+            commitments_from_supervision={},
             county_of_residence=_COUNTY_OF_RESIDENCE,
         )
 
