@@ -21,25 +21,27 @@ import logging
 import os
 import re
 import sys
+from collections import defaultdict
 from enum import Enum
 from io import StringIO
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 import ruamel.yaml
 from more_itertools import one
 from pytablewriter import MarkdownTableWriter
 
-import recidiviz
 from recidiviz.ingest.direct.ingest_mappings import yaml_schema
-from recidiviz.tools.docs.utils import persist_file_contents
+from recidiviz.tools.docs.summary_file_generator import (
+    SUMMARY_PATH,
+    update_summary_file,
+)
+from recidiviz.tools.docs.utils import DOCS_ROOT_PATH, persist_file_contents
 from recidiviz.utils.string import StrictStringFormatter
 
 ALL_SCHEMAS_PATH = os.path.dirname(yaml_schema.__file__)
 
-DOCS_DIR_PATH = os.path.join(
-    os.path.dirname(recidiviz.__file__),
-    "..",
-    "docs",
+ENGINEERING_DOCS_DIR_PATH = os.path.join(
+    DOCS_ROOT_PATH,
     "engineering",
     "ingest_mapping_schema",
 )
@@ -202,13 +204,14 @@ class SingleSchemaFile:
         self.file_expression_name = self._get_file_expression_name(
             file_type=self.file_type, file_json=self.json, schema_path=self.path
         )
+        _, self.dir_name = os.path.split(os.path.dirname(self.path))
 
     @staticmethod
     def _get_docs_output_path(schema_path: str) -> str:
         """Returns the absolute path that docs for this schema file should be output to."""
         relative_to_root = os.path.relpath(schema_path, ALL_SCHEMAS_PATH)
         path_no_ext, _ext = os.path.splitext(
-            os.path.normpath(os.path.join(DOCS_DIR_PATH, relative_to_root))
+            os.path.normpath(os.path.join(ENGINEERING_DOCS_DIR_PATH, relative_to_root))
         )
         return f"{path_no_ext}.md"
 
@@ -299,6 +302,29 @@ class SingleSchemaFileDocsGenerator:
             self.schema_file,
             all_schema_files,
         )
+
+    def generate_summary_md_list_item(self) -> str:
+        """Generates a single markdown list item that can be inserted into the
+        SUMMARY.md index.
+        """
+        docs_relative_to_summary = os.path.relpath(
+            self.schema_file.docs_output_path,
+            os.path.dirname(SUMMARY_PATH),
+        )
+        if self.schema_file.file_type in (
+            SchemaFileType.ROOT,
+            SchemaFileType.TYPE_INDEX,
+        ):
+            indent = 2
+        else:
+            indent = 4
+
+        title = self.schema_file.file_expression_name + (
+            " expressions"
+            if self.schema_file.file_type == SchemaFileType.TYPE_INDEX
+            else ""
+        )
+        return f"{' '* indent}- [{title}]({docs_relative_to_summary})\n"
 
     def generate_file_markdown(self) -> str:
         """Generates a single markdown documentation file for a single ingest mappings
@@ -572,6 +598,31 @@ class SingleSchemaFileDocsGenerator:
         return "".join(formatted_examples)
 
 
+def summary_lines_for_schema_files(
+    schema_version: str, all_schema_files: Dict[str, SingleSchemaFile]
+) -> List[str]:
+    """Generates the SUMMARY.md list item lines for the files in this schema."""
+    summary_lines = [f"- {schema_version}\n"]
+    bucketed_summary_lines = defaultdict(list)
+    index_files = {}
+    for schema_file in all_schema_files.values():
+        generator = SingleSchemaFileDocsGenerator(schema_file, all_schema_files)
+        if schema_file.file_type == SchemaFileType.ROOT:
+            summary_lines.append(generator.generate_summary_md_list_item())
+        elif schema_file.file_type == SchemaFileType.TYPE_INDEX:
+            index_files[
+                schema_file.dir_name
+            ] = generator.generate_summary_md_list_item()
+        else:
+            bucketed_summary_lines[schema_file.dir_name].append(
+                generator.generate_summary_md_list_item()
+            )
+    for expression_dir_name in sorted(bucketed_summary_lines.keys()):
+        summary_lines.append(index_files[expression_dir_name])
+        summary_lines.extend(sorted(bucketed_summary_lines[expression_dir_name]))
+    return summary_lines
+
+
 def generate_documentation() -> int:
     """Generates documentation for the ingest mappings yaml schema. Returns 1 if any
     changes were made to existing docs, returns 0 if no changes were made.
@@ -583,6 +634,8 @@ def generate_documentation() -> int:
         if not v.startswith(".") and not v.startswith("__")
     ]
     modified = False
+
+    summary_lines = ["## Ingest mapping schema\n\n"]
     for version in versions:
         schema_version_dir = os.path.join(ALL_SCHEMAS_PATH, version)
         all_schema_files = {}
@@ -592,10 +645,12 @@ def generate_documentation() -> int:
                 all_schema_files[schema_file_path] = SingleSchemaFile(schema_file_path)
 
         for schema_file in all_schema_files.values():
-            docs_md = SingleSchemaFileDocsGenerator(
-                schema_file, all_schema_files
-            ).generate_file_markdown()
+            generator = SingleSchemaFileDocsGenerator(schema_file, all_schema_files)
+            docs_md = generator.generate_file_markdown()
             modified |= persist_file_contents(docs_md, schema_file.docs_output_path)
+
+        summary_lines.extend(summary_lines_for_schema_files(version, all_schema_files))
+    update_summary_file(summary_lines, "## Ingest mapping schema")
 
     return 1 if modified else 0
 

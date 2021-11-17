@@ -25,7 +25,6 @@ Can be run on-demand via:
 import logging
 import os
 import sys
-
 from typing import List
 
 import sqlalchemy
@@ -33,18 +32,14 @@ from pytablewriter import MarkdownTableWriter
 
 import recidiviz
 from recidiviz.persistence.database.base_schema import StateBase
-from recidiviz.tools.docs.summary_file_generator import update_summary_file
-from recidiviz.tools.docs.utils import persist_file_contents
 
 # This is needed in order to get the full list of schema tables.
 # pylint: disable=unused-import
-from recidiviz.persistence.database.schema.state import (
-    schema as state_schema,
-)
+from recidiviz.persistence.database.schema.state import schema as state_schema
+from recidiviz.tools.docs.summary_file_generator import update_summary_file
+from recidiviz.tools.docs.utils import DOCS_ROOT_PATH, persist_file_contents
 
-ENTITY_DOCS_ROOT = os.path.join(
-    os.path.dirname(recidiviz.__file__), "..", "docs", "schema"
-)
+ENTITY_DOCS_ROOT = os.path.join(DOCS_ROOT_PATH, "schema")
 
 
 def generate_entity_documentation() -> bool:

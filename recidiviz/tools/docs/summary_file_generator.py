@@ -15,9 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Utility functions to update docs/SUMMARY.md for a respective catalog."""
+import os
 from typing import List
 
-SUMMARY_PATH = "docs/SUMMARY.md"
+from recidiviz.tools.docs.utils import DOCS_ROOT_PATH
+
+SUMMARY_PATH = os.path.join(DOCS_ROOT_PATH, "SUMMARY.md")
 
 
 def update_summary_file(catalog: List[str], catalog_title: str) -> None:

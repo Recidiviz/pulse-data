@@ -33,11 +33,14 @@ from werkzeug.routing import Rule
 
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tools.docs.summary_file_generator import update_summary_file
+from recidiviz.tools.docs.utils import DOCS_ROOT_PATH
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.string import StrictStringFormatter
 
-ENDPOINT_DOCS_DIRECTORY = "docs/endpoints"
-ENDPOINT_CATALOG_SPECIFICATION = "docs/endpoints/endpoint_specification_template.md"
+ENDPOINT_DOCS_DIRECTORY = os.path.join(DOCS_ROOT_PATH, "endpoints")
+ENDPOINT_CATALOG_SPECIFICATION = os.path.join(
+    ENDPOINT_DOCS_DIRECTORY, "endpoint_specification_template.md"
+)
 
 
 class EndpointDocumentationGenerator:
