@@ -19,7 +19,7 @@
 import unittest
 from collections import defaultdict
 from datetime import date
-from typing import Dict, List, Sequence, Type
+from typing import Dict, Sequence, Type
 
 import mock
 from freezegun import freeze_time
@@ -35,9 +35,7 @@ from recidiviz.calculator.pipeline.incarceration.events import (
 )
 from recidiviz.calculator.pipeline.incarceration.metrics import (
     IncarcerationCommitmentFromSupervisionMetric,
-    IncarcerationMetric,
     IncarcerationMetricType,
-    IncarcerationPopulationMetric,
 )
 from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric
 from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
@@ -302,6 +300,11 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
         self.assertTrue(
             IncarcerationMetricType.INCARCERATION_COMMITMENT_FROM_SUPERVISION
             in [metric.metric_type for metric in metrics]
+        )
+        # Assert that both metrics produce a supervision_type field with type PAROLE.
+        self.assertTrue(
+            StateSupervisionPeriodSupervisionType.PAROLE
+            in [metric.supervision_type for metric in metrics]  # type: ignore[attr-defined]
         )
 
         self.assertEqual(expected_count, len(metrics))
