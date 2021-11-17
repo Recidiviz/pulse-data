@@ -75,10 +75,10 @@ WITH all_incarceration_periods AS (
                 -- There shouldn't be any PeriodEvents that fall into `UNCATEGORIZED`
                 ELSE 'UNCATEGORIZED'
             END AS PeriodEvent,
-            -- Only pull in the Death Date if it is properly formatted. The DeathDate should look like: YYYY-MM-DD HH:MM:SS.
+            -- Only pull in the Death Date if it is properly formatted. The DeathDate should look like: YYYY-MM-DD.
             CASE 
-                WHEN REGEXP_CONTAINS(attributes.DeathDate, r'[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9] [0-9][0-9]:[0-9][0-9]:[0-9][0-9]') THEN DeathDate
-            END AS DeathDateTime,
+                WHEN REGEXP_CONTAINS(attributes.DeathDate, r'[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]') THEN DeathDate
+            END AS DeathDate,
             ROW_NUMBER() OVER (PARTITION BY OffenderID ORDER BY MovementDateTime ASC) AS MovementSequenceNumber,
         FROM filter_to_only_incarceration
         LEFT JOIN {OffenderAttributes} as attributes
@@ -90,9 +90,9 @@ WITH all_incarceration_periods AS (
         SELECT *
         FROM initial_setup
         WHERE 
-            DeathDateTime IS NULL
+            DeathDate IS NULL
             -- Filter out all rows whose start date is after the death date, if present.
-            OR SUBSTRING(MovementDateTime, 0, 10) <= SUBSTRING(DeathDateTime, 0, 10)
+            OR SUBSTRING(MovementDateTime, 0, 10) <= DeathDate
     ),
     append_next_movement_information_and_death_dates AS (
         SELECT 
@@ -110,7 +110,7 @@ WITH all_incarceration_periods AS (
             LEAD(FromLocationID) OVER person_sequence AS NextFromLocationID,
             LAG(ToLocationID) OVER person_sequence AS PreviousToLocationID,
             LEAD(PeriodEvent) OVER person_sequence AS NextPeriodEvent,
-            DeathDateTime,
+            DeathDate,
         FROM filter_out_movements_after_death_date
         WINDOW person_sequence AS (PARTITION BY OffenderID ORDER BY MovementSequenceNumber)
     ),
@@ -133,7 +133,7 @@ WITH all_incarceration_periods AS (
             NextMovementReason,
             NextFromLocationID,
             NextPeriodEvent,
-            DeathDateTime,
+            DeathDate,
         FROM append_next_movement_information_and_death_dates
     ),
     filter_out_erroneous_rows AS (
@@ -155,11 +155,11 @@ WITH all_incarceration_periods AS (
         IF ( 
             -- If we do not have an end date and do have a death date, then set the end date to be the death date. 
             -- If we do not have an end date and do not have a death date, then the EndDateTime will be null. 
-            -- Ignore the timestamp when doing the comparison between StartDateTime and DeathDateTime.
-            NextMovementDateTime IS NULL AND DeathDateTime IS NOT NULL, 
-            DeathDateTime, 
+            -- Ignore the timestamp when doing the comparison between StartDateTime and DeathDate.
+            NextMovementDateTime IS NULL AND DeathDate IS NOT NULL, 
+            DeathDate, 
             -- If there is an end date, use that, otherwise use the death date.
-            COALESCE(NextMovementDateTime, DeathDateTime)
+            COALESCE(NextMovementDateTime, DeathDate)
         ) AS EndDateTime,
         StartToLocationID as Site,
         StartMovementType,
