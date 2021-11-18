@@ -24,8 +24,7 @@ from recidiviz.calculator.query.state.dataset_config import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-# TODO(#9985): uncomment this after dopro_participants exists in us_id_raw
-# US_ID_RAW_DATASET = "us_id_raw_data_up_to_date_views"
+US_ID_RAW_DATASET = "us_id_raw_data_up_to_date_views"
 
 ASSIGNMENTS_VIEW_NAME = "assignments"
 
@@ -33,9 +32,6 @@ ASSIGNMENTS_VIEW_DESCRIPTION = (
     "Tracks assignments of experiment/policy/program variants to subjects in each "
     "experiment."
 )
-
-# after #9650 lands, swap dataset reference to us_id_raw_data_up_to_date_views in place
-# of experiments_scratch. Until that lands, big_query_view_dag_walker_test will fail.
 
 ASSIGNMENTS_QUERY_TEMPLATE = """
 WITH dosage_probation AS (
@@ -49,15 +45,15 @@ WITH dosage_probation AS (
         "0" as cluster_id,
         "0" as block_id,
     FROM
-        `{project_id}.{us_id_raw_dataset}.dopro_participant` a
+        `{project_id}.{us_id_raw_dataset}.DoPro_Participant_latest` a
     INNER JOIN
         `{project_id}.{state_base_dataset}.state_person_external_id` b
     ON
-        CAST(a.ofndr_num AS STRING) = b.external_id
+        a.ofndr_num = b.external_id
     WHERE
         b.state_code = "US_ID" AND
         -- Remove IDOC's test subject
-        ofndr_num NOT IN (30054)
+        ofndr_num NOT IN ("30054")
 )
 
 , geo_cis_referral AS (
@@ -129,8 +125,7 @@ ASSIGNMENTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=ASSIGNMENTS_VIEW_NAME,
     view_query_template=ASSIGNMENTS_QUERY_TEMPLATE,
     description=ASSIGNMENTS_VIEW_DESCRIPTION,
-    # TODO(#9985): SWAP IN US_ID_RAW_DATASET HERE
-    us_id_raw_dataset=STATIC_REFERENCE_TABLES_DATASET,
+    us_id_raw_dataset=US_ID_RAW_DATASET,
     state_base_dataset=STATE_BASE_DATASET,
     static_reference_dataset=STATIC_REFERENCE_TABLES_DATASET,
     should_materialize=True,
