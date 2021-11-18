@@ -25,6 +25,7 @@ This can be run on-demand whenever locally with the following command:
         --refresh_materialized_tables_only [True,False]
         --view_ids_to_load [DATASET_ID_1.VIEW_ID_1,DATASET_ID_2.VIEW_ID_2,...]
         --dataset_ids_to_load [DATASET_ID_1,DATASET_ID_2,...]
+        --update_ancestors [True,False]
         --update_descendants [True,False]
 """
 import argparse
@@ -42,11 +43,12 @@ from recidiviz.big_query.view_update_manager import (
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
 )
+from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override, project_id
 from recidiviz.utils.params import str_to_bool
 from recidiviz.view_registry.dataset_overrides import (
-    dataset_overrides_for_deployed_view_datasets,
+    dataset_overrides_for_view_builders,
 )
 from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
 from recidiviz.view_registry.deployed_views import deployed_view_builders
@@ -58,6 +60,7 @@ def load_views_to_sandbox(
     refresh_materialized_tables_only: bool = False,
     view_ids_to_load: Optional[List[str]] = None,
     dataset_ids_to_load: Optional[List[str]] = None,
+    update_ancestors: bool = False,
     update_descendants: bool = False,
 ) -> None:
     """Loads all views into sandbox datasets prefixed with the sandbox_dataset_prefix.
@@ -76,23 +79,35 @@ def load_views_to_sandbox(
         queries.
 
     view_ids_to_load : Optional[List[str]]
-        If specified, only loads views whose view_id matches one of the listed view_ids
-        as well as all ancestor views (dependencies). View_ids must take the form
-        dataset_id.view_id
+        If specified, only loads views whose view_id matches one of the listed view_ids.
+        View_ids must take the form dataset_id.view_id
+        TODO(#10076): this flag requires `update_ancestors` to be True because it has
+        to upload all ancestors in the same dataset as the view_ids provided
 
     dataset_ids_to_load : Optional[List[str]]
         If specified, only loads views whose dataset_id matches one of the listed
-        dataset_ids as well as all ancestor views (dependencies).
+        dataset_ids.
 
     update_descendants : bool, default False
+        Only applied if `view_ids_to_load` or `dataset_ids_to_load` is included.
+        If True, loads descendant views of views found in the two aforementioned
+        parameters.
+        TODO(#10076): this flag does not work if there are ancestors in the same dataset
+        that are not loaded. If you are getting errors using this flag you will need to
+        add the problematic views/datasets to the relevant `*_to_load` arg.
+        Once fixed, make this argument default to True
+
+    update_ancestors : bool, default False
         To be used with `view_ids_to_load` or `dataset_ids_to_load`. If True, loads
-        descendant views of views found in the two aforementioned parameters.
+        ancestor/parent views of views found in the two aforementioned parameters.
     """
-    # throw error if update_descendants and not view_ids_to_load
-    if update_descendants and not (view_ids_to_load or dataset_ids_to_load):
+    # throw error if update_ancestors and not view_ids_to_load or dataset_ids_to_load
+    if (update_ancestors or update_descendants) and not (
+        view_ids_to_load or dataset_ids_to_load
+    ):
         raise ValueError(
-            "Cannot update_descendants without supplying view_ids_to_load or "
-            "dataset_ids_to_load."
+            "Cannot update_ancestors or update descendants without supplying "
+            "view_ids_to_load or dataset_ids_to_load."
         )
 
     # throw error if both view_ids_to_load and dataset_ids_to_load supplied
@@ -101,11 +116,12 @@ def load_views_to_sandbox(
             "Only supply view_ids_to_load OR dataset_ids_to_load, not both."
         )
 
-    sandbox_dataset_overrides = dataset_overrides_for_deployed_view_datasets(
-        project_id=project_id(),
-        view_dataset_override_prefix=sandbox_dataset_prefix,
-        dataflow_dataset_override=dataflow_dataset_override,
-    )
+    # TODO(#10076): update the dataset overrides so that a single view can be updated
+    # throw error if view_ids_to_load is set without update_ancestors
+    if view_ids_to_load and not update_ancestors:
+        raise ValueError(
+            "Cannot use view_ids_to_load without including update_ancestors TODO(#10076)"
+        )
 
     view_builders = deployed_view_builders(project_id())
 
@@ -151,9 +167,12 @@ def load_views_to_sandbox(
             )
             views_to_load.extend(descendants_dag_walker.views)
 
-        # get ancestor views of views_to_load
-        ancestors_dag_walker = all_views_dag_walker.get_ancestors_sub_dag(views_to_load)
-        views_to_load.extend(ancestors_dag_walker.views)
+        # if necessary, get ancestor views of views_to_load
+        if update_ancestors:
+            ancestors_dag_walker = all_views_dag_walker.get_ancestors_sub_dag(
+                views_to_load
+            )
+            views_to_load.extend(ancestors_dag_walker.views)
 
         # get set of view addresses to update
         distinct_view_addresses_to_update = {
@@ -174,6 +193,7 @@ def load_views_to_sandbox(
 
     # update all view builders if view_ids_to_load not specified
     else:
+        prompt_for_confirmation("This will load all sandbox views, continue?")
         builders_to_update = [
             builder
             for builder in view_builders
@@ -184,6 +204,11 @@ def load_views_to_sandbox(
         ]
 
     logging.info("Updating %s views.", len(builders_to_update))
+
+    sandbox_dataset_overrides = dataset_overrides_for_view_builders(
+        view_dataset_override_prefix=sandbox_dataset_prefix,
+        view_builders=builders_to_update,
+    )
 
     if refresh_materialized_tables_only:
         rematerialize_views_for_view_builders(
@@ -267,6 +292,16 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
     )
 
     parser.add_argument(
+        "--update_ancestors",
+        dest="update_ancestors",
+        help="If True, will load views that are ancestors of those provided in "
+        "view_ids_to_load or dataset_ids_to_load.",
+        type=str_to_bool,
+        default=False,
+        required=False,
+    )
+
+    parser.add_argument(
         "--update_descendants",
         dest="update_descendants",
         help="If True, will load views that are descendants of those provided in "
@@ -301,5 +336,6 @@ if __name__ == "__main__":
             known_args.refresh_materialized_tables_only,
             known_args.view_ids_to_load,
             known_args.dataset_ids_to_load,
+            known_args.update_ancestors,
             known_args.update_descendants,
         )
