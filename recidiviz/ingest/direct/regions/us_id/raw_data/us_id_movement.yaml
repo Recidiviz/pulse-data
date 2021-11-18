@@ -7,7 +7,7 @@ primary_key_cols:
 columns:
   - name: move_srl
     description: |-
-      ID of this movement
+      ID of this movement. This is not strictly increasing with regards to move_dtd - it is possible for later movements to have a lower `move_srl` value.
   - name: docno
     description: |-
       ID of the person that is being moved
@@ -17,10 +17,19 @@ columns:
   - name: move_dtd
     is_datetime: True
     description: |-
-      The date of the move
+      The date and time of the move
   - name: move_typ
     description: |-
-      Type of movement (either I for incarcerated or P for probation / parole)
+      Type of movement
+    known_values:
+      - value: P
+        description: Supervision
+      - value: H
+        description: History (Release)
+      - value: I
+        description: Incarceration
+      - value: F
+        description: Fugitive
   - name: fac_cd
     description: |-
       Code for the new facility type
