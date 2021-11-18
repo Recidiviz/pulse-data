@@ -63,6 +63,12 @@ from recidiviz.calculator.query.state.views.analyst_data.us_id.us_id_ppo_metrics
 from recidiviz.calculator.query.state.views.analyst_data.us_id.us_id_raw_supervision_contacts import (
     US_ID_RAW_SUPERVISION_CONTACTS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_pa.us_pa_raw_required_treatment import (
+    US_PA_RAW_REQUIRED_TREATMENT_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_pa.us_pa_raw_treatment_classification_codes import (
+    US_PA_RAW_TREATMENT_CLASSIFICATION_CODES_VIEW_BUILDER,
+)
 
 ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     EVENT_BASED_METRICS_BY_SUPERVISION_OFFICER_VIEW_BUILDER,
@@ -80,4 +86,6 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_ID_PPO_METRICS_SUCCESSFUL_SUPERVISION_TERMINATIONS_VIEW_BUILDER,
     US_ID_PPO_METRICS_SUPERVISION_LEVEL_VIEW_BUILDER,
     US_ID_RAW_SUPERVISION_CONTACTS_VIEW_BUILDER,
+    US_PA_RAW_TREATMENT_CLASSIFICATION_CODES_VIEW_BUILDER,
+    US_PA_RAW_REQUIRED_TREATMENT_VIEW_BUILDER,
 ]
