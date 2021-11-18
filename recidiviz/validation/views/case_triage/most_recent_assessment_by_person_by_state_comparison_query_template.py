@@ -55,42 +55,19 @@ WITH
   SELECT
     state_code AS region_code,
     person_id,
-    assessment_date AS most_recent_assessment_state_date
+    assessment_date AS most_recent_state_date,
+    assessment_score AS most_recent_state_score
   FROM (
     SELECT
       *,
-      ROW_NUMBER() OVER(PARTITION BY state_code, person_id, assessment_date ORDER BY assessment_date, FORMAT('%128s', external_id) DESC ) AS rn
+      ROW_NUMBER() OVER(PARTITION BY state_code, person_id ORDER BY assessment_date DESC, FORMAT('%128s', external_id) DESC ) AS rn
     FROM
       `{project_id}.{state_dataset}.state_assessment`
     WHERE
-      assessment_date IS NOT NULL )
+      assessment_date IS NOT NULL
+      AND assessment_type = 'LSIR' OR assessment_type LIKE 'ORAS%')
   WHERE
     rn = 1),
-  score_to_state_date AS (
-  SELECT
-    state_code AS region_code,
-    person_id,
-    assessment_score,
-    assessment_date AS most_recent_assessment_state_date
-  FROM
-    `{project_id}.{state_dataset}.state_assessment`
-  WHERE
-    assessment_date IS NOT NULL
-    AND assessment_score IS NOT NULL ),
-  score_on_most_recent_state_date AS (
-  SELECT
-    region_code,
-    person_id,
-    most_recent_assessment_state_date AS most_recent_state_date,
-    assessment_score AS most_recent_state_score
-  FROM
-    most_recent_state_assessment
-  JOIN
-    score_to_state_date
-  USING
-    (region_code,
-      person_id,
-      most_recent_assessment_state_date) ),
   person_to_external_ids AS (
   SELECT
     state_code AS region_code,
@@ -107,7 +84,7 @@ SELECT
   most_recent_state_score
 FROM
   score_on_most_recent_etl_date
-JOIN (score_on_most_recent_state_date
+JOIN (most_recent_state_assessment
   JOIN
     person_to_external_ids
   USING
