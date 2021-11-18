@@ -1,6 +1,7 @@
 Hi {{ officer_given_name }},
 
-I’m Serena, a Product Manager at Recidiviz working on tools for {{ l10n.parole_agents }}. {{ l10n.partnership }}. One of the things we’re doing is building alerts and reports to help make your jobs easier.
+
+I’m Serena, a Product Manager at Recidiviz working on tools to help {{ l10n.parole_agents }} improve outcomes of your clients. We’ve been working with your individual-level data to make sure we capture {{ l10n.pbpp }} policies and practices accurately.
 
 {% if overdue_discharges %}
 As we look through the data, we found these clients may be overdue for discharge this week because their {{ l10n.expiration_date }} has passed.
@@ -18,9 +19,7 @@ Here are a few clients who have an expiration date in the next 60 days that you 
 {% endfor %}
 {% endif %}
 
-We are in an early development phase and want to make sure we get the data right, so if any of the information I mentioned looks incorrect, or there’s a valid reason why these folks would still be on supervision past their {{ l10n.expiration_date }}, please let us know in this form!
-
-If there are other types of things you’d be interested in being alerted about in the future (for example, when a client might be eligible for [something]), let us know.
+We are in an early development phase and want to make sure we get the data right, so if any of the information I mentioned looks incorrect, or there’s a valid reason why these folks would still be on supervision past their max date, please reply to this email and let me know!
 
 Thanks!
 Serena
