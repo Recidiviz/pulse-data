@@ -1,0 +1,19 @@
+file_tag: CIS_1241_SUPERVISION_STATUS
+file_description: |-
+  TODO(#10017): Fill in raw data descriptions
+primary_key_cols: []
+columns:
+  - name : Adult_Comm_Ind
+  - name : Adult_Insti_Ind
+  - name : Created_By_Tx
+  - name : Created_On_Date
+  - name : Juv_Comm_Ind
+  - name : Juv_Insti_Ind
+  - name : Locking_Tsp
+  - name : Logical_Delete_Ind
+  - name : Modified_By_Tx
+  - name : Modified_On_Date
+  - name : Supervision_Status_Desc
+  - name : System_Ref_Comments_Tx
+  - name : System_Ref_Tx
+  - name : Supervision_Status_Cd

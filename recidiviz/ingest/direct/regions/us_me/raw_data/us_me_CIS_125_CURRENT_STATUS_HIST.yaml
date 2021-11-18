@@ -5,147 +5,295 @@ file_description: |-
 primary_key_cols:
   - Current_Status_Hist_Id
 columns:
-  - name : Cis_100_Client_Id
+  - name: Cis_100_Client_Id
     description: |-
       The unique identifier for all clients in the offender management system.
-  - name : Cis_1000_Current_Status_Cd
+  - name: Cis_1000_Current_Status_Cd
     description: |-
       This is a client's status in the system between the Effct_Date and the End_Date.
     known_values:
       - value: 1
-        description: "Probation (The client is on probation)"
-      - value: 2
-        description: "Incarcerated (The client is being held in a DOC facility)"
-      - value: 3
-        description: "Committed - In Custody (Juvenile Populations Only)"
-      - value: 4
-        description: "Parole (The client is on Parole)"
-      - value: 5
-        description: "SCCP (Supervised Community Confinement Program. The client is released to a supervision officer to serve the remaining incarceration sentence in the community)"
-      - value: 6
-        description: "Interstate Compact Out (The client has been transferred to another jurisdiction, either out of state or federal)"
-      - value: 7
-        description: "Interstate Active Detainer (The client is being held by another jurisdiction for out of state or federal charges and eventually needs to return to complete their sentence in Maine)"
-      - value: 8
-        description: "County Jail (The client is not sentenced to a DOC Facility but is being held in one for resourcing needs. This could include 'Safekeepers', 'Boarders', and overflow populations from the county jail)"
-      - value: 9
-        description: "Warrant Absconded (The client has absconded while on probation and has an active warrant)"
+        description: Probation (The client is on probation)
       - value: 10
-        description: "Pending Violation (The client has a probation violation that is being processed)"
+        description: Pending Violation (The client has a probation violation that is being processed)
       - value: 11
-        description: "Partial Revocation - incarcerated (The client is serving 9 months and a day or more in a DOC facility because of a probation violation)"
+        description: Partial Revocation - incarcerated (The client is serving 9 months and a day or more in a DOC facility because of a probation violation)
       - value: 12
-        description: "Escape"
+        description: Escape
       - value: 13
-        description: "Inactive (This status is auto-generated when a client is discharged from the system and is neither incarcerated nor under supervision. This status is also generated if the client is deceased)"
+        description: Inactive (This status is auto-generated when a client is discharged from the system and is neither incarcerated nor under supervision. This status is also generated if the client is deceased)
       - value: 14
-        description: "Community Reintegration (Juvenile Populations Only)"
+        description: Community Reintegration (Juvenile Populations Only)
       - value: 15
-        description: "Interstate Compact (Juvenile Populations Only)"
+        description: Interstate Compact (Juvenile Populations Only)
       - value: 16
-        description: "Partial Revocation - probation to continue (This is a probation violation outcome status which means the client must continue probation after the revocation)"
+        description: Partial Revocation - probation to continue (This is a probation violation outcome status which means the client must continue probation after the revocation)
       - value: 17
-        description: "Partial Revocation - probation to terminate (This is a probation violation outcome status which means the client will complete their probation time in a DOC facility)"
+        description: Partial Revocation - probation to terminate (This is a probation violation outcome status which means the client will complete their probation time in a DOC facility)
       - value: 18
-        description: "Informal Adjustment (Juvenile Populations Only)"
+        description: Informal Adjustment (Juvenile Populations Only)
       - value: 19
-        description: "Sole Sanction (Juvenile Populations Only)"
+        description: Sole Sanction (Juvenile Populations Only)
+      - value: 2
+        description: Incarcerated (The client is being held in a DOC facility)
       - value: 20
-        description: "Petition Authorized (Juvenile Populations Only)"
+        description: Petition Authorized (Juvenile Populations Only)
       - value: 21
-        description: "Detention (Juvenile Populations Only)"
+        description: Detention (Juvenile Populations Only)
       - value: 22
-        description: "Shock Sentence (Juvenile Populations Only)"
+        description: Shock Sentence (Juvenile Populations Only)
       - value: 23
-        description: "Referral (Juvenile Populations Only)"
+        description: Referral (Juvenile Populations Only)
       - value: 24
-        description: "Drug Court Sanction (Juvenile Populations Only)"
+        description: Drug Court Sanction (Juvenile Populations Only)
       - value: 25
-        description: "Drug Court Participant (Juvenile Populations Only)"
+        description: Drug Court Participant (Juvenile Populations Only)
       - value: 26
-        description: "Conditional Release (Juvenile Populations Only)"
+        description: Conditional Release (Juvenile Populations Only)
       - value: 27
-        description: "Federal Hold (Never been used)"
+        description: Federal Hold (Never been used)
       - value: 28
-        description: "Interstate Compact In (The client has been transferred to a DOC facility but the jurisdiction responsible for the client is out of state or federal)"
-      - value: 31
-        description: "Active (Status for new client, can always be ignored)"
+        description: Interstate Compact In (The client has been transferred to a DOC facility but the jurisdiction responsible for the client is out of state or federal)
       - value: 29
-        description: "Pending Violation - Incarcerated (The client's probation violation is still in progress and the client has not been admitted to a facility yet. This usually means a client is incarcerated at a county jail to await the sentencing outcome)"
+        description: Pending Violation - Incarcerated (The client's probation violation is still in progress and the client has not been admitted to a facility yet. This usually means a client is incarcerated at a county jail to await the sentencing outcome)
+      - value: 3
+        description: Committed - In Custody (Juvenile Populations Only)
+      - value: 31
+        description: Active (Status for new client, can always be ignored)
       - value: 32
-        description: "No Further Action (Juvenile Populations Only)"
+        description: No Further Action (Juvenile Populations Only)
       - value: 33
-        description: "Partial Revocation - County Jail (The client is in a county jail for 9 months and a day or less because of a probation violation)"
-  - name : Cis_3091_Mvmt_Reason_Cd
-    description : |-
+        description: Partial Revocation - County Jail (The client is in a county jail for 9 months and a day or less because of a probation violation)
+      - value: 4
+        description: Parole (The client is on Parole)
+      - value: 5
+        description: SCCP (Supervised Community Confinement Program. The client is released to a supervision officer to serve the remaining incarceration sentence in the community)
+      - value: 6
+        description: Interstate Compact Out (The client has been transferred to another jurisdiction, either out of state or federal)
+      - value: 7
+        description: Interstate Active Detainer (The client is being held by another jurisdiction for out of state or federal charges and eventually needs to return to complete their sentence in Maine)
+      - value: 8
+        description: County Jail (The client is not sentenced to a DOC Facility but is being held in one for resourcing needs. This could include 'Safekeepers', 'Boarders', and overflow populations from the county jail)
+      - value: 9
+        description: Warrant Absconded (The client has absconded while on probation and has an active warrant)
+  - name: Cis_3091_Mvmt_Reason_Cd
+    description: |-
       Describes why someone was moved. Not all movements are transfers, but all transfers/transports are movements when they
       occur to/from a DOC Facility. Movements also include escapes and furloughs from DOC facilities.
       Movements are only related to incarcerated clients, not supervised clients. If a client is moved from
       incarceration to probation, there would be a record in both the movements and transfers tables.
-    known_values :
+    known_values:
       - value: 1
-        description: "Furlough -- Medical"
-      - value: 2
-        description: "Furlough -- All Other"
-      - value: 3
-        description: "Transport -- Hospital"
-      - value: 4
-        description: "Transport -- All Other"
-      - value: 5
-        description: "Transport -- Court"
-      - value: 6
-        description: "Escape"
-      - value: 7
-        description: "Transfer -- County Jail"
-      - value: 8
-        description: "Transfer -- All Other"
-      - value: 9
-        description: "Transfer -- SCCP"
+        description: Furlough -- Medical
       - value: 10
-        description: "Transfer -- ISC"
+        description: Transfer -- ISC
       - value: 11
-        description: "Transfer -- IAD"
+        description: Transfer -- IAD
       - value: 12
-        description: "Community Reintegration"
-  - name : Cis_314_Transfer_Id
-    description : |-
+        description: Community Reintegration
+      - value: 2
+        description: Furlough -- All Other
+      - value: 3
+        description: Transport -- Hospital
+      - value: 4
+        description: Transport -- All Other
+      - value: 5
+        description: Transport -- Court
+      - value: 6
+        description: Escape
+      - value: 7
+        description: Transfer -- County Jail
+      - value: 8
+        description: Transfer -- All Other
+      - value: 9
+        description: Transfer -- SCCP
+  - name: Cis_314_Transfer_Id
+    description: |-
       Foreign-key ID for the CIS_314_TRANSFER table
-  - name : Cis_908_Ccs_Location_2_Id
+  - name: Cis_908_Ccs_Location_2_Id
     description: |-
       Foreign-key ID for the CIS_908_CCS_LOCATION table, this is the client's physical location.
-  - name : Cis_908_Ccs_Location_Id
+  - name: Cis_908_Ccs_Location_Id
     description: |-
       Foreign-key ID for the CIS_908_CCS_LOCATION table, this is the client's responsible jurisdiction location.
-  - name : Cis_912_Unit_Id
+  - name: Cis_912_Unit_Id
     description: |-
       The unit within a DOC facility that is housing the client. For logistical reasons, Southern Maine Women's Reentry Center
       is considered a unit of Maine Correctional Center.
-  - name : Cis_913_Pod_Id
-  - name : Cis_914_Cell_Id
-  - name : Cis_915_Bed_Id
-  - name : Community_Ind
-  - name : Created_By_Tx
-  - name : Created_On_Date
-  - name : Current_Status_Hist_Id
+    known_values:
+      - value: 1
+        description: Unit 1 - Maine Correctional Center
+      - value: 2
+        description: Unit 2 - Maine Correctional Center
+      - value: 3
+        description: Unit 3 - Maine Correctional Center
+      - value: 4
+        description: MPU - Maine Correctional Center
+      - value: 5
+        description: Unit I - Facility closed 4/11/2013 - Central Maine Pre-Release Center
+      - value: 6
+        description: Unit I - 108 max.  -- Includes 5 extra Beds for Emergency purposes only - Charleston Correctional Facility
+      - value: 7
+        description: Unit I - Downeast Correctional Facility
+      - value: 8
+        description: Close - Maine State Prison
+      - value: 9
+        description: Receiving - Temporary Holding for Intake area - Maine State Prison
+      - value: 10
+        description: Medical - Infirmary Cells - Maine State Prison
+      - value: 11
+        description: Medium - Maine State Prison
+      - value: 12
+        description: SMU - Special Management Unit and Restrictive Housing - Maine State Prison
+      - value: 13
+        description: ComConfine - Community Confinement - No limit, per classification. - Bolduc Correctional Facility
+      - value: 14
+        description: Unit 1 - Bolduc Correctional Facility
+      - value: 15
+        description: Unit 2 - Bolduc Correctional Facility
+      - value: 16
+        description: A - Accessment and Orientation - Mountain View Youth Center
+      - value: 17
+        description: C - High Custody - Mountain View Youth Center
+      - value: 18
+        description: D - Moderate Custody - Mountain View Youth Center
+      - value: 19
+        description: E - Moderate/High-Female - Mountain View Youth Center
+      - value: 20
+        description: B - Detention-High/Moderate - Mountain View Youth Center
+      - value: 21
+        description: Spruce - Detention/Female SMU - Long Creek Youth Center
+      - value: 22
+        description: Infirmary - Infirmary Rooms - Long Creek Youth Center
+      - value: 23
+        description: Maple - Moderate - Long Creek Youth Center
+      - value: 24
+        description: Oak - High/Moderate/Detention - Long Creek Youth Center
+      - value: 25
+        description: Cedar - Moderate - Long Creek Youth Center
+      - value: 26
+        description: SMU - Special Management Unit Males - Long Creek Youth Center
+      - value: 27
+        description: Pine - Moderate - Long Creek Youth Center
+      - value: 28
+        description: Elm - Assessment & Orientation - Long Creek Youth Center
+      - value: 29
+        description: F/SMU - Special Management Unit - Mountain View Youth Center
+      - value: 30
+        description: Unit II - Segregation -- Keep inactive unless needed - Charleston Correctional Facility
+      - value: 31
+        description: Seg - Central Maine Pre-Release Center
+      - value: 32
+        description: County - Fake Unit for Male County Jail Transfers - Maine Correctional Center
+      - value: 33
+        description: County - Fake Unit for County Jail Transfers - Maine State Prison
+      - value: 34
+        description: Unit 2 - Charleston Correctional Facility
+      - value: 35
+        description: Women Unit - Womens Reentry Unit (Bangor WRC) - Charleston Correctional Facility
+      - value: 36
+        description: County - Cumberland County Female Work Release Program - Maine Correctional Center
+      - value: 37
+        description: Cumb Women - Womens Reenty Unit at CCJ - Charleston Correctional Facility
+      - value: 38
+        description: Intake - Intake Rooms - Long Creek Youth Center
+      - value: 39
+        description: County - Fake Unit for County Jail Transfers - Charleston Correctional Facility
+      - value: 40
+        description: County - Bolduc Correctional Facility
+      - value: 41
+        description: County - Faxe Unit for County Jail Transfers - Downeast Correctional Facility
+      - value: 43
+        description: County - Fake Unit for County Jail Transfers - Central Maine Pre-Release Center
+      - value: 44
+        description: SMWRC - Southern Maine Women's ReEntry Center - Maine Correctional Center
+      - value: 45
+        description: County - Kennebec County Jail Contracted Beds - Bolduc Correctional Facility
+      - value: 46
+        description: IMHU - Maine State Prison
+      - value: 47
+        description: Unit 3 - Charleston Correctional Facility
+      - value: 48
+        description: County - Fake Unit for County Jail Transfers - Mountain View Adult Center
+      - value: 49
+        description: Unit A - Mountain View Adult Center
+      - value: 50
+        description: Unit B SBT - capacity 29 plus 3 SMU cells - Mountain View Adult Center
+      - value: 51
+        description: Unit C - Mountain View Adult Center
+      - value: 57
+        description: UNIT A SBT - Sexual Behavior Treatment Unit A - Mountain View Adult Center
+      - value: 58
+        description: UNIT B SBT - Sexual Behavior Treatment Unit B - Mountain View Adult Center
+      - value: 59
+        description: Unit C YAO - Young Adult Offender Program Unit C - Mountain View Adult Center
+      - value: 60
+        description: UNIT D SA - Substance Abuse Treatment Unit D - Mountain View Adult Center
+      - value: 61
+        description: ALU - Assisted Living Unit F - Mountain View Adult Center
+      - value: 63
+        description: E Unit JD - Juvenile Detention Unit E - Mountain View Youth Center
+      - value: 64
+        description: ASU - Administrative Status Unit - Mountain View Correctional Facility
+      - value: 65
+        description: CCF-Seg - Mountain View Correctional Facility
+      - value: 66
+        description: Unit 3 - Mountain View Correctional Facility
+      - value: 67
+        description: Unit 2 - Mountain View Correctional Facility
+      - value: 68
+        description: Unit 1 - 100 max. -- Includes 5 extra Beds for Emergency purposes only - Mountain View Correctional Facility
+      - value: 69
+        description: County - Mountain View Correctional Facility
+      - value: 70
+        description: Unit A SBT - Mountain View Correctional Facility
+      - value: 71
+        description: Unit B ALU - Mountain View Correctional Facility
+      - value: 72
+        description: Unit C - Mountain View Correctional Facility
+      - value: 73
+        description: Unit D SA - Mountain View Correctional Facility
+      - value: 74
+        description: SLU - Maine State Prison
+      - value: 76
+        description: THU - Mountain View Youth Center
+      - value: 77
+        description: Unit E - Mountain View Correctional Facility
+      - value: 78
+        description: Unit 4 - Mountain View Correctional Facility
+      - value: 79
+        description: STEPS - Long Creek Youth Center
+      - value: 80
+        description: Bearings - Long Creek Youth Center
+      - value: 81
+        description: Unit 1 - Downeast Correctional Facility
+
+  - name: Cis_913_Pod_Id
+  - name: Cis_914_Cell_Id
+  - name: Cis_915_Bed_Id
+  - name: Community_Ind
+  - name: Created_By_Tx
+  - name: Created_On_Date
+  - name: Current_Status_Hist_Id
     description: |-
       Primary key of the table
-  - name : Effct_Date
+  - name: Effct_Date
     description: |-
       The date that the status starts.
-  - name : End_Date
+  - name: End_Date
     description: |-
       The date that the status ends. If this date is in the future, then the status is still active.
-  - name : End_Datetime
-  - name : Furlough_Ind
-  - name : Hospital_Ind
-  - name : Ineffct_Date
+  - name: End_Datetime
+  - name: Furlough_Ind
+  - name: Hospital_Ind
+  - name: Ineffct_Date
     description: |-
       The date that the status ends. If this date is 12/31/9999 then the status is still active and the End_Date shows
       the anticipated end date or in some cases the End_Date is NULL.
-  - name : Locking_Tsp
-  - name : Modified_By_Tx
-  - name : Modified_On_Date
-  - name : Out_Pop_Count_Ind
-  - name : Prim_Mess_Ind
-  - name : Rca_Mess_Ind
-  - name : Start_Datetime
+  - name: Locking_Tsp
+  - name: Modified_By_Tx
+  - name: Modified_On_Date
+  - name: Out_Pop_Count_Ind
+  - name: Prim_Mess_Ind
+  - name: Rca_Mess_Ind
+  - name: Start_Datetime
