@@ -711,9 +711,11 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
             int, Tuple[StateIncarcerationPeriodAdmissionReason, Optional[str], date]
         ] = incarceration_period_index.original_admission_reasons_by_period_id
 
-        admission_reason, _, _ = original_admission_reasons_by_period_id[
-            incarceration_period_id
-        ]
+        (
+            original_admission_reason,
+            _,
+            original_admission_date,
+        ) = original_admission_reasons_by_period_id[incarceration_period_id]
 
         if release_date and release_reason:
             supervision_type_at_release: Optional[
@@ -728,9 +730,9 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
                 StateSupervisionPeriodSupervisionType
             ] = None
             if incarceration_period.admission_date:
-                if is_commitment_from_supervision(admission_reason):
+                if is_commitment_from_supervision(original_admission_reason):
                     associated_commitment = commitments_from_supervision[
-                        incarceration_period.admission_date
+                        original_admission_date
                     ]
                     if not associated_commitment:
                         raise ValueError(
@@ -764,7 +766,7 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
                 purpose_for_incarceration=incarceration_period.specialized_purpose_for_incarceration,
                 county_of_residence=county_of_residence,
                 supervision_type_at_release=supervision_type_at_release,
-                admission_reason=admission_reason,
+                admission_reason=original_admission_reason,
                 total_days_incarcerated=total_days_incarcerated,
                 commitment_from_supervision_supervision_type=commitment_from_supervision_supervision_type,
             )
