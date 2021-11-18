@@ -35,7 +35,7 @@ OVERDUE_DISCHARGE_ALERT_DATA_DESCRIPTION = """
 DISCHARGE_STRUCT_FRAGMENT = """STRUCT (
                 projected_discharges.person_external_id,
                 CONCAT(projected_discharges.first_name, " ", projected_discharges.last_name) as full_name,
-                FORMAT_DATE("%x", projected_discharges.projected_end_date)
+                FORMAT_DATE("%x", projected_discharges.projected_end_date) AS expiration_date
             )"""
 
 OVERDUE_DISCHARGE_ALERT_DATA_QUERY_TEMPLATE = """
@@ -48,17 +48,23 @@ WITH base_recipients AS (
     WHERE state_code = 'US_PA'
 ), overdue_discharge_alert_recipients AS (
     SELECT
-        state_code,
-        email_address,
-        external_id,
-        TRIM(SPLIT(ARRAY_AGG(given_names)[SAFE_OFFSET(0)], ' ')[SAFE_OFFSET(0)]) AS officer_given_name
+        base_recipients.state_code,
+        base_recipients.email_address,
+        base_recipients.external_id,
+        officer_district.district,
+        TRIM(SPLIT(ARRAY_AGG(augmented_agent_info.given_names)[SAFE_OFFSET(0)], ' ')[SAFE_OFFSET(0)]) AS officer_given_name
     FROM base_recipients
-    JOIN `{project_id}.{reference_views_dataset}.augmented_agent_info` USING (state_code, external_id)
-    GROUP BY state_code, email_address, external_id
+    JOIN `{project_id}.{reference_views_dataset}.augmented_agent_info` augmented_agent_info USING (state_code, external_id)
+    JOIN `{project_id}.{po_report_dataset}.officer_supervision_district_association_materialized` officer_district
+        ON officer_district.state_code = base_recipients.state_code
+        AND officer_district.officer_external_id = base_recipients.external_id
+    GROUP BY state_code, district, email_address, external_id
 )
 SELECT
     EXTRACT(YEAR FROM CURRENT_DATE()) AS review_year,
     EXTRACT(MONTH FROM CURRENT_DATE()) AS review_month,
+    overdue_discharge_alert_recipients.state_code,
+    overdue_discharge_alert_recipients.district,
     overdue_discharge_alert_recipients.email_address,
     overdue_discharge_alert_recipients.officer_given_name,
     ARRAY_AGG(
@@ -76,8 +82,12 @@ FROM `{project_id}.{analyst_dataset}.projected_discharges_materialized` projecte
 INNER JOIN overdue_discharge_alert_recipients
     ON overdue_discharge_alert_recipients.state_code = projected_discharges.state_code
     AND overdue_discharge_alert_recipients.external_id = projected_discharges.supervising_officer_external_id
-WHERE projected_end_date <= DATE_ADD(CURRENT_DATE(), INTERVAL 1 WEEK)
-GROUP BY overdue_discharge_alert_recipients.email_address, overdue_discharge_alert_recipients.officer_given_name
+WHERE projected_end_date <= DATE_ADD(CURRENT_DATE(), INTERVAL 60 DAY)
+GROUP BY
+    overdue_discharge_alert_recipients.state_code,
+    overdue_discharge_alert_recipients.district,
+    overdue_discharge_alert_recipients.email_address,
+    overdue_discharge_alert_recipients.officer_given_name
 ORDER BY overdue_discharge_alert_recipients.email_address;
 """
 
@@ -88,6 +98,7 @@ OVERDUE_DISCHARGE_ALERT_DATA_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     should_materialize=True,
     view_query_template=OVERDUE_DISCHARGE_ALERT_DATA_QUERY_TEMPLATE,
     analyst_dataset=dataset_config.ANALYST_VIEWS_DATASET,
+    po_report_dataset=dataset_config.PO_REPORT_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
     discharge_struct=DISCHARGE_STRUCT_FRAGMENT,

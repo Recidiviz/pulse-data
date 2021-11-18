@@ -42,8 +42,13 @@ STATE_SPECIFIC_LANGUAGE = {
     StateCode.US_ID: {
         "expiration_date": "full term release date",
         "parole_agents": "POs",
-        "partnership": "Recidiviz is working with IDOC",
-    }
+        "pbpp": "PBPP",
+    },
+    StateCode.US_PA: {
+        "expiration_date": "sentence expiration date",
+        "parole_agents": "Agents",
+        "pbpp": "PBPP",
+    },
 }
 
 
