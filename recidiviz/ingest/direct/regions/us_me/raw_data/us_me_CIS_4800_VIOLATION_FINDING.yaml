@@ -1,0 +1,18 @@
+file_tag: CIS_4800_VIOLATION_FINDING
+file_description: |-
+  TODO(#10017): Add raw data descriptions
+primary_key_cols: []
+columns:
+  - name : Adult_Ind
+  - name : Created_By_Tx
+  - name : Created_On_Date
+  - name : Finding_Type_Cd
+  - name : Juvenile_Ind
+  - name : Locking_Tsp
+  - name : Logical_Delete_Ind
+  - name : Modified_By_Tx
+  - name : Modified_On_Date
+  - name : System_Ref_Comments_Tx
+  - name : System_Ref_Tx
+  - name : Violation_Finding_Descr_Tx
+  - name : Violation_Finding_Cd
