@@ -1,0 +1,16 @@
+file_tag: CIS_9009_REGION
+file_description: |-
+  TODO(#10017): Fill in raw data descriptions
+primary_key_cols: []
+columns:
+  - name : Created_By_Tx
+  - name : Created_On_Date
+  - name : E_Region_Desc
+  - name : Locking_Tsp
+  - name : Logical_Delete_Ind
+  - name : Medicaid_Provider_Num
+  - name : Modified_By_Tx
+  - name : Modified_On_Date
+  - name : System_Ref_Comments_Tx
+  - name : System_Ref_Tx
+  - name : Region_Cd
