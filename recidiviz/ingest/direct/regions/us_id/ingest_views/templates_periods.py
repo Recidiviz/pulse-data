@@ -194,7 +194,7 @@ FACILITY_PERIOD_FRAGMENT = """
           lvgunit.lu_cd,
           lvgunit.lu_ldesc,
           m.move_srl,
-          SAFE_CAST(m.move_dtd AS DATE) AS move_dtd,
+          m.move_dtd,
           LAG(m.fac_cd) OVER w AS previous_fac_cd,
           LAG(loc.loc_cd) OVER w AS previous_loc_cd,
           LAG(lvgunit.lu_cd) OVER w AS previous_lu_cd
@@ -230,9 +230,9 @@ FACILITY_PERIOD_FRAGMENT = """
       SELECT 
         docno,
         incrno,
-        move_dtd AS start_date,
+        SAFE_CAST(move_dtd AS DATE) AS start_date,
         COALESCE(
-          LEAD(move_dtd)
+          LEAD(SAFE_CAST(move_dtd AS DATE))
             OVER (PARTITION BY docno, incrno ORDER BY move_dtd, move_srl),
           CAST('9999-12-31' AS DATE)) AS end_date,
         fac_cd,
@@ -256,10 +256,10 @@ PO_PERIODS_FRAGMENT = """
         docno,
         incrno,
         CAST(move_srl AS INT64) AS move_srl, 
-        CAST(CAST(move_dtd AS TIMESTAMP) AS DATE) AS move_dtd,
+        CAST(move_dtd AS TIMESTAMP) AS move_dtd,
         move_typ,
         fac_cd,
-        CAST(CAST(case_dtd AS TIMESTAMP) AS DATE) AS case_dtd,
+        CAST(case_dtd AS TIMESTAMP) AS case_dtd,
         empl_cd,
         empl_sdesc,
         empl_ldesc,

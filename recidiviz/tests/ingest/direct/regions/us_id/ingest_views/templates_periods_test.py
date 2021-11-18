@@ -134,3 +134,180 @@ class TemplatesPeriodsTest(BaseViewTest):
         )
         expected = expected.set_index(dimensions)
         assert_frame_equal(expected, results)
+
+    def test_same_day_release(self) -> None:
+        # This tests a movement to parole and then history on the same day, where the
+        # move_srl of the history movement is earlier than the parole.
+
+        # Arrange
+        raw_file_configs = get_region_raw_file_config("us_id").raw_file_configs
+
+        self.create_mock_raw_file("us_id", raw_file_configs["casemgr"], [])
+        self.create_mock_raw_file("us_id", raw_file_configs["employee"], [])
+        self.create_mock_raw_file(
+            "us_id",
+            raw_file_configs["facility"],
+            [
+                ("D0", None, "P", "A", "DIST 0", "District 0"),
+                ("II", None, "I", "A", "IC", "Incarceration Center"),
+                ("HS", None, "H", "A", "HISTORY", "HISTORY"),
+            ],
+        )
+        self.create_mock_raw_file("us_id", raw_file_configs["location"], [])
+        self.create_mock_raw_file("us_id", raw_file_configs["lvgunit"], [])
+        self.create_mock_raw_file("us_id", raw_file_configs["mittimus"], [])
+        self.create_mock_raw_file(
+            "us_id",
+            raw_file_configs["movement"],
+            [
+                (
+                    "10000001",
+                    "11111",
+                    "1",
+                    "2020-01-01 13:01:00",
+                    "I",
+                    "II",
+                    "09",
+                    "001",
+                    "00",
+                    "A",
+                    "1",
+                    "B",
+                    None,
+                    None,
+                ),
+                (
+                    # Later move_srl
+                    "10000003",
+                    "11111",
+                    "1",
+                    # Earlier datetime
+                    "2020-01-14 01:01:00",
+                    "P",
+                    "D0",
+                    "DP",
+                    "002",
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                ),
+                (
+                    # Earlier move_srl
+                    "10000002",
+                    "11111",
+                    "1",
+                    # Later datetime
+                    "2020-01-14 13:00:00",
+                    "H",
+                    "HS",
+                    "HS",
+                    "908",
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                ),
+            ],
+        )
+        self.create_mock_raw_file("us_id", raw_file_configs["offstat"], [])
+        self.create_mock_raw_file("us_id", raw_file_configs["ofndr_loc_hist"], [])
+        self.create_mock_raw_file("us_id", raw_file_configs["ofndr_wrkld"], [])
+        self.create_mock_raw_file("us_id", raw_file_configs["wrkld_cat"], [])
+
+        # Act
+        dimensions = ["docno", "incrno", "start_date", "end_date"]
+        results = self.query_raw_data_view_for_builder(
+            DirectIngestPreProcessedIngestViewBuilder(
+                region="us_id",
+                ingest_view_name="incarceration_periods",
+                view_query_template=f"""
+            WITH {get_all_periods_query_fragment(period_type=PeriodType.SUPERVISION)}
+            SELECT * FROM periods_with_previous_and_next_info
+            """,
+                order_by_cols="docno, incrno, start_date, end_date",
+            ),
+            dimensions=dimensions,
+        )
+
+        # Assert
+        expected = pd.DataFrame(
+            [
+                [
+                    "11111",
+                    "1",
+                    date(2020, 1, 1),
+                    date(2020, 1, 14),
+                    None,
+                    None,
+                    None,
+                    "II",
+                    "I",
+                    "Incarceration Center",
+                ]
+                + [None] * 4
+                + ["10000001"]
+                + [None] * 6
+                + ["P", "D0", None],
+                [
+                    "11111",
+                    "1",
+                    date(2020, 1, 14),
+                    date(2020, 1, 14),
+                    "I",
+                    "II",
+                    None,
+                    "D0",
+                    "P",
+                    "District 0",
+                ]
+                + [None] * 4
+                + ["10000003"]
+                + [None] * 6
+                + ["H", "HS", None],
+                [
+                    "11111",
+                    "1",
+                    date(2020, 1, 14),
+                    date(9999, 12, 31),
+                    "P",
+                    "D0",
+                    None,
+                    "HS",
+                    "H",
+                    "HISTORY",
+                ]
+                + [None] * 4
+                + ["10000002"]
+                + [None] * 9,
+            ],
+            columns=dimensions
+            + [
+                "prev_fac_typ",
+                "prev_fac_cd",
+                "prev_loc_ldesc",
+                "fac_cd",
+                "fac_typ",
+                "fac_ldesc",
+                "loc_cd",
+                "loc_ldesc",
+                "lu_cd",
+                "lu_ldesc",
+                "move_srl",
+                "statuses",
+                "wrkld_cat_title",
+                "empl_cd",
+                "empl_sdesc",
+                "empl_ldesc",
+                "empl_title",
+                "next_fac_typ",
+                "next_fac_cd",
+                "next_loc_ldesc",
+            ],
+        )
+        expected = expected.set_index(dimensions)
+        assert_frame_equal(expected, results)
