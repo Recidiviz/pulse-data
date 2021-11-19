@@ -68,6 +68,7 @@ SUPERVISION_OFFICER_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=SUPERVISION_OFFICER_SESSIONS_QUERY_TEMPLATE,
     description=SUPERVISION_OFFICER_SESSIONS_VIEW_DESCRIPTION,
     sessions_dataset=SESSIONS_DATASET,
+    clustering_fields=["state_code", "person_id"],
     should_materialize=True,
 )
 

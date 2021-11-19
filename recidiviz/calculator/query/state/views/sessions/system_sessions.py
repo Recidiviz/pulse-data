@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2020 Recidiviz, Inc.
+# Copyright (C) 2021 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -27,7 +27,9 @@ SYSTEM_SESSIONS_VIEW_NAME = "system_sessions"
 SYSTEM_SESSIONS_VIEW_DESCRIPTION = """
 ## Overview
 
-This view is an aggregated view of sessions that represent a continuous stay within the system. A `RELEASE` session triggers the start of a new system session. This view is unique on person and system session id.
+This view is an aggregated view of sessions that represent a continuous stay within the 
+system. A `RELEASE` session triggers the start of a new system session. This view is 
+unique on person and system session id.
 
 As an example, say a person had the following compartment sessions:
 
@@ -39,12 +41,14 @@ As an example, say a person had the following compartment sessions:
 6. `SUPERVISION - PROBATION`
 7. `RELEASE`
 
-This person would have two system sessions - one that encompasses compartment sessions 1 - 4 and one that encompasses compartment session 6. 
+This person would have two system sessions - one that encompasses compartment sessions 
+1 - 4 and one that encompasses compartment session 6. 
 
 ## Field Definitions
 
 |	Field	|	Description	|
 |	--------------------	|	--------------------	|
+|	state_code	|	State code of the person	|
 |	person_id	|	Unique person identifier	|
 |	system_session_id	|	System session identifier. A new ID is triggered based on a RELEASE compartment session	|
 |	start_date	|	System session start date	|
@@ -60,12 +64,15 @@ This person would have two system sessions - one that encompasses compartment se
 SYSTEM_SESSIONS_QUERY_TEMPLATE = """
     /*{description}*/
     SELECT
+        state_code,
         person_id,
         system_session_id,
         MIN(start_date) AS start_date,
         CASE WHEN LOGICAL_AND(end_date IS NOT NULL) THEN MAX(end_date) END AS end_date,
-        SUM(CASE WHEN compartment_level_1 = 'INCARCERATION' THEN session_length_days ELSE 0 END) incarceration_days,
-        SUM(CASE WHEN compartment_level_1 = 'SUPERVISION' THEN session_length_days ELSE 0 END) supervision_days,
+        SUM(CASE WHEN compartment_level_1 = 'INCARCERATION' 
+            THEN session_length_days ELSE 0 END) incarceration_days,
+        SUM(CASE WHEN compartment_level_1 = 'SUPERVISION' 
+            THEN session_length_days ELSE 0 END) supervision_days,
         SUM(session_length_days) AS session_length_days,
         MIN(session_id) AS session_id_start,
         MAX(session_id) AS session_id_end,
@@ -73,11 +80,13 @@ SYSTEM_SESSIONS_QUERY_TEMPLATE = """
         (
         SELECT 
             *,
-            SUM(CASE WHEN compartment_level_1 = 'RELEASE' THEN 1 ELSE 0 END) OVER(PARTITION BY person_id ORDER BY start_date) + 1 AS system_session_id
+            SUM(CASE WHEN compartment_level_1 = 'RELEASE' THEN 1 ELSE 0 END) 
+                OVER(PARTITION BY state_code, person_id ORDER BY start_date) + 1 
+                AS system_session_id
         FROM `{project_id}.{sessions_dataset}.compartment_sessions_materialized` 
         )
-    WHERE compartment_level_1 !='RELEASE'
-    GROUP BY 1,2
+    WHERE compartment_level_1 != 'RELEASE'
+    GROUP BY 1, 2, 3
     """
 
 SYSTEM_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -86,6 +95,7 @@ SYSTEM_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=SYSTEM_SESSIONS_QUERY_TEMPLATE,
     description=SYSTEM_SESSIONS_VIEW_DESCRIPTION,
     sessions_dataset=SESSIONS_DATASET,
+    clustering_fields=["state_code", "person_id"],
     should_materialize=True,
 )
 
