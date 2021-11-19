@@ -64,6 +64,7 @@ DOC_FACILITY_LOCATION_TYPES = [
     "7",  # Pre-Release Centers
 ]
 COUNTY_JAIL_LOCATION_TYPES = ["9", "13"]  # County Jails and Maine Counties
+SUPERVISION_LOCATION_TYPES = ["4"]
 
 
 def in_temporary_custody(
