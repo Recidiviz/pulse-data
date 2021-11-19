@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2020 Recidiviz, Inc.
+# Copyright (C) 2021 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -67,6 +67,7 @@ ASSESSMENT_SCORE_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=ASSESSMENT_SCORE_SESSIONS_QUERY_TEMPLATE,
     description=ASSESSMENT_SCORE_SESSIONS_VIEW_DESCRIPTION,
     base_dataset=STATE_BASE_DATASET,
+    clustering_fields=["state_code", "person_id"],
     should_materialize=True,
 )
 

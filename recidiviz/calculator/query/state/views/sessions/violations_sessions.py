@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2020 Recidiviz, Inc.
+# Copyright (C) 2021 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -164,6 +164,7 @@ VIOLATIONS_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     sessions_dataset=dataset_config.SESSIONS_DATASET,
     dataflow_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     state_dataset=dataset_config.STATE_BASE_DATASET,
+    clustering_fields=["state_code", "person_id"],
     should_materialize=True,
 )
 

@@ -411,6 +411,7 @@ DATAFLOW_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=DATAFLOW_SESSIONS_VIEW_DESCRIPTION,
     materialized_metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
     sessions_dataset=SESSIONS_DATASET,
+    clustering_fields=["state_code", "person_id"],
     should_materialize=True,
     supported_states="', '".join(DATAFLOW_SESSIONS_SUPPORTED_STATES),
 )
