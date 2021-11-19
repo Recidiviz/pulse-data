@@ -42,13 +42,43 @@ races_ethnicities AS (
     STRING_AGG(DISTINCT OffRaceEthnicGroup, ',' ORDER BY OffRaceEthnicGroup) AS races_ethnicities_list
   FROM base_query
   GROUP BY recidiviz_primary_person_id
+),
+people_with_races_ethnicities as (
+  SELECT * EXCEPT (recency_rank)
+  FROM base_query
+  LEFT OUTER JOIN
+  races_ethnicities
+  USING (recidiviz_primary_person_id)
+  WHERE recency_rank = 1
+),
+-- TODO(#8895): Don't pull in contacts here once we have a real source for names.
+names_from_parole_contacts as (
+  SELECT
+    * EXCEPT (recency_rank)
+  FROM (
+    SELECT
+      * EXCEPT (created_date),
+      -- Look at the most recent contact that has a name.
+      ROW_NUMBER() OVER (PARTITION BY parole_number ORDER BY created_date DESC) AS recency_rank
+    FROM (
+      SELECT
+        parole_number,
+        first_name,
+        last_name,
+        suffix,
+        created_date
+      FROM
+        {{dbo_PRS_FACT_PAROLEE_CNTC_SUMRY}}
+      WHERE
+        first_name IS NOT NULL
+        AND last_name IS NOT NULL ) )
+  WHERE
+    recency_rank = 1
 )
-SELECT * EXCEPT (recency_rank)
-FROM base_query
-LEFT OUTER JOIN
-races_ethnicities
-USING (recidiviz_primary_person_id)
-WHERE recency_rank = 1
+SELECT people.*, names.first_name, names.last_name, names.suffix
+FROM people_with_races_ethnicities people
+LEFT JOIN names_from_parole_contacts names
+ON people.ParoleNumber = names.parole_number
 """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(

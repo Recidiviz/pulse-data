@@ -6,15 +6,31 @@ input_columns:
   - OffSex
   - races_ethnicities_list
   - OffRaceEthnicGroup
+  - first_name
+  - last_name
+  - suffix
 unused_columns:
-  - recidiviz_primary_person_id  # Internal Recidiviz person ID
-  - OffRaceEthnicGroup  # Redundant of races_ethnicities_list
+  - recidiviz_primary_person_id # Internal Recidiviz person ID
+  - OffRaceEthnicGroup # Redundant of races_ethnicities_list
 output:
   StatePerson:
     external_ids:
       - StatePersonExternalId:
           external_id: ParoleNumber
           id_type: $literal("US_PA_PBPP")
+    full_name:
+      $person_name:
+        $given_names: first_name
+        $surname: last_name
+        $name_suffix: suffix
+    aliases:
+      - StatePersonAlias:
+          full_name:
+            $person_name:
+              $given_names: first_name
+              $surname: last_name
+              $name_suffix: suffix
+          alias_type: $literal_enum(StatePersonAliasType.GIVEN_NAME)
     gender:
       $enum_mapping:
         $raw_text: OffSex

@@ -17,7 +17,8 @@ input_columns:
   - legal_zip_code
   - inmate_numbers
 unused_columns:
-  - recidiviz_primary_person_id  # Internal Recidiviz person ID
+  - recidiviz_primary_person_id # Internal Recidiviz person ID
+  - Mid_Nm # TODO(#8895): temporarily unused -- see below
 output:
   StatePerson:
     external_ids:
@@ -28,7 +29,10 @@ output:
     full_name:
       $person_name:
         $given_names: Frst_Nm
-        $middle_names: Mid_Nm
+        # TODO(#8895): We don't ingest middle names so that these line up with the names from
+        # parole data. Include middle names once we have a parole source that also has
+        # middle names.
+        # $middle_names: Mid_Nm
         $surname: Lst_Nm
         $name_suffix: Nm_Suff
     aliases:
@@ -36,7 +40,10 @@ output:
           full_name:
             $person_name:
               $given_names: Frst_Nm
-              $middle_names: Mid_Nm
+              # TODO(#8895): We don't ingest middle names so that these line up with the names from
+              # parole data. Include middle names once we have a parole source that also has
+              # middle names.
+              # $middle_names: Mid_Nm
               $surname: Lst_Nm
               $name_suffix: Nm_Suff
           alias_type: $literal_enum(StatePersonAliasType.GIVEN_NAME)
