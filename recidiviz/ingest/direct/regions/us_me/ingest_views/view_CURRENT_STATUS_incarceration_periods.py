@@ -45,6 +45,8 @@ VIEW_QUERY_TEMPLATE = """
             status_code.E_Current_Status_Desc AS current_status,
             l.Location_Name AS current_status_location,
             l.Cis_9080_Ccs_Location_Type_Cd AS location_type,
+            juris_loc.Cis_9080_Ccs_Location_Type_Cd AS jurisdiction_location_type,
+            unit.Name_Tx AS housing_unit,
             Cis_314_Transfer_Id AS transfer_id,
             -- TODO(#9968) Update timestamp format when we receive SFTP transfer
             EXTRACT(DATE FROM PARSE_TIMESTAMP("%m/%d/%Y %r", Effct_Date)) AS effective_date,
@@ -58,8 +60,11 @@ VIEW_QUERY_TEMPLATE = """
         LEFT JOIN {CIS_908_CCS_LOCATION} l
         ON Cis_908_Ccs_Location_2_Id = l.Ccs_Location_Id
         
-        LEFT JOIN {CIS_9080_CCS_LOCATION_TYPE} loc_type
-        ON Cis_9080_Ccs_Location_Type_Cd = loc_type.Ccs_Location_Type_Cd
+        LEFT JOIN {CIS_908_CCS_LOCATION} juris_loc
+        on Cis_908_Ccs_Location_Id = juris_loc.Ccs_Location_Id
+        
+        LEFT JOIN {CIS_912_UNIT} unit
+        ON Cis_912_Unit_Id = unit.Unit_Id
     ),
     statuses_with_next_and_prev AS (
         SELECT
@@ -69,6 +74,7 @@ VIEW_QUERY_TEMPLATE = """
             LEAD(current_status) OVER status_seq AS next_status,
             current_status_location,
             location_type,
+            jurisdiction_location_type,
             LEAD(location_type) OVER status_seq AS next_location_type,
             transfer_id,
             effective_date,
@@ -163,7 +169,9 @@ VIEW_QUERY_TEMPLATE = """
             s.next_status,
             s.current_status_location,
             s.location_type,
+            s.housing_unit,
             s.next_location_type,
+            s.jurisdiction_location_type
         FROM ranked_movements_with_next_prev m
         
         LEFT JOIN transfers t
@@ -200,9 +208,10 @@ VIEW_QUERY_TEMPLATE = """
         current_status_location,
         location_type,
         next_location_type,
+        jurisdiction_location_type,
+        housing_unit,
         start_date,
         end_date,
-        previous_movement_type,
         movement_type,
         next_movement_type,
         transfer_type,

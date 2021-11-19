@@ -18,6 +18,7 @@
 import datetime
 from typing import List, Optional
 
+from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
@@ -174,10 +175,13 @@ def add_incarceration_period_to_person(
     admission_date: datetime.date,
     release_date: Optional[datetime.date],
     facility: str,
-    admission_reason: Optional[StateIncarcerationPeriodAdmissionReason],
-    admission_reason_raw_text: str,
-    release_reason: Optional[StateIncarcerationPeriodReleaseReason],
-    release_reason_raw_text: str,
+    housing_unit: Optional[str] = None,
+    custodial_authority: Optional[StateCustodialAuthority] = None,
+    custodial_authority_raw_text: Optional[str] = None,
+    admission_reason: Optional[StateIncarcerationPeriodAdmissionReason] = None,
+    admission_reason_raw_text: Optional[str] = None,
+    release_reason: Optional[StateIncarcerationPeriodReleaseReason] = None,
+    release_reason_raw_text: Optional[str] = None,
     specialized_purpose_for_incarceration: Optional[
         StateSpecializedPurposeForIncarceration
     ] = None,
@@ -195,6 +199,9 @@ def add_incarceration_period_to_person(
         release_date=release_date,
         county_code=None,
         facility=facility,
+        housing_unit=housing_unit,
+        custodial_authority=custodial_authority,
+        custodial_authority_raw_text=custodial_authority_raw_text,
         admission_reason=admission_reason,
         admission_reason_raw_text=admission_reason_raw_text,
         release_reason=release_reason,
