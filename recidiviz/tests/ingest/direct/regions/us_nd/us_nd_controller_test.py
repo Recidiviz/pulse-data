@@ -30,7 +30,11 @@ from recidiviz.common.constants.person_characteristics import (
     Race,
     ResidencyStatus,
 )
-from recidiviz.common.constants.state.external_id_types import US_ND_ELITE, US_ND_SID
+from recidiviz.common.constants.state.external_id_types import (
+    US_ND_ELITE,
+    US_ND_ELITE_BOOKING,
+    US_ND_SID,
+)
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentClass,
@@ -307,8 +311,16 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                     state_person_id="52163",
                     state_person_external_ids=[
                         StatePersonExternalId(
+                            state_person_external_id_id="113377",
+                            id_type=US_ND_ELITE_BOOKING,
+                        ),
+                        StatePersonExternalId(
+                            state_person_external_id_id="114909",
+                            id_type=US_ND_ELITE_BOOKING,
+                        ),
+                        StatePersonExternalId(
                             state_person_external_id_id="52163", id_type=US_ND_ELITE
-                        )
+                        ),
                     ],
                     state_sentence_groups=[
                         StateSentenceGroup(
@@ -323,8 +335,12 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                     state_person_id="39768",
                     state_person_external_ids=[
                         StatePersonExternalId(
+                            state_person_external_id_id="105640",
+                            id_type=US_ND_ELITE_BOOKING,
+                        ),
+                        StatePersonExternalId(
                             state_person_external_id_id="39768", id_type=US_ND_ELITE
-                        )
+                        ),
                     ],
                     state_sentence_groups=[
                         StateSentenceGroup(state_sentence_group_id="105640", status="C")
@@ -347,6 +363,13 @@ class TestUsNdController(BaseDirectIngestControllerTests):
         expected = IngestInfo(
             state_people=[
                 StatePerson(
+                    state_person_id="105640",
+                    state_person_external_ids=[
+                        StatePersonExternalId(
+                            state_person_external_id_id="105640",
+                            id_type=US_ND_ELITE_BOOKING,
+                        ),
+                    ],
                     state_sentence_groups=[
                         StateSentenceGroup(
                             state_sentence_group_id="105640",
@@ -356,11 +379,33 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                                 incarceration_sentence_105640
                             ],
                         ),
+                    ],
+                ),
+                StatePerson(
+                    state_person_id="114909",
+                    state_person_external_ids=[
+                        StatePersonExternalId(
+                            state_person_external_id_id="114909",
+                            id_type=US_ND_ELITE_BOOKING,
+                        ),
+                    ],
+                    state_sentence_groups=[
                         StateSentenceGroup(
                             state_sentence_group_id="114909",
                             date_imposed="2/27/2018",
                             max_length="315",
                         ),
+                    ],
+                ),
+                StatePerson(
+                    state_person_id="113377",
+                    state_person_external_ids=[
+                        StatePersonExternalId(
+                            state_person_external_id_id="113377",
+                            id_type=US_ND_ELITE_BOOKING,
+                        ),
+                    ],
+                    state_sentence_groups=[
                         StateSentenceGroup(
                             state_sentence_group_id="113377",
                             date_imposed="3/27/2018",
@@ -369,17 +414,39 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                                 incarceration_sentence_113377
                             ],
                         ),
+                    ],
+                ),
+                StatePerson(
+                    state_person_id="115077",
+                    state_person_external_ids=[
+                        StatePersonExternalId(
+                            state_person_external_id_id="115077",
+                            id_type=US_ND_ELITE_BOOKING,
+                        ),
+                    ],
+                    state_sentence_groups=[
                         StateSentenceGroup(
                             state_sentence_group_id="115077",
                             date_imposed="10/29/2018",
                             max_length="1316",
                         ),
+                    ],
+                ),
+                StatePerson(
+                    state_person_id="44444",
+                    state_person_external_ids=[
+                        StatePersonExternalId(
+                            state_person_external_id_id="44444",
+                            id_type=US_ND_ELITE_BOOKING,
+                        ),
+                    ],
+                    state_sentence_groups=[
                         StateSentenceGroup(
                             state_sentence_group_id="44444",
                             date_imposed="10/29/2018",
                             is_life="True",
                         ),
-                    ]
+                    ],
                 ),
             ]
         )
@@ -455,20 +522,49 @@ class TestUsNdController(BaseDirectIngestControllerTests):
         expected = IngestInfo(
             state_people=[
                 StatePerson(
+                    state_person_id="114909",
+                    state_person_external_ids=[
+                        StatePersonExternalId(
+                            state_person_external_id_id="114909",
+                            id_type=US_ND_ELITE_BOOKING,
+                        ),
+                    ],
                     state_sentence_groups=[
                         StateSentenceGroup(
                             state_sentence_group_id="114909",
                             state_incarceration_sentences=sentences_114909,
                         ),
+                    ],
+                ),
+                StatePerson(
+                    state_person_id="105640",
+                    state_person_external_ids=[
+                        StatePersonExternalId(
+                            state_person_external_id_id="105640",
+                            id_type=US_ND_ELITE_BOOKING,
+                        ),
+                    ],
+                    state_sentence_groups=[
                         StateSentenceGroup(
                             state_sentence_group_id="105640",
                             state_incarceration_sentences=sentences_105640,
                         ),
+                    ],
+                ),
+                StatePerson(
+                    state_person_id="113377",
+                    state_person_external_ids=[
+                        StatePersonExternalId(
+                            state_person_external_id_id="113377",
+                            id_type=US_ND_ELITE_BOOKING,
+                        ),
+                    ],
+                    state_sentence_groups=[
                         StateSentenceGroup(
                             state_sentence_group_id="113377",
                             state_incarceration_sentences=sentences_113377,
                         ),
-                    ]
+                    ],
                 ),
             ]
         )
@@ -531,6 +627,13 @@ class TestUsNdController(BaseDirectIngestControllerTests):
         expected = IngestInfo(
             state_people=[
                 StatePerson(
+                    state_person_id="105640",
+                    state_person_external_ids=[
+                        StatePersonExternalId(
+                            state_person_external_id_id="105640",
+                            id_type=US_ND_ELITE_BOOKING,
+                        ),
+                    ],
                     state_sentence_groups=[
                         StateSentenceGroup(
                             state_sentence_group_id="105640",
@@ -546,6 +649,17 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                                 incarceration_sentence_105640_7,
                             ],
                         ),
+                    ],
+                ),
+                StatePerson(
+                    state_person_id="114909",
+                    state_person_external_ids=[
+                        StatePersonExternalId(
+                            state_person_external_id_id="114909",
+                            id_type=US_ND_ELITE_BOOKING,
+                        ),
+                    ],
+                    state_sentence_groups=[
                         StateSentenceGroup(
                             state_sentence_group_id="114909",
                             state_incarceration_sentences=[
@@ -553,6 +667,17 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                                 incarceration_sentence_114909_2,
                             ],
                         ),
+                    ],
+                ),
+                StatePerson(
+                    state_person_id="113377",
+                    state_person_external_ids=[
+                        StatePersonExternalId(
+                            state_person_external_id_id="113377",
+                            id_type=US_ND_ELITE_BOOKING,
+                        ),
+                    ],
+                    state_sentence_groups=[
                         StateSentenceGroup(
                             state_sentence_group_id="113377",
                             state_incarceration_sentences=[
@@ -561,7 +686,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                                 incarceration_sentence_113377_5,
                             ],
                         ),
-                    ]
+                    ],
                 ),
             ]
         )
@@ -725,6 +850,13 @@ class TestUsNdController(BaseDirectIngestControllerTests):
         expected = IngestInfo(
             state_people=[
                 StatePerson(
+                    state_person_id="105640",
+                    state_person_external_ids=[
+                        StatePersonExternalId(
+                            state_person_external_id_id="105640",
+                            id_type=US_ND_ELITE_BOOKING,
+                        ),
+                    ],
                     state_sentence_groups=[
                         StateSentenceGroup(
                             state_sentence_group_id="105640",
@@ -751,6 +883,17 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                                 ),
                             ],
                         ),
+                    ],
+                ),
+                StatePerson(
+                    state_person_id="113377",
+                    state_person_external_ids=[
+                        StatePersonExternalId(
+                            state_person_external_id_id="113377",
+                            id_type=US_ND_ELITE_BOOKING,
+                        ),
+                    ],
+                    state_sentence_groups=[
                         StateSentenceGroup(
                             state_sentence_group_id="113377",
                             state_incarceration_sentences=[
@@ -768,6 +911,17 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                                 ),
                             ],
                         ),
+                    ],
+                ),
+                StatePerson(
+                    state_person_id="114909",
+                    state_person_external_ids=[
+                        StatePersonExternalId(
+                            state_person_external_id_id="114909",
+                            id_type=US_ND_ELITE_BOOKING,
+                        ),
+                    ],
+                    state_sentence_groups=[
                         StateSentenceGroup(
                             state_sentence_group_id="114909",
                             state_incarceration_sentences=[
@@ -781,7 +935,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                                 ),
                             ],
                         ),
-                    ]
+                    ],
                 ),
             ]
         )
@@ -832,6 +986,13 @@ class TestUsNdController(BaseDirectIngestControllerTests):
         expected = IngestInfo(
             state_people=[
                 StatePerson(
+                    state_person_id="105640",
+                    state_person_external_ids=[
+                        StatePersonExternalId(
+                            state_person_external_id_id="105640",
+                            id_type=US_ND_ELITE_BOOKING,
+                        ),
+                    ],
                     state_sentence_groups=[
                         StateSentenceGroup(
                             state_sentence_group_id="105640",
@@ -846,7 +1007,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                                 ),
                             ],
                         ),
-                    ]
+                    ],
                 ),
             ]
         )
@@ -971,6 +1132,13 @@ class TestUsNdController(BaseDirectIngestControllerTests):
         expected = IngestInfo(
             state_people=[
                 StatePerson(
+                    state_person_id="113377",
+                    state_person_external_ids=[
+                        StatePersonExternalId(
+                            state_person_external_id_id="113377",
+                            id_type=US_ND_ELITE_BOOKING,
+                        ),
+                    ],
                     state_sentence_groups=[
                         StateSentenceGroup(
                             state_sentence_group_id="113377",
@@ -980,6 +1148,17 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                                 )
                             ],
                         ),
+                    ],
+                ),
+                StatePerson(
+                    state_person_id="105640",
+                    state_person_external_ids=[
+                        StatePersonExternalId(
+                            state_person_external_id_id="105640",
+                            id_type=US_ND_ELITE_BOOKING,
+                        ),
+                    ],
+                    state_sentence_groups=[
                         StateSentenceGroup(
                             state_sentence_group_id="105640",
                             state_incarceration_sentences=[
@@ -988,6 +1167,17 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                                 )
                             ],
                         ),
+                    ],
+                ),
+                StatePerson(
+                    state_person_id="114909",
+                    state_person_external_ids=[
+                        StatePersonExternalId(
+                            state_person_external_id_id="114909",
+                            id_type=US_ND_ELITE_BOOKING,
+                        ),
+                    ],
+                    state_sentence_groups=[
                         StateSentenceGroup(
                             state_sentence_group_id="114909",
                             state_incarceration_sentences=[
@@ -996,6 +1186,17 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                                 )
                             ],
                         ),
+                    ],
+                ),
+                StatePerson(
+                    state_person_id="555555",
+                    state_person_external_ids=[
+                        StatePersonExternalId(
+                            state_person_external_id_id="555555",
+                            id_type=US_ND_ELITE_BOOKING,
+                        ),
+                    ],
+                    state_sentence_groups=[
                         StateSentenceGroup(
                             state_sentence_group_id="555555",
                             state_incarceration_sentences=[
@@ -1004,7 +1205,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                                 )
                             ],
                         ),
-                    ]
+                    ],
                 ),
             ]
         )
@@ -1937,6 +2138,29 @@ class TestUsNdController(BaseDirectIngestControllerTests):
         # ELITE BOOKINGS
         ######################################
         # Arrange
+        person_1_external_id_3 = entities.StatePersonExternalId.new_with_defaults(
+            external_id="105640",
+            id_type=US_ND_ELITE_BOOKING,
+            state_code=_STATE_CODE,
+            person=person_1,
+        )
+        person_1.external_ids.append(person_1_external_id_3)
+
+        person_2_external_id_4 = entities.StatePersonExternalId.new_with_defaults(
+            external_id="113377",
+            id_type=US_ND_ELITE_BOOKING,
+            state_code=_STATE_CODE,
+            person=person_2,
+        )
+        person_2_external_id_5 = entities.StatePersonExternalId.new_with_defaults(
+            external_id="114909",
+            id_type=US_ND_ELITE_BOOKING,
+            state_code=_STATE_CODE,
+            person=person_2,
+        )
+
+        person_2.external_ids.extend([person_2_external_id_4, person_2_external_id_5])
+
         sentence_group_105640 = entities.StateSentenceGroup.new_with_defaults(
             external_id="105640",
             status=StateSentenceStatus.COMPLETED,
@@ -2005,6 +2229,14 @@ class TestUsNdController(BaseDirectIngestControllerTests):
         sentence_group_114909.max_length_days = 315
 
         person_4 = entities.StatePerson.new_with_defaults(state_code=_STATE_CODE)
+        person_4_external_id_1 = entities.StatePersonExternalId.new_with_defaults(
+            external_id="115077",
+            id_type=US_ND_ELITE_BOOKING,
+            state_code=_STATE_CODE,
+            person=person_4,
+        )
+        person_4.external_ids = [person_4_external_id_1]
+
         sentence_group_115077 = entities.StateSentenceGroup.new_with_defaults(
             external_id="115077",
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
@@ -2016,6 +2248,16 @@ class TestUsNdController(BaseDirectIngestControllerTests):
         person_4.sentence_groups.append(sentence_group_115077)
         expected_people.append(person_4)
 
+        person_5 = entities.StatePerson.new_with_defaults(state_code=_STATE_CODE)
+
+        person_5_external_id = entities.StatePersonExternalId.new_with_defaults(
+            external_id="44444",
+            id_type=US_ND_ELITE_BOOKING,
+            state_code=_STATE_CODE,
+            person=person_5,
+        )
+        person_5.external_ids = [person_5_external_id]
+
         sentence_group_44444 = entities.StateSentenceGroup.new_with_defaults(
             external_id="44444",
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
@@ -2023,9 +2265,10 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             max_length_days=None,
             date_imposed=datetime.date(year=2018, month=10, day=29),
             is_life=True,
-            person=person_4,
+            person=person_5,
         )
-        person_4.sentence_groups.append(sentence_group_44444)
+        person_5.sentence_groups.append(sentence_group_44444)
+        expected_people.append(person_5)
 
         # Act
         self._run_ingest_job_for_filename("elite_offendersentenceaggs.csv")
@@ -2745,6 +2988,13 @@ class TestUsNdController(BaseDirectIngestControllerTests):
         )
 
         person_555555 = entities.StatePerson.new_with_defaults(state_code=_STATE_CODE)
+        person_555555_external_id = entities.StatePersonExternalId.new_with_defaults(
+            external_id="555555",
+            id_type=US_ND_ELITE_BOOKING,
+            state_code=_STATE_CODE,
+            person=person_555555,
+        )
+        person_555555.external_ids = [person_555555_external_id]
         sentence_group_555555 = entities.StateSentenceGroup.new_with_defaults(
             external_id="555555",
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,

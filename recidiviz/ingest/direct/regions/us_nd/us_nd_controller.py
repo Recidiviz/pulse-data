@@ -24,7 +24,11 @@ from recidiviz.common import ncic
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.constants.person_characteristics import Ethnicity
-from recidiviz.common.constants.state.external_id_types import US_ND_ELITE, US_ND_SID
+from recidiviz.common.constants.state.external_id_types import (
+    US_ND_ELITE,
+    US_ND_ELITE_BOOKING,
+    US_ND_SID,
+)
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentClass,
@@ -127,6 +131,7 @@ class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         self.row_post_processors_by_file: Dict[str, List[IngestRowPosthookCallable]] = {
             "elite_offenders": [copy_name_to_alias],
             "elite_offenderidentifier": [self._normalize_external_id_type],
+            "elite_offenderbookingstable": [self._add_person_external_id],
             "elite_offendersentenceaggs": [
                 gen_set_is_life_sentence_hook("MAX_TERM", "LIFE", StateSentenceGroup),
                 self._set_sentence_group_length_max_length,
@@ -201,7 +206,14 @@ class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
 
         self.ancestor_chain_overrides_callback_by_file: Dict[
             str, AncestorChainOverridesCallable
-        ] = {"elite_offenderchargestable": _state_charge_ancestor_chain_overrides}
+        ] = {
+            "elite_offenderchargestable": _state_charge_ancestor_chain_overrides,
+            "elite_externalmovements": _state_person_ancestor_chain_overrides,
+            "elite_offendersentenceaggs": _state_person_ancestor_chain_overrides,
+            "elite_offendersentences": _state_person_ancestor_chain_overrides,
+            "elite_offendersentenceterms": _state_person_ancestor_chain_overrides,
+            "elite_orderstable": _state_person_ancestor_chain_overrides,
+        }
 
         self.files_to_set_with_empty_values = ["elite_offendersentenceterms"]
 
@@ -307,7 +319,15 @@ class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
     @staticmethod
     def _get_id_type(file_tag: str) -> Optional[str]:
         if file_tag.startswith("elite"):
-            return US_ND_ELITE
+            if file_tag in (
+                "elite_alias",
+                "elite_offenderbookingstable",
+                "elite_offenderidentifier",
+                "elite_offenders",
+                "elite_offense_in_custody_and_pos_report_data",
+            ):
+                return US_ND_ELITE
+            return US_ND_ELITE_BOOKING
         if file_tag.startswith("docstars"):
             return US_ND_SID
 
@@ -466,6 +486,26 @@ class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             if isinstance(extracted_object, StatePersonExternalId):
                 id_type = f"US_ND_{extracted_object.id_type}"
                 extracted_object.__setattr__("id_type", id_type)
+
+    @staticmethod
+    def _add_person_external_id(
+        _gating_context: IngestGatingContext,
+        row: Dict[str, str],
+        extracted_objects: List[IngestObject],
+        _cache: IngestObjectCache,
+    ) -> None:
+        """Adds a StatePersonExternalId with a US_ND_ELITE_BOOKING id_type."""
+        for extracted_object in extracted_objects:
+            if isinstance(extracted_object, StatePerson):
+                person_external_id = StatePersonExternalId(
+                    state_person_external_id_id=_generate_person_book_id(row),
+                    id_type=US_ND_ELITE_BOOKING,
+                )
+                create_if_not_exists(
+                    person_external_id,
+                    extracted_object,
+                    "state_person_external_ids",
+                )
 
     @staticmethod
     def _process_external_movement(
@@ -940,12 +980,27 @@ def _generate_charge_id(row: Dict[str, str]) -> str:
     return "-".join([sentence_group_id, charge_seq])
 
 
+def _generate_person_book_id(row: Dict[str, str]) -> str:
+    return row["OFFENDER_BOOK_ID"]
+
+
 def _state_charge_ancestor_chain_overrides(
     _gating_context: IngestGatingContext, row: Dict[str, str]
 ) -> Dict[str, str]:
     # The charge id can be used interchangeably in ND with the sentence id because there is a 1:1 mapping between
     # charges and sentences, so the CHARGE_SEQ and SENTENCE_SEQ numbers can be used interchangeably.
-    return {"state_incarceration_sentence": _generate_charge_id(row)}
+    return {
+        "state_incarceration_sentence": _generate_charge_id(row),
+        "state_person": _generate_person_book_id(row),
+    }
+
+
+def _state_person_ancestor_chain_overrides(
+    _gating_context: IngestGatingContext, row: Dict[str, str]
+) -> Dict[str, str]:
+    """This is used for views that do not have StatePerson as an ancestor. Connects
+    entities to the person via the US_ND_ELITE_BOOKING id."""
+    return {"state_person": _generate_person_book_id(row)}
 
 
 def _parse_charge_classification(

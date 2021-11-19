@@ -1,12 +1,13 @@
 key_mappings:
-  OFFENDER_BOOK_ID: state_sentence_group.state_sentence_group_id
-  BOOKING_STATUS: state_sentence_group.status
-
-ancestor_keys:
   ROOT_OFFENDER_ID: state_person.state_person_id
 
 primary_key:
+  ROOT_OFFENDER_ID: state_person.state_person_id
+
+child_key_mappings:
   OFFENDER_BOOK_ID: state_sentence_group.state_sentence_group_id
+  BOOKING_STATUS: state_sentence_group.status
+
 
 keys_to_ignore:
   - BOOKING_NO          # This particular id appears unused elsewhere
