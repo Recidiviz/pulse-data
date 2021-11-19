@@ -20,11 +20,14 @@
 Usage:
     python -m recidiviz.tools.ingest.development.create_ingest_config_skeleton --state [US_XX] \
     --delimiter <field separator> (--file|--folder) [path_to_raw_table(s)] \
-    [--allow-overwrite] [--initialize-state]
+    [--allow-overwrite] [--initialize-state] [--add-description-placeholders]
 
 Example:
     python -m recidiviz.tools.ingest.development.create_ingest_config_skeleton --state-code US_XX \
     --delimiter '|' --file Xxandland/db/historical/filename
+
+    python -m recidiviz.tools.ingest.development.create_ingest_config_skeleton --state-code US_XX \
+    --delimiter ',' --folder Xxandland/db/historical/ --add-description-placeholders True
 """
 import argparse
 import logging
@@ -74,7 +77,11 @@ def initialize_state_directories(state_code: str) -> None:
 
 
 def write_skeleton_config(
-    raw_table_path: str, state_code: str, delimiter: str, allow_overwrite: bool
+    raw_table_path: str,
+    state_code: str,
+    delimiter: str,
+    allow_overwrite: bool,
+    add_description_placeholders: bool,
 ) -> None:
     """Generates a config skeleton for the table at the given path"""
     table_name = os.path.basename(raw_table_path)
@@ -105,14 +112,18 @@ def write_skeleton_config(
     config = [
         f"file_tag: {table_name}",
         "file_description: |-",
-        f"  {PLACEHOLDER_TO_DO_STRING}",
+        f"  {PLACEHOLDER_TO_DO_STRING}(): Fill in the file description",
         "primary_key_cols: []",
         "columns:",
     ]
-    config += [
-        f"  - name : {field}\n    description : |-\n      {PLACEHOLDER_TO_DO_STRING}"
-        for field in fields
-    ]
+
+    field_description_placeholder = (
+        f"\n    description : |-\n      {PLACEHOLDER_TO_DO_STRING}"
+        if add_description_placeholders
+        else ""
+    )
+
+    config += [f"  - name : {field}{field_description_placeholder}" for field in fields]
 
     with open(config_path, "w", encoding="utf-8") as config_file:
         for line in config:
@@ -125,6 +136,7 @@ def create_ingest_config_skeleton(
     delimiter: str,
     allow_overwrite: bool,
     initialize_state: bool,
+    add_description_placeholders: bool,
 ) -> None:
     """Reads the header off of a raw config file and generate a config yaml skeleton for it."""
     state_code = state_code.lower()
@@ -138,7 +150,9 @@ def create_ingest_config_skeleton(
         )
 
     for path in raw_table_paths:
-        write_skeleton_config(path, state_code, delimiter, allow_overwrite)
+        write_skeleton_config(
+            path, state_code, delimiter, allow_overwrite, add_description_placeholders
+        )
 
 
 def parse_arguments(argv: List[str]) -> argparse.Namespace:
@@ -196,6 +210,15 @@ def parse_arguments(argv: List[str]) -> argparse.Namespace:
         default=False,
     )
 
+    parser.add_argument(
+        "--add-description-placeholders",
+        dest="add_description_placeholders",
+        help="Add placeholder descriptions for each field.",
+        action="store_true",
+        required=False,
+        default=False,
+    )
+
     known_args, _ = parser.parse_known_args(argv)
 
     return known_args
@@ -212,6 +235,7 @@ if __name__ == "__main__":
             args.delimiter,
             args.allow_overwrite,
             args.initialize_state,
+            args.add_description_placeholders,
         )
     else:
         # get all files in the supplied folder
@@ -224,4 +248,5 @@ if __name__ == "__main__":
             args.delimiter,
             args.allow_overwrite,
             args.initialize_state,
+            args.add_description_placeholders,
         )
