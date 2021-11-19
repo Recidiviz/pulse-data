@@ -295,13 +295,25 @@ class EntityTreeManifestFactory:
                 f"Found unused keys in fields manifest: {raw_fields_manifest.keys()}"
             )
 
+        primary_filter_predicate = cls._get_filter_predicate(
+            entity_cls, field_manifests
+        )
+        delegate_filter_predicate = delegate.get_filter_predicate(entity_cls)
+
+        def union_filter_predicate(e: EntityT) -> bool:
+            return (
+                primary_filter_predicate is not None and primary_filter_predicate(e)
+            ) or (
+                delegate_filter_predicate is not None and delegate_filter_predicate(e)
+            )
+
         entity_factory_cls = delegate.get_entity_factory_class(entity_cls.__name__)
         return EntityTreeManifest(
             entity_cls=entity_cls,
             entity_factory_cls=entity_factory_cls,
             common_args=delegate.get_common_args(),
             field_manifests=field_manifests,
-            filter_predicate=cls._get_filter_predicate(entity_cls, field_manifests),
+            filter_predicate=union_filter_predicate,
         )
 
     # TODO(#8905): Consider using more general logic to build a filter predicate, like
@@ -867,15 +879,22 @@ class SerializedJSONDictFieldManifest(ManifestNode[str]):
     # Maps JSON dict keys to values they should be hydrated with
     key_to_manifest_map: Dict[str, ManifestNode[str]] = attr.ib()
 
+    # If all the dictionary values are empty, return None instead of serialized JSON.
+    drop_all_empty: bool = attr.ib(default=False)
+
     @property
     def result_type(self) -> Type[str]:
         return str
 
-    def build_from_row(self, row: Dict[str, str]) -> str:
+    def build_from_row(self, row: Dict[str, str]) -> Optional[str]:
         result_dict = {
             key: manifest.build_from_row(row)
             for key, manifest in self.key_to_manifest_map.items()
         }
+        if self.drop_all_empty:
+            has_non_empty_value = any(value for value in result_dict.values())
+            if not has_non_empty_value:
+                return None
         return json.dumps(result_dict, sort_keys=True)
 
     def columns_referenced(self) -> Set[str]:
@@ -1142,7 +1161,7 @@ class PersonNameManifest(ManifestNode[str]):
     def result_type(self) -> Type[str]:
         return str
 
-    def build_from_row(self, row: Dict[str, str]) -> str:
+    def build_from_row(self, row: Dict[str, str]) -> Optional[str]:
         return self.name_json_manifest.build_from_row(row)
 
     @classmethod
@@ -1168,7 +1187,7 @@ class PersonNameManifest(ManifestNode[str]):
 
         return PersonNameManifest(
             name_json_manifest=SerializedJSONDictFieldManifest(
-                key_to_manifest_map=name_parts_to_manifest
+                key_to_manifest_map=name_parts_to_manifest, drop_all_empty=True
             )
         )
 
