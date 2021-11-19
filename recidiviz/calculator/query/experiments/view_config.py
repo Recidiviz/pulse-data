@@ -30,6 +30,9 @@ from recidiviz.calculator.query.experiments.views.case_triage_feedback_actions i
 from recidiviz.calculator.query.experiments.views.case_triage_metrics import (
     CASE_TRIAGE_EVENTS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.experiments.views.experiments import (
+    EXPERIMENTS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.experiments.views.outcomes import OUTCOMES_VIEW_BUILDER
 
 VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = [
@@ -37,5 +40,6 @@ VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = [
     ATTRIBUTES_VIEW_BUILDER,
     CASE_TRIAGE_EVENTS_VIEW_BUILDER,
     CASE_TRIAGE_FEEDBACK_ACTIONS_VIEW_BUILDER,
+    EXPERIMENTS_VIEW_BUILDER,
     OUTCOMES_VIEW_BUILDER,
 ]
