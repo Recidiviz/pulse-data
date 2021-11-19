@@ -53,7 +53,17 @@ output:
                       housing_unit: housing_unit
                       admission_date: start_date
                       release_date: end_date
-                      facility: current_status_location
+                      facility:
+                        $conditional:
+                          # Maine suspects the person who added SMWRC to the system did not want to create a whole
+                          # facility, so they just coded it as a housing unit of Maine Correctional Center.
+                          - $if:
+                              $equal:
+                                - housing_unit
+                                - $literal("SMWRC")
+                            # The facility name formatting here is taken directly from the CIS_908_CCS_LOCATION table.
+                            $then: $literal("Southern Maine Women's ReEntry Center")
+                          - $else: current_status_location
                       incarceration_type:
                         $enum_mapping:
                           $raw_text: location_type

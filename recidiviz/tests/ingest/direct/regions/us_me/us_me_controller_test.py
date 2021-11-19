@@ -253,7 +253,7 @@ class TestUsMeController(BaseDirectIngestControllerTests):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             admission_date=datetime.date(year=2016, month=9, day=20),
             release_date=datetime.date(year=2017, month=12, day=1),
-            facility="MAINE STATE PRISON",
+            facility="SOUTHERN MAINE WOMEN'S REENTRY CENTER",
             housing_unit="SMWRC",
             custodial_authority=StateCustodialAuthority.STATE_PRISON,
             custodial_authority_raw_text="8",

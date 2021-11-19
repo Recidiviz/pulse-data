@@ -416,7 +416,7 @@ class UsMeIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                                         admission_date=date(2016, 9, 20),
                                         release_date=date(2017, 12, 1),
                                         county_code=None,
-                                        facility="MAINE STATE PRISON",
+                                        facility="SOUTHERN MAINE WOMEN'S REENTRY CENTER",
                                         housing_unit="SMWRC",
                                         custodial_authority_raw_text="8",
                                         custodial_authority=StateCustodialAuthority.STATE_PRISON,
