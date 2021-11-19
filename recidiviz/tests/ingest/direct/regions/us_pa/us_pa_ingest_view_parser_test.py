@@ -393,11 +393,19 @@ class UsPaIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
             ),
             StatePerson(
                 state_code="US_PA",
+                full_name='{"given_names": "KEN", "middle_names": "", "name_suffix": "JR", "surname": "GRIFFEY"}',
                 gender=Gender.FEMALE,
                 gender_raw_text="F",
                 external_ids=[
                     StatePersonExternalId(
                         state_code="US_PA", external_id="789C", id_type="US_PA_PBPP"
+                    )
+                ],
+                aliases=[
+                    StatePersonAlias(
+                        state_code="US_PA",
+                        alias_type=StatePersonAliasType.GIVEN_NAME,
+                        full_name='{"given_names": "KEN", "middle_names": "", "name_suffix": "JR", "surname": "GRIFFEY"}',
                     )
                 ],
                 races=[
@@ -408,11 +416,19 @@ class UsPaIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
             ),
             StatePerson(
                 state_code="US_PA",
+                full_name='{"given_names": "JOHN", "middle_names": "", "name_suffix": "", "surname": "RAWLS"}',
                 gender=Gender.MALE,
                 gender_raw_text="M",
                 external_ids=[
                     StatePersonExternalId(
                         state_code="US_PA", external_id="345E", id_type="US_PA_PBPP"
+                    )
+                ],
+                aliases=[
+                    StatePersonAlias(
+                        state_code="US_PA",
+                        alias_type=StatePersonAliasType.GIVEN_NAME,
+                        full_name='{"given_names": "JOHN", "middle_names": "", "name_suffix": "", "surname": "RAWLS"}',
                     )
                 ],
                 races=[

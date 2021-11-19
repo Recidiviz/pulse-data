@@ -2828,8 +2828,16 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             )
         ]
 
+        person_5.full_name = '{"given_names": "KEN", "middle_names": "", "name_suffix": "JR", "surname": "GRIFFEY"}'
         person_5.gender = Gender.FEMALE
         person_5.gender_raw_text = "F"
+        person_5.aliases = [
+            entities.StatePersonAlias.new_with_defaults(
+                full_name='{"given_names": "KEN", "middle_names": "", "name_suffix": "JR", "surname": "GRIFFEY"}',
+                state_code=_STATE_CODE_UPPER,
+                alias_type=StatePersonAliasType.GIVEN_NAME,
+            )
+        ]
         person_5.races = [
             entities.StatePersonRace.new_with_defaults(
                 state_code=_STATE_CODE_UPPER, race=Race.OTHER, race_raw_text="N"
