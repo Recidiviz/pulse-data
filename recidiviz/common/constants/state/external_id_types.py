@@ -34,7 +34,12 @@ US_MO_SID = "US_MO_SID"
 US_MO_FBI = "US_MO_FBI"
 US_MO_OLN = "US_MO_OLN"
 
+# ND Elite ID - tracks someone across all incarceration stays
 US_ND_ELITE = "US_ND_ELITE"
+# ND Booking ID - tracks someone across incarceration stays that are related to
+# the same sentence. A person may be associated with more than one Booking ID.
+US_ND_ELITE_BOOKING = "US_ND_ELITE_BOOKING"
+# ND State ID
 US_ND_SID = "US_ND_SID"
 
 # PA Control Number - tracks someone across all incarceration stays (theoretically)
