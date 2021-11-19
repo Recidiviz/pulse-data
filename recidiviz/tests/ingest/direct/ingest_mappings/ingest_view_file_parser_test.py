@@ -19,7 +19,7 @@
 import datetime
 import os
 import unittest
-from typing import Dict, List, Optional, Type, Union
+from typing import Callable, Dict, List, Optional, Type, Union
 
 import jsonschema
 
@@ -43,6 +43,7 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_deserialize import (
     EntityFactory,
+    EntityT,
     entity_deserialize,
 )
 from recidiviz.tests.ingest.direct.ingest_mappings.fixtures.ingest_view_file_parser import (
@@ -180,6 +181,17 @@ class FakeSchemaIngestViewFileParserDelegate(IngestViewFileParserDelegate):
         if property_name == "test_is_primary_instance":
             return self.ingest_instance == DirectIngestInstance.PRIMARY
         raise ValueError(f"Unexpected test env property: {property_name}")
+
+    def get_filter_predicate(
+        self, entity_cls: Type[EntityT]
+    ) -> Optional[Callable[[EntityT], bool]]:
+        if issubclass(entity_cls, FakePersonAlias):
+
+            def fake_person_alias_filter_predicate(e: EntityT) -> bool:
+                return getattr(e, "full_name") is None
+
+            return fake_person_alias_filter_predicate
+        return None
 
 
 class IngestViewFileParserTest(unittest.TestCase):
@@ -1352,6 +1364,9 @@ class IngestViewFileParserTest(unittest.TestCase):
             ),
             FakePerson(
                 fake_state_code="US_XX",
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
                 name='{"GIVEN_NAMES": "", "MIDDLE_NAMES": "", "NAME_SUFFIX": "", "SURNAME": "KRAMER"}',
             ),
         ]
@@ -1885,6 +1900,54 @@ class IngestViewFileParserTest(unittest.TestCase):
 
         # Act
         parsed_output = self._run_parse_for_tag("json_list")
+
+        # Assert
+        self.assertEqual(expected_output, parsed_output)
+
+    def test_filter_predicate(self) -> None:
+        # Arrange
+        expected_output = [
+            FakePerson(
+                fake_state_code="US_XX",
+                aliases=[
+                    FakePersonAlias(
+                        fake_state_code="US_XX",
+                        full_name=(
+                            '{"GIVEN_NAMES": "JERRY", "MIDDLE_NAMES": "", "NAME_SUFFIX": "", "SURNAME": "SEINFELD"}'
+                        ),
+                    )
+                ],
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                aliases=[
+                    FakePersonAlias(
+                        fake_state_code="US_XX",
+                        full_name=(
+                            '{"GIVEN_NAMES": "ELAINE", "MIDDLE_NAMES": "", "NAME_SUFFIX": "", "SURNAME": "BENES"}'
+                        ),
+                    )
+                ],
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                aliases=[],
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                aliases=[
+                    FakePersonAlias(
+                        fake_state_code="US_XX",
+                        full_name=(
+                            '{"GIVEN_NAMES": "", "MIDDLE_NAMES": "", "NAME_SUFFIX": "", "SURNAME": "KRAMER"}'
+                        ),
+                    )
+                ],
+            ),
+        ]
+
+        # Act
+        parsed_output = self._run_parse_for_tag("filter_predicate")
 
         # Assert
         self.assertEqual(expected_output, parsed_output)

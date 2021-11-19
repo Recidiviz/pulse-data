@@ -21,19 +21,17 @@ logic from the ingest view parser.
 import abc
 import os
 from types import ModuleType
-from typing import Dict, Optional, Type, Union
+from typing import Callable, Dict, Optional, Type, Union
 
 from recidiviz.common.constants.enum_parser import EnumParser
 from recidiviz.common.module_collector_mixin import ModuleCollectorMixin
 from recidiviz.ingest.direct.ingest_mappings.custom_function_registry import (
     CustomFunctionRegistry,
 )
-from recidiviz.ingest.direct.types.direct_ingest_instance import (
-    DirectIngestInstance,
-)
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.entity_deserialize import EntityFactory
+from recidiviz.persistence.entity.entity_deserialize import EntityFactory, EntityT
 from recidiviz.persistence.entity.entity_utils import (
     get_entity_class_in_module_with_name,
 )
@@ -80,6 +78,14 @@ class IngestViewFileParserDelegate:
     def get_env_property(self, property_name: str) -> bool:
         """Returns a boolean value associated with an environment property with the
         given name. Throws ValueError for all unexpected properties.
+        """
+
+    @abc.abstractmethod
+    def get_filter_predicate(
+        self, entity_cls: Type[EntityT]
+    ) -> Optional[Callable[[EntityT], bool]]:
+        """Returns a predicate function which can be used to fully filter the evaluated
+        EntityTreeManifest from the result.
         """
 
 
@@ -181,3 +187,17 @@ class IngestViewFileParserDelegateImpl(
             return self.ingest_instance == DirectIngestInstance.SECONDARY
 
         raise ValueError(f"Unexpected environment property: [{property_name}]")
+
+    # TODO(#8905): Consider using more general logic to build a filter predicate, like
+    #  building a @required field annotation for fields that must be hydrated, otherwise
+    #  the whole entity is filtered out.
+    def get_filter_predicate(
+        self, entity_cls: Type[EntityT]
+    ) -> Optional[Callable[[EntityT], bool]]:
+        if issubclass(entity_cls, state_entities.StatePersonAlias):
+
+            def state_person_alias_filter_predicate(e: EntityT) -> bool:
+                return getattr(e, "full_name") is None
+
+            return state_person_alias_filter_predicate
+        return None

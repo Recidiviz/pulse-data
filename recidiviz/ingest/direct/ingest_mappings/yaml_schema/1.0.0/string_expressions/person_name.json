@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema",
-  "description": "An expression that returns a JSON-serialized person name.",
+  "description": "An expression that returns a JSON-serialized person name. If all name parts are null will return null.",
   "type": "object",
   "required": ["$person_name"],
   "additionalProperties": false,
