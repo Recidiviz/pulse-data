@@ -94,6 +94,8 @@ from recidiviz.ingest.direct.controllers.postgres_direct_ingest_file_metadata_ma
 )
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
     DirectIngestCloudTaskManagerImpl,
+    build_handle_new_files_task_id,
+    build_scheduler_task_id,
 )
 from recidiviz.ingest.direct.direct_ingest_controller_utils import (
     check_is_region_launched_in_env,
@@ -255,9 +257,42 @@ class BaseDirectIngestController:
             just_finished_job=just_finished_job,
         )
 
-    def schedule_next_ingest_job(self, just_finished_job: bool) -> None:
-        """Creates a cloud task to run a /process_job request for the file, which will
-        process and commit the contents to Postgres."""
+    def _prune_redundant_tasks(self, current_task_id: str) -> None:
+        """Prunes all tasks that match the type of the current task out of the scheduler
+        queue, leaving the current task.
+        """
+        queue_info = self.cloud_task_manager.get_scheduler_queue_info(self.region)
+        scheduler_task_id_prefix = build_scheduler_task_id(
+            self.region, self.ingest_instance, prefix_only=True
+        )
+        handle_new_files_task_id_prefix = build_handle_new_files_task_id(
+            self.region, self.ingest_instance, prefix_only=True
+        )
+        if current_task_id.startswith(scheduler_task_id_prefix):
+            task_id_prefix = scheduler_task_id_prefix
+        elif current_task_id.startswith(handle_new_files_task_id_prefix):
+            task_id_prefix = handle_new_files_task_id_prefix
+        else:
+            raise ValueError(f"Unexpected task_id: [{current_task_id}]")
+
+        task_names = queue_info.task_names_for_task_id_prefix(task_id_prefix)
+        for task_name in task_names:
+            _, task_id = os.path.split(task_name)
+            if task_id == current_task_id:
+                continue
+            self.cloud_task_manager.delete_scheduler_queue_task(self.region, task_name)
+
+    def schedule_next_ingest_task(
+        self, *, current_task_id: str, just_finished_job: bool
+    ) -> None:
+        """Finds the next task(s) that need to be scheduled for ingest and queues
+        them. Also prunes redundant tasks out of the scheduler queue, if they exist.
+        """
+        self._prune_redundant_tasks(current_task_id=current_task_id)
+        self._schedule_next_ingest_task(just_finished_job=just_finished_job)
+
+    def _schedule_next_ingest_task(self, just_finished_job: bool) -> None:
+        """Internal helper for scheduling the next ingest task. DOes"""
         check_is_region_launched_in_env(self.region)
 
         if self.ingest_instance_status_manager.is_instance_paused():
@@ -832,7 +867,7 @@ class BaseDirectIngestController:
                 raise ValueError(f"Unexpected file type [{parts.file_type}]")
 
     @trace.span
-    def handle_new_files(self, can_start_ingest: bool) -> None:
+    def handle_new_files(self, *, current_task_id: str, can_start_ingest: bool) -> None:
         """Searches the ingest directory for new/unprocessed files. Normalizes
         file names and splits files as necessary, schedules the next ingest job
         if allowed.
@@ -853,6 +888,8 @@ class BaseDirectIngestController:
                 "Ingest out of [%s] is currently paused.", self.ingest_bucket_path.uri()
             )
             return
+
+        self._prune_redundant_tasks(current_task_id=current_task_id)
 
         unnormalized_paths = self.fs.get_unnormalized_file_paths(
             self.ingest_bucket_path
@@ -930,7 +967,7 @@ class BaseDirectIngestController:
 
         # Even if there are no unprocessed paths, we still want to look for the next
         # job because there may be new files to generate.
-        self.schedule_next_ingest_job(just_finished_job=False)
+        self._schedule_next_ingest_task(just_finished_job=False)
 
     def do_raw_data_import(self, data_import_args: GcsfsRawDataBQImportArgs) -> None:
         """Process a raw incoming file by importing it to BQ, tracking it in our metadata tables, and moving it to

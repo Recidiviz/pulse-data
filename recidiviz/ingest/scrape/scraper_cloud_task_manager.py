@@ -49,7 +49,7 @@ class ScraperCloudTaskManager:
         for task in self.list_scrape_tasks(
             region_code=region_code, queue_name=queue_name
         ):
-            self.cloud_task_client.delete_task(task)
+            self.cloud_task_client.delete_task(task.name)
 
     def list_scrape_tasks(
         self, *, region_code: str, queue_name: str

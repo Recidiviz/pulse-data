@@ -90,3 +90,7 @@ class FakeDirectIngestCloudTaskManager(DirectIngestCloudTaskManager):
         can_start_ingest: bool,
     ) -> None:
         pass
+
+    @abc.abstractmethod
+    def delete_scheduler_queue_task(self, region: Region, task_name: str) -> None:
+        pass

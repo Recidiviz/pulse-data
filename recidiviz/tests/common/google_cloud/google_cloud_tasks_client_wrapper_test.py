@@ -247,7 +247,7 @@ class TestGoogleCloudTasksClientWrapper(unittest.TestCase):
         )
 
     def test_delete_task(self) -> None:
-        self.client_wrapper.delete_task(tasks_v2.types.task_pb2.Task(name="task_name"))
+        self.client_wrapper.delete_task("task_name")
 
         self.mock_client.delete_task.assert_called_with(name="task_name")
 
@@ -256,7 +256,7 @@ class TestGoogleCloudTasksClientWrapper(unittest.TestCase):
             message="message"
         )
 
-        self.client_wrapper.delete_task(tasks_v2.types.task_pb2.Task(name="task_name"))
+        self.client_wrapper.delete_task("task_name")
 
         self.mock_client.delete_task.assert_called_with(name="task_name")
 

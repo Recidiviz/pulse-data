@@ -49,9 +49,6 @@ from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
     to_normalized_unprocessed_file_path,
 )
-from recidiviz.ingest.direct.types.direct_ingest_instance import (
-    DirectIngestInstance,
-)
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_data_table_latest_view_updater import (
     DirectIngestRawDataTableLatestViewUpdater,
 )
@@ -78,6 +75,7 @@ from recidiviz.ingest.direct.direct_ingest_region_utils import (
     get_existing_region_dir_names,
 )
 from recidiviz.ingest.direct.errors import DirectIngestError, DirectIngestErrorType
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.utils.fake_region import fake_region
 from recidiviz.utils.metadata import local_project_id_override
@@ -85,6 +83,11 @@ from recidiviz.utils.regions import Region
 
 CONTROL_PACKAGE_NAME = direct_ingest_control.__name__
 TODAY = datetime.datetime.today()
+
+APP_ENGINE_HEADERS = {
+    "X-Appengine-Cron": "test-cron",
+    "X-AppEngine-TaskName": "my-task-id",
+}
 
 
 @patch("recidiviz.utils.metadata.project_number", Mock(return_value="123456789"))
@@ -145,7 +148,11 @@ class TestDirectIngestControl(unittest.TestCase):
             "region": self.region_code,
             "bucket": self.primary_bucket.bucket_name,
         }
-        headers = {"X-Appengine-Cron": "test-cron"}
+        task_id = "us_nd-primary-scheduler-b1f5a25c-07d2-408e-b9e9-2825be145263"
+        headers = {
+            **APP_ENGINE_HEADERS,
+            "X-AppEngine-TaskName": task_id,
+        }
         response = self.client.get(
             "/scheduler", query_string=request_args, headers=headers
         )
@@ -154,8 +161,8 @@ class TestDirectIngestControl(unittest.TestCase):
         self.mock_controller_factory.build.assert_called_with(
             ingest_bucket_path=self.primary_bucket, allow_unlaunched=False
         )
-        mock_controller.schedule_next_ingest_job.assert_called_with(
-            just_finished_job=False
+        mock_controller.schedule_next_ingest_task.assert_called_with(
+            current_task_id=task_id, just_finished_job=False
         )
 
     @patch("recidiviz.utils.regions.get_region")
@@ -177,7 +184,7 @@ class TestDirectIngestControl(unittest.TestCase):
             "region": self.region_code,
             "bucket": self.primary_bucket.bucket_name,
         }
-        headers = {"X-Appengine-Cron": "test-cron"}
+        headers = APP_ENGINE_HEADERS
         response = self.client.get(
             "/scheduler", query_string=request_args, headers=headers
         )
@@ -191,7 +198,7 @@ class TestDirectIngestControl(unittest.TestCase):
             response.get_data().decode(),
             "Test bad input error",
         )
-        mock_controller.schedule_next_ingest_job.assert_not_called()
+        mock_controller.schedule_next_ingest_task.assert_not_called()
 
     @patch("recidiviz.utils.environment.get_gcp_environment")
     @patch("recidiviz.utils.regions.get_region")
@@ -228,7 +235,7 @@ class TestDirectIngestControl(unittest.TestCase):
         }
         body_encoded = json.dumps(body).encode()
 
-        headers = {"X-Appengine-Cron": "test-cron"}
+        headers = APP_ENGINE_HEADERS
 
         response = self.client.post(
             "/process_job",
@@ -276,7 +283,7 @@ class TestDirectIngestControl(unittest.TestCase):
         }
         body_encoded = json.dumps(body).encode()
 
-        headers = {"X-Appengine-Cron": "test-cron"}
+        headers = APP_ENGINE_HEADERS
 
         response = self.client.post(
             "/process_job",
@@ -312,7 +319,7 @@ class TestDirectIngestControl(unittest.TestCase):
             "relative_file_path": path.blob_name,
             "start_ingest": "false",
         }
-        headers = {"X-Appengine-Cron": "test-cron"}
+        headers = APP_ENGINE_HEADERS
         response = self.client.get(
             "/handle_direct_ingest_file", query_string=request_args, headers=headers
         )
@@ -344,7 +351,7 @@ class TestDirectIngestControl(unittest.TestCase):
             "relative_file_path": path.blob_name,
             "start_ingest": "True",
         }
-        headers = {"X-Appengine-Cron": "test-cron"}
+        headers = APP_ENGINE_HEADERS
         response = self.client.get(
             "/handle_direct_ingest_file", query_string=request_args, headers=headers
         )
@@ -376,7 +383,7 @@ class TestDirectIngestControl(unittest.TestCase):
             "relative_file_path": path.blob_name,
             "start_ingest": "False",
         }
-        headers = {"X-Appengine-Cron": "test-cron"}
+        headers = APP_ENGINE_HEADERS
 
         response = self.client.get(
             "/handle_direct_ingest_file", query_string=request_args, headers=headers
@@ -406,7 +413,11 @@ class TestDirectIngestControl(unittest.TestCase):
             "bucket": self.primary_bucket.bucket_name,
             "can_start_ingest": "True",
         }
-        headers = {"X-Appengine-Cron": "test-cron"}
+        task_id = "us_nd-primary-handle_new_files-b1f5a25c-07d2-408e-b9e9-2825be145263"
+        headers = {
+            **APP_ENGINE_HEADERS,
+            "X-AppEngine-TaskName": task_id,
+        }
         response = self.client.get(
             "/handle_new_files", query_string=request_args, headers=headers
         )
@@ -415,7 +426,9 @@ class TestDirectIngestControl(unittest.TestCase):
         self.mock_controller_factory.build.assert_called_with(
             ingest_bucket_path=self.primary_bucket, allow_unlaunched=True
         )
-        mock_controller.handle_new_files.assert_called_with(True)
+        mock_controller.handle_new_files.assert_called_with(
+            current_task_id=task_id, can_start_ingest=True
+        )
 
     @patch("recidiviz.utils.environment.get_gcp_environment")
     @patch("recidiviz.utils.regions.get_region")
@@ -433,7 +446,11 @@ class TestDirectIngestControl(unittest.TestCase):
             "bucket": self.primary_bucket.bucket_name,
             "can_start_ingest": "False",
         }
-        headers = {"X-Appengine-Cron": "test-cron"}
+        task_id = "us_nd-primary-handle_new_files-b1f5a25c-07d2-408e-b9e9-2825be145263"
+        headers = {
+            **APP_ENGINE_HEADERS,
+            "X-AppEngine-TaskName": task_id,
+        }
         response = self.client.get(
             "/handle_new_files", query_string=request_args, headers=headers
         )
@@ -442,7 +459,9 @@ class TestDirectIngestControl(unittest.TestCase):
         self.mock_controller_factory.build.assert_called_with(
             ingest_bucket_path=self.primary_bucket, allow_unlaunched=True
         )
-        mock_controller.handle_new_files.assert_called_with(False)
+        mock_controller.handle_new_files.assert_called_with(
+            current_task_id=task_id, can_start_ingest=False
+        )
 
     @patch("recidiviz.utils.environment.get_gcp_environment")
     @patch("recidiviz.ingest.direct.direct_ingest_control.GcsfsFactory.build")
@@ -463,7 +482,7 @@ class TestDirectIngestControl(unittest.TestCase):
             "relative_file_path": path.blob_name,
         }
 
-        headers = {"X-Appengine-Cron": "test-cron"}
+        headers = APP_ENGINE_HEADERS
         response = self.client.get(
             "/normalize_raw_file_path", query_string=request_args, headers=headers
         )
@@ -501,7 +520,7 @@ class TestDirectIngestControl(unittest.TestCase):
             "relative_file_path": normalized_path.blob_name,
         }
 
-        headers = {"X-Appengine-Cron": "test-cron"}
+        headers = APP_ENGINE_HEADERS
         response = self.client.get(
             "/normalize_raw_file_path", query_string=request_args, headers=headers
         )
@@ -536,7 +555,11 @@ class TestDirectIngestControl(unittest.TestCase):
             "bucket": self.primary_bucket.bucket_name,
             "can_start_ingest": "False",
         }
-        headers = {"X-Appengine-Cron": "test-cron"}
+        task_id = "us_nd-primary-handle_new_files-b1f5a25c-07d2-408e-b9e9-2825be145263"
+        headers = {
+            **APP_ENGINE_HEADERS,
+            "X-AppEngine-TaskName": task_id,
+        }
         response = self.client.get(
             "/handle_new_files", query_string=request_args, headers=headers
         )
@@ -545,9 +568,11 @@ class TestDirectIngestControl(unittest.TestCase):
         self.mock_controller_factory.build.assert_called_with(
             ingest_bucket_path=self.primary_bucket, allow_unlaunched=True
         )
-        mock_controller.schedule_next_ingest_job.assert_not_called()
+        mock_controller.schedule_next_ingest_task.assert_not_called()
         mock_controller.run_ingest_job_and_kick_scheduler_on_completion.assert_not_called()
-        mock_controller.handle_new_files.assert_called_with(False)
+        mock_controller.handle_new_files.assert_called_with(
+            current_task_id=task_id, can_start_ingest=False
+        )
 
     @patch(f"{CONTROL_PACKAGE_NAME}.get_supported_direct_ingest_region_codes")
     @patch("recidiviz.utils.environment.get_gcp_environment")
@@ -606,7 +631,7 @@ class TestDirectIngestControl(unittest.TestCase):
 
         mock_supported_region_codes.return_value = fake_supported_regions.keys()
 
-        headers = {"X-Appengine-Cron": "test-cron"}
+        headers = APP_ENGINE_HEADERS
         response = self.client.get(
             "/ensure_all_raw_file_paths_normalized", query_string={}, headers=headers
         )
@@ -647,7 +672,7 @@ class TestDirectIngestControl(unittest.TestCase):
                 DirectIngestCloudTaskManager
             )
 
-            headers = {"X-Appengine-Cron": "test-cron"}
+            headers = APP_ENGINE_HEADERS
             response = self.client.get(
                 "/ensure_all_raw_file_paths_normalized",
                 query_string={},
@@ -682,7 +707,7 @@ class TestDirectIngestControl(unittest.TestCase):
                 "region": region_code,
             }
 
-            headers = {"X-Appengine-Cron": "test-cron"}
+            headers = APP_ENGINE_HEADERS
 
             response = self.client.post(
                 "/update_raw_data_latest_views_for_state",
@@ -707,7 +732,7 @@ class TestDirectIngestControl(unittest.TestCase):
             )
             mock_cloud_task_manager_fn.return_value = mock_cloud_task_manager
 
-            headers = {"X-Appengine-Cron": "test-cron"}
+            headers = APP_ENGINE_HEADERS
             response = self.client.post(
                 "/create_raw_data_latest_view_update_tasks",
                 query_string={},
@@ -761,7 +786,7 @@ class TestDirectIngestControl(unittest.TestCase):
         }
         body_encoded = json.dumps(body).encode()
 
-        headers = {"X-Appengine-Cron": "test-cron"}
+        headers = APP_ENGINE_HEADERS
 
         response = self.client.post(
             "/raw_data_import",
@@ -812,7 +837,7 @@ class TestDirectIngestControl(unittest.TestCase):
         }
         body_encoded = json.dumps(body).encode()
 
-        headers = {"X-Appengine-Cron": "test-cron"}
+        headers = APP_ENGINE_HEADERS
 
         response = self.client.post(
             "/ingest_view_export",
@@ -875,7 +900,7 @@ class TestDirectIngestControl(unittest.TestCase):
 
         mock_environment.return_value = "staging"
 
-        headers = {"X-Appengine-Cron": "test-cron"}
+        headers = APP_ENGINE_HEADERS
 
         response = self.client.post(
             "/heartbeat",
@@ -1086,7 +1111,7 @@ class TestDirectIngestControl(unittest.TestCase):
 
         mock_environment.return_value = "staging"
         request_args = {"region": region_code, "date": "2021-01-01"}
-        headers = {"X-Appengine-Cron": "test-cron"}
+        headers = APP_ENGINE_HEADERS
 
         mock_fs_factory.return_value = FakeGCSFileSystem()
 
@@ -1159,7 +1184,7 @@ class TestDirectIngestControl(unittest.TestCase):
         region_code = "us_xx"
         mock_environment.return_value = "staging"
         request_args = {"region": region_code, "date": "2021-01-01"}
-        headers = {"X-Appengine-Cron": "test-cron"}
+        headers = APP_ENGINE_HEADERS
 
         mock_download_delegate_factory.return_value = Mock(
             spec=BaseSftpDownloadDelegate,
@@ -1230,7 +1255,7 @@ class TestDirectIngestControl(unittest.TestCase):
         region_code = "us_xx"
         mock_environment.return_value = "staging"
         request_args = {"region": region_code, "date": "2021-01-01"}
-        headers = {"X-Appengine-Cron": "test-cron"}
+        headers = APP_ENGINE_HEADERS
 
         mock_download_delegate_factory.return_value = Mock(
             spec=BaseSftpDownloadDelegate,
@@ -1300,7 +1325,7 @@ class TestDirectIngestControl(unittest.TestCase):
         region_code = "us_xx"
         mock_environment.return_value = "staging"
         request_args = {"region": region_code, "date": "2021-01-01"}
-        headers = {"X-Appengine-Cron": "test-cron"}
+        headers = APP_ENGINE_HEADERS
 
         mock_download_delegate_factory.return_value = Mock(
             spec=BaseSftpDownloadDelegate,
@@ -1358,7 +1383,7 @@ class TestDirectIngestControl(unittest.TestCase):
         region_code = "us_xx"
         mock_environment.return_value = "staging"
         request_args = {"region": region_code, "date": "2021-01-01"}
-        headers = {"X-Appengine-Cron": "test-cron"}
+        headers = APP_ENGINE_HEADERS
 
         mock_download_delegate_factory.return_value = Mock(
             spec=BaseSftpDownloadDelegate,
@@ -1437,7 +1462,7 @@ class TestDirectIngestControl(unittest.TestCase):
         region_code = "us_xx"
         mock_environment.return_value = "staging"
         request_args = {"region": region_code, "date": "2021-01-01"}
-        headers = {"X-Appengine-Cron": "test-cron"}
+        headers = APP_ENGINE_HEADERS
 
         mock_download_delegate_factory.return_value = Mock(
             spec=BaseSftpDownloadDelegate,
@@ -1502,7 +1527,7 @@ class TestDirectIngestControl(unittest.TestCase):
         region_code = "us_xx"
         mock_environment.return_value = "staging"
         request_args = {"region": region_code, "date": "2021-01-01"}
-        headers = {"X-Appengine-Cron": "test-cron"}
+        headers = APP_ENGINE_HEADERS
 
         mock_download_delegate_factory.return_value = Mock(
             spec=BaseSftpDownloadDelegate,
@@ -1569,7 +1594,7 @@ class TestDirectIngestControl(unittest.TestCase):
         region_code = "us_xx"
         mock_environment.return_value = "staging"
         request_args = {"region": region_code, "date": "2021-01-01"}
-        headers = {"X-Appengine-Cron": "test-cron"}
+        headers = APP_ENGINE_HEADERS
 
         mock_download_delegate_factory.return_value = Mock(
             spec=BaseSftpDownloadDelegate,
@@ -1648,7 +1673,7 @@ class TestDirectIngestControl(unittest.TestCase):
         region_code = "us_xx"
         mock_environment.return_value = "staging"
         request_args = {"region": region_code, "date": "2021-01-01"}
-        headers = {"X-Appengine-Cron": "test-cron"}
+        headers = APP_ENGINE_HEADERS
 
         mock_download_delegate_factory.return_value = Mock(
             spec=BaseSftpDownloadDelegate,
@@ -1690,7 +1715,7 @@ class TestDirectIngestControl(unittest.TestCase):
         )
         mock_environment.return_value = "staging"
 
-        headers = {"X-Appengine-Cron": "test-cron"}
+        headers = APP_ENGINE_HEADERS
         request_args = {"region": "us_id"}
         response = self.client.get(
             "/handle_sftp_files", query_string=request_args, headers=headers
