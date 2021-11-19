@@ -58,6 +58,9 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
 from recidiviz.ingest.direct.controllers.postgres_direct_ingest_file_metadata_manager import (
     PostgresDirectIngestFileMetadataManager,
 )
+from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
+    build_scheduler_task_id,
+)
 from recidiviz.ingest.direct.errors import DirectIngestError
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_lock_manager import (
@@ -1772,7 +1775,12 @@ class TestDirectIngestController(unittest.TestCase):
         controller.file_metadata_manager.mark_raw_file_as_discovered(path_to_fixture)
         controller.file_metadata_manager.mark_raw_file_as_processed(path_to_fixture)
 
-        controller.schedule_next_ingest_job(just_finished_job=True)
+        controller.schedule_next_ingest_task(
+            current_task_id=build_scheduler_task_id(
+                controller.region, controller.ingest_instance
+            ),
+            just_finished_job=True,
+        )
         for task_name in controller.cloud_task_manager.get_bq_import_export_queue_info(
             controller.region
         ).task_names:

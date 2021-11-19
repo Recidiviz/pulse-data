@@ -50,6 +50,10 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.ingest.direct.types.direct_ingest_types import CloudTaskArgs
 from recidiviz.utils.regions import Region
 
+SCHEDULER_TASK_ID_TAG = "scheduler"
+HANDLE_NEW_FILES_TASK_ID_TAG = "handle_new_files"
+HANDLE_SFTP_DOWNLOAD_TASK_ID_TAG = "handle_sftp_download"
+
 
 def _build_task_id(
     region_code: str,
@@ -79,6 +83,70 @@ def _build_task_id(
         task_id_parts.append(str(uuid.uuid4()))
 
     return "-".join(task_id_parts)
+
+
+def build_scheduler_task_id(
+    region: Region, ingest_instance: DirectIngestInstance, prefix_only: bool = False
+) -> str:
+    return _build_task_id(
+        region.region_code,
+        ingest_instance,
+        task_id_tag=SCHEDULER_TASK_ID_TAG,
+        prefix_only=prefix_only,
+    )
+
+
+def build_handle_new_files_task_id(
+    region: Region, ingest_instance: DirectIngestInstance, prefix_only: bool = False
+) -> str:
+    return _build_task_id(
+        region.region_code,
+        ingest_instance,
+        task_id_tag=HANDLE_NEW_FILES_TASK_ID_TAG,
+        prefix_only=prefix_only,
+    )
+
+
+def build_raw_data_import_task_id(
+    region: Region,
+    data_import_args: GcsfsRawDataBQImportArgs,
+) -> str:
+    return _build_task_id(
+        region.region_code,
+        data_import_args.ingest_instance(),
+        task_id_tag=data_import_args.task_id_tag(),
+        prefix_only=False,
+    )
+
+
+def build_ingest_view_export_task_id(
+    region: Region,
+    ingest_view_export_args: GcsfsIngestViewExportArgs,
+) -> str:
+    return _build_task_id(
+        region.region_code,
+        ingest_view_export_args.ingest_instance(),
+        task_id_tag=ingest_view_export_args.task_id_tag(),
+        prefix_only=False,
+    )
+
+
+def build_process_job_task_id(region: Region, ingest_args: GcsfsIngestArgs) -> str:
+    return _build_task_id(
+        region.region_code,
+        ingest_args.ingest_instance(),
+        ingest_args.task_id_tag(),
+        prefix_only=False,
+    )
+
+
+def build_sftp_download_task_id(region: Region) -> str:
+    return _build_task_id(
+        region.region_code,
+        ingest_instance=DirectIngestInstance.PRIMARY,
+        task_id_tag=HANDLE_SFTP_DOWNLOAD_TASK_ID_TAG,
+        prefix_only=False,
+    )
 
 
 class DirectIngestQueueType(Enum):
@@ -140,7 +208,7 @@ def get_direct_ingest_queues_for_state(state_code: StateCode) -> List[str]:
 
 @attr.s
 class DirectIngestCloudTaskQueueInfo(CloudTaskQueueInfo):
-    def _tasks_for_instance(
+    def _task_names_for_instance(
         self, region_code: str, ingest_instance: DirectIngestInstance
     ) -> Generator[str, None, None]:
         instance_prefix = _build_task_id(
@@ -149,10 +217,12 @@ class DirectIngestCloudTaskQueueInfo(CloudTaskQueueInfo):
             task_id_tag=None,
             prefix_only=True,
         )
-        for task in self._tasks_for_prefix(instance_prefix):
+        for task in self.task_names_for_task_id_prefix(instance_prefix):
             yield task
 
-    def _tasks_for_prefix(self, task_prefix: str) -> Generator[str, None, None]:
+    def task_names_for_task_id_prefix(
+        self, task_prefix: str
+    ) -> Generator[str, None, None]:
         for task_name in self.task_names:
             _, task_id = os.path.split(task_name)
             if task_id.startswith(task_prefix):
@@ -161,7 +231,7 @@ class DirectIngestCloudTaskQueueInfo(CloudTaskQueueInfo):
     def has_any_tasks_for_instance(
         self, region_code: str, ingest_instance: DirectIngestInstance
     ) -> bool:
-        return any(self._tasks_for_instance(region_code, ingest_instance))
+        return any(self._task_names_for_instance(region_code, ingest_instance))
 
 
 @attr.s
@@ -194,7 +264,7 @@ class ProcessIngestJobCloudTaskQueueInfo(DirectIngestCloudTaskQueueInfo):
             prefix_only=True,
         )
 
-        return any(self._tasks_for_prefix(task_id_prefix))
+        return any(self.task_names_for_task_id_prefix(task_id_prefix))
 
 
 @attr.s
@@ -228,7 +298,7 @@ class BQImportExportCloudTaskQueueInfo(DirectIngestCloudTaskQueueInfo):
         return any(
             self._is_ingest_view_export_job(task_name)
             and task_args.task_id_tag() in task_name
-            for task_name in self._tasks_for_instance(
+            for task_name in self._task_names_for_instance(
                 region_code,
                 task_args.ingest_instance(),
             )
@@ -244,7 +314,7 @@ class BQImportExportCloudTaskQueueInfo(DirectIngestCloudTaskQueueInfo):
     ) -> bool:
         return any(
             self._is_ingest_view_export_job(task_name)
-            for task_name in self._tasks_for_instance(region_code, ingest_instance)
+            for task_name in self._task_names_for_instance(region_code, ingest_instance)
         )
 
 
@@ -348,6 +418,13 @@ class DirectIngestCloudTaskManager:
 
         Args:
             region: `Region` direct ingest region.
+        """
+
+    @abc.abstractmethod
+    def delete_scheduler_queue_task(self, region: Region, task_name: str) -> None:
+        """Deletes a single task from the region's scheduler queue with the
+        fully-qualified |task_name| which follows this format:
+           '/projects/{project}/locations/{location}/queues/{queue}/tasks/{task_id}'
         """
 
     @staticmethod
@@ -464,12 +541,7 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
         region: Region,
         ingest_args: GcsfsIngestArgs,
     ) -> None:
-        task_id = _build_task_id(
-            region.region_code,
-            ingest_args.ingest_instance(),
-            ingest_args.task_id_tag(),
-            prefix_only=False,
-        )
+        task_id = build_process_job_task_id(region, ingest_args)
         params = {
             "region": region.region_code.lower(),
             "file_path": ingest_args.file_path.abs_path(),
@@ -489,11 +561,8 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
         ingest_bucket: GcsfsBucketPath,
         just_finished_job: bool,
     ) -> None:
-        task_id = _build_task_id(
-            region.region_code,
-            DirectIngestInstance.for_ingest_bucket(ingest_bucket),
-            task_id_tag="scheduler",
-            prefix_only=False,
+        task_id = build_scheduler_task_id(
+            region, DirectIngestInstance.for_ingest_bucket(ingest_bucket)
         )
 
         params = {
@@ -516,11 +585,8 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
         ingest_bucket: GcsfsBucketPath,
         can_start_ingest: bool,
     ) -> None:
-        task_id = _build_task_id(
-            region.region_code,
-            DirectIngestInstance.for_ingest_bucket(ingest_bucket),
-            task_id_tag="handle_new_files",
-            prefix_only=False,
+        task_id = build_handle_new_files_task_id(
+            region, DirectIngestInstance.for_ingest_bucket(ingest_bucket)
         )
 
         params = {
@@ -541,12 +607,7 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
         region: Region,
         data_import_args: GcsfsRawDataBQImportArgs,
     ) -> None:
-        task_id = _build_task_id(
-            region.region_code,
-            data_import_args.ingest_instance(),
-            task_id_tag=data_import_args.task_id_tag(),
-            prefix_only=False,
-        )
+        task_id = build_raw_data_import_task_id(region, data_import_args)
 
         params = {
             "region": region.region_code.lower(),
@@ -567,12 +628,7 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
         region: Region,
         ingest_view_export_args: GcsfsIngestViewExportArgs,
     ) -> None:
-        task_id = _build_task_id(
-            region.region_code,
-            ingest_view_export_args.ingest_instance(),
-            task_id_tag=ingest_view_export_args.task_id_tag(),
-            prefix_only=False,
-        )
+        task_id = build_ingest_view_export_task_id(region, ingest_view_export_args)
         params = {
             "region": region.region_code.lower(),
             "output_bucket": ingest_view_export_args.output_bucket_name,
@@ -588,12 +644,7 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
         )
 
     def create_direct_ingest_sftp_download_task(self, region: Region) -> None:
-        task_id = _build_task_id(
-            region.region_code,
-            ingest_instance=DirectIngestInstance.PRIMARY,
-            task_id_tag="handle_sftp_download",
-            prefix_only=False,
-        )
+        task_id = build_sftp_download_task_id(region)
         params = {
             "region": region.region_code.lower(),
         }
@@ -601,3 +652,6 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
         self._get_sftp_queue_manager(region).create_task(
             task_id=task_id, relative_uri=relative_uri, body={}
         )
+
+    def delete_scheduler_queue_task(self, region: Region, task_name: str) -> None:
+        self._get_scheduler_queue_manager(region).delete_task(task_name=task_name)

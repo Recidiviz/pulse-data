@@ -18,14 +18,14 @@
 tasks_v2.CloudTasksClient.
 """
 
-from datetime import datetime, timedelta
 import json
 import logging
+from datetime import datetime, timedelta
 from enum import Enum
-from typing import List, Dict, Optional, Any
+from typing import Any, Dict, List, Optional
 
 import pytz
-from google.cloud import tasks_v2, exceptions
+from google.cloud import exceptions, tasks_v2
 from google.cloud.tasks_v2.types import queue_pb2, task_pb2
 from google.protobuf import timestamp_pb2
 
@@ -186,8 +186,14 @@ class GoogleCloudTasksClientWrapper:
             task=task,
         )
 
-    def delete_task(self, task: task_pb2.Task) -> None:
+    def delete_task(self, task_name: str) -> None:
+        """Deletes a single task with the fully-qualified |task_name| which follows
+        this format:
+           '/projects/{project}/locations/{location}/queues/{queue}/tasks/{task_id}'
+        """
         try:
-            retry_grpc(self.NUM_GRPC_RETRIES, self.client.delete_task, name=task.name)
+            retry_grpc(self.NUM_GRPC_RETRIES, self.client.delete_task, name=task_name)
         except exceptions.NotFound as e:
-            logging.debug("Task not found: [%s]", e)
+            logging.warning(
+                "Task not found - can't delete: [%s]. Exception: [%s]", task_name, e
+            )

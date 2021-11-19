@@ -203,6 +203,7 @@ def handle_new_files() -> Tuple[str, HTTPStatus]:
         "can_start_ingest", request.values, default=False
     )
     bucket = get_str_param_value("bucket", request.values)
+    current_task_id = _get_current_task_id()
 
     if not region_code or can_start_ingest is None or not bucket:
         response = f"Bad parameters [{request.values}]"
@@ -226,7 +227,10 @@ def handle_new_files() -> Tuple[str, HTTPStatus]:
                 return str(e), HTTPStatus.BAD_REQUEST
             raise e
 
-        controller.handle_new_files(can_start_ingest=can_start_ingest)
+        controller.handle_new_files(
+            current_task_id=current_task_id,
+            can_start_ingest=can_start_ingest,
+        )
     return "", HTTPStatus.OK
 
 
@@ -534,6 +538,15 @@ def process_job() -> Tuple[str, HTTPStatus]:
     return "", HTTPStatus.OK
 
 
+def _get_current_task_id() -> str:
+    current_task_id = request.headers.get("X-AppEngine-TaskName")
+    if not current_task_id:
+        raise ValueError(
+            f"Expected 'X-AppEngine-TaskName' in headers: {list(request.headers.keys())}"
+        )
+    return current_task_id
+
+
 @direct_ingest_control.route("/scheduler", methods=["GET", "POST"])
 @requires_gae_auth
 def scheduler() -> Tuple[str, HTTPStatus]:
@@ -543,6 +556,7 @@ def scheduler() -> Tuple[str, HTTPStatus]:
     just_finished_job = get_bool_param_value(
         "just_finished_job", request.values, default=False
     )
+    current_task_id = _get_current_task_id()
 
     # The bucket name for ingest instance to schedule work out of
     bucket = get_str_param_value("bucket", request.args)
@@ -568,7 +582,9 @@ def scheduler() -> Tuple[str, HTTPStatus]:
                 return str(e), HTTPStatus.BAD_REQUEST
             raise e
 
-        controller.schedule_next_ingest_job(just_finished_job)
+        controller.schedule_next_ingest_task(
+            current_task_id=current_task_id, just_finished_job=just_finished_job
+        )
     return "", HTTPStatus.OK
 
 
