@@ -20,6 +20,7 @@ from typing import Type
 
 from recidiviz.common.constants.person_characteristics import Ethnicity, Gender, Race
 from recidiviz.common.constants.state.external_id_types import US_ME_DOC
+from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
@@ -211,6 +212,9 @@ class TestUsMeController(BaseDirectIngestControllerTests):
             admission_date=datetime.date(year=2014, month=10, day=12),
             release_date=datetime.date(year=2015, month=8, day=20),
             facility="MAINE STATE PRISON",
+            housing_unit="UNIT 1",
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+            custodial_authority_raw_text="2",
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             admission_reason_raw_text="NULL@@INCARCERATED@@SENTENCE/DISPOSITION@@SOCIETY IN@@SENTENCE/DISPOSITION@@2",
             release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_TO_SUPERVISION,
@@ -229,6 +233,9 @@ class TestUsMeController(BaseDirectIngestControllerTests):
             admission_date=datetime.date(year=2015, month=9, day=20),
             release_date=datetime.date(year=2016, month=4, day=1),
             facility="MAINE CORRECTIONAL CENTER",
+            housing_unit="UNIT 2",
+            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+            custodial_authority_raw_text="4",
             admission_reason=StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
             admission_reason_raw_text="SCCP@@INCARCERATED@@TRANSFER@@DOC TRANSFER@@VIOLATION OF SCCP@@2",
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
@@ -247,6 +254,9 @@ class TestUsMeController(BaseDirectIngestControllerTests):
             admission_date=datetime.date(year=2016, month=9, day=20),
             release_date=datetime.date(year=2017, month=12, day=1),
             facility="MAINE STATE PRISON",
+            housing_unit="SMWRC",
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+            custodial_authority_raw_text="8",
             admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
             admission_reason_raw_text="INCARCERATED@@INCARCERATED@@TRANSFER@@DOC TRANSFER@@POPULATION DISTRIBUTION@@2",
             release_reason=StateIncarcerationPeriodReleaseReason.ESCAPE,

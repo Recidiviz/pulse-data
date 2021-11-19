@@ -10,16 +10,16 @@ input_columns:
   - current_status_location
   - location_type
   - next_location_type
+  - housing_unit
+  - jurisdiction_location_type
   - start_date
   - end_date
-  - previous_movement_type
   - movement_type
   - next_movement_type
   - transfer_type
   - transfer_reason
   - incarceration_period_id
-unused_columns:
-  - previous_movement_type
+unused_columns: []
 output:
   # TODO(#9969): Populate additional fields: [county_code,housing_unit,custodial_authority]
   StatePerson:
@@ -38,6 +38,19 @@ output:
                           $values:
                             - client_id
                             - incarceration_period_id
+                      custodial_authority:
+                        $enum_mapping:
+                          $raw_text: jurisdiction_location_type
+                          $mappings:
+                            StateCustodialAuthority.SUPERVISION_AUTHORITY:
+                              - "4" # Supervision office site
+                            StateCustodialAuthority.STATE_PRISON:
+                              - "2" # Adult DOC Facilities
+                              - "7" # Pre-Release Centers
+                              - "9" # County jails
+                              - "13" # Maine counties
+                              - "8" # State of Maine
+                      housing_unit: housing_unit
                       admission_date: start_date
                       release_date: end_date
                       facility: current_status_location

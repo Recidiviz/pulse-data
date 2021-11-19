@@ -20,6 +20,7 @@ from datetime import date
 from typing import Optional
 
 from recidiviz.common.constants.person_characteristics import Ethnicity, Gender, Race
+from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
@@ -326,6 +327,9 @@ class UsMeIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                                         release_date=date(2015, 8, 20),
                                         county_code=None,
                                         facility="MAINE STATE PRISON",
+                                        housing_unit="UNIT 1",
+                                        custodial_authority_raw_text="2",
+                                        custodial_authority=StateCustodialAuthority.STATE_PRISON,
                                         admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
                                         admission_reason_raw_text="NULL@@INCARCERATED@@SENTENCE/DISPOSITION@@SOCIETY IN@@SENTENCE/DISPOSITION@@2",
                                         release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_TO_SUPERVISION,
@@ -368,6 +372,9 @@ class UsMeIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                                         release_date=date(2016, 4, 1),
                                         county_code=None,
                                         facility="MAINE CORRECTIONAL CENTER",
+                                        housing_unit="UNIT 2",
+                                        custodial_authority_raw_text="4",
+                                        custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
                                         admission_reason=StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
                                         admission_reason_raw_text="SCCP@@INCARCERATED@@TRANSFER@@DOC TRANSFER@@VIOLATION OF SCCP@@2",
                                         release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
@@ -410,6 +417,9 @@ class UsMeIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                                         release_date=date(2017, 12, 1),
                                         county_code=None,
                                         facility="MAINE STATE PRISON",
+                                        housing_unit="SMWRC",
+                                        custodial_authority_raw_text="8",
+                                        custodial_authority=StateCustodialAuthority.STATE_PRISON,
                                         admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
                                         admission_reason_raw_text="INCARCERATED@@INCARCERATED@@TRANSFER@@DOC TRANSFER@@POPULATION DISTRIBUTION@@2",
                                         release_reason=StateIncarcerationPeriodReleaseReason.ESCAPE,
