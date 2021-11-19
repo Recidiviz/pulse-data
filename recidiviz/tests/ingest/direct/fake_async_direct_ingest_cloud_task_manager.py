@@ -22,9 +22,6 @@ from threading import Condition, Lock, Thread
 from typing import Any, Callable, List, Optional, Tuple
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
-from recidiviz.ingest.direct.types.direct_ingest_instance import (
-    DirectIngestInstance,
-)
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsIngestArgs,
     GcsfsIngestViewExportArgs,
@@ -35,7 +32,14 @@ from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
     ProcessIngestJobCloudTaskQueueInfo,
     SchedulerCloudTaskQueueInfo,
     SftpCloudTaskQueueInfo,
+    build_handle_new_files_task_id,
+    build_ingest_view_export_task_id,
+    build_process_job_task_id,
+    build_raw_data_import_task_id,
+    build_scheduler_task_id,
+    build_sftp_download_task_id,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.tests.ingest.direct.fake_direct_ingest_cloud_task_manager import (
     FakeDirectIngestCloudTaskManager,
 )
@@ -84,6 +88,10 @@ class SingleThreadTaskQueue(Queue):
             if self.running_task_name is not None:
                 self.all_task_names.append(self.running_task_name)
             self.has_unfinished_tasks_condition.notify()
+
+    def delete_task(self, task_name: str) -> None:
+        with self.all_tasks_mutex:
+            self.all_task_names.remove(task_name)
 
     def get_unfinished_task_names_unsafe(self) -> List[str]:
         """Returns the names of all unfinished tasks in this queue, including the task that is currently running, if
@@ -210,8 +218,9 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
         if not self.controller:
             raise ValueError("Controller is null - did you call set_controller()?")
 
+        task_id = build_process_job_task_id(region, ingest_args)
         self.process_job_queue.add_task(
-            f"{region.region_code}-process_job-{ingest_args.task_id_tag()}",
+            f"projects/path/to/{task_id}",
             with_monitoring(
                 region.region_code,
                 ingest_args.ingest_instance(),
@@ -234,14 +243,17 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
                 f"registered controller ingest bucket [{self.controller.ingest_bucket_path}]."
             )
 
+        ingest_instance = DirectIngestInstance.for_ingest_bucket(ingest_bucket)
+        task_id = build_scheduler_task_id(region, ingest_instance)
         self.scheduler_queue.add_task(
-            f"{region.region_code}-scheduler",
+            f"projects/path/to/{task_id}",
             with_monitoring(
                 region.region_code,
-                DirectIngestInstance.for_ingest_bucket(ingest_bucket),
-                self.controller.schedule_next_ingest_job,
+                ingest_instance,
+                self.controller.schedule_next_ingest_task,
             ),
-            just_finished_job,
+            current_task_id=task_id,
+            just_finished_job=just_finished_job,
         )
 
     def create_direct_ingest_handle_new_files_task(
@@ -258,14 +270,18 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
                 f"registered controller ingest bucket [{self.controller.ingest_bucket_path}]."
             )
 
+        ingest_instance = DirectIngestInstance.for_ingest_bucket(ingest_bucket)
+        task_id = build_handle_new_files_task_id(region, ingest_instance)
+
         self.scheduler_queue.add_task(
-            f"{region.region_code}-handle_new_files",
+            f"projects/path/to/{task_id}",
             with_monitoring(
                 region.region_code,
                 DirectIngestInstance.for_ingest_bucket(ingest_bucket),
                 self.controller.handle_new_files,
             ),
-            can_start_ingest,
+            current_task_id=task_id,
+            can_start_ingest=can_start_ingest,
         )
 
     def create_direct_ingest_raw_data_import_task(
@@ -276,8 +292,9 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
         if not self.controller:
             raise ValueError("Controller is null - did you call set_controller()?")
 
+        task_id = build_raw_data_import_task_id(region, data_import_args)
         self.bq_import_export_queue.add_task(
-            f"{region.region_code}-raw_data_import-{data_import_args.task_id_tag()}",
+            f"projects/path/to/{task_id}",
             with_monitoring(
                 region.region_code,
                 data_import_args.ingest_instance(),
@@ -294,8 +311,9 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
         if not self.controller:
             raise ValueError("Controller is null - did you call set_controller()?")
 
+        task_id = build_ingest_view_export_task_id(region, ingest_view_export_args)
         self.bq_import_export_queue.add_task(
-            f"{region.region_code}-ingest_view_export-{ingest_view_export_args.task_id_tag()}",
+            f"projects/path/to/{task_id}",
             with_monitoring(
                 region.region_code,
                 ingest_view_export_args.ingest_instance(),
@@ -305,9 +323,11 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
         )
 
     def create_direct_ingest_sftp_download_task(self, region: Region) -> None:
-        self.sftp_queue.add_task(
-            f"{region.region_code}-handle_sftp_download", lambda _: None
-        )
+        task_id = build_sftp_download_task_id(region)
+        self.sftp_queue.add_task(f"projects/path/to/{task_id}", lambda _: None)
+
+    def delete_scheduler_queue_task(self, region: Region, task_name: str) -> None:
+        self.scheduler_queue.delete_task(task_name)
 
     def get_process_job_queue_info(
         self, region: Region

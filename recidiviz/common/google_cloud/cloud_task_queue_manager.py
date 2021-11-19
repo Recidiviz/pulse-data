@@ -39,9 +39,10 @@ class CloudTaskQueueInfo:
 
     queue_name: str = attr.ib()
 
-    # Task names for tasks in queue, in order.
-    # pylint:disable=not-an-iterable
-    task_names: List[str] = attr.ib(factory=list)
+    # Fully-qualified task names for all tasks in the queue, in order. Task names take
+    # the form:
+    #   '/projects/{project}/locations/{location}/queues/{queue}/tasks/{task_id}'
+    task_names: List[str] = attr.ib()
 
     def size(self) -> int:
         """Number of tasks currently queued in the queue for the given region.
@@ -88,3 +89,10 @@ class CloudTaskQueueManager(Generic[QueueInfoType]):
             body=body,
             schedule_delay_seconds=schedule_delay_seconds,
         )
+
+    def delete_task(self, *, task_name: str) -> None:
+        """Deletes a single task with the fully-qualified |task_name| which follows
+        this format:
+           '/projects/{project}/locations/{location}/queues/{queue}/tasks/{task_id}'
+        """
+        self.cloud_task_client.delete_task(task_name=task_name)
