@@ -76,6 +76,9 @@ output:
                 - $not_null: RevoDispo
             $then:
               StateSupervisionViolation:
+                # We only generate at most a single violation per supervision period,
+                # so we can use the SP external_id as the external id for the violation
+                external_id: CASE_NUMBER
                 is_violent:
                   $conditional:
                     - $if:

@@ -133,18 +133,7 @@ class UsNdIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         id_type="US_ND_SID",
                     )
                 ],
-                supervision_violations=[
-                    StateSupervisionViolation(
-                        state_code="US_ND",
-                        supervision_violation_responses=[
-                            StateSupervisionViolationResponse(
-                                state_code="US_ND",
-                                response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
-                                response_date=datetime.date(2014, 12, 8),
-                            )
-                        ],
-                    )
-                ],
+                supervision_violations=[],
                 sentence_groups=[
                     StateSentenceGroup(
                         state_code="US_ND",
@@ -211,6 +200,7 @@ class UsNdIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                 supervision_violations=[
                     StateSupervisionViolation(
                         state_code="US_ND",
+                        external_id="117111",
                         supervision_violation_types=[
                             StateSupervisionViolationTypeEntry(
                                 state_code="US_ND",
@@ -309,6 +299,7 @@ class UsNdIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                 supervision_violations=[
                     StateSupervisionViolation(
                         state_code="US_ND",
+                        external_id="117111",
                         supervision_violation_types=[
                             StateSupervisionViolationTypeEntry(
                                 state_code="US_ND",
@@ -407,6 +398,7 @@ class UsNdIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                 supervision_violations=[
                     StateSupervisionViolation(
                         state_code="US_ND",
+                        external_id="140408",
                         supervision_violation_types=[
                             StateSupervisionViolationTypeEntry(
                                 state_code="US_ND",
@@ -505,6 +497,7 @@ class UsNdIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                     StateSupervisionViolation(
                         state_code="US_ND",
                         is_violent=True,
+                        external_id="147777",
                         supervision_violation_types=[
                             StateSupervisionViolationTypeEntry(
                                 state_code="US_ND",
@@ -582,6 +575,100 @@ class UsNdIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                                             state_code="US_ND",
                                             agent_type=StateAgentType.SUPERVISION_OFFICER,
                                             full_name='{"given_names": "COREY", "middle_names": "", "name_suffix": "", "surname": "KOLPIN"}',
+                                        ),
+                                    )
+                                ],
+                            )
+                        ],
+                    )
+                ],
+            ),
+            StatePerson(
+                state_code="US_ND",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_ND",
+                        external_id="241896",
+                        id_type="US_ND_SID",
+                    )
+                ],
+                supervision_violations=[
+                    StateSupervisionViolation(
+                        state_code="US_ND",
+                        is_violent=False,
+                        external_id="147778",
+                        supervision_violation_types=[
+                            StateSupervisionViolationTypeEntry(
+                                state_code="US_ND",
+                                violation_type=StateSupervisionViolationType.LAW,
+                            )
+                        ],
+                        supervision_violation_responses=[
+                            StateSupervisionViolationResponse(
+                                state_code="US_ND",
+                                response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
+                                response_date=datetime.date(2002, 12, 13),
+                                supervision_violation_response_decisions=[],
+                                decision_agents=[
+                                    StateAgent(
+                                        external_id="76",
+                                        state_code="US_ND",
+                                        agent_type=StateAgentType.SUPERVISION_OFFICER,
+                                        full_name='{"given_names": "DONNA", "middle_names": "", "name_suffix": "", "surname": "KOLBORG"}',
+                                    )
+                                ],
+                            )
+                        ],
+                    )
+                ],
+                sentence_groups=[
+                    StateSentenceGroup(
+                        state_code="US_ND",
+                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                        supervision_sentences=[
+                            StateSupervisionSentence(
+                                external_id="147778",
+                                state_code="US_ND",
+                                status=StateSentenceStatus.COMPLETED,
+                                supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
+                                supervision_type_raw_text="SUSPENDED",
+                                start_date=datetime.date(2000, 9, 14),
+                                projected_completion_date=datetime.date(2005, 9, 14),
+                                completion_date=datetime.date(2002, 12, 13),
+                                max_length_days=1826,
+                                charges=[
+                                    StateCharge(
+                                        state_code="US_ND",
+                                        status=ChargeStatus.PRESENT_WITHOUT_INFO,
+                                        court_case=StateCourtCase(
+                                            state_code="US_ND",
+                                            status=StateCourtCaseStatus.PRESENT_WITHOUT_INFO,
+                                            court_type=StateCourtType.PRESENT_WITHOUT_INFO,
+                                            judge=StateAgent(
+                                                state_code="US_ND",
+                                                agent_type=StateAgentType.JUDGE,
+                                                full_name='{"full_name": "JUDGE PERSON"}',
+                                            ),
+                                        ),
+                                    )
+                                ],
+                                supervision_periods=[
+                                    StateSupervisionPeriod(
+                                        external_id="147778",
+                                        state_code="US_ND",
+                                        supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+                                        supervision_type_raw_text="SUSPENDED",
+                                        start_date=datetime.date(2000, 9, 14),
+                                        termination_date=datetime.date(2002, 12, 13),
+                                        county_code="US_ND_GRAND_FORKS",
+                                        supervision_site="5",
+                                        termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
+                                        termination_reason_raw_text="9",
+                                        supervising_officer=StateAgent(
+                                            external_id="76",
+                                            state_code="US_ND",
+                                            agent_type=StateAgentType.SUPERVISION_OFFICER,
+                                            full_name='{"given_names": "DONNA", "middle_names": "", "name_suffix": "", "surname": "KOLBORG"}',
                                         ),
                                     )
                                 ],

@@ -3341,6 +3341,12 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             agent_type=StateAgentType.SUPERVISION_OFFICER,
             full_name='{"given_names": "DAVID", "middle_names": "", "name_suffix": "", "surname": "BORG"}',
         )
+        agent_76 = entities.StateAgent.new_with_defaults(
+            external_id="76",
+            state_code=_STATE_CODE,
+            agent_type=StateAgentType.SUPERVISION_OFFICER,
+            full_name='{"given_names": "DONNA", "middle_names": "", "name_suffix": "", "surname": "KOLBORG"}',
+        )
         agent_77 = entities.StateAgent.new_with_defaults(
             external_id="77",
             state_code=_STATE_CODE,
@@ -3500,6 +3506,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             entities.StateSupervisionViolation.new_with_defaults(
                 state_code=_STATE_CODE,
                 person=supervision_period_117111.person,
+                external_id=supervision_period_117111.external_id,
             )
         )
         supervision_violation_type_entry_117111 = (
@@ -3592,6 +3599,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             entities.StateSupervisionViolation.new_with_defaults(
                 state_code=_STATE_CODE,
                 person=supervision_period_140408.person,
+                external_id=supervision_period_140408.external_id,
             )
         )
         supervision_violation_type_entry_140408 = (
@@ -3683,6 +3691,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                 is_violent=True,
                 state_code=_STATE_CODE,
                 person=supervision_period_147777.person,
+                external_id=supervision_period_147777.external_id,
             )
         )
         supervision_violation_type_entry_147777 = (
@@ -3739,6 +3748,119 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             person=charge_147777.person,
         )
 
+        supervision_violation_147777.supervision_violation_types.append(
+            supervision_violation_type_entry_147777
+        )
+        supervision_violation_147777.supervision_violation_responses.append(
+            supervision_violation_response_147777
+        )
+        person_2.supervision_violations.append(supervision_violation_147777)
+        supervision_sentence_147777.supervision_periods.append(
+            supervision_period_147777
+        )
+        sentence_group_person_2_placeholder_ss.supervision_sentences.append(
+            supervision_sentence_147777
+        )
+        charge_147777.court_case = court_case_147777
+        supervision_sentence_147777.charges = [charge_147777]
+
+        supervision_sentence_147778 = (
+            entities.StateSupervisionSentence.new_with_defaults(
+                external_id="147778",
+                supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
+                supervision_type_raw_text="SUSPENDED",
+                start_date=datetime.date(year=2000, month=9, day=14),
+                projected_completion_date=datetime.date(year=2005, month=9, day=14),
+                completion_date=datetime.date(year=2002, month=12, day=13),
+                max_length_days=1826,
+                state_code=_STATE_CODE,
+                status=StateSentenceStatus.COMPLETED,
+                person=sentence_group_person_2_placeholder_ss.person,
+                sentence_group=sentence_group_person_2_placeholder_ss,
+            )
+        )
+        supervision_period_147778 = entities.StateSupervisionPeriod.new_with_defaults(
+            external_id="147778",
+            start_date=datetime.date(year=2000, month=9, day=14),
+            termination_date=datetime.date(year=2002, month=12, day=13),
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type_raw_text="SUSPENDED",
+            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
+            termination_reason_raw_text="9",
+            state_code=_STATE_CODE,
+            county_code="US_ND_GRAND_FORKS",
+            supervision_site="5",
+            supervising_officer=agent_76,
+            supervision_sentences=[supervision_sentence_147778],
+            person=supervision_sentence_147778.person,
+        )
+
+        supervision_violation_147778 = (
+            entities.StateSupervisionViolation.new_with_defaults(
+                is_violent=False,
+                state_code=_STATE_CODE,
+                person=supervision_period_147778.person,
+                external_id=supervision_period_147778.external_id,
+            )
+        )
+        supervision_violation_type_entry_147778 = (
+            entities.StateSupervisionViolationTypeEntry(
+                state_code=_STATE_CODE,
+                violation_type=StateSupervisionViolationType.LAW,
+                person=supervision_period_147778.person,
+                supervision_violation=supervision_violation_147778,
+            )
+        )
+        supervision_violation_response_147778 = (
+            entities.StateSupervisionViolationResponse.new_with_defaults(
+                response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
+                response_date=datetime.date(year=2002, month=12, day=13),
+                decision_agents=[agent_76],
+                state_code=_STATE_CODE,
+                supervision_violation=supervision_violation_147778,
+                person=supervision_violation_147778.person,
+            )
+        )
+
+        charge_147778 = entities.StateCharge.new_with_defaults(
+            state_code=_STATE_CODE,
+            status=ChargeStatus.PRESENT_WITHOUT_INFO,
+            supervision_sentences=[supervision_sentence_147778],
+            person=supervision_sentence_147778.person,
+        )
+        agent_person = entities.StateAgent.new_with_defaults(
+            agent_type=StateAgentType.JUDGE,
+            full_name='{"full_name": "JUDGE PERSON"}',
+            state_code=_STATE_CODE,
+        )
+        court_case_147778 = entities.StateCourtCase.new_with_defaults(
+            state_code=_STATE_CODE,
+            status=StateCourtCaseStatus.PRESENT_WITHOUT_INFO,
+            court_type=StateCourtType.PRESENT_WITHOUT_INFO,
+            judge=agent_person,
+            charges=[charge_147778],
+            person=charge_147778.person,
+        )
+        supervision_violation_147778.supervision_violation_types = [
+            supervision_violation_type_entry_147778
+        ]
+        supervision_violation_147778.supervision_violation_responses = [
+            supervision_violation_response_147778
+        ]
+        person_2.supervision_violations.append(supervision_violation_147778)
+
+        sentence_group_person_2_placeholder_ss.supervision_sentences.append(
+            supervision_sentence_147778
+        )
+
+        charge_147778.court_case = court_case_147778
+        supervision_sentence_147778.charges = [charge_147778]
+        supervision_sentence_147778.supervision_periods.append(
+            supervision_period_147778
+        )
+
+        person_2.sentence_groups.append(sentence_group_person_2_placeholder_ss)
+
         charge_140408.court_case = court_case_140408
         supervision_sentence_140408.charges = [charge_140408]
         supervision_violation_140408.supervision_violation_types.append(
@@ -3754,24 +3876,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
         sentence_group_person_2_placeholder_ss.supervision_sentences.append(
             supervision_sentence_140408
         )
-
-        charge_147777.court_case = court_case_147777
-        supervision_sentence_147777.charges = [charge_147777]
-        supervision_violation_147777.supervision_violation_types.append(
-            supervision_violation_type_entry_147777
-        )
-        supervision_violation_147777.supervision_violation_responses.append(
-            supervision_violation_response_147777
-        )
-        person_2.supervision_violations.append(supervision_violation_147777)
-        supervision_sentence_147777.supervision_periods.append(
-            supervision_period_147777
-        )
-        sentence_group_person_2_placeholder_ss.supervision_sentences.append(
-            supervision_sentence_147777
-        )
-
-        person_2.sentence_groups.append(sentence_group_person_2_placeholder_ss)
 
         # Act
         self._run_ingest_job_for_filename(
