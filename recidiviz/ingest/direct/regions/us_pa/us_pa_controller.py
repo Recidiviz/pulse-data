@@ -30,11 +30,7 @@ from recidiviz.common.constants.person_characteristics import Gender, Race
 from recidiviz.common.constants.standard_enum_overrides import (
     get_standard_enum_overrides,
 )
-from recidiviz.common.constants.state.external_id_types import (
-    US_PA_CONTROL,
-    US_PA_INMATE,
-    US_PA_PBPP,
-)
+from recidiviz.common.constants.state.external_id_types import US_PA_CONTROL, US_PA_PBPP
 from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import (
@@ -48,7 +44,6 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodReleaseReason,
     StateSpecializedPurposeForIncarceration,
 )
-from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactLocation,
     StateSupervisionContactMethod,
@@ -65,7 +60,6 @@ from recidiviz.common.constants.state.state_supervision_sentence import (
     StateSupervisionSentenceSupervisionType,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.common.str_field_utils import parse_days_from_duration_pieces
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
 )
@@ -107,7 +101,6 @@ from recidiviz.ingest.extractor.csv_data_extractor import IngestFieldCoordinates
 from recidiviz.ingest.models.ingest_info import (
     IngestObject,
     StateAssessment,
-    StateCharge,
     StateIncarcerationPeriod,
     StateIncarcerationSentence,
     StatePerson,
@@ -159,12 +152,6 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
                 self._generate_doc_assessment_external_id,
                 self._enrich_doc_assessments,
             ],
-            "dbo_Senrec": [
-                self._set_incarceration_sentence_id,
-                self._enrich_incarceration_sentence,
-                self._rationalize_offense_type,
-                self._set_is_violent,
-            ],
             "sci_incarceration_period": sci_incarceration_period_row_postprocessors,
             "ccis_incarceration_period": [
                 self._concatenate_admission_reason_codes,
@@ -188,9 +175,6 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             str, List[IngestFilePostprocessorCallable]
         ] = {
             "dbo_tblInmTestScore": [],
-            "dbo_Senrec": [
-                gen_convert_person_ids_to_external_id_objects(self._get_id_type),
-            ],
             "sci_incarceration_period": [
                 gen_convert_person_ids_to_external_id_objects(self._get_id_type),
             ],
@@ -227,59 +211,6 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         StateAssessmentType.LSIR: ["LSI-R"],
         StateAssessmentType.PA_RST: ["RST"],
         StateAssessmentType.STATIC_99: ["ST99"],
-        # TODO(#3312): Confirm the COMPLETED codes below. Some may be intermediate and not appropriately mapped as
-        # final.
-        StateSentenceStatus.COMPLETED: [
-            "B",  # Bailed
-            "CS",  # Change other Sentence
-            "DA",  # Deceased - Assault
-            "DN",  # Deceased - Natural
-            "DS",  # Deceased - Suicide
-            "DX",  # Deceased - Accident
-            "DZ",  # Deceased - Non DOC Location
-            "EX",  # Executed
-            "FR",  # Federal Release
-            "NC",  # Non-Return CSC
-            "NF",  # Non-Return Furlough
-            "NR",  # [Unlisted]
-            "NW",  # Non-Return Work Release
-            "P",  # Paroled
-            "RP",  # Re-paroled (extremely rare)
-            "SC",  # Sentence Complete
-            "SP",  # Serve Previous
-            "TC",  # Transfer to County
-            "TS",  # Transfer to Other State
-        ],
-        StateSentenceStatus.COMMUTED: [
-            "RD",  # Release Detentioner
-            "RE",  # Received in Error
-        ],
-        StateSentenceStatus.PARDONED: [
-            "PD",  # Pardoned
-        ],
-        StateSentenceStatus.SERVING: [
-            "AS",  # Actively Serving
-            "CT",  # In Court
-            "DC",  # Diag/Class (Diagnostics / Classification)
-            "EC",  # Escape CSC
-            "EI",  # Escape Institution
-            "F",  # Furloughed
-            # TODO(#3312): What does it mean when someone else is in custody elsewhere? Does this mean they are no
-            # longer the responsibility of the PA DOC? Should they also stop being counted towards population counts?
-            # What does it mean when this code is used with a county code?
-            "IC",  # In Custody Elsewhere
-            "MH",  # Mental Health
-            "SH",  # State Hospital
-            "W",  # Waiting
-            "WT",  # WRIT/ATA
-        ],
-        StateSentenceStatus.VACATED: [
-            "VC",  # Vacated Conviction
-            "VS",  # Vacated Sentence
-        ],
-        StateSentenceStatus.EXTERNAL_UNKNOWN: [
-            "O",  # ??? (this is PA's own label; it means unknown within their own system)
-        ],
         StateIncarcerationType.COUNTY_JAIL: [
             "C",  # County
             "CCIS",  # All CCIS periods are in contracted county facilities
@@ -547,13 +478,6 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             "EW",
             "Q",
             "S",
-        ],  # Unexplained rare values
-        StateIncarcerationType: [
-            "'"  # The dbo_Senrec table has several rows where the value type_of_sent is a single quotation mark
-        ],
-        StateSentenceStatus: [
-            # TODO(#10053): Need to determine the actual mapping for PC
-            "PC",  # This is a new unknown status code that needs to be mapped properly
         ],
     }
     ENUM_IGNORE_PREDICATES: Dict[Type[Enum], EnumIgnorePredicate] = {}
@@ -681,11 +605,6 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             return US_PA_CONTROL
 
         if file_tag in [
-            "dbo_Senrec",
-        ]:
-            return US_PA_INMATE
-
-        if file_tag in [
             "supervision_period_v3",
             "supervision_contacts",
         ]:
@@ -799,78 +718,6 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         for obj in extracted_objects:
             if isinstance(obj, StateIncarcerationSentence):
                 obj.state_incarceration_sentence_id = sentence_id
-
-    @staticmethod
-    def _enrich_incarceration_sentence(
-        _gating_context: IngestGatingContext,
-        row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        """Enriches incarceration sentences by setting sentence length and boolean fields."""
-        max_years = row.get("max_cort_sent_yrs", "0")
-        max_months = row.get("max_cort_sent_mths", "0")
-        max_days = row.get("max_cort_sent_days", "0")
-        min_years = row.get("min_cort_sent_yrs", "0")
-        min_months = row.get("min_cort_sent_mths", "0")
-        min_days = row.get("min_cort_sent_days", "0")
-
-        sentence_class = row.get("class_of_sent", "")
-        is_life = sentence_class in ("CL", "LF")
-        is_capital_punishment = sentence_class in ("EX", "EP")
-
-        for obj in extracted_objects:
-            if isinstance(obj, StateIncarcerationSentence):
-                start_date = obj.start_date
-                max_time = parse_days_from_duration_pieces(
-                    years_str=max_years,
-                    months_str=max_months,
-                    days_str=max_days,
-                    start_dt_str=start_date,
-                )
-                min_time = parse_days_from_duration_pieces(
-                    years_str=min_years,
-                    months_str=min_months,
-                    days_str=min_days,
-                    start_dt_str=start_date,
-                )
-
-                if max_time:
-                    obj.max_length = str(max_time)
-                if min_time:
-                    obj.min_length = str(min_time)
-
-                obj.is_life = str(is_life)
-                obj.is_capital_punishment = str(is_capital_punishment)
-
-    @staticmethod
-    def _set_is_violent(
-        _gating_context: IngestGatingContext,
-        row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        asca_category = row.get("ASCA_Category___Ranked", None)
-        is_violent = asca_category == "1-Violent"
-
-        for obj in extracted_objects:
-            if isinstance(obj, StateCharge):
-                obj.is_violent = str(is_violent)
-
-    @staticmethod
-    def _rationalize_offense_type(
-        _gating_context: IngestGatingContext,
-        row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        category = row.get("Category", "")
-        sub_category = row.get("SubCategory", None)
-        offense_type = "-".join(filter(None, [category, sub_category]))
-
-        for obj in extracted_objects:
-            if isinstance(obj, StateCharge):
-                obj.offense_type = offense_type
 
     @staticmethod
     def _concatenate_admission_reason_codes(

@@ -14,20 +14,21 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Custom enum parsers functions for US_ND. Can be referenced in an ingest view manifest
+"""Custom enum parsers functions for US_PA. Can be referenced in an ingest view manifest
 like this:
 
 my_flat_field:
     $custom:
-        $function: us_nd_custom_parsers.<function name>
+        $function: us_pa_custom_parsers.<function name>
         $args:
             arg_1: <expression>
             arg_2: <expression>
 """
 
 
-from typing import Dict, List
+from typing import Dict, List, Optional
 
+from recidiviz.common.str_field_utils import parse_days_from_duration_pieces
 from recidiviz.ingest.direct.direct_ingest_controller_utils import (
     invert_str_to_str_mappings,
 )
@@ -90,3 +91,19 @@ def violated_condition_from_violation_code(violation_code: str) -> str:
             f"[{violation_code}]",
         )
     return condition
+
+
+def max_and_min_lengths_days_from_court_sentence_duration(
+    years_str: str,
+    months_str: str,
+    days_str: str,
+    start_date_str: str,
+) -> Optional[str]:
+    """Returns the duration in days from a start date with given number of years, months
+    and days."""
+    result = parse_days_from_duration_pieces(
+        years_str, months_str, days_str, start_date_str
+    )
+    if result == 0:
+        return None
+    return str(result)

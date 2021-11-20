@@ -81,7 +81,6 @@ from recidiviz.ingest.models.ingest_info import (
     IngestInfo,
     StateAgent,
     StateAssessment,
-    StateCharge,
     StateIncarcerationPeriod,
     StateIncarcerationSentence,
     StatePerson,
@@ -260,192 +259,6 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         )
 
         self.run_legacy_parse_file_test(expected, "dbo_tblInmTestScore")
-
-    def test_populate_data_dbo_Senrec(self) -> None:
-        expected = IngestInfo(
-            state_people=[
-                StatePerson(
-                    state_person_id="AB7413",
-                    state_person_external_ids=[
-                        StatePersonExternalId(
-                            state_person_external_id_id="AB7413", id_type=US_PA_INMATE
-                        ),
-                    ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_sentence_group_id="AB7413",
-                            state_incarceration_sentences=[
-                                StateIncarcerationSentence(
-                                    state_incarceration_sentence_id="AB7413-01",
-                                    status="SC",
-                                    incarceration_type="S",
-                                    county_code="PHI",
-                                    date_imposed="20080815",
-                                    start_date="20080815",
-                                    completion_date="20090104",
-                                    min_length="549",
-                                    max_length="1095",
-                                    is_life="False",
-                                    is_capital_punishment="False",
-                                    state_charges=[
-                                        StateCharge(
-                                            state_charge_id="N7825555",
-                                            statute="CC3502",
-                                            description="Burglary (General)",
-                                            offense_type="Burglary-Violent-Property",
-                                            classification_type="Felony",
-                                            classification_subtype="F1",
-                                            is_violent="True",
-                                        )
-                                    ],
-                                )
-                            ],
-                        )
-                    ],
-                ),
-                StatePerson(
-                    state_person_id="GF3374",
-                    state_person_external_ids=[
-                        StatePersonExternalId(
-                            state_person_external_id_id="GF3374", id_type=US_PA_INMATE
-                        ),
-                    ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_sentence_group_id="GF3374",
-                            state_incarceration_sentences=[
-                                StateIncarcerationSentence(
-                                    state_incarceration_sentence_id="GF3374-01",
-                                    status="AS",
-                                    incarceration_type="S",
-                                    county_code="PHI",
-                                    date_imposed="20080816",
-                                    start_date="00000000",
-                                    completion_date="00000000",
-                                    min_length="4287",
-                                    max_length="5113",
-                                    is_life="False",
-                                    is_capital_punishment="False",
-                                    state_charges=[
-                                        StateCharge(
-                                            state_charge_id="U1196666",
-                                            statute="CC4101",
-                                            description="Forgery",
-                                            offense_type="Forgery",
-                                            classification_type="Felony",
-                                            classification_subtype="F2",
-                                            is_violent="False",
-                                        )
-                                    ],
-                                )
-                            ],
-                        )
-                    ],
-                ),
-                StatePerson(
-                    state_person_id="CJ1991",
-                    state_person_external_ids=[
-                        StatePersonExternalId(
-                            state_person_external_id_id="CJ1991", id_type=US_PA_INMATE
-                        ),
-                    ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_sentence_group_id="CJ1991",
-                            state_incarceration_sentences=[
-                                StateIncarcerationSentence(
-                                    state_incarceration_sentence_id="CJ1991-01",
-                                    status="AS",
-                                    incarceration_type="S",
-                                    county_code="BUC",
-                                    date_imposed="20160820",
-                                    start_date="20160820",
-                                    completion_date="00000000",
-                                    min_length="457",
-                                    max_length="914",
-                                    is_life="False",
-                                    is_capital_punishment="False",
-                                    state_charges=[
-                                        StateCharge(
-                                            state_charge_id="L3947777",
-                                            statute="CC2502B",
-                                            description="Murder (2Nd Degree)",
-                                            offense_type="Murder 2-Homicide",
-                                            classification_type="Felony",
-                                            classification_subtype="F",
-                                            is_violent="True",
-                                        )
-                                    ],
-                                )
-                            ],
-                        )
-                    ],
-                ),
-                StatePerson(
-                    state_person_id="JE1989",
-                    state_person_external_ids=[
-                        StatePersonExternalId(
-                            state_person_external_id_id="JE1989", id_type=US_PA_INMATE
-                        ),
-                    ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_sentence_group_id="JE1989",
-                            state_incarceration_sentences=[
-                                StateIncarcerationSentence(
-                                    state_incarceration_sentence_id="JE1989-01",
-                                    status="AS",
-                                    incarceration_type="S",
-                                    county_code="BUC",
-                                    date_imposed="20160820",
-                                    start_date="20160820",
-                                    completion_date="00000000",
-                                    max_length="1095",
-                                    is_life="False",
-                                    is_capital_punishment="False",
-                                    state_charges=[
-                                        StateCharge(
-                                            state_charge_id="L7858888",
-                                            statute="XX0500",
-                                            description="Theft",
-                                            offense_type="Theft",
-                                            classification_type="Misdemeanor",
-                                            classification_subtype="M1",
-                                            is_violent="False",
-                                        )
-                                    ],
-                                ),
-                                StateIncarcerationSentence(
-                                    state_incarceration_sentence_id="JE1989-02",
-                                    status="AS",
-                                    incarceration_type="S",
-                                    county_code="BUC",
-                                    date_imposed="20160820",
-                                    start_date="20160820",
-                                    completion_date="00000000",
-                                    min_length="549",
-                                    is_life="False",
-                                    is_capital_punishment="False",
-                                    state_charges=[
-                                        StateCharge(
-                                            state_charge_id="L7858890",
-                                            statute="CC2702A1",
-                                            description="Aggravated Assault W/Serious Bodily Injury against Elderly/Young Person",
-                                            offense_type="Aggravated Assault-Assault",
-                                            classification_type="Felony",
-                                            classification_subtype="F1",
-                                            is_violent="True",
-                                        )
-                                    ],
-                                ),
-                            ],
-                        ),
-                    ],
-                ),
-            ]
-        )
-
-        self.run_legacy_parse_file_test(expected, "dbo_Senrec")
 
     def test_populate_data_ccis_incarceration_period(self) -> None:
         je1989_incarceration_periods = [
@@ -1886,6 +1699,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             person=person_4,
             sentence_group=p4_sg,
         )
+
         p4_is_2 = entities.StateIncarcerationSentence.new_with_defaults(
             external_id="JE1989-02",
             state_code=_STATE_CODE_UPPER,
