@@ -75,6 +75,7 @@ VIEW_QUERY_TEMPLATE = """
             current_status_location,
             location_type,
             jurisdiction_location_type,
+            housing_unit,
             LEAD(location_type) OVER status_seq AS next_location_type,
             transfer_id,
             effective_date,
