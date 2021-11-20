@@ -276,11 +276,17 @@ class BaseDirectIngestController:
             raise ValueError(f"Unexpected task_id: [{current_task_id}]")
 
         task_names = queue_info.task_names_for_task_id_prefix(task_id_prefix)
+        pruned_task_count = 0
         for task_name in task_names:
             _, task_id = os.path.split(task_name)
             if task_id == current_task_id:
                 continue
             self.cloud_task_manager.delete_scheduler_queue_task(self.region, task_name)
+            pruned_task_count += 1
+        if pruned_task_count:
+            logging.info(
+                "Pruned [%s] duplicate tasks out of the queue.", pruned_task_count
+            )
 
     def schedule_next_ingest_task(
         self, *, current_task_id: str, just_finished_job: bool
