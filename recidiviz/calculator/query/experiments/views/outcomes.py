@@ -49,7 +49,7 @@ WITH participants AS (
         a.state_code,
         a.subject_id,
         a.id_type,
-        CAST(a.variant_time AS DATE) AS variant_date,
+        variant_date,
     FROM
         `{project_id}.{experiments_dataset}.assignments_materialized` a
     -- add experiment end date
