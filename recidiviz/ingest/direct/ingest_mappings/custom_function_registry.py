@@ -20,7 +20,7 @@ descriptors.
 
 import inspect
 from types import ModuleType
-from typing import Any, Callable, Dict, Type
+from typing import Any, Callable, Dict, Type, Union, get_args, get_origin
 
 import attr
 
@@ -95,7 +95,16 @@ class CustomFunctionRegistry(ModuleCollectorMixin):
                     f"[{expected_type}], found [{actual_type}]."
                 )
 
-        if function_signature.return_annotation != expected_return_type:
+        is_optional_expected_return_type = (
+            get_origin(function_signature.return_annotation) is Union
+            and expected_return_type in get_args(function_signature.return_annotation)
+            and type(None) in get_args(function_signature.return_annotation)
+        )
+
+        if (
+            function_signature.return_annotation != expected_return_type
+            and not is_optional_expected_return_type
+        ):
             raise ValueError(
                 f"Unexpected return type for function [{function_name}] in module "
                 f"[{module_name}]. Expected [{expected_return_type}], found "
