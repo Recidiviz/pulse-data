@@ -18,6 +18,7 @@
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.experiments.dataset_config import EXPERIMENTS_DATASET
 from recidiviz.calculator.query.state.dataset_config import (
+    SESSIONS_DATASET,
     STATE_BASE_DATASET,
     STATIC_REFERENCE_TABLES_DATASET,
 )
@@ -34,14 +35,23 @@ ASSIGNMENTS_VIEW_DESCRIPTION = (
 )
 
 ASSIGNMENTS_QUERY_TEMPLATE = """
-WITH dosage_probation AS (
+WITH last_day_of_data AS (
+    SELECT
+        state_code,
+        MIN(last_day_of_data) AS last_day_of_data,
+    FROM
+        `{project_id}.{sessions_dataset}.compartment_sessions_materialized`
+    GROUP BY 1
+)
+
+, dosage_probation AS (
     SELECT
         "DOSAGE_PROBATION" AS experiment_id,
         "US_ID" as state_code,
         CAST(person_id AS STRING) AS subject_id,
         "person_id" as id_type,
         COALESCE(dsg_asgnmt, "TREATED_INTERNAL_UNKNOWN") AS variant_id,
-        CAST(DATE(prgrm_strt_dt) AS DATETIME) AS variant_time,
+        DATE(prgrm_strt_dt) AS variant_date,
         "0" as cluster_id,
         "0" as block_id,
     FROM
@@ -63,7 +73,7 @@ WITH dosage_probation AS (
         CAST(person_id AS STRING) AS subject_id,
         "person_id" as id_type,
         "referred" AS variant_id,
-        CAST(DATE(start_date) AS DATETIME) AS variant_time,
+        DATE(start_date) AS variant_date,
         "0" as cluster_id,
         "0" as block_id,
     FROM
@@ -85,7 +95,7 @@ WITH dosage_probation AS (
         officer_external_id AS subject_id,
         "officer_external_id" as id_type,
         "received_access" AS variant_id,
-        CAST(received_access AS DATETIME) AS variant_time,
+        received_access AS variant_date,
         "0" as cluster_id,  -- district code, if rolled out consistently at district level
         "0" as block_id,  -- state_code once in more than one state
     FROM
@@ -99,25 +109,32 @@ WITH dosage_probation AS (
         officer_external_id AS subject_id,
         "officer_external_id" as id_type,
         "received_access" AS variant_id,
-        CAST(received_access AS DATETIME) AS variant_time,
+        received_access AS variant_date,
         "0" as cluster_id,  -- district code, if rolled out consistently at district level
         "0" as block_id,  -- state_code once in more than one state
     FROM
         `{project_id}.{static_reference_dataset}.case_triage_users`
 )
 
-SELECT *
-FROM dosage_probation
-UNION ALL
-SELECT *
-FROM geo_cis_referral
-UNION ALL
-SELECT *
-FROM case_triage_access
-UNION ALL
-SELECT *
-FROM monthly_report_access
+-- Union all assignment subqueries
+, stacked AS (
+    SELECT *
+    FROM dosage_probation
+    UNION ALL
+    SELECT *
+    FROM geo_cis_referral
+    UNION ALL
+    SELECT *
+    FROM case_triage_access
+    UNION ALL
+    SELECT *
+    FROM monthly_report_access
+)
 
+-- Add state-level last day data observed
+SELECT *
+FROM stacked
+INNER JOIN last_day_of_data USING(state_code)
 """
 
 ASSIGNMENTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -126,6 +143,7 @@ ASSIGNMENTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=ASSIGNMENTS_QUERY_TEMPLATE,
     description=ASSIGNMENTS_VIEW_DESCRIPTION,
     us_id_raw_dataset=US_ID_RAW_DATASET,
+    sessions_dataset=SESSIONS_DATASET,
     state_base_dataset=STATE_BASE_DATASET,
     static_reference_dataset=STATIC_REFERENCE_TABLES_DATASET,
     should_materialize=True,

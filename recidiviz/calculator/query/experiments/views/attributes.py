@@ -40,7 +40,7 @@ WITH participants AS (
         state_code,
         subject_id,
         id_type,
-        CAST(variant_time AS DATE) AS variant_date,
+        variant_date,
     FROM
         `{project_id}.{experiments_dataset}.assignments_materialized`
 ),
