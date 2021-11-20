@@ -26,6 +26,7 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 US_ID_RAW_DATASET = "us_id_raw_data_up_to_date_views"
+US_PA_RAW_DATASET = "us_pa_raw_data_up_to_date_views"
 
 ASSIGNMENTS_VIEW_NAME = "assignments"
 
@@ -52,8 +53,6 @@ WITH last_day_of_data AS (
         "person_id" as id_type,
         COALESCE(dsg_asgnmt, "TREATED_INTERNAL_UNKNOWN") AS variant_id,
         DATE(prgrm_strt_dt) AS variant_date,
-        "0" as cluster_id,
-        "0" as block_id,
     FROM
         `{project_id}.{us_id_raw_dataset}.DoPro_Participant_latest` a
     INNER JOIN
@@ -72,10 +71,8 @@ WITH last_day_of_data AS (
         "US_ID" as state_code,
         CAST(person_id AS STRING) AS subject_id,
         "person_id" as id_type,
-        "referred" AS variant_id,
+        "REFERRED" AS variant_id,
         DATE(start_date) AS variant_date,
-        "0" as cluster_id,
-        "0" as block_id,
     FROM
         `{project_id}.us_id_raw_data_up_to_date_views.geo_cis_participants_latest` a
     INNER JOIN
@@ -94,10 +91,10 @@ WITH last_day_of_data AS (
         state_code as state_code,
         officer_external_id AS subject_id,
         "officer_external_id" as id_type,
-        "received_access" AS variant_id,
+        "RECEIVED_ACCESS" AS variant_id,
         received_access AS variant_date,
-        "0" as cluster_id,  -- district code, if rolled out consistently at district level
-        "0" as block_id,  -- state_code once in more than one state
+        -- cluster_id = district code, if rolled out consistently at district level
+        -- block_id = state_code once in more than one state
     FROM
         `{project_id}.{static_reference_dataset}.case_triage_users`
 )
@@ -108,12 +105,74 @@ WITH last_day_of_data AS (
         state_code as state_code,
         officer_external_id AS subject_id,
         "officer_external_id" as id_type,
-        "received_access" AS variant_id,
+        "RECEIVED_ACCESS" AS variant_id,
         received_access AS variant_date,
-        "0" as cluster_id,  -- district code, if rolled out consistently at district level
-        "0" as block_id,  -- state_code once in more than one state
+        -- cluster_id = district code, if rolled out consistently at district level
+        -- block_id = state_code once in more than one state
     FROM
         `{project_id}.{static_reference_dataset}.case_triage_users`
+)
+
+, us_nd_community_placement_program AS (
+    SELECT 
+        "COVID_EARLY_RELEASE" AS experiment_id,
+        "US_ND" AS state_code,
+        CAST(person_id AS STRING) AS subject_id,
+        "person_id" AS id_type,
+        "COMMUNITY_PLACEMENT_PROGRAM" AS variant_id,
+        MIN(start_date) AS variant_date,
+    FROM 
+        `{project_id}.{sessions_dataset}.compartment_sessions_materialized` a
+    WHERE
+        compartment_level_2 = "COMMUNITY_PLACEMENT_PROGRAM"
+    GROUP BY 1, 2, 3, 4, 5
+)
+
+, us_pa_covid_reprieves AS (
+    SELECT 
+        "COVID_EARLY_RELEASE" AS experiment_id,
+        "US_PA" AS state_code,
+        CAST(person_id AS STRING) AS subject_id,
+        "person_id" AS id_type,
+        "TEMPORARY_REPRIEVE" AS variant_id,
+        reprieve_date AS variant_date,
+    FROM 
+        `{project_id}.{static_reference_dataset}.us_pa_temporary_reprieves` a
+    INNER JOIN
+        `{project_id}.{state_base_dataset}.state_person_external_id` b
+    ON
+        a.external_id = b.external_id
+        AND b.id_type = "US_PA_INMATE"
+)
+
+, us_pa_covid_furloughs AS (
+    SELECT 
+        "COVID_EARLY_RELEASE" AS experiment_id,
+        "US_PA" AS state_code,
+        CAST(person_id AS STRING) AS subject_id,
+        "person_id" AS id_type,
+        "FURLOUGH" AS variant_id,
+        -- Define first marked movement as treatment
+        MIN(DATE(Status_Dt)) AS variant_date,
+    FROM 
+        `{project_id}.{us_pa_raw_dataset}.dbo_vwCCISAllMvmt_latest` a
+    INNER JOIN (
+        SELECT
+            CCISMvmt_Id,
+        FROM
+            `{project_id}.{us_pa_raw_dataset}.dbo_vwCCISAllProgDtls_latest`
+        WHERE
+            -- covid-related furloughs only
+            Program_Id = "70"
+        )
+    USING
+        (CCISMvmt_Id)
+    INNER JOIN
+        `{project_id}.{state_base_dataset}.state_person_external_id` b
+    ON
+        a.Inmate_Number = b.external_id
+        AND b.id_type = "US_PA_INMATE"
+    GROUP BY 1, 2, 3, 4, 5
 )
 
 -- Union all assignment subqueries
@@ -129,6 +188,15 @@ WITH last_day_of_data AS (
     UNION ALL
     SELECT *
     FROM monthly_report_access
+    UNION ALL
+    SELECT *
+    FROM us_nd_community_placement_program
+    UNION ALL
+    SELECT *
+    FROM us_pa_covid_reprieves
+    UNION ALL
+    SELECT *
+    FROM us_pa_covid_furloughs
 )
 
 -- Add state-level last day data observed
@@ -143,6 +211,7 @@ ASSIGNMENTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=ASSIGNMENTS_QUERY_TEMPLATE,
     description=ASSIGNMENTS_VIEW_DESCRIPTION,
     us_id_raw_dataset=US_ID_RAW_DATASET,
+    us_pa_raw_dataset=US_PA_RAW_DATASET,
     sessions_dataset=SESSIONS_DATASET,
     state_base_dataset=STATE_BASE_DATASET,
     static_reference_dataset=STATIC_REFERENCE_TABLES_DATASET,
