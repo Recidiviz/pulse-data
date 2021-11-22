@@ -44,7 +44,8 @@ SINGLE_DAY_INCARCERATION_POPULATION_FOR_SPOTLIGHT_QUERY_TEMPLATE = """
       {age_bucket},
       IFNULL(judicial_district_code, 'EXTERNAL_UNKNOWN') as judicial_district_code,
       date_of_stay,
-      facility
+      facility,
+      commitment_from_supervision_supervision_type
     FROM
       `{project_id}.{materialized_metrics_dataset}.most_recent_single_day_incarceration_population_metrics_included_in_state_population_materialized`
     WHERE {state_specific_facility_exclusion}
