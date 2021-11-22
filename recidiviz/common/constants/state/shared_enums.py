@@ -19,6 +19,7 @@
 from enum import unique
 from typing import Dict
 
+from recidiviz.common.constants import enum_canonical_strings as enum_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 from recidiviz.common.constants.state import (
     enum_canonical_strings as state_enum_strings,
@@ -57,7 +58,10 @@ class StateCustodialAuthority(EntityEnum, metaclass=EntityEnumMeta):
     Generally the entity of the agent who is filling out the paperwork and making recommendations for the person. This
     is not necessarily the decision making authority on the period."""
 
+    COURT = state_enum_strings.state_custodial_authority_court
+    EXTERNAL_UNKNOWN = enum_strings.external_unknown
     FEDERAL = state_enum_strings.state_custodial_authority_federal
+    INTERNAL_UNKNOWN = enum_strings.internal_unknown
     OTHER_COUNTRY = state_enum_strings.state_custodial_authority_other_country
     OTHER_STATE = state_enum_strings.state_custodial_authority_other_state
     SUPERVISION_AUTHORITY = (
@@ -71,7 +75,10 @@ class StateCustodialAuthority(EntityEnum, metaclass=EntityEnumMeta):
 
 
 _STATE_CUSTODIAL_AUTHORITY_MAP = {
+    "COURT": StateCustodialAuthority.COURT,
+    "EXTERNAL UNKNOWN": StateCustodialAuthority.EXTERNAL_UNKNOWN,
     "FEDERAL": StateCustodialAuthority.FEDERAL,
+    "INTERNAL UNKNOWN": StateCustodialAuthority.INTERNAL_UNKNOWN,
     "OTHER COUNTRY": StateCustodialAuthority.OTHER_COUNTRY,
     "OTHER STATE": StateCustodialAuthority.OTHER_STATE,
     "SUPERVISION AUTHORITY": StateCustodialAuthority.SUPERVISION_AUTHORITY,
