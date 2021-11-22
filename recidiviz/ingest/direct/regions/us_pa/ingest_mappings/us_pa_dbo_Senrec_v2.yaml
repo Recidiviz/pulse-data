@@ -1,5 +1,4 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
-# TODO(#9882): Remove once the rerun completes.
 manifest_language: 1.0.0
 input_columns:
   - curr_inmate_num
@@ -18,84 +17,16 @@ input_columns:
   - max_cort_sent_days    
   - min_cort_sent_yrs     
   - min_cort_sent_mths    
-  - min_cort_sent_days         
+  - min_cort_sent_days  
+  - min_expir_date
+  - max_expir_date       
   - Offense
   - Grade_Category
   - Grade            
   - Category              
   - SubCategory           
-  - ASCA_Category___Ranked
-  - addit_sent_detnr   
-  - bail_yrs           
-  - bail_mths          
-  - bail_days          
-  - commit_crdit_yrs   
-  - commit_crdit_mths  
-  - commit_crdit_days  
-  - max_cort_sent_l_da 
-  - min_cort_sent_l_da 
-  - effective_date     
-  - escape_yrs         
-  - escape_mths        
-  - escape_days        
-  - max_expir_date     
-  - min_expir_date     
-  - max_fac_sent_yrs   
-  - max_fac_sent_mths  
-  - max_fac_sent_days  
-  - min_fac_sent_yrs   
-  - min_fac_sent_mths  
-  - min_fac_sent_days  
-  - gbmi               
-  - parole_status_cde  
-  - parole_status_dt   
-  - sent_status_date   
-  - st_to_frm_compact  
-  - term_of_cort       
-  - crime_facts_ind    
-  - megans_law_ind     
-  - sig_date           
-  - sig_time           
-  - user_id            
-  - cntinued_frm_doc_n 
-  - indictment_num     
-  - judge              
-unused_columns:
-  - addit_sent_detnr        # Unknown - unused
-  - bail_yrs                # Bail years - appears unused in source
-  - bail_mths               # Bail months - appears unused in source
-  - bail_days               # Bail days - appears unused in source
-  - commit_crdit_yrs        # Commitment credit years (credit awarded against a sentence, usually for pretrial confinement) - unused - TODO(#1759) - Should we add this?
-  - commit_crdit_mths       # Commitment credit months - unused
-  - commit_crdit_days       # Commitment credit days - unused
-  - max_cort_sent_l_da      # Max court sentence less days subtracted by judge - TODO(#1759) - Should we add this?
-  - min_cort_sent_l_da      # Min court sentence less days subtracted by judge - TODO(#1759) - Should we add this?
-  - effective_date          # Effective date for beginning of min sentence - unused
-  - escape_yrs              # Escape time years (time added to a sentence in response to an escape attempt) - unused - TODO(#1759) - Should we add this?
-  - escape_mths             # Escape time months - unused
-  - escape_days             # Escape time days - unused
-  - max_expir_date          # Max expiration date - unused (duplicative of max_cort_sent fields)
-  - min_expir_date          # Min expiration date - unused (duplicative of min_cort_sent fields)
-  - max_fac_sent_yrs        # Max factored time years (this is an inconsistent field, sometimes a combination of years + months + days factored into simpler forms, sometimes the same as court sentence, sometimes all 9s for life sentences, sometimes all 0s for no discernible reason) - unused
-  - max_fac_sent_mths       # Max factored time months - unused
-  - max_fac_sent_days       # Max factored time days - unused
-  - min_fac_sent_yrs        # Min factored time years - unused
-  - min_fac_sent_mths       # Min factored time months - unused
-  - min_fac_sent_days       # Min factored time days - unused
-  - gbmi                    # Guilty but mentally ill - unused
-  - parole_status_cde       # Parole status code - unused
-  - parole_status_dt        # Parole status code - unused
-  - sent_status_date        # Date sentence status was determined - unused
-  - st_to_frm_compact       # State transferred to/from - unused
-  - term_of_cort            # Term of court (year) - unused
-  - crime_facts_ind         # Unknown - unused
-  - megans_law_ind          # Megan's Law indicator - unused
-  - sig_date                # Date entered - unused
-  - sig_time                # Time entered - unused
-  - user_id                 # Id of employee who entered - unused
-  - cntinued_frm_doc_n      # Prior Inmate Number when an inmate rolls over into a new sentence without being released - unused as of yet
-  - indictment_num          # Court case id - unused
-  - judge                   # Judge name - unused
+  - ASCA_Category___Ranked     
+unused_columns: []
 output:
   StatePerson:
     external_ids:
@@ -190,6 +121,8 @@ output:
                 date_imposed: sent_date
                 start_date: sent_start_date
                 completion_date: sent_stop_date 
+                projected_min_release_date: min_expir_date
+                projected_max_release_date: max_expir_date
                 county_code: sentcing_cnty
                 is_life:
                   $in:
@@ -243,3 +176,4 @@ output:
                               - Category
                               - SubCategory
                             $include_nulls: False
+                

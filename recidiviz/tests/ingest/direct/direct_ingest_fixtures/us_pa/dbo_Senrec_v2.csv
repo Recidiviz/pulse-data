@@ -1,0 +1,6 @@
+curr_inmate_num,type_number,class_of_sent,max_cort_sent_yrs,max_cort_sent_mths,max_cort_sent_days,min_cort_sent_yrs,min_cort_sent_mths,min_cort_sent_days,max_expir_date,min_expir_date,offense_code,offense_track_num,sent_date,sent_start_date,sent_status_code,sent_stop_date,sentcing_cnty,type_of_sent,Offense,Category,ASCA_Category___Ranked,SubCategory,Grade_Category,Grade
+AB7413,01,IN,3,0,0,1,6,0,20090104,20070704,CC3502,N7825555,20080815,20080815,SC,20090104,PHI,S,Burglary (General),Burglary,1-Violent,Violent-Property,Felony,F1
+GF3374,01,IN,14,0,0,11,9,0,20220414,20200114,CC4101,U1196666,20080816,0,AS,0,PHI,S,Forgery,Forgery,2-Property,,Felony,F2
+CJ1991,01,IN,2,6,0,1,3,0,20181005,20170705,CC2502B,L3947777,20160820,20160820,AS,0,BUC,S,Murder (2Nd Degree),Murder 2,1-Violent,Homicide,Felony,F
+JE1989,01,IN,3,0,0,0,0,0,20190422,20171022,XX0500,L7858888,20160820,20160820,AS,0,BUC,S,Theft,Theft,2-Property,,Misdemeanor,M1
+JE1989,02,IN,0,0,0,1,6,0,20190422,20171022,CC2702A1,L7858890,20160820,20160820,AS,0,BUC,S,Aggravated Assault W/Serious Bodily Injury against Elderly/Young Person,Aggravated Assault,1-Violent,Assault,Felony,F1

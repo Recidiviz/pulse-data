@@ -1586,6 +1586,8 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             date_imposed=datetime.date(year=2008, month=8, day=15),
             start_date=datetime.date(year=2008, month=8, day=15),
             completion_date=datetime.date(year=2009, month=1, day=4),
+            projected_min_release_date=datetime.date(2007, 7, 4),
+            projected_max_release_date=datetime.date(2009, 1, 4),
             min_length_days=549,
             max_length_days=1095,
             is_life=False,
@@ -1621,6 +1623,8 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             incarceration_type_raw_text="S",
             date_imposed=datetime.date(year=2008, month=8, day=16),
+            projected_min_release_date=datetime.date(2020, 1, 14),
+            projected_max_release_date=datetime.date(2022, 4, 14),
             min_length_days=4287,
             max_length_days=5113,
             is_life=False,
@@ -1657,6 +1661,8 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             incarceration_type_raw_text="S",
             date_imposed=datetime.date(year=2016, month=8, day=20),
             start_date=datetime.date(year=2016, month=8, day=20),
+            projected_min_release_date=datetime.date(2017, 7, 5),
+            projected_max_release_date=datetime.date(2018, 10, 5),
             min_length_days=457,
             max_length_days=914,
             is_life=False,
@@ -1693,6 +1699,8 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             incarceration_type_raw_text="S",
             date_imposed=datetime.date(year=2016, month=8, day=20),
             start_date=datetime.date(year=2016, month=8, day=20),
+            projected_min_release_date=datetime.date(2017, 10, 22),
+            projected_max_release_date=datetime.date(2019, 4, 22),
             max_length_days=1095,
             is_life=False,
             is_capital_punishment=False,
@@ -1710,6 +1718,8 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             incarceration_type_raw_text="S",
             date_imposed=datetime.date(year=2016, month=8, day=20),
             start_date=datetime.date(year=2016, month=8, day=20),
+            projected_min_release_date=datetime.date(2017, 10, 22),
+            projected_max_release_date=datetime.date(2019, 4, 22),
             min_length_days=549,
             is_life=False,
             is_capital_punishment=False,
@@ -1753,7 +1763,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         populate_person_backedges(expected_people)
 
         # Act
-        self._run_ingest_job_for_filename("dbo_Senrec.csv")
+        self._run_ingest_job_for_filename("dbo_Senrec_v2.csv")
 
         # Assert
         self.assert_expected_db_people(expected_people)
