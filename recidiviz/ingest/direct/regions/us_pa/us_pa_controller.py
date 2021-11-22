@@ -97,6 +97,7 @@ from recidiviz.ingest.direct.state_shared_row_posthooks import (
     gen_convert_person_ids_to_external_id_objects,
     gen_label_single_external_id_hook,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.extractor.csv_data_extractor import IngestFieldCoordinates
 from recidiviz.ingest.models.ingest_info import (
     IngestObject,
@@ -511,6 +512,13 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         file_tags = launched_file_tags
         if not environment.in_gcp():
             file_tags += unlaunched_file_tags
+
+        # TODO(#9882): Update to `dbo_Senrec_v2` everywhere once rerun completes.
+        if (
+            not environment.in_gcp_production()
+            and self.ingest_instance == DirectIngestInstance.SECONDARY
+        ):
+            file_tags[3] = "dbo_Senrec_v2"
 
         return file_tags
 

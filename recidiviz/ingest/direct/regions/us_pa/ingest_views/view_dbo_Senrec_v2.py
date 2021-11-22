@@ -22,9 +22,31 @@ from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-# TODO(#9882): Remove once the rerun completes.
-VIEW_QUERY_TEMPLATE = """SELECT sentences.*,
-    offense_codes.Offense, offense_codes.Category, offense_codes.ASCA_Category___Ranked, offense_codes.SubCategory, offense_codes.Grade_Category,
+VIEW_QUERY_TEMPLATE = """SELECT
+    sentences.curr_inmate_num,
+    sentences.type_number,
+    sentences.sent_status_code,
+    sentences.type_of_sent,
+    sentences.sent_date,
+    sentences.sent_start_date,
+    sentences.sent_stop_date,
+    sentences.sentcing_cnty,
+    sentences.offense_track_num,
+    sentences.offense_code,
+    sentences.class_of_sent,         
+    sentences.max_cort_sent_yrs,    
+    sentences.max_cort_sent_mths,    
+    sentences.max_cort_sent_days,    
+    sentences.min_cort_sent_yrs,     
+    sentences.min_cort_sent_mths,    
+    sentences.min_cort_sent_days,  
+    sentences.min_expir_date,
+    sentences.max_expir_date,
+    offense_codes.Offense, 
+    offense_codes.Category, 
+    offense_codes.ASCA_Category___Ranked, 
+    offense_codes.SubCategory, 
+    offense_codes.Grade_Category,
     offense_codes.Grade
 FROM 
     {dbo_Senrec} sentences
@@ -34,7 +56,7 @@ LEFT JOIN {offense_codes} offense_codes
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     region="us_pa",
-    ingest_view_name="dbo_Senrec",
+    ingest_view_name="dbo_Senrec_v2",
     view_query_template=VIEW_QUERY_TEMPLATE,
     order_by_cols="curr_inmate_num",
 )
