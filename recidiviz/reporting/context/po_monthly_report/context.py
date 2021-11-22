@@ -36,6 +36,9 @@ from typing import Any, Dict, List, Literal, Optional
 from jinja2 import Template
 
 import recidiviz.reporting.email_reporting_utils as utils
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionLevel,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.reporting.context.context_utils import (
     align_columns,
@@ -481,7 +484,7 @@ class PoMonthlyReportContext(ReportContext):
             [
                 [
                     f'{_client_full_name(client)} ({client["person_external_id"]})',
-                    f"{client['current_supervision_level']} &rarr; {client['recommended_level']}",
+                    f"{self.metrics_delegate.get_supervision_level_label(client['current_supervision_level'])} &rarr; {self.metrics_delegate.get_supervision_level_label(client['recommended_level'])}",
                 ]
                 for client in action_clients
             ]
@@ -889,33 +892,25 @@ if __name__ == "__main__":
                     {
                         "full_name": '{"given_names": "TONYE", "surname": "THOMPSON"}',
                         "person_external_id": "189472",
-                        "last_score": 14,
-                        "last_assessment_date": "10/12/20",
-                        "current_supervision_level": "Medium",
-                        "recommended_level": "Low",
+                        "current_supervision_level": StateSupervisionLevel.MEDIUM.value,
+                        "recommended_level": StateSupervisionLevel.MINIMUM.value,
                     },
                     {
                         "full_name": '{"given_names": "LINET", "surname": "HANSEN"}',
                         "person_external_id": "47228",
-                        "last_assessment_date": "1/12/21",
-                        "last_score": 8,
-                        "current_supervision_level": "Medium",
-                        "recommended_level": "Low",
+                        "current_supervision_level": StateSupervisionLevel.MEDIUM.value,
+                        "recommended_level": StateSupervisionLevel.MINIMUM.value,
                     },
                     {
                         "full_name": '{"given_names": "REBEKAH", "surname": "CORTES"}',
                         "person_external_id": "132878",
-                        "last_assessment_date": "3/14/20",
-                        "last_score": 10,
-                        "current_supervision_level": "High",
-                        "recommended_level": "Medium",
+                        "current_supervision_level": StateSupervisionLevel.HIGH.value,
+                        "recommended_level": StateSupervisionLevel.MEDIUM.value,
                     },
                     {
                         "person_external_id": "147872",
-                        "last_assessment_date": "3/13/20",
-                        "last_score": 4,
-                        "current_supervision_level": "High",
-                        "recommended_level": "Low",
+                        "current_supervision_level": StateSupervisionLevel.HIGH.value,
+                        "recommended_level": StateSupervisionLevel.MINIMUM.value,
                     },
                 ],
             }

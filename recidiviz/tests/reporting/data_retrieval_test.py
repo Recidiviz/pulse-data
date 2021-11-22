@@ -350,43 +350,6 @@ class DataRetrievalTests(TestCase):
             ],
         )
 
-    def test_retrieve_po_report_mismatch(self) -> None:
-        self._write_test_data(build_report_json_fixture(self.officer.email_address))
-
-        recipients = retrieve_data(batch=self.po_report_batch)
-        self.assertEqual(len(recipients), 1)
-        recipient = recipients[0]
-
-        self.assertEqual(
-            recipient.data["mismatches"],
-            [
-                {
-                    "full_name": '{"given_names": "TEST", "surname": "NAME"}',
-                    "last_score": 1,
-                    "last_assessment_date": "2021-01-02",
-                    "person_external_id": "client_1",
-                    "current_supervision_level": "High",
-                    "recommended_level": "Low",
-                },
-                {
-                    "full_name": '{"given_names": "TEST", "surname": "NAME"}',
-                    "last_score": 1,
-                    "last_assessment_date": "2021-01-02",
-                    "person_external_id": "client_2",
-                    "current_supervision_level": "Moderate",
-                    "recommended_level": "Low",
-                },
-                {
-                    "full_name": '{"given_names": "TEST", "surname": "NAME"}',
-                    "last_score": 1,
-                    "last_assessment_date": "2021-01-02",
-                    "person_external_id": "client_3",
-                    "current_supervision_level": "Moderate",
-                    "recommended_level": "Low",
-                },
-            ],
-        )
-
     def test_filter_recipients(self) -> None:
         dev_from_idaho = Recipient.from_report_json(
             {

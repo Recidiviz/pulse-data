@@ -19,6 +19,9 @@ import abc
 import itertools
 from typing import Dict, List
 
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionLevel,
+)
 from recidiviz.reporting.context.po_monthly_report.constants import (
     DISTRICT,
     EMAIL_ADDRESS,
@@ -76,6 +79,11 @@ class PoMonthlyReportMetricsDelegate(abc.ABC):
     @abc.abstractmethod
     def has_case_triage(self) -> bool:
         """Denotes whether recipients in this state are presumed to have Case Triage access."""
+
+    @property
+    @abc.abstractmethod
+    def supervision_level_labels(self) -> Dict[StateSupervisionLevel, str]:
+        """Provides mapping from internal supervision-level enum to display label"""
 
     @property
     def revocation_metrics(self) -> List[str]:
@@ -217,3 +225,10 @@ class PoMonthlyReportMetricsDelegate(abc.ABC):
             + self.raw_and_percentage_compliance_metrics
             + REQUIRED_RECIPIENT_DATA_FIELDS
         )
+
+    def get_supervision_level_label(self, level: str) -> str:
+        """Returns display label for given supervision level. Falls back to raw string if no label exists."""
+        try:
+            return self.supervision_level_labels[StateSupervisionLevel(level)]
+        except KeyError:
+            return level
