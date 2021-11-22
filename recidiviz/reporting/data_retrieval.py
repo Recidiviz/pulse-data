@@ -386,15 +386,9 @@ def _json_lines(json_file: str) -> Generator[Dict[str, Any], None, None]:
 def _retrieve_data_for_po_monthly_report(report_json: str) -> List[Recipient]:
     """Post-processes the monthly report data into `Recipient`s"""
 
-    recipients: List[Recipient] = []
-
-    for item in _json_lines(report_json):
-        if email := item.get("email_address"):
-            mismatches = _get_mismatch_data_for_officer(email)
-            if mismatches is not None:
-                item["mismatches"] = mismatches
-
-        recipients.append(Recipient.from_report_json(item))
+    recipients: List[Recipient] = [
+        Recipient.from_report_json(item) for item in _json_lines(report_json)
+    ]
 
     logging.info("Retrieved %s recipients", len(recipients))
 

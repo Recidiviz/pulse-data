@@ -225,6 +225,18 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = """
       {district_dimension}
       GROUP BY state_code, year, month, district
     ),
+    action_items_per_officer AS (
+      SELECT
+        state_code,
+        officer_external_id,
+        ARRAY_AGG(
+          IF(
+            recommended_level IS NOT NULL, 
+            STRUCT(person_external_id, full_name, current_supervision_level, recommended_level),
+            NULL) IGNORE NULLS) as mismatches,
+      FROM `{project_id}.{po_report_dataset}.current_action_items_by_person_materialized` 
+      GROUP BY state_code, officer_external_id
+    ),
     agents AS (
       SELECT
         state_code,
@@ -257,6 +269,7 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = """
       state_agg.avg_supervision_downgrades AS supervision_downgrades_state_average,
       state_agg.total_supervision_downgrades AS supervision_downgrades_state_total,
       state_agg.max_supervision_downgrades AS supervision_downgrades_state_max,
+      action_items.mismatches,
       report_month.earned_discharges_clients,
       report_month.earned_discharges,
       IFNULL(last_month.earned_discharges, 0) AS earned_discharges_last_month,
@@ -316,6 +329,8 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = """
         IEEE_DIVIDE(report_month.facetoface_frequencies_sufficient + overdue_facetoface_goal, report_month.caseload_count)) * 100 as overdue_facetoface_goal_percent
     FROM `{project_id}.{static_reference_dataset}.po_report_recipients`
     LEFT JOIN report_data_per_officer report_month
+      USING (state_code, officer_external_id)
+    LEFT JOIN action_items_per_officer action_items
       USING (state_code, officer_external_id)
     LEFT JOIN (
       SELECT * FROM aggregates_by_state_and_district
