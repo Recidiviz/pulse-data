@@ -836,9 +836,9 @@ class PoMonthlyReportContextTests(TestCase):
         self.assertEqual(
             happy_path_data["action_table"],
             [
-                ["Tonye Thompson (189472)", "Medium &rarr; Low"],
-                ["Linet Hansen (47228)", "Medium &rarr; Low"],
-                ["Rebekah Cortes (132878)", "High &rarr; Medium"],
+                ["Tonye Thompson (189472)", "Moderate &rarr; Low"],
+                ["Linet Hansen (47228)", "Moderate &rarr; Low"],
+                ["Rebekah Cortes (132878)", "High &rarr; Moderate"],
                 ["Taryn Berry (147872)", "High &rarr; Low"],
             ],
         )

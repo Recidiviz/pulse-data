@@ -17,6 +17,10 @@
 """Metrics for US_ID that are to be displayed in the PO Monthly Report"""
 from typing import Dict, List
 
+from recidiviz.case_triage.state_utils.us_id import US_ID_SUPERVISION_LEVEL_NAMES
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionLevel,
+)
 from recidiviz.reporting.context.po_monthly_report.constants import (
     ABSCONSIONS,
     ASSESSMENTS,
@@ -61,3 +65,7 @@ class UsIdMetricsDelegate(PoMonthlyReportMetricsDelegate):
     @property
     def has_case_triage(self) -> bool:
         return True
+
+    @property
+    def supervision_level_labels(self) -> Dict[StateSupervisionLevel, str]:
+        return US_ID_SUPERVISION_LEVEL_NAMES
