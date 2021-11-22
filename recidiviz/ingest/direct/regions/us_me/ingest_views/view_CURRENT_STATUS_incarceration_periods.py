@@ -200,6 +200,10 @@ VIEW_QUERY_TEMPLATE = """
             "Interstate Compact In",
             "County Jail"
         )
+        -- Filter out periods at juvenile facilities
+        AND location_type NOT IN ("3","15")
+        AND jurisdiction_location_type NOT IN ("3", "15")
+        AND movement_type NOT IN ('Discharge', 'Release')
     )
     SELECT
         client_id,
@@ -219,7 +223,6 @@ VIEW_QUERY_TEMPLATE = """
         transfer_reason,
         ROW_NUMBER() OVER (PARTITION BY client_id ORDER BY start_date ASC) AS incarceration_period_id
     FROM movements_with_incarceration_statuses
-    WHERE movement_type NOT IN ('Discharge', 'Release')
 """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
