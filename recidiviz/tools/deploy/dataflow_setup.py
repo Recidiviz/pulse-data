@@ -50,7 +50,7 @@ REQUIRED_PACKAGES = [
     "opencensus-correlation",
     "opencensus-ext-stackdriver",
     # Must stay up-to-date with latest protobuf version in the Pipfile
-    "protobuf==3.17.3",
+    "protobuf==3.19.1",
     "SQLAlchemy",
     "us",
 ]

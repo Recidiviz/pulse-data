@@ -23,7 +23,7 @@ jobs:
         with:
           python-version: "3.8.8"
       - name: Install pipenv
-        run: pip install pipenv==2021.5.29
+        run: pip install pipenv
       - name: Pipenv caching
         uses: actions/cache@v2
         id: pipenv-caching
@@ -114,7 +114,7 @@ jobs:
         with:
           python-version: "3.8.8"
       - name: Install pipenv
-        run: pip install pipenv==2021.5.29
+        run: pip install pipenv
       - name: Pipenv caching
         uses: actions/cache@v2
         id: pipenv-caching
@@ -144,7 +144,7 @@ jobs:
         with:
           python-version: "3.8.8"
       - name: Install pipenv
-        run: pip install pipenv==2021.5.29
+        run: pip install pipenv
       - name: Pipenv caching
         uses: actions/cache@v2
         id: pipenv-caching
@@ -201,7 +201,7 @@ jobs:
         with:
           python-version: "3.8.8"
       - name: Install pipenv
-        run: pip install pipenv==2021.5.29
+        run: pip install pipenv
       - name: Pipenv caching
         uses: actions/cache@v2
         id: pipenv-caching
