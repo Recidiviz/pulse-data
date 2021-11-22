@@ -266,6 +266,70 @@ class TestUsMeController(BaseDirectIngestControllerTests):
             incarceration_type_raw_text="2",
         )
 
+        # Test all of the custodial authority mapped values
+        add_incarceration_period_to_person(
+            person=person_1,
+            state_code=_REGION_CODE_UPPER,
+            incarceration_sentence=incarceration_sentence,
+            external_id="00000001-4",
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=datetime.date(year=2016, month=9, day=20),
+            release_date=datetime.date(year=2017, month=12, day=1),
+            facility="SOUTHERN MAINE WOMEN'S REENTRY CENTER",
+            housing_unit="SMWRC",
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+            custodial_authority_raw_text="7",
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            admission_reason_raw_text="INCARCERATED@@INCARCERATED@@TRANSFER@@DOC TRANSFER@@POPULATION DISTRIBUTION@@2",
+            release_reason=StateIncarcerationPeriodReleaseReason.ESCAPE,
+            release_reason_raw_text="INCARCERATED@@ESCAPE@@ESCAPE@@POPULATION DISTRIBUTION@@2@@2",
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            specialized_purpose_for_incarceration_raw_text="INCARCERATED@@POPULATION DISTRIBUTION@@2",
+            incarceration_type_raw_text="2",
+        )
+
+        add_incarceration_period_to_person(
+            person=person_1,
+            state_code=_REGION_CODE_UPPER,
+            incarceration_sentence=incarceration_sentence,
+            external_id="00000001-5",
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=datetime.date(year=2016, month=9, day=20),
+            release_date=datetime.date(year=2017, month=12, day=1),
+            facility="SOUTHERN MAINE WOMEN'S REENTRY CENTER",
+            housing_unit="SMWRC",
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+            custodial_authority_raw_text="9",
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            admission_reason_raw_text="INCARCERATED@@INCARCERATED@@TRANSFER@@DOC TRANSFER@@POPULATION DISTRIBUTION@@2",
+            release_reason=StateIncarcerationPeriodReleaseReason.ESCAPE,
+            release_reason_raw_text="INCARCERATED@@ESCAPE@@ESCAPE@@POPULATION DISTRIBUTION@@2@@2",
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            specialized_purpose_for_incarceration_raw_text="INCARCERATED@@POPULATION DISTRIBUTION@@2",
+            incarceration_type_raw_text="2",
+        )
+
+        add_incarceration_period_to_person(
+            person=person_1,
+            state_code=_REGION_CODE_UPPER,
+            incarceration_sentence=incarceration_sentence,
+            external_id="00000001-6",
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=datetime.date(year=2016, month=9, day=20),
+            release_date=datetime.date(year=2017, month=12, day=1),
+            facility="SOUTHERN MAINE WOMEN'S REENTRY CENTER",
+            housing_unit="SMWRC",
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+            custodial_authority_raw_text="13",
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            admission_reason_raw_text="INCARCERATED@@INCARCERATED@@TRANSFER@@DOC TRANSFER@@POPULATION DISTRIBUTION@@2",
+            release_reason=StateIncarcerationPeriodReleaseReason.ESCAPE,
+            release_reason_raw_text="INCARCERATED@@ESCAPE@@ESCAPE@@POPULATION DISTRIBUTION@@2@@2",
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            specialized_purpose_for_incarceration_raw_text="INCARCERATED@@POPULATION DISTRIBUTION@@2",
+            incarceration_type_raw_text="2",
+        )
+
         expected_people = [
             person_1,
             person_2,

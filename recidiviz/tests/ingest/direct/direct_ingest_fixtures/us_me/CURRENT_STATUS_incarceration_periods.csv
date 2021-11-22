@@ -2,3 +2,6 @@ incarceration_period_id,client_id,previous_status,current_status,next_status,cur
 1,00000001,NULL,Incarcerated,SCCP,Maine State Prison,2,4,2,Unit 1,2014-10-12,2015-08-20,Sentence/Disposition,Transfer,Society In,Sentence/Disposition
 2,00000001,SCCP,Incarcerated,Incarcerated,Maine Correctional Center,2,2,4,Unit 2,2015-09-20,2016-04-01,Transfer,Transfer,DOC Transfer,Violation of SCCP
 3,00000001,Incarcerated,Incarcerated,Escape,Maine State Prison,2,2,8,SMWRC,2016-09-20,2017-12-01,Transfer,Escape,DOC Transfer,Population Distribution
+4,00000001,Incarcerated,Incarcerated,Escape,Maine State Prison,2,2,7,SMWRC,2016-09-20,2017-12-01,Transfer,Escape,DOC Transfer,Population Distribution
+5,00000001,Incarcerated,Incarcerated,Escape,Maine State Prison,2,2,9,SMWRC,2016-09-20,2017-12-01,Transfer,Escape,DOC Transfer,Population Distribution
+6,00000001,Incarcerated,Incarcerated,Escape,Maine State Prison,2,2,13,SMWRC,2016-09-20,2017-12-01,Transfer,Escape,DOC Transfer,Population Distribution

@@ -431,7 +431,140 @@ class UsMeIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                     )
                 ],
             ),
+            StatePerson(
+                state_code="US_ME",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_ME", external_id="00000001", id_type="US_ME_DOC"
+                    )
+                ],
+                sentence_groups=[
+                    StateSentenceGroup(
+                        state_code="US_ME",
+                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                        incarceration_sentences=[
+                            StateIncarcerationSentence(
+                                state_code="US_ME",
+                                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                                incarceration_periods=[
+                                    StateIncarcerationPeriod(
+                                        external_id="00000001-4",
+                                        state_code="US_ME",
+                                        status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                                        status_raw_text=None,
+                                        incarceration_type=StateIncarcerationType.STATE_PRISON,
+                                        specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+                                        specialized_purpose_for_incarceration_raw_text="INCARCERATED@@POPULATION DISTRIBUTION@@2",
+                                        incarceration_type_raw_text="2",
+                                        admission_date=date(2016, 9, 20),
+                                        release_date=date(2017, 12, 1),
+                                        county_code=None,
+                                        facility="SOUTHERN MAINE WOMEN'S REENTRY CENTER",
+                                        housing_unit="SMWRC",
+                                        custodial_authority_raw_text="7",
+                                        custodial_authority=StateCustodialAuthority.STATE_PRISON,
+                                        admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+                                        admission_reason_raw_text="INCARCERATED@@INCARCERATED@@TRANSFER@@DOC TRANSFER@@POPULATION DISTRIBUTION@@2",
+                                        release_reason=StateIncarcerationPeriodReleaseReason.ESCAPE,
+                                        release_reason_raw_text="INCARCERATED@@ESCAPE@@ESCAPE@@POPULATION DISTRIBUTION@@2@@2",
+                                    )
+                                ],
+                            )
+                        ],
+                    )
+                ],
+            ),
+            StatePerson(
+                state_code="US_ME",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_ME", external_id="00000001", id_type="US_ME_DOC"
+                    )
+                ],
+                sentence_groups=[
+                    StateSentenceGroup(
+                        state_code="US_ME",
+                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                        incarceration_sentences=[
+                            StateIncarcerationSentence(
+                                state_code="US_ME",
+                                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                                incarceration_periods=[
+                                    StateIncarcerationPeriod(
+                                        external_id="00000001-5",
+                                        state_code="US_ME",
+                                        status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                                        status_raw_text=None,
+                                        incarceration_type=StateIncarcerationType.STATE_PRISON,
+                                        specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+                                        specialized_purpose_for_incarceration_raw_text="INCARCERATED@@POPULATION DISTRIBUTION@@2",
+                                        incarceration_type_raw_text="2",
+                                        admission_date=date(2016, 9, 20),
+                                        release_date=date(2017, 12, 1),
+                                        county_code=None,
+                                        facility="SOUTHERN MAINE WOMEN'S REENTRY CENTER",
+                                        housing_unit="SMWRC",
+                                        custodial_authority_raw_text="9",
+                                        custodial_authority=StateCustodialAuthority.STATE_PRISON,
+                                        admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+                                        admission_reason_raw_text="INCARCERATED@@INCARCERATED@@TRANSFER@@DOC TRANSFER@@POPULATION DISTRIBUTION@@2",
+                                        release_reason=StateIncarcerationPeriodReleaseReason.ESCAPE,
+                                        release_reason_raw_text="INCARCERATED@@ESCAPE@@ESCAPE@@POPULATION DISTRIBUTION@@2@@2",
+                                    )
+                                ],
+                            )
+                        ],
+                    )
+                ],
+            ),
+            StatePerson(
+                state_code="US_ME",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_ME", external_id="00000001", id_type="US_ME_DOC"
+                    )
+                ],
+                sentence_groups=[
+                    StateSentenceGroup(
+                        state_code="US_ME",
+                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                        incarceration_sentences=[
+                            StateIncarcerationSentence(
+                                state_code="US_ME",
+                                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                                incarceration_periods=[
+                                    StateIncarcerationPeriod(
+                                        external_id="00000001-6",
+                                        state_code="US_ME",
+                                        status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                                        status_raw_text=None,
+                                        incarceration_type=StateIncarcerationType.STATE_PRISON,
+                                        specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+                                        specialized_purpose_for_incarceration_raw_text="INCARCERATED@@POPULATION DISTRIBUTION@@2",
+                                        incarceration_type_raw_text="2",
+                                        admission_date=date(2016, 9, 20),
+                                        release_date=date(2017, 12, 1),
+                                        county_code=None,
+                                        facility="SOUTHERN MAINE WOMEN'S REENTRY CENTER",
+                                        housing_unit="SMWRC",
+                                        custodial_authority_raw_text="13",
+                                        custodial_authority=StateCustodialAuthority.STATE_PRISON,
+                                        admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+                                        admission_reason_raw_text="INCARCERATED@@INCARCERATED@@TRANSFER@@DOC TRANSFER@@POPULATION DISTRIBUTION@@2",
+                                        release_reason=StateIncarcerationPeriodReleaseReason.ESCAPE,
+                                        release_reason_raw_text="INCARCERATED@@ESCAPE@@ESCAPE@@POPULATION DISTRIBUTION@@2@@2",
+                                    )
+                                ],
+                            )
+                        ],
+                    )
+                ],
+            ),
         ]
+
         self._run_parse_ingest_view_test(
             "CURRENT_STATUS_incarceration_periods", expected_output
         )
