@@ -184,10 +184,10 @@ class CaseTriageQuerier:
                 client_ids_to_notes[note.person_external_id].append(note)
 
             for client in clients:
-                if client_info := client_ids_to_client_info.get(
+                if client_info_by_id := client_ids_to_client_info.get(
                     client.person_external_id
                 ):
-                    client.client_info = client_info
+                    client.client_info = client_info_by_id
                 client.notes = client_ids_to_notes[client.person_external_id]
 
             return [

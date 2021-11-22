@@ -18,10 +18,11 @@
 import logging
 import sys
 
-from pipenv.core import project
+from pipenv.project import Project
 
 
 def is_locked() -> bool:
+    project = Project()
     lock_hash = project.get_lockfile_hash()
     pipfile_hash = project.calculate_pipfile_hash()
     if lock_hash == pipfile_hash:
