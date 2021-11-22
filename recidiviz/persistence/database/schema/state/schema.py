@@ -511,7 +511,10 @@ state_acting_body_type = Enum(
 )
 
 state_custodial_authority = Enum(
+    state_enum_strings.state_custodial_authority_court,
+    enum_strings.external_unknown,
     state_enum_strings.state_custodial_authority_federal,
+    enum_strings.internal_unknown,
     state_enum_strings.state_custodial_authority_other_country,
     state_enum_strings.state_custodial_authority_other_state,
     state_enum_strings.state_custodial_authority_supervision_authority,
