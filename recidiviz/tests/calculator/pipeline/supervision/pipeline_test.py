@@ -151,16 +151,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             metric_type.value: True for metric_type in SupervisionMetricType
         }
 
-        self.assessment_types_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.program.identifier.assessment_utils."
-            "_assessment_types_of_class_for_state"
-        )
-        self.mock_assessment_types = self.assessment_types_patcher.start()
-        self.mock_assessment_types.return_value = [
-            StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
-            StateAssessmentType.LSIR,
-        ]
-
         self.incarceration_pre_processing_delegate_patcher = mock.patch(
             "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils"
             ".get_state_specific_incarceration_period_pre_processing_delegate"
@@ -216,7 +206,6 @@ class TestSupervisionPipeline(unittest.TestCase):
         )
 
     def tearDown(self) -> None:
-        self.assessment_types_patcher.stop()
         self.incarceration_pre_processing_delegate_patcher.stop()
         self.supervision_pre_processing_delegate_patcher.stop()
         self.violation_delegate_patcher.stop()
@@ -1090,16 +1079,6 @@ class TestClassifyEvents(unittest.TestCase):
     def setUp(self) -> None:
         self.maxDiff = None
 
-        self.assessment_types_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.supervision.identifier.assessment_utils."
-            "_assessment_types_of_class_for_state"
-        )
-        self.mock_assessment_types = self.assessment_types_patcher.start()
-        self.mock_assessment_types.return_value = [
-            StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
-            StateAssessmentType.LSIR,
-        ]
-
         self.incarceration_pre_processing_delegate_patcher = mock.patch(
             "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils"
             ".get_state_specific_incarceration_period_pre_processing_delegate"
@@ -1143,15 +1122,14 @@ class TestClassifyEvents(unittest.TestCase):
         self.mock_supervision_delegate.return_value = UsXxSupervisionDelegate()
 
     def tearDown(self) -> None:
-        self.assessment_types_patcher.stop()
         self._stop_state_specific_delegate_patchers()
-        self.violation_delegate_patcher.stop()
-        self.supervision_delegate_patcher.stop()
 
     def _stop_state_specific_delegate_patchers(self) -> None:
         self.incarceration_pre_processing_delegate_patcher.stop()
         self.supervision_pre_processing_delegate_patcher.stop()
         self.violation_pre_processing_delegate_patcher.stop()
+        self.violation_delegate_patcher.stop()
+        self.supervision_delegate_patcher.stop()
 
     @staticmethod
     def load_person_entities_dict(

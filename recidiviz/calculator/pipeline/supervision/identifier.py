@@ -374,6 +374,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                 supervision_contacts,
                 violation_responses_for_history,
                 incarceration_period_index,
+                supervision_delegate,
             )
         )
 
@@ -406,7 +407,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                     event_date,
                     assessments,
                     assessment_class=StateAssessmentClass.RISK,
-                    state_code=supervision_period.state_code,
+                    supervision_delegate=supervision_delegate,
                 )
 
                 if most_recent_assessment:

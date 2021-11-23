@@ -102,14 +102,6 @@ class TestProgramPipeline(unittest.TestCase):
     def setUp(self) -> None:
         self.fake_bq_source_factory = FakeReadFromBigQueryFactory()
         self.fake_bq_sink_factory = FakeWriteToBigQueryFactory(FakeWriteToBigQuery)
-        self.assessment_types_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.program.identifier.assessment_utils."
-            "_assessment_types_of_class_for_state"
-        )
-        self.mock_assessment_types = self.assessment_types_patcher.start()
-        self.mock_assessment_types.return_value = [
-            StateAssessmentType.ORAS_COMMUNITY_SUPERVISION
-        ]
 
         self.incarceration_pre_processing_delegate_patcher = mock.patch(
             "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils"
@@ -138,7 +130,6 @@ class TestProgramPipeline(unittest.TestCase):
         self.mock_supervision_delegate.return_value = UsXxSupervisionDelegate()
 
     def tearDown(self) -> None:
-        self.assessment_types_patcher.stop()
         self.incarceration_pre_processing_delegate_patcher.stop()
         self.supervision_pre_processing_delegate_patcher.stop()
         self.supervision_delegate_patcher.stop()
@@ -459,15 +450,6 @@ class TestClassifyProgramAssignments(unittest.TestCase):
     """Tests the ClassifyProgramAssignments DoFn."""
 
     def setUp(self) -> None:
-        self.assessment_types_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.program.identifier.assessment_utils."
-            "_assessment_types_of_class_for_state"
-        )
-        self.mock_assessment_types = self.assessment_types_patcher.start()
-        self.mock_assessment_types.return_value = [
-            StateAssessmentType.ORAS_COMMUNITY_SUPERVISION
-        ]
-
         self.incarceration_pre_processing_delegate_patcher = mock.patch(
             "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils"
             ".get_state_specific_incarceration_period_pre_processing_delegate"
@@ -496,7 +478,6 @@ class TestClassifyProgramAssignments(unittest.TestCase):
         self.identifier = identifier.ProgramIdentifier()
 
     def tearDown(self) -> None:
-        self.assessment_types_patcher.stop()
         self.incarceration_pre_processing_delegate_patcher.stop()
         self.supervision_pre_processing_delegate_patcher.stop()
         self.supervision_delegate_patcher.stop()

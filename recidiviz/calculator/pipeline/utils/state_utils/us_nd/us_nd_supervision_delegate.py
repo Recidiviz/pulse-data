@@ -15,10 +15,24 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """US_ND implementation of the supervision delegate"""
+from typing import List, Optional
+
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_delegate import (
     StateSpecificSupervisionDelegate,
+)
+from recidiviz.common.constants.state.state_assessment import (
+    StateAssessmentClass,
+    StateAssessmentType,
 )
 
 
 class UsNdSupervisionDelegate(StateSpecificSupervisionDelegate):
     """US_ND implementation of the supervision delegate"""
+
+    def assessment_types_to_include_for_class(
+        self, assessment_class: StateAssessmentClass
+    ) -> Optional[List[StateAssessmentType]]:
+        """In US_ND, only LSIR assessments are supported."""
+        if assessment_class == StateAssessmentClass.RISK:
+            return [StateAssessmentType.LSIR]
+        return None

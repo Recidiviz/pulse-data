@@ -40,6 +40,9 @@ from recidiviz.calculator.pipeline.utils.execution_utils import (
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
     get_state_specific_supervision_delegate,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_delegate import (
+    StateSpecificSupervisionDelegate,
+)
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
     supervising_officer_and_location_info,
 )
@@ -141,6 +144,7 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
             incarceration_sentences=None,
             supervision_sentences=None,
         )
+        supervision_delegate = get_state_specific_supervision_delegate(state_code)
 
         if not sp_pre_processing_manager:
             raise ValueError("Expected pre-processed SPs for this pipeline.")
@@ -155,6 +159,7 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
                 assessments,
                 supervision_periods_for_calculations,
                 supervision_period_to_agent_associations,
+                supervision_delegate,
             )
 
             program_events.extend(program_referrals)
@@ -173,6 +178,7 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
         assessments: List[StateAssessment],
         supervision_periods: List[StateSupervisionPeriod],
         supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
+        supervision_delegate: StateSpecificSupervisionDelegate,
     ) -> List[ProgramReferralEvent]:
         """Finds instances of being referred to a program.
 
@@ -203,7 +209,7 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
                 referral_date,
                 assessments,
                 assessment_class=StateAssessmentClass.RISK,
-                state_code=program_assignment.state_code,
+                supervision_delegate=supervision_delegate,
             )
 
             relevant_supervision_periods = (
@@ -222,6 +228,7 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
                     assessment_type,
                     relevant_supervision_periods,
                     supervision_period_to_agent_associations,
+                    supervision_delegate,
                 )
             )
 
@@ -344,6 +351,7 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
         assessment_type: Optional[StateAssessmentType],
         supervision_periods: Optional[List[StateSupervisionPeriod]],
         supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
+        supervision_delegate: StateSpecificSupervisionDelegate,
     ) -> List[ProgramReferralEvent]:
         """Builds ProgramReferralEvents with data from the relevant supervision periods
         at the time of the referral.
@@ -352,7 +360,6 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
         Returns one ProgramReferralEvent for each of the supervision periods that
         overlap with the referral."""
         program_referrals: List[ProgramReferralEvent] = []
-        supervision_delegate = get_state_specific_supervision_delegate(state_code)
 
         if supervision_periods:
             for supervision_period in supervision_periods:
