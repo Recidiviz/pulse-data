@@ -35,7 +35,10 @@ function last_version_tag_on_branch {
 # Returns the last deployed version tag in a given project
 function last_deployed_version_tag {
     PROJECT_ID=$1
-    LAST_DEPLOYED_GIT_VERSION_TAG=$(gcloud app versions list --project=$PROJECT_ID --hide-no-traffic --service=default --format=yaml | pipenv run yq .id | tr -d \" | tr '-' '.') || exit_on_fail
+    # Get tag and strip surrounding quotes.
+    UNNORMALIZED_TAG=$(gcloud app versions list --project=$PROJECT_ID --hide-no-traffic --service=default --format=yaml | pipenv run yq .id | tr -d \") || exit_on_fail
+    # Deployed version tags have all periods replaced with dashes, re-format to match git version tag format.
+    LAST_DEPLOYED_GIT_VERSION_TAG=$(echo $UNNORMALIZED_TAG | tr '-' '.' | sed 's/.alpha/-alpha/g') || exit_on_fail
 
     echo ${LAST_DEPLOYED_GIT_VERSION_TAG}
 }
@@ -75,7 +78,7 @@ function migration_changes_since_last_deploy {
         exit 1
     fi
 
-    MIGRATION_CHANGES=$(git diff tags/${LAST_VERSION_TAG} -- ${BASH_SOURCE_DIR}/../../../recidiviz/persistence/database/migrations)
+    MIGRATION_CHANGES=$(git diff tags/${LAST_VERSION_TAG} -- ${BASH_SOURCE_DIR}/../../../recidiviz/persistence/database/migrations) || exit_on_fail
 
     if [[ ! -z $MIGRATION_CHANGES ]]; then
       MIGRATION_CHANGES_SINCE_LAST_DEPLOY=1
@@ -106,7 +109,7 @@ function calculation_pipeline_changes_since_last_deploy {
     if [[ MIGRATION_CHANGES_SINCE_LAST_DEPLOY -eq 1 ]]; then
         echo $MIGRATION_CHANGES_SINCE_LAST_DEPLOY
     else
-        CALCULATOR_CHANGES=$(git diff tags/${LAST_VERSION_TAG} -- ${BASH_SOURCE_DIR}/../../../recidiviz/calculator)
+        CALCULATOR_CHANGES=$(git diff tags/${LAST_VERSION_TAG} -- ${BASH_SOURCE_DIR}/../../../recidiviz/calculator) || exit_on_fail
 
         if [[ ! -z $CALCULATOR_CHANGES ]]; then
           CALC_CHANGES_SINCE_LAST_DEPLOY=1
