@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Creates the view builder and view for key discrete events concatenated in a common
+"""Creates the view builder and view for client (person) events concatenated in a common
 format."""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
@@ -26,61 +26,60 @@ from recidiviz.calculator.query.state.dataset_config import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-EVENTS_VIEW_NAME = "events"
+PERSON_EVENTS_VIEW_NAME = "person_events"
 
-EVENTS_VIEW_DESCRIPTION = "View concatenating key events in a common format"
+PERSON_EVENTS_VIEW_DESCRIPTION = (
+    "View concatenating client (person) events in a common format"
+)
 
-EVENTS_QUERY_TEMPLATE = """
+PERSON_EVENTS_QUERY_TEMPLATE = """
 -- compartment_level_0 starts
 SELECT
     state_code,
-    CAST(person_id AS STRING) AS subject_id,
-    "person_id" AS id_type,
-    CONCAT(compartment_level_0, '_START') AS metric,
+    person_id,
+    CONCAT(compartment_level_0, "_START") AS event,
     start_date AS event_date,
 FROM
     `{project_id}.{sessions_dataset}.compartment_level_0_super_sessions_materialized`
 WHERE
-    compartment_level_0 IN ('SUPERVISION', 'INCARCERATION', 'RELEASE')
+    compartment_level_0 IN ("SUPERVISION", "INCARCERATION", "RELEASE")
 
 UNION ALL
 
 -- violation occurrence by type
 SELECT
     state_code,
-    CAST(person_id AS STRING) AS subject_id,
-    "person_id" AS id_type,
-    CASE
-        WHEN violation_type IN ("ABSCONDED", "ESCAPED") THEN "VIOLATION_ABSCONDED"
-        WHEN violation_type IN ("FELONY", "LAW", "MISDEMEANOR", "MUNICIPAL") THEN 
-            "VIOLATION_LEGAL"
-        WHEN violation_type IN ("TECHNICAL") THEN "VIOLATION_TECHNICAL"
-        ELSE "VIOLATION_UNKNOWN" END AS metric,
+    person_id,
+    "VIOLATION" AS event,
     COALESCE(violation_date, response_date) AS event_date,
+    CASE
+        WHEN violation_type IN ("ABSCONDED", "ESCAPED") THEN "ABSCONDED"
+        WHEN violation_type IN ("FELONY", "LAW", "MISDEMEANOR", "MUNICIPAL") THEN 
+            "LEGAL"
+        WHEN violation_type IN ("TECHNICAL") THEN "TECHNICAL"
+        ELSE "UNKNOWN" END AS attribute_1,
 FROM
     `{project_id}.{dataflow_dataset}.most_recent_violation_with_response_metrics_materialized`
 
 UNION ALL
 
-/* most severed violation responses by type
+/* most severe violation responses by type
 Would we rather get all violation responses instead of only the most severe, ie use 
 state_supervision_violation_response?
 */
 SELECT
     state_code,
-    CAST(person_id AS STRING) AS subject_id,
-    "person_id" AS id_type,
+    person_id,
+    "VIOLATION_RESPONSE_MOST_SEVERE" AS event,
+    response_date AS event_date,
     CASE
         WHEN most_severe_response_decision IN ("COMMUNITY_SERVICE", "CONTINUANCE", 
             "DELAYED_ACTION", "EXTENSION", "NEW_CONDITIONS", "PRIVILEGES_REVOKED", 
             "REVOCATION", "SERVICE_TERMINATION", "SHOCK_INCARCERATION", 
             "SPECIALIZED_COURT", "SUSPENSION", "TREATMENT_IN_FIELD",
             "TREATMENT_IN_PRISON", "WARNING", "WARRANT_ISSUED") THEN 
-            CONCAT("VIOLATION_RESPONSE_", most_severe_response_decision)
-        WHEN most_severe_response_decision IN ("INTERNAL_UNKNOWN", "OTHER") THEN 
-            "VIOLATION_RESPONSE_UNKNOWN"
-        ELSE "VIOLATION_RESPONSE_UNKNOWN" END AS metric,
-    response_date AS event_date,
+            most_severe_response_decision
+        ELSE "UNKNOWN" END AS attribute_1,
 FROM
     `{project_id}.{dataflow_dataset}.most_recent_violation_with_response_metrics_materialized`
 
@@ -89,26 +88,26 @@ UNION ALL
 -- LSIR assessed
 SELECT
     state_code,
-    CAST(person_id AS STRING) AS subject_id,
-    "person_id" AS id_type,
-    "LSIR_ASSESSMENT" AS metric,
+    person_id,
+    "LSIR_ASSESSMENT" AS event,
     assessment_date AS event_date,
+    CAST(assessment_score AS STRING) AS attribute_1,
 FROM
     `{project_id}.{sessions_dataset}.assessment_score_sessions_materialized`
 
 """
 
-EVENTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+PERSON_EVENTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=ANALYST_VIEWS_DATASET,
-    view_id=EVENTS_VIEW_NAME,
-    view_query_template=EVENTS_QUERY_TEMPLATE,
-    description=EVENTS_VIEW_DESCRIPTION,
+    view_id=PERSON_EVENTS_VIEW_NAME,
+    view_query_template=PERSON_EVENTS_QUERY_TEMPLATE,
+    description=PERSON_EVENTS_VIEW_DESCRIPTION,
     dataflow_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
     sessions_dataset=SESSIONS_DATASET,
     should_materialize=True,
-    clustering_fields=["state_code", "subject_id"],
+    clustering_fields=["state_code", "person_id"],
 )
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        EVENTS_VIEW_BUILDER.build_and_print()
+        PERSON_EVENTS_VIEW_BUILDER.build_and_print()

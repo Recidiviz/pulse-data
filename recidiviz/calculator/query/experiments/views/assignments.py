@@ -36,6 +36,7 @@ ASSIGNMENTS_VIEW_DESCRIPTION = (
 )
 
 ASSIGNMENTS_QUERY_TEMPLATE = """
+-- last day data observable in sessions
 WITH last_day_of_data AS (
     SELECT
         state_code,
@@ -45,6 +46,7 @@ WITH last_day_of_data AS (
     GROUP BY 1
 )
 
+-- When clients referred to dosage probation in ID
 , dosage_probation AS (
     SELECT
         "DOSAGE_PROBATION" AS experiment_id,
@@ -65,6 +67,7 @@ WITH last_day_of_data AS (
         ofndr_num NOT IN ("30054")
 )
 
+-- When clients referred to GEO CIS in ID
 , geo_cis_referral AS (
     SELECT
         "GEO_CIS_REFERRAL" AS experiment_id,
@@ -85,6 +88,7 @@ WITH last_day_of_data AS (
         person_external_id NOT IN ("30054")
 )
 
+-- When officers first given access to Case Triage
 , case_triage_access AS (
     SELECT
         "CASE_TRIAGE_ACCESS" AS experiment_id,
@@ -99,6 +103,7 @@ WITH last_day_of_data AS (
         `{project_id}.{static_reference_dataset}.case_triage_users`
 )
 
+-- When officers first given access to monthly reports
 , monthly_report_access AS (
     SELECT
         "MONTHLY_REPORT_ACCESS" AS experiment_id,
@@ -113,6 +118,7 @@ WITH last_day_of_data AS (
         `{project_id}.{static_reference_dataset}.case_triage_users`
 )
 
+-- Covid-related CPP cohort in ND
 , us_nd_community_placement_program AS (
     SELECT 
         "COVID_EARLY_RELEASE" AS experiment_id,
@@ -128,6 +134,7 @@ WITH last_day_of_data AS (
     GROUP BY 1, 2, 3, 4, 5
 )
 
+-- Covid-related reprieve cohort in PA
 , us_pa_covid_reprieves AS (
     SELECT 
         "COVID_EARLY_RELEASE" AS experiment_id,
@@ -145,6 +152,7 @@ WITH last_day_of_data AS (
         AND b.id_type = "US_PA_INMATE"
 )
 
+-- Covid-related furlough cohort in PA
 , us_pa_covid_furloughs AS (
     SELECT 
         "COVID_EARLY_RELEASE" AS experiment_id,
@@ -175,6 +183,22 @@ WITH last_day_of_data AS (
     GROUP BY 1, 2, 3, 4, 5
 )
 
+-- State-level experiments from static reference table
+-- Generally, these are state-wide policies or other state-level changes
+, state_assignments AS (
+    SELECT
+        experiment_id,
+        state_code,
+        state_code AS subject_id,
+        "state_code" as id_type,
+        variant_id,
+        CAST(variant_date AS DATETIME) AS variant_time,
+        "0" as cluster_id,
+        "0" as block_id,
+    FROM
+        `{project_id}.{static_reference_dataset}.experiment_state_assignments_materialized`
+)
+
 -- Union all assignment subqueries
 , stacked AS (
     SELECT *
@@ -197,6 +221,9 @@ WITH last_day_of_data AS (
     UNION ALL
     SELECT *
     FROM us_pa_covid_furloughs
+    UNION ALL
+    SELECT *
+    FROM state_assignments
 )
 
 -- Add state-level last day data observed
