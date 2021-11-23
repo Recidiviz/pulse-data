@@ -42,9 +42,7 @@ import sys
 import alembic.config
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.types.direct_ingest_instance import (
-    DirectIngestInstance,
-)
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema.state.schema import StateAgent, StatePerson
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
@@ -153,7 +151,15 @@ def main(
                     ssl_cert_path=ssl_cert_path,
                     migration_user=True,
                 )
-                config = alembic.config.Config(db_key.alembic_file)
+
+                # Alembic normally hijacks logging with its own logging, which means
+                # we would stop sending output to stdout, breaking the communication
+                # channel with the local purge_state_db script. We set the
+                # 'configure_logger' flag here to turn off all logger configuration in
+                # the alembic env.py files.
+                config = alembic.config.Config(
+                    db_key.alembic_file, attributes={"configure_logger": False}
+                )
                 alembic.command.downgrade(config, "base")
 
                 # We need to manually delete alembic_version because it's leftover after
