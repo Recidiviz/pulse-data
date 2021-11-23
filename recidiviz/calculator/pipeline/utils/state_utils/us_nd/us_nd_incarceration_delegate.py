@@ -18,7 +18,24 @@
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_incarceration_delegate import (
     StateSpecificIncarcerationDelegate,
 )
+from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
+from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 
 
 class UsNdIncarcerationDelegate(StateSpecificIncarcerationDelegate):
     """US_ND implementation of the incarceration delegate"""
+
+    def is_period_included_in_state_population(  # pylint: disable=unused-argument
+        self,
+        incarceration_period: StateIncarcerationPeriod,
+    ) -> bool:
+        """In US_ND, only periods of incarceration that are under the custodial
+        authority of the state prison are included in the state population.
+        """
+        return (
+            # TODO(#3641): Delete the check for None once we're setting the
+            #  custodial_authority field at ingest for US_ND
+            incarceration_period.custodial_authority is None
+            or incarceration_period.custodial_authority
+            == StateCustodialAuthority.STATE_PRISON
+        )
