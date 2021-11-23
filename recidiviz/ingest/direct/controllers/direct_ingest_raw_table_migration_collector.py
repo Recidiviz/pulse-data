@@ -19,34 +19,36 @@
 import datetime
 from collections import defaultdict
 from types import ModuleType
-from typing import Dict, Tuple, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 from recidiviz.common.module_collector_mixin import ModuleCollectorMixin
 from recidiviz.ingest.direct import regions
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_table_migration import (
-    RawTableMigration,
-    RAW_TABLE_MIGRATION_FILE_PREFIX,
     MIGRATIONS_SUBDIR,
     RAW_DATA_SUBDIR,
+    RAW_TABLE_MIGRATION_FILE_PREFIX,
+    RawTableMigration,
 )
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_table_migration_generator import (
     RawTableMigrationGenerator,
 )
 
-_MIGRATIONS_LIST_EXPECTED_NAME = "MIGRATIONS"
+_MIGRATIONS_FUNCTION_EXPECTED_NAME = "get_migrations"
 
 RawFileKey = Tuple[str, Optional[datetime.datetime]]
 
 
 class DirectIngestRawTableMigrationCollector(ModuleCollectorMixin):
     """A class that finds all raw table migrations queries defined for a given region.
-    Migrations must be defined in a top-level list of RawTableMigration named MIGRATIONS in a file with a path like
-    this:
 
-        /path/to/provided/regions_module/{region_code}/raw_data/migrations/migrations_{file_tag}.yaml
+    Migrations must be defined in a top-level function named get_migrations that takes
+    no parameters and produces a list of RawTableMigration. These must be defined in a
+    file with a path like this:
+
+        /path/to/provided/regions_module/{region_code}/raw_data/migrations/migrations_{file_tag}.py
 
     Example:
-        recidiviz/ingest/direct/regions/us_pa/raw_data/migrations/migrations_dbo_Miscon.yaml
+        recidiviz/ingest/direct/regions/us_pa/raw_data/migrations/migrations_dbo_Miscon.py
     """
 
     def __init__(
@@ -81,14 +83,14 @@ class DirectIngestRawTableMigrationCollector(ModuleCollectorMixin):
 
         all_migrations = []
         for table_migrations_module in table_migrations_modules:
-            if not hasattr(table_migrations_module, _MIGRATIONS_LIST_EXPECTED_NAME):
-                raise ValueError(
-                    f"File [{table_migrations_module.__file__}] has no top-level attribute called "
-                    f"[{_MIGRATIONS_LIST_EXPECTED_NAME}]"
-                )
 
+            if not hasattr(table_migrations_module, _MIGRATIONS_FUNCTION_EXPECTED_NAME):
+                raise ValueError(
+                    f"File [{table_migrations_module.__file__}] has no top-level "
+                    f"function [{_MIGRATIONS_FUNCTION_EXPECTED_NAME}]"
+                )
             migrations_list = getattr(
-                table_migrations_module, _MIGRATIONS_LIST_EXPECTED_NAME
-            )
+                table_migrations_module, _MIGRATIONS_FUNCTION_EXPECTED_NAME
+            )()
             all_migrations.extend(migrations_list)
         return all_migrations
