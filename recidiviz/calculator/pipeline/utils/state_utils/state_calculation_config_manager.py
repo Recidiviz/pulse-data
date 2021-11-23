@@ -212,6 +212,7 @@ def get_state_specific_case_compliance_manager(
     supervision_contacts: List[StateSupervisionContact],
     violation_responses: List[StateSupervisionViolationResponse],
     incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
+    supervision_delegate: StateSpecificSupervisionDelegate,
 ) -> Optional[StateSupervisionCaseComplianceManager]:
     """Returns a state-specific SupervisionCaseComplianceManager object, containing information about whether the
     given supervision case is in compliance with state-specific standards. If the state of the
@@ -227,6 +228,7 @@ def get_state_specific_case_compliance_manager(
             supervision_contacts,
             violation_responses,
             incarceration_period_index,
+            supervision_delegate,
         )
     if state_code == StateCode.US_ND.value:
         return UsNdSupervisionCaseCompliance(
@@ -238,6 +240,7 @@ def get_state_specific_case_compliance_manager(
             supervision_contacts,
             violation_responses,
             incarceration_period_index,
+            supervision_delegate,
         )
     if state_code == StateCode.US_PA.value:
         return UsPaSupervisionCaseCompliance(
@@ -249,6 +252,7 @@ def get_state_specific_case_compliance_manager(
             supervision_contacts,
             violation_responses,
             incarceration_period_index,
+            supervision_delegate,
         )
 
     return None

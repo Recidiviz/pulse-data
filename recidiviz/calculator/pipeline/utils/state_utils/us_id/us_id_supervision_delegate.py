@@ -21,6 +21,10 @@ from recidiviz.calculator.pipeline.supervision.events import SupervisionPopulati
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_delegate import (
     StateSpecificSupervisionDelegate,
 )
+from recidiviz.common.constants.state.state_assessment import (
+    StateAssessmentClass,
+    StateAssessmentType,
+)
 
 _OUT_OF_STATE_EXTERNAL_ID_IDENTIFIERS: List[str] = [
     "INTERSTATE PROBATION",
@@ -64,3 +68,10 @@ class UsIdSupervisionDelegate(StateSpecificSupervisionDelegate):
         return external_id is not None and external_id.startswith(
             tuple(_OUT_OF_STATE_EXTERNAL_ID_IDENTIFIERS)
         )
+
+    def assessment_types_to_include_for_class(
+        self, assessment_class: StateAssessmentClass
+    ) -> Optional[List[StateAssessmentType]]:
+        if assessment_class == StateAssessmentClass.RISK:
+            return [StateAssessmentType.LSIR]
+        return None

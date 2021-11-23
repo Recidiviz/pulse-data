@@ -66,15 +66,6 @@ class TestFindProgramEvents(unittest.TestCase):
     """Tests the find_program_events function."""
 
     def setUp(self) -> None:
-        self.assessment_types_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.program.identifier.assessment_utils."
-            "_assessment_types_of_class_for_state"
-        )
-        self.mock_assessment_types = self.assessment_types_patcher.start()
-        self.mock_assessment_types.return_value = [
-            StateAssessmentType.ORAS_COMMUNITY_SUPERVISION
-        ]
-
         self.incarceration_pre_processing_delegate_patcher = mock.patch(
             "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils"
             ".get_state_specific_incarceration_period_pre_processing_delegate"
@@ -103,7 +94,6 @@ class TestFindProgramEvents(unittest.TestCase):
         self.identifier = identifier.ProgramIdentifier()
 
     def tearDown(self) -> None:
-        self.assessment_types_patcher.stop()
         self.incarceration_pre_processing_delegate_patcher.stop()
         self.supervision_pre_processing_delegate_patcher.stop()
         self.supervision_delegate_patcher.stop()
@@ -195,24 +185,7 @@ class TestFindProgramReferrals(unittest.TestCase):
     """Tests the find_program_referrals function."""
 
     def setUp(self) -> None:
-        self.assessment_types_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.program.identifier.assessment_utils."
-            "_assessment_types_of_class_for_state"
-        )
-        self.mock_assessment_types = self.assessment_types_patcher.start()
-        self.mock_assessment_types.return_value = [
-            StateAssessmentType.ORAS_COMMUNITY_SUPERVISION
-        ]
-        self.supervision_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.program.identifier.get_state_specific_supervision_delegate"
-        )
-        self.mock_supervision_delegate = self.supervision_delegate_patcher.start()
-        self.mock_supervision_delegate.return_value = UsXxSupervisionDelegate()
         self.identifier = identifier.ProgramIdentifier()
-
-    def tearDown(self) -> None:
-        self.assessment_types_patcher.stop()
-        self.supervision_delegate_patcher.stop()
 
     def test_find_program_referrals(self) -> None:
         program_assignment = StateProgramAssignment.new_with_defaults(
@@ -247,6 +220,7 @@ class TestFindProgramReferrals(unittest.TestCase):
             assessments,
             supervision_periods,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+            UsXxSupervisionDelegate(),
         )
 
         assert program_assignment.program_id is not None
@@ -284,6 +258,7 @@ class TestFindProgramReferrals(unittest.TestCase):
             assessments,
             supervision_periods,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+            UsXxSupervisionDelegate(),
         )
 
         self.assertListEqual([], program_referrals)
@@ -327,6 +302,7 @@ class TestFindProgramReferrals(unittest.TestCase):
             assessments,
             supervision_periods,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+            UsXxSupervisionDelegate(),
         )
 
         assert program_assignment.program_id is not None
@@ -376,6 +352,7 @@ class TestFindProgramReferrals(unittest.TestCase):
             assessments,
             supervision_periods,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+            UsXxSupervisionDelegate(),
         )
 
         assert program_assignment.program_id is not None
@@ -435,6 +412,7 @@ class TestFindProgramReferrals(unittest.TestCase):
             assessments,
             supervision_periods,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+            UsXxSupervisionDelegate(),
         )
 
         assert program_assignment.program_id is not None
@@ -505,6 +483,7 @@ class TestFindProgramReferrals(unittest.TestCase):
             assessments,
             supervision_periods,
             supervision_period_agent_associations,
+            UsXxSupervisionDelegate(),
         )
 
         assert program_assignment.program_id is not None
@@ -780,6 +759,7 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
             assessment_type=StateAssessmentType.LSIR,
             supervision_periods=[supervision_period],
             supervision_period_to_agent_associations=DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+            supervision_delegate=UsXxSupervisionDelegate(),
         )
 
         self.assertListEqual(
@@ -827,6 +807,7 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
             assessment_type=StateAssessmentType.LSIR,
             supervision_periods=supervision_periods,
             supervision_period_to_agent_associations=DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+            supervision_delegate=UsXxSupervisionDelegate(),
         )
 
         self.assertListEqual(
@@ -883,6 +864,7 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
             assessment_type=StateAssessmentType.LSIR,
             supervision_periods=supervision_periods,
             supervision_period_to_agent_associations=DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+            supervision_delegate=UsXxSupervisionDelegate(),
         )
 
         self.assertListEqual(

@@ -19,9 +19,13 @@ for state-specific decisions involved in categorizing various attributes of
 supervision."""
 # pylint: disable=unused-argument
 import abc
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from recidiviz.calculator.pipeline.supervision.events import SupervisionPopulationEvent
+from recidiviz.common.constants.state.state_assessment import (
+    StateAssessmentClass,
+    StateAssessmentType,
+)
 from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
 
 
@@ -99,3 +103,11 @@ class StateSpecificSupervisionDelegate(abc.ABC):
         )
 
         return agent_info["agent_external_id"] if agent_info is not None else None
+
+    @abc.abstractmethod
+    def assessment_types_to_include_for_class(
+        self, assessment_class: StateAssessmentClass
+    ) -> Optional[List[StateAssessmentType]]:
+        """Defines the assessment types to refer to in calculations for a given
+        assessment class. Each state needs to override this with the assessment type
+        (e.g. LSIR) that they support."""

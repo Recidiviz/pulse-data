@@ -16,13 +16,29 @@
 # =============================================================================
 """Contains generic implementation of the StateSpecificSupervisionDelegate
  for used in state-agnostic tests."""
-
+from typing import List, Optional
 
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_delegate import (
     StateSpecificSupervisionDelegate,
+)
+from recidiviz.common.constants.state.state_assessment import (
+    StateAssessmentClass,
+    StateAssessmentType,
 )
 
 
 class UsXxSupervisionDelegate(StateSpecificSupervisionDelegate):
     """State-agnostic implementation of the
     StateSpecificSupervisionDelegate."""
+
+    def assessment_types_to_include_for_class(
+        self, assessment_class: StateAssessmentClass
+    ) -> Optional[List[StateAssessmentType]]:
+        """For unit tests, we support all types of assessments."""
+        if assessment_class == StateAssessmentClass.RISK:
+            return [
+                StateAssessmentType.LSIR,
+                StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
+                StateAssessmentType.ORAS_COMMUNITY_SUPERVISION_SCREENING,
+            ]
+        return None

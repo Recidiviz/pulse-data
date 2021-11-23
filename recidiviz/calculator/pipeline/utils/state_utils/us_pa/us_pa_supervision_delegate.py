@@ -15,10 +15,14 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """US_PA implementation of the supervision delegate"""
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_delegate import (
     StateSpecificSupervisionDelegate,
+)
+from recidiviz.common.constants.state.state_assessment import (
+    StateAssessmentClass,
+    StateAssessmentType,
 )
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
@@ -61,3 +65,11 @@ class UsPaSupervisionDelegate(StateSpecificSupervisionDelegate):
             supervision_period.admission_reason
             != StateSupervisionPeriodAdmissionReason.ABSCONSION
         )
+
+    def assessment_types_to_include_for_class(
+        self, assessment_class: StateAssessmentClass
+    ) -> Optional[List[StateAssessmentType]]:
+        """In US_PA, only LSIR assessments are supported."""
+        if assessment_class == StateAssessmentClass.RISK:
+            return [StateAssessmentType.LSIR]
+        return None
