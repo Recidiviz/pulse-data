@@ -75,7 +75,7 @@ SELECT
 FROM
     participants_metrics_menu a
 LEFT JOIN
-    `{project_id}.{analyst_views_dataset}.events_materialized` b
+    `{project_id}.{analyst_views_dataset}.person_events_materialized` b
 ON
     a.state_code = b.state_code
     AND a.subject_id = b.subject_id
@@ -110,7 +110,7 @@ SELECT DISTINCT
 FROM
     participants_metrics_menu a
 LEFT JOIN
-    `{project_id}.{analyst_views_dataset}.events_materialized` b
+    `{project_id}.{analyst_views_dataset}.person_events_materialized` b
 ON
     a.state_code = b.state_code
     AND a.subject_id = b.subject_id
@@ -145,7 +145,7 @@ SELECT
 FROM
     participants_metrics_menu a
 LEFT JOIN
-    `{project_id}.{analyst_views_dataset}.events_materialized` b
+    `{project_id}.{analyst_views_dataset}.person_events_materialized` b
 ON
     a.state_code = b.state_code
     AND a.subject_id = b.subject_id
