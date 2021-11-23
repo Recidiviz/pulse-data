@@ -24,8 +24,11 @@ from recidiviz.calculator.query.state.views.analyst_data.event_based_metrics_by_
 from recidiviz.calculator.query.state.views.analyst_data.event_based_metrics_by_supervision_officer import (
     EVENT_BASED_METRICS_BY_SUPERVISION_OFFICER_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.events import (
-    EVENTS_VIEW_BUILDER,
+from recidiviz.calculator.query.state.views.analyst_data.officer_events import (
+    OFFICER_EVENTS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.person_events import (
+    PERSON_EVENTS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.analyst_data.projected_discharges import (
     PROJECTED_DISCHARGES_VIEW_BUILDER,
@@ -73,7 +76,8 @@ from recidiviz.calculator.query.state.views.analyst_data.us_pa.us_pa_raw_treatme
 ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     EVENT_BASED_METRICS_BY_SUPERVISION_OFFICER_VIEW_BUILDER,
     EVENT_BASED_METRICS_BY_DISTRICT_VIEW_BUILDER,
-    EVENTS_VIEW_BUILDER,
+    OFFICER_EVENTS_VIEW_BUILDER,
+    PERSON_EVENTS_VIEW_BUILDER,
     PROJECTED_DISCHARGES_VIEW_BUILDER,
     SUPERVISION_OFFICER_CASELOAD_HEALTH_METRICS_VIEW_BUILDER,
     SUPERVISION_POPULATION_ATTRIBUTES_BY_DISTRICT_BY_MONTH_VIEW_BUILDER,
