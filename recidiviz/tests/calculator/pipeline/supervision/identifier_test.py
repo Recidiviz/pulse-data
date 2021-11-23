@@ -65,6 +65,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_sentence_classi
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_supervision_delegate import (
     UsMoSupervisionDelegate,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_delegate import (
+    UsNdSupervisionDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_supervision_delegate import (
     UsPaSupervisionDelegate,
 )
@@ -175,16 +178,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
     def setUp(self) -> None:
         self.maxDiff = None
 
-        self.assessment_types_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.supervision.identifier.assessment_utils."
-            "_assessment_types_of_class_for_state"
-        )
-        self.mock_assessment_types = self.assessment_types_patcher.start()
-        self.mock_assessment_types.return_value = [
-            StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
-            StateAssessmentType.LSIR,
-        ]
-
         self.incarceration_pre_processing_delegate_patcher = mock.patch(
             "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils"
             ".get_state_specific_incarceration_period_pre_processing_delegate"
@@ -230,7 +223,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         )
 
     def tearDown(self) -> None:
-        self.assessment_types_patcher.stop()
         self._stop_state_specific_delegate_patchers()
 
     def _stop_state_specific_delegate_patchers(self) -> None:
@@ -824,6 +816,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     person=self.person,
                     start_date=first_supervision_period.start_date,
                     supervision_period=first_supervision_period,
+                    supervision_delegate=UsNdSupervisionDelegate(),
                 ),
             )
         )
@@ -920,6 +913,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     person=self.person,
                     start_date=supervision_period_start_date,
                     supervision_period=supervision_period,
+                    supervision_delegate=UsIdSupervisionDelegate(),
                 ),
             )
         )
@@ -4301,21 +4295,9 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
     def setUp(self) -> None:
         self.maxDiff = None
 
-        self.assessment_types_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.supervision.identifier.assessment_utils."
-            "_assessment_types_of_class_for_state"
-        )
-        self.mock_assessment_types = self.assessment_types_patcher.start()
-        self.mock_assessment_types.return_value = [
-            StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
-            StateAssessmentType.LSIR,
-        ]
         self.identifier = identifier.SupervisionIdentifier()
 
         self.person = StatePerson.new_with_defaults(state_code="US_XX")
-
-    def tearDown(self) -> None:
-        self.assessment_types_patcher.stop()
 
     def test_find_population_events_for_supervision_period_revocation_no_termination(
         self,
@@ -8612,6 +8594,7 @@ def _generate_case_compliances(
     next_recommended_assessment_date: Optional[date] = None,
     violation_responses: Optional[List[StateSupervisionViolationResponse]] = None,
     incarceration_period_index: Optional[PreProcessedIncarcerationPeriodIndex] = None,
+    supervision_delegate: Optional[StateSpecificSupervisionDelegate] = None,
 ) -> Dict[date, SupervisionCaseCompliance]:
     """Generates the expected list of supervision case compliances. Because case compliance logic is tested in
     supervision_case_compliance_manager_test and state-specific compliance tests, this function generates expected case
@@ -8643,10 +8626,13 @@ def _generate_case_compliances(
         assessments or [],
         face_to_face_contacts or [],
         violation_responses or [],
-        incarceration_period_index
-        or PreProcessedIncarcerationPeriodIndex(
-            incarceration_periods=[], ip_id_to_pfi_subtype={}
+        incarceration_period_index=(
+            incarceration_period_index
+            or PreProcessedIncarcerationPeriodIndex(
+                incarceration_periods=[], ip_id_to_pfi_subtype={}
+            )
         ),
+        supervision_delegate=(supervision_delegate or UsXxSupervisionDelegate()),
     )
     # There will only be case compliance output if there's a case compliance manager implemented for the given state.
     if not state_specific_case_compliance_manager:

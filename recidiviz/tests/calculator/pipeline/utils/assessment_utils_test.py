@@ -17,26 +17,39 @@
 """Tests the functions in the assessment_utils file."""
 import unittest
 from datetime import date
-from unittest import mock
+from typing import List, Optional
 
 from recidiviz.calculator.pipeline.utils import assessment_utils
+from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_delegate import (
+    UsIdSupervisionDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_supervision_delegate import (
+    UsMoSupervisionDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_delegate import (
+    UsNdSupervisionDelegate,
+)
 from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentClass,
     StateAssessmentType,
 )
 from recidiviz.persistence.entity.state.entities import StateAssessment
+from recidiviz.tests.calculator.pipeline.utils.state_utils.state_specific_supervision_delegate_test import (
+    UsXxSupervisionDelegate,
+)
 
 
 # pylint: disable=protected-access
 class TestFindMostRecentApplicableAssessment(unittest.TestCase):
     """Tests the find_most_recent_applicable_assessment_for_pipeline_and_state function."""
 
-    @mock.patch(
-        "recidiviz.calculator.pipeline.utils.assessment_utils._assessment_types_of_class_for_state"
-    )
-    def test_find_most_recent_applicable_assessment_LSIR(self, mock_assessment_types):
-        mock_assessment_types.return_value = [StateAssessmentType.LSIR]
+    class LsirOnlySupervisionDelegate(UsXxSupervisionDelegate):
+        def assessment_types_to_include_for_class(
+            self, _assessment_class: StateAssessmentClass
+        ) -> Optional[List[StateAssessmentType]]:
+            return [StateAssessmentType.LSIR]
 
+    def test_find_most_recent_applicable_assessment_LSIR(self):
         assessment_1 = StateAssessment.new_with_defaults(
             state_code="US_XX",
             assessment_type=StateAssessmentType.LSIR,
@@ -55,19 +68,16 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
 
         most_recent_assessment = (
             assessment_utils.find_most_recent_applicable_assessment_of_class_for_state(
-                date(2018, 4, 30), assessments, StateAssessmentClass.RISK, "US_XX"
+                date(2018, 4, 30),
+                assessments,
+                StateAssessmentClass.RISK,
+                self.LsirOnlySupervisionDelegate(),
             )
         )
 
         self.assertEqual(most_recent_assessment, assessment_1)
 
-    @mock.patch(
-        "recidiviz.calculator.pipeline.utils.assessment_utils._assessment_types_of_class_for_state"
-    )
-    def test_find_most_recent_applicable_assessment_LSIR_no_matches(
-        self, mock_assessment_types
-    ):
-        mock_assessment_types.return_value = [StateAssessmentType.LSIR]
+    def test_find_most_recent_applicable_assessment_LSIR_no_matches(self):
         assessment = StateAssessment.new_with_defaults(
             state_code="US_XX",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION_SCREENING,
@@ -77,20 +87,24 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
 
         most_recent_assessment = (
             assessment_utils.find_most_recent_applicable_assessment_of_class_for_state(
-                date(2018, 4, 30), [assessment], StateAssessmentClass.RISK, "US_XX"
+                date(2018, 4, 30),
+                [assessment],
+                StateAssessmentClass.RISK,
+                self.LsirOnlySupervisionDelegate(),
             )
         )
 
         self.assertIsNone(most_recent_assessment)
 
-    @mock.patch(
-        "recidiviz.calculator.pipeline.utils.assessment_utils._assessment_types_of_class_for_state"
-    )
-    def test_find_most_recent_applicable_assessment_no_assessment_types_for_pipeline(
-        self, mock_assessment_types
-    ):
-        mock_assessment_types.return_value = None
+    class NoRiskAssessmentSupervisionDelegate(UsXxSupervisionDelegate):
+        def assessment_types_to_include_for_class(
+            self, _assessment_class: StateAssessmentClass
+        ) -> Optional[List[StateAssessmentType]]:
+            return None
 
+    def test_find_most_recent_applicable_assessment_no_assessment_types_for_pipeline(
+        self,
+    ):
         assessment = StateAssessment.new_with_defaults(
             state_code="US_XX",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION_SCREENING,
@@ -100,22 +114,16 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
 
         most_recent_assessment = (
             assessment_utils.find_most_recent_applicable_assessment_of_class_for_state(
-                date(2018, 4, 30), [assessment], StateAssessmentClass.RISK, "US_XX"
+                date(2018, 4, 30),
+                [assessment],
+                StateAssessmentClass.RISK,
+                self.NoRiskAssessmentSupervisionDelegate(),
             )
         )
 
         self.assertIsNone(most_recent_assessment, assessment)
 
-    @mock.patch(
-        "recidiviz.calculator.pipeline.utils.assessment_utils._assessment_types_of_class_for_state"
-    )
-    def test_find_most_recent_applicable_assessment_no_assessment_score(
-        self, mock_assessment_types
-    ):
-        mock_assessment_types.return_value = [
-            StateAssessmentType.ORAS_COMMUNITY_SUPERVISION
-        ]
-
+    def test_find_most_recent_applicable_assessment_no_assessment_score(self):
         assessment = StateAssessment.new_with_defaults(
             state_code="US_XX",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
@@ -125,7 +133,10 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
 
         most_recent_assessment = (
             assessment_utils.find_most_recent_applicable_assessment_of_class_for_state(
-                date(2018, 4, 30), [assessment], StateAssessmentClass.RISK, "US_XX"
+                date(2018, 4, 30),
+                [assessment],
+                StateAssessmentClass.RISK,
+                UsXxSupervisionDelegate(),
             )
         )
 
@@ -150,12 +161,16 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
 
         assessments = [lsir_assessment, oras_assessment]
 
-        for pipeline in assessment_utils._ASSESSMENT_TYPES_TO_INCLUDE_FOR_CLASS:
-            most_recent_assessment = assessment_utils.find_most_recent_applicable_assessment_of_class_for_state(
-                date(2018, 4, 30), assessments, pipeline, state_code
+        most_recent_assessment = (
+            assessment_utils.find_most_recent_applicable_assessment_of_class_for_state(
+                date(2018, 4, 30),
+                assessments,
+                StateAssessmentClass.RISK,
+                UsIdSupervisionDelegate(),
             )
+        )
 
-            self.assertEqual(most_recent_assessment, lsir_assessment)
+        self.assertEqual(most_recent_assessment, lsir_assessment)
 
     def test_find_most_recent_applicable_assessment_US_ND(self):
         state_code = "US_ND"
@@ -176,12 +191,16 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
 
         assessments = [lsir_assessment, oras_assessment]
 
-        for pipeline in assessment_utils._ASSESSMENT_TYPES_TO_INCLUDE_FOR_CLASS:
-            most_recent_assessment = assessment_utils.find_most_recent_applicable_assessment_of_class_for_state(
-                date(2018, 4, 30), assessments, pipeline, state_code
+        most_recent_assessment = (
+            assessment_utils.find_most_recent_applicable_assessment_of_class_for_state(
+                date(2018, 4, 30),
+                assessments,
+                StateAssessmentClass.RISK,
+                UsNdSupervisionDelegate(),
             )
+        )
 
-            self.assertEqual(most_recent_assessment, lsir_assessment)
+        self.assertEqual(most_recent_assessment, lsir_assessment)
 
     def test_find_most_recent_applicable_assessment_US_MO(self):
         state_code = "US_MO"
@@ -199,8 +218,6 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
             assessment_score=17,
         )
 
-        assessments = [lsir_assessment, oras_assessment]
-
         applicable_assessment_types = [
             StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             StateAssessmentType.ORAS_COMMUNITY_SUPERVISION_SCREENING,
@@ -208,13 +225,14 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
 
         for assessment_type in applicable_assessment_types:
             oras_assessment.assessment_type = assessment_type
+            most_recent_assessment = assessment_utils.find_most_recent_applicable_assessment_of_class_for_state(
+                date(2018, 4, 30),
+                [lsir_assessment, oras_assessment],
+                StateAssessmentClass.RISK,
+                UsMoSupervisionDelegate(),
+            )
 
-            for pipeline in assessment_utils._ASSESSMENT_TYPES_TO_INCLUDE_FOR_CLASS:
-                most_recent_assessment = assessment_utils.find_most_recent_applicable_assessment_of_class_for_state(
-                    date(2018, 4, 30), assessments, pipeline, state_code
-                )
-
-                self.assertEqual(most_recent_assessment, oras_assessment)
+            self.assertEqual(most_recent_assessment, oras_assessment)
 
     def test_same_dates(self) -> None:
         assessment_1 = StateAssessment.new_with_defaults(
@@ -233,9 +251,13 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
             external_id="10",
         )
 
-        for pipeline in assessment_utils._ASSESSMENT_TYPES_TO_INCLUDE_FOR_CLASS:
-            most_recent_assessment = assessment_utils.find_most_recent_applicable_assessment_of_class_for_state(
-                date(2018, 4, 30), [assessment_1, assessment_2], pipeline, "US_XX"
+        most_recent_assessment = (
+            assessment_utils.find_most_recent_applicable_assessment_of_class_for_state(
+                date(2018, 4, 30),
+                [assessment_1, assessment_2],
+                StateAssessmentClass.RISK,
+                UsXxSupervisionDelegate(),
             )
+        )
 
-            self.assertEqual(most_recent_assessment, assessment_2)
+        self.assertEqual(most_recent_assessment, assessment_2)

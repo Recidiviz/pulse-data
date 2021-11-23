@@ -34,6 +34,9 @@ from recidiviz.calculator.pipeline.utils.assessment_utils import (
 from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
     PreProcessedIncarcerationPeriodIndex,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_delegate import (
+    StateSpecificSupervisionDelegate,
+)
 from recidiviz.calculator.pipeline.utils.supervision_level_policy import (
     SupervisionLevelPolicy,
 )
@@ -69,6 +72,7 @@ class StateSupervisionCaseComplianceManager:
         supervision_contacts: List[StateSupervisionContact],
         violation_responses: List[StateSupervisionViolationResponse],
         incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
+        supervision_delegate: StateSpecificSupervisionDelegate,
     ):
         self.person = person
         self.supervision_period = supervision_period
@@ -78,6 +82,7 @@ class StateSupervisionCaseComplianceManager:
         self.supervision_contacts = supervision_contacts
         self.violation_responses = violation_responses
         self.incarceration_period_index = incarceration_period_index
+        self.supervision_delegate = supervision_delegate
 
     def get_case_compliance_on_date(
         self, compliance_evaluation_date: date
@@ -112,7 +117,7 @@ class StateSupervisionCaseComplianceManager:
                 compliance_evaluation_date,
                 self.assessments,
                 assessment_class=StateAssessmentClass.RISK,
-                state_code=self.supervision_period.state_code,
+                supervision_delegate=self.supervision_delegate,
             )
         )
         most_recent_assessment_date = (
@@ -353,7 +358,7 @@ class StateSupervisionCaseComplianceManager:
                 evaluation_date,
                 self.assessments,
                 assessment_class=StateAssessmentClass.RISK,
-                state_code=self.supervision_period.state_code,
+                supervision_delegate=self.supervision_delegate,
             )
         )
 

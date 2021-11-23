@@ -572,7 +572,7 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
             admission_date,
             assessments,
             assessment_class=StateAssessmentClass.RISK,
-            state_code=incarceration_period.state_code,
+            supervision_delegate=supervision_delegate,
         )
         violation_responses_for_history = (
             filter_violation_responses_for_violation_history(

@@ -17,10 +17,14 @@
 """US_MO implementation of the supervision delegate"""
 # pylint: disable=unused-argument
 from datetime import date
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_delegate import (
     StateSpecificSupervisionDelegate,
+)
+from recidiviz.common.constants.state.state_assessment import (
+    StateAssessmentClass,
+    StateAssessmentType,
 )
 from recidiviz.common.date import DateRange, DateRangeDiff
 from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
@@ -65,4 +69,16 @@ class UsMoSupervisionDelegate(StateSpecificSupervisionDelegate):
             ).overlapping_range:
                 return agent_dict["agent_external_id"]
 
+        return None
+
+    def assessment_types_to_include_for_class(
+        self, assessment_class: StateAssessmentClass
+    ) -> Optional[List[StateAssessmentType]]:
+        """In US_MO, only Ohio Risk Assessment System (ORAS) assessment types are
+        supported."""
+        if assessment_class == StateAssessmentClass.RISK:
+            return [
+                StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
+                StateAssessmentType.ORAS_COMMUNITY_SUPERVISION_SCREENING,
+            ]
         return None
