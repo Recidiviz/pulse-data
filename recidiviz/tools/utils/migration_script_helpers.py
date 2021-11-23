@@ -18,26 +18,16 @@
 import os
 from typing import Set
 
-from recidiviz.persistence.database.schema_utils import SchemaType
-from recidiviz.utils.string import StrictStringFormatter
+import alembic.command
+import alembic.config
 
-_ALEMBIC_REVISION_COMMAND_TEMPLATE = (
-    "alembic -c {config_path} revision -m {migration_name}"
-)
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 
 _HEADER_SECTION_FINAL_LINE_START = "depends_on"
 
-PATH_TO_MIGRATIONS_DIRECTORY = "recidiviz/persistence/database/migrations"
 
-
-def path_to_versions_directory(schema: SchemaType) -> str:
-    return os.path.join(PATH_TO_MIGRATIONS_DIRECTORY, schema.value.lower(), "versions")
-
-
-def _path_to_config_file(schema: SchemaType) -> str:
-    return os.path.join(
-        PATH_TO_MIGRATIONS_DIRECTORY, f"{schema.value.lower()}_alembic.ini"
-    )
+def path_to_versions_directory(key: SQLAlchemyDatabaseKey) -> str:
+    return os.path.join(key.migrations_location, "versions")
 
 
 def get_migration_header_section(migration_filepath: str) -> str:
@@ -55,9 +45,9 @@ def get_migration_header_section(migration_filepath: str) -> str:
     return "".join(header_section_lines)
 
 
-def _get_all_filenames_in_versions_directory(schema: SchemaType) -> Set[str]:
+def _get_all_filenames_in_versions_directory(key: SQLAlchemyDatabaseKey) -> Set[str]:
     """Returns set of all filenames currently in versions directory"""
-    versions_directory = path_to_versions_directory(schema)
+    versions_directory = path_to_versions_directory(key)
 
     return {
         item
@@ -67,25 +57,16 @@ def _get_all_filenames_in_versions_directory(schema: SchemaType) -> Set[str]:
 
 
 def create_new_empty_migration_and_return_filename(
-    schema: SchemaType, migration_name: str
+    key: SQLAlchemyDatabaseKey, migration_name: str
 ) -> str:
     """Calls alembic script to generate new empty migration with
     |migration_name| and returns its filename"""
-    initial_filenames = _get_all_filenames_in_versions_directory(schema)
+    initial_filenames = _get_all_filenames_in_versions_directory(key)
 
-    command = StrictStringFormatter().format(
-        _ALEMBIC_REVISION_COMMAND_TEMPLATE,
-        config_path=_path_to_config_file(schema),
-        migration_name=migration_name,
-    )
-    exit_code = os.system(command)
-    if exit_code != 0:
-        raise RuntimeError(
-            "Call to generate alembic revision failed, any "
-            "error messages printed in preceding output"
-        )
+    config = alembic.config.Config(key.alembic_file)
+    alembic.command.revision(config, message=migration_name)
 
-    new_filenames = _get_all_filenames_in_versions_directory(schema)
+    new_filenames = _get_all_filenames_in_versions_directory(key)
 
     # Versions directory should now have 1 new file
     return new_filenames.difference(initial_filenames).pop()
