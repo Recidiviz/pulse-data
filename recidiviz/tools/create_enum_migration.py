@@ -21,11 +21,11 @@ from pytest_alembic import runner
 from pytest_alembic.config import Config
 from sqlalchemy import create_engine
 
+from recidiviz.persistence.database import migrations
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tools.postgres import local_postgres_helpers
 from recidiviz.tools.utils.migration_script_helpers import (
-    PATH_TO_MIGRATIONS_DIRECTORY,
     create_new_empty_migration_and_return_filename,
     get_migration_header_section,
     path_to_versions_directory,
@@ -33,7 +33,7 @@ from recidiviz.tools.utils.migration_script_helpers import (
 from recidiviz.utils.string import StrictStringFormatter
 
 _PATH_TO_BODY_SECTION_TEMPLATE = os.path.join(
-    PATH_TO_MIGRATIONS_DIRECTORY, "enum_migration_template.txt"
+    os.path.dirname(migrations.__file__), "enum_migration_template.txt"
 )
 
 
@@ -187,11 +187,12 @@ def main() -> None:
         if val not in args.remove_enum_value
     ]
 
+    key = SQLAlchemyDatabaseKey.canonical_for_schema(args.schema)
     migration_filename = create_new_empty_migration_and_return_filename(
-        args.schema, args.migration_name
+        key, args.migration_name
     )
     migration_filepath = os.path.join(
-        path_to_versions_directory(args.schema), migration_filename
+        path_to_versions_directory(key), migration_filename
     )
     header_section = get_migration_header_section(migration_filepath)
     body_section = _get_migration_body_section(

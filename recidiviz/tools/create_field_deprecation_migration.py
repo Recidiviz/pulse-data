@@ -34,14 +34,15 @@ import argparse
 import os
 from typing import List
 
+from recidiviz.persistence.database import migrations
 from recidiviz.persistence.database.schema_utils import (
     SchemaType,
     get_table_class_by_name,
     schema_type_to_schema_base,
 )
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.entity.base_entity import EnumEntity
 from recidiviz.tools.utils.migration_script_helpers import (
-    PATH_TO_MIGRATIONS_DIRECTORY,
     create_new_empty_migration_and_return_filename,
     get_migration_header_section,
     path_to_versions_directory,
@@ -49,7 +50,7 @@ from recidiviz.tools.utils.migration_script_helpers import (
 from recidiviz.utils.string import StrictStringFormatter
 
 _PATH_TO_BODY_SECTION_TEMPLATE = os.path.join(
-    PATH_TO_MIGRATIONS_DIRECTORY, "field_deprecation_migration_template.txt"
+    os.path.dirname(migrations.__file__), "field_deprecation_migration_template.txt"
 )
 
 
@@ -134,11 +135,12 @@ def main() -> None:
 
     # NOTE: We use prints instead of logging because the call out to alembic
     # does something to mess with our logging levels.
+    key = SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
     migration_filename = create_new_empty_migration_and_return_filename(
-        SchemaType.STATE, args.migration_name
+        key, args.migration_name
     )
     migration_filepath = os.path.join(
-        path_to_versions_directory(SchemaType.STATE), migration_filename
+        path_to_versions_directory(key), migration_filename
     )
     header_section = get_migration_header_section(migration_filepath)
     body_section = _get_migration_body_section(
