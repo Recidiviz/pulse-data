@@ -45,6 +45,9 @@ from recidiviz.calculator.query.state.views.analyst_data.supervision_population_
 from recidiviz.calculator.query.state.views.analyst_data.us_id.us_id_behavior_responses import (
     US_ID_BEHAVIOR_RESPONSES_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_id.us_id_early_discharge_requests import (
+    US_ID_EARLY_DISCHARGE_REQUESTS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.us_id.us_id_ppo_metrics_early_discharge_reduction import (
     US_ID_PPO_METRICS_EARLY_DISCHARGE_REDUCTION_VIEW_BUILDER,
 )
@@ -92,4 +95,5 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_ID_RAW_SUPERVISION_CONTACTS_VIEW_BUILDER,
     US_PA_RAW_TREATMENT_CLASSIFICATION_CODES_VIEW_BUILDER,
     US_PA_RAW_REQUIRED_TREATMENT_VIEW_BUILDER,
+    US_ID_EARLY_DISCHARGE_REQUESTS_VIEW_BUILDER,
 ]
