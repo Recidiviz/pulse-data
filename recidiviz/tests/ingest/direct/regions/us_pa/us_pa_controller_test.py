@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2020 Recidiviz, Inc.
+# Copyright (C) 2021 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -1000,7 +1000,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_legacy_parse_file_test(expected, "supervision_period_v3")
+        self.run_legacy_parse_file_test(expected, "supervision_period_v4")
 
     def test_populate_data_supervision_contact(self) -> None:
         expected = IngestInfo(
@@ -3634,7 +3634,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         populate_person_backedges(expected_people)
 
         # Act
-        self._run_ingest_job_for_filename("supervision_period_v3.csv")
+        self._run_ingest_job_for_filename("supervision_period_v4.csv")
 
         # Assert
         self.assert_expected_db_people(expected_people)
