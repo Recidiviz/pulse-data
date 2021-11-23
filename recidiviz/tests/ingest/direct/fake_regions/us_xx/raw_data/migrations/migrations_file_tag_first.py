@@ -20,9 +20,9 @@ import datetime
 from typing import List
 
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_table_migration import (
+    DeleteFromRawTableMigration,
     RawTableMigration,
     UpdateRawTableMigration,
-    DeleteFromRawTableMigration,
 )
 
 COLUMN_1a = "column_1a"
@@ -30,19 +30,21 @@ COLUMN_1b = "column_1b"
 DATE_1 = datetime.datetime.fromisoformat("2020-06-10T00:00:00")
 DATE_2 = datetime.datetime.fromisoformat("2020-09-21T00:00:00")
 
-MIGRATIONS: List[RawTableMigration] = [
-    UpdateRawTableMigration(
-        migrations_file=__file__,
-        update_datetime_filters=[
-            DATE_1,
-            DATE_2,
-        ],
-        filters=[(COLUMN_1a, "123")],
-        updates=[(COLUMN_1b, "456")],
-    ),
-    DeleteFromRawTableMigration(
-        migrations_file=__file__,
-        update_datetime_filters=[DATE_2],
-        filters=[(COLUMN_1a, "00000000")],
-    ),
-]
+
+def get_migrations() -> List[RawTableMigration]:
+    return [
+        UpdateRawTableMigration(
+            migrations_file=__file__,
+            update_datetime_filters=[
+                DATE_1,
+                DATE_2,
+            ],
+            filters=[(COLUMN_1a, "123")],
+            updates=[(COLUMN_1b, "456")],
+        ),
+        DeleteFromRawTableMigration(
+            migrations_file=__file__,
+            update_datetime_filters=[DATE_2],
+            filters=[(COLUMN_1a, "00000000")],
+        ),
+    ]
