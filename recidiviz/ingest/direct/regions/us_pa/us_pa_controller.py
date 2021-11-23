@@ -165,7 +165,9 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
                 self._generate_pbpp_assessment_external_id,
                 self._enrich_pbpp_assessments,
             ],
+            # TODO(#10138): [US_PA] Transition supervision_periods to v4
             "supervision_period_v3": supervision_period_postprocessors,
+            "supervision_period_v4": supervision_period_postprocessors,
             "supervision_contacts": [
                 self._set_supervision_contact_agent,
                 self._set_supervision_contact_fields,
@@ -184,7 +186,11 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             ],
             "dbo_LSIR": [],
             "dbo_LSIHistory": [],
+            # TODO(#10138): [US_PA] Transition supervision_periods to v4
             "supervision_period_v3": [
+                gen_convert_person_ids_to_external_id_objects(self._get_id_type),
+            ],
+            "supervision_period_v4": [
                 gen_convert_person_ids_to_external_id_objects(self._get_id_type),
             ],
             "supervision_contacts": [
@@ -196,7 +202,9 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             str, IngestPrimaryKeyOverrideCallable
         ] = {
             "sci_incarceration_period": _generate_sci_incarceration_period_primary_key,
+            # TODO(#10138): [US_PA] Transition supervision_periods to v4
             "supervision_period_v3": _generate_supervision_period_primary_key,
+            "supervision_period_v4": _generate_supervision_period_primary_key,
             "supervision_contacts": _generate_supervision_contact_primary_key,
         }
 
@@ -502,8 +510,16 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             "supervision_violation_response",
             "board_action",
             "supervision_contacts",
-            "supervision_period_v3",
         ]
+
+        # TODO(#10138): [US_PA] Transition supervision_periods to v4
+        if (
+            not environment.in_gcp_production()
+            and self.ingest_instance is DirectIngestInstance.SECONDARY
+        ):
+            launched_file_tags.append("supervision_period_v4")
+        else:
+            launched_file_tags.append("supervision_period_v3")
 
         unlaunched_file_tags: List[str] = [
             # Empty for now
@@ -612,8 +628,10 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         ]:
             return US_PA_CONTROL
 
+        # TODO(#10138): [US_PA] Transition supervision_periods to v4
         if file_tag in [
             "supervision_period_v3",
+            "supervision_period_v4",
             "supervision_contacts",
         ]:
             return US_PA_PBPP

@@ -33,7 +33,6 @@ from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-# TODO(#10138): [US_PA] Transition supervision_periods to v4
 VIEW_QUERY_TEMPLATE = """WITH
 parole_count_id_level_info_base AS (
   -- This subquery selects one row per continuous stint a person spends on supervision (i.e. per ParoleCountID), along
@@ -286,6 +285,38 @@ edges_with_sequence_numbers AS (
     )
   )
 ),
+-- Sometimes, PA assigns a supervising agent to an incarcerated person shortly before their incarceration period ends
+-- This block looks back 7 days from a transition from incarceration to supervision and carries forward any
+-- supervisor assigned during that window
+edges_with_backfilled_supervising_agents AS (
+    SELECT
+        * EXCEPT(supervising_officer_name, supervising_officer_id, district_office, district_sub_office_id, supervision_location_org_code),
+        IFNULL(supervising_officer_name,
+            IF(open_block_did_change AND DATE_DIFF(edge_date, LAG(edge_date) OVER parolee_window, DAY) < 8,
+                LAG(supervising_officer_name) OVER parolee_window,
+                NULL)) AS supervising_officer_name,
+        IFNULL(supervising_officer_id,
+            IF(open_block_did_change AND DATE_DIFF(edge_date, LAG(edge_date) OVER parolee_window, DAY) < 8,
+                LAG(supervising_officer_id) OVER parolee_window,
+                NULL)) AS supervising_officer_id,
+        IFNULL(district_office,
+            IF(open_block_did_change AND DATE_DIFF(edge_date, LAG(edge_date) OVER parolee_window, DAY) < 8,
+                LAG(district_office) OVER parolee_window,
+                NULL)) AS district_office,
+        IFNULL(district_sub_office_id,
+            IF(open_block_did_change AND DATE_DIFF(edge_date, LAG(edge_date) OVER parolee_window, DAY) < 8,
+                LAG(district_sub_office_id) OVER parolee_window,
+                NULL)) AS district_sub_office_id,
+        IFNULL(supervision_location_org_code,
+            IF(open_block_did_change AND DATE_DIFF(edge_date, LAG(edge_date) OVER parolee_window, DAY) < 8,
+                LAG(supervision_location_org_code) OVER parolee_window,
+                NULL)) AS supervision_location_org_code,
+    FROM edges_with_sequence_numbers
+    WINDOW parolee_window AS (
+        PARTITION BY parole_number
+        ORDER BY sequence_number
+    )
+),
 hydrated_edges AS (
   -- Returns a table with the same critical date edges, but with a number of NULL fields hydrated properly based on
   -- their relative position to other edges.
@@ -318,7 +349,7 @@ hydrated_edges AS (
     LAST_VALUE(district_sub_office_id IGNORE NULLS) OVER preceding_for_parole_number AS district_sub_office_id,
     LAST_VALUE(supervision_location_org_code IGNORE NULLS) OVER preceding_for_parole_number AS supervision_location_org_code,
     LAST_VALUE(condition_codes IGNORE NULLS) OVER preceding_for_parole_number AS condition_codes,
-  FROM edges_with_sequence_numbers 
+  FROM edges_with_backfilled_supervising_agents 
   WINDOW preceding_for_parole_number AS (
     PARTITION BY parole_number, block_sequence_number
     ORDER BY sequence_number ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
@@ -427,7 +458,7 @@ WHERE open_count != 0
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     region="us_pa",
-    ingest_view_name="supervision_period_v3",
+    ingest_view_name="supervision_period_v4",
     view_query_template=VIEW_QUERY_TEMPLATE,
     order_by_cols="parole_number ASC, period_sequence_number ASC",
 )
