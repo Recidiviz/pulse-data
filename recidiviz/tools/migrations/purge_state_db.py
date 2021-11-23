@@ -34,9 +34,7 @@ import argparse
 import logging
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.types.direct_ingest_instance import (
-    DirectIngestInstance,
-)
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.tools.utils.script_helpers import (
     prompt_for_confirmation,
     run_command,
