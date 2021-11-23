@@ -64,9 +64,7 @@ from recidiviz.case_triage.views.dataset_config import (
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.types.direct_ingest_instance import (
-    DirectIngestInstance,
-)
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database import base_schema
 
 # TODO(#4302): Remove unused schema module imports
@@ -505,7 +503,10 @@ class CloudSqlToBQConfig:
             if col_python_type == datetime.date:
                 return bigquery.enums.SqlTypeNames.DATE.value
             if col_python_type == datetime.datetime:
-                if isinstance(col_postgres_type, postgresql.TIMESTAMP):
+                if (
+                    isinstance(col_postgres_type, postgresql.TIMESTAMP)
+                    or col_postgres_type.timezone
+                ):
                     return bigquery.enums.SqlTypeNames.TIMESTAMP.value
                 return bigquery.enums.SqlTypeNames.DATETIME.value
             if col_python_type == bool:
