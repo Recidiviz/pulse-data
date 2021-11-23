@@ -15,9 +15,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-from typing import Optional
+from typing import Any, Dict, Optional
 
 class Config:
     attributes: dict
     config_file_name: str
-    def __init__(self, file_: Optional[str] = None): ...
+    def __init__(
+        self, file_: Optional[str] = None, attributes: Dict[str, Any] = None
+    ): ...
