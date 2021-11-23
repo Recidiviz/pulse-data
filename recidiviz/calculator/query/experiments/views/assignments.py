@@ -193,8 +193,6 @@ WITH last_day_of_data AS (
         "state_code" as id_type,
         variant_id,
         CAST(variant_date AS DATETIME) AS variant_time,
-        "0" as cluster_id,
-        "0" as block_id,
     FROM
         `{project_id}.{static_reference_dataset}.experiment_state_assignments_materialized`
 )
