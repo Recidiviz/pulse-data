@@ -78,12 +78,12 @@ LEFT JOIN
     `{project_id}.{analyst_views_dataset}.person_events_materialized` b
 ON
     a.state_code = b.state_code
-    AND a.subject_id = b.subject_id
-    AND a.id_type = b.id_type
+    AND CAST(a.subject_id AS INT64) = b.person_id
     AND b.event_date BETWEEN a.variant_date AND CURRENT_DATE()  -- swap for experiment end date
-    AND a.metric = CONCAT(b.metric, "_FIRST")
+    AND a.metric = CONCAT(b.event, "_FIRST")
 WHERE
     a.metric LIKE ("%_FIRST")
+    AND a.id_type = "person_id"
 QUALIFY
     -- keep first occurrence of event, if any
     ROW_NUMBER() OVER (
@@ -113,13 +113,13 @@ LEFT JOIN
     `{project_id}.{analyst_views_dataset}.person_events_materialized` b
 ON
     a.state_code = b.state_code
-    AND a.subject_id = b.subject_id
-    AND a.id_type = b.id_type
+    AND CAST(a.subject_id AS INT64) = b.person_id
     AND b.event_date BETWEEN a.variant_date AND 
         DATE_ADD(a.variant_date, INTERVAL 1 YEAR)
-    AND a.metric = CONCAT(b.metric, "_COUNT_1_YEAR")
+    AND a.metric = CONCAT(b.event, "_COUNT_1_YEAR")
 WHERE
     a.metric LIKE("%_COUNT_1_YEAR")
+    AND a.id_type = "person_id"
 GROUP BY 1, 2, 3, 4, 5, 6
 
 UNION ALL 
@@ -148,13 +148,13 @@ LEFT JOIN
     `{project_id}.{analyst_views_dataset}.person_events_materialized` b
 ON
     a.state_code = b.state_code
-    AND a.subject_id = b.subject_id
-    AND a.id_type = b.id_type
+    AND CAST(a.subject_id AS INT64) = b.person_id
     AND b.event_date BETWEEN a.variant_date AND 
         DATE_ADD(a.variant_date, INTERVAL 1 YEAR)
-    AND a.metric = CONCAT(b.metric, "_DAYS_TO_EVENT_1_YEAR")
+    AND a.metric = CONCAT(b.event, "_DAYS_TO_EVENT_1_YEAR")
 WHERE
     a.metric LIKE("%_DAYS_TO_EVENT_1_YEAR")
+    AND a.id_type = "person_id"
 QUALIFY
     -- keep first occurrence of event, if any
     ROW_NUMBER() OVER (
