@@ -772,7 +772,9 @@ class TestDirectIngestController(unittest.TestCase):
 
         # Single process job request should be waiting for the first file
         self.assertEqual(
-            task_manager.get_process_job_queue_info(controller.region).size(),
+            task_manager.get_process_job_queue_info(
+                controller.region, controller.ingest_instance
+            ).size(),
             1,
         )
 
@@ -782,7 +784,9 @@ class TestDirectIngestController(unittest.TestCase):
         task_manager.test_pop_finished_process_job_task()
 
         self.assertEqual(
-            task_manager.get_process_job_queue_info(controller.region).size(),
+            task_manager.get_process_job_queue_info(
+                controller.region, controller.ingest_instance
+            ).size(),
             0,
         )
 
@@ -798,11 +802,15 @@ class TestDirectIngestController(unittest.TestCase):
 
         self.assertEqual(
             0,
-            task_manager.get_scheduler_queue_info(controller.region).size(),
+            task_manager.get_scheduler_queue_info(
+                controller.region, controller.ingest_instance
+            ).size(),
         )
         self.assertEqual(
             1,
-            task_manager.get_process_job_queue_info(controller.region).size(),
+            task_manager.get_process_job_queue_info(
+                controller.region, controller.ingest_instance
+            ).size(),
         )
 
         self.validate_file_metadata(
@@ -837,7 +845,9 @@ class TestDirectIngestController(unittest.TestCase):
 
         self.assertEqual(
             1,
-            task_manager.get_process_job_queue_info(controller.region).size(),
+            task_manager.get_process_job_queue_info(
+                controller.region, controller.ingest_instance
+            ).size(),
         )
 
         file_path2 = path_for_fixture_file(
@@ -879,11 +889,15 @@ class TestDirectIngestController(unittest.TestCase):
 
         self.assertEqual(
             0,
-            task_manager.get_scheduler_queue_info(controller.region).size(),
+            task_manager.get_scheduler_queue_info(
+                controller.region, controller.ingest_instance
+            ).size(),
         )
         self.assertEqual(
             0,
-            task_manager.get_process_job_queue_info(controller.region).size(),
+            task_manager.get_process_job_queue_info(
+                controller.region, controller.ingest_instance
+            ).size(),
         )
         self.validate_file_metadata(
             controller,
@@ -968,11 +982,15 @@ class TestDirectIngestController(unittest.TestCase):
 
         self.assertEqual(
             0,
-            task_manager.get_scheduler_queue_info(controller.region).size(),
+            task_manager.get_scheduler_queue_info(
+                controller.region, controller.ingest_instance
+            ).size(),
         )
         self.assertEqual(
             0,
-            task_manager.get_process_job_queue_info(controller.region).size(),
+            task_manager.get_process_job_queue_info(
+                controller.region, controller.ingest_instance
+            ).size(),
         )
         self.validate_file_metadata(
             controller,
@@ -1122,11 +1140,15 @@ class TestDirectIngestController(unittest.TestCase):
         # just get us in a loop).
         self.assertEqual(
             0,
-            task_manager.get_scheduler_queue_info(controller.region).size(),
+            task_manager.get_scheduler_queue_info(
+                controller.region, controller.ingest_instance
+            ).size(),
         )
         self.assertEqual(
             0,
-            task_manager.get_process_job_queue_info(controller.region).size(),
+            task_manager.get_process_job_queue_info(
+                controller.region, controller.ingest_instance
+            ).size(),
         )
         self.validate_file_metadata(
             controller,
@@ -1409,11 +1431,15 @@ class TestDirectIngestController(unittest.TestCase):
 
         self.assertEqual(
             0,
-            task_manager.get_scheduler_queue_info(controller.region).size(),
+            task_manager.get_scheduler_queue_info(
+                controller.region, controller.ingest_instance
+            ).size(),
         )
         self.assertEqual(
             0,
-            task_manager.get_process_job_queue_info(controller.region).size(),
+            task_manager.get_process_job_queue_info(
+                controller.region, controller.ingest_instance
+            ).size(),
         )
 
         # Later file that succeeds will trigger proper upload of all files
@@ -1486,11 +1512,15 @@ class TestDirectIngestController(unittest.TestCase):
 
         self.assertEqual(
             0,
-            task_manager.get_scheduler_queue_info(controller.region).size(),
+            task_manager.get_scheduler_queue_info(
+                controller.region, controller.ingest_instance
+            ).size(),
         )
         self.assertEqual(
             0,
-            task_manager.get_process_job_queue_info(controller.region).size(),
+            task_manager.get_process_job_queue_info(
+                controller.region, controller.ingest_instance
+            ).size(),
         )
 
         if not isinstance(controller.fs.gcs_file_system, FakeGCSFileSystem):

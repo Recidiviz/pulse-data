@@ -19,24 +19,15 @@
 import abc
 from typing import Optional
 
-from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
 )
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
-    GcsfsIngestArgs,
-)
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
-    BQImportExportCloudTaskQueueInfo,
     DirectIngestCloudTaskManager,
-    ProcessIngestJobCloudTaskQueueInfo,
-    SchedulerCloudTaskQueueInfo,
-    SftpCloudTaskQueueInfo,
 )
-from recidiviz.utils.regions import Region
 
 
-class FakeDirectIngestCloudTaskManager(DirectIngestCloudTaskManager):
+class FakeDirectIngestCloudTaskManager(DirectIngestCloudTaskManager, abc.ABC):
     """Base class for fake implementations of DirectIngestCloudTaskManager."""
 
     def __init__(self) -> None:
@@ -44,53 +35,3 @@ class FakeDirectIngestCloudTaskManager(DirectIngestCloudTaskManager):
 
     def set_controller(self, controller: BaseDirectIngestController) -> None:
         self.controller = controller
-
-    @abc.abstractmethod
-    def get_process_job_queue_info(
-        self, region: Region
-    ) -> ProcessIngestJobCloudTaskQueueInfo:
-        pass
-
-    @abc.abstractmethod
-    def get_scheduler_queue_info(self, region: Region) -> SchedulerCloudTaskQueueInfo:
-        pass
-
-    @abc.abstractmethod
-    def get_bq_import_export_queue_info(
-        self, region: Region
-    ) -> BQImportExportCloudTaskQueueInfo:
-        pass
-
-    @abc.abstractmethod
-    def get_sftp_queue_info(self, region: Region) -> SftpCloudTaskQueueInfo:
-        pass
-
-    @abc.abstractmethod
-    def create_direct_ingest_process_job_task(
-        self,
-        region: Region,
-        ingest_args: GcsfsIngestArgs,
-    ) -> None:
-        pass
-
-    @abc.abstractmethod
-    def create_direct_ingest_scheduler_queue_task(
-        self,
-        region: Region,
-        ingest_bucket: GcsfsBucketPath,
-        just_finished_job: bool,
-    ) -> None:
-        pass
-
-    @abc.abstractmethod
-    def create_direct_ingest_handle_new_files_task(
-        self,
-        region: Region,
-        ingest_bucket: GcsfsBucketPath,
-        can_start_ingest: bool,
-    ) -> None:
-        pass
-
-    @abc.abstractmethod
-    def delete_scheduler_queue_task(self, region: Region, task_name: str) -> None:
-        pass
