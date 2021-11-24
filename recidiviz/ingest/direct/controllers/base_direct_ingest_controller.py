@@ -262,10 +262,7 @@ class BaseDirectIngestController:
         queue, leaving the current task.
         """
         queue_info = self.cloud_task_manager.get_scheduler_queue_info(
-            # TODO(#9713): Migrate to use self.ingest_instance once we're routing
-            #  scheduler tasks to their instance-specific queues.
-            self.region,
-            DirectIngestInstance.PRIMARY,
+            self.region, self.ingest_instance
         )
         scheduler_task_id_prefix = build_scheduler_task_id(
             self.region, self.ingest_instance, prefix_only=True
@@ -287,11 +284,7 @@ class BaseDirectIngestController:
             if task_id == current_task_id:
                 continue
             self.cloud_task_manager.delete_scheduler_queue_task(
-                # TODO(#9713): Migrate to use self.ingest_instance once we're routing
-                #  scheduler tasks to their instance-specific queues.
-                self.region,
-                DirectIngestInstance.PRIMARY,
-                task_name,
+                self.region, self.ingest_instance, task_name
             )
             pruned_task_count += 1
         if pruned_task_count:
@@ -327,10 +320,7 @@ class BaseDirectIngestController:
             return
 
         process_job_queue_info = self.cloud_task_manager.get_process_job_queue_info(
-            # TODO(#9713): Migrate to use self.ingest_instance once we're routing
-            #  scheduler tasks to their instance-specific queues.
-            self.region,
-            DirectIngestInstance.PRIMARY,
+            self.region, self.ingest_instance
         )
         if (
             process_job_queue_info.has_any_tasks_for_instance(
