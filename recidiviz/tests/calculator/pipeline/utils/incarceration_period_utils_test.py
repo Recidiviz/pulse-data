@@ -288,7 +288,7 @@ class TestPeriodEdgesAreValidTransfer(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_XX",
             admission_date=date(2002, 9, 11),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
             release_date=date(2002, 9, 19),
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
