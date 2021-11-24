@@ -209,11 +209,9 @@ def period_is_commitment_from_supervision_admission_from_parole_board_hold(
         # Valid commitment from supervision admission reasons following a parole board
         # hold
         in (
-            # TODO(#9865): Delete `DUAL_REVOCATION` and `PAROLE_REVOCATION` once collapsed to `REVOCATION`.
             StateIncarcerationPeriodAdmissionReason.DUAL_REVOCATION,
             StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
             StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
-            StateIncarcerationPeriodAdmissionReason.REVOCATION,
         )
         # Admissions from a parole board hold should happen on the same day
         # as the release from the parole board hold
@@ -291,7 +289,6 @@ def _get_commitment_from_supervision_supervision_period(
 
     admission_date = incarceration_period.admission_date
     admission_reason = incarceration_period.admission_reason
-    admission_reason_raw_text = incarceration_period.admission_reason_raw_text
 
     if not is_commitment_from_supervision(admission_reason):
         raise ValueError(
@@ -332,7 +329,7 @@ def _get_commitment_from_supervision_supervision_period(
 
     relevant_periods = _get_relevant_sps_for_pre_commitment_sp_search(
         admission_reason=admission_reason,
-        admission_reason_raw_text=admission_reason_raw_text,
+        admission_reason_raw_text=incarceration_period.admission_reason_raw_text,
         supervision_periods=supervision_period_index.supervision_periods,
         commitment_from_supervision_delegate=commitment_from_supervision_delegate,
     )
@@ -370,8 +367,8 @@ def _get_commitment_from_supervision_supervision_period(
     )
 
     if (
-        admission_reason_raw_text
-        in commitment_from_supervision_delegate.admission_reason_raw_texts_that_should_prioritize_overlaps_in_pre_commitment_sp_search()
+        admission_reason
+        in commitment_from_supervision_delegate.admission_reasons_that_should_prioritize_overlaps_in_pre_commitment_sp_search()
     ):
         valid_pre_commitment_periods = (
             overlapping_periods if overlapping_periods else terminated_periods

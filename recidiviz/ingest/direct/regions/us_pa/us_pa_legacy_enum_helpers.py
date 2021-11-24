@@ -341,11 +341,11 @@ def incarceration_period_admission_reason_mapper(
 
     if start_is_new_revocation == "TRUE":
         # Note: These are not always legal revocations. We are currently using the
-        # REVOCATION admission_reason for admissions from parole for treatment
+        # PAROLE_REVOCATION admission_reason for admissions from parole for treatment
         # and shock incarceration as well as for legal revocations in ingest.
         # Treatment and shock incarceration admissions are handled as sanction
         # admissions in IP pre-processing.
-        return StateIncarcerationPeriodAdmissionReason.REVOCATION
+        return StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION
 
     if start_is_admin_edge == "TRUE":
         return StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE

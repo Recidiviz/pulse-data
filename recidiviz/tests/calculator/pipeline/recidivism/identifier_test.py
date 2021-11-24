@@ -154,7 +154,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             state_code="US_XX",
             admission_date=date(2020, 4, 14),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
         )
 
         incarceration_periods = [
@@ -226,7 +226,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             state_code="US_XX",
             admission_date=date(2014, 4, 14),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
         )
 
         incarceration_periods = [
@@ -729,7 +729,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_XX",
             admission_date=date(2011, 4, 5),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
             release_date=date(2014, 4, 14),
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
@@ -771,7 +771,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             )
         ]
 
-    def test_find_release_events_REVOCATION(self) -> None:
+    def test_find_release_events_probation_revocation(self) -> None:
         """Tests the find_release_events function path where the
         person was conditionally released and returned for a probation
         revocation."""
@@ -793,7 +793,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_XX",
             admission_date=date(2011, 4, 5),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
             release_date=date(2014, 4, 14),
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
@@ -921,7 +921,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_XX",
             admission_date=date(2011, 4, 5),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
             release_date=date(2014, 4, 14),
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )

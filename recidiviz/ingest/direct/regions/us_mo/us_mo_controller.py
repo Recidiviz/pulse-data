@@ -1095,15 +1095,35 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             )
 
         if ip_admission_reason_enum in {
-            # TODO(#9865): Delete `PAROLE_REVOCATION`, `DUAL_REVOCATION`, and `PROBATION_REVOCATION` once
-            #  collapsed to `REVOCATION`.
             StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
             StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
             StateIncarcerationPeriodAdmissionReason.DUAL_REVOCATION,
-            StateIncarcerationPeriodAdmissionReason.REVOCATION,
         }:
             return ip_admission_reason_enum
         return None
+
+    @classmethod
+    def _deciding_body_type(
+        cls, revocation_admission_reason: StateIncarcerationPeriodAdmissionReason
+    ) -> StateSupervisionViolationResponseDecidingBodyType:
+        if (
+            revocation_admission_reason
+            == StateIncarcerationPeriodAdmissionReason.DUAL_REVOCATION
+        ):
+            return StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD
+        if (
+            revocation_admission_reason
+            == StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION
+        ):
+            return StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD
+        if (
+            revocation_admission_reason
+            == StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION
+        ):
+            return StateSupervisionViolationResponseDecidingBodyType.COURT
+        raise ValueError(
+            f"Unexpected revocation_admission_reason [{revocation_admission_reason}]."
+        )
 
     @classmethod
     def _set_incarceration_period_status(

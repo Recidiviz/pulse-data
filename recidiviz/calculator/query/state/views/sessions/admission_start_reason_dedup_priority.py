@@ -54,8 +54,6 @@ SUPERVISION_START_REASON_ORDERED_PRIORITY = [
 
 INCARCERATION_START_REASON_ORDERED_PRIORITY = [
     StateIncarcerationPeriodAdmissionReason.REVOCATION,
-    # TODO(#9865): Delete `PAROLE_REVOCATION`, `DUAL_REVOCATION`, and `PROBATION_REVOCATION` once
-    #  collapsed to `REVOCATION`.
     StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
     StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
     StateIncarcerationPeriodAdmissionReason.DUAL_REVOCATION,

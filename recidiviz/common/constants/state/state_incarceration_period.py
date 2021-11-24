@@ -218,8 +218,6 @@ def is_commitment_from_supervision(
         return False
     commitment_admissions = [
         StateIncarcerationPeriodAdmissionReason.REVOCATION,
-        # TODO(#9865): Delete `PAROLE_REVOCATION`, `DUAL_REVOCATION`, and `PROBATION_REVOCATION` once
-        #  collapsed to `REVOCATION`.
         StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
         StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
         StateIncarcerationPeriodAdmissionReason.DUAL_REVOCATION,
@@ -281,8 +279,6 @@ def is_official_admission(
     # official start of incarceration
     official_admission_types = [
         StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-        # TODO(#9865): Delete `PAROLE_REVOCATION`, `DUAL_REVOCATION`, and `PROBATION_REVOCATION` once
-        #  collapsed to `REVOCATION`.
         StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
         StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
         StateIncarcerationPeriodAdmissionReason.REVOCATION,
