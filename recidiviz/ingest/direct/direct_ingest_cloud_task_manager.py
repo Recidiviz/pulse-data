@@ -791,7 +791,7 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
 
         body = self._get_body_from_args(data_import_args)
 
-        self._get_bq_import_export_queue_manager(region).create_task(
+        self._get_raw_data_import_queue_manager(region).create_task(
             task_id=task_id,
             relative_uri=relative_uri,
             body=body,
