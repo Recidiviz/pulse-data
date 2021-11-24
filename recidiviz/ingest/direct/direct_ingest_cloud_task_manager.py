@@ -697,11 +697,8 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
         relative_uri = f"/direct/process_job?{urlencode(params)}"
         body = self._get_body_from_args(ingest_args)
 
-        # TODO(#9713): Migrate to use ingest_args.ingest_instance() var once we're routing
-        #  scheduler tasks to their instance-specific queues.
-
         self._get_process_job_queue_manager(
-            region, DirectIngestInstance.PRIMARY
+            region, ingest_args.ingest_instance()
         ).create_task(
             task_id=task_id,
             relative_uri=relative_uri,
@@ -725,11 +722,7 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
 
         relative_uri = f"/direct/scheduler?{urlencode(params)}"
 
-        # TODO(#9713): Migrate to use ingest_instance var once we're routing
-        #  scheduler tasks to their instance-specific queues.
-        self._get_scheduler_queue_manager(
-            region, DirectIngestInstance.PRIMARY
-        ).create_task(
+        self._get_scheduler_queue_manager(region, ingest_instance).create_task(
             task_id=task_id,
             relative_uri=relative_uri,
             body={},
@@ -750,11 +743,8 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
             "can_start_ingest": can_start_ingest,
         }
         relative_uri = f"/direct/handle_new_files?{urlencode(params)}"
-        # TODO(#9713): Migrate to use ingest_instance var once we're routing
-        #  scheduler tasks to their instance-specific queues.
-        self._get_scheduler_queue_manager(
-            region, DirectIngestInstance.PRIMARY
-        ).create_task(
+
+        self._get_scheduler_queue_manager(region, ingest_instance).create_task(
             task_id=task_id,
             relative_uri=relative_uri,
             body={},

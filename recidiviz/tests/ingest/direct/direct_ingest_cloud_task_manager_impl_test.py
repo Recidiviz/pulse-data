@@ -607,7 +607,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         uuid = "random-uuid"
         mock_uuid.uuid4.return_value = uuid
         queue_path = "us_xx-scheduler-queue-path"
-        queue_name = "direct-ingest-state-us-xx-scheduler"
+        queue_name = "direct-ingest-state-us-xx-scheduler-secondary"
 
         task_name = f"{queue_name}/{_REGION.region_code}-2019-07-20-{uuid}"
         task = tasks_v2.types.task_pb2.Task(
@@ -726,7 +726,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         mock_uuid.uuid4.return_value = uuid
         date = "2019-07-20"
         queue_path = "us-xx-process-queue-path"
-        queue_name = "direct-ingest-state-us-xx-process-job-queue"
+        queue_name = "direct-ingest-state-us-xx-process-job-queue-secondary"
 
         task_name = f"{queue_name}/{_REGION.region_code}-{date}-{uuid}"
         url_params = {"region": _REGION.region_code, "file_path": file_path.abs_path()}
