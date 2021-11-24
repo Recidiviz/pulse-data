@@ -149,18 +149,13 @@ output:
                               - OJFA-RTMED  # Return from medical/other jurisdiction
                               - OJFA-RTDET  # Return from detainer
 
-                            # TODO(#8885): Migrate to general `REVOCATION` admission reason once created.
-                            StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION:
+                            StateIncarcerationPeriodAdmissionReason.REVOCATION:
                               # The following are all movements from parole to facility (PAFA).
                               - PAFA-PAVOK  # Parole Revoked
                               - PAFA-REVOK  # Revocation
-
-                            # TODO(#8885): Migrate to general `REVOCATION` admission reason once created.
-                            StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION:
                               # The following are all movements from probation to facility (PRFA).
                               - PRFA-PRVOK  # Probation revoked
                               - PRFA-PTVOK  # Partial revocation
-                              # TODO(#8885): Migrate to general `REVOCATION` admission reason once created.
                               - CCFA-REVOK  # Revocation
                               - CCFA-PTVOK  # Partial revocation
                               - PAFA-RECIS  # Rescission
