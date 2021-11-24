@@ -25,7 +25,7 @@ from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 class UsNdIncarcerationDelegate(StateSpecificIncarcerationDelegate):
     """US_ND implementation of the incarceration delegate"""
 
-    def is_period_included_in_state_population(  # pylint: disable=unused-argument
+    def is_period_included_in_state_population(
         self,
         incarceration_period: StateIncarcerationPeriod,
     ) -> bool:

@@ -15,7 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains logic for US_XX specific entity matching overrides."""
-
+from recidiviz.common.constants.states import StateCode
+from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.persistence.entity_matching.state.base_state_matching_delegate import (
     BaseStateMatchingDelegate,
 )
@@ -24,5 +25,5 @@ from recidiviz.persistence.entity_matching.state.base_state_matching_delegate im
 class UsXxMatchingDelegate(BaseStateMatchingDelegate):
     """Class that contains matching logic specific to US_XX."""
 
-    def __init__(self) -> None:
-        super().__init__("us_xx")
+    def __init__(self, ingest_metadata: IngestMetadata):
+        super().__init__(StateCode.US_XX.value.lower(), ingest_metadata)

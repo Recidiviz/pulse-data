@@ -520,7 +520,7 @@ def write_entities(
             logging.info("Starting entity matching")
 
             entity_matching_output = entity_matching.match(
-                session, ingest_metadata.region, people
+                session, ingest_metadata.region, people, ingest_metadata
             )
             output_people = entity_matching_output.people
             total_root_entities = (

@@ -18,6 +18,8 @@
 import logging
 from typing import List
 
+from recidiviz.common.constants.states import StateCode
+from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity_matching.state.base_state_matching_delegate import (
     BaseStateMatchingDelegate,
@@ -30,8 +32,8 @@ from recidiviz.persistence.entity_matching.state.state_date_based_matching_utils
 class UsIdMatchingDelegate(BaseStateMatchingDelegate):
     """Class that contains matching logic specific to US_ID."""
 
-    def __init__(self):
-        super().__init__("us_id")
+    def __init__(self, ingest_metadata: IngestMetadata):
+        super().__init__(StateCode.US_ID.value.lower(), ingest_metadata)
 
     def perform_match_postprocessing(self, matched_persons: List[schema.StatePerson]):
         """Performs the following ID specific postprocessing on the provided |matched_persons| directly after they have

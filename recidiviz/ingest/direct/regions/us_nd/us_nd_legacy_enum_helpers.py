@@ -61,6 +61,8 @@ from recidiviz.ingest.direct.direct_ingest_controller_utils import (
 )
 
 
+# TODO(#10152): Delete once elite_externalmovements_incarceration_periods has shipped
+#  to prod
 def incarceration_period_status_mapper(label: str) -> StateIncarcerationPeriodStatus:
     """Parses the custody status from a string containing the external movement edge direction and active flag."""
 
@@ -194,6 +196,8 @@ def generate_enum_overrides() -> EnumOverrides:
         StateSentenceStatus.SERVING: ["O"],
         StateChargeClassificationType.FELONY: ["IF"],
         StateChargeClassificationType.MISDEMEANOR: ["IM"],
+        # TODO(#10152): Delete all StateIncarcerationPeriod enums once
+        #  elite_externalmovements_incarceration_periods has shipped to prod
         StateIncarcerationPeriodAdmissionReason.ADMITTED_IN_ERROR: ["ADM ERROR"],
         StateIncarcerationPeriodAdmissionReason.EXTERNAL_UNKNOWN: ["OTHER", "PREA"],
         StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION: [

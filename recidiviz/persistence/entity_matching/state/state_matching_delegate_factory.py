@@ -16,6 +16,7 @@
 # =============================================================================
 """Contains factory class for creating StateMatchingDelegate objects"""
 
+from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.persistence.entity_matching.state.base_state_matching_delegate import (
     BaseStateMatchingDelegate,
 )
@@ -41,17 +42,19 @@ from recidiviz.persistence.entity_matching.state.us_tn.us_tn_matching_delegate i
 
 class StateMatchingDelegateFactory:
     @classmethod
-    def build(cls, *, region_code: str) -> BaseStateMatchingDelegate:
+    def build(
+        cls, *, region_code: str, ingest_metadata: IngestMetadata
+    ) -> BaseStateMatchingDelegate:
         if region_code.upper() == "US_ID":
-            return UsIdMatchingDelegate()
+            return UsIdMatchingDelegate(ingest_metadata)
         if region_code.upper() == "US_MO":
-            return UsMoMatchingDelegate()
+            return UsMoMatchingDelegate(ingest_metadata)
         if region_code.upper() == "US_ND":
-            return UsNdMatchingDelegate()
+            return UsNdMatchingDelegate(ingest_metadata)
         if region_code.upper() == "US_PA":
-            return UsPaMatchingDelegate()
+            return UsPaMatchingDelegate(ingest_metadata)
         if region_code.upper() == "US_TN":
-            return UsTnMatchingDelegate()
+            return UsTnMatchingDelegate(ingest_metadata)
         if region_code.upper() == "US_ME":
-            return UsMeMatchingDelegate()
+            return UsMeMatchingDelegate(ingest_metadata)
         raise ValueError(f"Unexpected region_code provided: {region_code}.")

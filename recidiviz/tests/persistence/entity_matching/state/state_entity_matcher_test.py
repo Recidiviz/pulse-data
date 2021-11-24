@@ -44,8 +44,12 @@ from recidiviz.common.constants.state.state_supervision_violation import (
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseDecision,
 )
+from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
 from recidiviz.persistence.database.schema.state import schema
+from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session import Session
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+from recidiviz.persistence.entity.entities import EntityPersonType
 from recidiviz.persistence.entity.state.entities import (
     StateAgent,
     StateAssessment,
@@ -67,6 +71,7 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionViolationResponse,
 )
 from recidiviz.persistence.entity_matching import entity_matching
+from recidiviz.persistence.entity_matching.entity_matching_types import MatchedEntities
 from recidiviz.persistence.entity_matching.state import (
     state_entity_matcher,
     state_matching_utils,
@@ -128,11 +133,19 @@ _STATE_CODE = "US_XX"
 _DATE_1 = datetime.date(year=2019, month=1, day=1)
 _DATE_2 = datetime.date(year=2019, month=2, day=1)
 _DATE_3 = datetime.date(year=2019, month=3, day=1)
+DEFAULT_METADATA = IngestMetadata(
+    region="us_xx",
+    system_level=SystemLevel.STATE,
+    ingest_time=datetime.datetime(year=1000, month=1, day=1),
+    database_key=SQLAlchemyDatabaseKey.canonical_for_schema(
+        schema_type=SchemaType.STATE
+    ),
+)
 
 
 class FakeStateMatchingDelegate(BaseStateMatchingDelegate):
-    def __init__(self, region_code: str):
-        super().__init__(region_code)
+    def __init__(self, region_code: str, ingest_metadata: IngestMetadata):
+        super().__init__(region_code, ingest_metadata)
 
     def read_potential_match_db_persons(
         self, session: Session, ingested_persons: List[schema.StatePerson]
@@ -157,7 +170,15 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         self.addCleanup(self.matching_delegate_patcher.stop)
 
     def _get_base_delegate(self, **_kwargs: Any) -> FakeStateMatchingDelegate:
-        return FakeStateMatchingDelegate(_STATE_CODE)
+        return FakeStateMatchingDelegate(_STATE_CODE, DEFAULT_METADATA)
+
+    @staticmethod
+    def _match(
+        session: Session, ingested_people: List[EntityPersonType]
+    ) -> MatchedEntities:
+        return entity_matching.match(
+            session, _STATE_CODE, ingested_people, DEFAULT_METADATA
+        )
 
     def test_match_newPerson(self) -> None:
         # Arrange 1 - Match
@@ -187,7 +208,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         # Act 1 - Match
         session = self._session()
-        matched_entities = entity_matching.match(session, _STATE_CODE, [person_2])
+        matched_entities = self._match(session, [person_2])
 
         self.assert_people_match_pre_and_post_commit(
             [expected_person_2],
@@ -247,7 +268,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         # Act 1 - Match
         session = self._session()
-        matched_entities = entity_matching.match(session, _STATE_CODE, [person])
+        matched_entities = self._match(session, [person])
 
         self.assertEqual(0, matched_entities.error_count)
         self.assertEqual(1, matched_entities.total_root_entities)
@@ -292,9 +313,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         # Act
         session = self._session()
-        matched_entities = entity_matching.match(
-            session, _STATE_CODE, [person, person_2]
-        )
+        matched_entities = self._match(session, [person, person_2])
 
         # Assert
         self.assert_people_match_pre_and_post_commit(
@@ -353,9 +372,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         self.maxDiff = None
         # Act
         session = self._session()
-        matched_entities = entity_matching.match(
-            session, _STATE_CODE, [person, person_2]
-        )
+        matched_entities = self._match(session, [person, person_2])
 
         # Assert
         self.assert_people_match_pre_and_post_commit(
@@ -408,7 +425,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         # Act
         session = self._session()
         start = datetime.datetime.now()
-        matched_entities = entity_matching.match(session, _STATE_CODE, people)
+        matched_entities = self._match(session, people)
         end = datetime.datetime.now()
         duration_seconds = (end - start).total_seconds()
         self.assertTrue(
@@ -460,7 +477,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         # Act 1 - Match
         session = self._session()
-        matched_entities = entity_matching.match(session, _STATE_CODE, [person])
+        matched_entities = self._match(session, [person])
 
         # Assert 1 - Match
         self.assert_no_errors(matched_entities)
@@ -578,9 +595,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         # Act 1 - Match
         session = self._session()
-        matched_entities = entity_matching.match(
-            session, _STATE_CODE, [person, person_another]
-        )
+        matched_entities = self._match(session, [person, person_another])
 
         # Assert 1 - Match
         self.assert_no_errors(matched_entities)
@@ -644,7 +659,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             r"Found multiple different ingested entites of type \[StateSentenceGroup\] "
             r"with conflicting information",
         ):
-            _ = entity_matching.match(session, _STATE_CODE, [person, person_2])
+            _ = self._match(session, [person, person_2])
 
     def test_matchPersons_multipleIngestedPeopleMatchOneDbPerson(self) -> None:
         db_external_id = generate_external_id(
@@ -696,9 +711,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         # Act 1 - Match
         session = self._session()
-        matched_entities = entity_matching.match(
-            session, _STATE_CODE, [person, person_dup]
-        )
+        matched_entities = self._match(session, [person, person_dup])
 
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
@@ -796,9 +809,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         # Act 1 - Match
         session = self._session()
-        matched_entities = entity_matching.match(
-            session, _STATE_CODE, ingested_people=[person]
-        )
+        matched_entities = self._match(session, ingested_people=[person])
 
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
@@ -915,9 +926,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         # Act 1 - Match
         session = self._session()
-        _matched_entities = entity_matching.match(
-            session, _STATE_CODE, ingested_people=[person]
-        )
+        _matched_entities = self._match(session, ingested_people=[person])
 
         # Assert 1 - Match
         # TODO(#3194): Uncomment once resolved
@@ -1054,9 +1063,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         # Act 1 - Match
         session = self._session()
-        matched_entities = entity_matching.match(
-            session, _STATE_CODE, ingested_people=[person]
-        )
+        matched_entities = self._match(session, ingested_people=[person])
 
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
@@ -1127,7 +1134,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         # Act 1 - Match
         session = self._session()
-        matched_entities = entity_matching.match(session, _STATE_CODE, [person])
+        matched_entities = self._match(session, [person])
 
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
@@ -1219,9 +1226,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         # Act 1 - Match
         session = self._session()
-        matched_entities = entity_matching.match(
-            session, _STATE_CODE, ingested_people=[person]
-        )
+        matched_entities = self._match(session, ingested_people=[person])
 
         # Assert 1 - Match
         self.assert_no_errors(matched_entities)
@@ -1355,9 +1360,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         # Act 1 - Match
         session = self._session()
-        matched_entities = entity_matching.match(
-            session, _STATE_CODE, ingested_people=[person]
-        )
+        matched_entities = self._match(session, ingested_people=[person])
 
         # Assert 1 - Match
         self.assert_no_errors(matched_entities)
@@ -1395,9 +1398,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         # Act 1 - Match
         session = self._session()
-        matched_entities = entity_matching.match(
-            session, _STATE_CODE, ingested_people=[person]
-        )
+        matched_entities = self._match(session, ingested_people=[person])
 
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
@@ -1469,9 +1470,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         # Act 1 - Match
         session = self._session()
-        matched_entities = entity_matching.match(
-            session, _STATE_CODE, ingested_people=[person]
-        )
+        matched_entities = self._match(session, ingested_people=[person])
 
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
@@ -1628,9 +1627,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         # Act 1 - Match
         session = self._session()
-        matched_entities = entity_matching.match(
-            session, _STATE_CODE, ingested_people=[person]
-        )
+        matched_entities = self._match(session, ingested_people=[person])
 
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
@@ -2061,9 +2058,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         # Act 1 - Match
         session = self._session()
-        matched_entities = entity_matching.match(
-            session, _STATE_CODE, ingested_people=[person]
-        )
+        matched_entities = self._match(session, ingested_people=[person])
 
         # Assert 1 - Match
         self.assert_no_errors(matched_entities)
@@ -2107,9 +2102,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         # Act 1 - Match
         session = self._session()
-        matched_entities = entity_matching.match(
-            session, _STATE_CODE, ingested_people=[person]
-        )
+        matched_entities = self._match(session, ingested_people=[person])
 
         # Assert 1 - Match
         self.assert_no_errors(matched_entities)
@@ -2209,9 +2202,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         # Act 1 - Match
         session = self._session()
-        matched_entities = entity_matching.match(
-            session, _STATE_CODE, ingested_people=[person]
-        )
+        matched_entities = self._match(session, ingested_people=[person])
 
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
@@ -2304,9 +2295,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         # Act 1 - Match
         session = self._session()
-        matched_entities = entity_matching.match(
-            session, _STATE_CODE, ingested_people=[person]
-        )
+        matched_entities = self._match(session, ingested_people=[person])
 
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
@@ -2420,9 +2409,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         # Act 1 - Match
         session = self._session()
-        matched_entities = entity_matching.match(
-            session, _STATE_CODE, ingested_people=[person]
-        )
+        matched_entities = self._match(session, ingested_people=[person])
 
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
@@ -2525,9 +2512,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         # Act 1 - Match
         session = self._session()
-        matched_entities = entity_matching.match(
-            session, _STATE_CODE, ingested_people=[placeholder_person]
-        )
+        matched_entities = self._match(session, ingested_people=[placeholder_person])
 
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
@@ -2635,9 +2620,8 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         # Act 1 - Match
         session = self._session()
-        matched_entities = entity_matching.match(
+        matched_entities = self._match(
             session,
-            _STATE_CODE,
             ingested_people=[placeholder_person, placeholder_person_another],
         )
 
@@ -2744,9 +2728,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         # Act 1 - Match
         session = self._session()
-        matched_entities = entity_matching.match(
-            session, _STATE_CODE, ingested_people=[person]
-        )
+        matched_entities = self._match(session, ingested_people=[person])
 
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
@@ -2816,9 +2798,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         # Act 1 - Match
         session = self._session()
-        matched_entities = entity_matching.match(
-            session, _STATE_CODE, ingested_people=[placeholder_person]
-        )
+        matched_entities = self._match(session, ingested_people=[placeholder_person])
 
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
@@ -2896,9 +2876,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         # Act 1 - Match
         session = self._session()
-        matched_entities = entity_matching.match(
-            session, _STATE_CODE, ingested_people=[person]
-        )
+        matched_entities = self._match(session, ingested_people=[person])
 
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
@@ -3011,9 +2989,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         # Act 1 - Match
         session = self._session()
-        matched_entities = entity_matching.match(
-            session, _STATE_CODE, ingested_people=[placeholder_person]
-        )
+        matched_entities = self._match(session, ingested_people=[placeholder_person])
 
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
@@ -3120,9 +3096,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         # Act 1 - Match
         session = self._session()
-        matched_entities = entity_matching.match(
-            session, _STATE_CODE, ingested_people=[person]
-        )
+        matched_entities = self._match(session, ingested_people=[person])
 
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
@@ -3176,9 +3150,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         # Act 1 - Match
         session = self._session()
-        matched_entities = entity_matching.match(
-            session, _STATE_CODE, ingested_people=[person]
-        )
+        matched_entities = self._match(session, ingested_people=[person])
 
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
@@ -3226,9 +3198,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         # Act 1 - Match
         session = self._session()
-        matched_entities = entity_matching.match(
-            session, _STATE_CODE, ingested_people=[person]
-        )
+        matched_entities = self._match(session, ingested_people=[person])
 
         self.assert_people_match_pre_and_post_commit(
             [expected_person], matched_entities.people, session
@@ -3290,7 +3260,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         # Arrange 1 - Match
         session = self._session()
-        matched_entities = entity_matching.match(session, _STATE_CODE, [person])
+        matched_entities = self._match(session, [person])
 
         # Assert 1 - Match
         sentence_group = matched_entities.people[0].sentence_groups[0]
@@ -3373,7 +3343,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         # Act 1 - Match
         session = self._session()
-        matched_entities = entity_matching.match(session, _STATE_CODE, [person])
+        matched_entities = self._match(session, [person])
 
         # Assert 1 - Match
         sentence_group = matched_entities.people[0].sentence_groups[0]
@@ -3452,7 +3422,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         # Act 1 - Match
         session = self._session()
-        matched_entities = entity_matching.match(session, _STATE_CODE, [person])
+        matched_entities = self._match(session, [person])
 
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
@@ -3551,7 +3521,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         # Act 1 - Match
         session = self._session()
-        matched_entities = entity_matching.match(session, _STATE_CODE, [person])
+        matched_entities = self._match(session, [person])
 
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
@@ -3648,7 +3618,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         # Act 1 - Match
         session = self._session()
-        matched_entities = entity_matching.match(session, _STATE_CODE, [person])
+        matched_entities = self._match(session, [person])
 
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
@@ -3732,7 +3702,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         # Arrange 1 - Match
         session = self._session()
-        matched_entities = entity_matching.match(session, _STATE_CODE, input_people)
+        matched_entities = self._match(session, input_people)
 
         # Assert 1 - Match
         sentence_group = matched_entities.people[0].sentence_groups[0]
@@ -3767,7 +3737,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             "^Failed to identify one of the non-placeholder ingest types: "
             r"\[StateSentenceGroup\]\.",
         ):
-            _ = entity_matching.match(session, _STATE_CODE, input_people)
+            _ = self._match(session, input_people)
 
     @patch(
         f"{state_entity_matcher.__name__}.MAX_NUM_TREES_TO_SEARCH_FOR_NON_PLACEHOLDER_TYPES",
@@ -3819,9 +3789,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         # Arrange 1 - Match
         session = self._session()
-        matched_entities = entity_matching.match(
-            session, _STATE_CODE, [person, person_dup]
-        )
+        matched_entities = self._match(session, [person, person_dup])
 
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
@@ -3896,7 +3864,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         # Act 1 - Match
         session = self._session()
-        matched_entities = entity_matching.match(session, _STATE_CODE, [person])
+        matched_entities = self._match(session, [person])
 
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
@@ -3976,9 +3944,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         # Act 1 - Match
         session = self._session()
-        matched_entities = entity_matching.match(
-            session, _STATE_CODE, [placeholder_person]
-        )
+        matched_entities = self._match(session, [placeholder_person])
 
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
@@ -4078,9 +4044,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         # Act 1 - Match
         session = self._session()
-        matched_entities = entity_matching.match(
-            session, _STATE_CODE, ingested_people=[person]
-        )
+        matched_entities = self._match(session, ingested_people=[person])
 
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
@@ -4203,9 +4167,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         # Act
         session = self._session()
-        matched_entities = entity_matching.match(
-            session, _STATE_CODE, ingested_people=[person]
-        )
+        matched_entities = self._match(session, ingested_people=[person])
 
         # Assert
         self.assert_people_match_pre_and_post_commit(
@@ -4322,9 +4284,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         # Act
         session = self._session()
-        matched_entities = entity_matching.match(
-            session, _STATE_CODE, ingested_people=[person]
-        )
+        matched_entities = self._match(session, ingested_people=[person])
 
         # Assert
         self.assert_people_match_pre_and_post_commit(
@@ -4395,9 +4355,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         # Act
         session = self._session()
-        matched_entities = entity_matching.match(
-            session, _STATE_CODE, ingested_people=[person]
-        )
+        matched_entities = self._match(session, ingested_people=[person])
 
         # Assert
         self.assert_people_match_pre_and_post_commit(
@@ -4526,9 +4484,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         # Act
         session = self._session()
-        matched_entities = entity_matching.match(
-            session, _STATE_CODE, ingested_people=[person]
-        )
+        matched_entities = self._match(session, ingested_people=[person])
         self.assert_no_errors(matched_entities)
         self.assertEqual(1, matched_entities.total_root_entities)
 
