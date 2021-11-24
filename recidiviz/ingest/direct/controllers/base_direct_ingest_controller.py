@@ -398,9 +398,7 @@ class BaseDirectIngestController:
         if they have not been scheduled. If tasks are scheduled or are still running,
         returns True. Otherwise, if it's safe to proceed with next steps of ingest,
         returns False."""
-        queue_info = self.cloud_task_manager.get_bq_import_export_queue_info(
-            self.region
-        )
+        queue_info = self.cloud_task_manager.get_raw_data_import_queue_info(self.region)
 
         did_schedule = False
         tasks_to_schedule = [

@@ -17,7 +17,7 @@
 """Test implementation of the DirectIngestCloudTaskManager that runs tasks
 synchronously, when prompted."""
 import os.path
-from typing import List, Tuple, Union
+from typing import List, Tuple
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
@@ -58,10 +58,11 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
         self.scheduler_tasks: List[Tuple[str, GcsfsBucketPath, bool]] = []
         self.num_finished_scheduler_tasks = 0
 
+        self.raw_data_import_tasks: List[Tuple[str, GcsfsRawDataBQImportArgs]] = []
+        self.num_finished_raw_data_import_tasks = 0
+
         # TODO(#9713): Delete these vars once we delete this queue.
-        self.bq_import_export_tasks: List[
-            Tuple[str, Union[GcsfsRawDataBQImportArgs, GcsfsIngestViewExportArgs]]
-        ] = []
+        self.bq_import_export_tasks: List[Tuple[str, GcsfsIngestViewExportArgs]] = []
         self.num_finished_bq_import_export_tasks = 0
         self.sftp_tasks: List[str] = []
 
@@ -92,8 +93,9 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
     def get_raw_data_import_queue_info(
         self, region: Region
     ) -> RawDataImportCloudTaskQueueInfo:
-        raise NotImplementedError(
-            "TODO(#9713): Implement once we start routing tasks to these queues"
+        return RawDataImportCloudTaskQueueInfo(
+            queue_name="raw_data_import",
+            task_names=[t[0] for t in self.raw_data_import_tasks],
         )
 
     def get_ingest_view_export_queue_info(
@@ -164,7 +166,7 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
         if not self.controller:
             raise ValueError("Controller is null - did you call set_controller()?")
         task_id = build_raw_data_import_task_id(region, data_import_args)
-        self.bq_import_export_tasks.append(
+        self.raw_data_import_tasks.append(
             (f"projects/path/to/{task_id}", data_import_args)
         )
 
@@ -288,12 +290,7 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
         with monitoring.push_region_tag(
             self.controller.region.region_code, self.controller.ingest_instance.value
         ):
-            if "raw_data_import" in task_id:
-                if not isinstance(args, GcsfsRawDataBQImportArgs):
-                    raise ValueError(f"Unexpected args type {type(args)}")
-
-                self.controller.do_raw_data_import(data_import_args=args)
-            elif "ingest_view_export" in task_id:
+            if "ingest_view_export" in task_id:
                 if not isinstance(args, GcsfsIngestViewExportArgs):
                     raise ValueError(f"Unexpected args type {type(args)}")
 
@@ -305,9 +302,23 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
     def test_run_next_raw_data_import_task(self) -> None:
         """Synchronously executes the next queued raw data import task, but *does not
         remove it from the queue*."""
-        raise NotImplementedError(
-            "TODO(#9713): Implement once we start routing tasks to this queue"
-        )
+        if not self.raw_data_import_tasks:
+            raise ValueError("BQ import/export job tasks should not be empty.")
+
+        if self.num_finished_raw_data_import_tasks:
+            raise ValueError("Must first pop last finished task.")
+
+        if not self.controller:
+            raise ValueError("Controller is null - did you call set_controller()?")
+
+        _task_id, args = self.raw_data_import_tasks[0]
+
+        with monitoring.push_region_tag(
+            self.controller.region.region_code, self.controller.ingest_instance.value
+        ):
+            self.controller.do_raw_data_import(data_import_args=args)
+
+        self.num_finished_raw_data_import_tasks += 1
 
     def test_run_next_ingest_view_export_task(self) -> None:
         """Synchronously executes the next queued ingest view export task, but *does not
@@ -345,9 +356,11 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
 
     def test_pop_finished_raw_data_import_task(self) -> None:
         """Removes most recently run raw data import task from the queue."""
-        raise NotImplementedError(
-            "TODO(#9713): Implement once we start routing tasks to this queue"
-        )
+        if self.num_finished_raw_data_import_tasks == 0:
+            raise ValueError("No finished tasks to pop.")
+
+        self.raw_data_import_tasks.pop(0)
+        self.num_finished_raw_data_import_tasks -= 1
 
     def test_pop_finished_ingest_view_export_task(self) -> None:
         """Removes most recently run ingest view export task from the queue."""
