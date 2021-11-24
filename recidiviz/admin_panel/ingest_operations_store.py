@@ -28,9 +28,6 @@ from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
 )
-from recidiviz.ingest.direct.types.direct_ingest_instance import (
-    DirectIngestInstance,
-)
 from recidiviz.ingest.direct.controllers.direct_ingest_instance_status_manager import (
     DirectIngestInstanceStatusManager,
 )
@@ -50,6 +47,7 @@ from recidiviz.ingest.direct.direct_ingest_region_utils import (
     get_direct_ingest_states_launched_in_env,
 )
 from recidiviz.ingest.direct.errors import DirectIngestInstanceError
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import in_development
 from recidiviz.utils.regions import get_region
@@ -128,10 +126,17 @@ class IngestOperationsStore:
         self, state_code: StateCode, new_queue_state: str
     ) -> None:
         """This function is called through the Ingest Operations UI in the admin panel.
-        It updates the state of the following queues by either pausing or resuming the queues:
-         - direct-ingest-state-<region_code>-bq-import-export
+        It updates the state of the following queues by either pausing or resuming the
+        queues:
+         - direct-ingest-state-<region_code>-bq-import-export (legacy queue) TODO(#9713): Update comment to delete
          - direct-ingest-state-<region_code>-process-job-queue
+         - direct-ingest-state-<region_code>-process-job-queue-secondary
          - direct-ingest-state-<region_code>-scheduler
+         - direct-ingest-state-<region_code>-scheduler-secondary
+         - direct-ingest-state-<region_code>-raw-data-import
+         - direct-ingest-state-<region_code>-raw-data-import-secondary
+         - direct-ingest-state-<region_code>-ingest-view-export
+         - direct-ingest-state-<region_code>-ingest-view-export-secondary
          - direct-ingest-state-<region_code>-sftp-queue    (for select regions)
 
         Requires:

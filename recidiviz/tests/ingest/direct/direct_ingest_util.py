@@ -511,21 +511,32 @@ def check_all_paths_processed(
 
 
 def run_task_queues_to_empty(controller: BaseDirectIngestController) -> None:
+    """Runs task queues until they are all empty."""
     if isinstance(controller.cloud_task_manager, FakeAsyncDirectIngestCloudTaskManager):
         controller.cloud_task_manager.wait_for_all_tasks_to_run()
     elif isinstance(
         controller.cloud_task_manager, FakeSynchronousDirectIngestCloudTaskManager
     ):
         tm = controller.cloud_task_manager
-        queue_args = [controller.region]
+        queue_args = (controller.region, controller.ingest_instance)
         while (
             tm.get_scheduler_queue_info(*queue_args).size()
             or tm.get_process_job_queue_info(*queue_args).size()
-            or tm.get_bq_import_export_queue_info(*queue_args).size()
+            or tm.get_bq_import_export_queue_info(controller.region).size()
+            # TODO(#9713): Uncomment when we are routing tasks to these queues
+            # or tm.get_raw_data_import_queue_info(controller.region).size()
+            # or tm.get_ingest_view_export_queue_info(*queue_args).size()
         ):
-            if tm.get_bq_import_export_queue_info(*queue_args).size():
+            if tm.get_bq_import_export_queue_info(controller.region).size():
                 tm.test_run_next_bq_import_export_task()
                 tm.test_pop_finished_bq_import_export_task()
+            # TODO(#9713): Uncomment when we are routing tasks to these queues
+            # if tm.get_raw_data_import_queue_info(controller.region).size():
+            #     tm.test_run_next_raw_data_import_task()
+            #     tm.test_pop_finished_raw_data_import_task()
+            # if tm.get_ingest_view_export_queue_info(*queue_args).size():
+            #     tm.test_run_next_ingest_view_export_task()
+            #     tm.test_pop_finished_ingest_view_export_task()
             if tm.get_scheduler_queue_info(*queue_args).size():
                 tm.test_run_next_scheduler_task()
                 tm.test_pop_finished_scheduler_task()
