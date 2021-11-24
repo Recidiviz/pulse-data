@@ -16,11 +16,11 @@
 # =============================================================================
 """Utilities for working with CSV files."""
 import csv
-from typing import Iterator, List
+from typing import Dict, Iterator
 
 
-def get_rows_from_csv(csv_filename: str) -> Iterator[List[str]]:
-    with open(csv_filename, mode="r", encoding="utf-8") as dropped_rows_file:
-        dropped_rows_reader = csv.reader(dropped_rows_file)
-        for dropped_row in dropped_rows_reader:
-            yield dropped_row
+def get_rows_from_csv(csv_filename: str) -> Iterator[Dict[str, str]]:
+    with open(csv_filename, mode="r", encoding="utf-8") as csv_file:
+        csv_reader = csv.DictReader(csv_file)
+        for row in csv_reader:
+            yield row
