@@ -23,6 +23,40 @@ module "scheduler-queue" {
   max_dispatches_per_second = 100
 }
 
+module "scheduler-queue-secondary" {
+  source = "../serial-task-queue"
+
+  queue_name                = "${local.direct_ingest_formatted_str}-scheduler-secondary"
+  region                    = var.region
+  max_dispatches_per_second = 100
+}
+
+# Note: It's intentional that there is not a secondary BQ import queue - raw data import
+# only happens out of the primary instance.
+module "raw-data-import-queue" {
+  source = "../serial-task-queue"
+
+  queue_name                = "${local.direct_ingest_formatted_str}-raw-data-import"
+  region                    = var.region
+  max_dispatches_per_second = 100
+}
+
+module "ingest-view-export-queue" {
+  source = "../serial-task-queue"
+
+  queue_name                = "${local.direct_ingest_formatted_str}-ingest-view-export"
+  region                    = var.region
+  max_dispatches_per_second = 100
+}
+
+module "ingest-view-export-queue-secondary" {
+  source = "../serial-task-queue"
+
+  queue_name                = "${local.direct_ingest_formatted_str}-ingest-view-export-secondary"
+  region                    = var.region
+  max_dispatches_per_second = 100
+}
+
 module "process-job-queue" {
   source = "../serial-task-queue"
 
@@ -31,6 +65,16 @@ module "process-job-queue" {
   max_dispatches_per_second = 100
 }
 
+module "process-job-queue-secondary" {
+  source = "../serial-task-queue"
+
+  queue_name                = "${local.direct_ingest_formatted_str}-process-job-queue-secondary"
+  region                    = var.region
+  max_dispatches_per_second = 100
+}
+
+# TODO(#9713): Delete this once all tasks have been migrated to use raw-data-import and
+#  ingest-view-export queues.
 module "bq-import-export-queue" {
   source = "../serial-task-queue"
 
