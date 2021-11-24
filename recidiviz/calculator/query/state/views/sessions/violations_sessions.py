@@ -50,7 +50,9 @@ Finally, `revocation_sessions` are associated with violations by associating a r
 |	most_serious_violation_type	|	The most serious violation type for a given person on a given day. Determined using state specific logic	|
 |	most_serious_violation_sub_type	|	The most serious violation sub type for a given person on a given day. Determined using state specific logic	|
 |	most_severe_response_decision	|	The most severe recommendation from a PO for the most severe violation type for a given person/day	|
-|	session_id	|	Session id	|
+|	current_session_id	|	Session id associated with the `earliest_date_available`	|
+|	most_recent_supervision_session_id	|	Session id associated with the most recent supervision session on or before `earliest_date_available`	|
+|	violations_array	|	Array of all violation types and subtypes on for a given person, state_code, and `earliest_date_available`	|
 |	violation_date	|	Date the violation occurred	|
 |	response_date	|	Date the violation was recorded	|
 |	earliest_available_date	|	Takes the earliest of violation and response date	|
@@ -70,7 +72,16 @@ Takes the output of the dataflow violations pipeline and integrates it with othe
 
 VIOLATIONS_SESSIONS_QUERY_TEMPLATE = """
     /*{description}*/
-    WITH violations_cte AS (
+    WITH all_violations AS (
+        SELECT
+            state_code,
+            person_id,
+            COALESCE(violations.violation_date, violations.response_date) AS earliest_available_date,
+            ARRAY_AGG(CONCAT(violation_type,'-',violation_type_subtype)) AS violations_array
+        FROM `{project_id}.{dataflow_dataset}.most_recent_violation_with_response_metrics_materialized` violations
+        GROUP BY 1,2,3
+    ),
+    violations_cte AS (
         SELECT 
             violations.state_code,
             violations.person_id,
@@ -142,18 +153,33 @@ VIOLATIONS_SESSIONS_QUERY_TEMPLATE = """
     )
     SELECT 
         violations.* EXCEPT(rn),
-        session_id,
+        current_session.session_id AS current_session_id,
+        most_recent_supervision_session.session_id AS most_recent_supervision_session_id,
         super_sessions.supervision_super_session_id,
+        violations_array,        
     FROM 
         violations_combine violations
+    LEFT JOIN `{project_id}.{sessions_dataset}.compartment_sessions_materialized` most_recent_supervision_session
+        ON most_recent_supervision_session.person_id = violations.person_id
+        AND most_recent_supervision_session.state_code = violations.state_code
+        AND most_recent_supervision_session.start_date <= violations.earliest_available_date
+        AND most_recent_supervision_session.compartment_level_1 IN ('SUPERVISION','SUPERVISION_OUT_OF_STATE')
     /* left join because there are a very small number of observations that dont get a session_id - if the violation
     is recorded before they show up in population metrics and therefore in sessions */
-    LEFT JOIN `{project_id}.{sessions_dataset}.compartment_sessions_materialized` sessions
-        ON sessions.person_id = violations.person_id
-        AND violations.earliest_available_date BETWEEN sessions.start_date AND COALESCE(sessions.end_date, '9999-01-01')
+    LEFT JOIN `{project_id}.{sessions_dataset}.compartment_sessions_materialized` current_session
+        ON current_session.person_id = violations.person_id
+        AND violations.earliest_available_date BETWEEN current_session.start_date AND COALESCE(current_session.end_date, '9999-01-01')
     LEFT JOIN `{project_id}.{sessions_dataset}.supervision_super_sessions_materialized` super_sessions
-        ON sessions.person_id = super_sessions.person_id
-        AND sessions.session_id BETWEEN super_sessions.session_id_start AND super_sessions.session_id_end
+        ON current_session.person_id = super_sessions.person_id
+        AND current_session.session_id BETWEEN super_sessions.session_id_start AND super_sessions.session_id_end        
+    LEFT JOIN all_violations 
+        ON violations.person_id = all_violations.person_id
+        AND violations.state_code = all_violations.state_code
+        AND violations.earliest_available_date = all_violations.earliest_available_date
+    WHERE TRUE
+    QUALIFY ROW_NUMBER() 
+        OVER(PARTITION BY violations.state_code, violations.person_id, violations.earliest_available_date 
+        ORDER BY most_recent_supervision_session.start_date DESC)  = 1 
     """
 
 VIOLATIONS_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
