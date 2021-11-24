@@ -29,7 +29,9 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
 )
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
     BQImportExportCloudTaskQueueInfo,
+    IngestViewExportCloudTaskQueueInfo,
     ProcessIngestJobCloudTaskQueueInfo,
+    RawDataImportCloudTaskQueueInfo,
     SchedulerCloudTaskQueueInfo,
     SftpCloudTaskQueueInfo,
     build_handle_new_files_task_id,
@@ -326,11 +328,13 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
         task_id = build_sftp_download_task_id(region)
         self.sftp_queue.add_task(f"projects/path/to/{task_id}", lambda _: None)
 
-    def delete_scheduler_queue_task(self, region: Region, task_name: str) -> None:
+    def delete_scheduler_queue_task(
+        self, region: Region, ingest_instance: DirectIngestInstance, task_name: str
+    ) -> None:
         self.scheduler_queue.delete_task(task_name)
 
     def get_process_job_queue_info(
-        self, region: Region
+        self, region: Region, ingest_instance: DirectIngestInstance
     ) -> ProcessIngestJobCloudTaskQueueInfo:
         with self.process_job_queue.all_tasks_mutex:
             task_names = self.process_job_queue.get_unfinished_task_names_unsafe()
@@ -339,7 +343,9 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
             queue_name=self.process_job_queue.name, task_names=task_names
         )
 
-    def get_scheduler_queue_info(self, region: Region) -> SchedulerCloudTaskQueueInfo:
+    def get_scheduler_queue_info(
+        self, region: Region, ingest_instance: DirectIngestInstance
+    ) -> SchedulerCloudTaskQueueInfo:
         with self.scheduler_queue.all_tasks_mutex:
             task_names = self.scheduler_queue.get_unfinished_task_names_unsafe()
 
@@ -347,6 +353,7 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
             queue_name=self.scheduler_queue.name, task_names=task_names
         )
 
+    # TODO(#9713): Delete this function when we delete this queue.
     def get_bq_import_export_queue_info(
         self, region: Region
     ) -> BQImportExportCloudTaskQueueInfo:
@@ -360,6 +367,20 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
         )
         return BQImportExportCloudTaskQueueInfo(
             queue_name=self.bq_import_export_queue.name, task_names=task_names
+        )
+
+    def get_raw_data_import_queue_info(
+        self, region: Region
+    ) -> RawDataImportCloudTaskQueueInfo:
+        raise NotImplementedError(
+            "TODO(#9713): Implement once we start routing tasks to these queues"
+        )
+
+    def get_ingest_view_export_queue_info(
+        self, region: Region, ingest_instance: DirectIngestInstance
+    ) -> IngestViewExportCloudTaskQueueInfo:
+        raise NotImplementedError(
+            "TODO(#9713): Implement once we start routing tasks to these queues"
         )
 
     def get_sftp_queue_info(self, region: Region) -> SftpCloudTaskQueueInfo:

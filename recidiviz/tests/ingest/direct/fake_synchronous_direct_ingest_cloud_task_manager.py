@@ -27,7 +27,9 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
 )
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
     BQImportExportCloudTaskQueueInfo,
+    IngestViewExportCloudTaskQueueInfo,
     ProcessIngestJobCloudTaskQueueInfo,
+    RawDataImportCloudTaskQueueInfo,
     SchedulerCloudTaskQueueInfo,
     SftpCloudTaskQueueInfo,
     build_handle_new_files_task_id,
@@ -55,6 +57,8 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
         self.num_finished_process_job_tasks = 0
         self.scheduler_tasks: List[Tuple[str, GcsfsBucketPath, bool]] = []
         self.num_finished_scheduler_tasks = 0
+
+        # TODO(#9713): Delete these vars once we delete this queue.
         self.bq_import_export_tasks: List[
             Tuple[str, Union[GcsfsRawDataBQImportArgs, GcsfsIngestViewExportArgs]]
         ] = []
@@ -62,24 +66,41 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
         self.sftp_tasks: List[str] = []
 
     def get_process_job_queue_info(
-        self, region: Region
+        self, region: Region, ingest_instance: DirectIngestInstance
     ) -> ProcessIngestJobCloudTaskQueueInfo:
 
         return ProcessIngestJobCloudTaskQueueInfo(
             queue_name="process", task_names=[t[0] for t in self.process_job_tasks]
         )
 
-    def get_scheduler_queue_info(self, region: Region) -> SchedulerCloudTaskQueueInfo:
+    def get_scheduler_queue_info(
+        self, region: Region, ingest_instance: DirectIngestInstance
+    ) -> SchedulerCloudTaskQueueInfo:
         return SchedulerCloudTaskQueueInfo(
             queue_name="schedule", task_names=[t[0] for t in self.scheduler_tasks]
         )
 
+    # TODO(#9713): Delete this function when we delete this queue.
     def get_bq_import_export_queue_info(
         self, region: Region
     ) -> BQImportExportCloudTaskQueueInfo:
         return BQImportExportCloudTaskQueueInfo(
             queue_name="bq_import_export",
             task_names=[t[0] for t in self.bq_import_export_tasks],
+        )
+
+    def get_raw_data_import_queue_info(
+        self, region: Region
+    ) -> RawDataImportCloudTaskQueueInfo:
+        raise NotImplementedError(
+            "TODO(#9713): Implement once we start routing tasks to these queues"
+        )
+
+    def get_ingest_view_export_queue_info(
+        self, region: Region, ingest_instance: DirectIngestInstance
+    ) -> IngestViewExportCloudTaskQueueInfo:
+        raise NotImplementedError(
+            "TODO(#9713): Implement once we start routing tasks to these queues"
         )
 
     def get_sftp_queue_info(self, region: Region) -> SftpCloudTaskQueueInfo:
@@ -165,7 +186,9 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
         task_id = build_sftp_download_task_id(region)
         self.sftp_tasks.append(task_id)
 
-    def delete_scheduler_queue_task(self, region: Region, task_name: str) -> None:
+    def delete_scheduler_queue_task(
+        self, region: Region, ingest_instance: DirectIngestInstance, task_name: str
+    ) -> None:
         scheduler_tasks = []
         for task_info in self.scheduler_tasks:
             this_task_name = task_info[0]
@@ -245,6 +268,7 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
                 raise ValueError(f"Unexpected task id [{task_name}]")
         self.num_finished_scheduler_tasks += 1
 
+    # TODO(#9713): Delete this function when we delete this queue.
     def test_run_next_bq_import_export_task(self) -> None:
         """Synchronously executes the next queued BQ import/export task, but *does not
         remove it from the queue*."""
@@ -278,6 +302,20 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
                 raise ValueError(f"Unexpected task id [{task_id}]")
         self.num_finished_bq_import_export_tasks += 1
 
+    def test_run_next_raw_data_import_task(self) -> None:
+        """Synchronously executes the next queued raw data import task, but *does not
+        remove it from the queue*."""
+        raise NotImplementedError(
+            "TODO(#9713): Implement once we start routing tasks to this queue"
+        )
+
+    def test_run_next_ingest_view_export_task(self) -> None:
+        """Synchronously executes the next queued ingest view export task, but *does not
+        remove it from the queue*."""
+        raise NotImplementedError(
+            "TODO(#9713): Implement once we start routing tasks to this queue"
+        )
+
     def test_pop_finished_process_job_task(self) -> Tuple[str, GcsfsIngestArgs]:
         """Removes most recently run process job task from the queue."""
         if self.num_finished_process_job_tasks == 0:
@@ -295,6 +333,7 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
         self.scheduler_tasks.pop(0)
         self.num_finished_scheduler_tasks -= 1
 
+    # TODO(#9713): Delete this function when we delete this queue.
     def test_pop_finished_bq_import_export_task(self) -> None:
         """Removes most recently run import/export task from the queue."""
 
@@ -303,3 +342,15 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
 
         self.bq_import_export_tasks.pop(0)
         self.num_finished_bq_import_export_tasks -= 1
+
+    def test_pop_finished_raw_data_import_task(self) -> None:
+        """Removes most recently run raw data import task from the queue."""
+        raise NotImplementedError(
+            "TODO(#9713): Implement once we start routing tasks to this queue"
+        )
+
+    def test_pop_finished_ingest_view_export_task(self) -> None:
+        """Removes most recently run ingest view export task from the queue."""
+        raise NotImplementedError(
+            "TODO(#9713): Implement once we start routing tasks to this queue"
+        )
