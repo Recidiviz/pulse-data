@@ -23,6 +23,7 @@ from parameterized import parameterized
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_supervision_delegate import (
     UsPaSupervisionDelegate,
 )
+from recidiviz.common.constants.state.state_assessment import StateAssessmentLevel
 
 
 class TestUsPaSupervisionDelegate(unittest.TestCase):
@@ -54,4 +55,21 @@ class TestUsPaSupervisionDelegate(unittest.TestCase):
         )
         self.assertEqual(
             level_2_supervision_location, expected_level_2_supervision_location
+        )
+
+    def test_lsir_score_bucket(self) -> None:
+        self.assertEqual(
+            self.supervision_delegate.set_lsir_assessment_score_bucket(
+                assessment_score=11,
+                assessment_level=StateAssessmentLevel.LOW,
+            ),
+            StateAssessmentLevel.LOW.value,
+        )
+
+    def test_lsir_score_bucket_no_level(self) -> None:
+        self.assertIsNone(
+            self.supervision_delegate.set_lsir_assessment_score_bucket(
+                assessment_score=11,
+                assessment_level=None,
+            )
         )

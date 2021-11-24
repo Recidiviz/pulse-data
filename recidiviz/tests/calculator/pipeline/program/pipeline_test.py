@@ -39,6 +39,9 @@ from recidiviz.calculator.pipeline.program.metrics import (
     ProgramParticipationMetric,
     ProgramReferralMetric,
 )
+from recidiviz.calculator.pipeline.utils.assessment_utils import (
+    DEFAULT_ASSESSMENT_SCORE_BUCKET,
+)
 from recidiviz.calculator.pipeline.utils.person_utils import (
     ExtractPersonEventsMetadata,
     PersonMetadata,
@@ -547,6 +550,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
                 participation_status=program_assignment.participation_status,
                 assessment_score=33,
                 assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
                 supervision_type=supervision_period.supervision_type,
                 supervising_officer_external_id="OFFICER0009",
                 supervising_district_external_id="10",
@@ -641,6 +645,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
                 participation_status=program_assignment.participation_status,
                 assessment_score=33,
                 assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
                 supervision_type=supervision_period.supervision_type,
                 supervising_officer_external_id="OFFICER0009",
                 supervising_district_external_id="10",
@@ -784,6 +789,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             supervising_officer_external_id="OFFICER0009",
             supervising_district_external_id="10",
             level_1_supervision_location_external_id="10",
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
         )
 
         correct_output = [(fake_person.person_id, (fake_person, [program_event]))]
@@ -846,6 +852,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             event_date=program_assignment.referral_date,
             assessment_score=33,
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             participation_status=program_assignment.participation_status,
         )
 
@@ -890,6 +897,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
                 event_date=date(2011, 4, 3),
                 program_id="program",
                 participation_status=StateProgramAssignmentParticipationStatus.IN_PROGRESS,
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             ),
             ProgramParticipationEvent(
                 state_code="US_XX", event_date=date(2011, 6, 3), program_id="program"

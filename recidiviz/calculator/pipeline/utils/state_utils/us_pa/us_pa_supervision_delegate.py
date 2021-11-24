@@ -22,6 +22,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_
 )
 from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentClass,
+    StateAssessmentLevel,
     StateAssessmentType,
 )
 from recidiviz.common.constants.state.state_supervision_period import (
@@ -72,4 +73,16 @@ class UsPaSupervisionDelegate(StateSpecificSupervisionDelegate):
         """In US_PA, only LSIR assessments are supported."""
         if assessment_class == StateAssessmentClass.RISK:
             return [StateAssessmentType.LSIR]
+        return None
+
+    # pylint: disable=unused-argument
+    def set_lsir_assessment_score_bucket(
+        self,
+        assessment_score: Optional[int],
+        assessment_level: Optional[StateAssessmentLevel],
+    ) -> Optional[str]:
+        """In US_PA, the score buckets for LSIR have changed over time, so in order to
+        set the bucket, the assessment level is used instead."""
+        if assessment_level:
+            return assessment_level.value
         return None

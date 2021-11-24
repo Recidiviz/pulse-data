@@ -361,6 +361,13 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
         overlap with the referral."""
         program_referrals: List[ProgramReferralEvent] = []
 
+        assessment_score_bucket = assessment_utils.assessment_score_bucket(
+            assessment_type=assessment_type,
+            assessment_score=assessment_score,
+            assessment_level=None,
+            supervision_delegate=supervision_delegate,
+        )
+
         if supervision_periods:
             for supervision_period in supervision_periods:
                 # Return one ProgramReferralEvent per supervision period
@@ -378,6 +385,7 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
                     level_2_supervision_location_external_id
                     or level_1_supervision_location_external_id
                 )
+
                 program_referrals.append(
                     ProgramReferralEvent(
                         state_code=state_code,
@@ -386,6 +394,7 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
                         participation_status=participation_status,
                         assessment_score=assessment_score,
                         assessment_type=assessment_type,
+                        assessment_score_bucket=assessment_score_bucket,
                         supervision_type=supervision_period.supervision_type,
                         supervising_officer_external_id=supervising_officer_external_id,
                         supervising_district_external_id=deprecated_supervising_district_external_id,
@@ -403,6 +412,7 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
                     participation_status=participation_status,
                     assessment_score=assessment_score,
                     assessment_type=assessment_type,
+                    assessment_score_bucket=assessment_score_bucket,
                 )
             ]
 

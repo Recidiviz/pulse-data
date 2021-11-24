@@ -34,6 +34,9 @@ from recidiviz.calculator.pipeline.incarceration.events import (
     IncarcerationStandardAdmissionEvent,
     IncarcerationStayEvent,
 )
+from recidiviz.calculator.pipeline.utils.assessment_utils import (
+    DEFAULT_ASSESSMENT_SCORE_BUCKET,
+)
 from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
     PreProcessedIncarcerationPeriodIndex,
 )
@@ -510,6 +513,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                 level_1_supervision_location_external_id="X",
                 supervising_officer_external_id="XXX",
                 case_type=StateSupervisionCaseType.GENERAL,
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             ),
             IncarcerationStandardAdmissionEvent(
                 state_code=incarceration_period_2.state_code,
@@ -1203,6 +1207,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                     supervising_officer_external_id="XXX",
                     supervising_district_external_id="X",
                     level_1_supervision_location_external_id="X",
+                    assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
                 ),
                 IncarcerationReleaseEvent(
                     state_code=revocation_period.state_code,
@@ -1592,6 +1597,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                     specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
                     case_type=StateSupervisionCaseType.GENERAL,
                     supervision_level=supervision_period.supervision_level,
+                    assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
                 ),
                 IncarcerationReleaseEvent(
                     state_code=temp_custody_period.state_code,
@@ -1926,6 +1932,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                     level_1_supervision_location_external_id="Y",
                     level_2_supervision_location_external_id="X",
                     supervising_officer_external_id="XXX",
+                    assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
                 ),
                 IncarcerationReleaseEvent(
                     state_code=revocation_period.state_code,
@@ -2210,6 +2217,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                 assessment_score=assessment.assessment_score,
                 assessment_level=StateAssessmentLevel.HIGH,
                 assessment_type=assessment.assessment_type,
+                assessment_score_bucket=StateAssessmentLevel.HIGH.value,
             ),
         ]
 
@@ -3211,6 +3219,7 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
                 supervision_type=StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN,
                 specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
                 case_type=StateSupervisionCaseType.GENERAL,
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             ),
             admission_event,
         )
@@ -3557,6 +3566,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             supervising_district_external_id="OFFICE_1",
             level_1_supervision_location_external_id="OFFICE_1",
             county_of_residence=_COUNTY_OF_RESIDENCE,
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
         )
 
         self.assertEqual(
@@ -3689,6 +3699,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             supervising_district_external_id="OFFICE_1",
             level_1_supervision_location_external_id="OFFICE_1",
             county_of_residence=_COUNTY_OF_RESIDENCE,
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
         )
 
         self.assertEqual(
@@ -3905,6 +3916,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             supervising_district_external_id="OFFICE_1",
             level_1_supervision_location_external_id="OFFICE_1",
             county_of_residence=_COUNTY_OF_RESIDENCE,
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
         )
 
         self.assertEqual(
@@ -3996,6 +4008,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             supervising_district_external_id="X",
             level_1_supervision_location_external_id="X",
             county_of_residence=_COUNTY_OF_RESIDENCE,
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
         )
 
         self.assertEqual(
