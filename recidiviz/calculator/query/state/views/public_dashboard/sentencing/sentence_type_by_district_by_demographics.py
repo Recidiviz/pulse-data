@@ -40,7 +40,7 @@ SENTENCE_TYPE_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = """
         state_code,
         person_id,
         -- TODO(#3720): Improve the sentence type classification and make it less ND specific --
-        IF(admission_reason = 'PROBATION_REVOCATION', 'PROBATION', 'INCARCERATION') as sentence_type,
+        IF(admission_reason LIKE '%REVOCATION' and commitment_from_supervision_supervision_type = 'PROBATION', 'PROBATION', 'INCARCERATION') as sentence_type,
         {state_specific_race_or_ethnicity_groupings},
         gender,
         age_bucket,
