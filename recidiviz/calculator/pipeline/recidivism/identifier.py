@@ -290,8 +290,6 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
                 AdmissionReason.EXTERNAL_UNKNOWN,
                 AdmissionReason.INTERNAL_UNKNOWN,
                 AdmissionReason.NEW_ADMISSION,
-                # TODO(#9865): Delete `PAROLE_REVOCATION`, `DUAL_REVOCATION`, and `PROBATION_REVOCATION` once
-                #  collapsed to `REVOCATION`.
                 AdmissionReason.PAROLE_REVOCATION,
                 AdmissionReason.PROBATION_REVOCATION,
                 AdmissionReason.REVOCATION,

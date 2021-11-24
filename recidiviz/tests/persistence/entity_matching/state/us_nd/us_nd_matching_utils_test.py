@@ -77,7 +77,9 @@ class TestUsNdMatchingUtils(BaseStateMatchingUtilsTest):
     def setUp(self) -> None:
         super().setUp()
         overrides_builder = EnumOverrides.Builder()
-        overrides_builder.add("PV", StateIncarcerationPeriodAdmissionReason.REVOCATION)
+        overrides_builder.add(
+            "PV", StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION
+        )
         overrides_builder.add(
             "REC", StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE
         )
@@ -156,7 +158,7 @@ class TestUsNdMatchingUtils(BaseStateMatchingUtilsTest):
         ip = schema.StateIncarcerationPeriod(
             state_code=_STATE_CODE,
             admission_date=_DATE_1,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION.value,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION.value,
             admission_reason_raw_text="PV",
             release_date=_DATE_2,
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER.value,
@@ -206,7 +208,7 @@ class TestUsNdMatchingUtils(BaseStateMatchingUtilsTest):
         )
         expected_ip_3 = attr.evolve(
             self.to_entity(ip_3),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
         )
         expected_ip_4 = attr.evolve(self.to_entity(ip_4))
 
@@ -230,7 +232,7 @@ class TestUsNdMatchingUtils(BaseStateMatchingUtilsTest):
         ip = schema.StateIncarcerationPeriod(
             state_code=_STATE_CODE,
             admission_date=date_1,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION.value,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION.value,
             admission_reason_raw_text="PV",
             release_date=date_1,
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER.value,
@@ -288,7 +290,7 @@ class TestUsNdMatchingUtils(BaseStateMatchingUtilsTest):
         ip = schema.StateIncarcerationPeriod(
             state_code=_STATE_CODE,
             admission_date=_DATE_1,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION.value,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION.value,
             admission_reason_raw_text="PV",
             release_date=_DATE_2,
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER.value,

@@ -821,13 +821,15 @@ INCARCERATION_PERIOD_ADMISSION_REASON_TO_STR_MAPPINGS: Dict[
         *RETURN_POST_REMAND_STATUS_CODES,
         *NEW_ADMISSION_SECONDARY_STATUS_CODES,
     ],
-    StateIncarcerationPeriodAdmissionReason.REVOCATION: [
-        *PROBATION_REVOCATION_RETURN_STATUSES,
-        *LEGACY_PROBATION_REENTRY_STATUS_CODES,
-        *PROBATION_REVOCATION_SECONDARY_STATUS_CODES,
+    StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION: [
         *PAROLE_REVOKED_REENTRY_STATUS_CODES,
         *CONDITIONAL_RELEASE_RETURN_STATUS_CODES,
         *PAROLE_REVOKED_WHILE_INCARCERATED_STATUS_CODES,
+    ],
+    StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION: [
+        *PROBATION_REVOCATION_RETURN_STATUSES,
+        *LEGACY_PROBATION_REENTRY_STATUS_CODES,
+        *PROBATION_REVOCATION_SECONDARY_STATUS_CODES,
     ],
     StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY: [
         *BOARD_HOLDOVER_ENTRY_STATUS_CODES
@@ -967,6 +969,12 @@ def incarceration_period_admission_reason_mapper(
         potential_admission_reasons.add(
             STR_TO_INCARCERATION_PERIOD_ADMISSION_REASON_MAPPINGS[status_str]
         )
+
+    if potential_admission_reasons == {
+        StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+        StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+    }:
+        return StateIncarcerationPeriodAdmissionReason.DUAL_REVOCATION
 
     if len(potential_admission_reasons) > 1:
         raise EnumParsingError(
