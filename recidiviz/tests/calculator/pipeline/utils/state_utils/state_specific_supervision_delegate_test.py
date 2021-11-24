@@ -19,6 +19,8 @@ import unittest
 from datetime import date
 from typing import Optional
 
+from parameterized import parameterized
+
 from recidiviz.calculator.pipeline.supervision.events import SupervisionPopulationEvent
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
@@ -74,4 +76,21 @@ class TestStateSpecificSupervisionDelegate(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervising_district_external_id=supervising_district_external_id,
             projected_end_date=None,
+        )
+
+    @parameterized.expand(
+        [
+            ("low", 19, "0-23"),
+            ("med", 27, "24-29"),
+            ("high", 30, "30-38"),
+            ("max", 39, "39+"),
+        ]
+    )
+    def test_lsir_score_bucket(self, _name: str, score: int, bucket: str) -> None:
+        self.assertEqual(
+            self.supervision_delegate.set_lsir_assessment_score_bucket(
+                assessment_score=score,
+                assessment_level=None,
+            ),
+            bucket,
         )

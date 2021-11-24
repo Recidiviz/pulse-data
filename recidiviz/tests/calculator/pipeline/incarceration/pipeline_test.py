@@ -41,6 +41,9 @@ from recidiviz.calculator.pipeline.incarceration.metrics import (
     IncarcerationPopulationMetric,
     IncarcerationReleaseMetric,
 )
+from recidiviz.calculator.pipeline.utils.assessment_utils import (
+    DEFAULT_ASSESSMENT_SCORE_BUCKET,
+)
 from recidiviz.calculator.pipeline.utils.person_utils import (
     ExtractPersonEventsMetadata,
     PersonMetadata,
@@ -929,6 +932,7 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
                 supervision_level=supervision_period.supervision_level,
                 supervision_level_raw_text=supervision_period.supervision_level_raw_text,
                 supervising_officer_external_id="OFFICER0009",
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             ),
             IncarcerationReleaseEvent(
                 state_code=incarceration_period.state_code,
@@ -1114,6 +1118,7 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
                 supervision_type=StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN,
                 specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
                 case_type=StateSupervisionCaseType.GENERAL,
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             ),
             IncarcerationReleaseEvent(
                 state_code=incarceration_period_with_death.state_code,

@@ -574,6 +574,9 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
             assessment_class=StateAssessmentClass.RISK,
             supervision_delegate=supervision_delegate,
         )
+        assessment_score_bucket = assessment_utils.assessment_score_bucket(
+            assessment_type, assessment_score, assessment_level, supervision_delegate
+        )
         violation_responses_for_history = (
             filter_violation_responses_for_violation_history(
                 violation_delegate,
@@ -663,6 +666,7 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
             assessment_score=assessment_score,
             assessment_level=assessment_level,
             assessment_type=assessment_type,
+            assessment_score_bucket=assessment_score_bucket,
             most_severe_violation_type=violation_history.most_severe_violation_type,
             most_severe_violation_type_subtype=violation_history.most_severe_violation_type_subtype,
             most_severe_response_decision=violation_history.most_severe_response_decision,

@@ -24,6 +24,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from recidiviz.calculator.pipeline.supervision.events import SupervisionPopulationEvent
 from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentClass,
+    StateAssessmentLevel,
     StateAssessmentType,
 )
 from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
@@ -111,3 +112,22 @@ class StateSpecificSupervisionDelegate(abc.ABC):
         """Defines the assessment types to refer to in calculations for a given
         assessment class. Each state needs to override this with the assessment type
         (e.g. LSIR) that they support."""
+
+    def set_lsir_assessment_score_bucket(
+        self,
+        assessment_score: Optional[int],
+        assessment_level: Optional[StateAssessmentLevel],
+    ) -> Optional[str]:
+        """This determines the logic for defining LSIR score buckets, for states
+        that use LSIR as the assessment of choice. States may override this logic
+        based on interpretations of LSIR scores that are different from the default
+        score ranges."""
+        if assessment_score:
+            if assessment_score < 24:
+                return "0-23"
+            if assessment_score <= 29:
+                return "24-29"
+            if assessment_score <= 38:
+                return "30-38"
+            return "39+"
+        return None

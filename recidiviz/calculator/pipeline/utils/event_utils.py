@@ -16,7 +16,6 @@
 # =============================================================================
 """Utils for events that are a product of each pipeline's identifier step."""
 import datetime
-import logging
 from typing import Optional
 
 import attr
@@ -147,8 +146,6 @@ class AssessmentEventMixin:
     """Set of attributes that store information about assessments, and enables an event
     to be able to calculate the score bucket from assessment information."""
 
-    DEFAULT_ASSESSMENT_SCORE_BUCKET = "NOT_ASSESSED"
-
     # Assessment type
     assessment_type: Optional[StateAssessmentType] = attr.ib(default=None)
 
@@ -158,67 +155,5 @@ class AssessmentEventMixin:
     # Most recent assessment level
     assessment_level: Optional[StateAssessmentLevel] = attr.ib(default=None)
 
-    @property
-    def assessment_score_bucket(self) -> str:
-        """Calculates the assessment score bucket that applies to measurement.
-
-        NOTE: Only LSIR and ORAS buckets are currently supported
-        TODO(#2742): Add calculation support for all supported StateAssessmentTypes
-
-        Returns:
-            A string representation of the assessment score for the person.
-            DEFAULT_ASSESSMENT_SCORE_BUCKET if the assessment type is not supported or if the object is missing
-                assessment information.
-        """
-        state_code = getattr(self, "state_code")
-
-        if self.assessment_type:
-            if self.assessment_type == StateAssessmentType.LSIR:
-                if state_code == "US_PA":
-                    # The score buckets for US_PA have changed over time, so we defer to the assessment_level
-                    if self.assessment_level:
-                        return self.assessment_level.value
-                else:
-                    if self.assessment_score:
-                        if self.assessment_score < 24:
-                            return "0-23"
-                        if self.assessment_score <= 29:
-                            return "24-29"
-                        if self.assessment_score <= 38:
-                            return "30-38"
-                        return "39+"
-
-            elif self.assessment_type in [
-                StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
-                StateAssessmentType.ORAS_COMMUNITY_SUPERVISION_SCREENING,
-                StateAssessmentType.ORAS_MISDEMEANOR_ASSESSMENT,
-                StateAssessmentType.ORAS_MISDEMEANOR_SCREENING,
-                StateAssessmentType.ORAS_PRE_TRIAL,
-                StateAssessmentType.ORAS_PRISON_SCREENING,
-                StateAssessmentType.ORAS_PRISON_INTAKE,
-                StateAssessmentType.ORAS_REENTRY,
-                StateAssessmentType.ORAS_STATIC,
-                StateAssessmentType.ORAS_SUPPLEMENTAL_REENTRY,
-            ]:
-                if self.assessment_level:
-                    return self.assessment_level.value
-            elif self.assessment_type in [
-                StateAssessmentType.INTERNAL_UNKNOWN,
-                StateAssessmentType.ASI,
-                StateAssessmentType.CSSM,
-                StateAssessmentType.HIQ,
-                StateAssessmentType.PA_RST,
-                StateAssessmentType.PSA,
-                StateAssessmentType.SORAC,
-                StateAssessmentType.STATIC_99,
-                StateAssessmentType.TCU_DRUG_SCREEN,
-            ]:
-                logging.warning(
-                    "Assessment type %s is unsupported.", self.assessment_type
-                )
-            else:
-                raise ValueError(
-                    f"Unexpected unsupported StateAssessmentType: {self.assessment_type}"
-                )
-
-        return self.DEFAULT_ASSESSMENT_SCORE_BUCKET
+    # The assessment score bucket that applies to measurement
+    assessment_score_bucket: Optional[str] = attr.ib(default=None)

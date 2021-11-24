@@ -415,6 +415,13 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                     assessment_level = most_recent_assessment.assessment_level
                     assessment_type = most_recent_assessment.assessment_type
 
+                assessment_score_bucket = assessment_utils.assessment_score_bucket(
+                    assessment_type,
+                    assessment_score,
+                    assessment_level,
+                    supervision_delegate,
+                )
+
                 violation_history = get_violation_and_response_history(
                     upper_bound_exclusive_date=(event_date + relativedelta(days=1)),
                     violation_responses_for_history=violation_responses_for_history,
@@ -460,6 +467,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                         assessment_score=assessment_score,
                         assessment_level=assessment_level,
                         assessment_type=assessment_type,
+                        assessment_score_bucket=assessment_score_bucket,
                         most_severe_violation_type=violation_history.most_severe_violation_type,
                         most_severe_violation_type_subtype=violation_history.most_severe_violation_type_subtype,
                         most_severe_response_decision=violation_history.most_severe_response_decision,
@@ -711,6 +719,12 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                 assessments,
                 supervision_delegate,
             )
+            end_assessment_score_bucket = assessment_utils.assessment_score_bucket(
+                end_assessment_type,
+                end_assessment_score,
+                end_assessment_level,
+                supervision_delegate,
+            )
 
             violation_history = get_violation_and_response_history(
                 upper_bound_exclusive_date=(termination_date + relativedelta(days=1)),
@@ -773,6 +787,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                 assessment_score=end_assessment_score,
                 assessment_level=end_assessment_level,
                 assessment_type=end_assessment_type,
+                assessment_score_bucket=end_assessment_score_bucket,
                 termination_reason=supervision_period.termination_reason,
                 assessment_score_change=assessment_score_change,
                 supervising_officer_external_id=supervising_officer_external_id,

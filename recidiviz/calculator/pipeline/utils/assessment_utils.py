@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Utils for dealing with assessment data in the calculation pipelines."""
+import logging
 from datetime import date
 from typing import List, Optional, Tuple
 
@@ -27,6 +28,8 @@ from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentType,
 )
 from recidiviz.persistence.entity.state.entities import StateAssessment
+
+DEFAULT_ASSESSMENT_SCORE_BUCKET = "NOT_ASSESSED"
 
 
 def find_most_recent_applicable_assessment_of_class_for_state(
@@ -93,3 +96,61 @@ def most_recent_applicable_assessment_attributes_for_class(
         )
 
     return None, None, None
+
+
+def assessment_score_bucket(
+    assessment_type: Optional[StateAssessmentType],
+    assessment_score: Optional[int],
+    assessment_level: Optional[StateAssessmentLevel],
+    supervision_delegate: StateSpecificSupervisionDelegate,
+) -> str:
+    """Calculates the assessment score bucket that applies to measurement
+    based on the assessment type. If various fields are not provided, then
+    it falls to the default state of not being assessed.
+
+    NOTE: Only LSIR and ORAS buckets are currently supported
+    TODO(#2742): Add calculation support for all supported StateAssessmentTypes
+
+    Returns:
+        A string representation of the assessment score for the person.
+        DEFAULT_ASSESSMENT_SCORE_BUCKET if the assessment type is not supported or if the object is missing
+            assessment information."""
+    if assessment_type:
+        if assessment_type == StateAssessmentType.LSIR:
+            lsir_bucket = supervision_delegate.set_lsir_assessment_score_bucket(
+                assessment_score, assessment_level
+            )
+            if lsir_bucket:
+                return lsir_bucket
+        elif assessment_type in [
+            StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
+            StateAssessmentType.ORAS_COMMUNITY_SUPERVISION_SCREENING,
+            StateAssessmentType.ORAS_MISDEMEANOR_ASSESSMENT,
+            StateAssessmentType.ORAS_MISDEMEANOR_SCREENING,
+            StateAssessmentType.ORAS_PRE_TRIAL,
+            StateAssessmentType.ORAS_PRISON_SCREENING,
+            StateAssessmentType.ORAS_PRISON_INTAKE,
+            StateAssessmentType.ORAS_REENTRY,
+            StateAssessmentType.ORAS_STATIC,
+            StateAssessmentType.ORAS_SUPPLEMENTAL_REENTRY,
+        ]:
+            if assessment_level:
+                return assessment_level.value
+        elif assessment_type in [
+            StateAssessmentType.INTERNAL_UNKNOWN,
+            StateAssessmentType.ASI,
+            StateAssessmentType.CSSM,
+            StateAssessmentType.HIQ,
+            StateAssessmentType.PA_RST,
+            StateAssessmentType.PSA,
+            StateAssessmentType.SORAC,
+            StateAssessmentType.STATIC_99,
+            StateAssessmentType.TCU_DRUG_SCREEN,
+        ]:
+            logging.warning("Assessment type %s is unsupported.", assessment_type)
+        else:
+            raise ValueError(
+                f"Unexpected unsupported StateAssessmentType: {assessment_type}"
+            )
+
+    return DEFAULT_ASSESSMENT_SCORE_BUCKET
