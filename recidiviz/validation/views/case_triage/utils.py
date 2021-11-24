@@ -15,11 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Utils for freshness checks for Case Triage."""
-from recidiviz.validation.views.utils.freshness_validation import (
-    current_date_add,
-    current_date_sub,
-)
 
-FRESHNESS_FRAGMENT = f"{current_date_sub(days=1)} AND {current_date_add(days=100)}"
+MAX_DAYS_STALE = 1
 
 DT_CLAUSE = "SAFE_CAST(SPLIT({datetime_field}, ' ')[OFFSET(0)] AS DATE)"
