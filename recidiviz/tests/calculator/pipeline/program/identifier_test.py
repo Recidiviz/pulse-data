@@ -30,6 +30,9 @@ from recidiviz.calculator.pipeline.program.events import (
     ProgramParticipationEvent,
     ProgramReferralEvent,
 )
+from recidiviz.calculator.pipeline.utils.assessment_utils import (
+    DEFAULT_ASSESSMENT_SCORE_BUCKET,
+)
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
@@ -148,6 +151,7 @@ class TestFindProgramEvents(unittest.TestCase):
                 participation_status=program_assignment.participation_status,
                 assessment_score=assessment.assessment_score,
                 assessment_type=assessment.assessment_type,
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
                 supervising_officer_external_id="XXX",
                 supervising_district_external_id="OFFICE_1",
                 level_1_supervision_location_external_id="OFFICE_1",
@@ -234,6 +238,7 @@ class TestFindProgramReferrals(unittest.TestCase):
                     participation_status=program_assignment.participation_status,
                     assessment_score=33,
                     assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
+                    assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
                     supervision_type=supervision_period.supervision_type,
                     supervising_officer_external_id="XXX",
                     supervising_district_external_id="OFFICE_1",
@@ -316,6 +321,7 @@ class TestFindProgramReferrals(unittest.TestCase):
                     participation_status=program_assignment.participation_status,
                     assessment_score=29,
                     assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
+                    assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
                     supervision_type=supervision_period.supervision_type,
                 )
             ],
@@ -366,6 +372,7 @@ class TestFindProgramReferrals(unittest.TestCase):
                     participation_status=program_assignment.participation_status,
                     assessment_score=33,
                     assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
+                    assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
                 )
             ],
             program_referrals,
@@ -426,6 +433,7 @@ class TestFindProgramReferrals(unittest.TestCase):
                     participation_status=program_assignment.participation_status,
                     assessment_score=33,
                     assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
+                    assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
                     supervision_type=supervision_period_1.supervision_type,
                 ),
                 ProgramReferralEvent(
@@ -435,6 +443,7 @@ class TestFindProgramReferrals(unittest.TestCase):
                     participation_status=program_assignment.participation_status,
                     assessment_score=33,
                     assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
+                    assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
                     supervision_type=supervision_period_2.supervision_type,
                 ),
             ],
@@ -497,6 +506,7 @@ class TestFindProgramReferrals(unittest.TestCase):
                     participation_status=program_assignment.participation_status,
                     assessment_score=33,
                     assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
+                    assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
                     supervision_type=supervision_period.supervision_type,
                     supervising_officer_external_id="OFFICER10",
                     supervising_district_external_id="DISTRICT8",
@@ -771,6 +781,7 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
                     participation_status=StateProgramAssignmentParticipationStatus.DISCHARGED,
                     assessment_score=39,
                     assessment_type=StateAssessmentType.LSIR,
+                    assessment_score_bucket="39+",
                     supervision_type=supervision_period.supervision_type,
                 )
             ],
@@ -819,6 +830,7 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
                     participation_status=StateProgramAssignmentParticipationStatus.DISCHARGED,
                     assessment_score=39,
                     assessment_type=StateAssessmentType.LSIR,
+                    assessment_score_bucket="39+",
                     supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 ),
                 ProgramReferralEvent(
@@ -828,6 +840,7 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
                     participation_status=StateProgramAssignmentParticipationStatus.DISCHARGED,
                     assessment_score=39,
                     assessment_type=StateAssessmentType.LSIR,
+                    assessment_score_bucket="39+",
                     supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 ),
             ],
@@ -876,6 +889,7 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
                     participation_status=StateProgramAssignmentParticipationStatus.DENIED,
                     assessment_score=39,
                     assessment_type=StateAssessmentType.LSIR,
+                    assessment_score_bucket="39+",
                     supervision_type=supervision_period_1.supervision_type,
                 ),
                 ProgramReferralEvent(
@@ -885,6 +899,7 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
                     participation_status=StateProgramAssignmentParticipationStatus.DENIED,
                     assessment_score=39,
                     assessment_type=StateAssessmentType.LSIR,
+                    assessment_score_bucket="39+",
                     supervision_type=supervision_period_2.supervision_type,
                 ),
             ],

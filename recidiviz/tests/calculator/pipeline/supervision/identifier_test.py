@@ -43,6 +43,9 @@ from recidiviz.calculator.pipeline.supervision.metrics import SupervisionMetricT
 from recidiviz.calculator.pipeline.supervision.supervision_case_compliance import (
     SupervisionCaseCompliance,
 )
+from recidiviz.calculator.pipeline.utils.assessment_utils import (
+    DEFAULT_ASSESSMENT_SCORE_BUCKET,
+)
 from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
     PreProcessedIncarcerationPeriodIndex,
 )
@@ -312,6 +315,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
                 termination_reason=supervision_period.termination_reason,
                 in_supervision_population_on_date=True,
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             ),
             create_start_event_from_period(
                 supervision_period,
@@ -327,6 +331,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 assessment_score=assessment.assessment_score,
                 assessment_level=assessment.assessment_level,
                 assessment_type=assessment.assessment_type,
+                assessment_score_bucket=StateAssessmentLevel.HIGH.value,
                 projected_supervision_completion_date=supervision_sentence.projected_completion_date,
             )
         )
@@ -401,6 +406,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     start_date=supervision_period.start_date,
                     supervision_period=supervision_period,
                 ),
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             )
         )
 
@@ -492,6 +498,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     start_date=first_supervision_period.start_date,
                     supervision_period=first_supervision_period,
                 ),
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             )
         )
 
@@ -504,6 +511,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     start_date=first_supervision_period.start_date,
                     supervision_period=second_supervision_period,
                 ),
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             )
         )
 
@@ -610,6 +618,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     start_date=first_supervision_period.start_date,
                     supervision_period=second_supervision_period,
                 ),
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             )
         )
 
@@ -707,6 +716,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     start_date=first_supervision_period.start_date,
                     supervision_period=first_supervision_period,
                 ),
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             )
         )
 
@@ -719,6 +729,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     start_date=first_supervision_period.start_date,
                     supervision_period=second_supervision_period,
                 ),
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             )
         )
 
@@ -818,6 +829,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     supervision_period=first_supervision_period,
                     supervision_delegate=UsNdSupervisionDelegate(),
                 ),
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             )
         )
 
@@ -903,6 +915,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 case_type=StateSupervisionCaseType.GENERAL,
                 termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
                 in_supervision_population_on_date=True,
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             ),
         ]
         expected_events.extend(
@@ -915,6 +928,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     supervision_period=supervision_period,
                     supervision_delegate=UsIdSupervisionDelegate(),
                 ),
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             )
         )
         supervision_events = self.identifier._find_supervision_events(
@@ -1154,6 +1168,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     start_date=first_supervision_period.start_date,
                     supervision_period=first_supervision_period,
                 ),
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             )
         )
 
@@ -1166,6 +1181,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     start_date=first_supervision_period.start_date,
                     supervision_period=second_supervision_period,
                 ),
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             )
         )
 
@@ -1264,6 +1280,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     start_date=first_supervision_period.start_date,
                     supervision_period=first_supervision_period,
                 ),
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             )
         )
 
@@ -1372,6 +1389,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     start_date=first_supervision_period.start_date,
                     supervision_period=first_supervision_period,
                 ),
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             )
         )
 
@@ -1387,6 +1405,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     start_date=first_supervision_period.start_date,
                     supervision_period=second_supervision_period,
                 ),
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             )
         )
 
@@ -1486,12 +1505,18 @@ class TestClassifySupervisionEvents(unittest.TestCase):
 
         # The entirety of both supervision periods should be counted as SupervisionPopulationEvents
         expected_events.extend(
-            expected_population_events(first_supervision_period, first_supervision_type)
+            expected_population_events(
+                first_supervision_period,
+                first_supervision_type,
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+            )
         )
 
         expected_events.extend(
             expected_population_events(
-                second_supervision_period, second_supervision_type
+                second_supervision_period,
+                second_supervision_type,
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             )
         )
 
@@ -1582,6 +1607,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     start_date=first_supervision_period.start_date,
                     supervision_period=first_supervision_period,
                 ),
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             )
         )
 
@@ -1594,6 +1620,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     start_date=first_supervision_period.start_date,
                     supervision_period=second_supervision_period,
                 ),
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             )
         )
 
@@ -1692,6 +1719,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     start_date=supervision_period.start_date,
                     supervision_period=supervision_period,
                 ),
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             )
         )
 
@@ -1797,6 +1825,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     start_date=supervision_period.start_date,
                     supervision_period=supervision_period,
                 ),
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             )
         )
 
@@ -2092,6 +2121,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
                 termination_reason=supervision_period.termination_reason,
                 in_supervision_population_on_date=True,
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             ),
             create_start_event_from_period(
                 supervision_period,
@@ -2107,6 +2137,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 assessment_score=assessment.assessment_score,
                 assessment_level=assessment.assessment_level,
                 assessment_type=assessment.assessment_type,
+                assessment_score_bucket=StateAssessmentLevel.HIGH.value,
                 projected_supervision_completion_date=supervision_sentence.projected_completion_date,
             )
         )
@@ -2422,6 +2453,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 case_type=StateSupervisionCaseType.GENERAL,
                 termination_reason=supervision_period.termination_reason,
                 in_supervision_population_on_date=True,
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             ),
         ]
 
@@ -2432,6 +2464,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 assessment_score=assessment.assessment_score,
                 assessment_level=assessment.assessment_level,
                 assessment_type=assessment.assessment_type,
+                assessment_score_bucket="30-38",
                 level_1_supervision_location_external_id="OFFICE_2",
                 level_2_supervision_location_external_id="DISTRICT_1",
                 case_compliances=_generate_case_compliances(
@@ -2536,6 +2569,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 supervising_officer_external_id="XXX",
                 judicial_district_code="XXX",
                 in_supervision_population_on_date=True,
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             ),
         ]
 
@@ -2546,6 +2580,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 assessment_score=assessment.assessment_score,
                 assessment_level=StateAssessmentLevel.HIGH,
                 assessment_type=assessment.assessment_type,
+                assessment_score_bucket=StateAssessmentLevel.HIGH.value,
                 level_1_supervision_location_external_id="OFFICE_2",
                 level_2_supervision_location_external_id="DISTRICT_1",
                 supervising_officer_external_id="XXX",
@@ -2727,6 +2762,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 termination_reason=supervision_period.termination_reason,
                 in_supervision_population_on_date=True,
                 supervising_officer_external_id="XXX",
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             ),
             create_start_event_from_period(
                 supervision_period,
@@ -2746,6 +2782,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 assessment_score=assessment.assessment_score,
                 assessment_level=assessment.assessment_level,
                 assessment_type=assessment.assessment_type,
+                assessment_score_bucket=StateAssessmentLevel.HIGH.value,
                 supervising_officer_external_id="XXX",
             )
         )
@@ -2989,6 +3026,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 supervision_level_raw_text=supervision_period.supervision_level_raw_text,
                 termination_reason=supervision_period.termination_reason,
                 in_supervision_population_on_date=True,
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             ),
         ]
 
@@ -2999,6 +3037,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 assessment_score=assessment.assessment_score,
                 assessment_level=assessment.assessment_level,
                 assessment_type=assessment.assessment_type,
+                assessment_score_bucket="30-38",
                 case_compliances=_generate_case_compliances(
                     person=self.person,
                     start_date=supervision_period.start_date,
@@ -3218,6 +3257,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 case_type=StateSupervisionCaseType.GENERAL,
                 termination_reason=supervision_period.termination_reason,
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             ),
             create_start_event_from_period(
                 supervision_period,
@@ -4824,6 +4864,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                 supervision_type=supervision_type,
                 supervision_level=supervision_period.supervision_level,
                 case_type=StateSupervisionCaseType.GENERAL,
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             ),
         )
 
@@ -4903,6 +4944,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                 supervision_type=supervision_type,
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervision_level=supervision_period.supervision_level,
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             ),
         )
 
@@ -5063,6 +5105,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
             assessment_score=assessment_1.assessment_score,
             assessment_level=assessment_1.assessment_level,
             assessment_type=assessment_1.assessment_type,
+            assessment_score_bucket=StateAssessmentLevel.HIGH.value,
         )
 
         expected_events.extend(
@@ -5074,6 +5117,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                 assessment_score=assessment_2.assessment_score,
                 assessment_level=assessment_2.assessment_level,
                 assessment_type=assessment_2.assessment_type,
+                assessment_score_bucket=StateAssessmentLevel.MEDIUM.value,
             )
         )
 
@@ -5151,6 +5195,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
             assessment_score=assessment.assessment_score,
             assessment_level=assessment.assessment_level,
             assessment_type=assessment.assessment_type,
+            assessment_score_bucket="24-29",
             case_compliances=_generate_case_compliances(
                 person=self.person,
                 start_date=supervision_period.start_date,
@@ -6651,6 +6696,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             case_type=StateSupervisionCaseType.GENERAL,
             assessment_score=last_assessment.assessment_score,
             assessment_type=last_assessment.assessment_type,
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             termination_reason=supervision_period.termination_reason,
             assessment_score_change=assessment_score_change,
             in_supervision_population_on_date=True,
@@ -6704,6 +6750,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             case_type=StateSupervisionCaseType.GENERAL,
             assessment_score=None,
             assessment_type=None,
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             termination_reason=supervision_period.termination_reason,
             assessment_score_change=None,
             in_supervision_population_on_date=True,
@@ -6764,6 +6811,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             case_type=StateSupervisionCaseType.GENERAL,
             assessment_score=None,
             assessment_type=None,
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             termination_reason=supervision_period.termination_reason,
             assessment_score_change=None,
             in_supervision_population_on_date=True,
@@ -6894,6 +6942,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             case_type=StateSupervisionCaseType.GENERAL,
             assessment_score=assessment_3_score,
             assessment_type=assessment_3.assessment_type,
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             termination_reason=first_supervision_period.termination_reason,
             assessment_score_change=(assessment_3_score - assessment_2_score),
         )
@@ -6944,6 +6993,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             case_type=StateSupervisionCaseType.GENERAL,
             termination_reason=supervision_period.termination_reason,
             in_supervision_population_on_date=True,
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
         )
 
         self.assertEqual(expected_termination_event, termination_event)
@@ -7078,6 +7128,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             case_type=StateSupervisionCaseType.GENERAL,
             assessment_score=None,
             assessment_type=None,
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             termination_reason=first_supervision_period.termination_reason,
             assessment_score_change=None,
         )
@@ -7172,6 +7223,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             case_type=StateSupervisionCaseType.GENERAL,
             assessment_score=None,
             assessment_type=None,
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             termination_reason=first_supervision_period.termination_reason,
             assessment_score_change=None,
         )
@@ -7255,6 +7307,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             case_type=StateSupervisionCaseType.GENERAL,
             assessment_score=None,
             assessment_type=None,
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             termination_reason=supervision_period.termination_reason,
             assessment_score_change=None,
         )
@@ -7628,6 +7681,7 @@ class TestConvertEventsToDual(unittest.TestCase):
                 month=1,
                 event_date=date(1900, 1, 3),
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             ),
             SupervisionPopulationEvent(
                 state_code="US_MO",
@@ -7635,6 +7689,7 @@ class TestConvertEventsToDual(unittest.TestCase):
                 month=1,
                 event_date=date(1900, 1, 3),
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             ),
         ]
 
@@ -7649,6 +7704,7 @@ class TestConvertEventsToDual(unittest.TestCase):
                 month=1,
                 event_date=date(1900, 1, 3),
                 supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             ),
             SupervisionPopulationEvent(
                 state_code="US_MO",
@@ -7656,6 +7712,7 @@ class TestConvertEventsToDual(unittest.TestCase):
                 month=1,
                 event_date=date(1900, 1, 3),
                 supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             ),
         ]
 
@@ -7669,6 +7726,7 @@ class TestConvertEventsToDual(unittest.TestCase):
                 month=1,
                 event_date=date(1900, 1, 3),
                 supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             ),
             SupervisionPopulationEvent(
                 state_code="US_MO",
@@ -7676,6 +7734,7 @@ class TestConvertEventsToDual(unittest.TestCase):
                 month=1,
                 event_date=date(1900, 1, 3),
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             ),
         ]
 
@@ -7690,6 +7749,7 @@ class TestConvertEventsToDual(unittest.TestCase):
                 month=1,
                 event_date=date(1900, 1, 3),
                 supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             ),
             SupervisionPopulationEvent(
                 state_code="US_MO",
@@ -7697,6 +7757,7 @@ class TestConvertEventsToDual(unittest.TestCase):
                 month=1,
                 event_date=date(1900, 1, 3),
                 supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             ),
         ]
 
@@ -7711,6 +7772,7 @@ class TestConvertEventsToDual(unittest.TestCase):
                 event_date=date(1900, 1, 3),
                 supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
                 projected_end_date=None,
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             ),
             SupervisionPopulationEvent(
                 state_code="US_MO",
@@ -7719,6 +7781,7 @@ class TestConvertEventsToDual(unittest.TestCase):
                 event_date=date(1900, 1, 3),
                 supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
                 projected_end_date=None,
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             ),
             SupervisionPopulationEvent(
                 state_code="US_MO",
@@ -7727,6 +7790,7 @@ class TestConvertEventsToDual(unittest.TestCase):
                 event_date=date(1900, 1, 4),
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 projected_end_date=None,
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             ),
         ]
 
@@ -7742,6 +7806,7 @@ class TestConvertEventsToDual(unittest.TestCase):
                 event_date=date(1900, 1, 3),
                 supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
                 projected_end_date=None,
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             ),
             SupervisionPopulationEvent(
                 state_code="US_MO",
@@ -7750,6 +7815,7 @@ class TestConvertEventsToDual(unittest.TestCase):
                 event_date=date(1900, 1, 3),
                 supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
                 projected_end_date=None,
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             ),
             SupervisionPopulationEvent(
                 state_code="US_MO",
@@ -7758,6 +7824,7 @@ class TestConvertEventsToDual(unittest.TestCase):
                 event_date=date(1900, 1, 4),
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 projected_end_date=None,
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             ),
         ]
 
@@ -7772,6 +7839,7 @@ class TestConvertEventsToDual(unittest.TestCase):
                 event_date=date(1900, 1, 1),
                 supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
                 projected_end_date=None,
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             ),
             SupervisionPopulationEvent(
                 state_code="US_MO",
@@ -7780,6 +7848,7 @@ class TestConvertEventsToDual(unittest.TestCase):
                 event_date=date(1900, 1, 1),
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 projected_end_date=None,
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             ),
             ProjectedSupervisionCompletionEvent(
                 state_code="US_MO",
@@ -7803,6 +7872,7 @@ class TestConvertEventsToDual(unittest.TestCase):
                 event_date=date(1900, 1, 1),
                 supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
                 projected_end_date=None,
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             ),
             SupervisionPopulationEvent(
                 state_code="US_MO",
@@ -7811,6 +7881,7 @@ class TestConvertEventsToDual(unittest.TestCase):
                 event_date=date(1900, 1, 1),
                 supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
                 projected_end_date=None,
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             ),
             ProjectedSupervisionCompletionEvent(
                 state_code="US_MO",
@@ -7851,6 +7922,7 @@ def expected_population_events(
     assessment_score: Optional[int] = None,
     assessment_level: Optional[StateAssessmentLevel] = None,
     assessment_type: Optional[StateAssessmentType] = None,
+    assessment_score_bucket: Optional[str] = None,
     most_severe_violation_type: Optional[StateSupervisionViolationType] = None,
     most_severe_violation_type_subtype: Optional[str] = None,
     most_severe_response_decision: Optional[
@@ -7918,6 +7990,8 @@ def expected_population_events(
                 assessment_score=assessment_score,
                 assessment_level=assessment_level,
                 assessment_type=assessment_type,
+                assessment_score_bucket=assessment_score_bucket
+                or DEFAULT_ASSESSMENT_SCORE_BUCKET,
                 most_severe_violation_type=most_severe_violation_type,
                 most_severe_violation_type_subtype=most_severe_violation_type_subtype,
                 most_severe_response_decision=most_severe_response_decision,
@@ -8579,6 +8653,7 @@ def create_termination_event_from_period(
         level_2_supervision_location_external_id=level_2_supervision_location_external_id,
         case_type=StateSupervisionCaseType.GENERAL,
         termination_reason=termination_reason,
+        assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
     )
     event = attr.evolve(event, **kwargs)
     return event

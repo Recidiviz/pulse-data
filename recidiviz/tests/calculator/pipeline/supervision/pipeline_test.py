@@ -43,6 +43,9 @@ from recidiviz.calculator.pipeline.supervision.metrics import (
 from recidiviz.calculator.pipeline.supervision.supervision_case_compliance import (
     SupervisionCaseCompliance,
 )
+from recidiviz.calculator.pipeline.utils.assessment_utils import (
+    DEFAULT_ASSESSMENT_SCORE_BUCKET,
+)
 from recidiviz.calculator.pipeline.utils.metric_utils import (
     RecidivizMetric,
     RecidivizMetricType,
@@ -1319,6 +1322,7 @@ class TestClassifyEvents(unittest.TestCase):
                 supervision_level=supervision_period.supervision_level,
                 supervision_level_raw_text=supervision_period.supervision_level_raw_text,
                 in_supervision_population_on_date=True,
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             )
         )
         expected_events.append(
@@ -1515,6 +1519,7 @@ class TestClassifyEvents(unittest.TestCase):
                 supervision_level=supervision_period_with_death.supervision_level,
                 supervision_level_raw_text=supervision_period_with_death.supervision_level_raw_text,
                 in_supervision_population_on_date=True,
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             )
         )
 
@@ -1687,6 +1692,7 @@ class TestClassifyEvents(unittest.TestCase):
                 supervision_level=supervision_period_with_death.supervision_level,
                 supervision_level_raw_text=supervision_period_with_death.supervision_level_raw_text,
                 in_supervision_population_on_date=True,
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             )
         )
 
@@ -1725,6 +1731,7 @@ class TestClassifyEvents(unittest.TestCase):
                 supervision_level=supervision_period_with_death.supervision_level,
                 supervision_level_raw_text=supervision_period_with_death.supervision_level_raw_text,
                 in_supervision_population_on_date=True,
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             )
         )
 
@@ -1842,6 +1849,7 @@ class TestClassifyEvents(unittest.TestCase):
                     supervision_level=supervision_period.supervision_level,
                     supervision_level_raw_text=supervision_period.supervision_level_raw_text,
                     in_supervision_population_on_date=True,
+                    assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
                 ),
                 identifier_test.create_start_event_from_period(
                     supervision_period,
@@ -1946,6 +1954,7 @@ class TestClassifyEvents(unittest.TestCase):
                     supervision_level=supervision_period.supervision_level,
                     supervision_level_raw_text=supervision_period.supervision_level_raw_text,
                     in_supervision_population_on_date=True,
+                    assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
                 ),
                 identifier_test.create_start_event_from_period(
                     supervision_period,

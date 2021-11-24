@@ -19,6 +19,8 @@ import unittest
 from datetime import date
 from typing import List, Optional
 
+from parameterized import parameterized
+
 from recidiviz.calculator.pipeline.utils import assessment_utils
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_delegate import (
     UsIdSupervisionDelegate,
@@ -31,6 +33,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_del
 )
 from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentClass,
+    StateAssessmentLevel,
     StateAssessmentType,
 )
 from recidiviz.persistence.entity.state.entities import StateAssessment
@@ -261,3 +264,92 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
         )
 
         self.assertEqual(most_recent_assessment, assessment_2)
+
+
+class TestAssessmentScoreBucket(unittest.TestCase):
+    """Tests the assessment_score_bucket function."""
+
+    def test_assessment_score_bucket_all_assessment_types(self) -> None:
+        for assessment_type in StateAssessmentType:
+            _ = assessment_utils.assessment_score_bucket(
+                assessment_type=assessment_type,
+                assessment_score=None,
+                assessment_level=None,
+                supervision_delegate=UsXxSupervisionDelegate(),
+            )
+
+    @parameterized.expand(
+        [
+            ("low", 19, "0-23"),
+            ("med", 27, "24-29"),
+            ("high", 30, "30-38"),
+            ("max", 39, "39+"),
+        ]
+    )
+    def test_assessment_score_bucket_lsir(
+        self, _name: str, score: int, bucket: str
+    ) -> None:
+        self.assertEqual(
+            assessment_utils.assessment_score_bucket(
+                assessment_type=StateAssessmentType.LSIR,
+                assessment_score=score,
+                assessment_level=None,
+                supervision_delegate=UsXxSupervisionDelegate(),
+            ),
+            bucket,
+        )
+
+    def test_assessment_score_bucket_lsir_no_score(self) -> None:
+        self.assertEqual(
+            assessment_utils.assessment_score_bucket(
+                assessment_type=StateAssessmentType.LSIR,
+                assessment_level=None,
+                assessment_score=None,
+                supervision_delegate=UsXxSupervisionDelegate(),
+            ),
+            assessment_utils.DEFAULT_ASSESSMENT_SCORE_BUCKET,
+        )
+
+    def test_assessment_score_bucket_oras(self) -> None:
+        self.assertEqual(
+            assessment_utils.assessment_score_bucket(
+                assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
+                assessment_score=10,
+                assessment_level=StateAssessmentLevel.MEDIUM,
+                supervision_delegate=UsXxSupervisionDelegate(),
+            ),
+            StateAssessmentLevel.MEDIUM.value,
+        )
+
+    def test_assessment_score_bucket_oras_no_level(self) -> None:
+        self.assertEqual(
+            assessment_utils.assessment_score_bucket(
+                assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
+                assessment_score=10,
+                assessment_level=None,
+                supervision_delegate=UsXxSupervisionDelegate(),
+            ),
+            assessment_utils.DEFAULT_ASSESSMENT_SCORE_BUCKET,
+        )
+
+    def test_assessment_score_bucket_unsupported_assessment_type(self) -> None:
+        self.assertEqual(
+            assessment_utils.assessment_score_bucket(
+                assessment_type=StateAssessmentType.PSA,
+                assessment_score=10,
+                assessment_level=None,
+                supervision_delegate=UsXxSupervisionDelegate(),
+            ),
+            assessment_utils.DEFAULT_ASSESSMENT_SCORE_BUCKET,
+        )
+
+    def test_assessment_score_bucket_no_type(self) -> None:
+        self.assertEqual(
+            assessment_utils.assessment_score_bucket(
+                assessment_type=None,
+                assessment_score=10,
+                assessment_level=None,
+                supervision_delegate=UsXxSupervisionDelegate(),
+            ),
+            assessment_utils.DEFAULT_ASSESSMENT_SCORE_BUCKET,
+        )
