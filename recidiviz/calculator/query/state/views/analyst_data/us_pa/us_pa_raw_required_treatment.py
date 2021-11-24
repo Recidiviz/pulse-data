@@ -195,6 +195,7 @@ US_PA_RAW_REQUIRED_TREATMENT_QUERY_TEMPLATE = """
       JSON_VALUE(person.full_name, '$.surname') AS last_name,
       level_1_supervision_location_name,
       level_2_supervision_location_name,
+      TreatmentID AS treatment_id,
       TrtClassCode AS treatment_class_code,
       treatment.treatment_start_date,
       treatment.treatment_end_date,
@@ -208,7 +209,13 @@ US_PA_RAW_REQUIRED_TREATMENT_QUERY_TEMPLATE = """
         AND treatment.treatment_start_date >= board_action_date
     LEFT JOIN `{project_id}.{analyst_dataset}.us_pa_raw_treatment_classification_codes`
         ON IF(LENGTH(TrtClassCode)=5,SUBSTR(TrtClassCode,0,3),SUBSTR(TrtClassCode,0,2)) = classification_code
-    LEFT JOIN `{project_id}.reference_views.supervision_location_ids_to_names` ref
+    LEFT JOIN (SELECT DISTINCT state_code, 
+              level_1_supervision_location_external_id,
+              level_1_supervision_location_name,
+              level_2_supervision_location_external_id,
+              level_2_supervision_location_name
+              FROM `{project_id}.reference_views.supervision_location_ids_to_names` 
+              ) ref 
         ON df_and_board_actions.level_1_supervision_location_external_id = ref.level_1_supervision_location_external_id
       AND df_and_board_actions.level_2_supervision_location_external_id = ref.level_2_supervision_location_external_id
       AND df_and_board_actions.state_code = ref.state_code      
