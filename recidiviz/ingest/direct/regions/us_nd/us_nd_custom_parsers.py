@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Custom enum parsers functions for US_ND. Can be referenced in an ingest view manifest
+"""Custom parser functions for US_ND. Can be referenced in an ingest view manifest
 like this:
 
 my_flat_field:
@@ -24,7 +24,6 @@ my_flat_field:
             arg_1: <expression>
             arg_2: <expression>
 """
-
 import re
 from re import Pattern
 
@@ -34,6 +33,18 @@ from recidiviz.ingest.direct.regions.us_nd.us_nd_county_code_reference import (
     COUNTY_CODES,
     normalized_county_code,
 )
+
+
+def decimal_str_as_int_str(dec_str: str) -> str:
+    """Converts a comma-separated string representation of an integer into a string
+    representing a simple integer with no commas.
+
+    E.g. _decimal_str_as_int_str('1,234.00') -> '1234'
+    """
+    if not dec_str:
+        return dec_str
+
+    return str(int(float(dec_str.replace(",", ""))))
 
 
 def normalize_county_code(county_code: str) -> str:

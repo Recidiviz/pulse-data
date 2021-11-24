@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2019 Recidiviz, Inc.
+# Copyright (C) 2021 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,6 +17,7 @@
 """Tests for county_entity_matcher.py."""
 import copy
 from datetime import datetime
+from typing import List
 from unittest import TestCase
 
 import attr
@@ -26,20 +27,24 @@ from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.county.booking import CustodyStatus
 from recidiviz.common.constants.county.hold import HoldStatus
 from recidiviz.common.constants.person_characteristics import Gender
+from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
 from recidiviz.persistence.database.schema.county import schema
 from recidiviz.persistence.database.schema_entity_converter import (
     schema_entity_converter as converter,
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.entity.county import entities
+from recidiviz.persistence.entity.entities import EntityPersonType
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity_matching import entity_matching
 from recidiviz.persistence.entity_matching.county import (
     county_entity_matcher,
     county_matching_utils,
 )
+from recidiviz.persistence.entity_matching.entity_matching_types import MatchedEntities
 from recidiviz.persistence.errors import EntityMatchingError
 from recidiviz.tests.utils import fakes
 
@@ -69,6 +74,14 @@ _NAME = "name_1"
 _NAME_2 = "name_2"
 _NAME_3 = "name_3"
 _JURISDICTION_ID = "12345678"
+DEFAULT_METADATA = IngestMetadata(
+    region=_REGION,
+    system_level=SystemLevel.COUNTY,
+    ingest_time=datetime(year=1000, month=1, day=1),
+    database_key=SQLAlchemyDatabaseKey.canonical_for_schema(
+        schema_type=SchemaType.JAILS
+    ),
+)
 
 
 class TestCountyEntityMatcher(TestCase):
@@ -81,6 +94,14 @@ class TestCountyEntityMatcher(TestCase):
 
     def tearDown(self) -> None:
         fakes.teardown_in_memory_sqlite_databases()
+
+    @staticmethod
+    def _match(
+        session: Session, ingested_people: List[EntityPersonType]
+    ) -> MatchedEntities:
+        return entity_matching.match(
+            session, _REGION, ingested_people, DEFAULT_METADATA
+        )
 
     def test_matchPeople_errorCount(self):
         # Arrange
@@ -138,9 +159,7 @@ class TestCountyEntityMatcher(TestCase):
             )
 
         # Act
-        out = entity_matching.match(
-            session, _REGION, [ingested_person, ingested_person_another]
-        )
+        out = self._match(session, [ingested_person, ingested_person_another])
 
         # Assert
         expected_person = attr.evolve(
@@ -205,7 +224,7 @@ class TestCountyEntityMatcher(TestCase):
             )
 
         # Act
-        out = entity_matching.match(session, _REGION, [ingested_person])
+        out = self._match(session, [ingested_person])
 
         # Assert
         expected_orphaned_bond = attr.evolve(
@@ -300,9 +319,7 @@ class TestCountyEntityMatcher(TestCase):
             )
 
         # Act
-        out = entity_matching.match(
-            session, _REGION, [ingested_person, ingested_person_another]
-        )
+        out = self._match(session, [ingested_person, ingested_person_another])
 
         # Assert
         expected_booking = attr.evolve(ingested_booking, booking_id=_BOOKING_ID)
@@ -394,9 +411,7 @@ class TestCountyEntityMatcher(TestCase):
             )
 
         # Act
-        out = entity_matching.match(
-            session, _REGION, [ingested_person_external_id, ingested_person]
-        )
+        out = self._match(session, [ingested_person_external_id, ingested_person])
 
         # Assert
         expected_booking = attr.evolve(ingested_booking, booking_id=_BOOKING_ID)
@@ -454,7 +469,7 @@ class TestCountyEntityMatcher(TestCase):
             )
 
         # Act
-        matched_entities = entity_matching.match(session, _REGION, [ingested_person])
+        matched_entities = self._match(session, [ingested_person])
 
         # Assert both schema objects are matches, but we select the most
         # similar one.

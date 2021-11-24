@@ -17,7 +17,7 @@
 
 """Contains util methods for UsNdMatchingDelegate."""
 import datetime
-from typing import List, Optional, Union, cast
+from typing import List, Union, cast
 
 from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
@@ -40,22 +40,8 @@ from recidiviz.persistence.entity_matching.state.state_matching_utils import (
 from recidiviz.persistence.errors import EntityMatchingError
 
 
-def _get_closest_matching_incarceration_period(
-    svr: schema.StateSupervisionViolationResponse,
-    ips: List[schema.StateIncarcerationPeriod],
-) -> Optional[schema.StateIncarcerationPeriod]:
-    """Returns the StateIncarcerationPeriod whose admission_date is
-    closest to, and within 90 days of, the response_date of the provided |svr|.
-    90 days is an arbitrary buffer for which we accept discrepancies between
-    the SupervisionViolationResponse response_date and the
-    StateIncarcerationPeriod's admission_date.
-    """
-    closest_ip = min(ips, key=lambda x: abs(x.admission_date - svr.response_date))
-    if abs((closest_ip.admission_date - svr.response_date).days) <= 90:
-        return closest_ip
-    return None
-
-
+# TODO(#10152): Delete once elite_externalmovements_incarceration_periods has shipped
+#  to prod
 def update_temporary_holds(ingested_persons: List[schema.StatePerson]) -> None:
     """ND specific logic to handle correct setting of admission and release
     reasons for incarceration periods that are holds and that directly succeed
@@ -70,6 +56,8 @@ def update_temporary_holds(ingested_persons: List[schema.StatePerson]) -> None:
                 )
 
 
+# TODO(#10152): Delete once elite_externalmovements_incarceration_periods has shipped
+#  to prod
 def _update_temporary_holds_helper(
     ips: List[schema.StateIncarcerationPeriod], enum_overrides: EnumOverrides
 ) -> None:
@@ -81,6 +69,9 @@ def _update_temporary_holds_helper(
             _set_preceding_admission_reason(idx, sorted_ips, enum_overrides)
 
 
+# TODO(#10152): Delete once elite_externalmovements_incarceration_periods has shipped
+#  to prod
+# TODO(#10171): Move this logic to IP pre-processing in a backwards compatible way
 def _update_ips_to_holds(sorted_ips: List[schema.StateIncarcerationPeriod]) -> None:
     """Converts any of the given incarceration periods to "holds" which should be converted.
 
@@ -123,6 +114,9 @@ def _update_ips_to_holds(sorted_ips: List[schema.StateIncarcerationPeriod]) -> N
         previous_ip = ip
 
 
+# TODO(#10152): Delete once elite_externalmovements_incarceration_periods has shipped
+#  to prod
+# TODO(#10171): Move this logic to IP pre-processing in a backwards compatible way
 def _set_preceding_admission_reason(
     idx: int,
     sorted_ips: List[schema.StateIncarcerationPeriod],
@@ -173,6 +167,8 @@ def _set_preceding_admission_reason(
             beginning_ip.admission_reason = earliest_hold_admission_reason.value
 
 
+# TODO(#10152): Delete once elite_externalmovements_incarceration_periods has shipped
+#  to prod
 def _is_hold(ip: schema.StateIncarcerationPeriod) -> bool:
     """Determines if the provided |ip| represents a temporary hold and not a
     stay in a DOCR overseen facility.
@@ -196,6 +192,8 @@ def _is_hold(ip: schema.StateIncarcerationPeriod) -> bool:
     )
 
 
+# TODO(#10152): Delete once elite_externalmovements_incarceration_periods has shipped
+#  to prod
 def _are_consecutive(
     ip1: schema.StateIncarcerationPeriod, ip2: schema.StateIncarcerationPeriod
 ) -> bool:
@@ -213,6 +211,8 @@ def _are_consecutive(
     )
 
 
+# TODO(#10152): Delete once elite_externalmovements_incarceration_periods has shipped
+#  to prod
 def merge_incarceration_periods(
     ingested_persons: List[schema.StatePerson], field_index: CoreEntityFieldIndex
 ):
@@ -229,6 +229,8 @@ def merge_incarceration_periods(
                 )
 
 
+# TODO(#10152): Delete once elite_externalmovements_incarceration_periods has shipped
+#  to prod
 def _merge_incarceration_periods_helper(
     incomplete_incarceration_periods: List[schema.StateIncarcerationPeriod],
     field_index: CoreEntityFieldIndex,
@@ -278,6 +280,8 @@ def _merge_incarceration_periods_helper(
 _INCARCERATION_PERIOD_ID_DELIMITER = "|"
 
 
+# TODO(#10152): Delete once elite_externalmovements_incarceration_periods has shipped
+#  to prod
 def merge_incomplete_periods(
     new_entity: schema.StateIncarcerationPeriod,
     old_entity: schema.StateIncarcerationPeriod,
@@ -342,6 +346,8 @@ def merge_incomplete_periods(
     return old_entity
 
 
+# TODO(#10152): Delete once elite_externalmovements_incarceration_periods has shipped
+#  to prod
 def is_incarceration_period_match(
     ingested_entity: Union[EntityTree, StateBase],
     db_entity: Union[EntityTree, StateBase],
@@ -393,6 +399,8 @@ def is_incarceration_period_match(
     return incomplete_external_id in complete_external_ids
 
 
+# TODO(#10152): Delete once elite_externalmovements_incarceration_periods has shipped
+#  to prod
 def is_incomplete_incarceration_period_match(
     ingested_entity: schema.StateIncarcerationPeriod,
     db_entity: schema.StateIncarcerationPeriod,
@@ -429,6 +437,8 @@ def is_incomplete_incarceration_period_match(
     return True
 
 
+# TODO(#10152): Delete once elite_externalmovements_incarceration_periods has shipped
+#  to prod
 def _get_sequence_no(period: schema.StateIncarcerationPeriod) -> int:
     """Extracts the ND specific Movement Sequence Number from the external id
     of the provided |period|.
@@ -443,6 +453,8 @@ def _get_sequence_no(period: schema.StateIncarcerationPeriod) -> int:
     return sequence_no
 
 
+# TODO(#10152): Delete once elite_externalmovements_incarceration_periods has shipped
+#  to prod
 def is_incarceration_period_complete(period: schema.StateIncarcerationPeriod) -> bool:
     """Returns True if the period is considered complete (has both an admission
     and release date).

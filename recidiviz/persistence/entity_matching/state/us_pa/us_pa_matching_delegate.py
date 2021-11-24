@@ -18,6 +18,8 @@
 
 from typing import List, Optional
 
+from recidiviz.common.constants.states import StateCode
+from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity_matching import entity_matching_utils
 from recidiviz.persistence.entity_matching.entity_matching_types import EntityTree
@@ -32,8 +34,12 @@ from recidiviz.persistence.entity_matching.state.state_matching_utils import (
 class UsPaMatchingDelegate(BaseStateMatchingDelegate):
     """Class that contains matching logic specific to US_PA."""
 
-    def __init__(self):
-        super().__init__("us_pa", [schema.StatePerson, schema.StateSentenceGroup])
+    def __init__(self, ingest_metadata: IngestMetadata):
+        super().__init__(
+            StateCode.US_PA.value.lower(),
+            ingest_metadata,
+            [schema.StatePerson, schema.StateSentenceGroup],
+        )
 
     def get_non_external_id_match(
         self, ingested_entity_tree: EntityTree, db_entity_trees: List[EntityTree]

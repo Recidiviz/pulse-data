@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2019 Recidiviz, Inc.
+# Copyright (C) 2021 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,11 +16,17 @@
 # =============================================================================
 """US_MO specific entity matching tests."""
 import datetime
+from typing import List
 
 import attr
 
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
+from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
+from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.session import Session
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+from recidiviz.persistence.entity.entities import EntityPersonType
 from recidiviz.persistence.entity.state.entities import (
     StateAgent,
     StatePerson,
@@ -29,6 +35,7 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionSentence,
 )
 from recidiviz.persistence.entity_matching import entity_matching
+from recidiviz.persistence.entity_matching.entity_matching_types import MatchedEntities
 from recidiviz.tests.persistence.database.schema.state.schema_test_utils import (
     generate_agent,
     generate_external_id,
@@ -52,10 +59,24 @@ _DATE_1 = datetime.date(year=2019, month=1, day=1)
 _DATE_2 = datetime.date(year=2019, month=2, day=1)
 _DATE_3 = datetime.date(year=2019, month=3, day=1)
 _DATE_4 = datetime.date(year=2019, month=4, day=1)
+DEFAULT_METADATA = IngestMetadata(
+    region=_US_MO,
+    system_level=SystemLevel.STATE,
+    ingest_time=datetime.datetime(year=1000, month=1, day=1),
+    database_key=SQLAlchemyDatabaseKey.canonical_for_schema(
+        schema_type=SchemaType.STATE
+    ),
+)
 
 
 class TestMoEntityMatching(BaseStateEntityMatcherTest):
     """Test class for US_MO specific entity matching logic."""
+
+    @staticmethod
+    def _match(
+        session: Session, ingested_people: List[EntityPersonType]
+    ) -> MatchedEntities:
+        return entity_matching.match(session, _US_MO, ingested_people, DEFAULT_METADATA)
 
     def test_runMatch_supervisingOfficerNotMovedFromPersonOntoOpenSupervisionPeriods(
         self,
@@ -127,9 +148,7 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
 
         # Act 1 - Match
         session = self._session()
-        matched_entities = entity_matching.match(
-            session, _US_MO, ingested_people=[person]
-        )
+        matched_entities = self._match(session, ingested_people=[person])
 
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
@@ -247,9 +266,7 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
 
         # Act
         session = self._session()
-        matched_entities = entity_matching.match(
-            session, _US_MO, ingested_people=[person]
-        )
+        matched_entities = self._match(session, ingested_people=[person])
 
         # Assert
         self.assert_people_match_pre_and_post_commit(

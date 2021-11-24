@@ -18,6 +18,7 @@
 
 from typing import List, Optional
 
+from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.entity.county import entities as county_entities
 from recidiviz.persistence.entity.entities import EntityPersonType
@@ -42,9 +43,12 @@ _EMPTY_MATCH_OUTPUT = MatchedEntities(
 
 @trace.span
 def match(
-    session: Session, region: str, ingested_people: List[EntityPersonType]
+    session: Session,
+    region: str,
+    ingested_people: List[EntityPersonType],
+    ingest_metadata: IngestMetadata,
 ) -> MatchedEntities:
-    matcher = _get_matcher(ingested_people, region)
+    matcher = _get_matcher(ingested_people, region, ingest_metadata)
     if not matcher:
         return _EMPTY_MATCH_OUTPUT
 
@@ -52,7 +56,9 @@ def match(
 
 
 def _get_matcher(
-    ingested_people: List[EntityPersonType], region_code: str
+    ingested_people: List[EntityPersonType],
+    region_code: str,
+    ingest_metadata: IngestMetadata,
 ) -> Optional[BaseEntityMatcher]:
     sample = next(iter(ingested_people), None)
     if not sample:
@@ -63,7 +69,8 @@ def _get_matcher(
 
     if isinstance(sample, state_entities.StatePerson):
         state_matching_delegate = StateMatchingDelegateFactory.build(
-            region_code=region_code
+            region_code=region_code,
+            ingest_metadata=ingest_metadata,
         )
         return StateEntityMatcher(state_matching_delegate)
 

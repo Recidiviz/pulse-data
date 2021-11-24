@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2019 Recidiviz, Inc.
+# Copyright (C) 2021 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,6 +19,9 @@
 import logging
 from typing import List, Optional
 
+from recidiviz.common.constants.states import StateCode
+from recidiviz.common.ingest_metadata import IngestMetadata
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity_matching import entity_matching_utils
@@ -35,34 +38,51 @@ from recidiviz.persistence.entity_matching.state.us_nd.us_nd_matching_utils impo
     merge_incomplete_periods,
     update_temporary_holds,
 )
+from recidiviz.utils import environment
 
 
 class UsNdMatchingDelegate(BaseStateMatchingDelegate):
     """Class that contains matching logic specific to US_ND."""
 
-    def __init__(self):
-        super().__init__("us_nd", [schema.StatePerson, schema.StateSentenceGroup])
+    def __init__(self, ingest_metadata: IngestMetadata):
+        super().__init__(
+            StateCode.US_ND.value.lower(),
+            ingest_metadata,
+            [schema.StatePerson, schema.StateSentenceGroup],
+        )
 
+    # TODO(#10152): Delete once elite_externalmovements_incarceration_periods has
+    #  shipped to prod
     def perform_match_postprocessing(self, matched_persons: List[schema.StatePerson]):
         """Performs the following ND specific postprocessing on the provided
         |matched_persons| directly after they have been entity matched:
             - Transform IncarcerationPeriods periods of temporary custody
               (holds), when appropriate.
-            - Associates SupervisionViolationResponses with IncarcerationPeriods
-              based on date.
-            - Moves supervising_officer from StatePerson onto open
-              SupervisionPeriods.
         """
-        logging.info("[Entity matching] Transform incarceration periods into holds")
-        update_temporary_holds(matched_persons)
+        if (
+            environment.in_gcp_production()
+            or self.ingest_metadata.database_key
+            == DirectIngestInstance.PRIMARY.database_key_for_state(StateCode.US_ND)
+        ):
+            logging.info("[Entity matching] Transform incarceration periods into holds")
+            update_temporary_holds(matched_persons)
 
+    # TODO(#10152): Delete once elite_externalmovements_incarceration_periods has
+    #  shipped to prod
     def perform_match_preprocessing(self, ingested_persons: List[schema.StatePerson]):
         """Performs the following ND specific preprocessing on the provided
         |ingested_persons| directly before they are entity matched:
             - Merge incomplete IncarcerationPeriods when possible.
         """
-        logging.info("[Entity matching] Pre-processing: Merge incarceration periods")
-        merge_incarceration_periods(ingested_persons, self.field_index)
+        if (
+            environment.in_gcp_production()
+            or self.ingest_metadata.database_key
+            == DirectIngestInstance.PRIMARY.database_key_for_state(StateCode.US_ND)
+        ):
+            logging.info(
+                "[Entity matching] Pre-processing: Merge incarceration periods"
+            )
+            merge_incarceration_periods(ingested_persons, self.field_index)
 
     def get_non_external_id_match(
         self, ingested_entity_tree: EntityTree, db_entity_trees: List[EntityTree]
