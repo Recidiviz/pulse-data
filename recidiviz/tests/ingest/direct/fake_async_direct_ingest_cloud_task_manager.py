@@ -209,7 +209,7 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
         super().__init__()
         self.scheduler_queue = SingleThreadTaskQueue(name="scheduler")
         self.process_job_queue = SingleThreadTaskQueue(name="process_job")
-        self.bq_import_export_queue = SingleThreadTaskQueue(name="bq_import_export")
+        self.ingest_view_export_queue = SingleThreadTaskQueue(name="ingest_view_export")
         self.raw_data_import_queue = SingleThreadTaskQueue(name="raw_data_import")
         self.sftp_queue = SingleThreadTaskQueue(name="sftp")
 
@@ -315,7 +315,7 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
             raise ValueError("Controller is null - did you call set_controller()?")
 
         task_id = build_ingest_view_export_task_id(region, ingest_view_export_args)
-        self.bq_import_export_queue.add_task(
+        self.ingest_view_export_queue.add_task(
             f"projects/path/to/{task_id}",
             with_monitoring(
                 region.region_code,
@@ -358,16 +358,8 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
     def get_bq_import_export_queue_info(
         self, region: Region
     ) -> BQImportExportCloudTaskQueueInfo:
-        with self.bq_import_export_queue.all_tasks_mutex:
-            has_unfinished_tasks = (
-                self.bq_import_export_queue.get_unfinished_task_names_unsafe()
-            )
-
-        task_names = (
-            [f"{region.region_code}-schedule-job"] if has_unfinished_tasks else []
-        )
-        return BQImportExportCloudTaskQueueInfo(
-            queue_name=self.bq_import_export_queue.name, task_names=task_names
+        raise NotImplementedError(
+            "TODO(#9713): Function no longer in use, soon to be deleted."
         )
 
     def get_raw_data_import_queue_info(
@@ -383,8 +375,13 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
     def get_ingest_view_export_queue_info(
         self, region: Region, ingest_instance: DirectIngestInstance
     ) -> IngestViewExportCloudTaskQueueInfo:
-        raise NotImplementedError(
-            "TODO(#9713): Implement once we start routing tasks to these queues"
+        with self.ingest_view_export_queue.all_tasks_mutex:
+            task_names = (
+                self.ingest_view_export_queue.get_unfinished_task_names_unsafe()
+            )
+
+        return IngestViewExportCloudTaskQueueInfo(
+            queue_name=self.ingest_view_export_queue.name, task_names=task_names
         )
 
     def get_sftp_queue_info(self, region: Region) -> SftpCloudTaskQueueInfo:
@@ -400,28 +397,28 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
 
     def wait_for_all_tasks_to_run(self) -> None:
         raw_data_import_done = False
-        bq_import_export_done = False
+        ingest_view_export_done = False
         scheduler_done = False
         process_job_queue_done = False
         while not (
-            bq_import_export_done
+            ingest_view_export_done
             and scheduler_done
             and process_job_queue_done
             and raw_data_import_done
         ):
             self.raw_data_import_queue.join()
-            self.bq_import_export_queue.join()
+            self.ingest_view_export_queue.join()
             self.scheduler_queue.join()
             self.process_job_queue.join()
 
-            with self.bq_import_export_queue.all_tasks_mutex:
+            with self.ingest_view_export_queue.all_tasks_mutex:
                 with self.scheduler_queue.all_tasks_mutex:
                     with self.process_job_queue.all_tasks_mutex:
                         raw_data_import_done = (
                             not self.raw_data_import_queue.get_unfinished_task_names_unsafe()
                         )
-                        bq_import_export_done = (
-                            not self.bq_import_export_queue.get_unfinished_task_names_unsafe()
+                        ingest_view_export_done = (
+                            not self.ingest_view_export_queue.get_unfinished_task_names_unsafe()
                         )
                         scheduler_done = (
                             not self.scheduler_queue.get_unfinished_task_names_unsafe()

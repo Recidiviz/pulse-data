@@ -398,8 +398,8 @@ class TestDirectIngestController(unittest.TestCase):
             task_manager.test_run_next_scheduler_task()
             task_manager.test_pop_finished_scheduler_task()
         # file_path ingest view export
-        task_manager.test_run_next_bq_import_export_task()
-        task_manager.test_pop_finished_bq_import_export_task()
+        task_manager.test_run_next_ingest_view_export_task()
+        task_manager.test_pop_finished_ingest_view_export_task()
 
         if clear_scheduler_queue_after:
             while task_manager.scheduler_tasks:

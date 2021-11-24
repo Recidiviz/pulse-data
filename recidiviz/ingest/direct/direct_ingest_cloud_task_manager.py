@@ -585,22 +585,6 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
             cloud_tasks_client=self.cloud_tasks_client,
         )
 
-    # TODO(#9713): Delete this function when we delete this queue.
-    def _get_bq_import_export_queue_manager(
-        self, region: Region
-    ) -> CloudTaskQueueManager[BQImportExportCloudTaskQueueInfo]:
-        queue_name = _queue_name_for_queue_type(
-            DirectIngestQueueType.BQ_IMPORT_EXPORT,
-            region.region_code,
-            DirectIngestInstance.PRIMARY,
-        )
-
-        return CloudTaskQueueManager(
-            queue_info_cls=BQImportExportCloudTaskQueueInfo,
-            queue_name=queue_name,
-            cloud_tasks_client=self.cloud_tasks_client,
-        )
-
     def _get_raw_data_import_queue_manager(
         self, region: Region
     ) -> CloudTaskQueueManager[RawDataImportCloudTaskQueueInfo]:
@@ -677,8 +661,8 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
     def get_bq_import_export_queue_info(
         self, region: Region
     ) -> BQImportExportCloudTaskQueueInfo:
-        return self._get_bq_import_export_queue_manager(region).get_queue_info(
-            task_id_prefix=region.region_code
+        raise NotImplementedError(
+            "TODO(#9713): Function no longer in use, soon to be deleted."
         )
 
     def get_raw_data_import_queue_info(
@@ -811,7 +795,9 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
 
         body = self._get_body_from_args(ingest_view_export_args)
 
-        self._get_bq_import_export_queue_manager(region).create_task(
+        self._get_ingest_view_export_queue_manager(
+            region, ingest_view_export_args.ingest_instance()
+        ).create_task(
             task_id=task_id,
             relative_uri=relative_uri,
             body=body,
