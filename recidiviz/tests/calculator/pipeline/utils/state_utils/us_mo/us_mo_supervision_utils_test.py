@@ -53,7 +53,7 @@ class UsMoGetPostIncarcerationSupervisionTypeTest(unittest.TestCase):
     def test_usMo_getPostIncarcerationSupervisionType(self) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
             external_id="ip1",
             state_code="US_MO",
             admission_date=datetime.date(year=2019, month=9, day=13),
@@ -99,7 +99,7 @@ class UsMoGetPostIncarcerationSupervisionTypeTest(unittest.TestCase):
     ) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
             external_id="ip1",
             state_code="US_MO",
             admission_date=datetime.date(year=2019, month=9, day=13),

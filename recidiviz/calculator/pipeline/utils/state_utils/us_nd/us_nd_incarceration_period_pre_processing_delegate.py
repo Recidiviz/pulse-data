@@ -202,14 +202,19 @@ def _us_nd_normalize_period_if_commitment_from_supervision(
             if was_intermediate_state_prison_admission:
                 return incarceration_period
 
-            admission_reason = StateIncarcerationPeriodAdmissionReason.REVOCATION
-            # Override the admission reason raw text, if the previous supervision type is probation or parole.
+            # Override the admission reason and raw text, if the previous supervision type is probation or parole.
             if (
                 most_recent_supervision_period.supervision_type
                 == StateSupervisionPeriodSupervisionType.PROBATION
             ):
+                admission_reason = (
+                    StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION
+                )
                 admission_reason_prefix = PROBATION_REVOCATION_PREPROCESSING_PREFIX
             else:
+                admission_reason = (
+                    StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION
+                )
                 admission_reason_prefix = PAROLE_REVOCATION_PREPROCESSING_PREFIX
 
             return attr.evolve(

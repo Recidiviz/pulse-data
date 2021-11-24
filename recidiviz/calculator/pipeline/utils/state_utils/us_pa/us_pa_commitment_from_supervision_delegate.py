@@ -68,7 +68,7 @@ class UsPaCommitmentFromSupervisionDelegate(
 
         if admission_reason in (
             # TODO(#8028): For now the only revocations in US_PA are parole revocations.
-            StateIncarcerationPeriodAdmissionReason.REVOCATION,
+            StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
         ):
             return StateSupervisionPeriodSupervisionType.PAROLE
 

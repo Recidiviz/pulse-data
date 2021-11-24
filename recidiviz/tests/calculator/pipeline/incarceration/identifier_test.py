@@ -1131,7 +1131,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             state_code="US_ND",
             facility="PRISON",
             admission_date=date(2008, 12, 20),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
             admission_reason_raw_text="NPRB",
             release_date=date(2008, 12, 21),
             release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
@@ -1258,7 +1258,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             state_code="US_MO",
             facility="PRISON",
             admission_date=date(2008, 11, 21),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
             admission_reason_raw_text="40I2000",
             release_date=date(2008, 11, 22),
             release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
@@ -1618,7 +1618,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                     facility=revocation_period.facility,
                     county_of_residence=_COUNTY_OF_RESIDENCE,
                     release_reason=revocation_period.release_reason,
-                    admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
+                    admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
                     commitment_from_supervision_supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
                     total_days_incarcerated=(
                         revocation_period.release_date
@@ -2137,7 +2137,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             incarceration_type=StateIncarcerationType.COUNTY_JAIL,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             admission_date=date(2018, 5, 19),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
             # Program 46 indicates a revocation for a 6, 9 or 12 month stay
             specialized_purpose_for_incarceration_raw_text="CCIS-46",
@@ -2417,7 +2417,7 @@ class TestFindIncarcerationStays(unittest.TestCase):
             state_code="US_XX",
             facility="PRISON3",
             admission_date=date(2000, 1, 20),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
             release_date=date(2010, 12, 1),
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
@@ -2511,7 +2511,7 @@ class TestFindIncarcerationStays(unittest.TestCase):
             state_code="US_XX",
             facility="PRISON3",
             admission_date=date(2000, 1, 20),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
             release_date=date(2010, 12, 1),
             release_reason=None,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
@@ -2955,7 +2955,7 @@ class TestFindIncarcerationStays(unittest.TestCase):
             state_code="US_XX",
             facility="PRISON3",
             admission_date=date(2010, 3, 1),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
             release_date=date(2010, 3, 31),
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
@@ -3524,7 +3524,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code="US_XX",
             admission_date=date(2009, 12, 31),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
@@ -3658,7 +3658,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code="US_XX",
             admission_date=date(2009, 12, 31),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
@@ -3792,7 +3792,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code=state_code,
             admission_date=date(2012, 12, 31),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
@@ -3963,7 +3963,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code="US_ND",
             admission_date=date(2018, 6, 3),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
             admission_reason_raw_text="PARL",
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )

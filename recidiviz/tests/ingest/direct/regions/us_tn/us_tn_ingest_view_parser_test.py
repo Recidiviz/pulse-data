@@ -306,7 +306,7 @@ class UsTnIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                                         release_date=datetime.date(2010, 11, 4),
                                         county_code=None,
                                         facility="WTSP",
-                                        admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
+                                        admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
                                         admission_reason_raw_text="PAFA-PAVOK",
                                         release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_TO_SUPERVISION,
                                         release_reason_raw_text="FAPA-RELEL",

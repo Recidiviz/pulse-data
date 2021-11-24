@@ -67,7 +67,7 @@ class TestPreCommitmentSupervisionTypeIdentification(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_PA",
             admission_date=date(2008, 12, 20),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
             admission_reason_raw_text="ADMN",
             release_date=date(2010, 12, 21),
             release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
