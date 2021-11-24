@@ -61,9 +61,9 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
         self.raw_data_import_tasks: List[Tuple[str, GcsfsRawDataBQImportArgs]] = []
         self.num_finished_raw_data_import_tasks = 0
 
-        # TODO(#9713): Delete these vars once we delete this queue.
-        self.bq_import_export_tasks: List[Tuple[str, GcsfsIngestViewExportArgs]] = []
-        self.num_finished_bq_import_export_tasks = 0
+        self.ingest_view_export_tasks: List[Tuple[str, GcsfsIngestViewExportArgs]] = []
+        self.num_finished_ingest_view_export_tasks = 0
+
         self.sftp_tasks: List[str] = []
 
     def get_process_job_queue_info(
@@ -85,9 +85,8 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
     def get_bq_import_export_queue_info(
         self, region: Region
     ) -> BQImportExportCloudTaskQueueInfo:
-        return BQImportExportCloudTaskQueueInfo(
-            queue_name="bq_import_export",
-            task_names=[t[0] for t in self.bq_import_export_tasks],
+        raise NotImplementedError(
+            "TODO(#9713): Function no longer in use, soon to be deleted."
         )
 
     def get_raw_data_import_queue_info(
@@ -101,8 +100,9 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
     def get_ingest_view_export_queue_info(
         self, region: Region, ingest_instance: DirectIngestInstance
     ) -> IngestViewExportCloudTaskQueueInfo:
-        raise NotImplementedError(
-            "TODO(#9713): Implement once we start routing tasks to these queues"
+        return IngestViewExportCloudTaskQueueInfo(
+            queue_name="ingest_view_export",
+            task_names=[t[0] for t in self.ingest_view_export_tasks],
         )
 
     def get_sftp_queue_info(self, region: Region) -> SftpCloudTaskQueueInfo:
@@ -178,7 +178,7 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
         if not self.controller:
             raise ValueError("Controller is null - did you call set_controller()?")
         task_id = build_ingest_view_export_task_id(region, ingest_view_export_args)
-        self.bq_import_export_tasks.append(
+        self.ingest_view_export_tasks.append(
             (f"projects/path/to/{task_id}", ingest_view_export_args)
         )
 
@@ -270,35 +270,6 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
                 raise ValueError(f"Unexpected task id [{task_name}]")
         self.num_finished_scheduler_tasks += 1
 
-    # TODO(#9713): Delete this function when we delete this queue.
-    def test_run_next_bq_import_export_task(self) -> None:
-        """Synchronously executes the next queued BQ import/export task, but *does not
-        remove it from the queue*."""
-        if not self.bq_import_export_tasks:
-            raise ValueError("BQ import/export job tasks should not be empty.")
-
-        if self.num_finished_bq_import_export_tasks:
-            raise ValueError("Must first pop last finished task.")
-
-        if not self.controller:
-            raise ValueError("Controller is null - did you call set_controller()?")
-
-        task = self.bq_import_export_tasks[0]
-        task_id = task[0]
-        args = task[1]
-
-        with monitoring.push_region_tag(
-            self.controller.region.region_code, self.controller.ingest_instance.value
-        ):
-            if "ingest_view_export" in task_id:
-                if not isinstance(args, GcsfsIngestViewExportArgs):
-                    raise ValueError(f"Unexpected args type {type(args)}")
-
-                self.controller.do_ingest_view_export(ingest_view_export_args=args)
-            else:
-                raise ValueError(f"Unexpected task id [{task_id}]")
-        self.num_finished_bq_import_export_tasks += 1
-
     def test_run_next_raw_data_import_task(self) -> None:
         """Synchronously executes the next queued raw data import task, but *does not
         remove it from the queue*."""
@@ -323,9 +294,23 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
     def test_run_next_ingest_view_export_task(self) -> None:
         """Synchronously executes the next queued ingest view export task, but *does not
         remove it from the queue*."""
-        raise NotImplementedError(
-            "TODO(#9713): Implement once we start routing tasks to this queue"
-        )
+        if not self.ingest_view_export_tasks:
+            raise ValueError("BQ import/export job tasks should not be empty.")
+
+        if self.num_finished_ingest_view_export_tasks:
+            raise ValueError("Must first pop last finished task.")
+
+        if not self.controller:
+            raise ValueError("Controller is null - did you call set_controller()?")
+
+        _task_id, args = self.ingest_view_export_tasks[0]
+
+        with monitoring.push_region_tag(
+            self.controller.region.region_code, self.controller.ingest_instance.value
+        ):
+            self.controller.do_ingest_view_export(ingest_view_export_args=args)
+
+        self.num_finished_ingest_view_export_tasks += 1
 
     def test_pop_finished_process_job_task(self) -> Tuple[str, GcsfsIngestArgs]:
         """Removes most recently run process job task from the queue."""
@@ -344,16 +329,6 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
         self.scheduler_tasks.pop(0)
         self.num_finished_scheduler_tasks -= 1
 
-    # TODO(#9713): Delete this function when we delete this queue.
-    def test_pop_finished_bq_import_export_task(self) -> None:
-        """Removes most recently run import/export task from the queue."""
-
-        if self.num_finished_bq_import_export_tasks == 0:
-            raise ValueError("No finished tasks to pop.")
-
-        self.bq_import_export_tasks.pop(0)
-        self.num_finished_bq_import_export_tasks -= 1
-
     def test_pop_finished_raw_data_import_task(self) -> None:
         """Removes most recently run raw data import task from the queue."""
         if self.num_finished_raw_data_import_tasks == 0:
@@ -364,6 +339,8 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
 
     def test_pop_finished_ingest_view_export_task(self) -> None:
         """Removes most recently run ingest view export task from the queue."""
-        raise NotImplementedError(
-            "TODO(#9713): Implement once we start routing tasks to this queue"
-        )
+        if self.num_finished_ingest_view_export_tasks == 0:
+            raise ValueError("No finished tasks to pop.")
+
+        self.ingest_view_export_tasks.pop(0)
+        self.num_finished_ingest_view_export_tasks -= 1
