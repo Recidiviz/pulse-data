@@ -296,7 +296,7 @@ class TestIncarcerationPipeline(unittest.TestCase):
             county_code="124",
             facility="San Quentin",
             facility_security_level=StateIncarcerationFacilitySecurityLevel.MAXIMUM,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
             projected_release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
             admission_date=date(2011, 4, 5),
             release_date=date(2014, 4, 14),
@@ -866,7 +866,7 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
             state_code=state_code,
             facility="PRISON XX",
             admission_date=date(2010, 11, 20),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
             release_date=date(2010, 11, 21),
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
@@ -1030,7 +1030,7 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
             state_code="US_XX",
             facility="PRISON XX",
             admission_date=date(2010, 11, 20),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
             release_date=date(2010, 11, 21),
             release_reason=StateIncarcerationPeriodReleaseReason.DEATH,
         )
@@ -1191,7 +1191,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
                 event_date=date(2001, 3, 16),
                 facility="SAN QUENTIN",
                 county_of_residence="county_of_residence",
-                admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
             ),
             IncarcerationReleaseEvent(
                 state_code="US_XX",

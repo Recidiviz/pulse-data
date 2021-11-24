@@ -795,7 +795,7 @@ class TestDeserializeEntityFactories(unittest.TestCase):
             .add("P", StateIncarcerationType.STATE_PRISON)
             .add("PAR", StateSupervisionPeriodSupervisionType.PAROLE)
             .add("M", StateIncarcerationFacilitySecurityLevel.MEDIUM)
-            .add("REV", StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION)
+            .add("REV", StateIncarcerationPeriodAdmissionReason.REVOCATION)
             .add("SS", StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED)
             .add("60DAY", StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION)
             .add("SP", StateCustodialAuthority.STATE_PRISON)
@@ -846,7 +846,7 @@ class TestDeserializeEntityFactories(unittest.TestCase):
             incarceration_type_raw_text="P",
             facility_security_level=StateIncarcerationFacilitySecurityLevel.MEDIUM,
             facility_security_level_raw_text="M",
-            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
             admission_reason_raw_text="REV",
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
             release_reason_raw_text="SS",

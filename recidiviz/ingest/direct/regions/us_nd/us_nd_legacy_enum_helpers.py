@@ -205,8 +205,9 @@ def generate_enum_overrides() -> EnumOverrides:
             "RAB",
             "DEF",
         ],
-        StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION: ["PARL", "PV"],
-        StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION: [
+        StateIncarcerationPeriodAdmissionReason.REVOCATION: [
+            "PARL",
+            "PV",
             "NPRB",
             "NPROB",
             "PRB",
