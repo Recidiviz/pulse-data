@@ -36,6 +36,7 @@ INVALID_ADMISSION_REASON_AND_PFI_QUERY_TEMPLATE = """
     * EXCEPT (state_code)
     FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_admission_metrics_included_in_state_population_materialized`
     -- Any REVOCATION admission_reason should have a purpose of GENERAL
+    -- TODO(#9866): Change to '=REVOCATION' once the admission reason enum is REVOCATION.
     WHERE (admission_reason LIKE '%REVOCATION'
         AND specialized_purpose_for_incarceration NOT IN ('GENERAL'))
     -- Any NEW_ADMISSION should have a purpose of GENERAL, TREATMENT_IN_PRISON, INTERNAL_UNKNOWN, or SHOCK_INCARCERATION

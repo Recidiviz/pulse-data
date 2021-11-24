@@ -40,6 +40,7 @@ INCARCERATION_POPULATION_BY_ADMISSION_REASON_VIEW_QUERY_TEMPLATE = """
         gender,
         age_bucket,
         admission_reason,
+        commitment_from_supervision_supervision_type,
         {state_specific_race_or_ethnicity_groupings}
       FROM
         `{project_id}.{reference_views_dataset}.single_day_incarceration_population_for_spotlight_materialized`
@@ -53,9 +54,11 @@ INCARCERATION_POPULATION_BY_ADMISSION_REASON_VIEW_QUERY_TEMPLATE = """
       gender,
       age_bucket,
       COUNT(DISTINCT IF(admission_reason = 'NEW_ADMISSION', person_id, NULL)) as new_admission_count,
-      COUNT(DISTINCT IF(admission_reason = 'PAROLE_REVOCATION', person_id, NULL)) as parole_revocation_count,
-      COUNT(DISTINCT IF(admission_reason = 'PROBATION_REVOCATION', person_id, NULL)) as probation_revocation_count,
-      COUNT(DISTINCT IF(admission_reason NOT IN ('NEW_ADMISSION', 'PAROLE_REVOCATION', 'PROBATION_REVOCATION'), person_id, NULL)) as other_count,
+      -- TODO(#9866): Change to '=REVOCATION' once the admission reason enum is REVOCATION.
+      COUNT(DISTINCT IF(admission_reason LIKE '%REVOCATION' and commitment_from_supervision_supervision_type = 'PAROLE', person_id, NULL)) as parole_revocation_count,
+      COUNT(DISTINCT IF(admission_reason LIKE '%REVOCATION' and commitment_from_supervision_supervision_type = 'PROBATION', person_id, NULL)) as probation_revocation_count,
+      -- TODO(#9866): Change to '=REVOCATION' once the admission reason enum is REVOCATION.
+      COUNT(DISTINCT IF(admission_reason != 'NEW_ADMISSION' and admission_reason NOT LIKE '%REVOCATION', person_id, NULL)) as other_count,
       COUNT(DISTINCT(person_id)) as total_population
     FROM
       state_specific_groupings,

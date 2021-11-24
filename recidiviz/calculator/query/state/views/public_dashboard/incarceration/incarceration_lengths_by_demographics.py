@@ -36,7 +36,7 @@ INCARCERATION_LENGTHS_BY_DEMOGRAPHICS_VIEW_DESCRIPTION = """Years spent incarcer
      following release reasons:
         COMMUTED, COMPASSIONATE, CONDITIONAL_RELEASE, SENTENCE_SERVED, DEATH
      and the original admission reason on the period of incarceration must be one of the following:
-        NEW_ADMISSION, PROBATION_REVOCATION
+        NEW_ADMISSION, REVOCATION (with previous supervision type PROBATION)
     This methodology intends to calculate the amount of time spent incarcerated at the time of someone's "first release"
     from an incarceration for a new charge, and notably excludes time spent incarcerated following a parole revocation.     
     """
@@ -58,7 +58,8 @@ INCARCERATION_LENGTHS_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = """
         FROM
           `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_release_metrics_included_in_state_population_materialized` releases
         WHERE release_reason in ('COMMUTED', 'COMPASSIONATE', 'CONDITIONAL_RELEASE', 'SENTENCE_SERVED', 'DEATH', 'EXECUTION')
-          AND admission_reason IN ('NEW_ADMISSION', 'PROBATION_REVOCATION')
+          -- TODO(#9866): Change to '=REVOCATION' once the admission reason enum is REVOCATION.
+          AND (admission_reason = 'NEW_ADMISSION' OR (admission_reason LIKE '%REVOCATION' and commitment_from_supervision_supervision_type = 'PROBATION'))
     ), ranked_releases_by_period AS (
         SELECT
           *,
