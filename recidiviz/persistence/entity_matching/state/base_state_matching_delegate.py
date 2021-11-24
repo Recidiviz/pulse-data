@@ -17,6 +17,7 @@
 """Contains the base class to handle state specific matching."""
 from typing import List, Optional, Type
 
+from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.session import Session
@@ -34,11 +35,13 @@ class BaseStateMatchingDelegate:
     def __init__(
         self,
         region_code: str,
+        ingest_metadata: IngestMetadata,
         allowed_root_entity_classes_override: Optional[
             List[Type[DatabaseEntity]]
         ] = None,
     ) -> None:
         self.region_code = region_code.upper()
+        self.ingest_metadata = ingest_metadata
         self.allowed_root_entity_classes: List[Type[DatabaseEntity]] = (
             [schema.StatePerson]
             if not allowed_root_entity_classes_override

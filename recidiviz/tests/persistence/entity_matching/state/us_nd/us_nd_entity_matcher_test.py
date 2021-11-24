@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2019 Recidiviz, Inc.
+# Copyright (C) 2021 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,6 +16,7 @@
 # =============================================================================
 """US_ND specific entity matching tests."""
 import datetime
+from typing import List
 
 import attr
 
@@ -27,8 +28,12 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodStatus,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
-
+from recidiviz.common.constants.states import StateCode
+from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema.state import schema
+from recidiviz.persistence.database.session import Session
+from recidiviz.persistence.entity.entities import EntityPersonType
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
     StateIncarcerationSentence,
@@ -38,6 +43,7 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionCaseTypeEntry,
 )
 from recidiviz.persistence.entity_matching import entity_matching
+from recidiviz.persistence.entity_matching.entity_matching_types import MatchedEntities
 from recidiviz.tests.persistence.database.schema.state.schema_test_utils import (
     generate_external_id,
     generate_incarceration_period,
@@ -69,10 +75,28 @@ _DATE_3 = datetime.date(year=2019, month=3, day=1)
 _DATE_4 = datetime.date(year=2019, month=4, day=1)
 _DATE_5 = datetime.date(year=2019, month=5, day=1)
 _DATE_6 = datetime.date(year=2019, month=6, day=1)
+DEFAULT_METADATA = IngestMetadata(
+    region=_US_ND,
+    system_level=SystemLevel.STATE,
+    ingest_time=datetime.datetime(year=1000, month=1, day=1),
+    # TODO(#10152): Change this to the following once
+    #  elite_externalmovements_incarceration_periods has shipped to prod:
+    #      database_key=SQLAlchemyDatabaseKey.canonical_for_schema(
+    #         schema_type=SchemaType.STATE
+    #     ),
+    database_key=DirectIngestInstance.PRIMARY.database_key_for_state(StateCode.US_ND),
+)
 
 
 class TestNdEntityMatching(BaseStateEntityMatcherTest):
     """Test class for US_ND specific entity matching logic."""
+
+    @staticmethod
+    def _match(
+        session: Session,
+        ingested_people: List[EntityPersonType],
+    ) -> MatchedEntities:
+        return entity_matching.match(session, _US_ND, ingested_people, DEFAULT_METADATA)
 
     def test_runMatch_checkPlaceholdersWhenNoRootEntityMatch(self) -> None:
         """Tests that ingested people are matched with DB placeholder people
@@ -118,9 +142,7 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
 
         # Act 1 - Match
         session = self._session()
-        matched_entities = entity_matching.match(
-            session, _US_ND, ingested_people=[person]
-        )
+        matched_entities = self._match(session, ingested_people=[person])
 
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
@@ -171,9 +193,7 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
 
         # Act 1 - Match
         session = self._session()
-        matched_entities = entity_matching.match(
-            session, _US_ND, ingested_people=[placeholder_person]
-        )
+        matched_entities = self._match(session, ingested_people=[placeholder_person])
 
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
@@ -182,6 +202,8 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
         self.assertEqual(0, matched_entities.error_count)
         self.assertEqual(1, matched_entities.total_root_entities)
 
+    # TODO(#10152): Delete once elite_externalmovements_incarceration_periods has
+    #  shipped to prod
     def test_match_mergeIncomingIncarcerationPeriods(self) -> None:
         # Arrange 1 - Match
         db_person = schema.StatePerson(full_name=_FULL_NAME, state_code=_US_ND)
@@ -302,9 +324,7 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
 
         # Act 1 - Match
         session = self._session()
-        matched_entities = entity_matching.match(
-            session, _US_ND, ingested_people=[placeholder_person]
-        )
+        matched_entities = self._match(session, ingested_people=[placeholder_person])
 
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
@@ -313,6 +333,8 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
         self.assertEqual(0, matched_entities.error_count)
         self.assertEqual(1, matched_entities.total_root_entities)
 
+    # TODO(#10152): Delete once elite_externalmovements_incarceration_periods has
+    #  shipped to prod
     def test_matchPersons_mergeIncompleteIncarcerationPeriodOntoComplete(self) -> None:
         """Tests correct matching behavior when an incomplete period is ingested
         and a matching complete period is in the db.
@@ -415,9 +437,7 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
 
         # Act 1 - Match
         session = self._session()
-        matched_entities = entity_matching.match(
-            session, _US_ND, ingested_people=[placeholder_person]
-        )
+        matched_entities = self._match(session, ingested_people=[placeholder_person])
 
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
@@ -426,6 +446,8 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
         self.assertEqual(0, matched_entities.error_count)
         self.assertEqual(1, matched_entities.total_root_entities)
 
+    # TODO(#10152): Delete once elite_externalmovements_incarceration_periods has
+    #  shipped to prod
     def test_matchPersons_mergeCompleteIncarcerationPeriodOntoIncomplete(self) -> None:
         """Tests correct matching behavior when a complete period is ingested
         and a matching incomplete period is in the db.
@@ -530,9 +552,7 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
 
         # Act 1 - Match
         session = self._session()
-        matched_entities = entity_matching.match(
-            session, _US_ND, ingested_people=[placeholder_person]
-        )
+        matched_entities = self._match(session, ingested_people=[placeholder_person])
 
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
@@ -541,6 +561,8 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
         self.assertEqual(0, matched_entities.error_count)
         self.assertEqual(1, matched_entities.total_root_entities)
 
+    # TODO(#10152): Delete once elite_externalmovements_incarceration_periods has
+    #  shipped to prod
     def test_matchPersons_mergeCompleteIncarcerationPeriods(self) -> None:
         """Tests correct matching behavior when a complete period is ingested
         and a matching complete period is in the db.
@@ -640,9 +662,7 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
 
         # Act 1 - Match
         session = self._session()
-        matched_entities = entity_matching.match(
-            session, _US_ND, ingested_people=[placeholder_person]
-        )
+        matched_entities = self._match(session, ingested_people=[placeholder_person])
 
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
@@ -651,6 +671,8 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
         self.assertEqual(0, matched_entities.error_count)
         self.assertEqual(1, matched_entities.total_root_entities)
 
+    # TODO(#10152): Delete once elite_externalmovements_incarceration_periods has
+    #  shipped to prod
     def test_matchPersons_mergeIncompleteIncarcerationPeriods(self) -> None:
         """Tests correct matching behavior when an incomplete period is ingested
         and a matching incomplete period is in the db.
@@ -777,9 +799,7 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
 
         # Act 1 - Match
         session = self._session()
-        matched_entities = entity_matching.match(
-            session, _US_ND, ingested_people=[placeholder_person]
-        )
+        matched_entities = self._match(session, ingested_people=[placeholder_person])
 
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
@@ -788,6 +808,8 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
         self.assertEqual(0, matched_entities.error_count)
         self.assertEqual(1, matched_entities.total_root_entities)
 
+    # TODO(#10152): Delete once elite_externalmovements_incarceration_periods has
+    #  shipped to prod
     def test_matchPersons_dontMergePeriodsFromDifferentStates(self) -> None:
         """Tests that incarceration periods don't match when either doesn't have
         US_ND as its state code.
@@ -895,9 +917,7 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
 
         # Act 1 - Match
         session = self._session()
-        matched_entities = entity_matching.match(
-            session, _US_ND, ingested_people=[placeholder_person]
-        )
+        matched_entities = self._match(session, ingested_people=[placeholder_person])
 
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
@@ -906,6 +926,8 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
         self.assertEqual(0, matched_entities.error_count)
         self.assertEqual(1, matched_entities.total_root_entities)
 
+    # TODO(#10152): Delete once elite_externalmovements_incarceration_periods has
+    #  shipped to prod
     def test_matchPersons_temporaryCustodyPeriods(self) -> None:
         # Arrange 1 - Match
         db_person = generate_person(full_name=_FULL_NAME, state_code=_US_ND)
@@ -1035,8 +1057,21 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
 
         # Act 1 - Match
         session = self._session()
+        # This is testing code that is only running on PRIMARY right now
+        ingest_metadata = IngestMetadata(
+            region=_US_ND,
+            system_level=SystemLevel.STATE,
+            ingest_time=datetime.datetime(year=1000, month=1, day=1),
+            database_key=DirectIngestInstance.PRIMARY.database_key_for_state(
+                StateCode.US_ND
+            ),
+        )
+
         matched_entities = entity_matching.match(
-            session, _US_ND, ingested_people=[placeholder_person]
+            session,
+            _US_ND,
+            ingested_people=[placeholder_person],
+            ingest_metadata=ingest_metadata,
         )
 
         # Assert 1 - Match
@@ -1046,6 +1081,8 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
         self.assertEqual(0, matched_entities.error_count)
         self.assertEqual(1, matched_entities.total_root_entities)
 
+    # TODO(#10152): Delete once elite_externalmovements_incarceration_periods has
+    #  shipped to prod
     def test_matchPersons_mergeIngestedAndDbIncarcerationPeriods_reverse(self) -> None:
         """Tests that periods are correctly merged when the release period is
         ingested before the admission period."""
@@ -1171,9 +1208,7 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
 
         # Act 1 - Match
         session = self._session()
-        matched_entities = entity_matching.match(
-            session, _US_ND, ingested_people=[placeholder_person]
-        )
+        matched_entities = self._match(session, ingested_people=[placeholder_person])
 
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
@@ -1182,6 +1217,8 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
         self.assertEqual(0, matched_entities.error_count)
         self.assertEqual(1, matched_entities.total_root_entities)
 
+    # TODO(#10152): Delete once elite_externalmovements_incarceration_periods has
+    #  shipped to prod
     def test_matchPersons_mergeIngestedAndDbSupervisionCaseTypeEntries(self) -> None:
         db_person = generate_person(state_code=_US_ND)
         db_external_id = generate_external_id(
@@ -1261,9 +1298,7 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
 
         # Act 1 - Match
         session = self._session()
-        matched_entities = entity_matching.match(
-            session, _US_ND, ingested_people=[person]
-        )
+        matched_entities = self._match(session, ingested_people=[person])
 
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(

@@ -61,6 +61,9 @@ from recidiviz.ingest.direct.direct_ingest_controller_utils import create_if_not
 from recidiviz.ingest.direct.regions.us_nd.us_nd_county_code_reference import (
     normalized_county_code,
 )
+from recidiviz.ingest.direct.regions.us_nd.us_nd_custom_parsers import (
+    decimal_str_as_int_str,
+)
 from recidiviz.ingest.direct.regions.us_nd.us_nd_judicial_district_code_reference import (
     normalized_judicial_district_code,
 )
@@ -77,6 +80,7 @@ from recidiviz.ingest.direct.state_shared_row_posthooks import (
     gen_set_is_life_sentence_hook,
     get_normalized_ymd_str,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.extractor.csv_data_extractor import (
     AncestorChainOverridesCallable,
     IngestFieldCoordinates,
@@ -230,8 +234,17 @@ class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             "elite_offendersentenceterms",
             "elite_offenderchargestable",
             "elite_orderstable",
-            "elite_externalmovements",
         ]
+
+        # TODO(#10152): Delete elite_externalmovements once
+        #  elite_externalmovements_incarceration_periods has shipped to prod
+        if (
+            not environment.in_gcp_production()
+            and self.ingest_instance == DirectIngestInstance.SECONDARY
+        ):
+            tags.append("elite_externalmovements_incarceration_periods")
+        else:
+            tags.append("elite_externalmovements")
 
         if not environment.in_gcp():
             # TODO(#2399): Once we are capable of handling historical and nightly ingest of
@@ -268,19 +281,7 @@ class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             "ORDER_ID",
         ]:
             if field_name in row:
-                row[field_name] = self._decimal_str_as_int_str(row[field_name])
-
-    @staticmethod
-    def _decimal_str_as_int_str(dec_str: str) -> str:
-        """Converts a comma-separated string representation of an integer into a string representing a simple integer
-        with no commas.
-
-        E.g. _decimal_str_as_int_str('1,234.00') -> '1234'
-        """
-        if not dec_str:
-            return dec_str
-
-        return str(int(float(dec_str.replace(",", ""))))
+                row[field_name] = decimal_str_as_int_str(row[field_name])
 
     # TODO(#8901): Delete LegacyIngestViewProcessorDelegate methods when we have fully
     #  migrated this state to new ingest mappings version.

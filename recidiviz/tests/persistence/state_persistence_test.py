@@ -118,7 +118,8 @@ class _PatchedStateEntityMatcher(StateEntityMatcher):
         self, region_code: str, erroring_class: Type, erroring_external_ids: List[str]
     ):
         state_matching_delegate = StateMatchingDelegateFactory.build(
-            region_code=region_code
+            region_code=region_code,
+            ingest_metadata=DEFAULT_METADATA,
         )
         super().__init__(state_matching_delegate)
         self.erroring_external_ids = erroring_external_ids

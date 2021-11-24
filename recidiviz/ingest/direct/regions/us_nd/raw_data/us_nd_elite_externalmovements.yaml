@@ -12,7 +12,10 @@ columns:
       External ID of a booking for a particular person, i.e. a new series of interactions with the justice system due to a new offense.
   - name: ACTIVE_FLAG
     description: |-
-      Whether this is the most recent movement, representing the "active" movement/destination for the booking.
+      This is supposed to indicate whether this is the most recent movement for the
+      person, representing the "active" movement/destination for the booking.
+      However, it's not uncommon for people to have more than one movement listed as
+      active, so we disregard this value.
   - name: ARREST_AGENCY_LOC_ID
     description: |-
       External id of the agency that made the arrest which led to the movement.

@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains logic for US_TX_BRAZOS specific entity matching overrides."""
-
+from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.persistence.entity_matching.state.base_state_matching_delegate import (
     BaseStateMatchingDelegate,
 )
@@ -24,5 +24,5 @@ from recidiviz.persistence.entity_matching.state.base_state_matching_delegate im
 class UsTxBrazosMatchingDelegate(BaseStateMatchingDelegate):
     """Class that contains matching logic specific to US_TX_BRAZOS."""
 
-    def __init__(self) -> None:
-        super().__init__("us_tx_brazos")
+    def __init__(self, ingest_metadata: IngestMetadata):
+        super().__init__("us_tx_brazos", ingest_metadata)

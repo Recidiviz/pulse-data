@@ -22,3 +22,87 @@ my_enum_field:
     $raw_text: MY_CSV_COL
     $custom_parser: us_nd_custom_enum_parsers.<function name>
 """
+import datetime
+from typing import Dict, List
+
+from recidiviz.common.constants.entity_enum import EnumParsingError
+from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
+
+OTHER_STATE_FACILITY = "OOS"
+
+POST_JULY_2017_CUSTODIAL_AUTHORITY_ENUM_MAP: Dict[
+    StateCustodialAuthority, List[str]
+] = {
+    StateCustodialAuthority.COURT: [
+        "CJ",
+        "DEFP",
+        # There are only a few of these, and they seem to represent judicial
+        # districts in ND
+        "NW",
+        "SC",
+        "SW",
+    ],
+    StateCustodialAuthority.EXTERNAL_UNKNOWN: [
+        # Could be a county jail or another state's facility
+        "NTAD",
+    ],
+    StateCustodialAuthority.STATE_PRISON: [
+        "BTC",
+        "CONT",
+        "CPP",
+        "DWCRC",
+        "FTPFAR",
+        "FTPMND",
+        "GFC",
+        "HACTC",
+        "HRCC",
+        "INACT",
+        "JRCC",
+        "LRRP",
+        "MRCC",
+        "MTPFAR",
+        "MTPMDN",
+        "MTPMND",
+        "NCCRC",
+        "NDSP",
+        "OUT",
+        "PREA",
+        "PROB",
+        "TRC",
+        "TRCC",
+        "TRN",
+        "YCC",
+    ],
+}
+
+POST_JULY_2017_CUSTODIAL_AUTHORITY_RAW_TEXT_TO_ENUM_MAP: Dict[
+    str, StateCustodialAuthority
+] = {
+    raw_text_value: custodial_authority
+    for custodial_authority, raw_text_values in POST_JULY_2017_CUSTODIAL_AUTHORITY_ENUM_MAP.items()
+    for raw_text_value in raw_text_values
+}
+
+
+def custodial_authority_from_facility_and_dates(
+    raw_text: str,
+) -> StateCustodialAuthority:
+    facility, date_str_for_comparison = raw_text.split("-")
+
+    if facility == OTHER_STATE_FACILITY:
+        return StateCustodialAuthority.OTHER_STATE
+
+    comparison_date = datetime.datetime.strptime(date_str_for_comparison, "%m/%d/%Y")
+
+    # Everything except OOS (checked above) was overseen by DOCR before July 1, 2017.
+    if comparison_date < datetime.datetime(year=2017, month=7, day=1):
+        return StateCustodialAuthority.STATE_PRISON
+
+    if facility not in POST_JULY_2017_CUSTODIAL_AUTHORITY_RAW_TEXT_TO_ENUM_MAP:
+        raise EnumParsingError(
+            StateCustodialAuthority,
+            "Found facility without a mapping to a custodial authority: "
+            f"{facility}.",
+        )
+
+    return POST_JULY_2017_CUSTODIAL_AUTHORITY_RAW_TEXT_TO_ENUM_MAP[facility]
