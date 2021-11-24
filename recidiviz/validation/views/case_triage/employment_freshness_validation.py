@@ -20,7 +20,7 @@
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.string import StrictStringFormatter
-from recidiviz.validation.views.case_triage.utils import DT_CLAUSE, FRESHNESS_FRAGMENT
+from recidiviz.validation.views.case_triage.utils import DT_CLAUSE, MAX_DAYS_STALE
 from recidiviz.validation.views.dataset_config import VIEWS_DATASET
 from recidiviz.validation.views.utils.freshness_validation import (
     FreshnessValidation,
@@ -34,21 +34,23 @@ EMPLOYMENT_FRESHNESS_VALIDATION_VIEW_BUILDER = FreshnessValidation(
     view_id="case_triage_employment_freshness",
     description="Builds validation table to ensure ingested employment data meets Case Triage SLAs",
     assertions=[
-        FreshnessValidationAssertion.build_assertion(
+        FreshnessValidationAssertion(
             region_code="US_ID",
-            assertion="RAW_DATA_WAS_IMPORTED",
+            assertion_name="RAW_DATA_WAS_IMPORTED",
             description="Checks that we've imported raw data in the last 24 hours, but not the received data is timely",
             dataset="us_id_raw_data",
             table="cis_employment",
-            freshness_clause=f"CAST(update_datetime AS DATE) BETWEEN {FRESHNESS_FRAGMENT}",
+            date_column_clause="CAST(update_datetime AS DATE)",
+            allowed_days_stale=MAX_DAYS_STALE,
         ),
-        FreshnessValidationAssertion.build_assertion(
+        FreshnessValidationAssertion(
             region_code="US_ID",
-            assertion="RAW_DATA_WAS_EDITED_WITHIN_EXPECTED_PERIOD",
+            assertion_name="RAW_DATA_WAS_EDITED_WITHIN_EXPECTED_PERIOD",
             description="Checks that the imported data contains edits from within the freshness threshold",
             dataset="us_id_raw_data",
             table="cis_employment",
-            freshness_clause=f"{UPDDATE_DT_CLAUSE} BETWEEN {FRESHNESS_FRAGMENT}",
+            date_column_clause=UPDDATE_DT_CLAUSE,
+            allowed_days_stale=MAX_DAYS_STALE,
         ),
     ],
 ).to_big_query_view_builder()

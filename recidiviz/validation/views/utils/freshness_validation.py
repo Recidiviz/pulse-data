@@ -15,55 +15,71 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """ Helpers for builder freshness validation views """
-from typing import Any, List, Optional
+from typing import List
 
 import attr
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 
+# We only expect new data for a given day to be processed by ~10 am Pacific so if it is
+# any earlier pretend it is the prior day.
+CURRENT_DATE_FRAGMENT = 'EXTRACT(DATE FROM TIMESTAMP_SUB(CURRENT_DATETIME("America/Los_Angeles"), INTERVAL 10 HOUR))'
+
 
 def current_date_sub(*, days: int) -> str:
-    return f"DATE_SUB(CURRENT_DATE(), INTERVAL {days} DAY)"
+    return f"DATE_SUB({CURRENT_DATE_FRAGMENT}, INTERVAL {days} DAY)"
 
 
 def current_date_add(*, days: int) -> str:
-    return f"DATE_ADD(CURRENT_DATE(), INTERVAL {days} DAY)"
+    return f"DATE_ADD({CURRENT_DATE_FRAGMENT}, INTERVAL {days} DAY)"
+
+
+# Farthest in the future that data can be before it is excluded from the validation.
+# This prevents any data far in the future from making the validation always pass.
+MAX_DAYS_IN_FUTURE = 100
 
 
 @attr.s(auto_attribs=True)
 class FreshnessValidationAssertion:
+    """Asserts that the most recent data for a column is no more than X days stale"""
+
     region_code: str
-    assertion: str
+    assertion_name: str
     description: str
-    from_clause: str
-    freshness_clause: Optional[str] = attr.ib(default=None)
+    dataset: str
+    table: str
+    date_column_clause: str
+    allowed_days_stale: int
+
+    # Filters the data that is used when checking the assertions.
+    # E.g. `state_code = 'US_XX'` can be used if we want to check freshness of data for
+    # a single state from a table that contains data for multiple states.
+    filter_clause: str = attr.ib(default="TRUE")
 
     def to_sql_query(self) -> str:
+        """This query yields an array of dates that we expected to have data but did not"""
         query = f"""
             /* {self.description} */   
             SELECT
                 '{self.region_code}' as region_code,
-                '{self.assertion}' as assertion,
-                COUNT(*) > 0 as passed
-            FROM {self.from_clause}
+                '{self.assertion_name}' as assertion,
+                GENERATE_DATE_ARRAY(
+                    DATE_ADD(MAX({self.date_column_clause}), INTERVAL 1 DAY),
+                    {current_date_sub(days=self.allowed_days_stale)}
+                ) as failed_dates
+            FROM `{{project_id}}.{self.dataset}.{self.table}`
+            WHERE
+                {self.date_column_clause} < {current_date_add(days=MAX_DAYS_IN_FUTURE)}
+                AND {self.filter_clause}
         """
 
-        if self.freshness_clause:
-            query += f"WHERE {self.freshness_clause}"
-
         return query
-
-    @staticmethod
-    def build_assertion(
-        *, dataset: str, table: str, **kwargs: Any
-    ) -> "FreshnessValidationAssertion":
-        return FreshnessValidationAssertion(
-            **kwargs, from_clause=f"`{{project_id}}.{dataset}.{table}`"
-        )
 
 
 @attr.s(auto_attribs=True)
 class FreshnessValidation:
+    """Produces a BigQueryViewBuilder that validates the given freshness assertions."""
+
     dataset: str
     view_id: str
     description: str
@@ -71,22 +87,29 @@ class FreshnessValidation:
 
     def __attrs_post_init__(self) -> None:
         # Every single assertion should have a unique statement
-        assertion_statements = [assertion.assertion for assertion in self.assertions]
+        assertion_statements = [
+            assertion.assertion_name for assertion in self.assertions
+        ]
         assert len(set(assertion_statements)) == len(assertion_statements)
 
     def build_query_template(self) -> str:
+        """This query yields all the dates that failed an assertion and the list of
+        assertions that failed for the given date.
+        """
         assertion_queries = "\n UNION ALL \n".join(
             [assertion.to_sql_query() for assertion in self.assertions]
         )
+        # This pivots the data from a list of dates that failed for each assertion to a
+        # list of assertions that failed for each date.
         return f"""
             /* {self.description} */
             WITH assertions AS ( {assertion_queries} )
             SELECT
                 region_code,
+                failed_date,
                 ARRAY_AGG(assertion) as failed_assertions
-            FROM assertions
-            WHERE passed = false
-            GROUP BY region_code
+            FROM assertions, UNNEST(failed_dates) failed_date
+            GROUP BY region_code, failed_date
         """
 
     def to_big_query_view_builder(self) -> SimpleBigQueryViewBuilder:

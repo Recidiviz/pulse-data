@@ -17,7 +17,7 @@
 """A view that can be used to validate that the Case Triage ETL has been exported within SLA."""
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
-from recidiviz.validation.views.case_triage.utils import FRESHNESS_FRAGMENT
+from recidiviz.validation.views.case_triage.utils import MAX_DAYS_STALE
 from recidiviz.validation.views.dataset_config import VIEWS_DATASET
 from recidiviz.validation.views.utils.freshness_validation import (
     FreshnessValidation,
@@ -29,25 +29,27 @@ from recidiviz.validation.views.utils.freshness_validation import (
 ETL_TABLES = ["etl_clients", "etl_officers", "etl_opportunities"]
 
 ETL_EXPORTED_ASSERTIONS = [
-    FreshnessValidationAssertion.build_assertion(
+    FreshnessValidationAssertion(
         region_code="US_ID",
-        assertion=f"{etl_table.upper()}_WAS_EXPORTED",
+        assertion_name=f"{etl_table.upper()}_WAS_EXPORTED",
         description="Checks that we've exported data in the last 24 hours",
         dataset="case_triage",
         table=f"{etl_table}_materialized",
-        freshness_clause=f"CAST(exported_at AS DATE) BETWEEN {FRESHNESS_FRAGMENT}",
+        date_column_clause="CAST(exported_at AS DATE)",
+        allowed_days_stale=MAX_DAYS_STALE,
     )
     for etl_table in ETL_TABLES
 ]
 
 ETL_EXPORTED_CLOUDSQL_BIGQUERY_ASSERTIONS = [
-    FreshnessValidationAssertion.build_assertion(
+    FreshnessValidationAssertion(
         region_code="US_ID",
-        assertion=f"{etl_table.upper()}_WAS_EXPORTED_FROM_CLOUDSQL_TO_BIGQUERY",
+        assertion_name=f"{etl_table.upper()}_WAS_EXPORTED_FROM_CLOUDSQL_TO_BIGQUERY",
         description="Checks that we've exported data in the last 24 hours after data was exported from CloudSQL back to BigQuery",
         dataset="case_triage_federated",
         table=etl_table,
-        freshness_clause=f"CAST(exported_at AS DATE) BETWEEN {FRESHNESS_FRAGMENT}",
+        date_column_clause="CAST(exported_at AS DATE)",
+        allowed_days_stale=MAX_DAYS_STALE,
     )
     for etl_table in ETL_TABLES
 ]
