@@ -441,8 +441,8 @@ class BaseDirectIngestController:
         returns True. Otherwise, if it's safe to proceed with next steps of ingest,
         returns False.
         """
-        queue_info = self.cloud_task_manager.get_bq_import_export_queue_info(
-            self.region,
+        queue_info = self.cloud_task_manager.get_ingest_view_export_queue_info(
+            self.region, self.ingest_instance
         )
         if queue_info.has_ingest_view_export_jobs_queued(
             self.region_code(), self.ingest_instance
