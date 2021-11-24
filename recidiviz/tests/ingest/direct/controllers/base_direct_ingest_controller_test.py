@@ -392,8 +392,8 @@ class TestDirectIngestController(unittest.TestCase):
             task_manager.test_run_next_scheduler_task()
             task_manager.test_pop_finished_scheduler_task()
         # file_path raw data import
-        task_manager.test_run_next_bq_import_export_task()
-        task_manager.test_pop_finished_bq_import_export_task()
+        task_manager.test_run_next_raw_data_import_task()
+        task_manager.test_pop_finished_raw_data_import_task()
         while task_manager.scheduler_tasks:
             task_manager.test_run_next_scheduler_task()
             task_manager.test_pop_finished_scheduler_task()
@@ -1811,10 +1811,12 @@ class TestDirectIngestController(unittest.TestCase):
             ),
             just_finished_job=True,
         )
-        for task_name in controller.cloud_task_manager.get_bq_import_export_queue_info(
-            controller.region
-        ).task_names:
-            self.assertNotRegex(task_name, "raw")
+        self.assertEqual(
+            0,
+            controller.cloud_task_manager.get_raw_data_import_queue_info(
+                controller.region
+            ).size(),
+        )
         run_task_queues_to_empty(controller)
 
     def test_serialize_gcsfs_ingest_args(self) -> None:

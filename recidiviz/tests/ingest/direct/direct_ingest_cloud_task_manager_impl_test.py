@@ -842,7 +842,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         uuid = "random-uuid"
         mock_uuid.uuid4.return_value = uuid
         date = "2019-07-20"
-        queue_name = "direct-ingest-state-us-xx-bq-import-export"
+        queue_name = "direct-ingest-state-us-xx-raw-data-import"
         queue_path = f"{queue_name}-path"
 
         task_name = queue_name + f"/{_REGION.region_code}-{date}-{uuid}"
