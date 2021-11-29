@@ -10,6 +10,7 @@ We use `docker-compose` to run our development services locally, this includes:
 
 - [`flask`](https://flask.palletsprojects.com/en/1.1.x/) web server
 - [`postgres`](https://www.postgresql.org/) database
+- [`redis`](https://redis.io/) key/value store
 - `migrations` container, which automatically runs [`alembic`](https://alembic.sqlalchemy.org/) migrations
 
 For those without access to GCR repository, you will have to build the image before being able to run docker-compose:
@@ -24,14 +25,7 @@ When running locally, we mock Google Cloud Storage and Google Secrets Manager to
 Run this script from the root of the repository to set up the development secrets:
 
 ```bash
-pushd recidiviz/case_triage
-mkdir -p local/gcs/case-triage-data/ local/gsm/
-echo $(python -c 'import uuid; print(uuid.uuid4().hex)') > local/gsm/case_triage_secret_key
-echo $(gcloud secrets versions access latest --secret=case_triage_auth0 --project recidiviz-staging) > local/gsm/case_triage_auth0
-echo '[{"email": "youremail@recidiviz.org", "is_admin": true}]' > local/gcs/case-triage-data/allowlist_v2.json
-echo 'rate_limit_cache' > local/gsm/case_triage_rate_limiter_redis_host
-echo '6379' > local/gsm/case_triage_rate_limiter_redis_port
-popd
+./recidiviz/tools/case_triage/initialize_development_environment.sh
 ```
 
 ## Frontend
