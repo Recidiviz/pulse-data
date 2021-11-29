@@ -117,7 +117,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         """Tests that we prioritize the period with the supervision_type that matches
         the admission reason supervision type."""
         admission_date = date(2019, 5, 25)
-        admission_reason = StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION
+        admission_reason = StateIncarcerationPeriodAdmissionReason.REVOCATION
         admission_reason_raw_text = "PV"
 
         # Overlapping parole period
@@ -159,7 +159,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         """Tests that we prioritize the overlapping parole period over the one that
         was recently terminated because the admission is a PAROLE_REVOCATION."""
         admission_date = date(2019, 5, 25)
-        admission_reason = StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION
+        admission_reason = StateIncarcerationPeriodAdmissionReason.REVOCATION
         admission_reason_raw_text = "PV"
 
         # Overlapping parole period
@@ -173,7 +173,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
-        # Terminated parole period
+        # Terminated parole period.
         terminated_parole_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=222,
             external_id="sp2",
@@ -201,10 +201,10 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
     def test_us_nd_pre_commitment_supervision_period_parole_revocation_rev_term(
         self,
     ) -> None:
-        """Tests that we prioritize the overlapping PAROLE period with a termination
+        """Tests that we prioritize the overlapping parole period with a termination
         reason of REVOCATION."""
         admission_date = date(2019, 5, 25)
-        admission_reason = StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION
+        admission_reason = StateIncarcerationPeriodAdmissionReason.REVOCATION
         admission_reason_raw_text = "PV"
 
         # Overlapping revoked parole period
@@ -246,7 +246,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         """Tests that we prioritize the overlapping parole period with a termination
         reason of REVOCATION."""
         admission_date = date(2019, 5, 25)
-        admission_reason = StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION
+        admission_reason = StateIncarcerationPeriodAdmissionReason.REVOCATION
         admission_reason_raw_text = "PV"
 
         # Overlapping revoked parole period, 5 days after admission
@@ -291,7 +291,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         """Tests that we prioritize the period with the supervision_type that matches
         the admission reason supervision type."""
         admission_date = date(2019, 5, 25)
-        admission_reason = StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION
+        admission_reason = StateIncarcerationPeriodAdmissionReason.REVOCATION
         admission_reason_raw_text = "NPROB"
 
         # Overlapping parole period
@@ -333,7 +333,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         """Tests that we prioritize the recently terminated probation period over the
         one that is overlapping because the admission is a PROBATION_REVOCATION."""
         admission_date = date(2019, 5, 25)
-        admission_reason = StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION
+        admission_reason = StateIncarcerationPeriodAdmissionReason.REVOCATION
         admission_reason_raw_text = "NPROB"
 
         # Overlapping probation period
@@ -378,7 +378,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         """Tests that we prioritize the probation period with a termination
         reason of REVOCATION."""
         admission_date = date(2019, 5, 25)
-        admission_reason = StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION
+        admission_reason = StateIncarcerationPeriodAdmissionReason.REVOCATION
         admission_reason_raw_text = "NPROB"
 
         # Terminated revoked probation period
@@ -423,7 +423,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         """Tests that we prioritize the overlapping probation period with a termination
         date that is closer to the admission_date."""
         admission_date = date(2019, 5, 25)
-        admission_reason = StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION
+        admission_reason = StateIncarcerationPeriodAdmissionReason.REVOCATION
         admission_reason_raw_text = "NPROB"
 
         # Overlapping revoked probation period, 5 days after admission
@@ -469,7 +469,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
     ) -> None:
         """Tests the situation where the person has no supervision periods."""
         admission_date = date(2019, 5, 25)
-        admission_reason = StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION
+        admission_reason = StateIncarcerationPeriodAdmissionReason.REVOCATION
         admission_reason_raw_text = "NPROB"
 
         pre_commitment_supervision_period = (
@@ -518,7 +518,7 @@ class TestGetPreIncarcerationSupervisionTypeFromIPAdmissionReason(unittest.TestC
     def test_us_nd_get_pre_incarceration_supervision_type_from_ip_admission_reason_parole_revocation(
         self,
     ) -> None:
-        admission_reason = StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION
+        admission_reason = StateIncarcerationPeriodAdmissionReason.REVOCATION
         admission_reason_raw_text = "PARL"
 
         supervision_type: Optional[
@@ -533,7 +533,7 @@ class TestGetPreIncarcerationSupervisionTypeFromIPAdmissionReason(unittest.TestC
     def test_us_nd_get_pre_incarceration_supervision_type_from_ip_admission_reason_parole_revocation_with_prefix(
         self,
     ) -> None:
-        admission_reason = StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION
+        admission_reason = StateIncarcerationPeriodAdmissionReason.REVOCATION
         admission_reason_raw_text = f"{PAROLE_REVOCATION_PREPROCESSING_PREFIX}-ABC"
 
         supervision_type: Optional[
@@ -548,7 +548,7 @@ class TestGetPreIncarcerationSupervisionTypeFromIPAdmissionReason(unittest.TestC
     def test_us_nd_get_pre_incarceration_supervision_type_from_ip_admission_reason_probation_revocation(
         self,
     ) -> None:
-        admission_reason = StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION
+        admission_reason = StateIncarcerationPeriodAdmissionReason.REVOCATION
         admission_reason_raw_text = "NPRB"
 
         supervision_type: Optional[
@@ -565,7 +565,7 @@ class TestGetPreIncarcerationSupervisionTypeFromIPAdmissionReason(unittest.TestC
     def test_us_nd_get_pre_incarceration_supervision_type_from_ip_admission_reason_probation_prb(
         self,
     ) -> None:
-        admission_reason = StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION
+        admission_reason = StateIncarcerationPeriodAdmissionReason.REVOCATION
         admission_reason_raw_text = "PRB"
 
         supervision_type: Optional[
@@ -582,7 +582,7 @@ class TestGetPreIncarcerationSupervisionTypeFromIPAdmissionReason(unittest.TestC
     def test_us_nd_get_pre_incarceration_supervision_type_from_ip_admission_reason_probation_revocation_with_prefix(
         self,
     ) -> None:
-        admission_reason = StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION
+        admission_reason = StateIncarcerationPeriodAdmissionReason.REVOCATION
         admission_reason_raw_text = f"{PROBATION_REVOCATION_PREPROCESSING_PREFIX}-ABC"
 
         supervision_type: Optional[
@@ -599,7 +599,7 @@ class TestGetPreIncarcerationSupervisionTypeFromIPAdmissionReason(unittest.TestC
     def test_us_nd_get_pre_incarceration_supervision_type_from_ip_admission_reason_not_present_in_list(
         self,
     ) -> None:
-        admission_reason = StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION
+        admission_reason = StateIncarcerationPeriodAdmissionReason.REVOCATION
         admission_reason_raw_text = "ABC"
 
         with self.assertRaises(ValueError):
@@ -639,7 +639,7 @@ class TestPreCommitmentSupervisionTypeIdentification(unittest.TestCase):
             state_code="US_ND",
             facility="NDSP",
             admission_date=date(2008, 12, 20),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
             admission_reason_raw_text="PARL",
             release_date=date(2010, 12, 21),
             release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
