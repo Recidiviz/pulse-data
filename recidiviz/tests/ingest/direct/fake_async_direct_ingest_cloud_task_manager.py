@@ -28,7 +28,6 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsRawDataBQImportArgs,
 )
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
-    BQImportExportCloudTaskQueueInfo,
     IngestViewExportCloudTaskQueueInfo,
     ProcessIngestJobCloudTaskQueueInfo,
     RawDataImportCloudTaskQueueInfo,
@@ -352,14 +351,6 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
 
         return SchedulerCloudTaskQueueInfo(
             queue_name=self.scheduler_queue.name, task_names=task_names
-        )
-
-    # TODO(#9713): Delete this function when we delete this queue.
-    def get_bq_import_export_queue_info(
-        self, region: Region
-    ) -> BQImportExportCloudTaskQueueInfo:
-        raise NotImplementedError(
-            "TODO(#9713): Function no longer in use, soon to be deleted."
         )
 
     def get_raw_data_import_queue_info(

@@ -42,7 +42,6 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     gcsfs_direct_ingest_bucket_for_region,
 )
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
-    BQImportExportCloudTaskQueueInfo,
     DirectIngestCloudTaskManagerImpl,
     DirectIngestQueueType,
     IngestViewExportCloudTaskQueueInfo,
@@ -83,8 +82,6 @@ class TestDirectIngestQueueType(TestCase):
         primary_only_queue_types = {
             DirectIngestQueueType.SFTP_QUEUE,
             DirectIngestQueueType.RAW_DATA_IMPORT,
-            # TODO(#9713): Remove this when we delete this enum value.
-            DirectIngestQueueType.BQ_IMPORT_EXPORT,
         }
         for queue_type in primary_only_queue_types:
             self.assertTrue(
@@ -102,185 +99,6 @@ class TestDirectIngestQueueType(TestCase):
             self.assertTrue(
                 queue_type.exists_for_instance(DirectIngestInstance.SECONDARY)
             )
-
-
-# TODO(#9713): Delete these tests once we delete this queue.
-class TestBQImportExportCloudTaskQueueInfo(TestCase):
-    """Tests for the BQImportExportCloudTaskQueueInfo."""
-
-    def setUp(self) -> None:
-        self.raw_data_file_path = GcsfsFilePath.from_directory_and_file_name(
-            _PRIMARY_INGEST_BUCKET,
-            to_normalized_unprocessed_file_name(
-                "file_path.csv", GcsfsDirectIngestFileType.RAW_DATA
-            ),
-        )
-        self.raw_data_import_args = GcsfsRawDataBQImportArgs(
-            raw_data_file_path=self.raw_data_file_path
-        )
-        self.primary_ingest_view_export_args = GcsfsIngestViewExportArgs(
-            ingest_view_name="my_file_tag",
-            output_bucket_name=_PRIMARY_INGEST_BUCKET.bucket_name,
-            upper_bound_datetime_prev=None,
-            upper_bound_datetime_to_export=datetime.datetime.now(),
-        )
-        self.secondary_ingest_view_export_args = attr.evolve(
-            self.primary_ingest_view_export_args,
-            output_bucket_name=_SECONDARY_INGEST_BUCKET.bucket_name,
-        )
-
-    def test_info_no_tasks(self) -> None:
-        info = BQImportExportCloudTaskQueueInfo(queue_name="queue_name", task_names=[])
-
-        for instance in DirectIngestInstance:
-            self.assertFalse(
-                info.has_any_tasks_for_instance(_REGION.region_code, instance)
-            )
-            self.assertFalse(
-                info.has_ingest_view_export_jobs_queued(_REGION.region_code, instance)
-            )
-        self.assertFalse(
-            info.is_ingest_view_export_task_already_queued(
-                _REGION.region_code, self.primary_ingest_view_export_args
-            )
-        )
-        self.assertFalse(
-            info.is_raw_data_import_task_already_queued(self.raw_data_import_args)
-        )
-        self.assertFalse(info.has_raw_data_import_jobs_queued())
-
-    def test_single_raw_task(self) -> None:
-        full_task_name = _build_task_id(
-            _REGION.region_code,
-            DirectIngestInstance.PRIMARY,
-            self.raw_data_import_args.task_id_tag(),
-        )
-
-        other_args = attr.evolve(
-            self.raw_data_import_args,
-            raw_data_file_path=GcsfsFilePath.from_directory_and_file_name(
-                _PRIMARY_INGEST_BUCKET,
-                to_normalized_unprocessed_file_name(
-                    "other_file.csv", GcsfsDirectIngestFileType.RAW_DATA
-                ),
-            ),
-        )
-
-        info = BQImportExportCloudTaskQueueInfo(
-            queue_name="queue_name",
-            task_names=[
-                f"projects/path/to/{full_task_name}",
-            ],
-        )
-
-        self.assertTrue(
-            info.has_any_tasks_for_instance(
-                _REGION.region_code, DirectIngestInstance.PRIMARY
-            )
-        )
-
-        self.assertFalse(
-            info.has_any_tasks_for_instance(
-                _REGION.region_code, DirectIngestInstance.SECONDARY
-            )
-        )
-
-        for instance in DirectIngestInstance:
-            self.assertFalse(
-                info.has_ingest_view_export_jobs_queued(_REGION.region_code, instance)
-            )
-        self.assertFalse(
-            info.is_ingest_view_export_task_already_queued(
-                _REGION.region_code, self.primary_ingest_view_export_args
-            )
-        )
-        self.assertTrue(
-            info.is_raw_data_import_task_already_queued(self.raw_data_import_args)
-        )
-        self.assertFalse(info.is_raw_data_import_task_already_queued(other_args))
-        self.assertTrue(info.has_raw_data_import_jobs_queued())
-
-    def test_single_ingest_view_task(self) -> None:
-        full_task_name = _build_task_id(
-            _REGION.region_code,
-            DirectIngestInstance.PRIMARY,
-            self.primary_ingest_view_export_args.task_id_tag(),
-        )
-
-        info = BQImportExportCloudTaskQueueInfo(
-            queue_name="queue_name",
-            task_names=[
-                f"projects/path/to/{full_task_name}",
-            ],
-        )
-
-        for instance in DirectIngestInstance:
-            self.assertEqual(
-                instance == DirectIngestInstance.PRIMARY,
-                info.has_ingest_view_export_jobs_queued(_REGION.region_code, instance),
-            )
-            self.assertEqual(
-                instance == DirectIngestInstance.PRIMARY,
-                info.has_any_tasks_for_instance(_REGION.region_code, instance),
-            )
-
-        self.assertTrue(
-            info.is_ingest_view_export_task_already_queued(
-                _REGION.region_code, self.primary_ingest_view_export_args
-            )
-        )
-        self.assertFalse(
-            info.is_ingest_view_export_task_already_queued(
-                _REGION.region_code, self.secondary_ingest_view_export_args
-            )
-        )
-        self.assertFalse(
-            info.is_raw_data_import_task_already_queued(self.raw_data_import_args)
-        )
-        self.assertFalse(info.has_raw_data_import_jobs_queued())
-
-    def test_two_ingest_view_tasks(self) -> None:
-        primary_full_task_name = _build_task_id(
-            _REGION.region_code,
-            DirectIngestInstance.PRIMARY,
-            self.primary_ingest_view_export_args.task_id_tag(),
-        )
-        secondary_full_task_name = _build_task_id(
-            _REGION.region_code,
-            DirectIngestInstance.SECONDARY,
-            self.secondary_ingest_view_export_args.task_id_tag(),
-        )
-
-        info = BQImportExportCloudTaskQueueInfo(
-            queue_name="queue_name",
-            task_names=[
-                f"projects/path/to/{primary_full_task_name}",
-                f"projects/path/to/{secondary_full_task_name}",
-            ],
-        )
-
-        for instance in DirectIngestInstance:
-            self.assertTrue(
-                info.has_ingest_view_export_jobs_queued(_REGION.region_code, instance),
-            )
-            self.assertTrue(
-                info.has_any_tasks_for_instance(_REGION.region_code, instance),
-            )
-
-        self.assertTrue(
-            info.is_ingest_view_export_task_already_queued(
-                _REGION.region_code, self.primary_ingest_view_export_args
-            )
-        )
-        self.assertTrue(
-            info.is_ingest_view_export_task_already_queued(
-                _REGION.region_code, self.secondary_ingest_view_export_args
-            )
-        )
-        self.assertFalse(
-            info.is_raw_data_import_task_already_queued(self.raw_data_import_args)
-        )
-        self.assertFalse(info.has_raw_data_import_jobs_queued())
 
 
 class TestRawDataImportQueueInfo(TestCase):
