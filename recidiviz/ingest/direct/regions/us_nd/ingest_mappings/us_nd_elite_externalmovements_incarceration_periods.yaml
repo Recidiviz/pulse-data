@@ -157,7 +157,7 @@ output:
                             StateIncarcerationPeriodReleaseReason.COMPASSIONATE:
                               - COM
                             StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE:
-                              - PARL,
+                              - PARL
                               - PRB
                               - PV
                               - RPAR
