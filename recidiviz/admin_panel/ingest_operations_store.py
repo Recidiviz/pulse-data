@@ -128,7 +128,6 @@ class IngestOperationsStore:
         """This function is called through the Ingest Operations UI in the admin panel.
         It updates the state of the following queues by either pausing or resuming the
         queues:
-         - direct-ingest-state-<region_code>-bq-import-export (legacy queue) TODO(#9713): Update comment to delete
          - direct-ingest-state-<region_code>-process-job-queue
          - direct-ingest-state-<region_code>-process-job-queue-secondary
          - direct-ingest-state-<region_code>-scheduler
