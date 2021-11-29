@@ -1222,7 +1222,7 @@ class TestOriginalAdmissionReasonsByPeriodID(unittest.TestCase):
             incarceration_period_id=333,
             admission_date=date(2020, 5, 1),
             release_date=date(2020, 10, 3),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
             status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
         )

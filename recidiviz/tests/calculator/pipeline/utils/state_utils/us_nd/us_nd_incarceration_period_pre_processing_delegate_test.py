@@ -318,7 +318,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
     ) -> None:
         """Tests that when a NEW_ADMISSION incarceration follows a PROBATION+REVOCATION
         supervision period directly, then the admission_reason on the period is
-        updated to be PROBATION_REVOCATION."""
+        updated to be REVOCATION."""
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
@@ -341,7 +341,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         updated_period = attr.evolve(
             incarceration_period,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
@@ -359,7 +359,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
     ) -> None:
         """Tests that when a NEW_ADMISSION incarceration follows a PAROLE+REVOCATION
         supervision period directly, then the admission_reason on the period is
-        updated to be PAROLE_REVOCATION."""
+        updated to be REVOCATION."""
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
@@ -382,7 +382,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         updated_period = attr.evolve(
             incarceration_period,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
@@ -571,7 +571,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         updated_initial_period = attr.evolve(
             initial_commitment_incarceration_period,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
@@ -602,7 +602,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
         supervision period, but not directly, as there is a separate incarceration
         admission in the interim, but that admission is to a county jail (i.e. is a
         temporary hold while revocation proceedings take place, then the
-        admission_reason on the period is updated to be PROBATION_REVOCATION."""
+        admission_reason on the period is updated to be REVOCATION."""
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
@@ -637,7 +637,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         updated_period = attr.evolve(
             subsequent_incarceration_period,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 

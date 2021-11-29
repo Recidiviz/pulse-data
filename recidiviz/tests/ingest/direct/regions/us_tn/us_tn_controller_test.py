@@ -195,7 +195,7 @@ class TestUsTnController(BaseDirectIngestControllerTests):
             admission_date=datetime.date(year=2010, month=4, day=6),
             release_date=datetime.date(year=2010, month=11, day=4),
             facility="WTSP",
-            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
             admission_reason_raw_text="PAFA-PAVOK",
             release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_TO_SUPERVISION,
             release_reason_raw_text="FAPA-RELEL",

@@ -291,7 +291,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
             incarceration_type=StateIncarcerationType.COUNTY_JAIL,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             admission_date=date(2018, 3, 11),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
             # Program 26 indicates a revocation to a PVC
             specialized_purpose_for_incarceration_raw_text=PURPOSE_FOR_INCARCERATION_PVC,
@@ -534,7 +534,7 @@ class TestCommitmentFromBoardHold(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_XX",
             admission_date=date(2002, 9, 11),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
             release_date=date(2002, 9, 19),
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
@@ -564,39 +564,7 @@ class TestCommitmentFromBoardHold(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_XX",
             admission_date=date(2002, 9, 11),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
-            release_date=date(2002, 9, 19),
-            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
-        )
-
-        self.assertFalse(
-            period_is_commitment_from_supervision_admission_from_parole_board_hold(
-                incarceration_period=ip_2, preceding_incarceration_period=ip_1
-            )
-        )
-
-    def test_period_is_commitment_from_parole_board_hold_invalid_admission(
-        self,
-    ) -> None:
-        ip_1 = StateIncarcerationPeriod.new_with_defaults(
-            external_id="1",
-            incarceration_period_id=1111,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code="US_XX",
-            admission_date=date(2002, 2, 5),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
-            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
-            release_date=date(2002, 9, 11),
-            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
-        )
-
-        ip_2 = StateIncarcerationPeriod.new_with_defaults(
-            external_id="1",
-            incarceration_period_id=1111,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code="US_XX",
-            admission_date=date(2002, 9, 11),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
             release_date=date(2002, 9, 19),
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
@@ -626,7 +594,7 @@ class TestCommitmentFromBoardHold(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_XX",
             admission_date=date(2010, 3, 31),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
             release_date=date(2012, 9, 19),
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
