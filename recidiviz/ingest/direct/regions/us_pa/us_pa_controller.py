@@ -515,7 +515,7 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         # TODO(#10138): [US_PA] Transition supervision_periods to v4
         if (
             not environment.in_gcp_production()
-            and self.ingest_instance is DirectIngestInstance.SECONDARY
+            or self.ingest_instance is DirectIngestInstance.SECONDARY
         ):
             launched_file_tags.append("supervision_period_v4")
         else:
@@ -532,9 +532,10 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         # TODO(#9882): Update to `dbo_Senrec_v2` everywhere once rerun completes.
         if (
             not environment.in_gcp_production()
-            and self.ingest_instance == DirectIngestInstance.SECONDARY
+            or self.ingest_instance == DirectIngestInstance.SECONDARY
         ):
-            file_tags[3] = "dbo_Senrec_v2"
+            idx_of_senrec = file_tags.index("dbo_Senrec")
+            file_tags[idx_of_senrec] = "dbo_Senrec_v2"
 
         return file_tags
 
