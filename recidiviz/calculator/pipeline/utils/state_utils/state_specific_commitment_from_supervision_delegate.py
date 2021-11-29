@@ -69,10 +69,10 @@ class StateSpecificCommitmentFromSupervisionDelegate(abc.ABC):
         """
         return False
 
-    def admission_reasons_that_should_prioritize_overlaps_in_pre_commitment_sp_search(
+    def admission_reason_raw_texts_that_should_prioritize_overlaps_in_pre_commitment_sp_search(
         self,
-    ) -> Set[StateIncarcerationPeriodAdmissionReason]:
-        """Returns the set of commitment from supervision admission reasons for which
+    ) -> Set[str]:
+        """Returns the set of commitment from supervision admission reason raw texts for which
         we should prioritize periods that *overlap* with the date of admission to
         incarceration, as opposed to prioritizing periods that have already terminated
         by the date of admission.

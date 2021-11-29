@@ -86,9 +86,9 @@ class UsNdCommitmentFromSupervisionDelegate(
         """
         return True
 
-    def admission_reasons_that_should_prioritize_overlaps_in_pre_commitment_sp_search(
+    def admission_reason_raw_texts_that_should_prioritize_overlaps_in_pre_commitment_sp_search(
         self,
-    ) -> Set[StateIncarcerationPeriodAdmissionReason]:
+    ) -> Set[str]:
         """In US_ND there are different expectations for when a supervision period
         will be terminated relative to the date of a commitment from
         supervision admission based on the |admission_reason| on the commitment.
@@ -100,7 +100,18 @@ class UsNdCommitmentFromSupervisionDelegate(
         # However, for PROBATION, we prioritize periods that have terminated before the
         # |admission_date|, since we expect probation periods to be terminated at the
         # time of a probation revocation admission
-        return {StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION}
+
+        # Filter dictionary by keeping admission reason raw texts whose associated supervision types are PAROLE.
+        filtered_admission_raw_texts: Set[str] = {
+            key
+            for (
+                key,
+                value,
+            ) in PREVIOUS_SUPERVISION_TYPE_TO_INCARCERATION_ADMISSION_REASON_RAW_TEXT.items()
+            if value == StateSupervisionPeriodSupervisionType.PAROLE
+        }
+
+        return filtered_admission_raw_texts
 
     def violation_history_window_pre_commitment_from_supervision(
         self,

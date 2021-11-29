@@ -126,7 +126,7 @@ class UsMoIncarcerationPreProcessingDelegate(
                 and (
                     next_period.admission_reason
                     in (
-                        StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+                        StateIncarcerationPeriodAdmissionReason.REVOCATION,
                         StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
                     )
                     or self.period_is_parole_board_hold(
