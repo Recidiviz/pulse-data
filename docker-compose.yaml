@@ -30,8 +30,11 @@ services:
       - SQLALCHEMY_DB_USER=postgres
       - SQLALCHEMY_DB_PASSWORD=example
       - SQLALCHEMY_USE_SSL=0
+    links:
+      - "redis:rate_limit_cache"
+      - "redis:sessions_cache"
 
-  rate_limit_cache:
+  redis:
     image: redis:5.0
     ports:
       - "6379:6379"
@@ -44,7 +47,7 @@ services:
       - "~/.config:/root/.config"
     depends_on:
       - migrations
-      - rate_limit_cache
+      - redis
     ports:
       - "5050:5000"
     command: pipenv run flask run -h 0.0.0.0
