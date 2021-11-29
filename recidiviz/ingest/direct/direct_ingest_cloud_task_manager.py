@@ -155,15 +155,12 @@ class DirectIngestQueueType(Enum):
     PROCESS_JOB_QUEUE = "process-job-queue"
     RAW_DATA_IMPORT = "raw-data-import"
     INGEST_VIEW_EXPORT = "ingest-view-export"
-    # TODO(#9713): Legacy queue - will be replaced by RAW_DATA_IMPORT /
-    #  INGEST_VIEW_EXPORT. Delete once those queues are fully in use.
-    BQ_IMPORT_EXPORT = "bq-import-export"
 
     def exists_for_instance(self, ingest_instance: DirectIngestInstance) -> bool:
         return ingest_instance is DirectIngestInstance.PRIMARY or self not in (
+            # Primary-instance-only queues
             DirectIngestQueueType.SFTP_QUEUE,
             DirectIngestQueueType.RAW_DATA_IMPORT,
-            DirectIngestQueueType.BQ_IMPORT_EXPORT,
         )
 
 
@@ -187,11 +184,7 @@ def _build_direct_ingest_queue_name(
             f"Queue type [{queue_type}] does not exist for [{ingest_instance}] instance."
         )
 
-    # TODO(#9713): Remove BQ_IMPORT_EXPORT check when we delete that queue and type.
-    if (
-        ingest_instance == DirectIngestInstance.PRIMARY
-        or queue_type is DirectIngestQueueType.BQ_IMPORT_EXPORT
-    ):
+    if ingest_instance == DirectIngestInstance.PRIMARY:
         instance_suffix = ""
     elif ingest_instance == DirectIngestInstance.SECONDARY:
         instance_suffix = "-secondary"
@@ -219,7 +212,10 @@ def _queue_name_for_queue_type(
             return DIRECT_INGEST_SCHEDULER_QUEUE_V2
         if queue_type == DirectIngestQueueType.PROCESS_JOB_QUEUE:
             return DIRECT_INGEST_JAILS_PROCESS_JOB_QUEUE_V2
-        if queue_type == DirectIngestQueueType.BQ_IMPORT_EXPORT:
+        if queue_type in (
+            DirectIngestQueueType.RAW_DATA_IMPORT,
+            DirectIngestQueueType.INGEST_VIEW_EXPORT,
+        ):
             return DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2
         raise ValueError(f"Unexpected queue_type: [{queue_type}]")
 
@@ -362,58 +358,6 @@ class IngestViewExportCloudTaskQueueInfo(DirectIngestCloudTaskQueueInfo):
         )
 
 
-# TODO(#9713): Delete this legacy queue info type when we delete this queue.
-@attr.s
-class BQImportExportCloudTaskQueueInfo(DirectIngestCloudTaskQueueInfo):
-    """Class containing information about tasks in a given region's raw data import /
-    ingest view export task queue.
-    """
-
-    @staticmethod
-    def _is_raw_data_export_task(task_name: str) -> bool:
-        return "raw_data_import" in task_name
-
-    @staticmethod
-    def _is_ingest_view_export_job(task_name: str) -> bool:
-        return "ingest_view_export" in task_name
-
-    def is_raw_data_import_task_already_queued(
-        self, task_args: GcsfsRawDataBQImportArgs
-    ) -> bool:
-        return any(
-            self._is_raw_data_export_task(task_name)
-            and task_args.task_id_tag() in task_name
-            for task_name in self.task_names
-        )
-
-    def is_ingest_view_export_task_already_queued(
-        self,
-        region_code: str,
-        task_args: GcsfsIngestViewExportArgs,
-    ) -> bool:
-        return any(
-            self._is_ingest_view_export_job(task_name)
-            and task_args.task_id_tag() in task_name
-            for task_name in self._task_names_for_instance(
-                region_code,
-                task_args.ingest_instance(),
-            )
-        )
-
-    def has_raw_data_import_jobs_queued(self) -> bool:
-        return any(
-            self._is_raw_data_export_task(task_name) for task_name in self.task_names
-        )
-
-    def has_ingest_view_export_jobs_queued(
-        self, region_code: str, ingest_instance: DirectIngestInstance
-    ) -> bool:
-        return any(
-            self._is_ingest_view_export_job(task_name)
-            for task_name in self._task_names_for_instance(region_code, ingest_instance)
-        )
-
-
 class DirectIngestCloudTaskManager:
     """Abstract interface for a class that interacts with Cloud Task queues."""
 
@@ -443,14 +387,6 @@ class DirectIngestCloudTaskManager:
         self, region: Region, ingest_instance: DirectIngestInstance
     ) -> IngestViewExportCloudTaskQueueInfo:
         """Returns information about the tasks in the raw data import queue for
-        the given region."""
-
-    # TODO(#9713): Delete this function when we delete this queue.
-    @abc.abstractmethod
-    def get_bq_import_export_queue_info(
-        self, region: Region
-    ) -> BQImportExportCloudTaskQueueInfo:
-        """Returns information about the tasks in the BQ import export queue for
         the given region."""
 
     @abc.abstractmethod
@@ -656,14 +592,6 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
         return self._get_scheduler_queue_manager(
             region, ingest_instance
         ).get_queue_info(task_id_prefix=region.region_code)
-
-    # TODO(#9713): Delete this function when we delete this queue.
-    def get_bq_import_export_queue_info(
-        self, region: Region
-    ) -> BQImportExportCloudTaskQueueInfo:
-        raise NotImplementedError(
-            "TODO(#9713): Function no longer in use, soon to be deleted."
-        )
 
     def get_raw_data_import_queue_info(
         self, region: Region
