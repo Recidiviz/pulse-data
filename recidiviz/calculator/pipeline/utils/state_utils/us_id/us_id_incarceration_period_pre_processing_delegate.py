@@ -17,7 +17,7 @@
 """Contains state-specific logic for certain aspects of pre-processing US_ID
 StateIncarcerationPeriod entities so that they are ready to be used in pipeline
 calculations."""
-from typing import List, Optional, Set
+from typing import List, Optional
 
 import attr
 
@@ -25,7 +25,6 @@ from recidiviz.calculator.pipeline.utils.commitment_from_supervision_utils impor
     SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT,
 )
 from recidiviz.calculator.pipeline.utils.incarceration_period_pre_processing_manager import (
-    PurposeForIncarcerationInfo,
     StateSpecificIncarcerationPreProcessingDelegate,
 )
 from recidiviz.calculator.pipeline.utils.incarceration_period_utils import (
@@ -40,7 +39,6 @@ from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index 
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
     filter_out_unknown_supervision_type_periods,
 )
-from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateSpecializedPurposeForIncarceration,
@@ -48,10 +46,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
 )
-from recidiviz.persistence.entity.state.entities import (
-    StateIncarcerationPeriod,
-    StateSupervisionViolationResponse,
-)
+from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 
 
 class UsIdIncarcerationPreProcessingDelegate(
@@ -59,7 +54,6 @@ class UsIdIncarcerationPreProcessingDelegate(
 ):
     """US_ID implementation of the StateSpecificIncarcerationPreProcessingDelegate."""
 
-    # Functions with state-specific overrides
     def normalize_period_if_commitment_from_supervision(
         self,
         incarceration_period_list_index: int,
@@ -76,49 +70,6 @@ class UsIdIncarcerationPreProcessingDelegate(
         """The normalize_period_if_commitment_from_supervision function for US_ID
         relies on supervision period entities."""
         return True
-
-    # Functions using default behavior
-    def admission_reasons_to_filter(
-        self,
-    ) -> Set[StateIncarcerationPeriodAdmissionReason]:
-        return self._default_admission_reasons_to_filter()
-
-    def get_pfi_info_for_period_if_commitment_from_supervision(
-        self,
-        incarceration_period_list_index: int,
-        sorted_incarceration_periods: List[StateIncarcerationPeriod],
-        violation_responses: Optional[List[StateSupervisionViolationResponse]],
-    ) -> PurposeForIncarcerationInfo:
-        return self._default_get_pfi_info_for_period_if_commitment_from_supervision(
-            incarceration_period_list_index,
-            sorted_incarceration_periods,
-            violation_responses,
-        )
-
-    def incarceration_types_to_filter(self) -> Set[StateIncarcerationType]:
-        return self._default_incarceration_types_to_filter()
-
-    def period_is_parole_board_hold(
-        self,
-        incarceration_period_list_index: int,
-        sorted_incarceration_periods: List[StateIncarcerationPeriod],
-    ) -> bool:
-        return self._default_period_is_parole_board_hold(
-            incarceration_period_list_index, sorted_incarceration_periods
-        )
-
-    def period_is_non_board_hold_temporary_custody(
-        self,
-        incarceration_period_list_index: int,
-        sorted_incarceration_periods: List[StateIncarcerationPeriod],
-    ) -> bool:
-        return self._default_period_is_non_board_hold_temporary_custody(
-            incarceration_period_list_index,
-            sorted_incarceration_periods,
-        )
-
-    def pre_processing_relies_on_violation_responses(self) -> bool:
-        return self._default_pre_processing_relies_on_violation_responses()
 
 
 def _us_id_normalize_period_if_commitment_from_supervision(

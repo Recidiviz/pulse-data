@@ -16,7 +16,6 @@
 # =============================================================================
 """Contains the default logic for pre-processing StateIncarcerationPeriod entities so
 that they are ready to be used in pipeline calculations."""
-import abc
 import logging
 from copy import deepcopy
 from datetime import date
@@ -89,24 +88,18 @@ class StateSpecificIncarcerationPreProcessingDelegate:
     """Interface for state-specific decisions involved in pre-processing
     incarceration periods for calculations."""
 
-    @abc.abstractmethod
     def admission_reasons_to_filter(
         self,
     ) -> Set[StateIncarcerationPeriodAdmissionReason]:
         """State-specific implementations of this class should return a non-empty set if
         there are certain admission reasons that indicate a period should be dropped
         entirely from calculations.
-        """
 
-    @staticmethod
-    def _default_admission_reasons_to_filter() -> Set[
-        StateIncarcerationPeriodAdmissionReason
-    ]:
-        """Default behavior of admission_reasons_to_filter function."""
+        By default, returns an empty set.
+        """
         return set()
 
-    @abc.abstractmethod
-    def normalize_period_if_commitment_from_supervision(
+    def normalize_period_if_commitment_from_supervision(  # pylint: disable=unused-argument
         self,
         incarceration_period_list_index: int,
         sorted_incarceration_periods: List[StateIncarcerationPeriod],
@@ -114,22 +107,13 @@ class StateSpecificIncarcerationPreProcessingDelegate:
     ) -> StateIncarcerationPeriod:
         """State-specific implementations of this class should return a new
         StateIncarcerationPeriod with updated attributes if this period represents a
-        commitment from supervision admission and requires updated attribute values."""
-
-    @staticmethod
-    def _default_normalize_period_if_commitment_from_supervision(
-        incarceration_period_list_index: int,
-        sorted_incarceration_periods: List[StateIncarcerationPeriod],
-        _supervision_period_index: Optional[PreProcessedSupervisionPeriodIndex],
-    ) -> StateIncarcerationPeriod:
-        """Default behavior of normalize_period_if_commitment_from_supervision.
+        commitment from supervision admission and requires updated attribute values.
 
         By default, returns the original period unchanged.
         """
         return sorted_incarceration_periods[incarceration_period_list_index]
 
-    @abc.abstractmethod
-    def get_pfi_info_for_period_if_commitment_from_supervision(
+    def get_pfi_info_for_period_if_commitment_from_supervision(  # pylint: disable=unused-argument
         self,
         incarceration_period_list_index: int,
         sorted_incarceration_periods: List[StateIncarcerationPeriod],
@@ -139,20 +123,12 @@ class StateSpecificIncarcerationPreProcessingDelegate:
         PurposeForIncarcerationInfo object complete with the correct
         purpose_for_incarceration for the incarceration period, if it differs from the
         purpose_for_incarceration value currently set on the period and if the
-        period represents a commitment from supervision admission."""
+        period represents a commitment from supervision admission.
 
-    @staticmethod
-    def _default_get_pfi_info_for_period_if_commitment_from_supervision(
-        incarceration_period_list_index: int,
-        sorted_incarceration_periods: List[StateIncarcerationPeriod],
-        _violation_responses: Optional[List[StateSupervisionViolationResponse]],
-    ) -> PurposeForIncarcerationInfo:
-        """Default behavior of the
-        get_pfi_info_for_period_if_commitment_from_supervision function.
-
-        Returns a PurposeForIncarcerationInfo object with the period's current
-        purpose_for_incarceration value and an unset
-        purpose_for_incarceration_subtype."""
+        By default, returns a PurposeForIncarcerationInfo object with the period's
+        current purpose_for_incarceration value and an unset
+        purpose_for_incarceration_subtype.
+        """
         return PurposeForIncarcerationInfo(
             purpose_for_incarceration=sorted_incarceration_periods[
                 incarceration_period_list_index
@@ -160,19 +136,15 @@ class StateSpecificIncarcerationPreProcessingDelegate:
             purpose_for_incarceration_subtype=None,
         )
 
-    @abc.abstractmethod
     def incarceration_types_to_filter(self) -> Set[StateIncarcerationType]:
         """State-specific implementations of this class should return a non-empty set if
         there are certain incarceration types that indicate a period should be dropped
         entirely from calculations.
-        """
 
-    @staticmethod
-    def _default_incarceration_types_to_filter() -> Set[StateIncarcerationType]:
-        """Default behavior of incarceration_types_to_filter function."""
+        By default, returns an empty set.
+        """
         return set()
 
-    @abc.abstractmethod
     def period_is_parole_board_hold(
         self,
         incarceration_period_list_index: int,
@@ -180,14 +152,10 @@ class StateSpecificIncarcerationPreProcessingDelegate:
     ) -> bool:
         """State-specific implementations of this class should return True if the
         incarceration_period represents a period of time spent in a parole board hold.
-        """
 
-    @staticmethod
-    def _default_period_is_parole_board_hold(
-        incarceration_period_list_index: int,
-        sorted_incarceration_periods: List[StateIncarcerationPeriod],
-    ) -> bool:
-        """Default behavior of period_is_parole_board_hold function."""
+        Default behavior is that a period is a parole board hold if it has a
+        specialized_purpose_for_incarceration of PAROLE_BOARD_HOLD.
+        """
         return (
             sorted_incarceration_periods[
                 incarceration_period_list_index
@@ -195,15 +163,6 @@ class StateSpecificIncarcerationPreProcessingDelegate:
             == StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD
         )
 
-    @staticmethod
-    def _default_pre_processing_incarceration_period_admission_reason_mapper(
-        incarceration_period: StateIncarcerationPeriod,
-    ) -> Optional[StateIncarcerationPeriodAdmissionReason]:
-        """Default behavior of
-        pre_processing_incarceration_period_admission_reason_mapper function."""
-        return incarceration_period.admission_reason
-
-    @abc.abstractmethod
     def period_is_non_board_hold_temporary_custody(
         self,
         incarceration_period_list_index: int,
@@ -212,19 +171,17 @@ class StateSpecificIncarcerationPreProcessingDelegate:
         """State-specific implementations of this class should return True if the
         |incarceration_period| represents a period of time spent in a form of
         temporary custody that is NOT a parole board hold.
-        """
 
-    def _default_period_is_non_board_hold_temporary_custody(
-        self,
-        incarceration_period_list_index: int,
-        sorted_incarceration_periods: List[StateIncarcerationPeriod],
-    ) -> bool:
-        """Default behavior of period_is_non_board_hold_temporary_custody function."""
+        Default behavior returns True if the period is not a board hold, if the
+        admission_reason is TEMPORARY_CUSTODY, and if the
+        specialized_purpose_for_incarceration is one of: None, GENERAL,
+        TEMPORARY_CUSTODY.
+        """
         incarceration_period = sorted_incarceration_periods[
             incarceration_period_list_index
         ]
         return (
-            not self._default_period_is_parole_board_hold(
+            not self.period_is_parole_board_hold(
                 incarceration_period_list_index, sorted_incarceration_periods
             )
             and incarceration_period.admission_reason
@@ -237,26 +194,22 @@ class StateSpecificIncarcerationPreProcessingDelegate:
             )
         )
 
-    @abc.abstractmethod
     def pre_processing_relies_on_supervision_periods(self) -> bool:
         """State-specific implementations of this class should return whether the IP
         pre-processing logic for the state relies on information in
-        StateSupervisionPeriod entities"""
+        StateSupervisionPeriod entities.
 
-    @staticmethod
-    def _default_pre_processing_relies_on_supervision_periods() -> bool:
-        """Default behavior of pre_processing_relies_on_supervision_periods function."""
+        Default is False.
+        """
         return False
 
-    @abc.abstractmethod
     def pre_processing_relies_on_violation_responses(self) -> bool:
         """State-specific implementations of this class should return whether the IP
         pre-processing logic for the state relies on information in
-        StateSupervisionViolationResponse entities"""
+        StateSupervisionViolationResponse entities.
 
-    @staticmethod
-    def _default_pre_processing_relies_on_violation_responses() -> bool:
-        """Default behavior of pre_processing_relies_on_violation_responses function."""
+        Default is False.
+        """
         return False
 
 

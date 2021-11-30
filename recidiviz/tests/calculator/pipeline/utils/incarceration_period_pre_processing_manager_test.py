@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 # pylint: disable=protected-access
-
 """Tests for incarceration_period_pre_processing_manager.py."""
 
 import unittest
@@ -31,13 +30,9 @@ from recidiviz.calculator.pipeline.utils.incarceration_period_pre_processing_man
     ATTRIBUTES_TRIGGERING_STATUS_CHANGE,
     IncarcerationPreProcessingManager,
     PurposeForIncarcerationInfo,
-    StateSpecificIncarcerationPreProcessingDelegate,
 )
 from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index import (
     PreProcessedSupervisionPeriodIndex,
-)
-from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
-    get_state_specific_incarceration_period_pre_processing_delegate,
 )
 from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
@@ -48,109 +43,11 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodStatus,
     StateSpecializedPurposeForIncarceration,
 )
-from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_incarceration_period_pre_processing_delegate import (
     UsXxIncarcerationPreProcessingDelegate,
 )
-
-
-class TestStateSpecificIncarcerationPreProcessingDelegate(unittest.TestCase):
-    """Tests the StateSpecificIncarcerationPreProcessingDelegate."""
-
-    def setUp(self) -> None:
-        # All methods on the StateSpecificIncarcerationPreProcessingDelegate that
-        # need to be implemented by subclasses
-        self.methods_to_implement = frozenset(
-            name
-            for name, attr in vars(
-                StateSpecificIncarcerationPreProcessingDelegate
-            ).items()
-            if getattr(attr, "__isabstractmethod__", False)
-        )
-
-    def test_delegate_function_coverage(self):
-        """Tests that all abstract methods from the
-        StateSpecificIncarcerationPreProcessingDelegate are implemented on all
-        state-specific subclasses of the delegate."""
-        num_state_delegates = 0
-        for state_code in StateCode:
-            try:
-                state_delegate = (
-                    get_state_specific_incarceration_period_pre_processing_delegate(
-                        state_code.value
-                    )
-                )
-
-                if not state_delegate:
-                    # Delegate not implemented for this state
-                    continue
-
-                num_state_delegates += 1
-
-                implemented_methods = frozenset(
-                    name
-                    for name, class_attr in vars(state_delegate.__class__).items()
-                    if not getattr(class_attr, "__isabstractmethod__", False)
-                    and name not in ("__doc__", "__module__")
-                )
-
-                if self.methods_to_implement != implemented_methods:
-                    if self.methods_to_implement.difference(implemented_methods):
-                        self.fail(
-                            "StateSpecificIncarcerationPreProcessingDelegate for state "
-                            f"{state_code.value} missing implementation of required "
-                            "methods: "
-                            f"[{self.methods_to_implement.difference(implemented_methods)}]"
-                        )
-                    else:
-                        self.fail(
-                            "StateSpecificIncarcerationPreProcessingDelegate for state "
-                            f"{state_code.value} has unexpected extra methods: "
-                            f"[{implemented_methods.difference(self.methods_to_implement)}]"
-                        )
-            except ValueError:
-                # Only expected error is if a delegate is not implemented for this state
-                pass
-
-        # Assert that we've tested all (non-test) subclasses of the
-        # StateSpecificIncarcerationPreProcessingDelegate
-        self.assertEqual(
-            len(
-                [
-                    subclass
-                    for subclass in StateSpecificIncarcerationPreProcessingDelegate.__subclasses__()
-                    if subclass != UsXxIncarcerationPreProcessingDelegate
-                ]
-            ),
-            num_state_delegates,
-        )
-
-    def test_US_XX_delegate_function_coverage(self):
-        implemented_methods = frozenset(
-            name
-            for name, class_attr in vars(UsXxIncarcerationPreProcessingDelegate).items()
-            if not getattr(class_attr, "__isabstractmethod__", False)
-            and name not in ("__doc__", "__module__")
-        )
-
-        missing_from_us_xx = self.methods_to_implement.difference(implemented_methods)
-
-        if missing_from_us_xx:
-            self.fail(
-                "UsXxStateSpecificIncarcerationPreProcessingDelegate missing "
-                "implementation of required methods: "
-                f"[{missing_from_us_xx}]"
-            )
-
-        missing_from_base = implemented_methods.difference(self.methods_to_implement)
-        if missing_from_base:
-            self.fail(
-                "UsXxStateSpecificIncarcerationPreProcessingDelegate has "
-                "extra method that is not defined in base: "
-                f"[{missing_from_base}]"
-            )
 
 
 class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
