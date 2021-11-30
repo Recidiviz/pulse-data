@@ -14,8 +14,14 @@ columns:
   - name : Amended_Date
   - name : Apply_Det_Days_Ind
   - name : Cis_319_Term_Id
+    description: |-
+      Foreign-key association to the CIS_319_TERM table.
   - name : Cis_400_Charge_Id
+    description: |-
+      Foreign-key association to the CIS_400_CHARGE table.
   - name : Cis_400_Cis_100_Client_Id
+    description: |-
+      The unique MEDOC client ID that is associated with this sentence information.
   - name : Cis_4003_Offence_Type_Cd
   - name : Cis_4009_Comm_Override_Rsn_Cd
     description: |-
