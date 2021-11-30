@@ -1,7 +1,9 @@
 file_tag: CIS_1241_SUPERVISION_STATUS
 file_description: |-
-  TODO(#10017): Fill in raw data descriptions
-primary_key_cols: []
+  The code table that lists the values used for the Cis_1241_Super_Status_Cd field in the
+  CIS_124_SUPERVISION_HISTORY_TABLE.
+primary_key_cols:
+  - Supervision_Status_Cd
 columns:
   - name : Adult_Comm_Ind
   - name : Adult_Insti_Ind
@@ -14,6 +16,8 @@ columns:
   - name : Modified_By_Tx
   - name : Modified_On_Date
   - name : Supervision_Status_Desc
+    description: The plain-text value associated with the Supervision_Status_Cd. For a full list of possible values see the config for CIS_124_SUPERVISION_HISTORY.
   - name : System_Ref_Comments_Tx
   - name : System_Ref_Tx
   - name : Supervision_Status_Cd
+    description: The primary key for this table and the code value used in CIS_124_SUPERVISION_HISTORY.

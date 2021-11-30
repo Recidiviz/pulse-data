@@ -1,7 +1,8 @@
 file_tag: CIS_4009_SENT_CALC_SYS
 file_description: |-
-  TODO(#9296): Add raw data descriptions
-primary_key_cols: []
+  This is a code table that has sentencing related values that are used in several tables, including CIS_401_CRT_ORDER_HDR.
+primary_key_cols:
+  - Sent_Calc_Sys_Cd
 columns:
   - name : Adult_Ind
   - name : Cis_4007_Sent_Calc_Sub_Type_Cd
@@ -13,6 +14,8 @@ columns:
   - name : Modified_By_Tx
   - name : Modified_On_Date
   - name : Sent_Calc_Sys_Desc
+    description: The plain-text value associated with the Sent_Calc_Sys_Cd.
   - name : System_Ref_Comments_Tx
   - name : System_Ref_Tx
   - name : Sent_Calc_Sys_Cd
+    description: The primary key of the table and the code value used in sentencing tables that have column names starting with CIS_4009.

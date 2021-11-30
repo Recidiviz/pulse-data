@@ -1,11 +1,13 @@
 file_tag: CIS_4010_CRT_ORDER_STATUS
 file_description: |-
-  TODO(#9296): Add raw data descriptions
-primary_key_cols: []
+  This is a code table containing the values for the Cis_4010_Crt_Order_Status_Cd column in the CIS_401_CRT_ORDER_HDR table.
+primary_key_cols:
+  - Crt_Order_Status_Cd
 columns:
   - name : Created_By_Tx
   - name : Created_On_Date
   - name : E_Crt_Order_Status_Desc
+    description: The plain-text value associated with the Crt_Order_Status_Cd. For a full list of possible values see the config for CIS_401_CRT_ORDER_HDR.
   - name : Locking_Tsp
   - name : Logical_Delete_Ind
   - name : Modified_By_Tx
@@ -13,3 +15,4 @@ columns:
   - name : System_Ref_Comments_Tx
   - name : System_Ref_Tx
   - name : Crt_Order_Status_Cd
+    description: The primary key of the table and the value used in the Cis_4010_Crt_Order_Status_Cd column on the CIS_401_CRT_ORDER_HDR table.
