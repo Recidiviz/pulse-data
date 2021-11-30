@@ -23,9 +23,6 @@ from recidiviz.calculator.pipeline.utils.incarceration_period_pre_processing_man
     PurposeForIncarcerationInfo,
     StateSpecificIncarcerationPreProcessingDelegate,
 )
-from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index import (
-    PreProcessedSupervisionPeriodIndex,
-)
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     SANCTION_ADMISSION_PURPOSE_FOR_INCARCERATION_VALUES,
@@ -49,7 +46,6 @@ class UsMoIncarcerationPreProcessingDelegate(
 ):
     """US_MO implementation of the StateSpecificIncarcerationPreProcessingDelegate."""
 
-    # Functions with state-specific overrides
     def incarceration_types_to_filter(self) -> Set[StateIncarcerationType]:
         """US_MO drops all incarceration periods that aren't in a STATE_PRISON from
         calculations."""
@@ -155,27 +151,6 @@ class UsMoIncarcerationPreProcessingDelegate(
         """IP pre-processing for US_MO does not rely on StateSupervisionPeriod
         entities."""
         return False
-
-    # Functions using default behavior
-    def admission_reasons_to_filter(
-        self,
-    ) -> Set[StateIncarcerationPeriodAdmissionReason]:
-        return self._default_admission_reasons_to_filter()
-
-    def normalize_period_if_commitment_from_supervision(
-        self,
-        incarceration_period_list_index: int,
-        sorted_incarceration_periods: List[StateIncarcerationPeriod],
-        supervision_period_index: Optional[PreProcessedSupervisionPeriodIndex],
-    ) -> StateIncarcerationPeriod:
-        return self._default_normalize_period_if_commitment_from_supervision(
-            incarceration_period_list_index,
-            sorted_incarceration_periods,
-            supervision_period_index,
-        )
-
-    def pre_processing_relies_on_violation_responses(self) -> bool:
-        return self._default_pre_processing_relies_on_violation_responses()
 
 
 # TODO(#8118): Move this logic to ingest once we're putting the status codes in the

@@ -22,7 +22,6 @@ from typing import List, Optional, Set
 import attr
 
 from recidiviz.calculator.pipeline.utils.incarceration_period_pre_processing_manager import (
-    PurposeForIncarcerationInfo,
     StateSpecificIncarcerationPreProcessingDelegate,
 )
 from recidiviz.calculator.pipeline.utils.incarceration_period_utils import (
@@ -45,7 +44,6 @@ from recidiviz.common.constants.state.state_supervision_period import (
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
     StateSupervisionPeriod,
-    StateSupervisionViolationResponse,
 )
 
 # The number of months for the window of time prior to a new admission return to search
@@ -65,7 +63,6 @@ class UsNdIncarcerationPreProcessingDelegate(
 ):
     """US_ND implementation of the StateSpecificIncarcerationPreProcessingDelegate."""
 
-    # Functions with state-specific overrides
     def admission_reasons_to_filter(
         self,
     ) -> Set[StateIncarcerationPeriodAdmissionReason]:
@@ -91,7 +88,7 @@ class UsNdIncarcerationPreProcessingDelegate(
         sorted_incarceration_periods: List[StateIncarcerationPeriod],
     ) -> bool:
         """There are no parole board hold incarceration periods in US_ND."""
-        if self._default_period_is_parole_board_hold(
+        if super().period_is_parole_board_hold(
             incarceration_period_list_index, sorted_incarceration_periods
         ):
             raise ValueError(
@@ -106,35 +103,6 @@ class UsNdIncarcerationPreProcessingDelegate(
         """The apply_commitment_from_supervision_period_overrides function for US_ND
         relies on supervision period entities."""
         return True
-
-    # Functions using default behavior
-    def get_pfi_info_for_period_if_commitment_from_supervision(
-        self,
-        incarceration_period_list_index: int,
-        sorted_incarceration_periods: List[StateIncarcerationPeriod],
-        violation_responses: Optional[List[StateSupervisionViolationResponse]],
-    ) -> PurposeForIncarcerationInfo:
-        return self._default_get_pfi_info_for_period_if_commitment_from_supervision(
-            incarceration_period_list_index,
-            sorted_incarceration_periods,
-            violation_responses,
-        )
-
-    def incarceration_types_to_filter(self) -> Set[StateIncarcerationType]:
-        return self._default_incarceration_types_to_filter()
-
-    def period_is_non_board_hold_temporary_custody(
-        self,
-        incarceration_period_list_index: int,
-        sorted_incarceration_periods: List[StateIncarcerationPeriod],
-    ) -> bool:
-        return self._default_period_is_non_board_hold_temporary_custody(
-            incarceration_period_list_index,
-            sorted_incarceration_periods,
-        )
-
-    def pre_processing_relies_on_violation_responses(self) -> bool:
-        return self._default_pre_processing_relies_on_violation_responses()
 
 
 def _us_nd_normalize_period_if_commitment_from_supervision(
