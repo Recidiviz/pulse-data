@@ -27,6 +27,7 @@ from typing import Dict, List
 
 from recidiviz.common.constants.entity_enum import EnumParsingError
 from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
+from recidiviz.common.str_field_utils import parse_datetime
 
 OTHER_STATE_FACILITY = "OOS"
 
@@ -87,12 +88,19 @@ POST_JULY_2017_CUSTODIAL_AUTHORITY_RAW_TEXT_TO_ENUM_MAP: Dict[
 def custodial_authority_from_facility_and_dates(
     raw_text: str,
 ) -> StateCustodialAuthority:
-    facility, date_str_for_comparison = raw_text.split("-")
+    facility, datetime_str_for_comparison = raw_text.split("-")
 
     if facility == OTHER_STATE_FACILITY:
         return StateCustodialAuthority.OTHER_STATE
 
-    comparison_date = datetime.datetime.strptime(date_str_for_comparison, "%m/%d/%Y")
+    comparison_date = parse_datetime(datetime_str_for_comparison)
+
+    if not comparison_date:
+        raise EnumParsingError(
+            StateCustodialAuthority,
+            "Unable to parse custodial authority without a valid date on the IP. "
+            f"Found: {datetime_str_for_comparison}.",
+        )
 
     # Everything except OOS (checked above) was overseen by DOCR before July 1, 2017.
     if comparison_date < datetime.datetime(year=2017, month=7, day=1):
