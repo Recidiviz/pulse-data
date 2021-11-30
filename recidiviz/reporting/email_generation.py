@@ -56,7 +56,9 @@ def generate(batch: Batch, recipient: Recipient, report_context: ReportContext) 
         recipient.email_address,
     )
     upload_file_contents_to_gcs(
-        file_path=html_path, file_contents=html_content, content_type="text/html"
+        file_path=html_path,
+        file_contents=html_content,
+        content_type="text/html; charset=utf-8",
     )
 
     if attachment_content:
