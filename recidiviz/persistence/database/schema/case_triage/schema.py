@@ -245,8 +245,7 @@ class ETLOfficer(CaseTriageBase, ETLDerivedEntity):
     external_id = Column(String(255), nullable=False, index=True, primary_key=True)
     state_code = Column(String(255), nullable=False, index=True, primary_key=True)
     email_address = Column(String(255), nullable=False)
-    given_names = Column(String(255), nullable=False)
-    surname = Column(String(255), nullable=False)
+    full_name = Column(JSONB, nullable=False)
     hashed_email_address = Column(Text, nullable=True)
 
 

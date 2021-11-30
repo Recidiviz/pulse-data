@@ -40,6 +40,7 @@ SELECT
     -- for each combination. When we have a reliable upstream data source for names for state_agents
     -- we should replace this.
     MAX(given_names) AS given_names,
+    MAX(full_name) AS full_name,
     MAX(surname) AS surname
 FROM
     `{project_id}.{reference_views_dataset}.augmented_agent_info`
@@ -65,7 +66,13 @@ all_officers AS (
         external_id,
         id_roster.email_address AS email_address,
         given_names,
-        names.surname AS surname,
+        TO_JSON_STRING(
+            STRUCT (
+                names.given_names AS given_names,  
+                names.surname AS surname,
+                names.full_name AS full_name
+            )
+        ) AS full_name,
         id_roster.hashed_email_address AS hashed_email_address
     FROM
         id_roster
@@ -90,8 +97,7 @@ OFFICER_LIST_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         "state_code",
         "external_id",
         "email_address",
-        "given_names",
-        "surname",
+        "full_name",
         "hashed_email_address",
         "exported_at",
     ],
