@@ -53,8 +53,7 @@ def generate_fake_officer(
         external_id=officer_id,
         email_address=email,
         state_code=state_code,
-        given_names="Test",
-        surname="Officer",
+        full_name={"given_names": "Test", "surname": "Officer"},
         hashed_email_address=hash_email(email),
     )
 

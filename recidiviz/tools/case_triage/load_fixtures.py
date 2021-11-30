@@ -44,6 +44,7 @@ from recidiviz.persistence.database.constants import (
 
 
 def reset_case_triage_fixtures() -> None:
+    """Deletes all ETL data and re-imports data from our fixture files"""
     user = os.getenv(SQLALCHEMY_DB_USER, "postgres")
     password = os.getenv(SQLALCHEMY_DB_PASSWORD, "example")
     host = os.getenv(SQLALCHEMY_DB_HOST, "localhost")
@@ -66,7 +67,13 @@ def reset_case_triage_fixtures() -> None:
             table_name = table.__table__.name
             cursor.execute(f"DELETE FROM {table_name}")
             _import_csv(
-                f"recidiviz/tools/case_triage/fixtures/{table_name}.csv",
+                os.path.realpath(
+                    os.path.join(
+                        os.path.dirname(__file__),
+                        "../../..",
+                        f"recidiviz/tools/case_triage/fixtures/{table_name}.csv",
+                    )
+                ),
                 table_name,
             )
 

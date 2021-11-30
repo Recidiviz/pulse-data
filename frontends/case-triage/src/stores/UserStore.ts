@@ -25,6 +25,7 @@ import { makeAutoObservable, runInAction, when } from "mobx";
 import qs from "qs";
 import { navigate } from "@reach/router";
 import { titleCase } from "../utils";
+import { FullName } from "./API";
 
 export const REGISTRATION_DATE_CLAIM =
   "https://dashboard.recidiviz.org/registration_date";
@@ -64,9 +65,7 @@ export default class UserStore {
 
   user?: User;
 
-  officerGivenNames: string;
-
-  officerSurname: string;
+  officerFullName: FullName;
 
   isImpersonating: boolean;
 
@@ -98,8 +97,7 @@ export default class UserStore {
 
     // We assume that when first loading, that they will be accessing their
     // own case triage.
-    this.officerGivenNames = "";
-    this.officerSurname = "";
+    this.officerFullName = {};
     this.isImpersonating = false;
     this.shouldSeeOnboarding = false;
 
@@ -198,12 +196,10 @@ export default class UserStore {
   }
 
   setOfficerMetadata(
-    officerGivenNames: string,
-    officerSurname: string,
+    officerFullName: FullName,
     isImpersonating: boolean
   ): void {
-    this.officerGivenNames = officerGivenNames;
-    this.officerSurname = officerSurname;
+    this.officerFullName = officerFullName;
     this.isImpersonating = isImpersonating;
   }
 
@@ -212,9 +208,25 @@ export default class UserStore {
   }
 
   getOfficerFullName(): string {
-    return `${titleCase(this.officerGivenNames)} ${titleCase(
-      this.officerSurname
-    )}`;
+    const {
+      given_names: givenNames,
+      full_name: fullName,
+      surname,
+    } = this.officerFullName;
+
+    if (fullName) {
+      return titleCase(fullName);
+    }
+    const names = [];
+    if (givenNames) {
+      names.push(givenNames);
+    }
+
+    if (surname) {
+      names.push(surname);
+    }
+
+    return names.map(titleCase).join(" ") || "Recidiviz User";
   }
 
   isInExperiment(experiment: KNOWN_EXPERIMENTS): boolean {
