@@ -361,7 +361,7 @@ def _retrieve_data_for_top_opportunities(batch: Batch) -> List[Recipient]:
                             utils.KEY_EMAIL_ADDRESS: officer_email,
                             utils.KEY_STATE_CODE: batch.state_code.value,
                             utils.KEY_DISTRICT: None,
-                            OFFICER_GIVEN_NAME: officer.given_names,
+                            OFFICER_GIVEN_NAME: officer.full_name["given_names"],
                             "mismatches": mismatches,
                         }
                     )

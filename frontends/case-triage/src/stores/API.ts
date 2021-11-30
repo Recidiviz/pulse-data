@@ -33,13 +33,20 @@ interface RequestProps {
   retrying?: boolean;
 }
 
+export interface FullName {
+  // eslint-disable-next-line camelcase
+  given_names?: string;
+  // eslint-disable-next-line camelcase
+  full_name?: string;
+  surname?: string;
+}
+
 interface BootstrapResponse {
   csrf: string;
   segmentUserId: string;
   knownExperiments: FeatureVariants;
   dashboardURL: string;
-  officerGivenNames: string;
-  officerSurname: string;
+  officerFullName: FullName;
   isImpersonating: boolean;
   canAccessCaseTriage: boolean;
   canAccessLeadershipDashboard: boolean;
@@ -136,8 +143,7 @@ class API {
             segmentUserId,
             knownExperiments: featureVariants,
             dashboardURL,
-            officerGivenNames,
-            officerSurname,
+            officerFullName,
             isImpersonating,
             canAccessCaseTriage,
             canAccessLeadershipDashboard,
@@ -158,11 +164,7 @@ class API {
             Sentry.setUser({ id: segmentUserId });
             Sentry.setTag("app.version", this.userStore.currentVersion);
 
-            this.userStore.setOfficerMetadata(
-              officerGivenNames,
-              officerSurname,
-              isImpersonating
-            );
+            this.userStore.setOfficerMetadata(officerFullName, isImpersonating);
             this.bootstrapped = true;
           }
         )

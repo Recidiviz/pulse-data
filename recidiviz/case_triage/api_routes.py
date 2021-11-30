@@ -202,13 +202,11 @@ def create_api_blueprint(
 
         officer_names: Dict[str, Any] = (
             {
-                "officerGivenNames": g.user_context.current_user.given_names,
-                "officerSurname": g.user_context.current_user.surname,
+                "officerFullName": g.user_context.current_user.full_name,
             }
             if g.user_context.current_user
             else {
-                "officerGivenNames": None,
-                "officerSurname": None,
+                "officerFullName": None,
             }
         )
 
