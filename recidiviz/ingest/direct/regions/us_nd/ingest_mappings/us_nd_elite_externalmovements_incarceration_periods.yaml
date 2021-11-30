@@ -98,6 +98,18 @@ output:
                                       $then: admission_date
                                     - $else: release_date
                           $custom_parser: us_nd_custom_enum_parsers.custodial_authority_from_facility_and_dates
+                      specialized_purpose_for_incarceration:
+                        $enum_mapping:
+                          $raw_text:
+                            $concat:
+                              $values:
+                                - facility
+                                - $conditional:
+                                    - $if:
+                                        $not_null: admission_date
+                                      $then: admission_date
+                                    - $else: release_date
+                          $custom_parser: us_nd_custom_enum_parsers.pfi_from_facility_and_dates
                       admission_reason:
                         $enum_mapping:
                           $raw_text: admission_reason_code

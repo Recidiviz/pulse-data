@@ -23,10 +23,13 @@ my_enum_field:
     $custom_parser: us_nd_custom_enum_parsers.<function name>
 """
 import datetime
-from typing import Dict, List
+from typing import Dict, List, Type
 
-from recidiviz.common.constants.entity_enum import EnumParsingError
+from recidiviz.common.constants.entity_enum import EntityEnum, EnumParsingError
 from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateSpecializedPurposeForIncarceration,
+)
 from recidiviz.common.str_field_utils import parse_datetime
 
 OTHER_STATE_FACILITY = "OOS"
@@ -76,6 +79,48 @@ POST_JULY_2017_CUSTODIAL_AUTHORITY_ENUM_MAP: Dict[
     ],
 }
 
+POST_JULY_2017_PFI_ENUM_MAP: Dict[
+    StateSpecializedPurposeForIncarceration, List[str]
+] = {
+    StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY: [
+        "CJ",
+        "DEFP",
+        "NTAD",
+        # There are only a few of these, and they seem to represent judicial
+        # districts in ND
+        "NW",
+        "SC",
+        "SW",
+    ],
+    StateSpecializedPurposeForIncarceration.GENERAL: [
+        "BTC",
+        "CONT",
+        "CPP",
+        "DWCRC",
+        "FTPFAR",
+        "FTPMND",
+        "GFC",
+        "HACTC",
+        "HRCC",
+        "INACT",
+        "JRCC",
+        "LRRP",
+        "MRCC",
+        "MTPFAR",
+        "MTPMDN",
+        "MTPMND",
+        "NCCRC",
+        "NDSP",
+        "OUT",
+        "PREA",
+        "PROB",
+        "TRC",
+        "TRCC",
+        "TRN",
+        "YCC",
+    ],
+}
+
 POST_JULY_2017_CUSTODIAL_AUTHORITY_RAW_TEXT_TO_ENUM_MAP: Dict[
     str, StateCustodialAuthority
 ] = {
@@ -83,6 +128,29 @@ POST_JULY_2017_CUSTODIAL_AUTHORITY_RAW_TEXT_TO_ENUM_MAP: Dict[
     for custodial_authority, raw_text_values in POST_JULY_2017_CUSTODIAL_AUTHORITY_ENUM_MAP.items()
     for raw_text_value in raw_text_values
 }
+
+POST_JULY_2017_PFI_RAW_TEXT_TO_ENUM_MAP: Dict[
+    str, StateSpecializedPurposeForIncarceration
+] = {
+    raw_text_value: custodial_authority
+    for custodial_authority, raw_text_values in POST_JULY_2017_PFI_ENUM_MAP.items()
+    for raw_text_value in raw_text_values
+}
+
+
+def _datetime_str_is_before_2017_custodial_authority_cutoff(
+    datetime_str: str, enum_type_being_parsed: Type[EntityEnum]
+) -> bool:
+    comparison_date = parse_datetime(datetime_str)
+
+    if not comparison_date:
+        raise EnumParsingError(
+            enum_type_being_parsed,
+            "Unable to parse custodial authority without a valid date on the IP. "
+            f"Found: {datetime_str}.",
+        )
+
+    return comparison_date < datetime.datetime(year=2017, month=7, day=1)
 
 
 def custodial_authority_from_facility_and_dates(
@@ -93,17 +161,10 @@ def custodial_authority_from_facility_and_dates(
     if facility == OTHER_STATE_FACILITY:
         return StateCustodialAuthority.OTHER_STATE
 
-    comparison_date = parse_datetime(datetime_str_for_comparison)
-
-    if not comparison_date:
-        raise EnumParsingError(
-            StateCustodialAuthority,
-            "Unable to parse custodial authority without a valid date on the IP. "
-            f"Found: {datetime_str_for_comparison}.",
-        )
-
     # Everything except OOS (checked above) was overseen by DOCR before July 1, 2017.
-    if comparison_date < datetime.datetime(year=2017, month=7, day=1):
+    if _datetime_str_is_before_2017_custodial_authority_cutoff(
+        datetime_str_for_comparison, StateCustodialAuthority
+    ):
         return StateCustodialAuthority.STATE_PRISON
 
     if facility not in POST_JULY_2017_CUSTODIAL_AUTHORITY_RAW_TEXT_TO_ENUM_MAP:
@@ -114,3 +175,26 @@ def custodial_authority_from_facility_and_dates(
         )
 
     return POST_JULY_2017_CUSTODIAL_AUTHORITY_RAW_TEXT_TO_ENUM_MAP[facility]
+
+
+def pfi_from_facility_and_dates(
+    raw_text: str,
+) -> StateSpecializedPurposeForIncarceration:
+    facility, datetime_str_for_comparison = raw_text.split("-")
+
+    if facility == OTHER_STATE_FACILITY:
+        return StateSpecializedPurposeForIncarceration.INTERNAL_UNKNOWN
+
+    # There were no periods of temporary custody before July 1, 2017.
+    if _datetime_str_is_before_2017_custodial_authority_cutoff(
+        datetime_str_for_comparison, StateSpecializedPurposeForIncarceration
+    ):
+        return StateSpecializedPurposeForIncarceration.GENERAL
+
+    if facility not in POST_JULY_2017_PFI_RAW_TEXT_TO_ENUM_MAP:
+        raise EnumParsingError(
+            StateSpecializedPurposeForIncarceration,
+            "Found facility without a mapping to a pfi: " f"{facility}.",
+        )
+
+    return POST_JULY_2017_PFI_RAW_TEXT_TO_ENUM_MAP[facility]

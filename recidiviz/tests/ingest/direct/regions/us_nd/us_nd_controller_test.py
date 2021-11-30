@@ -57,6 +57,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
     StateIncarcerationPeriodStatus,
+    StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_person_alias import StatePersonAliasType
 from recidiviz.common.constants.state.state_program_assignment import (
@@ -2689,6 +2690,8 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             incarceration_type_raw_text="NDSP",
             custodial_authority=StateCustodialAuthority.STATE_PRISON,
             custodial_authority_raw_text="NDSP-2/28/2016 12:00:00 AM",
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            specialized_purpose_for_incarceration_raw_text="NDSP-2/28/2016 12:00:00 AM",
             admission_date=datetime.date(year=2016, month=2, day=28),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION,
             admission_reason_raw_text="OOS",
@@ -2708,6 +2711,8 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             incarceration_type_raw_text="CJ",
             custodial_authority=StateCustodialAuthority.STATE_PRISON,
             custodial_authority_raw_text="CJ-10/4/2016 12:00:00 AM",
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            specialized_purpose_for_incarceration_raw_text="CJ-10/4/2016 12:00:00 AM",
             admission_date=datetime.date(year=2016, month=10, day=4),
             admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
             admission_reason_raw_text="PV",
@@ -2740,6 +2745,8 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             incarceration_type_raw_text="NDSP",
             custodial_authority=StateCustodialAuthority.STATE_PRISON,
             custodial_authority_raw_text="NDSP-11/9/2018 12:00:00 AM",
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            specialized_purpose_for_incarceration_raw_text="NDSP-11/9/2018 12:00:00 AM",
             admission_date=datetime.date(year=2018, month=11, day=9),
             admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
             admission_reason_raw_text="PV",
@@ -2763,64 +2770,64 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             incarceration_sentence_105640_ips
         )
 
-        incarceration_period_105640_1 = (
-            entities.StateIncarcerationPeriod.new_with_defaults(
-                state_code=_STATE_CODE,
-                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                external_id="105640-1",
-                facility="NDSP",
-                incarceration_type=StateIncarcerationType.STATE_PRISON,
-                incarceration_type_raw_text="NDSP",
-                custodial_authority=StateCustodialAuthority.STATE_PRISON,
-                custodial_authority_raw_text="NDSP-1/1/2019 12:00:00 AM",
-                admission_date=datetime.date(year=2019, month=1, day=1),
-                admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-                admission_reason_raw_text="ADMN",
-                release_date=datetime.date(year=2019, month=2, day=1),
-                release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
-                release_reason_raw_text="INT",
-                incarceration_sentences=[incarceration_sentence_105640_ips],
-                person=incarceration_sentence_105640_ips.person,
-            )
+        incarceration_period_105640_1 = entities.StateIncarcerationPeriod.new_with_defaults(
+            state_code=_STATE_CODE,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            external_id="105640-1",
+            facility="NDSP",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            incarceration_type_raw_text="NDSP",
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+            custodial_authority_raw_text="NDSP-1/1/2019 12:00:00 AM",
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            specialized_purpose_for_incarceration_raw_text="NDSP-1/1/2019 12:00:00 AM",
+            admission_date=datetime.date(year=2019, month=1, day=1),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            admission_reason_raw_text="ADMN",
+            release_date=datetime.date(year=2019, month=2, day=1),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+            release_reason_raw_text="INT",
+            incarceration_sentences=[incarceration_sentence_105640_ips],
+            person=incarceration_sentence_105640_ips.person,
         )
 
-        incarceration_period_105640_2 = (
-            entities.StateIncarcerationPeriod.new_with_defaults(
-                state_code=_STATE_CODE,
-                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                external_id="105640-2",
-                facility="JRCC",
-                incarceration_type=StateIncarcerationType.STATE_PRISON,
-                incarceration_type_raw_text="JRCC",
-                custodial_authority=StateCustodialAuthority.STATE_PRISON,
-                custodial_authority_raw_text="JRCC-2/1/2019 12:00:00 AM",
-                admission_date=datetime.date(year=2019, month=2, day=1),
-                admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
-                admission_reason_raw_text="INT",
-                release_date=datetime.date(year=2019, month=3, day=1),
-                release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
-                release_reason_raw_text="HOSPS",
-                incarceration_sentences=[incarceration_sentence_105640_ips],
-                person=incarceration_sentence_105640_ips.person,
-            )
+        incarceration_period_105640_2 = entities.StateIncarcerationPeriod.new_with_defaults(
+            state_code=_STATE_CODE,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            external_id="105640-2",
+            facility="JRCC",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            incarceration_type_raw_text="JRCC",
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+            custodial_authority_raw_text="JRCC-2/1/2019 12:00:00 AM",
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            specialized_purpose_for_incarceration_raw_text="JRCC-2/1/2019 12:00:00 AM",
+            admission_date=datetime.date(year=2019, month=2, day=1),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            admission_reason_raw_text="INT",
+            release_date=datetime.date(year=2019, month=3, day=1),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+            release_reason_raw_text="HOSPS",
+            incarceration_sentences=[incarceration_sentence_105640_ips],
+            person=incarceration_sentence_105640_ips.person,
         )
 
-        incarceration_period_105640_3 = (
-            entities.StateIncarcerationPeriod.new_with_defaults(
-                state_code=_STATE_CODE,
-                status=StateIncarcerationPeriodStatus.IN_CUSTODY,
-                external_id="105640-3",
-                facility="JRCC",
-                incarceration_type=StateIncarcerationType.STATE_PRISON,
-                incarceration_type_raw_text="JRCC",
-                custodial_authority=StateCustodialAuthority.STATE_PRISON,
-                custodial_authority_raw_text="JRCC-4/1/2019 12:00:00 AM",
-                admission_date=datetime.date(year=2019, month=4, day=1),
-                admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
-                admission_reason_raw_text="HOSPS",
-                incarceration_sentences=[incarceration_sentence_105640_ips],
-                person=incarceration_sentence_105640_ips.person,
-            )
+        incarceration_period_105640_3 = entities.StateIncarcerationPeriod.new_with_defaults(
+            state_code=_STATE_CODE,
+            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+            external_id="105640-3",
+            facility="JRCC",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            incarceration_type_raw_text="JRCC",
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+            custodial_authority_raw_text="JRCC-4/1/2019 12:00:00 AM",
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            specialized_purpose_for_incarceration_raw_text="JRCC-4/1/2019 12:00:00 AM",
+            admission_date=datetime.date(year=2019, month=4, day=1),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            admission_reason_raw_text="HOSPS",
+            incarceration_sentences=[incarceration_sentence_105640_ips],
+            person=incarceration_sentence_105640_ips.person,
         )
 
         person_555555 = entities.StatePerson.new_with_defaults(state_code=_STATE_CODE)
@@ -2860,6 +2867,8 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             incarceration_type_raw_text="NTAD",
             custodial_authority=StateCustodialAuthority.EXTERNAL_UNKNOWN,
             custodial_authority_raw_text="NTAD-2/28/2018 12:00:00 AM",
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
+            specialized_purpose_for_incarceration_raw_text="NTAD-2/28/2018 12:00:00 AM",
             admission_date=datetime.date(year=2018, month=2, day=28),
             admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
             admission_reason_raw_text="PV",
@@ -2879,6 +2888,8 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             incarceration_type_raw_text="CJ",
             custodial_authority=StateCustodialAuthority.COURT,
             custodial_authority_raw_text="CJ-3/1/2018 12:00:00 AM",
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
+            specialized_purpose_for_incarceration_raw_text="CJ-3/1/2018 12:00:00 AM",
             admission_date=datetime.date(year=2018, month=3, day=1),
             admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
             admission_reason_raw_text="PV",
@@ -2889,22 +2900,22 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             person=incarceration_sentence_555555_ips.person,
         )
 
-        incarceration_period_555555_3 = (
-            entities.StateIncarcerationPeriod.new_with_defaults(
-                state_code=_STATE_CODE,
-                status=StateIncarcerationPeriodStatus.IN_CUSTODY,
-                external_id="555555-3",
-                facility="NDSP",
-                incarceration_type=StateIncarcerationType.STATE_PRISON,
-                incarceration_type_raw_text="NDSP",
-                custodial_authority=StateCustodialAuthority.STATE_PRISON,
-                custodial_authority_raw_text="NDSP-3/8/2018 12:00:00 AM",
-                admission_date=datetime.date(year=2018, month=3, day=8),
-                admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
-                admission_reason_raw_text="INT",
-                incarceration_sentences=[incarceration_sentence_555555_ips],
-                person=incarceration_sentence_555555_ips.person,
-            )
+        incarceration_period_555555_3 = entities.StateIncarcerationPeriod.new_with_defaults(
+            state_code=_STATE_CODE,
+            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+            external_id="555555-3",
+            facility="NDSP",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            incarceration_type_raw_text="NDSP",
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+            custodial_authority_raw_text="NDSP-3/8/2018 12:00:00 AM",
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            specialized_purpose_for_incarceration_raw_text="NDSP-3/8/2018 12:00:00 AM",
+            admission_date=datetime.date(year=2018, month=3, day=8),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            admission_reason_raw_text="INT",
+            incarceration_sentences=[incarceration_sentence_555555_ips],
+            person=incarceration_sentence_555555_ips.person,
         )
 
         expected_people.append(person_555555)
