@@ -34,7 +34,6 @@ from recidiviz.calculator.pipeline.utils.violation_response_utils import (
     responses_on_most_recent_response_date,
 )
 from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
-from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateSpecializedPurposeForIncarceration,
@@ -79,7 +78,6 @@ class UsPaIncarcerationPreProcessingDelegate(
 ):
     """US_PA implementation of the StateSpecificIncarcerationPreProcessingDelegate."""
 
-    # Functions with state-specific overrides
     def get_pfi_info_for_period_if_commitment_from_supervision(
         self,
         incarceration_period_list_index: int,
@@ -98,15 +96,6 @@ class UsPaIncarcerationPreProcessingDelegate(
         """The normalize_period_if_commitment_from_supervision_and_set_pfi_subtype
         function for US_PA relies on violation response entities."""
         return True
-
-    # Functions using default behavior
-    def admission_reasons_to_filter(
-        self,
-    ) -> Set[StateIncarcerationPeriodAdmissionReason]:
-        return self._default_admission_reasons_to_filter()
-
-    def incarceration_types_to_filter(self) -> Set[StateIncarcerationType]:
-        return self._default_incarceration_types_to_filter()
 
     def normalize_period_if_commitment_from_supervision(
         self,
@@ -136,28 +125,6 @@ class UsPaIncarcerationPreProcessingDelegate(
             )
 
         return incarceration_period
-
-    def period_is_parole_board_hold(
-        self,
-        incarceration_period_list_index: int,
-        sorted_incarceration_periods: List[StateIncarcerationPeriod],
-    ) -> bool:
-        return self._default_period_is_parole_board_hold(
-            incarceration_period_list_index, sorted_incarceration_periods
-        )
-
-    def period_is_non_board_hold_temporary_custody(
-        self,
-        incarceration_period_list_index: int,
-        sorted_incarceration_periods: List[StateIncarcerationPeriod],
-    ) -> bool:
-        return self._default_period_is_non_board_hold_temporary_custody(
-            incarceration_period_list_index,
-            sorted_incarceration_periods,
-        )
-
-    def pre_processing_relies_on_supervision_periods(self) -> bool:
-        return self._default_pre_processing_relies_on_supervision_periods()
 
 
 def _us_pa_get_pfi_info_for_incarceration_period(
