@@ -4,7 +4,7 @@ BASH_SOURCE_DIR=$(dirname "$BASH_SOURCE")
 source ${BASH_SOURCE_DIR}/../recidiviz/tools/script_base.sh
 
 echo "Setting up helperbot@recidiviz.com as git user"
-run_cmd git config user.email "helperbot@recidiviz.com"
+run_cmd git config user.email "helperbot@recidiviz.org"
 run_cmd git config user.name "Helper Bot"
 
 echo "Saving helperbot git credentials"
