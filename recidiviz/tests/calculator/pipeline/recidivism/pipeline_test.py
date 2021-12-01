@@ -51,7 +51,12 @@ from recidiviz.calculator.pipeline.recidivism.metrics import (
     ReincarcerationRecidivismRateMetric,
 )
 from recidiviz.calculator.pipeline.utils.beam_utils import RecidivizMetricWritableDict
-from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
+from recidiviz.calculator.pipeline.utils.person_utils import (
+    PERSON_EVENTS_KEY,
+    PERSON_METADATA_KEY,
+    ExtractPersonEventsMetadata,
+    PersonMetadata,
+)
 from recidiviz.common.constants.person_characteristics import (
     Ethnicity,
     Gender,
@@ -1085,8 +1090,8 @@ class TestProduceRecidivismMetrics(unittest.TestCase):
             (
                 self.fake_person_id,
                 {
-                    "person_events": person_release_events,
-                    "person_metadata": [self.person_metadata],
+                    PERSON_EVENTS_KEY: person_release_events,
+                    PERSON_METADATA_KEY: [self.person_metadata],
                 },
             )
         ]
@@ -1119,7 +1124,7 @@ class TestProduceRecidivismMetrics(unittest.TestCase):
         output = (
             test_pipeline
             | beam.Create(inputs)
-            | beam.ParDo(pipeline.ExtractPersonReleaseEventsMetadata())
+            | beam.ParDo(ExtractPersonEventsMetadata())
             | "Produce Metric Combinations"
             >> beam.ParDo(
                 ProduceMetrics(),
@@ -1157,8 +1162,8 @@ class TestProduceRecidivismMetrics(unittest.TestCase):
             (
                 self.fake_person_id,
                 {
-                    "person_events": person_release_events,
-                    "person_metadata": [self.person_metadata],
+                    PERSON_EVENTS_KEY: person_release_events,
+                    PERSON_METADATA_KEY: [self.person_metadata],
                 },
             )
         ]
@@ -1168,7 +1173,7 @@ class TestProduceRecidivismMetrics(unittest.TestCase):
         output = (
             test_pipeline
             | beam.Create(inputs)
-            | beam.ParDo(pipeline.ExtractPersonReleaseEventsMetadata())
+            | beam.ParDo(ExtractPersonEventsMetadata())
             | "Produce Metric Combinations"
             >> beam.ParDo(
                 ProduceMetrics(),
@@ -1191,7 +1196,7 @@ class TestProduceRecidivismMetrics(unittest.TestCase):
         output = (
             test_pipeline
             | beam.Create([])
-            | beam.ParDo(pipeline.ExtractPersonReleaseEventsMetadata())
+            | beam.ParDo(ExtractPersonEventsMetadata())
             | "Produce Metric Combinations"
             >> beam.ParDo(
                 ProduceMetrics(),

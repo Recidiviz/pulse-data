@@ -88,6 +88,15 @@ from recidiviz.calculator.pipeline.utils.violation_utils import (
     filter_violation_responses_for_violation_history,
     get_violation_and_response_history,
 )
+from recidiviz.calculator.query.state.views.reference.incarceration_period_judicial_district_association import (
+    INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME,
+)
+from recidiviz.calculator.query.state.views.reference.persons_to_recent_county_of_residence import (
+    PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME,
+)
+from recidiviz.calculator.query.state.views.reference.supervision_period_to_agent_association import (
+    SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME,
+)
 from recidiviz.common.constants.state.state_assessment import StateAssessmentClass
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
@@ -123,7 +132,27 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
     def find_events(
         self, _person: StatePerson, identifier_context: IdentifierContextT
     ) -> List[IncarcerationEvent]:
-        return self._find_incarceration_events(**identifier_context)
+        return self._find_incarceration_events(
+            incarceration_periods=identifier_context[StateIncarcerationPeriod.__name__],
+            incarceration_sentences=identifier_context[
+                StateIncarcerationSentence.__name__
+            ],
+            supervision_sentences=identifier_context[StateSupervisionSentence.__name__],
+            supervision_periods=identifier_context[StateSupervisionPeriod.__name__],
+            assessments=identifier_context[StateAssessment.__name__],
+            violation_responses=identifier_context[
+                StateSupervisionViolationResponse.__name__
+            ],
+            incarceration_period_judicial_district_association=identifier_context[
+                INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME
+            ],
+            persons_to_recent_county_of_residence=identifier_context[
+                PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME
+            ],
+            supervision_period_to_agent_association=identifier_context[
+                SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME
+            ],
+        )
 
     def _find_incarceration_events(
         self,

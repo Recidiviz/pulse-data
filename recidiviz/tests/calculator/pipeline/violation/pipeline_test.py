@@ -26,6 +26,8 @@ from apache_beam.testing.util import BeamAssertException, assert_that, equal_to
 
 from recidiviz.calculator.pipeline.base_pipeline import ClassifyEvents, ProduceMetrics
 from recidiviz.calculator.pipeline.utils.person_utils import (
+    PERSON_EVENTS_KEY,
+    PERSON_METADATA_KEY,
     ExtractPersonEventsMetadata,
     PersonMetadata,
 )
@@ -481,8 +483,8 @@ class TestProduceViolationMetrics(unittest.TestCase):
             (
                 self.fake_person_id,
                 {
-                    "person_events": [(fake_person, violation_events)],
-                    "person_metadata": [self.person_metadata],
+                    PERSON_EVENTS_KEY: [(fake_person, violation_events)],
+                    PERSON_METADATA_KEY: [self.person_metadata],
                 },
             )
         ]

@@ -27,7 +27,11 @@ from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.common.constants.person_characteristics import Ethnicity, Race
 from recidiviz.persistence.entity.state.entities import StatePerson
 
-# Race and ethnicity values that we do not track in the state_race_ethnicity_population_counts table
+PERSON_EVENTS_KEY = "PERSON_EVENTS"
+PERSON_METADATA_KEY = "PERSON_METADATA"
+
+# Race and ethnicity values that we do not track in the
+# state_race_ethnicity_population_counts table
 _NON_PRIORITIZED_RACES_OR_ETHNICITIES: List[Union[Race, Ethnicity]] = [
     Race.EXTERNAL_UNKNOWN,
     Ethnicity.EXTERNAL_UNKNOWN,
@@ -76,13 +80,7 @@ class BuildPersonMetadata(beam.DoFn):
         StatePerson."""
         _, hydrated_required_entities = element
 
-        # TODO(#2769): Update this to only accept StatePerson.__name__ as the key for
-        #  the list of StatePerson entities once all pipelines have been migrated to
-        #  v2 entity hydration
-        if "persons" in hydrated_required_entities:
-            person = one(list(hydrated_required_entities["persons"]))
-        else:
-            person = one(list(hydrated_required_entities[StatePerson.__name__]))
+        person = one(list(hydrated_required_entities[StatePerson.__name__]))
 
         person = cast(StatePerson, person)
 
@@ -107,18 +105,30 @@ class BuildPersonMetadata(beam.DoFn):
 
 
 class ExtractPersonEventsMetadata(beam.DoFn):
+    """Extracts the StatePerson, PersonMetadata, and list of pipeline-specific
+    events for use in the calculator step of the pipeline."""
+
     def process(
         self,
         element: Tuple[int, Dict[str, Iterable[Any]]],
         *_args: Tuple[Any, ...],
         **_kwargs: Dict[str, Any],
-    ) -> Iterable[Tuple[StatePerson, List[IdentifierEvent], PersonMetadata]]:
-        """Extracts the StatePerson, PersonMetadata, and list of pipeline-specific events for use in the calculator
-        step of the pipeline."""
+        # All pipeline identifier steps produce lists of IdentifierEvents, except for
+        # the recidivism pipeline, which produces a dictionary of ReleaseEvents
+        # indexed by the year of the release.
+    ) -> Iterable[
+        Tuple[
+            StatePerson,
+            Union[List[IdentifierEvent], Dict[int, IdentifierEvent]],
+            PersonMetadata,
+        ]
+    ]:
+        """Extracts the StatePerson, PersonMetadata, and list of pipeline-specific
+        events for use in the calculator step of the pipeline."""
         _, element_data = element
 
-        person_events = element_data.get("person_events")
-        person_metadata_group = element_data.get("person_metadata")
+        person_events = element_data.get(PERSON_EVENTS_KEY)
+        person_metadata_group = element_data.get(PERSON_METADATA_KEY)
 
         # If there isn't a person associated with this person_id_person, continue
         if person_events and person_metadata_group:
@@ -135,7 +145,8 @@ def build_person_metadata(
     person: StatePerson,
     state_race_ethnicity_population_counts: List[StateRaceEthnicityPopulationCounts],
 ) -> PersonMetadata:
-    """Loads a PersonMetadata object with information about the StatePerson that is necessary for the calculations."""
+    """Loads a PersonMetadata object with information about the StatePerson that is
+    necessary for the calculations."""
     prioritized_race_or_ethnicity = determine_prioritized_race_or_ethnicity(
         person, state_race_ethnicity_population_counts
     )
