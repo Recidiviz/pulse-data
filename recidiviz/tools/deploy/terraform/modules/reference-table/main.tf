@@ -33,7 +33,12 @@ resource "google_bigquery_job" "load" {
   # reloaded when the data changes.
   # Note: Whenever this resource is changed, the `vX` fragment below must be incremented
   # to ensure the new resource can be created without conflict.
-  job_id = "${var.table_name}_load_v1_${md5(google_storage_bucket_object.table_data.crc32c)}"
+  # There's an outstanding terraform issue where GCP deletes the BQ job history after 6
+  # months, causing terraform to assume that this version of the file hasn't been loaded
+  # into the table. Until this issue is resolved we are required to update the `vX`
+  # fragment below on a 6-month cadence.
+  # Issue: https://github.com/hashicorp/terraform-provider-google/issues/9768)
+  job_id = "${var.table_name}_load_v2_${md5(google_storage_bucket_object.table_data.crc32c)}"
 
   load {
     source_uris = [
