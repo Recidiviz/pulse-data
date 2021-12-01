@@ -19,11 +19,15 @@
 """Tests for supervision_period_utils.py."""
 import unittest
 from datetime import date
-from typing import Optional
+from typing import List, Optional
 
 import attr
+from dateutil.relativedelta import relativedelta
 
 from recidiviz.calculator.pipeline.supervision.events import SupervisionPopulationEvent
+from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index import (
+    PreProcessedSupervisionPeriodIndex,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_delegate import (
     UsIdSupervisionDelegate,
 )
@@ -37,16 +41,22 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_supervision_del
     UsPaSupervisionDelegate,
 )
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
+    get_post_incarceration_supervision_type,
     identify_most_severe_case_type,
     supervising_officer_and_location_info,
     supervision_period_is_out_of_state,
 )
 from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateIncarcerationPeriodReleaseReason,
+    StateIncarcerationPeriodStatus,
+)
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
 )
 from recidiviz.persistence.entity.state.entities import (
+    StateIncarcerationPeriod,
     StateSupervisionCaseTypeEntry,
     StateSupervisionPeriod,
 )
@@ -423,4 +433,140 @@ class TestSupervisionPeriodIsOutOfState(unittest.TestCase):
             supervising_district_external_id="TEST",
             custodial_authority=custodial_authority,
             projected_end_date=None,
+        )
+
+
+class TestGetPostIncarcerationSupervisionType(unittest.TestCase):
+    """Tests the get_post_incarceration_supervision_type function."""
+
+    def setUp(self) -> None:
+        self.admission_date = date(2020, 1, 3)
+        self.release_date = date(2020, 1, 31)
+        self.incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1,
+            state_code="US_XX",
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=self.admission_date,
+            release_date=self.release_date,
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+        )
+        self.supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=1,
+            state_code="US_XX",
+            start_date=self.release_date,
+            termination_date=date(2020, 4, 1),
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+        )
+        self.supervision_period_index = PreProcessedSupervisionPeriodIndex(
+            supervision_periods=[self.supervision_period]
+        )
+        self.supervision_delegate = UsXxSupervisionDelegate()
+
+    def test_get_post_incarceration_supervision_type(self) -> None:
+        self.assertEqual(
+            StateSupervisionPeriodSupervisionType.PAROLE,
+            get_post_incarceration_supervision_type(
+                self.incarceration_period,
+                self.supervision_period_index,
+                self.supervision_delegate,
+            ),
+        )
+
+    def test_get_post_incarceration_supervision_type_no_release_date(self) -> None:
+        no_release_date_period = attr.evolve(
+            self.incarceration_period, release_date=None, release_reason=None
+        )
+        with self.assertRaises(ValueError):
+            _ = get_post_incarceration_supervision_type(
+                no_release_date_period,
+                self.supervision_period_index,
+                self.supervision_delegate,
+            )
+
+    def test_get_post_incarceration_supervision_type_supervision_period_too_far_out(
+        self,
+    ) -> None:
+        supervision_period_far_out = attr.evolve(
+            self.supervision_period,
+            start_date=self.release_date + relativedelta(days=40),
+        )
+        self.assertIsNone(
+            get_post_incarceration_supervision_type(
+                self.incarceration_period,
+                PreProcessedSupervisionPeriodIndex(
+                    supervision_periods=[supervision_period_far_out]
+                ),
+                self.supervision_delegate,
+            )
+        )
+
+    def test_get_post_incarceration_supervision_type_sorting_criteria_proximity_to_release_date(
+        self,
+    ) -> None:
+        second_supervision_period = attr.evolve(
+            self.supervision_period,
+            start_date=self.release_date + relativedelta(days=40),
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+        )
+        self.assertEqual(
+            StateSupervisionPeriodSupervisionType.PAROLE,
+            get_post_incarceration_supervision_type(
+                self.incarceration_period,
+                PreProcessedSupervisionPeriodIndex(
+                    supervision_periods=[
+                        self.supervision_period,
+                        second_supervision_period,
+                    ]
+                ),
+                self.supervision_delegate,
+            ),
+        )
+
+    class TestSupervisionDelegate(UsXxSupervisionDelegate):
+        def get_incarceration_period_supervision_type_at_release(
+            self, incarceration_period: StateIncarcerationPeriod
+        ) -> Optional[StateSupervisionPeriodSupervisionType]:
+            return StateSupervisionPeriodSupervisionType.COMMUNITY_CONFINEMENT
+
+    def test_get_post_incarceration_supervision_type_sorting_criteria_delegate(
+        self,
+    ) -> None:
+        second_supervision_period = attr.evolve(
+            self.supervision_period,
+            supervision_type=StateSupervisionPeriodSupervisionType.COMMUNITY_CONFINEMENT,
+        )
+        self.assertEqual(
+            StateSupervisionPeriodSupervisionType.COMMUNITY_CONFINEMENT,
+            get_post_incarceration_supervision_type(
+                self.incarceration_period,
+                PreProcessedSupervisionPeriodIndex(
+                    supervision_periods=[
+                        self.supervision_period,
+                        second_supervision_period,
+                    ]
+                ),
+                self.TestSupervisionDelegate(),
+            ),
+        )
+
+    def test_get_post_incarceration_supervision_type_sorting_criteria_duration(
+        self,
+    ) -> None:
+        second_supervision_period = attr.evolve(
+            self.supervision_period,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            termination_date=date(2020, 6, 1),
+        )
+        self.assertEqual(
+            StateSupervisionPeriodSupervisionType.PROBATION,
+            get_post_incarceration_supervision_type(
+                self.incarceration_period,
+                PreProcessedSupervisionPeriodIndex(
+                    supervision_periods=[
+                        self.supervision_period,
+                        second_supervision_period,
+                    ]
+                ),
+                self.supervision_delegate,
+            ),
         )

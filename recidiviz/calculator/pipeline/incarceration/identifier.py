@@ -55,7 +55,6 @@ from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index 
     PreProcessedSupervisionPeriodIndex,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
-    get_post_incarceration_supervision_type,
     get_state_specific_commitment_from_supervision_delegate,
     get_state_specific_incarceration_delegate,
     get_state_specific_supervision_delegate,
@@ -75,6 +74,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_specific_violations_d
 )
 from recidiviz.calculator.pipeline.utils.supervision_period_pre_processing_manager import (
     SupervisionPreProcessingManager,
+)
+from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
+    get_post_incarceration_supervision_type,
 )
 from recidiviz.calculator.pipeline.utils.violation_response_utils import (
     get_most_severe_response_decision,
@@ -171,6 +173,9 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
         state_specific_incarceration_delegate = (
             get_state_specific_incarceration_delegate(state_code)
         )
+        state_specific_supervision_delegate = get_state_specific_supervision_delegate(
+            state_code
+        )
 
         # Convert the list of dictionaries into one dictionary where the keys are the
         # incarceration_period_id values
@@ -223,6 +228,7 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
             supervision_period_to_agent_associations=supervision_period_to_agent_associations,
             county_of_residence=county_of_residence,
             incarceration_delegate=state_specific_incarceration_delegate,
+            supervision_delegate=state_specific_supervision_delegate,
         )
 
         incarceration_events.extend(release_events)
@@ -248,6 +254,7 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
         sorted_violation_responses: List[StateSupervisionViolationResponse],
         supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
         incarceration_delegate: StateSpecificIncarcerationDelegate,
+        supervision_delegate: StateSpecificSupervisionDelegate,
         county_of_residence: Optional[str],
     ) -> Tuple[
         List[Union[IncarcerationAdmissionEvent, IncarcerationReleaseEvent]],
@@ -308,11 +315,11 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
             incarceration_period
         ) in incarceration_period_index_for_releases.incarceration_periods:
             release_event = self._release_event_for_period(
-                incarceration_sentences=incarceration_sentences,
-                supervision_sentences=supervision_sentences,
                 incarceration_period=incarceration_period,
                 incarceration_period_index=incarceration_period_index_for_releases,
+                supervision_period_index=supervision_period_index,
                 incarceration_delegate=incarceration_delegate,
+                supervision_delegate=supervision_delegate,
                 commitments_from_supervision=commitments_from_supervision,
                 county_of_residence=county_of_residence,
             )
@@ -686,11 +693,11 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
 
     def _release_event_for_period(
         self,
-        incarceration_sentences: List[StateIncarcerationSentence],
-        supervision_sentences: List[StateSupervisionSentence],
         incarceration_period: StateIncarcerationPeriod,
         incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
+        supervision_period_index: PreProcessedSupervisionPeriodIndex,
         incarceration_delegate: StateSpecificIncarcerationDelegate,
+        supervision_delegate: StateSpecificSupervisionDelegate,
         commitments_from_supervision: Dict[
             date, IncarcerationCommitmentFromSupervisionAdmissionEvent
         ],
@@ -725,7 +732,7 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
             supervision_type_at_release: Optional[
                 StateSupervisionPeriodSupervisionType
             ] = get_post_incarceration_supervision_type(
-                incarceration_sentences, supervision_sentences, incarceration_period
+                incarceration_period, supervision_period_index, supervision_delegate
             )
 
             total_days_incarcerated: Optional[int] = None

@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2020 Recidiviz, Inc.
+# Copyright (C) 2021 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,12 +14,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for us_nd_supervision_utils.py"""
+"""Tests for the us_nd_supervision_delegate.py file"""
 import unittest
 from datetime import date
+from typing import List
 
-from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_utils import (
-    us_nd_get_post_incarceration_supervision_type,
+from parameterized import parameterized
+
+from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_delegate import (
+    UsNdSupervisionDelegate,
 )
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
@@ -33,38 +36,32 @@ from recidiviz.common.constants.state.state_supervision_period import (
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 
 
-class TestUsNdPostIncarcerationSupervisionTypeIdentification(unittest.TestCase):
-    """Tests the us_nd_get_post_incarceration_supervision_type function."""
+class TestUsNdSupervisionDelegate(unittest.TestCase):
+    """Unit tests for UsNdSupervisionDelegate"""
 
-    def test_us_nd_get_post_incarceration_supervision_type_parole(self) -> None:
-        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=1112,
-            external_id="2",
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code="US_ND",
-            facility="PRISON",
-            admission_date=date(2008, 12, 20),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
-            admission_reason_raw_text="Revocation",
-            release_date=date(2008, 12, 21),
-            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
-        )
+    def setUp(self) -> None:
+        self.supervision_delegate = UsNdSupervisionDelegate()
 
-        parole_raw_text_values = ["RPAR", "PARL", "PV"]
-
-        for value in parole_raw_text_values:
-            incarceration_period.release_reason_raw_text = value
-            supervision_type_at_release = us_nd_get_post_incarceration_supervision_type(
-                incarceration_period
-            )
-
-            self.assertEqual(
+    @parameterized.expand(
+        [
+            (
+                "parole_types",
+                ["RPAR", "PARL", "PV"],
                 StateSupervisionPeriodSupervisionType.PAROLE,
-                supervision_type_at_release,
-            )
-
-    def test_us_nd_get_post_incarceration_supervision_type_probation(self) -> None:
+            ),
+            (
+                "probation_types",
+                ["RPRB", "PRB"],
+                StateSupervisionPeriodSupervisionType.PROBATION,
+            ),
+        ]
+    )
+    def test_get_incarceration_period_supervision_type_at_release(
+        self,
+        _name: str,
+        raw_text_values: List[str],
+        expected_supervision_type: StateSupervisionPeriodSupervisionType,
+    ) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1112,
             external_id="2",
@@ -79,20 +76,20 @@ class TestUsNdPostIncarcerationSupervisionTypeIdentification(unittest.TestCase):
             release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
         )
 
-        parole_raw_text_values = ["RPRB", "NPROB", "NPRB", "PRB"]
-
-        for value in parole_raw_text_values:
+        for value in raw_text_values:
             incarceration_period.release_reason_raw_text = value
-            supervision_type_at_release = us_nd_get_post_incarceration_supervision_type(
+            supervision_type_at_release = self.supervision_delegate.get_incarceration_period_supervision_type_at_release(
                 incarceration_period
             )
 
             self.assertEqual(
-                StateSupervisionPeriodSupervisionType.PROBATION,
+                expected_supervision_type,
                 supervision_type_at_release,
             )
 
-    def test_us_nd_get_post_incarceration_supervision_type_no_supervision(self) -> None:
+    def test_get_incarceration_period_supervision_type_at_release_no_supervision(
+        self,
+    ) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1112,
             external_id="2",
@@ -108,13 +105,13 @@ class TestUsNdPostIncarcerationSupervisionTypeIdentification(unittest.TestCase):
             release_reason_raw_text="X",
         )
 
-        supervision_type_at_release = us_nd_get_post_incarceration_supervision_type(
+        supervision_type_at_release = self.supervision_delegate.get_incarceration_period_supervision_type_at_release(
             incarceration_period
         )
 
         self.assertIsNone(supervision_type_at_release)
 
-    def test_us_nd_get_post_incarceration_supervision_type_unexpected_raw_text(
+    def test_get_incarceration_period_supervision_type_at_release_unexpected_raw_text(
         self,
     ) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -133,4 +130,6 @@ class TestUsNdPostIncarcerationSupervisionTypeIdentification(unittest.TestCase):
         )
 
         with self.assertRaises(ValueError):
-            _ = us_nd_get_post_incarceration_supervision_type(incarceration_period)
+            _ = self.supervision_delegate.get_incarceration_period_supervision_type_at_release(
+                incarceration_period
+            )
