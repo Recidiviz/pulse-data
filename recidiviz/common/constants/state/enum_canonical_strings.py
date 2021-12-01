@@ -125,11 +125,6 @@ state_incarceration_period_admission_reason_admitted_from_supervision = (
     "ADMITTED_FROM_SUPERVISION"
 )
 state_incarceration_period_admission_reason_new_admission = "NEW_ADMISSION"
-state_incarceration_period_admission_reason_parole_revocation = "PAROLE_REVOCATION"
-state_incarceration_period_admission_reason_probation_revocation = (
-    "PROBATION_REVOCATION"
-)
-state_incarceration_period_admission_reason_dual_revocation = "DUAL_REVOCATION"
 state_incarceration_period_admission_reason_revocation = "REVOCATION"
 state_incarceration_period_admission_reason_return_from_court = "RETURN_FROM_COURT"
 state_incarceration_period_admission_reason_return_from_erroneous_release = (

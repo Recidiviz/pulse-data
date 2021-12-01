@@ -163,9 +163,6 @@ def period_is_commitment_from_supervision_admission_from_parole_board_hold(
         # Valid commitment from supervision admission reasons following a parole board
         # hold
         in (
-            # TODO(#9865): Delete `DUAL_REVOCATION` and `PAROLE_REVOCATION` once collapsed to `REVOCATION`.
-            StateIncarcerationPeriodAdmissionReason.DUAL_REVOCATION,
-            StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
             StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
             StateIncarcerationPeriodAdmissionReason.REVOCATION,
         )

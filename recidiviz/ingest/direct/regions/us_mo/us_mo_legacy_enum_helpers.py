@@ -873,7 +873,7 @@ def rank_incarceration_period_admission_reason_status_str(
         or status_str in PROBATION_REVOCATION_RETURN_STATUSES
         or status_str in LEGACY_PROBATION_REENTRY_STATUS_CODES
     ):
-        # These are the main PROBATION_REVOCATION / PAROLE_REVOCATION revocation statuses
+        # These are the main probation and parole revocation statuses
         return 0
 
     if (

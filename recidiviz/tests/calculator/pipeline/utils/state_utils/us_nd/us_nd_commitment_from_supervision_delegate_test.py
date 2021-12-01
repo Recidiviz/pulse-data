@@ -157,7 +157,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         self,
     ) -> None:
         """Tests that we prioritize the overlapping parole period over the one that
-        was recently terminated because the admission is a PAROLE_REVOCATION."""
+        was recently terminated because the admission reason raw text is associated with a parole revocation."""
         admission_date = date(2019, 5, 25)
         admission_reason = StateIncarcerationPeriodAdmissionReason.REVOCATION
         admission_reason_raw_text = "PV"
@@ -331,7 +331,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         self,
     ) -> None:
         """Tests that we prioritize the recently terminated probation period over the
-        one that is overlapping because the admission is a PROBATION_REVOCATION."""
+        one that is overlapping because the admission raw text is associated with a probation revocation."""
         admission_date = date(2019, 5, 25)
         admission_reason = StateIncarcerationPeriodAdmissionReason.REVOCATION
         admission_reason_raw_text = "NPROB"

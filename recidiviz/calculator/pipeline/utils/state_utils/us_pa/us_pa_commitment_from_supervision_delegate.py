@@ -52,8 +52,7 @@ class UsPaCommitmentFromSupervisionDelegate(
         """Determines the supervision type associated with the commitment from
         supervision.
 
-        If the admission_reason is either PAROLE_REVOCATION or PROBATION_REVOCATION,
-        uses the default mapping to supervision types.
+        If the admission_reason is REVOCATION, then infers that the person is coming from parole.
 
         If the admission_reason is SANCTION_ADMISSION, then infers that the person is
         coming from parole.

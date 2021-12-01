@@ -59,7 +59,7 @@ class IngestInfoProtoEnumMapperTest(unittest.TestCase):
         }
 
         proto = StateIncarcerationPeriod(
-            admission_reason="PAROLE_REVOCATION",
+            admission_reason="REVOCATION",
             projected_release_reason="CONDITIONAL_RELEASE",
             release_reason="SERVED",
         )

@@ -159,7 +159,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             state_code="US_XX",
             admission_date=date(2018, 5, 25),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
         )
 
@@ -203,7 +203,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             state_code="US_ND",
             admission_date=date(2018, 5, 25),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
@@ -240,7 +240,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             state_code="US_XX",
             admission_date=date(2018, 5, 25),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
