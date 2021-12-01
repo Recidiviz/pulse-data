@@ -1,4 +1,5 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# TODO(#10073): Delete this mapping
 manifest_language: 1.0.0
 input_columns:
   - recidiviz_primary_person_id
