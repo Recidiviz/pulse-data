@@ -223,13 +223,11 @@ class IncarcerationCommitmentFromSupervisionMetric(
         return """
 The `IncarcerationCommitmentFromSupervisionMetric` stores information about all admissions to incarceration that qualify as a commitment from supervision. A commitment from supervision is when an individual that is on supervision is admitted to prison in response to a mandate from either the court or the parole board. This includes an admission to prison from supervision for any of the following reasons:
 
-- Revocation of probation by the court to serve a full sentence in prison (`PROBATION_REVOCATION`)
-- Revocation of parole by the parole board to serve the remainder of one’s sentence in prison (`PAROLE_REVOCATION`)
-- Revocation of both probation and parole to serve a full sentence (or, sentences) in prison (`DUAL_REVOCATION`)
+- Revocation of any kind (ex: probation, parole, community corrections, dual, etc) to serve a full/remainder of a sentence in prison (`REVOCATION`)
 - Treatment mandated by either the court or the parole board (`SANCTION_ADMISSION`)
 - Shock incarceration mandated by either the court or the parole board (`SANCTION_ADMISSION`)
 
-Admissions to temporary parole board holds are not considered commitments from supervision admissions. If a person enters a parole board hold and then has their parole revoked by the parole board, then there will be a `IncarcerationCommitmentFromSupervisionMetric` for a `PAROLE_REVOCATION` on the date of the revocation.
+Admissions to temporary parole board holds are not considered commitments from supervision admissions. If a person enters a parole board hold and then has their parole revoked by the parole board, then there will be a `IncarcerationCommitmentFromSupervisionMetric` for a `REVOCATION` on the date of the revocation.
 
 With this metric, we can answer questions like:
 
@@ -239,7 +237,7 @@ With this metric, we can answer questions like:
 
 This metric is a subset of the `IncarcerationAdmissionMetric`. This means that every admission in the `IncarcerationAdmissionMetric` output that qualifies as a commitment from supervision admission has a corresponding entry in the `IncarcerationCommitmentFromSupervisionMetrics`. This metric is used to track information about the supervision that preceded the admission to incarceration, as well as other information related to the type of commitment from supervision the admission represents. 
 
-If a person was admitted to Facility X on 2021-01-01 for a `PROBATION_REVOCATION`, then there will be an `IncarcerationAdmissionMetric` for this person on 2021-01-01 into Facility X and an associated `IncarcerationCommitmentFromSupervisionMetric` for this person on 2021-01-01 that stores all of the supervision information related to this commitment from supervision admission. If a person enters a parole board hold in Facility X on 2021-01-01, and then has their parole revoked by the parole board on 2021-02-13, then there will be an `IncarcerationAdmissionMetric` for the admission to the `PAROLE_BOARD_HOLD` in Facility X on 2021-01-01, another `IncarcerationAdmissionMetric` for the `PAROLE_REVOCATION` admission to Facility X on 2021-02-13, and an associated `IncarcerationCommitmentFromSupervisionMetric` for the `PAROLE_REVOCATION` on 2021-02-13 that stores all of the supervision information related to this commitment from supervision admission.
+If a person was admitted to Facility X on 2021-01-01 for a `REVOCATION` from parole, then there will be an `IncarcerationAdmissionMetric` for this person on 2021-01-01 into Facility X and an associated `IncarcerationCommitmentFromSupervisionMetric` for this person on 2021-01-01 that stores all of the supervision information related to this commitment from supervision admission. If a person enters a parole board hold in Facility X on 2021-01-01, and then has their parole revoked by the parole board on 2021-02-13, then there will be an `IncarcerationAdmissionMetric` for the admission to the `PAROLE_BOARD_HOLD` in Facility X on 2021-01-01, another `IncarcerationAdmissionMetric` for the `REVOCATION` admission to Facility X on 2021-02-13, and an associated `IncarcerationCommitmentFromSupervisionMetric` for the `REVOCATION` on 2021-02-13 that stores all of the supervision information related to this commitment from supervision admission. The `supervision_type` for all of these metrics would be `PAROLE`.
 """
 
     # The type of IncarcerationMetric

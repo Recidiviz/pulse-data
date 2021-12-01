@@ -113,7 +113,7 @@ def _us_nd_normalize_period_if_commitment_from_supervision(
     """Returns an updated version of the specified incarceration period if it is a
     commitment from supervision admission.
 
-    Updates the admission_reason to be a PROBATION_REVOCATION or a PAROLE_REVOCATION
+    Updates the admission_reason_raw_text with a probation or parole specific identifier prefix
     for the following scenarios:
         - The person was admitted to a state prison due to a NEW_ADMISSION (not a period
       of TEMPORARY_CUSTODY in a county jail) and was previously in a PAROLE or

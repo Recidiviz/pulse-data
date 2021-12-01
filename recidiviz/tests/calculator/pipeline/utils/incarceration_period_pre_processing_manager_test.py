@@ -3476,7 +3476,7 @@ class TestIsZeroDayErroneousPeriod(unittest.TestCase):
             external_id="1",
             state_code=state_code,
             admission_date=date(2008, 11, 20),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
             release_date=date(2008, 11, 20),
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )

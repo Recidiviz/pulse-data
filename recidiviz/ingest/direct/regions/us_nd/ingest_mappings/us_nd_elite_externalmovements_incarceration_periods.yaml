@@ -128,10 +128,11 @@ output:
                               - ADMN
                               - RAB
                               - DEF
-                            StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION:
+                            StateIncarcerationPeriodAdmissionReason.REVOCATION:
+                              # Parole revocations
                               - PARL
                               - PV
-                            StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION:
+                              # Probation revocations
                               - NPRB
                               - NPROB
                               - PRB

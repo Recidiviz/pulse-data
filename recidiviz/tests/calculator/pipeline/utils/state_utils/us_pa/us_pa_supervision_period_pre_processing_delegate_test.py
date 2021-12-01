@@ -146,14 +146,16 @@ class TestUsPaSupervisionPreProcessingDelegate(unittest.TestCase):
             supervision_site="XXX",
             supervision_level=StateSupervisionLevel.MEDIUM,
         )
-        incarceration_period_post_absconsion = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=1,
-            state_code=StateCode.US_PA.value,
-            admission_date=date(2010, 3, 15),
-            release_date=date(2010, 4, 30),
-            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
-            release_reason=StateIncarcerationPeriodReleaseReason.TEMPORARY_RELEASE,
+        incarceration_period_post_absconsion = (
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=1,
+                state_code=StateCode.US_PA.value,
+                admission_date=date(2010, 3, 15),
+                release_date=date(2010, 4, 30),
+                status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
+                release_reason=StateIncarcerationPeriodReleaseReason.TEMPORARY_RELEASE,
+            )
         )
         inferred_periods = self.delegate.infer_additional_periods(
             [supervision_period_absconsion], [incarceration_period_post_absconsion]
@@ -199,14 +201,16 @@ class TestUsPaSupervisionPreProcessingDelegate(unittest.TestCase):
             supervision_site="XXX",
             supervision_level=StateSupervisionLevel.MEDIUM,
         )
-        incarceration_period_post_absconsion = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=1,
-            state_code=StateCode.US_PA.value,
-            admission_date=date(2010, 3, 16),
-            release_date=date(2010, 4, 30),
-            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
-            release_reason=StateIncarcerationPeriodReleaseReason.TEMPORARY_RELEASE,
+        incarceration_period_post_absconsion = (
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=1,
+                state_code=StateCode.US_PA.value,
+                admission_date=date(2010, 3, 16),
+                release_date=date(2010, 4, 30),
+                status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
+                release_reason=StateIncarcerationPeriodReleaseReason.TEMPORARY_RELEASE,
+            )
         )
         inferred_periods = self.delegate.infer_additional_periods(
             [supervision_period_absconsion, supervision_period_post_absconsion],

@@ -105,7 +105,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
             supervision_period_set,
             self._test_us_id_pre_commitment_supervision_period(
                 admission_date=date(2017, 5, 11),
-                admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
                 supervision_periods=supervision_periods,
             ),
         )
@@ -137,7 +137,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
             supervision_period_set,
             self._test_us_id_pre_commitment_supervision_period(
                 admission_date=date(2017, 5, 11),
-                admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
                 supervision_periods=supervision_periods,
             ),
         )

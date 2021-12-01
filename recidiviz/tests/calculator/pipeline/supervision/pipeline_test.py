@@ -703,7 +703,7 @@ class TestSupervisionPipeline(unittest.TestCase):
             county_code="124",
             facility="San Quentin",
             facility_security_level=StateIncarcerationFacilitySecurityLevel.MAXIMUM,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
             projected_release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
             admission_date=date(2017, 1, 4),
             person_id=fake_person_id,

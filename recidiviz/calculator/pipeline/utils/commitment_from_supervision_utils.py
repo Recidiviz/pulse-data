@@ -209,9 +209,6 @@ def period_is_commitment_from_supervision_admission_from_parole_board_hold(
         # Valid commitment from supervision admission reasons following a parole board
         # hold
         in (
-            # TODO(#9865): Delete `DUAL_REVOCATION` and `PAROLE_REVOCATION` once collapsed to `REVOCATION`.
-            StateIncarcerationPeriodAdmissionReason.DUAL_REVOCATION,
-            StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
             StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
             StateIncarcerationPeriodAdmissionReason.REVOCATION,
         )
@@ -231,8 +228,8 @@ def _filter_to_matching_supervision_types(
 ) -> List[StateSupervisionPeriod]:
     """Filters the given |supervision_periods| to ony the ones that have a
     supervision type that matches the supervision type implied in the
-    |admission_reason| (for example, filtering to only PAROLE periods if the
-    |admission_reason| is a PAROLE_REVOCATION)."""
+    |admission_reason| or |admission_reason_raw_text| (for example, filtering to only PAROLE periods if the
+    |admission_reason_raw_text| is associated with a parole revocation)."""
     supervision_types_to_match: List[StateSupervisionPeriodSupervisionType]
 
     if (

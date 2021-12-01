@@ -795,7 +795,7 @@ class UsMeIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
         )
         self.assertEqual(
             parse_admission_reason(admission_reason_raw_text),
-            StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+            StateIncarcerationPeriodAdmissionReason.REVOCATION,
         )
 
         admission_reason_raw_text = self._build_admission_reason_raw_text(
@@ -803,7 +803,7 @@ class UsMeIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
         )
         self.assertEqual(
             parse_admission_reason(admission_reason_raw_text),
-            StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+            StateIncarcerationPeriodAdmissionReason.REVOCATION,
         )
 
     def test_parse_admission_reason_parole_revocation(self) -> None:
@@ -812,7 +812,7 @@ class UsMeIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
         )
         self.assertEqual(
             parse_admission_reason(admission_reason_raw_text),
-            StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            StateIncarcerationPeriodAdmissionReason.REVOCATION,
         )
 
     def test_parse_admission_reason_transfer(self) -> None:
