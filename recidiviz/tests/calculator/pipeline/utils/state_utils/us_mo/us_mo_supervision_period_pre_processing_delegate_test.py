@@ -99,7 +99,6 @@ class TestUsMoSupervisionPeriodPreProcessingDelegate(unittest.TestCase):
                 completion_date=date(2020, 10, 1),
                 external_id="ss1",
                 status=StateSentenceStatus.COMPLETED,
-                supervision_periods=[supervision_period],
                 supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
             ),
             supervision_type_spans=[
@@ -207,7 +206,6 @@ class TestUsMoSupervisionPeriodPreProcessingDelegate(unittest.TestCase):
                 completion_date=date(2020, 10, 1),
                 external_id="ss1",
                 status=StateSentenceStatus.COMPLETED,
-                supervision_periods=[],
                 supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
             ),
             supervision_type_spans=[
@@ -326,7 +324,6 @@ class TestUsMoSupervisionPeriodPreProcessingDelegate(unittest.TestCase):
                 completion_date=date(2020, 10, 1),
                 external_id="ss1",
                 status=StateSentenceStatus.COMPLETED,
-                supervision_periods=[supervision_period],
                 supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
             ),
             supervision_type_spans=[
