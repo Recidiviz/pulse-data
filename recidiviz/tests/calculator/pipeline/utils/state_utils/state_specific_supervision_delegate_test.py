@@ -22,8 +22,21 @@ from typing import Optional
 from parameterized import parameterized
 
 from recidiviz.calculator.pipeline.supervision.events import SupervisionPopulationEvent
+from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
+from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionLevel,
     StateSupervisionPeriodSupervisionType,
+    StateSupervisionPeriodTerminationReason,
+)
+from recidiviz.common.constants.state.state_supervision_sentence import (
+    StateSupervisionSentenceSupervisionType,
+)
+from recidiviz.persistence.entity.state.entities import (
+    StateIncarcerationSentence,
+    StateSupervisionCaseTypeEntry,
+    StateSupervisionPeriod,
+    StateSupervisionSentence,
 )
 from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_supervision_delegate import (
     UsXxSupervisionDelegate,
@@ -93,4 +106,222 @@ class TestStateSpecificSupervisionDelegate(unittest.TestCase):
                 assessment_level=None,
             ),
             bucket,
+        )
+
+    def test_get_projected_completion_date_supervision_period_not_in_sentence(
+        self,
+    ) -> None:
+        """The supervision periods extends past the supervision sentence projected
+        completion date, but is not associated with the supervision sentence. However,
+        it should still be considered past the completion date,"""
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            case_type_entries=[
+                StateSupervisionCaseTypeEntry.new_with_defaults(
+                    state_code="US_XX",
+                    case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
+                )
+            ],
+            state_code="US_XX",
+            start_date=date(2018, 5, 1),
+            # Termination date is after sentence's projected completion date
+            termination_date=date(2018, 5, 15),
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_level=StateSupervisionLevel.MEDIUM,
+            supervision_level_raw_text="M",
+        )
+
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
+            supervision_sentence_id=111,
+            start_date=date(2018, 5, 1),
+            external_id="ss1",
+            state_code="US_XX",
+            status=StateSentenceStatus.COMPLETED,
+            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
+            projected_completion_date=date(2018, 5, 10),
+            supervision_periods=[],
+        )
+
+        self.assertEqual(
+            self.supervision_delegate.get_projected_completion_date(
+                supervision_period=supervision_period,
+                supervision_sentences=[supervision_sentence],
+                incarceration_sentences=[],
+            ),
+            supervision_sentence.projected_completion_date,
+        )
+
+    def test_get_projected_completion_date_no_supervision_sentence(self) -> None:
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            case_type_entries=[
+                StateSupervisionCaseTypeEntry.new_with_defaults(
+                    state_code="US_XX",
+                    case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
+                )
+            ],
+            state_code="US_XX",
+            start_date=date(2018, 5, 1),
+            termination_date=date(2018, 5, 15),
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_level=StateSupervisionLevel.MEDIUM,
+            supervision_level_raw_text="M",
+        )
+
+        self.assertIsNone(
+            self.supervision_delegate.get_projected_completion_date(
+                supervision_period=supervision_period,
+                supervision_sentences=[],
+                incarceration_sentences=[],
+            )
+        )
+
+    def test_get_projected_completion_date_supervision_period_in_supervision_sentence(
+        self,
+    ) -> None:
+        """The supervision periods extends past the supervision sentence projected
+        completion date, and is associated with the supervision sentence."""
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            case_type_entries=[
+                StateSupervisionCaseTypeEntry.new_with_defaults(
+                    state_code="US_XX",
+                    case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
+                )
+            ],
+            state_code="US_XX",
+            start_date=date(2018, 5, 1),
+            # Termination date is after sentence's projected completion date
+            termination_date=date(2018, 5, 15),
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_level=StateSupervisionLevel.MEDIUM,
+            supervision_level_raw_text="M",
+        )
+
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
+            supervision_sentence_id=111,
+            start_date=date(2018, 5, 1),
+            external_id="ss1",
+            state_code="US_XX",
+            status=StateSentenceStatus.COMPLETED,
+            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
+            projected_completion_date=date(2018, 5, 10),
+            supervision_periods=[supervision_period],
+        )
+
+        self.assertEqual(
+            self.supervision_delegate.get_projected_completion_date(
+                supervision_period=supervision_period,
+                supervision_sentences=[supervision_sentence],
+                incarceration_sentences=[],
+            ),
+            supervision_sentence.projected_completion_date,
+        )
+
+    def test_get_projected_completion_date_supervision_period_in_incarceration_sentence(
+        self,
+    ) -> None:
+        """The supervision periods extends past the supervision sentence projected
+        completion date, and is associated with the incarceration sentence."""
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            case_type_entries=[
+                StateSupervisionCaseTypeEntry.new_with_defaults(
+                    state_code="US_XX",
+                    case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
+                )
+            ],
+            state_code="US_XX",
+            start_date=date(2018, 5, 1),
+            # Termination date is after sentence's projected completion date
+            termination_date=date(2018, 5, 15),
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_level=StateSupervisionLevel.MEDIUM,
+            supervision_level_raw_text="M",
+        )
+
+        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+            state_code="US_XX",
+            incarceration_sentence_id=123,
+            external_id="is1",
+            start_date=date(2018, 5, 1),
+            supervision_periods=[supervision_period],
+            projected_max_release_date=date(2018, 5, 10),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        self.assertEqual(
+            self.supervision_delegate.get_projected_completion_date(
+                supervision_period=supervision_period,
+                incarceration_sentences=[incarceration_sentence],
+                supervision_sentences=[],
+            ),
+            incarceration_sentence.projected_max_release_date,
+        )
+
+    def test_get_projected_completion_date_supervision_period_in_incarceration_and_supervision_sentence(
+        self,
+    ) -> None:
+        """The supervision period is within the bounds of both a supervision and
+        incarceration sentence, but it extends past the supervision sentence projected
+        completion date, and does not extend past the incarceration sentence's projected
+        release date."""
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            case_type_entries=[
+                StateSupervisionCaseTypeEntry.new_with_defaults(
+                    state_code="US_XX",
+                    case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
+                )
+            ],
+            state_code="US_XX",
+            start_date=date(2018, 5, 1),
+            # Termination date is after sentence's projected completion date
+            termination_date=date(2018, 5, 15),
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_level=StateSupervisionLevel.MEDIUM,
+            supervision_level_raw_text="M",
+        )
+
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
+            supervision_sentence_id=111,
+            start_date=date(2018, 5, 1),
+            external_id="ss1",
+            state_code="US_XX",
+            status=StateSentenceStatus.COMPLETED,
+            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
+            projected_completion_date=date(2018, 5, 10),
+            supervision_periods=[supervision_period],
+        )
+
+        # The supervision period is within the bounds of the incarceration sentence, and because its projected max
+        # release date is after the supervision sentence's, it will be used to determine whether the event date is past
+        # the projected end date.
+        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+            state_code="US_XX",
+            incarceration_sentence_id=123,
+            external_id="is1",
+            start_date=date(2018, 5, 1),
+            supervision_periods=[supervision_period],
+            projected_max_release_date=date(2018, 5, 20),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        self.assertEqual(
+            self.supervision_delegate.get_projected_completion_date(
+                supervision_period=supervision_period,
+                incarceration_sentences=[incarceration_sentence],
+                supervision_sentences=[supervision_sentence],
+            ),
+            incarceration_sentence.projected_max_release_date,
         )
