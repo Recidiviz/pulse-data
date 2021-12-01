@@ -33,6 +33,15 @@ output:
         $mappings:
           Gender.MALE: M
           Gender.FEMALE: F
+        $ignore:
+          # These are relatively rare erroneous values.
+          - "1"
+          - A
+          - B
+          - MM
+          - N
+          - U
+          - W
     races:
       - StatePersonRace:
           race:
@@ -49,6 +58,14 @@ output:
                 - H
                 # This is an erroneous value - ignore it.
                 - M
+                # These are relatively rare erroneous values - ignore them.
+                - EW
+                - F
+                - QB
+                - QW
+                - U
+                - WSW
+                - WW
     ethnicities:
       - StatePersonEthnicity:
           ethnicity:
@@ -56,5 +73,19 @@ output:
               $raw_text: OffRaceEthnicGroup
               $mappings:
                 Ethnicity.HISPANIC: H
-              # These are race values - ignore when mapping to ethnicity.
-              $ignore: [A, B, I, N, W, M]
+              $ignore:
+                # These are race values - ignore when mapping to ethnicity.
+                - A
+                - B
+                - I
+                - N
+                - W
+                - M
+                # These are relatively rare erroneous values - ignore them.
+                - EW
+                - F
+                - QB
+                - QW
+                - U
+                - WSW
+                - WW
