@@ -321,7 +321,7 @@ def incarceration_period_admission_reason_mapper(
 
     If start_is_admin_edge indicates that this new period was started only for
     administrative reasons, then we return STATUS_CHANGE. If start_is_new_revocation is
-    true, then we return PAROLE_REVOCATION. Otherwise we map based on the
+    true, then we return REVOCATION. Otherwise we map based on the
     start_movement_code.
     """
 

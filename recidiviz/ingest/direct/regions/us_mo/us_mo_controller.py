@@ -1094,14 +1094,10 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
                 f"Unexpected enum type returned: [{ip_admission_reason_enum}]"
             )
 
-        if ip_admission_reason_enum in {
-            # TODO(#9865): Delete `PAROLE_REVOCATION`, `DUAL_REVOCATION`, and `PROBATION_REVOCATION` once
-            #  collapsed to `REVOCATION`.
-            StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
-            StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
-            StateIncarcerationPeriodAdmissionReason.DUAL_REVOCATION,
-            StateIncarcerationPeriodAdmissionReason.REVOCATION,
-        }:
+        if (
+            ip_admission_reason_enum
+            == StateIncarcerationPeriodAdmissionReason.REVOCATION
+        ):
             return ip_admission_reason_enum
         return None
 

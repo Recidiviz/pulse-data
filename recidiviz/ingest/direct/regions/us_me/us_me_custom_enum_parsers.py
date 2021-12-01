@@ -131,14 +131,11 @@ def parse_admission_reason(raw_text: str) -> StateIncarcerationPeriodAdmissionRe
         in [
             "Violation of Probation",
             "Violation of Probation - Prob. to Terminate(J)",
+            "Violation of Parole",
         ]
         or current_status == "Partial Revocation - incarcerated"
     ):
-        return StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION
-
-    if transfer_reason == "Violation of Parole":
-        return StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION
-
+        return StateIncarcerationPeriodAdmissionReason.REVOCATION
     if previous_status in SUPERVISION_STATUSES:
         return StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION
 
