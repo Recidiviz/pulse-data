@@ -174,25 +174,12 @@ class TestExtractDataForPipeline(unittest.TestCase):
         entity_races = entity_converter.convert_all([schema_race_1, schema_race_2])
         entity_assessment = entity_converter.convert(schema_assessment)
 
-        all_non_person_entities = [
-            entity_ethnicity,
-            entity_alias,
-            entity_external_id,
-            entity_sentence_group,
-            entity_races[0],
-            entity_races[1],
-            entity_assessment,
-        ]
-
         entity_person.ethnicities = [entity_ethnicity]
         entity_person.aliases = [entity_alias]
         entity_person.external_ids = [entity_external_id]
         entity_person.sentence_groups = [entity_sentence_group]
         entity_person.races = entity_races
         entity_person.assessments = [entity_assessment]
-
-        for entity in all_non_person_entities:
-            setattr(entity, "person", entity_person)
 
         dataset = "recidiviz-123.state"
 
@@ -353,8 +340,10 @@ class TestExtractDataForPipeline(unittest.TestCase):
         all_non_person_entities.extend(entity_violated_conditions)
         all_non_person_entities.extend(entity_violation_response_decisions)
 
+        # The entity converter sets the person field, but we don't hydrate this
+        # relationship
         for entity in all_non_person_entities:
-            setattr(entity, "person", entity_person)
+            setattr(entity, "person", None)
 
         dataset = "recidiviz-123.state"
 
@@ -627,58 +616,49 @@ class TestExtractDataForPipeline(unittest.TestCase):
         entity_charges[1].supervision_sentences = [entity_sentence]
         entity_sentence.charges = entity_charges
 
-        all_non_person_entities = [entity_sentence] + entity_charges
-
-        for entity in all_non_person_entities:
-            setattr(entity, "person", entity_person)
-
         dataset = "recidiviz-123.state"
-        reference_dataset = "recidiviz-123.reference_views"
 
-        # TODO(#2769): This should not error once support for association queries
-        #  are built
-        with self.assertRaises(NotImplementedError):
-            with patch(
-                "recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery",
-                self.fake_bq_source_factory.create_fake_bq_source_constructor(
-                    dataset, data_dict
+        with patch(
+            "recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery",
+            self.fake_bq_source_factory.create_fake_bq_source_constructor(
+                dataset, data_dict
+            ),
+        ):
+            test_pipeline = TestPipeline()
+
+            output = test_pipeline | extractor_utils.ExtractDataForPipeline(
+                state_code=entity_person.state_code,
+                dataset=dataset,
+                required_entity_classes=[
+                    entities.StatePerson,
+                    entities.StateSupervisionSentence,
+                    entities.StateCharge,
+                ],
+                reference_dataset=dataset,
+                required_reference_tables=None,
+                unifying_class=entities.StatePerson,
+                unifying_id_field_filter_set=None,
+            )
+
+            assert_that(
+                output,
+                equal_to(
+                    [
+                        (
+                            12345,
+                            {
+                                entities.StatePerson.__name__: [entity_person],
+                                entities.StateSupervisionSentence.__name__: [
+                                    entity_sentence
+                                ],
+                                entities.StateCharge.__name__: entity_charges,
+                            },
+                        )
+                    ]
                 ),
-            ):
-                test_pipeline = TestPipeline()
+            )
 
-                output = test_pipeline | extractor_utils.ExtractDataForPipeline(
-                    state_code=entity_person.state_code,
-                    dataset=dataset,
-                    required_entity_classes=[
-                        entities.StatePerson,
-                        entities.StateSupervisionSentence,
-                        entities.StateCharge,
-                    ],
-                    reference_dataset=reference_dataset,
-                    required_reference_tables=None,
-                    unifying_class=entities.StatePerson,
-                    unifying_id_field_filter_set=None,
-                )
-
-                assert_that(
-                    output,
-                    equal_to(
-                        [
-                            (
-                                12345,
-                                {
-                                    entities.StatePerson.__name__: [entity_person],
-                                    entities.StateSupervisionSentence.__name__: [
-                                        entity_sentence
-                                    ],
-                                    entities.StateCharge.__name__: entity_charges,
-                                },
-                            )
-                        ]
-                    ),
-                )
-
-                test_pipeline.run()
+            test_pipeline.run()
 
     def testExtractDataForPipeline_withReferenceTables(self):
         """Tests the extraction of multiple entities with cross-entity
@@ -794,25 +774,12 @@ class TestExtractDataForPipeline(unittest.TestCase):
         entity_races = entity_converter.convert_all([schema_race_1, schema_race_2])
         entity_assessment = entity_converter.convert(schema_assessment)
 
-        all_non_person_entities = [
-            entity_ethnicity,
-            entity_alias,
-            entity_external_id,
-            entity_sentence_group,
-            entity_races[0],
-            entity_races[1],
-            entity_assessment,
-        ]
-
         entity_person.ethnicities = [entity_ethnicity]
         entity_person.aliases = [entity_alias]
         entity_person.external_ids = [entity_external_id]
         entity_person.sentence_groups = [entity_sentence_group]
         entity_person.races = entity_races
         entity_person.assessments = [entity_assessment]
-
-        for entity in all_non_person_entities:
-            setattr(entity, "person", entity_person)
 
         dataset = "recidiviz-123.state"
 
@@ -865,6 +832,164 @@ class TestExtractDataForPipeline(unittest.TestCase):
                                 ],
                                 entities.StateAssessment.__name__: [entity_assessment],
                                 PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME: person_to_county_of_residence_data,
+                            },
+                        )
+                    ]
+                ),
+            )
+
+            test_pipeline.run()
+
+    def testExtractDataForPipeline_withAssociationTablesAndFilter(self):
+        """Tests the extraction of multiple entities with cross-entity
+        relationship properties hydrated, where there are required association
+        tables, and a unifying_id_field filter is set."""
+        required_schema_classes = [
+            schema.StatePerson,
+            schema.StateSupervisionSentence,
+            schema.StateCharge,
+        ]
+
+        person_id_1 = 12345
+
+        schema_person_1 = schema.StatePerson(
+            person_id=person_id_1,
+            current_address="123 Street",
+            full_name="Bernard Madoff",
+            birthdate=date(1970, 1, 1),
+            gender=Gender.MALE,
+            residency_status=ResidencyStatus.PERMANENT,
+            state_code="US_XX",
+        )
+
+        schema_charge_1 = database_test_utils.generate_test_charge(
+            person_id=person_id_1, charge_id=123
+        )
+
+        schema_charge_2 = database_test_utils.generate_test_charge(
+            person_id=person_id_1, charge_id=456
+        )
+
+        schema_sentence_1 = database_test_utils.generate_test_supervision_sentence(
+            person_id=person_id_1,
+            charges=[schema_charge_1, schema_charge_2],
+            supervision_periods=[],
+            early_discharges=[],
+        )
+
+        person_id_2 = 67890
+
+        schema_person_2 = schema.StatePerson(
+            person_id=person_id_2,
+            current_address="890 Street",
+            full_name="Steven Steven",
+            birthdate=date(1970, 1, 1),
+            gender=Gender.MALE,
+            residency_status=ResidencyStatus.PERMANENT,
+            state_code="US_XX",
+        )
+
+        schema_charge_3 = database_test_utils.generate_test_charge(
+            person_id=person_id_2, charge_id=789
+        )
+
+        schema_charge_4 = database_test_utils.generate_test_charge(
+            person_id=person_id_2, charge_id=890
+        )
+
+        schema_sentence_2 = database_test_utils.generate_test_supervision_sentence(
+            person_id=person_id_2,
+            charges=[schema_charge_2, schema_charge_4],
+            supervision_periods=[],
+            early_discharges=[],
+        )
+
+        schema_sentence_2.supervision_sentence_id = 2222
+
+        person_data = normalized_database_base_dict_list(
+            [schema_person_1, schema_person_2]
+        )
+        charge_data = normalized_database_base_dict_list(
+            [schema_charge_1, schema_charge_2, schema_charge_3, schema_charge_4]
+        )
+        sentence_data = normalized_database_base_dict_list(
+            [schema_sentence_1, schema_sentence_2]
+        )
+
+        state_charge_supervision_sentence_association_table_data = [
+            {
+                "charge_id": charge.charge_id,
+                "supervision_sentence_id": schema_sentence_1.supervision_sentence_id,
+            }
+            for charge in [schema_charge_1, schema_charge_2]
+        ] + [
+            {
+                "charge_id": charge.charge_id,
+                "supervision_sentence_id": schema_sentence_2.supervision_sentence_id,
+            }
+            for charge in [schema_charge_3, schema_charge_4]
+        ]
+
+        data_dict = default_data_dict_for_root_schema_classes(required_schema_classes)
+
+        data_dict_overrides = {
+            schema.StatePerson.__tablename__: person_data,
+            schema.StateSupervisionSentence.__tablename__: sentence_data,
+            schema.StateCharge.__tablename__: charge_data,
+            schema.state_charge_supervision_sentence_association_table.name: state_charge_supervision_sentence_association_table_data,
+        }
+        data_dict.update(data_dict_overrides)
+
+        entity_converter = StateSchemaToEntityConverter()
+
+        entity_person = entity_converter.convert(schema_person_1)
+        entity_charges: List[entities.StateCharge] = entity_converter.convert_all(
+            [schema_charge_1, schema_charge_2], populate_back_edges=False
+        )
+        entity_sentence: entities.StateSupervisionSentence = entity_converter.convert(
+            schema_sentence_1
+        )
+
+        entity_charges[0].supervision_sentences = [entity_sentence]
+        entity_charges[1].supervision_sentences = [entity_sentence]
+        entity_sentence.charges = entity_charges
+
+        dataset = "recidiviz-123.state"
+
+        with patch(
+            "recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery",
+            self.fake_bq_source_factory.create_fake_bq_source_constructor(
+                dataset, data_dict
+            ),
+        ):
+            test_pipeline = TestPipeline()
+
+            output = test_pipeline | extractor_utils.ExtractDataForPipeline(
+                state_code=entity_person.state_code,
+                dataset=dataset,
+                required_entity_classes=[
+                    entities.StatePerson,
+                    entities.StateSupervisionSentence,
+                    entities.StateCharge,
+                ],
+                reference_dataset=dataset,
+                required_reference_tables=None,
+                unifying_class=entities.StatePerson,
+                unifying_id_field_filter_set={person_id_1},
+            )
+
+            assert_that(
+                output,
+                equal_to(
+                    [
+                        (
+                            person_id_1,
+                            {
+                                entities.StatePerson.__name__: [entity_person],
+                                entities.StateSupervisionSentence.__name__: [
+                                    entity_sentence
+                                ],
+                                entities.StateCharge.__name__: entity_charges,
                             },
                         )
                     ]
@@ -1011,44 +1136,40 @@ class TestExtractAssociationValues(unittest.TestCase):
 
         dataset = "recidiviz-123.state"
 
-        # TODO(#2769): This should not error once support for association queries
-        #  are built
-        with self.assertRaises(NotImplementedError):
-            with patch(
-                "recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery",
-                self.fake_bq_source_factory.create_fake_bq_source_constructor(
-                    dataset, data_dict
+        with patch(
+            "recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery",
+            self.fake_bq_source_factory.create_fake_bq_source_constructor(
+                dataset, data_dict
+            ),
+        ):
+            test_pipeline = TestPipeline()
+
+            output = (
+                test_pipeline
+                | "Extract association table entities"
+                >> extractor_utils._ExtractAssociationValues(
+                    dataset=dataset,
+                    root_entity_class=entities.StateIncarcerationSentence,
+                    related_entity_class=entities.StateCharge,
+                    related_id_field=entities.StateCharge.get_class_id_name(),
+                    unifying_id_field=entities.StatePerson.get_class_id_name(),
+                    association_table=association_table_name,
+                    unifying_id_field_filter_set=None,
+                    state_code=charge.state_code,
+                )
+            )
+
+            assert_that(
+                output,
+                ExtractAssertMatchers.validate_extract_relationship_property_values(
+                    unifying_id=charge.person_id,
+                    parent_id=incarceration_sentence.incarceration_sentence_id,
+                    entity_id=charge.charge_id,
                 ),
-            ):
+                label="Validate StateCharge output",
+            )
 
-                test_pipeline = TestPipeline()
-
-                output = (
-                    test_pipeline
-                    | "Extract association table entities"
-                    >> extractor_utils._ExtractAssociationValues(
-                        dataset=dataset,
-                        root_entity_class=entities.StateIncarcerationSentence,
-                        related_entity_class=entities.StateCharge,
-                        related_id_field=entities.StateCharge.get_class_id_name(),
-                        unifying_id_field=entities.StatePerson.get_class_id_name(),
-                        association_table=association_table_name,
-                        unifying_id_field_filter_set=None,
-                        state_code=charge.state_code,
-                    )
-                )
-
-                assert_that(
-                    output,
-                    ExtractAssertMatchers.validate_extract_relationship_property_entities(
-                        outer_connection_id=incarceration_sentence.person_id,
-                        inner_connection_id=incarceration_sentence.incarceration_sentence_id,
-                        class_type=entities.StateCharge,
-                    ),
-                    label="Validate StateCharge output",
-                )
-
-                test_pipeline.run()
+            test_pipeline.run()
 
 
 class TestBuildRootEntity(unittest.TestCase):
@@ -3047,6 +3168,40 @@ class ExtractAssertMatchers:
                 assert second_id == inner_connection_id
 
                 assert issubclass(entity.__class__, class_type)
+            assert not empty
+
+        return _validate_extract_relationship_property_entities
+
+    @staticmethod
+    def validate_extract_relationship_property_values(
+        unifying_id: int,
+        parent_id: int,
+        entity_id: int,
+    ):
+        """Validates that the output of _ExtractAssociationValues
+        matches the expected format:
+
+            (unifying_id, (parent_id, entity_id))
+
+        where the Entity is of the given |class_type|.
+        """
+
+        def _validate_extract_relationship_property_entities(output):
+            empty = True
+            for item in output:
+                print("VALIDATING")
+                print(item)
+                empty = False
+                first_id, other_ids = item
+                assert first_id == unifying_id
+
+                second_id, third_id = other_ids
+                print(f"second_id={second_id}, parent_id={parent_id}")
+                assert second_id == parent_id
+
+                print(f"third_id={third_id}, entity_id={entity_id}")
+                assert third_id == entity_id
+
             assert not empty
 
         return _validate_extract_relationship_property_entities

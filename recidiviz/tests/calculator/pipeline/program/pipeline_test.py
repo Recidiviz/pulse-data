@@ -43,6 +43,8 @@ from recidiviz.calculator.pipeline.utils.assessment_utils import (
     DEFAULT_ASSESSMENT_SCORE_BUCKET,
 )
 from recidiviz.calculator.pipeline.utils.person_utils import (
+    PERSON_EVENTS_KEY,
+    PERSON_METADATA_KEY,
     ExtractPersonEventsMetadata,
     PersonMetadata,
 )
@@ -917,8 +919,8 @@ class TestProduceProgramMetrics(unittest.TestCase):
             (
                 self.fake_person_id,
                 {
-                    "person_events": [(fake_person, program_events)],
-                    "person_metadata": [self.person_metadata],
+                    PERSON_EVENTS_KEY: [(fake_person, program_events)],
+                    PERSON_METADATA_KEY: [self.person_metadata],
                 },
             )
         ]
@@ -964,8 +966,8 @@ class TestProduceProgramMetrics(unittest.TestCase):
             (
                 self.fake_person_id,
                 {
-                    "person_events": [(fake_person, [])],
-                    "person_metadata": [self.person_metadata],
+                    PERSON_EVENTS_KEY: [(fake_person, [])],
+                    PERSON_METADATA_KEY: [self.person_metadata],
                 },
             )
         ]

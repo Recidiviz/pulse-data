@@ -17,6 +17,7 @@
 """Abstract class for all calculation pipelines."""
 import abc
 import argparse
+import datetime
 import logging
 from typing import (
     Any,
@@ -34,6 +35,7 @@ from typing import (
 import apache_beam as beam
 import attr
 from apache_beam.options.pipeline_options import PipelineOptions, SetupOptions
+from apache_beam.pvalue import AsList
 from apache_beam.runners.pipeline_context import PipelineContext
 from apache_beam.typehints.decorators import with_input_types, with_output_types
 
@@ -48,26 +50,40 @@ from recidiviz.calculator.pipeline.utils.beam_utils import (
     RecidivizMetricWritableDict,
     WriteAppendToBigQuery,
 )
+from recidiviz.calculator.pipeline.utils.entity_hydration_utils import (
+    ConvertEntitiesToStateSpecificTypes,
+)
 from recidiviz.calculator.pipeline.utils.event_utils import IdentifierEvent
 from recidiviz.calculator.pipeline.utils.execution_utils import (
     get_job_id,
     person_and_kwargs_for_identifier,
 )
+from recidiviz.calculator.pipeline.utils.extractor_utils import (
+    ExtractDataForPipeline,
+    ImportTable,
+)
 from recidiviz.calculator.pipeline.utils.metric_utils import (
     RecidivizMetric,
     RecidivizMetricType,
 )
-from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
+from recidiviz.calculator.pipeline.utils.person_utils import (
+    PERSON_EVENTS_KEY,
+    PERSON_METADATA_KEY,
+    BuildPersonMetadata,
+    ExtractPersonEventsMetadata,
+    PersonMetadata,
+)
 from recidiviz.calculator.pipeline.utils.pipeline_args_utils import (
     add_shared_pipeline_arguments,
 )
+from recidiviz.calculator.query.state.state_specific_query_strings import (
+    STATE_RACE_ETHNICITY_POPULATION_TABLE_NAME,
+)
+from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state import entities
 from recidiviz.utils import environment
-
-HYDRATED_ENTITIES_KEY = "hydrated_entities"
-
 
 # Cached job_id value
 _job_id = None
@@ -99,11 +115,11 @@ class PipelineConfig:
     # The metric producer transforming events to metrics
     metric_producer: BaseMetricProducer = attr.ib()
 
-    # TODO(#2769): Make non-optional and remove default value once all pipelines are
-    #  using v2 entity hydration
-    required_entities: Optional[List[Type[Entity]]] = attr.ib(default=None)
+    required_entities: List[Type[Entity]] = attr.ib()
 
-    required_reference_tables: Optional[List[str]] = attr.ib(default=None)
+    required_reference_tables: List[str] = attr.ib()
+
+    state_specific_required_reference_tables: Dict[StateCode, List[str]] = attr.ib()
 
 
 @with_input_types(
@@ -146,7 +162,7 @@ class ProduceMetrics(beam.DoFn):
                 values for whether or not to include that metric type in the calculations
             pipeline_options: A dictionary storing configuration details for the pipeline.
         Yields:
-            Each supervision metric."""
+            Each metric."""
         person, events, person_metadata = element
 
         pipeline_job_id = job_id(pipeline_options)
@@ -284,23 +300,6 @@ class BasePipeline(abc.ABC):
     pipeline_config: PipelineConfig = attr.ib()
     include_calculation_limit_args: bool = attr.ib(default=False)
 
-    @abc.abstractmethod
-    def execute_pipeline(
-        self,
-        pipeline: beam.Pipeline,
-        all_pipeline_options: Dict[str, Any],
-        state_code: str,
-        input_dataset: str,
-        reference_dataset: str,
-        static_reference_dataset: str,
-        metric_types: List[str],
-        person_id_filter_set: Optional[Set[int]],
-        calculation_month_count: int = -1,
-        calculation_end_month: Optional[str] = None,
-    ) -> beam.Pipeline:
-        """Define the specific pipeline steps here and returns the last step of the
-        pipeline as the output before writing metrics."""
-
     @property
     def _metric_type_values(self) -> List[str]:
         return [
@@ -429,17 +428,80 @@ class BasePipeline(abc.ABC):
         person_id_filter_set = set(person_filter_ids) if person_filter_ids else None
 
         with beam.Pipeline(options=apache_beam_pipeline_options) as p:
-            metrics = self.execute_pipeline(
-                p,
-                all_pipeline_options,
-                state_code,
-                input_dataset,
-                reference_dataset,
-                static_reference_dataset,
-                metric_types,
-                person_id_filter_set,
-                calculation_month_count,
-                calculation_end_month,
+            required_reference_tables = (
+                self.pipeline_config.required_reference_tables.copy()
+            )
+
+            required_reference_tables.extend(
+                self.pipeline_config.state_specific_required_reference_tables.get(
+                    StateCode(state_code.upper()), []
+                )
+            )
+
+            # Get all required entities and reference data
+            pipeline_data = p | "Load required data" >> ExtractDataForPipeline(
+                state_code=state_code,
+                dataset=input_dataset,
+                reference_dataset=reference_dataset,
+                required_entity_classes=self.pipeline_config.required_entities,
+                required_reference_tables=required_reference_tables,
+                unifying_class=entities.StatePerson,
+                unifying_id_field_filter_set=person_id_filter_set,
+            )
+
+            # Update entities to have state-specific types, where applicable
+            pipeline_data = (
+                pipeline_data
+                | "Convert entities to state-specific type"
+                >> beam.ParDo(ConvertEntitiesToStateSpecificTypes())
+            )
+
+            person_events = pipeline_data | "Get Events" >> beam.ParDo(
+                ClassifyEvents(), identifier=self.pipeline_config.identifier
+            )
+
+            state_race_ethnicity_population_counts = (
+                p
+                | "Load state_race_ethnicity_population_counts"
+                >> ImportTable(
+                    dataset_id=static_reference_dataset,
+                    table_id=STATE_RACE_ETHNICITY_POPULATION_TABLE_NAME,
+                    state_code_filter=state_code,
+                )
+            )
+
+            person_metadata = (
+                pipeline_data
+                | "Build the person_metadata dictionary"
+                >> beam.ParDo(
+                    BuildPersonMetadata(),
+                    state_race_ethnicity_population_counts=AsList(
+                        state_race_ethnicity_population_counts
+                    ),
+                )
+            )
+
+            person_events_with_metadata = (
+                {PERSON_EVENTS_KEY: person_events, PERSON_METADATA_KEY: person_metadata}
+                | "Group events with person-level metadata" >> beam.CoGroupByKey()
+                | "Organize StatePerson, PersonMetadata and events for calculations"
+                >> beam.ParDo(ExtractPersonEventsMetadata())
+            )
+
+            # Get the type of metric to calculate
+            metric_types_set = set(metric_types)
+
+            # Add timestamp for local jobs
+            job_timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H_%M_%S.%f")
+            all_pipeline_options["job_timestamp"] = job_timestamp
+
+            # Get metrics
+            metrics = person_events_with_metadata | "Get Metrics" >> GetMetrics(
+                pipeline_options=all_pipeline_options,
+                pipeline_config=self.pipeline_config,
+                metric_types_to_include=metric_types_set,
+                calculation_end_month=calculation_end_month,
+                calculation_month_count=calculation_month_count,
             )
 
             if person_id_filter_set:

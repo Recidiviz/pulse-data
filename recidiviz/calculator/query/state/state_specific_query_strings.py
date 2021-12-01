@@ -34,6 +34,8 @@ VITALS_LEVEL_2_SUPERVISION_LOCATION_OPTIONS: str = (
     f"({', '.join(VITALS_LEVEL_2_SUPERVISION_LOCATION_STATES)})"
 )
 
+STATE_RACE_ETHNICITY_POPULATION_TABLE_NAME = "state_race_ethnicity_population_counts"
+
 
 def state_supervision_specific_district_groupings(
     district_column: str, judicial_district_column: str

@@ -25,7 +25,6 @@ import attr
 from apache_beam.testing.test_pipeline import TestPipeline
 from apache_beam.testing.util import BeamAssertException, assert_that, equal_to
 from freezegun import freeze_time
-from mock import patch
 from more_itertools import one
 
 from recidiviz.calculator.pipeline.base_pipeline import ClassifyEvents, ProduceMetrics
@@ -51,6 +50,8 @@ from recidiviz.calculator.pipeline.utils.metric_utils import (
     RecidivizMetricType,
 )
 from recidiviz.calculator.pipeline.utils.person_utils import (
+    PERSON_EVENTS_KEY,
+    PERSON_METADATA_KEY,
     ExtractPersonEventsMetadata,
     PersonMetadata,
 )
@@ -313,6 +314,14 @@ class TestSupervisionPipeline(unittest.TestCase):
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
         )
 
+        incarceration_sentence_incarceration_period_association = [
+            {
+                "incarceration_period_id": ip.incarceration_period_id,
+                "incarceration_sentence_id": incarceration_sentence.incarceration_sentence_id,
+            }
+            for ip in incarceration_sentence.incarceration_periods
+        ]
+
         charge = database_test_utils.generate_test_charge(
             person_id=fake_person_id,
             charge_id=1234523,
@@ -478,6 +487,7 @@ class TestSupervisionPipeline(unittest.TestCase):
             schema.StateIncarcerationSentence.__tablename__: incarceration_sentences_data,
             schema.StateCharge.__tablename__: charge_data,
             schema.state_supervision_sentence_supervision_period_association_table.name: [],
+            schema.state_incarceration_sentence_incarceration_period_association_table.name: incarceration_sentence_incarceration_period_association,
             schema.StateAssessment.__tablename__: assessment_data,
             schema.StateSupervisionContact.__tablename__: supervision_contact_data,
             "supervision_period_to_agent_association": supervision_period_to_agent_data,
@@ -554,19 +564,15 @@ class TestSupervisionPipeline(unittest.TestCase):
                 expected_violation_types=expected_violation_types,
             )
         )
-        with patch(
-            f"{SUPERVISION_PIPELINE_PACKAGE_NAME}.ReadFromBigQuery",
-            read_from_bq_constructor,
-        ):
-            run_test_pipeline(
-                pipeline=pipeline.SupervisionPipeline(),
-                state_code="US_XX",
-                dataset=dataset,
-                read_from_bq_constructor=read_from_bq_constructor,
-                write_to_bq_constructor=write_to_bq_constructor,
-                unifying_id_field_filter_set=unifying_id_field_filter_set,
-                metric_types_filter=metric_types_filter,
-            )
+        run_test_pipeline(
+            pipeline=pipeline.SupervisionPipeline(),
+            state_code="US_XX",
+            dataset=dataset,
+            read_from_bq_constructor=read_from_bq_constructor,
+            write_to_bq_constructor=write_to_bq_constructor,
+            unifying_id_field_filter_set=unifying_id_field_filter_set,
+            metric_types_filter=metric_types_filter,
+        )
 
     @freeze_time("2017-01-31")
     def testSupervisionPipeline_withMetricTypesFilter(self) -> None:
@@ -1118,20 +1124,24 @@ class TestClassifyEvents(unittest.TestCase):
         supervision_period_to_agent_association: List[Dict[Any, Any]] = None,
     ) -> Dict[str, List[Any]]:
         return {
-            "persons": [person],
-            "supervision_periods": supervision_periods if supervision_periods else [],
-            "assessments": assessments if assessments else [],
-            "incarceration_periods": incarceration_periods
+            entities.StatePerson.__name__: [person],
+            entities.StateSupervisionPeriod.__name__: supervision_periods
+            if supervision_periods
+            else [],
+            entities.StateAssessment.__name__: assessments if assessments else [],
+            entities.StateIncarcerationPeriod.__name__: incarceration_periods
             if incarceration_periods
             else [],
-            "incarceration_sentences": incarceration_sentences
+            entities.StateIncarcerationSentence.__name__: incarceration_sentences
             if incarceration_sentences
             else [],
-            "supervision_sentences": supervision_sentences
+            entities.StateSupervisionSentence.__name__: supervision_sentences
             if supervision_sentences
             else [],
-            "violation_responses": violation_responses if violation_responses else [],
-            "supervision_contacts": supervision_contacts
+            entities.StateSupervisionViolationResponse.__name__: violation_responses
+            if violation_responses
+            else [],
+            entities.StateSupervisionContact.__name__: supervision_contacts
             if supervision_contacts
             else [],
             "supervision_period_judicial_district_association": (
@@ -2058,8 +2068,8 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             (
                 self.fake_person_id,
                 {
-                    "person_events": [(fake_person, supervision_time_events)],
-                    "person_metadata": [self.person_metadata],
+                    PERSON_EVENTS_KEY: [(fake_person, supervision_time_events)],
+                    PERSON_METADATA_KEY: [self.person_metadata],
                 },
             )
         ]
@@ -2103,8 +2113,8 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             (
                 self.fake_person_id,
                 {
-                    "person_events": [(fake_person, [])],
-                    "person_metadata": [self.person_metadata],
+                    PERSON_EVENTS_KEY: [(fake_person, [])],
+                    PERSON_METADATA_KEY: [self.person_metadata],
                 },
             )
         ]
