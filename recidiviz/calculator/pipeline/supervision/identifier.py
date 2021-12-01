@@ -76,6 +76,12 @@ from recidiviz.calculator.pipeline.utils.violation_utils import (
     filter_violation_responses_for_violation_history,
     get_violation_and_response_history,
 )
+from recidiviz.calculator.query.state.views.reference.supervision_period_judicial_district_association import (
+    SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME,
+)
+from recidiviz.calculator.query.state.views.reference.supervision_period_to_agent_association import (
+    SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME,
+)
 from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentClass,
     StateAssessmentLevel,
@@ -116,7 +122,26 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
     def find_events(
         self, person: StatePerson, identifier_context: IdentifierContextT
     ) -> List[SupervisionEvent]:
-        return self._find_supervision_events(person, **identifier_context)
+        return self._find_supervision_events(
+            person=person,
+            supervision_sentences=identifier_context[StateSupervisionSentence.__name__],
+            incarceration_sentences=identifier_context[
+                StateIncarcerationSentence.__name__
+            ],
+            supervision_periods=identifier_context[StateSupervisionPeriod.__name__],
+            incarceration_periods=identifier_context[StateIncarcerationPeriod.__name__],
+            assessments=identifier_context[StateAssessment.__name__],
+            violation_responses=identifier_context[
+                StateSupervisionViolationResponse.__name__
+            ],
+            supervision_contacts=identifier_context[StateSupervisionContact.__name__],
+            supervision_period_to_agent_association=identifier_context[
+                SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME
+            ],
+            supervision_period_judicial_district_association=identifier_context[
+                SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME
+            ],
+        )
 
     def _find_supervision_events(
         self,

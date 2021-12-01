@@ -20,65 +20,13 @@ for details on how to launch a local run.
 
 from __future__ import absolute_import
 
-import datetime
-from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
-
-import apache_beam as beam
-from apache_beam.pvalue import AsList
-from apache_beam.typehints import with_input_types, with_output_types
-from more_itertools import one
-
-from recidiviz.calculator.pipeline.base_pipeline import (
-    BasePipeline,
-    ClassifyEvents,
-    GetMetrics,
-    PipelineConfig,
-)
+from recidiviz.calculator.pipeline.base_pipeline import BasePipeline, PipelineConfig
 from recidiviz.calculator.pipeline.pipeline_type import PipelineType
 from recidiviz.calculator.pipeline.recidivism import identifier, metric_producer
-from recidiviz.calculator.pipeline.recidivism.events import ReleaseEvent
-from recidiviz.calculator.pipeline.utils.extractor_utils import (
-    ExtractDataForPipeline,
-    ImportTable,
-)
-from recidiviz.calculator.pipeline.utils.person_utils import (
-    BuildPersonMetadata,
-    PersonMetadata,
-)
 from recidiviz.calculator.query.state.views.reference.persons_to_recent_county_of_residence import (
     PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME,
 )
 from recidiviz.persistence.entity.state import entities
-
-
-@with_input_types(beam.typehints.Tuple[int, Dict[str, Iterable[Any]]])
-@with_output_types(
-    beam.typehints.Tuple[entities.StatePerson, Dict[int, ReleaseEvent], PersonMetadata]
-)
-class ExtractPersonReleaseEventsMetadata(beam.DoFn):
-    # pylint: disable=arguments-differ
-    def process(
-        self, element: Tuple[int, Dict[str, Iterable[Any]]]
-    ) -> Iterable[Tuple[entities.StatePerson, List[ReleaseEvent], PersonMetadata]]:
-        """Extracts the StatePerson, dict of release years and ReleaseEvents, and PersonMetadata for use in the
-        calculator step of the pipeline.
-
-        Note: This is a pipeline-specific version of the ExtractPersonEventsMetadata DoFn in utils/beam_utils.py
-        """
-        _, element_data = element
-
-        person_events = element_data.get("person_events")
-        person_metadata_group = element_data.get("person_metadata")
-
-        # If there isn't a person associated with this person_id_person, continue
-        if person_events and person_metadata_group:
-            person, events = one(person_events)
-            person_metadata = one(person_metadata_group)
-
-            yield person, events, person_metadata
-
-    def to_runner_api_parameter(self, unused_context: Any) -> None:
-        pass  # Passing unused abstract method.
 
 
 class RecidivismPipeline(BasePipeline):
@@ -98,87 +46,6 @@ class RecidivismPipeline(BasePipeline):
                 entities.StatePersonExternalId,
             ],
             required_reference_tables=[PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME],
+            state_specific_required_reference_tables={},
         )
         self.include_calculation_limit_args = False
-
-    def execute_pipeline(
-        self,
-        pipeline: beam.Pipeline,
-        all_pipeline_options: Dict[str, Any],
-        state_code: str,
-        input_dataset: str,
-        reference_dataset: str,
-        static_reference_dataset: str,
-        metric_types: List[str],
-        person_id_filter_set: Optional[Set[int]],
-        calculation_month_count: int = -1,
-        calculation_end_month: Optional[str] = None,
-    ) -> beam.Pipeline:
-        # TODO(#2769): Remove this once required_entities is non-optional
-        if not self.pipeline_config.required_entities:
-            raise ValueError("Must set required_entities arg on PipelineConfig.")
-
-        # Get all required entities and reference data
-        pipeline_data = pipeline | "Load required data" >> ExtractDataForPipeline(
-            state_code=state_code,
-            dataset=input_dataset,
-            reference_dataset=reference_dataset,
-            required_entity_classes=self.pipeline_config.required_entities,
-            required_reference_tables=self.pipeline_config.required_reference_tables,
-            unifying_class=entities.StatePerson,
-            unifying_id_field_filter_set=person_id_filter_set,
-        )
-
-        state_race_ethnicity_population_counts = (
-            pipeline
-            | "Load state_race_ethnicity_population_counts"
-            >> ImportTable(
-                dataset_id=static_reference_dataset,
-                table_id="state_race_ethnicity_population_counts",
-                state_code_filter=state_code,
-            )
-        )
-
-        # Identify ReleaseEvents events from the StatePerson's StateIncarcerationPeriods
-        person_release_events = pipeline_data | "ClassifyReleaseEvents" >> beam.ParDo(
-            ClassifyEvents(), identifier=self.pipeline_config.identifier
-        )
-
-        person_metadata = (
-            pipeline_data
-            | "Build the person_metadata dictionary"
-            >> beam.ParDo(
-                BuildPersonMetadata(),
-                state_race_ethnicity_population_counts=AsList(
-                    state_race_ethnicity_population_counts
-                ),
-            )
-        )
-
-        person_release_events_with_metadata = (
-            {"person_events": person_release_events, "person_metadata": person_metadata}
-            | "Group ReleaseEvents with person-level metadata" >> beam.CoGroupByKey()
-            | "Organize StatePerson, PersonMetadata and ReleaseEvents for calculations"
-            >> beam.ParDo(ExtractPersonReleaseEventsMetadata())
-        )
-
-        # Add timestamp for local jobs
-        job_timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H_%M_%S.%f")
-        all_pipeline_options["job_timestamp"] = job_timestamp
-
-        # Get the type of metric to calculate
-        metric_types_set = set(metric_types)
-
-        # Get recidivism metrics
-        recidivism_metrics = (
-            person_release_events_with_metadata
-            | "Get Recidivism Metrics"
-            >> GetMetrics(
-                pipeline_options=all_pipeline_options,
-                pipeline_config=self.pipeline_config,
-                metric_types_to_include=metric_types_set,
-                calculation_end_month=calculation_end_month,
-                calculation_month_count=calculation_month_count,
-            )
-        )
-        return recidivism_metrics

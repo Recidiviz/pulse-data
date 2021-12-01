@@ -24,7 +24,6 @@ import apache_beam as beam
 from apache_beam.testing.test_pipeline import TestPipeline
 from apache_beam.testing.util import BeamAssertException, assert_that, equal_to
 from freezegun import freeze_time
-from mock import patch
 
 from recidiviz.calculator.pipeline.base_pipeline import ClassifyEvents, ProduceMetrics
 from recidiviz.calculator.pipeline.incarceration import identifier, pipeline
@@ -45,6 +44,8 @@ from recidiviz.calculator.pipeline.utils.assessment_utils import (
     DEFAULT_ASSESSMENT_SCORE_BUCKET,
 )
 from recidiviz.calculator.pipeline.utils.person_utils import (
+    PERSON_EVENTS_KEY,
+    PERSON_METADATA_KEY,
     ExtractPersonEventsMetadata,
     PersonMetadata,
 )
@@ -207,6 +208,9 @@ class TestIncarcerationPipeline(unittest.TestCase):
         self.mock_incarceration_delegate.return_value = UsXxIncarcerationDelegate()
 
     def tearDown(self) -> None:
+        self._stop_state_specific_delegate_patchers()
+
+    def _stop_state_specific_delegate_patchers(self) -> None:
         self.incarceration_pre_processing_delegate_patcher.stop()
         self.supervision_pre_processing_delegate_patcher.stop()
         self.commitment_from_supervision_delegate_patcher.stop()
@@ -384,17 +388,21 @@ class TestIncarcerationPipeline(unittest.TestCase):
             }
         ]
 
-        us_mo_sentence_status_data: List[Dict[str, Any]] = [
-            {
-                "state_code": "US_MO",
-                "person_id": fake_person_id,
-                "sentence_external_id": "XXX",
-                "sentence_status_external_id": "YYY",
-                "status_code": "ZZZ",
-                "status_date": "not_a_date",
-                "status_description": "XYZ",
-            }
-        ]
+        us_mo_sentence_status_data: List[Dict[str, Any]] = (
+            [
+                {
+                    "state_code": state_code,
+                    "person_id": fake_person_id,
+                    "sentence_external_id": "XXX",
+                    "sentence_status_external_id": "YYY",
+                    "status_code": "ZZZ",
+                    "status_date": "not_a_date",
+                    "status_description": "XYZ",
+                }
+            ]
+            if state_code == "US_MO"
+            else []
+        )
 
         incarceration_period_judicial_district_association_data = [
             {
@@ -484,6 +492,8 @@ class TestIncarcerationPipeline(unittest.TestCase):
         )
 
     def testIncarcerationPipelineUsMo(self) -> None:
+        self._stop_state_specific_delegate_patchers()
+
         fake_person_id = 12345
         data_dict = self.build_incarceration_pipeline_data_dict(
             fake_person_id=fake_person_id, state_code="US_MO"
@@ -533,19 +543,16 @@ class TestIncarcerationPipeline(unittest.TestCase):
                 expected_output_metric_types=expected_metric_types,
             )
         )
-        with patch(
-            f"{INCARCERATION_PIPELINE_PACKAGE_NAME}.ReadFromBigQuery",
-            read_from_bq_constructor,
-        ):
-            run_test_pipeline(
-                pipeline=pipeline.IncarcerationPipeline(),
-                state_code=state_code,
-                dataset=dataset,
-                read_from_bq_constructor=read_from_bq_constructor,
-                write_to_bq_constructor=write_to_bq_constructor,
-                unifying_id_field_filter_set=unifying_id_field_filter_set,
-                metric_types_filter=metric_types_filter,
-            )
+
+        run_test_pipeline(
+            pipeline=pipeline.IncarcerationPipeline(),
+            state_code=state_code,
+            dataset=dataset,
+            read_from_bq_constructor=read_from_bq_constructor,
+            write_to_bq_constructor=write_to_bq_constructor,
+            unifying_id_field_filter_set=unifying_id_field_filter_set,
+            metric_types_filter=metric_types_filter,
+        )
 
     def build_incarceration_pipeline_data_dict_no_incarceration(
         self, fake_person_id: int
@@ -760,13 +767,23 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
         person_id_to_county_kv: List[Dict[Any, Any]] = None,
     ) -> Dict[str, List]:
         return {
-            "persons": [person],
-            "assessments": assessments or [],
-            "incarceration_periods": incarceration_periods or [],
-            "supervision_periods": supervision_periods or [],
-            "incarceration_sentences": incarceration_sentences or [],
-            "supervision_sentences": supervision_sentences or [],
-            "violation_responses": violation_responses or [],
+            StatePerson.__name__: [person],
+            entities.StateAssessment.__name__: assessments or [],
+            entities.StateSupervisionPeriod.__name__: supervision_periods
+            if supervision_periods
+            else [],
+            entities.StateIncarcerationPeriod.__name__: incarceration_periods
+            if incarceration_periods
+            else [],
+            entities.StateIncarcerationSentence.__name__: incarceration_sentences
+            if incarceration_sentences
+            else [],
+            entities.StateSupervisionSentence.__name__: supervision_sentences
+            if supervision_sentences
+            else [],
+            entities.StateSupervisionViolationResponse.__name__: violation_responses
+            if violation_responses
+            else [],
             "incarceration_period_judicial_district_association": ip_to_judicial_district_kv
             or [],
             "supervision_period_to_agent_association": supervision_period_to_agent_associations_as_kv
@@ -1130,8 +1147,8 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             (
                 self.fake_person_id,
                 {
-                    "person_events": [(fake_person, incarceration_events)],
-                    "person_metadata": [self.person_metadata],
+                    PERSON_EVENTS_KEY: [(fake_person, incarceration_events)],
+                    PERSON_METADATA_KEY: [self.person_metadata],
                 },
             )
         ]
@@ -1178,7 +1195,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
                 self.fake_person_id,
                 {
                     "person_incarceration_events": [(fake_person, [])],
-                    "person_metadata": [self.person_metadata],
+                    PERSON_METADATA_KEY: [self.person_metadata],
                 },
             )
         ]

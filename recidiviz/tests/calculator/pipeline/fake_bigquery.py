@@ -35,6 +35,7 @@ from apache_beam.testing.util import BeamAssertException, assert_that, equal_to
 from more_itertools import one
 
 from recidiviz.calculator.dataflow_config import DATAFLOW_METRICS_TO_TABLES
+from recidiviz.calculator.pipeline.utils.extractor_utils import UNIFYING_ID_KEY
 from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetricType
 from recidiviz.persistence.database.schema_utils import get_state_table_classes
 from recidiviz.tests.calculator.calculator_test_utils import NormalizedDatabaseDict
@@ -54,6 +55,7 @@ ENTITY_TABLE_QUERY_REGEX = re.compile(
     r"WHERE state_code IN \(\'([\w\d]+)\'\)( AND ([a-z_]+) IN \(([\'\w\d ,]+)\))?"
 )
 
+# TODO(#2769): Delete this once all pipelines are using v2 entity hydration
 # Regex matching queries used by calc pipelines to hydrate association table rows.
 # Example query (with newlines added for readability):
 # SELECT state_incarceration_incident_outcome.incarceration_incident_outcome_id,
@@ -175,9 +177,8 @@ class FakeReadFromBigQueryFactory:
             )
 
         if re.match(ASSOCIATION_VALUES_QUERY_REGEX, query):
-            # TODO(#2769): Implement support for this kind of association query
-            raise NotImplementedError(
-                "Must implement to move all pipelines to v2 entity hydration."
+            return FakeReadFromBigQueryFactory._do_fake_association_values_query(
+                data_dict, query, expected_dataset, unifying_id_field
             )
 
         if re.match(ENTITY_TABLE_QUERY_REGEX, query):
@@ -279,6 +280,7 @@ class FakeReadFromBigQueryFactory:
 
         return filtered_rows
 
+    # TODO(#2769): Delete once all pipelines are using v2 entity hydration
     @staticmethod
     def _do_fake_association_tables_query(
         data_dict: DataTablesDict,
@@ -387,6 +389,131 @@ class FakeReadFromBigQueryFactory:
             all_association_table_rows,
             association_table_join_column,
             valid_entity_join_ids,
+            allow_none_values=True,
+        )
+
+    @staticmethod
+    def _do_fake_association_values_query(
+        data_dict: DataTablesDict,
+        query: str,
+        expected_dataset: str,
+        expected_unifying_id_field: str,
+    ) -> List[NormalizedDatabaseDict]:
+        """Parses, validates, and replicates the behavior of the provided association
+        value query string, returning data out of the data_dict object.
+        """
+        match = re.match(ASSOCIATION_VALUES_QUERY_REGEX, query)
+        if not match:
+            raise ValueError(f"Query does not match regex: {query}")
+
+        entity_table_alias_1, unifying_id_field = match.group(1).split(".")
+        association_table_alias_1, root_id = match.group(2).split(".")
+        association_table_alias_2, related_id = match.group(3).split(".")
+
+        dataset_1 = match.group(4)
+        association_table_name = match.group(5)
+        association_table_alias_3 = match.group(6)
+        dataset_2 = match.group(7)
+        entity_table_name = match.group(8)
+        entity_table_alias_2 = match.group(13)
+        entity_table_alias_3, entity_table_join_column = match.group(14).split(".")
+        association_table_alias_4, association_table_join_column = match.group(
+            15
+        ).split(".")
+
+        all_association_table_aliases = {
+            association_table_alias_1,
+            association_table_alias_2,
+            association_table_alias_3,
+            association_table_alias_4,
+        }
+        if len(all_association_table_aliases) != 1:
+            raise ValueError(
+                f"Unexpected multiple association table aliases: {all_association_table_aliases}"
+            )
+
+        all_entity_table_aliases = {
+            entity_table_alias_1,
+            entity_table_alias_2,
+            entity_table_alias_3,
+        }
+        if len(all_association_table_aliases) != 1:
+            raise ValueError(
+                f"Unexpected multiple entity table aliases: {all_entity_table_aliases}"
+            )
+
+        dataset = one({dataset_1, dataset_2})
+        if dataset != expected_dataset:
+            raise ValueError(
+                f"Found dataset {dataset} does not match expected dataset {expected_dataset}"
+            )
+
+        if association_table_name not in data_dict:
+            raise ValueError(f"Table {association_table_name} not in data dict")
+
+        check_field_exists_in_table(association_table_name, root_id)
+        check_field_exists_in_table(association_table_name, related_id)
+        check_field_exists_in_table(
+            association_table_name, association_table_join_column
+        )
+        check_field_exists_in_table(entity_table_name, entity_table_join_column)
+
+        all_entity_table_rows = data_dict[entity_table_name]
+        state_code_value = match.group(9)
+        if not state_code_value:
+            raise ValueError(f"Found no state_code in query [{query}]")
+
+        filtered_entity_rows = filter_results(
+            entity_table_name,
+            all_entity_table_rows,
+            "state_code",
+            {state_code_value},
+            allow_none_values=False,
+        )
+        unifying_id_field_for_filter = match.group(11)
+        unifying_id_field_filter_list_str = match.group(12)
+
+        if unifying_id_field_for_filter and unifying_id_field_filter_list_str:
+            if unifying_id_field_for_filter != expected_unifying_id_field:
+                raise ValueError(
+                    f"Expected value [{expected_unifying_id_field}] for unifying_id_field does not match: "
+                    f"[{unifying_id_field_for_filter}"
+                )
+
+            filtered_entity_rows = filter_results(
+                entity_table_name,
+                filtered_entity_rows,
+                unifying_id_field_for_filter,
+                id_list_str_to_set(unifying_id_field_filter_list_str),
+                allow_none_values=False,
+            )
+        elif unifying_id_field_for_filter or unifying_id_field_filter_list_str:
+            raise ValueError(
+                "Found one of unifying_id_field, unifying_id_field_filter_list_str is None, but not both."
+            )
+
+        valid_entity_join_ids = {
+            row[entity_table_join_column] for row in filtered_entity_rows
+        }
+
+        all_association_table_rows = data_dict[association_table_name]
+
+        joined_filtered_rows = [
+            {
+                UNIFYING_ID_KEY: entity_row[unifying_id_field],
+                root_id: association_table_row[root_id],
+                related_id: association_table_row[related_id],
+            }
+            for entity_row in filtered_entity_rows
+            for association_table_row in all_association_table_rows
+            if entity_row[root_id] == association_table_row[root_id]
+        ]
+
+        return filter_results(
+            table_name=association_table_name,
+            unfiltered_table_rows=joined_filtered_rows,
+            filter_id_name=association_table_join_column,
+            filter_id_set=valid_entity_join_ids,
             allow_none_values=True,
         )
 

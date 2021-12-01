@@ -78,7 +78,10 @@ class UsMoSupervisionPreProcessingDelegate(
         supervision_type_spans: List[SupervisionTypeSpan] = []
         for sentence in sentences:
             if not isinstance(sentence, UsMoSentenceMixin):
-                raise ValueError(f"Unexpected type for sentence: {type(sentence)}")
+                raise ValueError(
+                    f"Unexpected type for sentence: {type(sentence)}. "
+                    f"Found sentence: {sentence}."
+                )
             for supervision_type_span in sentence.supervision_type_spans:
                 supervision_type_spans.append(supervision_type_span)
 

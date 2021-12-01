@@ -38,6 +38,7 @@ from recidiviz.calculator.pipeline.incarceration import (
 from recidiviz.calculator.pipeline.program import pipeline as program_pipeline
 from recidiviz.calculator.pipeline.recidivism import pipeline as recidivism_pipeline
 from recidiviz.calculator.pipeline.supervision import pipeline as supervision_pipeline
+from recidiviz.calculator.pipeline.violation import pipeline as violation_pipeline
 from recidiviz.vendor.modulefinder import modulefinder
 
 PIPELINES = {
@@ -45,6 +46,7 @@ PIPELINES = {
     program_pipeline,
     recidivism_pipeline,
     supervision_pipeline,
+    violation_pipeline,
 }
 
 

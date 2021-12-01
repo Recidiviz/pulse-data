@@ -27,6 +27,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
     is_official_supervision_admission,
 )
+from recidiviz.common.date import DateRange, DateRangeDiff
 from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
 
 
@@ -166,6 +167,15 @@ class PreProcessedSupervisionPeriodIndex:
         ]
 
         return most_recent_previous_supervision_period
+
+    def get_supervision_period_overlapping_with_date_range(
+        self, date_range: DateRange
+    ) -> Optional[StateSupervisionPeriod]:
+        """Returns the first supervision period that overlaps with the given date range."""
+        for supervision_period in self.supervision_periods:
+            if DateRangeDiff(supervision_period.duration, date_range).overlapping_range:
+                return supervision_period
+        return None
 
 
 def _transfer_from_supervision_type_is_official_admission(

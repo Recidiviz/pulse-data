@@ -19,6 +19,9 @@ from recidiviz.calculator.query.state import (
     dataset_config,
     state_specific_query_strings,
 )
+from recidiviz.calculator.query.state.state_specific_query_strings import (
+    STATE_RACE_ETHNICITY_POPULATION_TABLE_NAME,
+)
 from recidiviz.calculator.query.state.views.dashboard.revocation_analysis.revocations_matrix_distribution_by_race import (
     US_PA_SUPPORTED_RACE_VALUES,
 )
@@ -39,14 +42,14 @@ STATE_RACE_ETHNICITY_POPULATION_VIEW_QUERY_TEMPLATE = """
         SELECT
           state_code,
           population_count as total_state_population_count
-        FROM `{project_id}.{static_reference_dataset}.state_race_ethnicity_population_counts`
+        FROM `{project_id}.{static_reference_dataset}.{state_race_ethnicity_population_table}`
         WHERE race_or_ethnicity = 'ALL'
     ), state_specific_group_sums AS (
         SELECT
           state_code,
           {state_specific_race_or_ethnicity_groupings},
           SUM(population_count) as population_count
-        FROM `{project_id}.{static_reference_dataset}.state_race_ethnicity_population_counts` 
+        FROM `{project_id}.{static_reference_dataset}.{state_race_ethnicity_population_table}` 
         WHERE race_or_ethnicity != 'ALL'
         GROUP BY state_code, race_or_ethnicity
     )
@@ -70,6 +73,7 @@ STATE_RACE_ETHNICITY_POPULATION_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dimensions=("state_code", "race_or_ethnicity"),
     description=STATE_RACE_ETHNICITY_POPULATION_VIEW_DESCRIPTION,
     static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
+    state_race_ethnicity_population_table=STATE_RACE_ETHNICITY_POPULATION_TABLE_NAME,
     state_specific_race_or_ethnicity_groupings=state_specific_query_strings.state_specific_race_or_ethnicity_groupings(
         supported_race_overrides={StateCode.US_PA: US_PA_SUPPORTED_RACE_VALUES}
     ),

@@ -209,21 +209,52 @@ class ExtractDataForPipeline(beam.PTransform):
                     )
                 )
 
+                if property_entity_class == state_entities.StatePerson:
+                    # Since all person-level entities are connected to StatePerson,
+                    # not hydrating this relationship significantly reduces the size
+                    # of the python objects.
+                    continue
+
+                # TODO(#9567): Stop checking for the relationship between
+                #  StateSupervisionPeriod and sentences once this entity is on
+                #  the StatePerson
+                # TODO(#9568): Stop checking for the relationship between
+                #  StateIncarcerationPeriod and sentences once this entity is on
+                #  the StatePerson
+                if (
+                    root_entity_class
+                    in (
+                        state_entities.StateIncarcerationSentence,
+                        state_entities.StateSupervisionSentence,
+                    )
+                    and "periods" in property_name
+                ) or (
+                    root_entity_class
+                    in (
+                        state_entities.StateIncarcerationPeriod,
+                        state_entities.StateSupervisionPeriod,
+                    )
+                    and "sentences" in property_name
+                ):
+                    # We are temporarily avoiding hydrating the period to sentence
+                    # relationship to avoid memory issues with this memory-intensive
+                    # relationship
+                    continue
+
                 if property_entity_class in self._required_entities:
                     is_property_forward_edge = self._direction_checker.is_higher_ranked(
                         root_schema_class, property_schema_class
                     )
 
-                    if is_property_forward_edge:
-                        # Many-to-many relationship
-                        if property_object.secondary is not None:
-                            association_table = property_object.secondary.name
-                            association_table_entity_id_field = (
-                                property_entity_class.get_class_id_name()
-                            )
-
+                    # Many-to-many relationship
+                    if property_object.secondary is not None:
+                        association_table = property_object.secondary.name
+                        association_table_entity_id_field = (
+                            property_entity_class.get_class_id_name()
+                        )
+                    elif is_property_forward_edge:
                         # 1-to-many relationship
-                        elif property_object.uselist:
+                        if property_object.uselist:
                             association_table = property_schema_class.__tablename__
                             association_table_entity_id_field = (
                                 property_entity_class.get_class_id_name()
@@ -355,7 +386,14 @@ class ExtractDataForPipeline(beam.PTransform):
 
     def expand(
         self, input_or_inputs: PBegin
-    ) -> PCollection[Tuple[UnifyingId, Dict[EntityClassName, Iterable[Entity]]]]:
+    ) -> PCollection[
+        Tuple[
+            UnifyingId,
+            Dict[
+                Union[EntityClassName, TableName], Union[List[Entity], List[TableRow]]
+            ],
+        ]
+    ]:
         """Does the work of building all entities required for a pipeline
         and hydrating all existing relationships between the entities."""
         shallow_hydrated_entities: Dict[
@@ -437,7 +475,10 @@ class ExtractDataForPipeline(beam.PTransform):
     beam.typehints.Dict[str, List[EntityRelationshipDetails]],
 )
 @with_output_types(
-    beam.typehints.Tuple[UnifyingId, Dict[EntityClassName, Iterable[Entity]]],
+    beam.typehints.Tuple[
+        UnifyingId,
+        Dict[Union[EntityClassName, TableName], Union[List[Entity], List[TableRow]]],
+    ],
 )
 class _ConnectHydratedRelatedEntities(beam.DoFn):
     """Connects all entities of the |root_entity_class| type to all
@@ -1148,7 +1189,7 @@ class _ExtractAssociationValues(_ExtractEntityBase):
                 raise ValueError(
                     "All three association fields must exist on the "
                     "entity if the entity's table is provided as the "
-                    "association table."
+                    f"association table. association_table: {self._association_table}"
                 )
 
             columns_to_include = [
