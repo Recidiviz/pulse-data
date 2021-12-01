@@ -16,6 +16,7 @@
 # =============================================================================
 """Tests for the us_pa_supervision_delegate.py file"""
 import unittest
+from datetime import date
 from typing import Optional
 
 from parameterized import parameterized
@@ -24,6 +25,16 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_supervision_del
     UsPaSupervisionDelegate,
 )
 from recidiviz.common.constants.state.state_assessment import StateAssessmentLevel
+from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionLevel,
+    StateSupervisionPeriodSupervisionType,
+    StateSupervisionPeriodTerminationReason,
+)
+from recidiviz.persistence.entity.state.entities import (
+    StateIncarcerationSentence,
+    StateSupervisionPeriod,
+)
 
 
 class TestUsPaSupervisionDelegate(unittest.TestCase):
@@ -72,4 +83,113 @@ class TestUsPaSupervisionDelegate(unittest.TestCase):
                 assessment_score=11,
                 assessment_level=None,
             )
+        )
+
+    def test_get_projected_completion_date_supervision_period_in_incarceration_sentence(
+        self,
+    ) -> None:
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            state_code="US_PA",
+            start_date=date(2018, 5, 1),
+            termination_date=date(2018, 5, 15),
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_level=StateSupervisionLevel.MEDIUM,
+            supervision_level_raw_text="M",
+        )
+
+        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+            state_code="US_PA",
+            incarceration_sentence_id=123,
+            start_date=date(2018, 5, 1),
+            supervision_periods=[supervision_period],
+            projected_max_release_date=date(2018, 5, 10),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        self.assertEqual(
+            self.supervision_delegate.get_projected_completion_date(
+                supervision_period=supervision_period,
+                incarceration_sentences=[incarceration_sentence],
+                supervision_sentences=[],
+            ),
+            incarceration_sentence.projected_max_release_date,
+        )
+
+    def test_get_projected_completion_date_supervision_period_no_sentence_overlapping(
+        self,
+    ) -> None:
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            state_code="US_PA",
+            start_date=date(2018, 5, 1),
+            termination_date=date(2018, 5, 15),
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_level=StateSupervisionLevel.MEDIUM,
+            supervision_level_raw_text="M",
+        )
+
+        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+            state_code="US_PA",
+            incarceration_sentence_id=123,
+            start_date=date(2018, 4, 1),
+            completion_date=date(2018, 4, 30),
+            supervision_periods=[],
+            projected_max_release_date=date(2018, 5, 10),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        self.assertIsNone(
+            self.supervision_delegate.get_projected_completion_date(
+                supervision_period=supervision_period,
+                incarceration_sentences=[incarceration_sentence],
+                supervision_sentences=[],
+            )
+        )
+
+    def test_get_projected_completion_date_supervision_period_multiple_sentences(
+        self,
+    ) -> None:
+        """Tests that if there are multiple overlapping sentences, we take only the
+        latest date."""
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            state_code="US_PA",
+            start_date=date(2018, 5, 1),
+            termination_date=date(2018, 5, 15),
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_level=StateSupervisionLevel.MEDIUM,
+            supervision_level_raw_text="M",
+        )
+
+        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+            state_code="US_PA",
+            incarceration_sentence_id=123,
+            start_date=date(2018, 5, 1),
+            supervision_periods=[supervision_period],
+            projected_max_release_date=date(2018, 5, 10),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+        )
+        incarceration_sentence_2 = StateIncarcerationSentence.new_with_defaults(
+            state_code="US_PA",
+            incarceration_sentence_id=123,
+            start_date=date(2018, 5, 1),
+            supervision_periods=[supervision_period],
+            projected_max_release_date=date(2018, 6, 10),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        self.assertEqual(
+            self.supervision_delegate.get_projected_completion_date(
+                supervision_period=supervision_period,
+                incarceration_sentences=[
+                    incarceration_sentence,
+                    incarceration_sentence_2,
+                ],
+                supervision_sentences=[],
+            ),
+            incarceration_sentence_2.projected_max_release_date,
         )

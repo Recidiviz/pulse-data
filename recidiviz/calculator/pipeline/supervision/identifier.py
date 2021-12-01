@@ -95,7 +95,6 @@ from recidiviz.persistence.entity.entity_utils import (
     get_single_state_code,
 )
 from recidiviz.persistence.entity.state.entities import (
-    PeriodType,
     StateAssessment,
     StateIncarcerationPeriod,
     StateIncarcerationSentence,
@@ -450,10 +449,10 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                         supervision_period_index, supervision_period
                     )
 
-                projected_end_date = self._get_projected_end_date(
+                projected_end_date = supervision_delegate.get_projected_completion_date(
+                    supervision_period=supervision_period,
                     incarceration_sentences=incarceration_sentences,
                     supervision_sentences=supervision_sentences,
-                    period=supervision_period,
                 )
 
                 supervision_population_events.append(
@@ -803,81 +802,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
             )
 
         return None
-
-    def _get_projected_end_date(
-        self,
-        supervision_sentences: List[StateSupervisionSentence],
-        incarceration_sentences: List[StateIncarcerationSentence],
-        period: PeriodType,
-    ) -> Optional[date]:
-        """Returns the projected completion date. Because supervision and incarceration periods have different
-        relationships with incarceration and supervision sentences, we consider the projected completion date to be the
-        latest projected_completion_date/projected_max_release_date of all sentences that overlap with the given period.
-        """
-        if not supervision_sentences and not incarceration_sentences:
-            return None
-
-        # Get the period start and end dates
-        if isinstance(period, StateSupervisionPeriod):
-            period_start_date = period.start_date
-            period_end_date = period.termination_date
-        else:
-            period_start_date = period.admission_date
-            period_end_date = period.release_date
-
-        # Determine which supervision/incarceration sentence's projected completion date is latest
-        max_projected_end_date: date = date.min
-        for supervision_sentence in supervision_sentences:
-            if self._period_is_within_sentence_bounds(
-                period_start_date,
-                period_end_date,
-                supervision_sentence.start_date,
-                supervision_sentence.completion_date,
-            ):
-                max_projected_end_date = max(
-                    max_projected_end_date,
-                    (supervision_sentence.projected_completion_date or date.min),
-                )
-
-        for incarceration_sentence in incarceration_sentences:
-            if self._period_is_within_sentence_bounds(
-                period_start_date,
-                period_end_date,
-                incarceration_sentence.start_date,
-                incarceration_sentence.completion_date,
-            ):
-                max_projected_end_date = max(
-                    max_projected_end_date,
-                    (incarceration_sentence.projected_max_release_date or date.min),
-                )
-
-        # If none of the sentences had a projected completion date, then the event date cannot be past it.
-        if max_projected_end_date == date.min:
-            return None
-
-        return max_projected_end_date
-
-    def _period_is_within_sentence_bounds(
-        self,
-        period_start_date: Optional[date],
-        period_end_date: Optional[date],
-        sentence_start_date: Optional[date],
-        sentence_end_date: Optional[date],
-    ) -> bool:
-        """Given optional period start and end dates and optional sentence start and end dates, return whether the period is
-        within the sentence's bounds."""
-        if not sentence_start_date or not period_start_date:
-            # Start dates are required to determine overlap
-            return False
-
-        # Assume a missing end_date means the sentence/period is ongoing
-        sentence_end_date = sentence_end_date or date.today()
-        period_end_date = period_end_date or date.today()
-
-        sentence_range = DateRange(sentence_start_date, sentence_end_date)
-        period_range = DateRange(period_start_date, period_end_date)
-
-        return DateRangeDiff(sentence_range, period_range).overlapping_range is not None
 
     def _classify_supervision_success(
         self,
