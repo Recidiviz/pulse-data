@@ -53,17 +53,22 @@ class UsNdMatchingDelegate(BaseStateMatchingDelegate):
 
     # TODO(#10152): Delete once elite_externalmovements_incarceration_periods has
     #  shipped to prod
+    def _is_v2_incarceration_periods_shipped(self) -> bool:
+        return (
+            environment.in_gcp_production()
+            or self.ingest_metadata.database_key
+            == DirectIngestInstance.PRIMARY.database_key_for_state(StateCode.US_ND)
+        )
+
+    # TODO(#10152): Delete once elite_externalmovements_incarceration_periods has
+    #  shipped to prod
     def perform_match_postprocessing(self, matched_persons: List[schema.StatePerson]):
         """Performs the following ND specific postprocessing on the provided
         |matched_persons| directly after they have been entity matched:
             - Transform IncarcerationPeriods periods of temporary custody
               (holds), when appropriate.
         """
-        if (
-            environment.in_gcp_production()
-            or self.ingest_metadata.database_key
-            == DirectIngestInstance.PRIMARY.database_key_for_state(StateCode.US_ND)
-        ):
+        if self._is_v2_incarceration_periods_shipped():
             logging.info("[Entity matching] Transform incarceration periods into holds")
             update_temporary_holds(matched_persons)
 
@@ -74,11 +79,7 @@ class UsNdMatchingDelegate(BaseStateMatchingDelegate):
         |ingested_persons| directly before they are entity matched:
             - Merge incomplete IncarcerationPeriods when possible.
         """
-        if (
-            environment.in_gcp_production()
-            or self.ingest_metadata.database_key
-            == DirectIngestInstance.PRIMARY.database_key_for_state(StateCode.US_ND)
-        ):
+        if self._is_v2_incarceration_periods_shipped():
             logging.info(
                 "[Entity matching] Pre-processing: Merge incarceration periods"
             )
@@ -91,13 +92,14 @@ class UsNdMatchingDelegate(BaseStateMatchingDelegate):
         |db_entity_trees| that does not rely solely on matching by external_id.
         If such a match is found, it is returned.
         """
-        if isinstance(ingested_entity_tree.entity, schema.StateIncarcerationPeriod):
-            return entity_matching_utils.get_only_match(
-                ingested_entity_tree,
-                db_entity_trees,
-                self.field_index,
-                is_incarceration_period_match,
-            )
+        if self._is_v2_incarceration_periods_shipped():
+            if isinstance(ingested_entity_tree.entity, schema.StateIncarcerationPeriod):
+                return entity_matching_utils.get_only_match(
+                    ingested_entity_tree,
+                    db_entity_trees,
+                    self.field_index,
+                    is_incarceration_period_match,
+                )
         if isinstance(
             ingested_entity_tree.entity,
             (
@@ -117,18 +119,21 @@ class UsNdMatchingDelegate(BaseStateMatchingDelegate):
             )
         return None
 
+    # TODO(#10152): Delete once elite_externalmovements_incarceration_periods has
+    #  shipped to prod
     def merge_flat_fields(
         self, from_entity: DatabaseEntity, to_entity: DatabaseEntity
     ) -> DatabaseEntity:
         """Returns ND specific callable to handle merging of entities of type
         |cls|, if a specialized merge is necessary.
         """
-        if isinstance(from_entity, schema.StateIncarcerationPeriod):
-            if not isinstance(to_entity, schema.StateIncarcerationPeriod):
-                raise ValueError(f"Unexpected type for to_entity: {to_entity}")
-            return merge_incomplete_periods(
-                new_entity=from_entity,
-                old_entity=to_entity,
-                field_index=self.field_index,
-            )
+        if self._is_v2_incarceration_periods_shipped():
+            if isinstance(from_entity, schema.StateIncarcerationPeriod):
+                if not isinstance(to_entity, schema.StateIncarcerationPeriod):
+                    raise ValueError(f"Unexpected type for to_entity: {to_entity}")
+                return merge_incomplete_periods(
+                    new_entity=from_entity,
+                    old_entity=to_entity,
+                    field_index=self.field_index,
+                )
         return super().merge_flat_fields(from_entity=from_entity, to_entity=to_entity)
