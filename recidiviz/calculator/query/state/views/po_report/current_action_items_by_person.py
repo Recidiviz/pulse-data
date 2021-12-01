@@ -55,7 +55,10 @@ CURRENT_ACTION_ITEMS_BY_PERSON_QUERY_TEMPLATE = """
       current_supervision_level,
     FROM current_mismatches
     INNER JOIN `{project_id}.{state_dataset}.state_person_external_id` state_person_external_id
-        ON (current_mismatches.person_external_id = state_person_external_id.external_id)
+        ON (
+            current_mismatches.state_code = state_person_external_id.state_code
+            AND current_mismatches.person_external_id = state_person_external_id.external_id
+            )
     INNER JOIN `{project_id}.{state_dataset}.state_person` person USING (person_id)
 """
 
