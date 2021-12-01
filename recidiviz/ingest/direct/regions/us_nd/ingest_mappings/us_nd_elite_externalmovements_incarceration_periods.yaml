@@ -113,6 +113,11 @@ output:
                       admission_reason:
                         $enum_mapping:
                           $raw_text: admission_reason_code
+                          $ignore:
+                            - COM
+                            - CONT
+                            - CONV
+                            - NTAD
                           $mappings:
                             StateIncarcerationPeriodAdmissionReason.ADMITTED_IN_ERROR:
                               - ADM ERROR
@@ -155,6 +160,12 @@ output:
                       release_reason:
                         $enum_mapping:
                           $raw_text: release_reason_code
+                          $ignore:
+                            - ADMN
+                            - CONT
+                            - CONV
+                            - REC
+                            - "4139"
                           $mappings:
                             StateIncarcerationPeriodReleaseReason.ESCAPE:
                               - ESC
