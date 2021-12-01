@@ -41,7 +41,6 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
     StateSupervisionPeriodAdmissionReason,
 )
-from recidiviz.common.date import DateRange
 from recidiviz.persistence.entity.state.entities import StateSupervisionContact
 
 NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS = 45
@@ -209,9 +208,8 @@ class UsPaSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
             )
             or self._is_incarcerated(compliance_evaluation_date)
             or self._is_in_parole_board_hold(compliance_evaluation_date)
-            or self._is_past_max_date_of_supervision(compliance_evaluation_date)
             or self._is_actively_absconding(compliance_evaluation_date)
-            or self._is_within_max_date_of_supervision(compliance_evaluation_date)
+            # TODO(#9882): Check _is_past_max_date_of_supervision
         )
 
     def _can_skip_direct_contact(self, compliance_evaluation_date: date) -> bool:
@@ -219,7 +217,7 @@ class UsPaSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
         return (
             self._is_incarcerated(compliance_evaluation_date)
             or self._is_in_parole_board_hold(compliance_evaluation_date)
-            or self._is_past_max_date_of_supervision(compliance_evaluation_date)
+            # TODO(#9882): Check _is_past_max_date_of_supervision
             or self._is_actively_absconding(compliance_evaluation_date)
         )
 
@@ -335,7 +333,7 @@ class UsPaSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
         return (
             self._is_incarcerated(compliance_evaluation_date)
             or self._is_in_parole_board_hold(compliance_evaluation_date)
-            or self._is_past_max_date_of_supervision(compliance_evaluation_date)
+            # TODO(#9882): Check _is_past_max_date_of_supervision
         )
 
     def _next_recommended_treatment_collateral_contact_date(
@@ -419,19 +417,13 @@ class UsPaSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
     def _max_completion_date_of_supervision(
         self, compliance_evaluation_date: date
     ) -> date:
-        completion_dates = [
-            supervision_sentence.projected_completion_date
-            for supervision_sentence in self.supervision_period.supervision_sentences
-            if supervision_sentence.projected_completion_date
-            and supervision_sentence.start_date
-            and DateRange.from_maybe_open_range(
-                supervision_sentence.start_date,
-                supervision_sentence.projected_completion_date,
-            ).contains_day(compliance_evaluation_date)
-        ]
-        if completion_dates:
-            return max(completion_dates)
-        return date.max
+        raise NotImplementedError(
+            "This function is waiting on issue #9274 to be "
+            "resolved before being implemented."
+        )
+        # TODO(#9882): Return the max projected_max_release_date on all
+        #  StateIncarcerationSentence entities overlapping with the
+        #  compliance_evaluation_date
 
     def _is_past_max_date_of_supervision(
         self, compliance_evaluation_date: date

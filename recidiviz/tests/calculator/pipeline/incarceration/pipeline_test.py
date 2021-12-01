@@ -75,8 +75,8 @@ from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
     StateIncarcerationSentence,
     StatePerson,
-    StateSentenceGroup,
     StateSupervisionPeriod,
+    StateSupervisionSentence,
 )
 from recidiviz.tests.calculator.calculator_test_utils import (
     normalized_database_base_dict,
@@ -136,7 +136,7 @@ INCARCERATION_PIPELINE_PACKAGE_NAME = pipeline.__name__
 
 ROOT_SCHEMA_CLASSES_FOR_PIPELINE = [
     schema.StatePerson,
-    schema.StateSentenceGroup,
+    schema.StateIncarcerationPeriod,
     schema.StateSupervisionPeriod,
     schema.StateSupervisionViolation,
     schema.StateSupervisionViolationResponse,
@@ -255,13 +255,6 @@ class TestIncarcerationPipeline(unittest.TestCase):
 
         ethnicity_data = normalized_database_base_dict_list([ethnicity])
 
-        sentence_group = schema.StateSentenceGroup(
-            sentence_group_id=98765,
-            state_code=state_code,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            person_id=fake_person_id,
-        )
-
         initial_incarceration = schema.StateIncarcerationPeriod(
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -325,22 +318,12 @@ class TestIncarcerationPipeline(unittest.TestCase):
             incarceration_sentence_id=1111,
             state_code=state_code,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            sentence_group_id=sentence_group.sentence_group_id,
-            incarceration_periods=[
-                initial_incarceration,
-                first_reincarceration,
-                subsequent_reincarceration,
-            ],
-            supervision_periods=[
-                supervision_period,
-            ],
             person_id=fake_person_id,
         )
 
         supervision_sentence = schema.StateSupervisionSentence(
             supervision_sentence_id=123,
             state_code=state_code,
-            sentence_group_id=sentence_group.sentence_group_id,
             person_id=fake_person_id,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
         )
@@ -352,11 +335,6 @@ class TestIncarcerationPipeline(unittest.TestCase):
             assessment_type=StateAssessmentType.LSIR,
             person_id=fake_person_id,
         )
-
-        sentence_group.incarceration_sentences = [incarceration_sentence]
-        sentence_group.supervision_sentences = [supervision_sentence]
-
-        sentence_group_data = [normalized_database_base_dict(sentence_group)]
 
         incarceration_sentence_data = [
             normalized_database_base_dict(incarceration_sentence)
@@ -397,28 +375,6 @@ class TestIncarcerationPipeline(unittest.TestCase):
         ]
 
         assessment_data = [normalized_database_base_dict(assessment)]
-
-        state_incarceration_sentence_incarceration_period_association = [
-            {
-                "incarceration_period_id": initial_incarceration.incarceration_period_id,
-                "incarceration_sentence_id": incarceration_sentence.incarceration_sentence_id,
-            },
-            {
-                "incarceration_period_id": first_reincarceration.incarceration_period_id,
-                "incarceration_sentence_id": incarceration_sentence.incarceration_sentence_id,
-            },
-            {
-                "incarceration_period_id": subsequent_reincarceration.incarceration_period_id,
-                "incarceration_sentence_id": incarceration_sentence.incarceration_sentence_id,
-            },
-        ]
-
-        incarceration_sentence_supervision_period_association = [
-            {
-                "supervision_period_id": supervision_period.supervision_period_id,
-                "incarceration_sentence_id": incarceration_sentence.incarceration_sentence_id,
-            },
-        ]
 
         fake_person_id_to_county_query_result = [
             {
@@ -475,16 +431,15 @@ class TestIncarcerationPipeline(unittest.TestCase):
             schema.StatePerson.__tablename__: persons_data,
             schema.StatePersonRace.__tablename__: races_data,
             schema.StatePersonEthnicity.__tablename__: ethnicity_data,
-            schema.StateSentenceGroup.__tablename__: sentence_group_data,
             schema.StateIncarcerationSentence.__tablename__: incarceration_sentence_data,
             schema.StateSupervisionSentence.__tablename__: supervision_sentence_data,
             schema.StateIncarcerationPeriod.__tablename__: incarceration_periods_data,
             schema.StateSupervisionViolationResponse.__tablename__: supervision_violation_response_data,
             schema.StateSupervisionViolation.__tablename__: supervision_violation_data,
             schema.StateSupervisionPeriod.__tablename__: supervision_periods_data,
-            schema.state_incarceration_sentence_supervision_period_association_table.name: incarceration_sentence_supervision_period_association,
+            schema.state_incarceration_sentence_supervision_period_association_table.name: [],
             schema.StateAssessment.__tablename__: assessment_data,
-            schema.state_incarceration_sentence_incarceration_period_association_table.name: state_incarceration_sentence_incarceration_period_association,
+            schema.state_incarceration_sentence_incarceration_period_association_table.name: [],
             "persons_to_recent_county_of_residence": fake_person_id_to_county_query_result,
             "incarceration_period_judicial_district_association": incarceration_period_judicial_district_association_data,
             "state_race_ethnicity_population_counts": state_race_ethnicity_population_count_data,
@@ -619,18 +574,9 @@ class TestIncarcerationPipeline(unittest.TestCase):
             normalized_database_base_dict(fake_person_2),
         ]
 
-        sentence_group = schema.StateSentenceGroup(
-            sentence_group_id=111,
-            state_code="US_XX",
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            person_id=fake_person_id,
-        )
-
         incarceration_sentence = schema.StateIncarcerationSentence(
             incarceration_sentence_id=1111,
             state_code="US_XX",
-            sentence_group_id=sentence_group.sentence_group_id,
-            incarceration_periods=[],
             person_id=fake_person_id,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
         )
@@ -642,10 +588,6 @@ class TestIncarcerationPipeline(unittest.TestCase):
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
         )
 
-        sentence_group.incarceration_sentences = [incarceration_sentence]
-
-        sentence_group_data = [normalized_database_base_dict(sentence_group)]
-
         incarceration_sentence_data = [
             normalized_database_base_dict(incarceration_sentence)
         ]
@@ -655,13 +597,6 @@ class TestIncarcerationPipeline(unittest.TestCase):
         ]
 
         incarceration_periods_data: Dict[str, Any] = {}
-
-        state_incarceration_sentence_incarceration_period_association = [
-            {
-                "incarceration_period_id": None,
-                "incarceration_sentence_id": incarceration_sentence.incarceration_sentence_id,
-            },
-        ]
 
         fake_person_id_to_county_query_result = [
             {
@@ -716,11 +651,10 @@ class TestIncarcerationPipeline(unittest.TestCase):
         )
         data_dict_overrides = {
             schema.StatePerson.__tablename__: persons_data,
-            schema.StateSentenceGroup.__tablename__: sentence_group_data,
             schema.StateIncarcerationSentence.__tablename__: incarceration_sentence_data,
             schema.StateSupervisionSentence.__tablename__: supervision_sentence_data,
             schema.StateIncarcerationPeriod.__tablename__: incarceration_periods_data,
-            schema.state_incarceration_sentence_incarceration_period_association_table.name: state_incarceration_sentence_incarceration_period_association,
+            schema.state_incarceration_sentence_incarceration_period_association_table.name: [],
             "persons_to_recent_county_of_residence": fake_person_id_to_county_query_result,
             "incarceration_period_judicial_district_association": incarceration_period_judicial_district_association_data,
             "state_race_ethnicity_population_counts": state_race_ethnicity_population_count_data,
@@ -815,7 +749,10 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
     @staticmethod
     def load_person_entities_dict(
         person: StatePerson,
-        sentence_groups: List[entities.StateSentenceGroup] = None,
+        incarceration_periods: List[StateIncarcerationPeriod] = None,
+        supervision_sentences: List[StateSupervisionSentence] = None,
+        incarceration_sentences: List[StateIncarcerationSentence] = None,
+        supervision_periods: List[StateSupervisionPeriod] = None,
         violation_responses: List[entities.StateSupervisionViolationResponse] = None,
         assessments: List[entities.StateAssessment] = None,
         ip_to_judicial_district_kv: List[Dict[Any, Any]] = None,
@@ -825,7 +762,10 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
         return {
             "persons": [person],
             "assessments": assessments or [],
-            "sentence_groups": sentence_groups or [],
+            "incarceration_periods": incarceration_periods or [],
+            "supervision_periods": supervision_periods or [],
+            "incarceration_sentences": incarceration_sentences or [],
+            "supervision_sentences": supervision_sentences or [],
             "violation_responses": violation_responses or [],
             "incarceration_period_judicial_district_association": ip_to_judicial_district_kv
             or [],
@@ -878,21 +818,8 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
             state_code=state_code,
             incarceration_sentence_id=123,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            incarceration_periods=[incarceration_period],
-            supervision_periods=[supervision_period],
             start_date=date(2009, 2, 9),
         )
-
-        sentence_group = StateSentenceGroup.new_with_defaults(
-            state_code=state_code,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            sentence_group_id=123,
-            incarceration_sentences=[incarceration_sentence],
-        )
-
-        incarceration_sentence.sentence_group = sentence_group
-
-        incarceration_period.incarceration_sentences = [incarceration_sentence]
 
         fake_person_id_to_county_query_result = {
             "person_id": fake_person_id,
@@ -966,7 +893,9 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
 
         person_entities = self.load_person_entities_dict(
             person=fake_person,
-            sentence_groups=[sentence_group],
+            incarceration_periods=[incarceration_period],
+            supervision_periods=[supervision_period],
+            incarceration_sentences=[incarceration_sentence],
             ip_to_judicial_district_kv=[
                 fake_incarceration_period_judicial_district_association_result
             ],
@@ -1065,32 +994,8 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
             state_code="US_XX",
             incarceration_sentence_id=123,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            incarceration_periods=[
-                incarceration_period_with_death,
-                post_mortem_incarceration_period_1,
-                post_mortem_incarceration_period_2,
-            ],
             start_date=date(2009, 2, 9),
         )
-
-        sentence_group = StateSentenceGroup.new_with_defaults(
-            state_code="US_XX",
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            sentence_group_id=123,
-            incarceration_sentences=[incarceration_sentence],
-        )
-
-        incarceration_sentence.sentence_group = sentence_group
-
-        incarceration_period_with_death.incarceration_sentences = [
-            incarceration_sentence
-        ]
-        post_mortem_incarceration_period_1.incarceration_sentences = [
-            incarceration_sentence
-        ]
-        post_mortem_incarceration_period_2.incarceration_sentences = [
-            incarceration_sentence
-        ]
 
         fake_person_id_to_county_query_result = {
             "person_id": fake_person_id,
@@ -1152,7 +1057,12 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
 
         person_entities = self.load_person_entities_dict(
             person=fake_person,
-            sentence_groups=[sentence_group],
+            incarceration_periods=[
+                incarceration_period_with_death,
+                post_mortem_incarceration_period_1,
+                post_mortem_incarceration_period_2,
+            ],
+            incarceration_sentences=[incarceration_sentence],
             ip_to_judicial_district_kv=[
                 fake_incarceration_period_judicial_district_association_result
             ],

@@ -40,8 +40,6 @@ from recidiviz.calculator.pipeline.utils.beam_utils import (
 )
 from recidiviz.calculator.pipeline.utils.entity_hydration_utils import (
     ConvertSentencesToStateSpecificType,
-    SetSentencesOnSentenceGroup,
-    SetSupervisionPeriodsOnSentences,
     SetViolationOnViolationsResponse,
 )
 from recidiviz.calculator.pipeline.utils.execution_utils import (
@@ -105,16 +103,6 @@ class IncarcerationPipeline(BasePipeline):
             state_code=state_code,
         )
 
-        # Get StateSentenceGroups
-        sentence_groups = pipeline | "Load StateSentenceGroups" >> BuildRootEntity(
-            dataset=input_dataset,
-            root_entity_class=entities.StateSentenceGroup,
-            unifying_id_field=entities.StatePerson.get_class_id_name(),
-            build_related_entities=True,
-            unifying_id_field_filter_set=person_id_filter_set,
-            state_code=state_code,
-        )
-
         # Get StateIncarcerationSentences
         incarceration_sentences = (
             pipeline
@@ -123,7 +111,7 @@ class IncarcerationPipeline(BasePipeline):
                 dataset=input_dataset,
                 root_entity_class=entities.StateIncarcerationSentence,
                 unifying_id_field=entities.StatePerson.get_class_id_name(),
-                build_related_entities=True,
+                build_related_entities=False,
                 unifying_id_field_filter_set=person_id_filter_set,
                 state_code=state_code,
             )
@@ -137,7 +125,21 @@ class IncarcerationPipeline(BasePipeline):
                 dataset=input_dataset,
                 root_entity_class=entities.StateSupervisionSentence,
                 unifying_id_field=entities.StatePerson.get_class_id_name(),
-                build_related_entities=True,
+                build_related_entities=False,
+                unifying_id_field_filter_set=person_id_filter_set,
+                state_code=state_code,
+            )
+        )
+
+        # Get StateIncarcerationPeriods
+        incarceration_periods = (
+            pipeline
+            | "Load StateIncarcerationPeriods"
+            >> BuildRootEntity(
+                dataset=input_dataset,
+                root_entity_class=entities.StateIncarcerationPeriod,
+                unifying_id_field=entities.StatePerson.get_class_id_name(),
+                build_related_entities=False,
                 unifying_id_field_filter_set=person_id_filter_set,
                 state_code=state_code,
             )
@@ -240,43 +242,6 @@ class IncarcerationPipeline(BasePipeline):
             )
         )
 
-        # Set hydrated supervision periods on the corresponding incarceration sentences
-        incarceration_sentences_with_hydrated_sps = (
-            {
-                "supervision_periods": supervision_periods,
-                "sentences": sentences_converted.incarceration_sentences,
-            }
-            | "Group supervision periods to incarceration sentences"
-            >> beam.CoGroupByKey()
-            | "Set hydrated supervision periods on incarceration sentences"
-            >> beam.ParDo(SetSupervisionPeriodsOnSentences())
-        )
-
-        # Set hydrated supervision periods on the corresponding supervision sentences
-        supervision_sentences_with_hydrated_sps = (
-            {
-                "supervision_periods": supervision_periods,
-                "sentences": sentences_converted.supervision_sentences,
-            }
-            | "Group supervision periods to supervision sentences"
-            >> beam.CoGroupByKey()
-            | "Set hydrated supervision periods on supervision sentences"
-            >> beam.ParDo(SetSupervisionPeriodsOnSentences())
-        )
-
-        sentences_and_sentence_groups = {
-            "sentence_groups": sentence_groups,
-            "incarceration_sentences": incarceration_sentences_with_hydrated_sps,
-            "supervision_sentences": supervision_sentences_with_hydrated_sps,
-        } | "Group sentences to sentence groups" >> beam.CoGroupByKey()
-
-        # Set hydrated sentences on the corresponding sentence groups
-        sentence_groups_with_hydrated_sentences = (
-            sentences_and_sentence_groups
-            | "Set hydrated sentences on sentence groups"
-            >> beam.ParDo(SetSentencesOnSentenceGroup())
-        )
-
         # Bring in the table that associates people and their county of residence
         person_id_to_county_kv = (
             pipeline
@@ -349,8 +314,11 @@ class IncarcerationPipeline(BasePipeline):
         # Group each StatePerson with their related entities
         person_entities = {
             "persons": persons,
+            "incarceration_periods": incarceration_periods,
+            "supervision_periods": supervision_periods,
+            "incarceration_sentences": sentences_converted.incarceration_sentences,
+            "supervision_sentences": sentences_converted.supervision_sentences,
             "assessments": assessments,
-            "sentence_groups": sentence_groups_with_hydrated_sentences,
             "violation_responses": violation_responses_with_hydrated_violations,
             "incarceration_period_judicial_district_association": ip_to_judicial_district_kv,
             "supervision_period_to_agent_association": supervision_period_to_agent_associations_as_kv,

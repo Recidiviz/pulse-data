@@ -15,9 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Utils for validating and manipulating supervision periods for use in calculations."""
-import itertools
 import sys
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from dateutil.relativedelta import relativedelta
 
@@ -40,9 +39,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
 from recidiviz.common.date import DateRange, DateRangeDiff
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
-    StateIncarcerationSentence,
     StateSupervisionPeriod,
-    StateSupervisionSentence,
 )
 
 CASE_TYPE_SEVERITY_ORDER = [
@@ -86,35 +83,6 @@ def standard_date_sort_for_supervision_periods(
         is_transfer_start_function=_is_transfer_start,
         is_transfer_end_function=_is_transfer_end,
     )
-
-    return supervision_periods
-
-
-def get_supervision_periods_from_sentences(
-    incarceration_sentences: List[StateIncarcerationSentence],
-    supervision_sentences: List[StateSupervisionSentence],
-) -> List[StateSupervisionPeriod]:
-    """Returns all unique supervision periods associated with any of the given
-    sentences."""
-    sentences = itertools.chain(supervision_sentences, incarceration_sentences)
-    supervision_period_ids: Set[int] = set()
-    supervision_periods: List[StateSupervisionPeriod] = []
-
-    for sentence in sentences:
-        if not isinstance(
-            sentence, (StateIncarcerationSentence, StateSupervisionSentence)
-        ):
-            raise ValueError(f"Sentence has unexpected type {type(sentence)}")
-
-        for supervision_period in sentence.supervision_periods:
-            supervision_period_id = supervision_period.supervision_period_id
-
-            if (
-                supervision_period_id is not None
-                and supervision_period_id not in supervision_period_ids
-            ):
-                supervision_periods.append(supervision_period)
-                supervision_period_ids.add(supervision_period_id)
 
     return supervision_periods
 
@@ -283,7 +251,6 @@ def _sort_supervision_periods_for_release_type(
         3. The duration of the supervision period. Longer is better so more negative."""
 
     proximity = sys.maxsize
-    duration = sys.maxsize
     matches_supervision_type = 0
 
     if supervision_period.start_date and incarceration_period.release_date:
