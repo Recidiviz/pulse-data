@@ -17,7 +17,7 @@
 """Identifier class for events related to incarceration."""
 import logging
 from datetime import date
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from dateutil.relativedelta import relativedelta
 
@@ -103,12 +103,10 @@ from recidiviz.persistence.entity.entity_utils import (
     get_single_state_code,
 )
 from recidiviz.persistence.entity.state.entities import (
-    PeriodType,
     StateAssessment,
     StateIncarcerationPeriod,
     StateIncarcerationSentence,
     StatePerson,
-    StateSentenceGroup,
     StateSupervisionPeriod,
     StateSupervisionSentence,
     StateSupervisionViolationResponse,
@@ -129,7 +127,10 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
 
     def _find_incarceration_events(
         self,
-        sentence_groups: List[StateSentenceGroup],
+        incarceration_periods: List[StateIncarcerationPeriod],
+        incarceration_sentences: List[StateIncarcerationSentence],
+        supervision_sentences: List[StateSupervisionSentence],
+        supervision_periods: List[StateSupervisionPeriod],
         assessments: List[StateAssessment],
         violation_responses: List[StateSupervisionViolationResponse],
         incarceration_period_judicial_district_association: List[Dict[str, Any]],
@@ -137,30 +138,13 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
         supervision_period_to_agent_association: List[Dict[str, Any]],
     ) -> List[IncarcerationEvent]:
         """Finds instances of various events related to incarceration.
-        Transforms the person's StateIncarcerationPeriods, which are connected to their StateSentenceGroups, into
-        IncarcerationAdmissionEvents, IncarcerationStayEvents, and IncarcerationReleaseEvents, representing admissions,
-        stays in, and releases from incarceration in a state prison.
-        Args:
-            - sentence_groups: All of the person's StateSentenceGroups
-            - incarceration_period_judicial_district_association: A list of dictionaries with information connecting
-                StateIncarcerationPeriod ids to the judicial district responsible for the period of incarceration
-            - persons_to_recent_county_of_residence: Reference table rows containing the county that the incarcerated person
-                lives in (prior to incarceration).
+        Transforms the person's StateIncarcerationPeriods into various
+        IncarcerationEvents.
+
         Returns:
             A list of IncarcerationEvents for the person.
         """
         incarceration_events: List[IncarcerationEvent] = []
-        incarceration_sentences: List[StateIncarcerationSentence] = []
-        supervision_sentences: List[StateSupervisionSentence] = []
-        for sentence_group in sentence_groups:
-            incarceration_sentences.extend(sentence_group.incarceration_sentences)
-            supervision_sentences.extend(sentence_group.supervision_sentences)
-        (
-            incarceration_periods,
-            supervision_periods,
-        ) = self._get_unique_periods_from_sentence_groups_and_add_backedges(
-            sentence_groups
-        )
 
         if not incarceration_periods:
             return incarceration_events
@@ -783,86 +767,3 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
             )
 
         return None
-
-    # TODO(#2769): Remove once we get all required entities sent to the identifier
-    def _get_unique_periods_from_sentence_groups_and_add_backedges(
-        self,
-        sentence_groups: List[StateSentenceGroup],
-    ) -> Tuple[List[StateIncarcerationPeriod], List[StateSupervisionPeriod]]:
-        """Returns a list of unique StateIncarcerationPeriods and StateSupervisionSentences hanging off of the
-        StateSentenceGroups. Additionally adds sentence backedges to all StateIncarcerationPeriods/StateSupervisionPeriods.
-        """
-
-        incarceration_periods_and_sentences: List[
-            Tuple[
-                Union[StateSupervisionSentence, StateIncarcerationSentence],
-                StateIncarcerationPeriod,
-            ]
-        ] = []
-        supervision_periods_and_sentences: List[
-            Tuple[
-                Union[StateSupervisionSentence, StateIncarcerationSentence],
-                StateSupervisionPeriod,
-            ]
-        ] = []
-
-        for sentence_group in sentence_groups:
-            for incarceration_sentence in sentence_group.incarceration_sentences:
-                for (
-                    incarceration_period
-                ) in incarceration_sentence.incarceration_periods:
-                    incarceration_periods_and_sentences.append(
-                        (incarceration_sentence, incarceration_period)
-                    )
-                for supervision_period in incarceration_sentence.supervision_periods:
-                    supervision_periods_and_sentences.append(
-                        (incarceration_sentence, supervision_period)
-                    )
-            for supervision_sentence in sentence_group.supervision_sentences:
-                for incarceration_period in supervision_sentence.incarceration_periods:
-                    incarceration_periods_and_sentences.append(
-                        (supervision_sentence, incarceration_period)
-                    )
-                for supervision_period in supervision_sentence.supervision_periods:
-                    supervision_periods_and_sentences.append(
-                        (supervision_sentence, supervision_period)
-                    )
-
-        unique_incarceration_periods = self._set_backedges_and_return_unique_periods(
-            incarceration_periods_and_sentences
-        )
-        unique_supervision_periods = self._set_backedges_and_return_unique_periods(
-            supervision_periods_and_sentences
-        )
-
-        return unique_incarceration_periods, unique_supervision_periods
-
-    # TODO(#2769): Remove once all required relationships are hydrated at extraction
-    #  time
-    def _set_backedges_and_return_unique_periods(
-        self,
-        sentences_and_periods: List[
-            Tuple[
-                Union[StateSupervisionSentence, StateIncarcerationSentence], PeriodType
-            ]
-        ],
-    ) -> List[PeriodType]:
-        period_ids: Set[int] = set()
-
-        unique_periods = []
-        for sentence, period in sentences_and_periods:
-            # Setting this manually because this direction of hydration doesn't happen
-            # in the hydration steps
-            if isinstance(sentence, StateSupervisionSentence):
-                period.supervision_sentences.append(sentence)
-            if isinstance(sentence, StateIncarcerationSentence):
-                period.incarceration_sentences.append(sentence)
-
-            period_id = period.get_id()
-            if not period_id:
-                raise ValueError("No period id found for incarceration period.")
-            if period_id and period_id not in period_ids:
-                period_ids.add(period_id)
-                unique_periods.append(period)
-
-        return unique_periods
