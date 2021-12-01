@@ -27,7 +27,13 @@ from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentLevel,
     StateAssessmentType,
 )
-from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionPeriodSupervisionType,
+)
+from recidiviz.persistence.entity.state.entities import (
+    StateIncarcerationPeriod,
+    StateSupervisionPeriod,
+)
 
 
 class StateSpecificSupervisionDelegate(abc.ABC):
@@ -130,4 +136,12 @@ class StateSpecificSupervisionDelegate(abc.ABC):
             if assessment_score <= 38:
                 return "30-38"
             return "39+"
+        return None
+
+    def get_incarceration_period_supervision_type_at_release(
+        self, incarceration_period: StateIncarcerationPeriod
+    ) -> Optional[StateSupervisionPeriodSupervisionType]:
+        """For some states, we may need to look at the incarceration period to determine
+        the supervision type upon release. By default, returns None, as it's assumed
+        we will use the supervision period's supervision type that corresponds date-wise."""
         return None
