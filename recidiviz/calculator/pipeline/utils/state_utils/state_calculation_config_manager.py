@@ -15,9 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Manages state-specific methodology decisions made throughout the calculation pipelines."""
-import logging
-
-# TODO(#2995): Make a state config file for every state and every one of these state-specific calculation methodologies
 from datetime import date
 from typing import List, Optional
 
@@ -57,9 +54,6 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_del
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_period_pre_processing_delegate import (
     UsIdSupervisionPreProcessingDelegate,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_utils import (
-    us_id_get_post_incarceration_supervision_type,
-)
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_violation_response_preprocessing_delegate import (
     UsIdViolationResponsePreprocessingDelegate,
 )
@@ -80,9 +74,6 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_supervision_del
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_supervision_period_pre_processing_delegate import (
     UsMoSupervisionPreProcessingDelegate,
-)
-from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_supervision_utils import (
-    us_mo_get_post_incarceration_supervision_type,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_violation_response_preprocessing_delegate import (
     UsMoViolationResponsePreprocessingDelegate,
@@ -107,9 +98,6 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_del
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_period_pre_processing_delegate import (
     UsNdSupervisionPreProcessingDelegate,
-)
-from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_utils import (
-    us_nd_get_post_incarceration_supervision_type,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_violation_response_preprocessing_delegate import (
     UsNdViolationResponsePreprocessingDelegate,
@@ -151,56 +139,14 @@ from recidiviz.calculator.pipeline.utils.supervision_violation_responses_pre_pro
     StateSpecificViolationResponsePreProcessingDelegate,
 )
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
-from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionPeriodSupervisionType,
-)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.state.entities import (
     StateAssessment,
-    StateIncarcerationPeriod,
-    StateIncarcerationSentence,
     StatePerson,
     StateSupervisionContact,
     StateSupervisionPeriod,
-    StateSupervisionSentence,
     StateSupervisionViolationResponse,
 )
-
-
-# TODO(#2995): Remove usage when all logic is in state-specific delegates
-def get_post_incarceration_supervision_type(
-    incarceration_sentences: List[StateIncarcerationSentence],
-    supervision_sentences: List[StateSupervisionSentence],
-    incarceration_period: StateIncarcerationPeriod,
-) -> Optional[StateSupervisionPeriodSupervisionType]:
-    """If the person was released from incarceration onto some form of supervision, returns the type of supervision
-    they were released to. This function must be implemented for each state for which we need this output. There is not
-    a default way to determine the supervision type someone is released onto.
-
-    Args:
-        incarceration_sentences: (List[StateIncarcerationSentence]) All IncarcerationSentences associated with this
-            person.
-        supervision_sentences: (List[StateSupervisionSentence]) All SupervisionSentences associated with this person.
-        incarceration_period: (StateIncarcerationPeriod) The incarceration period the person was released from.
-    """
-    state_code = incarceration_period.state_code
-
-    if state_code.upper() == "US_ID":
-        return us_id_get_post_incarceration_supervision_type(
-            incarceration_sentences, supervision_sentences, incarceration_period
-        )
-    if state_code.upper() == "US_MO":
-        return us_mo_get_post_incarceration_supervision_type(
-            incarceration_sentences, supervision_sentences, incarceration_period
-        )
-    if state_code.upper() == "US_ND":
-        return us_nd_get_post_incarceration_supervision_type(incarceration_period)
-
-    logging.warning(
-        "get_post_incarceration_supervision_type not implemented for state: %s",
-        state_code,
-    )
-    return None
 
 
 def get_state_specific_case_compliance_manager(

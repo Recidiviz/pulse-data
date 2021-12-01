@@ -16,11 +16,17 @@
 # =============================================================================
 """Utils for validating and manipulating supervision periods for use in calculations."""
 import itertools
+import sys
 from typing import Any, Dict, List, Optional, Set, Tuple
+
+from dateutil.relativedelta import relativedelta
 
 from recidiviz.calculator.pipeline.supervision.events import SupervisionPopulationEvent
 from recidiviz.calculator.pipeline.utils.period_utils import (
     sort_periods_by_set_dates_and_statuses,
+)
+from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index import (
+    PreProcessedSupervisionPeriodIndex,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_delegate import (
     StateSpecificSupervisionDelegate,
@@ -31,7 +37,9 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
+from recidiviz.common.date import DateRange, DateRangeDiff
 from recidiviz.persistence.entity.state.entities import (
+    StateIncarcerationPeriod,
     StateIncarcerationSentence,
     StateSupervisionPeriod,
     StateSupervisionSentence,
@@ -50,6 +58,8 @@ CASE_TYPE_SEVERITY_ORDER = [
     StateSupervisionCaseType.ALCOHOL_DRUG,
     StateSupervisionCaseType.GENERAL,
 ]
+
+POST_RELEASE_LOOKFORWARD_DAYS = 30
 
 
 def _is_transfer_start(period: StateSupervisionPeriod) -> bool:
@@ -218,3 +228,83 @@ def should_produce_supervision_event_for_period(
         supervision_period.supervision_type
         != StateSupervisionPeriodSupervisionType.INVESTIGATION
     )
+
+
+def get_post_incarceration_supervision_type(
+    incarceration_period: StateIncarcerationPeriod,
+    supervision_period_index: PreProcessedSupervisionPeriodIndex,
+    supervision_delegate: StateSpecificSupervisionDelegate,
+) -> Optional[StateSupervisionPeriodSupervisionType]:
+    """If the person was released from incarceration onto some form of supervision,
+    returns the type of supervision they were released to."""
+
+    if not incarceration_period.release_date:
+        raise ValueError(
+            f"No release date for incarceration period {incarceration_period.incarceration_period_id}"
+        )
+
+    release_date_lookforward_date_range = DateRange(
+        incarceration_period.release_date,
+        incarceration_period.release_date
+        + relativedelta(days=POST_RELEASE_LOOKFORWARD_DAYS),
+    )
+
+    overlapping_sps = [
+        supervision_period
+        for supervision_period in supervision_period_index.supervision_periods
+        if DateRangeDiff(
+            supervision_period.duration, release_date_lookforward_date_range
+        ).overlapping_range
+    ]
+
+    if overlapping_sps:
+        relevant_sp = sorted(
+            overlapping_sps,
+            key=lambda sp: _sort_supervision_periods_for_release_type(
+                sp, incarceration_period, supervision_delegate
+            ),
+        )[0]
+        return relevant_sp.supervision_type
+
+    return None
+
+
+def _sort_supervision_periods_for_release_type(
+    supervision_period: StateSupervisionPeriod,
+    incarceration_period: StateIncarcerationPeriod,
+    supervision_delegate: StateSpecificSupervisionDelegate,
+) -> Tuple[int, int, int]:
+    """To determine the most relevant supervision period for post incarceration release,
+    sort on three criteria:
+        1. The proximity of the supervision period's start date to the incarceration
+        period's release date. Shorter is better so less positive.
+        2. Whether or not the supervision period's supervision type matches the
+        release criteria for the incarceration period (i.e. looking at ND release notes).
+        3. The duration of the supervision period. Longer is better so more negative."""
+
+    proximity = sys.maxsize
+    duration = sys.maxsize
+    matches_supervision_type = 0
+
+    if supervision_period.start_date and incarceration_period.release_date:
+        proximity = abs(
+            (supervision_period.start_date - incarceration_period.release_date).days
+        )
+
+    supervision_type_at_release = (
+        supervision_delegate.get_incarceration_period_supervision_type_at_release(
+            incarceration_period
+        )
+    )
+    if supervision_type_at_release:
+        if supervision_type_at_release == supervision_period.supervision_type:
+            matches_supervision_type = -1
+        else:
+            matches_supervision_type = 1
+
+    duration = (
+        supervision_period.duration.lower_bound_inclusive_date
+        - supervision_period.duration.upper_bound_exclusive_date
+    ).days
+
+    return (proximity, matches_supervision_type, duration)
