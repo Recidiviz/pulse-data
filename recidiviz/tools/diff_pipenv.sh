@@ -15,9 +15,13 @@ source ${BASH_SOURCE_DIR}/script_base.sh
 # - Sort, in case the above affected the sort order
 expected=$(pipenv lock -r --dev | cut -d';' -f1 | sed 's/\[.*\]//' | sed '/^[-#]/d' | sed '/^$/d' | sort) || exit_on_fail
 # The installed command gets all installed packages in a requirements format, with the following transformations
+# - Replace any underscores with dashes
+#   - Note: setuptools replaces any non-alphanumeric/. with a dash but so far we have only seen issues with underscore and
+#     this lets us run it on the whole line instead of just the package name. See
+#     https://github.com/pypa/setuptools/blob/main/pkg_resources/__init__.py#L1314)
 # - Make everything lower case
 # - Sort, in case the above affected the sort order
-installed=$(pipenv run pip freeze | tr A-Z a-z | sort) || exit_on_fail
+installed=$(pipenv run pip freeze | tr _ - | tr A-Z a-z | sort) || exit_on_fail
 
 # Diff returns 1 if there are differences and >1 if an error occurred. We only want to fail here if there was an actual
 # error.
