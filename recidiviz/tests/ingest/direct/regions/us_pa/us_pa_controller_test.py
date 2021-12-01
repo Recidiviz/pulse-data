@@ -2620,7 +2620,6 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         ######################################
         # Arrange
         person_1.gender_raw_text = "M"
-        person_1.races[0].race_raw_text = "B"
         person_1.races.append(
             entities.StatePersonRace.new_with_defaults(
                 state_code=_STATE_CODE_UPPER,
@@ -2630,13 +2629,6 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         )
 
         person_2.gender_raw_text = "M"
-        person_2.races.append(
-            entities.StatePersonRace.new_with_defaults(
-                state_code=_STATE_CODE_UPPER,
-                race=Race.AMERICAN_INDIAN_ALASKAN_NATIVE,
-                race_raw_text="I",
-            )
-        )
         person_2.ethnicities.append(
             entities.StatePersonEthnicity.new_with_defaults(
                 state_code=_STATE_CODE_UPPER,
@@ -2648,8 +2640,11 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         person_4.gender_raw_text = "M"
         person_4.races = [
             entities.StatePersonRace.new_with_defaults(
+                state_code=_STATE_CODE_UPPER, race=Race.ASIAN, race_raw_text="A"
+            ),
+            entities.StatePersonRace.new_with_defaults(
                 state_code=_STATE_CODE_UPPER, race=Race.WHITE, race_raw_text="W"
-            )
+            ),
         ]
 
         person_5.full_name = '{"given_names": "KEN", "middle_names": "", "name_suffix": "JR", "surname": "GRIFFEY"}'
@@ -2687,7 +2682,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         populate_person_backedges(expected_people)
 
         # Act
-        self._run_ingest_job_for_filename("dbo_Offender.csv")
+        self._run_ingest_job_for_filename("dbo_Offender_v2.csv")
 
         # Assert
         self.assert_expected_db_people(expected_people)

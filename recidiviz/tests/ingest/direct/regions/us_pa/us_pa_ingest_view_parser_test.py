@@ -352,6 +352,7 @@ class UsPaIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
         ]
         self._run_parse_ingest_view_test("doc_person_info", expected_output)
 
+    # TODO(#10073): Delete this test and the associated CSV fixture
     def test_parse_dbo_Offender(self) -> None:
         expected_output = [
             StatePerson(
@@ -458,6 +459,118 @@ class UsPaIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
         ]
 
         self._run_parse_ingest_view_test("dbo_Offender", expected_output)
+
+    def test_parse_dbo_Offender_v2(self) -> None:
+        expected_output = [
+            StatePerson(
+                state_code="US_PA",
+                gender=Gender.MALE,
+                gender_raw_text="M",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_PA", external_id="123A", id_type="US_PA_PBPP"
+                    )
+                ],
+                races=[
+                    StatePersonRace(
+                        state_code="US_PA", race=Race.ASIAN, race_raw_text="A"
+                    ),
+                ],
+            ),
+            StatePerson(
+                state_code="US_PA",
+                gender=Gender.MALE,
+                gender_raw_text="M",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_PA", external_id="456B", id_type="US_PA_PBPP"
+                    )
+                ],
+                ethnicities=[
+                    StatePersonEthnicity(
+                        state_code="US_PA",
+                        ethnicity=Ethnicity.HISPANIC,
+                        ethnicity_raw_text="H",
+                    )
+                ],
+            ),
+            StatePerson(
+                state_code="US_PA",
+                full_name='{"given_names": "KEN", "middle_names": "", "name_suffix": "JR", "surname": "GRIFFEY"}',
+                gender=Gender.FEMALE,
+                gender_raw_text="F",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_PA", external_id="789C", id_type="US_PA_PBPP"
+                    )
+                ],
+                aliases=[
+                    StatePersonAlias(
+                        state_code="US_PA",
+                        alias_type=StatePersonAliasType.GIVEN_NAME,
+                        full_name='{"given_names": "KEN", "middle_names": "", "name_suffix": "JR", "surname": "GRIFFEY"}',
+                    )
+                ],
+                races=[
+                    StatePersonRace(
+                        state_code="US_PA", race=Race.OTHER, race_raw_text="N"
+                    )
+                ],
+            ),
+            StatePerson(
+                state_code="US_PA",
+                full_name='{"given_names": "JOHN", "middle_names": "", "name_suffix": "", "surname": "RAWLS"}',
+                gender=Gender.MALE,
+                gender_raw_text="M",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_PA", external_id="345E", id_type="US_PA_PBPP"
+                    )
+                ],
+                aliases=[
+                    StatePersonAlias(
+                        state_code="US_PA",
+                        alias_type=StatePersonAliasType.GIVEN_NAME,
+                        full_name='{"given_names": "JOHN", "middle_names": "", "name_suffix": "", "surname": "RAWLS"}',
+                    )
+                ],
+                races=[
+                    StatePersonRace(
+                        state_code="US_PA", race=Race.WHITE, race_raw_text="W"
+                    )
+                ],
+            ),
+            StatePerson(
+                state_code="US_PA",
+                gender=Gender.MALE,
+                gender_raw_text="M",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_PA", external_id="999Z", id_type="US_PA_PBPP"
+                    )
+                ],
+                races=[
+                    StatePersonRace(
+                        state_code="US_PA", race=Race.ASIAN, race_raw_text="A"
+                    )
+                ],
+            ),
+            StatePerson(
+                state_code="US_PA",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_PA", external_id="111A", id_type="US_PA_PBPP"
+                    )
+                ],
+                races=[
+                    StatePersonRace(
+                        state_code="US_PA", race=Race.WHITE, race_raw_text="W"
+                    )
+                ],
+            ),
+        ]
+
+        self._run_parse_ingest_view_test("dbo_Offender_v2", expected_output)
 
     def test_parse_dbo_Miscon(self) -> None:
         expected_output = [
