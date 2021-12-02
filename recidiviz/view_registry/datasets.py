@@ -27,6 +27,7 @@ from recidiviz.calculator.query.state.dataset_config import (
     COVID_DASHBOARD_REFERENCE_DATASET,
     DATAFLOW_METRICS_DATASET,
     POPULATION_PROJECTION_OUTPUT_DATASET,
+    SENDGRID_EMAIL_DATA_DATASET,
     STATE_BASE_DATASET,
     STATIC_REFERENCE_TABLES_DATASET,
 )
@@ -57,6 +58,7 @@ OTHER_SOURCE_TABLE_DATASETS = {
     EXTERNAL_REFERENCE_DATASET,
     OPERATIONS_BASE_DATASET,
     POPULATION_PROJECTION_OUTPUT_DATASET,
+    SENDGRID_EMAIL_DATA_DATASET,
     STATE_BASE_DATASET,
     STATIC_REFERENCE_TABLES_DATASET,
     VERA_DATASET,
@@ -94,6 +96,7 @@ OTHER_SOURCE_TABLE_DATASETS_TO_DESCRIPTIONS = {
     " copy of the operations postgres database.",
     POPULATION_PROJECTION_OUTPUT_DATASET: "Stores output of the population projection"
     " simulations.",
+    SENDGRID_EMAIL_DATA_DATASET: "Stores the output of email activity data from Sendgrid.",
     STATE_BASE_DATASET: "Ingested state data. This dataset is a copy of the state"
     " postgres database.",
     STATIC_REFERENCE_TABLES_DATASET: "Reference tables used by various views in BigQuery."

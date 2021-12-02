@@ -59,6 +59,7 @@ from google.cloud import bigquery
 from google.cloud.bigquery import WriteDisposition
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.calculator.query.state.dataset_config import SENDGRID_EMAIL_DATA_DATASET
 from recidiviz.cloud_storage.gcs_file_system import (
     GCSFileSystem,
     GcsfsFileContentsHandle,
@@ -70,7 +71,6 @@ from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAG
 from recidiviz.utils.string import StrictStringFormatter
 
 BUCKET_SUFFIX = "-sendgrid-data"
-DATASET_ID = "sendgrid_email_data"
 FINAL_DESTINATION_TABLE = "raw_sendgrid_email_data"
 TEMP_DESTINATION_TABLE = "temp_for_upload"
 DATE_FORMAT = "%Y.%m.%d"
@@ -103,7 +103,7 @@ def main(*, project_id: str, local_filepath: str, backfill: bool) -> None:
     ):
         # Clear out old rows from table
         bq_client.delete_from_table_async(
-            dataset_id=DATASET_ID,
+            dataset_id=SENDGRID_EMAIL_DATA_DATASET,
             table_id=FINAL_DESTINATION_TABLE,
             filter_clause="WHERE TRUE",
         )
@@ -163,7 +163,7 @@ def load_from_gcs_to_temp_table(
         source_uri=f"gs://{bucket_name}/" f"{blob_name}",
         destination_dataset_ref=bigquery.DatasetReference(
             project=project_id,
-            dataset_id=DATASET_ID,
+            dataset_id=SENDGRID_EMAIL_DATA_DATASET,
         ),
         destination_table_id=TEMP_DESTINATION_TABLE,
         destination_table_schema=[
@@ -216,18 +216,18 @@ def load_from_temp_to_permanent_table(
     num_rows_before = bq_client.get_table(
         dataset_ref=bigquery.DatasetReference(
             project=project_id,
-            dataset_id=DATASET_ID,
+            dataset_id=SENDGRID_EMAIL_DATA_DATASET,
         ),
         table_id=FINAL_DESTINATION_TABLE,
     ).num_rows
 
     insert_job = bq_client.insert_into_table_from_query_async(
-        destination_dataset_id=DATASET_ID,
+        destination_dataset_id=SENDGRID_EMAIL_DATA_DATASET,
         destination_table_id=FINAL_DESTINATION_TABLE,
         query=StrictStringFormatter().format(
             INSERT_QUERY_TEMPLATE,
             project_id=project_id,
-            dataset_id=DATASET_ID,
+            dataset_id=SENDGRID_EMAIL_DATA_DATASET,
             temp_table=TEMP_DESTINATION_TABLE,
             final_table=FINAL_DESTINATION_TABLE,
         ),
@@ -242,7 +242,9 @@ def load_from_temp_to_permanent_table(
         FINAL_DESTINATION_TABLE,
     )
 
-    bq_client.delete_table(dataset_id=DATASET_ID, table_id=TEMP_DESTINATION_TABLE)
+    bq_client.delete_table(
+        dataset_id=SENDGRID_EMAIL_DATA_DATASET, table_id=TEMP_DESTINATION_TABLE
+    )
 
 
 def parse_arguments(argv: List[str]) -> argparse.Namespace:
