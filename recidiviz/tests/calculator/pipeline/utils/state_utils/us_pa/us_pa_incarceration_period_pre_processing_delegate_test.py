@@ -30,6 +30,9 @@ from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index 
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa import (
     us_pa_incarceration_period_pre_processing_delegate,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_incarceration_delegate import (
+    UsPaIncarcerationDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_incarceration_period_pre_processing_delegate import (
     PURPOSE_FOR_INCARCERATION_PVC,
     SHOCK_INCARCERATION_6_MONTHS,
@@ -77,6 +80,8 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
         overwrite_facility_information_in_transfers: bool = True,
         earliest_death_date: Optional[date] = None,
     ) -> Tuple[List[StateIncarcerationPeriod], Dict[int, Optional[str]]]:
+        """Helper function for testing the
+        pre_processed_incarceration_periods_for_calculations function for US_PA."""
         sp_index = PreProcessedSupervisionPeriodIndex(
             supervision_periods=supervision_periods or [],
         )
@@ -85,7 +90,8 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         ip_pre_processing_manager = IncarcerationPreProcessingManager(
             incarceration_periods=incarceration_periods,
-            delegate=UsPaIncarcerationPreProcessingDelegate(),
+            pre_processing_delegate=UsPaIncarcerationPreProcessingDelegate(),
+            incarceration_delegate=UsPaIncarcerationDelegate(),
             pre_processed_supervision_period_index=sp_index,
             violation_responses=violation_responses,
             earliest_death_date=earliest_death_date,

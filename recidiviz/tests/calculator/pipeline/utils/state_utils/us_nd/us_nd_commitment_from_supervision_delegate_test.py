@@ -31,6 +31,9 @@ from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index 
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_commitment_from_supervision_delegate import (
     UsNdCommitmentFromSupervisionDelegate,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_incarceration_delegate import (
+    UsNdIncarcerationDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_incarceration_period_pre_processing_delegate import (
     PAROLE_REVOCATION_PREPROCESSING_PREFIX,
     PROBATION_REVOCATION_PREPROCESSING_PREFIX,
@@ -110,6 +113,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
                     for ip in incarceration_periods
                     if ip.incarceration_period_id
                 },
+                incarceration_delegate=UsNdIncarcerationDelegate(),
             ),
         )
 

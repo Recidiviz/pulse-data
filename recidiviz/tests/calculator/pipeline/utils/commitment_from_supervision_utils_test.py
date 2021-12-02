@@ -33,6 +33,9 @@ from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index 
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_delegate import (
     StateSpecificSupervisionDelegate,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_incarceration_delegate import (
+    UsPaIncarcerationDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_incarceration_period_pre_processing_delegate import (
     PURPOSE_FOR_INCARCERATION_PVC,
     SHOCK_INCARCERATION_PVC,
@@ -76,6 +79,9 @@ from recidiviz.persistence.entity.state.entities import (
 )
 from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_commitment_from_supervision_utils import (
     UsXxCommitmentFromSupervisionDelegate,
+)
+from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_incarceration_delegate import (
+    UsXxIncarcerationDelegate,
 )
 from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_supervision_delegate import (
     UsXxSupervisionDelegate,
@@ -124,6 +130,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
                     if incarceration_period.incarceration_period_id
                     else {}
                 ),
+                incarceration_delegate=UsXxIncarcerationDelegate(),
             )
         )
 
@@ -306,6 +313,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
             ip_id_to_pfi_subtype={
                 incarceration_period.incarceration_period_id: SHOCK_INCARCERATION_PVC
             },
+            incarceration_delegate=UsPaIncarcerationDelegate(),
         )
 
         commitment_details = self._test_get_commitment_from_supervision_details(

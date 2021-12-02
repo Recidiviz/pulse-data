@@ -28,6 +28,9 @@ from recidiviz.calculator.pipeline.utils.incarceration_period_pre_processing_man
 from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index import (
     PreProcessedSupervisionPeriodIndex,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_incarceration_delegate import (
+    UsMoIncarcerationDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_incarceration_period_pre_processing_delegate import (
     UsMoIncarcerationPreProcessingDelegate,
 )
@@ -67,7 +70,8 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         ip_pre_processing_manager = IncarcerationPreProcessingManager(
             incarceration_periods=incarceration_periods,
-            delegate=UsMoIncarcerationPreProcessingDelegate(),
+            pre_processing_delegate=UsMoIncarcerationPreProcessingDelegate(),
+            incarceration_delegate=UsMoIncarcerationDelegate(),
             pre_processed_supervision_period_index=sp_index,
             violation_responses=violation_responses,
             earliest_death_date=earliest_death_date,

@@ -70,6 +70,9 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionContact,
     StateSupervisionPeriod,
 )
+from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_incarceration_delegate import (
+    UsXxIncarcerationDelegate,
+)
 
 
 class TestCaseCompliance(unittest.TestCase):
@@ -77,6 +80,11 @@ class TestCaseCompliance(unittest.TestCase):
 
     def setUp(self) -> None:
         self.person = StatePerson.new_with_defaults(state_code="US_XX")
+        self.empty_ip_index = PreProcessedIncarcerationPeriodIndex(
+            incarceration_periods=[],
+            ip_id_to_pfi_subtype={},
+            incarceration_delegate=UsXxIncarcerationDelegate(),
+        )
 
     @patch.object(UsNdSupervisionCaseCompliance, "_guidelines_applicable_for_case")
     def test_us_nd_guidelines_not_applicable_provided(
@@ -108,9 +116,7 @@ class TestCaseCompliance(unittest.TestCase):
             assessments=[],
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
-            ),
+            incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsNdSupervisionDelegate(),
         )
         compliance = us_nd_supervision_compliance.get_case_compliance_on_date(
@@ -151,9 +157,7 @@ class TestCaseCompliance(unittest.TestCase):
             assessments=[],
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
-            ),
+            incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate(),
         )
         compliance = us_id_supervision_compliance.get_case_compliance_on_date(
@@ -191,9 +195,7 @@ class TestCaseCompliance(unittest.TestCase):
             assessments=[],
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
-            ),
+            incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsNdSupervisionDelegate(),
         )
         compliance = us_nd_supervision_compliance.get_case_compliance_on_date(
@@ -250,9 +252,7 @@ class TestCaseCompliance(unittest.TestCase):
             assessments=assessments,
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
-            ),
+            incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsNdSupervisionDelegate(),
         )
         compliance = us_nd_supervision_compliance.get_case_compliance_on_date(
@@ -311,9 +311,7 @@ class TestCaseCompliance(unittest.TestCase):
             assessments=assessments,
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
-            ),
+            incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsNdSupervisionDelegate(),
         )
         compliance = us_nd_supervision_compliance.get_case_compliance_on_date(
@@ -370,9 +368,7 @@ class TestCaseCompliance(unittest.TestCase):
             assessments=assessments,
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
-            ),
+            incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsNdSupervisionDelegate(),
         )
         compliance = us_nd_supervision_compliance.get_case_compliance_on_date(
@@ -444,9 +440,7 @@ class TestCaseCompliance(unittest.TestCase):
             assessments=assessments,
             supervision_contacts=supervision_contacts,
             violation_responses=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
-            ),
+            incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate(),
         )
         compliance = us_id_supervision_compliance.get_case_compliance_on_date(
@@ -525,9 +519,7 @@ class TestCaseCompliance(unittest.TestCase):
             assessments=assessments,
             supervision_contacts=supervision_contacts,
             violation_responses=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
-            ),
+            incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate(),
         )
         compliance = us_id_supervision_compliance.get_case_compliance_on_date(
@@ -578,9 +570,7 @@ class TestCaseCompliance(unittest.TestCase):
             assessments=[],
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
-            ),
+            incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate(),
         )
         compliance = us_id_supervision_compliance.get_case_compliance_on_date(
@@ -646,9 +636,7 @@ class TestCaseCompliance(unittest.TestCase):
             assessments=assessments,
             supervision_contacts=supervision_contacts,
             violation_responses=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
-            ),
+            incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate(),
         )
         compliance = us_id_supervision_compliance.get_case_compliance_on_date(
@@ -695,9 +683,7 @@ class TestCaseCompliance(unittest.TestCase):
             assessments=[],
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
-            ),
+            incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate(),
         )
         compliance = us_id_supervision_compliance.get_case_compliance_on_date(
@@ -766,9 +752,7 @@ class TestCaseCompliance(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts,
             violation_responses=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
-            ),
+            incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate(),
         )
         compliance = us_id_supervision_compliance.get_case_compliance_on_date(
@@ -835,9 +819,7 @@ class TestCaseCompliance(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts,
             violation_responses=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
-            ),
+            incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate(),
         )
         compliance = us_id_supervision_compliance.get_case_compliance_on_date(
@@ -903,9 +885,7 @@ class TestCaseCompliance(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts,
             violation_responses=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
-            ),
+            incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate(),
         )
         compliance = us_id_supervision_compliance.get_case_compliance_on_date(
@@ -1007,9 +987,7 @@ class TestCaseCompliance(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts_1,
             violation_responses=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
-            ),
+            incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate(),
         )
         compliance_1 = us_id_supervision_compliance_1.get_case_compliance_on_date(
@@ -1024,9 +1002,7 @@ class TestCaseCompliance(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts_2,
             violation_responses=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
-            ),
+            incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate(),
         )
         compliance_2 = us_id_supervision_compliance_2.get_case_compliance_on_date(
@@ -1146,9 +1122,7 @@ class TestCaseCompliance(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts_1,
             violation_responses=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
-            ),
+            incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate(),
         )
         compliance_1 = us_id_supervision_compliance_1.get_case_compliance_on_date(
@@ -1163,9 +1137,7 @@ class TestCaseCompliance(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts_2,
             violation_responses=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
-            ),
+            incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate(),
         )
         compliance_2 = us_id_supervision_compliance_2.get_case_compliance_on_date(
@@ -1210,6 +1182,11 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
 
     def setUp(self) -> None:
         self.person = StatePerson.new_with_defaults(state_code="US_XX")
+        self.empty_ip_index = PreProcessedIncarcerationPeriodIndex(
+            incarceration_periods=[],
+            ip_id_to_pfi_subtype={},
+            incarceration_delegate=UsXxIncarcerationDelegate(),
+        )
 
     def test_us_id_next_recommended_assessment_date(self) -> None:
         supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -1240,9 +1217,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             assessments=[assessment],
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
-            ),
+            incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate(),
         )
 
@@ -1275,9 +1250,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             assessments=[],
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
-            ),
+            incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate(),
         )
 
@@ -1314,9 +1287,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             assessments=[],
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
-            ),
+            incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate(),
         )
 
@@ -1361,9 +1332,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             assessments=[assessment],
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
-            ),
+            incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate(),
         )
 
@@ -1408,9 +1377,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             assessments=[assessment],
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
-            ),
+            incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate(),
         )
 
@@ -1454,9 +1421,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             assessments=[assessment],
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
-            ),
+            incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate(),
         )
 
@@ -1503,9 +1468,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             assessments=[assessment],
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
-            ),
+            incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate(),
         )
 
@@ -1552,9 +1515,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             assessments=[assessment],
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
-            ),
+            incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate(),
         )
 
@@ -1600,9 +1561,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             assessments=[assessment],
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
-            ),
+            incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate(),
         )
 
@@ -1643,9 +1602,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             assessments=[assessment],
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
-            ),
+            incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate(),
         )
 
@@ -1678,9 +1635,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             assessments=[],
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
-            ),
+            incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate(),
         )
 
@@ -1717,9 +1672,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             assessments=[],
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
-            ),
+            incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate(),
         )
 
@@ -1756,9 +1709,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             assessments=[],
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
-            ),
+            incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate(),
         )
 
@@ -1803,9 +1754,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             assessments=[assessment],
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
-            ),
+            incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate(),
         )
 
@@ -1850,9 +1799,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             assessments=[assessment],
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
-            ),
+            incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate(),
         )
 
@@ -1897,9 +1844,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             assessments=[assessment],
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
-            ),
+            incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate(),
         )
 
@@ -1945,9 +1890,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             assessments=[assessment],
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
-            ),
+            incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate(),
         )
 
@@ -1993,9 +1936,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             assessments=[assessment],
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
-            ),
+            incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate(),
         )
 
@@ -2033,9 +1974,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             assessments=[],
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
-            ),
+            incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate(),
         )
 
@@ -2073,9 +2012,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             assessments=[],
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
-            ),
+            incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsNdSupervisionDelegate(),
         )
 
@@ -2117,9 +2054,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             assessments=[assessment],
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
-            ),
+            incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsNdSupervisionDelegate(),
         )
 
@@ -2161,9 +2096,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             assessments=[assessment],
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
-            ),
+            incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsNdSupervisionDelegate(),
         )
 
@@ -2207,9 +2140,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             assessments=[assessment],
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
-            ),
+            incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsNdSupervisionDelegate(),
         )
 
