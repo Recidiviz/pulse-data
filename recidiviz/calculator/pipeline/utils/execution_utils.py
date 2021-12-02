@@ -192,9 +192,7 @@ def person_and_kwargs_for_identifier(
     person = None
 
     for key, values in arg_to_entities_map.items():
-        # TODO(#2769): Only check for StatePerson.__name__ once all pipelines have
-        #  been migrated to v2 entity hydration
-        if key in (StatePerson.__name__, "persons"):
+        if key == StatePerson.__name__:
             if not values:
                 raise ValueError(
                     f"Found no person values in arg_to_entities_map: {arg_to_entities_map}"

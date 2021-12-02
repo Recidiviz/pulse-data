@@ -55,25 +55,6 @@ ENTITY_TABLE_QUERY_REGEX = re.compile(
     r"WHERE state_code IN \(\'([\w\d]+)\'\)( AND ([a-z_]+) IN \(([\'\w\d ,]+)\))?"
 )
 
-# TODO(#2769): Delete this once all pipelines are using v2 entity hydration
-# Regex matching queries used by calc pipelines to hydrate association table rows.
-# Example query (with newlines added for readability):
-# SELECT state_incarceration_incident_outcome.incarceration_incident_outcome_id,
-#   state_incarceration_incident_outcome.incarceration_incident_id
-# FROM `recidiviz-123.state.state_incarceration_incident_outcome` state_incarceration_incident_outcome
-# JOIN (SELECT * FROM `recidiviz-123.state.state_incarceration_incident`
-#       WHERE state_code IN ('US_XX') AND person_id IN (12345)) state_incarceration_incident
-# ON state_incarceration_incident.incarceration_incident_id
-#   = state_incarceration_incident_outcome.incarceration_incident_id
-ASSOCIATION_TABLE_TUPLE_QUERY_REGEX = re.compile(
-    r"SELECT ([a-z_]+\.[a-z_]+), ([a-z_]+\.[a-z_]+) "
-    r"FROM `([a-z\d\-]+\.[a-z_]+)\.([a-z_]+)` ([a-z_]+) "
-    r"JOIN \(SELECT \* FROM `([a-z\d\-]+\.[a-z_]+)\.([a-z_]+)` "
-    r"WHERE state_code IN \(\'([\w\d]+)\'\)( AND ([a-z_]+) IN \(([\'\w\d ,]+)\))?\) ([a-z_]+) "
-    r"ON ([a-z_]+\.[a-z_]+) = ([a-z_]+\.[a-z_]+)"
-)
-
-
 # Regex matching queries used by calc pipelines to hydrate association table rows
 # that include the unifying_id (usually person_id).
 # Example query (with newlines added for readability):
@@ -171,11 +152,6 @@ class FakeReadFromBigQueryFactory:
         """Default implementation of the fake query function, which parses, validates,
         and replicates the behavior of the provided query string, returning data out
         of the data_dict object."""
-        if re.match(ASSOCIATION_TABLE_TUPLE_QUERY_REGEX, query):
-            return FakeReadFromBigQueryFactory._do_fake_association_tables_query(
-                data_dict, query, expected_dataset, unifying_id_field
-            )
-
         if re.match(ASSOCIATION_VALUES_QUERY_REGEX, query):
             return FakeReadFromBigQueryFactory._do_fake_association_values_query(
                 data_dict, query, expected_dataset, unifying_id_field
@@ -279,118 +255,6 @@ class FakeReadFromBigQueryFactory:
             filtered_rows = filtered_rows_limited_columns
 
         return filtered_rows
-
-    # TODO(#2769): Delete once all pipelines are using v2 entity hydration
-    @staticmethod
-    def _do_fake_association_tables_query(
-        data_dict: DataTablesDict,
-        query: str,
-        expected_dataset: str,
-        expected_unifying_id_field: str,
-    ) -> List[NormalizedDatabaseDict]:
-        """Parses, validates, and replicates the behavior of the provided association
-        table query string, returning data out of the data_dict object.
-        """
-        match = re.match(ASSOCIATION_TABLE_TUPLE_QUERY_REGEX, query)
-        if not match:
-            raise ValueError(f"Query does not match regex: {query}")
-
-        association_table_alias_1, association_table_parent_id = match.group(1).split(
-            "."
-        )
-        association_table_alias_2, association_table_entity_id = match.group(2).split(
-            "."
-        )
-        dataset_1 = match.group(3)
-        association_table_name = match.group(4)
-        association_table_alias_3 = match.group(5)
-        dataset_2 = match.group(6)
-        entity_table_name = match.group(7)
-        entity_table_alias_1 = match.group(12)
-        entity_table_alias_2, entity_table_join_column = match.group(13).split(".")
-        association_table_alias_4, association_table_join_column = match.group(
-            14
-        ).split(".")
-
-        all_association_table_aliases = {
-            association_table_alias_1,
-            association_table_alias_2,
-            association_table_alias_3,
-            association_table_alias_4,
-        }
-        if len(all_association_table_aliases) != 1:
-            raise ValueError(
-                f"Unexpected multiple association table aliases: {all_association_table_aliases}"
-            )
-
-        all_entity_table_aliases = {entity_table_alias_1, entity_table_alias_2}
-        if len(all_association_table_aliases) != 1:
-            raise ValueError(
-                f"Unexpected multiple entity table aliases: {all_entity_table_aliases}"
-            )
-
-        dataset = one({dataset_1, dataset_2})
-        if dataset != expected_dataset:
-            raise ValueError(
-                f"Found dataset {dataset} does not match expected dataset {expected_dataset}"
-            )
-
-        if association_table_name not in data_dict:
-            raise ValueError(f"Table {association_table_name} not in data dict")
-
-        check_field_exists_in_table(association_table_name, association_table_parent_id)
-        check_field_exists_in_table(association_table_name, association_table_entity_id)
-        check_field_exists_in_table(
-            association_table_name, association_table_join_column
-        )
-        check_field_exists_in_table(entity_table_name, entity_table_join_column)
-
-        all_entity_table_rows = data_dict[entity_table_name]
-        state_code_value = match.group(8)
-        if not state_code_value:
-            raise ValueError(f"Found no state_code in query [{query}]")
-
-        filtered_enity_rows = filter_results(
-            entity_table_name,
-            all_entity_table_rows,
-            "state_code",
-            {state_code_value},
-            allow_none_values=False,
-        )
-        unifying_id_field = match.group(10)
-        unifying_id_field_filter_list_str = match.group(11)
-
-        if unifying_id_field and unifying_id_field_filter_list_str:
-            if unifying_id_field != expected_unifying_id_field:
-                raise ValueError(
-                    f"Expected value [{expected_unifying_id_field}] for unifying_id_field does not match: "
-                    f"[{unifying_id_field}"
-                )
-
-            filtered_enity_rows = filter_results(
-                entity_table_name,
-                filtered_enity_rows,
-                unifying_id_field,
-                id_list_str_to_set(unifying_id_field_filter_list_str),
-                allow_none_values=False,
-            )
-        elif unifying_id_field or unifying_id_field_filter_list_str:
-            raise ValueError(
-                "Found one of unifying_id_field, unifying_id_field_filter_list_str is None, but not both."
-            )
-
-        valid_entity_join_ids = {
-            row[entity_table_join_column] for row in filtered_enity_rows
-        }
-
-        all_association_table_rows = data_dict[association_table_name]
-        return filter_results(
-            association_table_name,
-            all_association_table_rows,
-            association_table_join_column,
-            valid_entity_join_ids,
-            allow_none_values=True,
-        )
 
     @staticmethod
     def _do_fake_association_values_query(
