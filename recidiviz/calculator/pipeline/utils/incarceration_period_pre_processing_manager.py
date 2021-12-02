@@ -35,6 +35,9 @@ from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_inde
 from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index import (
     PreProcessedSupervisionPeriodIndex,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_incarceration_delegate import (
+    StateSpecificIncarcerationDelegate,
+)
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     SANCTION_ADMISSION_PURPOSE_FOR_INCARCERATION_VALUES,
@@ -220,7 +223,8 @@ class IncarcerationPreProcessingManager:
     def __init__(
         self,
         incarceration_periods: List[StateIncarcerationPeriod],
-        delegate: StateSpecificIncarcerationPreProcessingDelegate,
+        pre_processing_delegate: StateSpecificIncarcerationPreProcessingDelegate,
+        incarceration_delegate: StateSpecificIncarcerationDelegate,
         pre_processed_supervision_period_index: Optional[
             PreProcessedSupervisionPeriodIndex
         ],
@@ -229,7 +233,8 @@ class IncarcerationPreProcessingManager:
         earliest_death_date: Optional[date] = None,
     ):
         self._incarceration_periods = deepcopy(incarceration_periods)
-        self.delegate = delegate
+        self.pre_processing_delegate = pre_processing_delegate
+        self.incarceration_delegate = incarceration_delegate
         self._pre_processed_incarceration_period_index_for_calculations: Dict[
             PreProcessingConfiguration, PreProcessedIncarcerationPeriodIndex
         ] = {}
@@ -240,7 +245,7 @@ class IncarcerationPreProcessingManager:
             PreProcessedSupervisionPeriodIndex
         ] = (
             pre_processed_supervision_period_index
-            if self.delegate.pre_processing_relies_on_supervision_periods()
+            if self.pre_processing_delegate.pre_processing_relies_on_supervision_periods()
             else None
         )
 
@@ -249,7 +254,7 @@ class IncarcerationPreProcessingManager:
         # pre-processing
         self._violation_responses: Optional[List[StateSupervisionViolationResponse]] = (
             violation_responses
-            if self.delegate.pre_processing_relies_on_violation_responses()
+            if self.pre_processing_delegate.pre_processing_relies_on_violation_responses()
             else None
         )
 
@@ -286,6 +291,7 @@ class IncarcerationPreProcessingManager:
                 ] = PreProcessedIncarcerationPeriodIndex(
                     incarceration_periods=self._incarceration_periods,
                     ip_id_to_pfi_subtype={},
+                    incarceration_delegate=self.incarceration_delegate,
                 )
             else:
                 # Make a deep copy of the original incarceration periods to preprocess
@@ -361,6 +367,7 @@ class IncarcerationPreProcessingManager:
                 ] = PreProcessedIncarcerationPeriodIndex(
                     incarceration_periods=mid_processing_periods,
                     ip_id_to_pfi_subtype=ip_id_to_pfi_subtype,
+                    incarceration_delegate=self.incarceration_delegate,
                 )
         return self._pre_processed_incarceration_period_index_for_calculations[config]
 
@@ -395,9 +402,15 @@ class IncarcerationPreProcessingManager:
         filtered_periods: List[StateIncarcerationPeriod] = []
 
         for idx, ip in enumerate(incarceration_periods):
-            if ip.admission_reason in self.delegate.admission_reasons_to_filter():
+            if (
+                ip.admission_reason
+                in self.pre_processing_delegate.admission_reasons_to_filter()
+            ):
                 continue
-            if ip.incarceration_type in self.delegate.incarceration_types_to_filter():
+            if (
+                ip.incarceration_type
+                in self.pre_processing_delegate.incarceration_types_to_filter()
+            ):
                 continue
 
             previous_ip = filtered_periods[-1] if filtered_periods else None
@@ -728,12 +741,14 @@ class IncarcerationPreProcessingManager:
         ]
 
         for index, ip in enumerate(incarceration_periods):
-            period_is_board_hold = self.delegate.period_is_parole_board_hold(
-                incarceration_period_list_index=index,
-                sorted_incarceration_periods=incarceration_periods,
+            period_is_board_hold = (
+                self.pre_processing_delegate.period_is_parole_board_hold(
+                    incarceration_period_list_index=index,
+                    sorted_incarceration_periods=incarceration_periods,
+                )
             )
             period_is_non_board_hold_temp_custody = (
-                self.delegate.period_is_non_board_hold_temporary_custody(
+                self.pre_processing_delegate.period_is_non_board_hold_temporary_custody(
                     incarceration_period_list_index=index,
                     sorted_incarceration_periods=incarceration_periods,
                 )
@@ -743,7 +758,7 @@ class IncarcerationPreProcessingManager:
                 raise ValueError(
                     "A period of incarceration cannot be both a parole "
                     "board hold period AND a non-board hold temporary "
-                    "custody period. Invalid logic in the delegate."
+                    "custody period. Invalid logic in the pre_processing_delegate."
                 )
 
             previous_ip: Optional[StateIncarcerationPeriod] = None
@@ -889,17 +904,15 @@ class IncarcerationPreProcessingManager:
         for index, original_ip in enumerate(incarceration_periods):
             # First, identify the purpose_for_incarceration information for the given
             # period if it's a commitment from supervision admission
-            pfi_info = (
-                self.delegate.get_pfi_info_for_period_if_commitment_from_supervision(
-                    incarceration_period_list_index=index,
-                    sorted_incarceration_periods=incarceration_periods,
-                    violation_responses=violation_responses,
-                )
+            pfi_info = self.pre_processing_delegate.get_pfi_info_for_period_if_commitment_from_supervision(
+                incarceration_period_list_index=index,
+                sorted_incarceration_periods=incarceration_periods,
+                violation_responses=violation_responses,
             )
 
             # Then, apply any state-specific overrides if the period is a  commitment
             # from supervision admission
-            updated_ip = self.delegate.normalize_period_if_commitment_from_supervision(
+            updated_ip = self.pre_processing_delegate.normalize_period_if_commitment_from_supervision(
                 incarceration_period_list_index=index,
                 sorted_incarceration_periods=incarceration_periods,
                 supervision_period_index=supervision_period_index,

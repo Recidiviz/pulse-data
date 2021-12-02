@@ -172,6 +172,14 @@ class TestIncarcerationPipeline(unittest.TestCase):
         self.mock_supervision_pre_processing_delegate.return_value = (
             UsXxSupervisionPreProcessingDelegate()
         )
+        self.pre_processing_incarceration_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils"
+            ".get_state_specific_incarceration_delegate"
+        )
+        self.mock_incarceration_delegate = (
+            self.pre_processing_incarceration_delegate_patcher.start()
+        )
+        self.mock_incarceration_delegate.return_value = UsXxIncarcerationDelegate()
 
         self.commitment_from_supervision_delegate_patcher = mock.patch(
             "recidiviz.calculator.pipeline.incarceration.identifier.get_state_specific_commitment_from_supervision_delegate"
@@ -218,6 +226,7 @@ class TestIncarcerationPipeline(unittest.TestCase):
         self.violation_pre_processing_delegate_patcher.stop()
         self.supervision_delegate_patcher.stop()
         self.incarceration_delegate_patcher.stop()
+        self.pre_processing_incarceration_delegate_patcher.stop()
 
     @staticmethod
     def build_incarceration_pipeline_data_dict(
@@ -708,6 +717,14 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
         self.mock_supervision_pre_processing_delegate.return_value = (
             UsXxSupervisionPreProcessingDelegate()
         )
+        self.pre_processing_incarceration_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils"
+            ".get_state_specific_incarceration_delegate"
+        )
+        self.mock_incarceration_delegate = (
+            self.pre_processing_incarceration_delegate_patcher.start()
+        )
+        self.mock_incarceration_delegate.return_value = UsXxIncarcerationDelegate()
         self.identifier = identifier.IncarcerationIdentifier()
 
         self.commitment_from_supervision_delegate_patcher = mock.patch(
@@ -752,6 +769,7 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
         self.violation_pre_processing_delegate_patcher.stop()
         self.supervision_delegate_patcher.stop()
         self.incarceration_delegate_patcher.stop()
+        self.pre_processing_incarceration_delegate_patcher.stop()
 
     @staticmethod
     def load_person_entities_dict(

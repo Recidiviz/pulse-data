@@ -45,6 +45,9 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 )
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
+from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_incarceration_delegate import (
+    UsXxIncarcerationDelegate,
+)
 from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_incarceration_period_pre_processing_delegate import (
     UsXxIncarcerationPreProcessingDelegate,
 )
@@ -67,7 +70,8 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         ip_pre_processing_manager = IncarcerationPreProcessingManager(
             incarceration_periods=incarceration_periods,
-            delegate=UsXxIncarcerationPreProcessingDelegate(),
+            pre_processing_delegate=UsXxIncarcerationPreProcessingDelegate(),
+            incarceration_delegate=UsXxIncarcerationDelegate(),
             pre_processed_supervision_period_index=sp_index,
             violation_responses=violation_responses,
             earliest_death_date=earliest_death_date,
@@ -655,7 +659,8 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         ip_pre_processing_manager = IncarcerationPreProcessingManager(
             incarceration_periods=incarceration_periods,
-            delegate=UsXxIncarcerationPreProcessingDelegate(),
+            pre_processing_delegate=UsXxIncarcerationPreProcessingDelegate(),
+            incarceration_delegate=UsXxIncarcerationDelegate(),
             pre_processed_supervision_period_index=sp_index,
             violation_responses=violation_responses,
             earliest_death_date=None,
@@ -1496,7 +1501,8 @@ class TestCollapseIncarcerationPeriods(unittest.TestCase):
 
         ip_pre_processing_manager = IncarcerationPreProcessingManager(
             incarceration_periods=incarceration_periods,
-            delegate=UsXxIncarcerationPreProcessingDelegate(),
+            pre_processing_delegate=UsXxIncarcerationPreProcessingDelegate(),
+            incarceration_delegate=UsXxIncarcerationDelegate(),
             pre_processed_supervision_period_index=sp_index,
             violation_responses=violation_responses,
             earliest_death_date=None,
@@ -2118,7 +2124,8 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
 
         ip_pre_processing_manager = IncarcerationPreProcessingManager(
             incarceration_periods=incarceration_periods,
-            delegate=UsXxIncarcerationPreProcessingDelegate(),
+            pre_processing_delegate=UsXxIncarcerationPreProcessingDelegate(),
+            incarceration_delegate=UsXxIncarcerationDelegate(),
             pre_processed_supervision_period_index=sp_index,
             violation_responses=violation_responses,
             earliest_death_date=None,
