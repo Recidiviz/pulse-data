@@ -43,6 +43,9 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 )
 from recidiviz.common.date import DateRange, date_or_tomorrow
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
+from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_incarceration_delegate import (
+    UsXxIncarcerationDelegate,
+)
 
 
 def _get_incarceration_period_index(
@@ -60,6 +63,7 @@ def _get_incarceration_period_index(
                 if ip.incarceration_period_id
             }
         ),
+        incarceration_delegate=UsXxIncarcerationDelegate(),
     )
 
 
@@ -1080,10 +1084,14 @@ class TesIsExcludedFromSupervisionPopulationForRange(unittest.TestCase):
         )
 
 
-class TestIncarcerationPeriodsNotUnderSupervisionAuthority(unittest.TestCase):
-    """Tests the incarceration_periods_not_under_supervision_authority function."""
+class TestIncarcerationPeriodsThatExcludePersonFromSupervisionPopulation(
+    unittest.TestCase
+):
+    """Tests the incarceration_periods_that_exclude_person_from_supervision_population function."""
 
-    def test_incarceration_periods_not_under_supervision_authority(self):
+    def test_incarceration_periods_that_exclude_person_from_supervision_population(
+        self,
+    ):
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=444,
             external_id="ip4",
@@ -1115,10 +1123,10 @@ class TestIncarcerationPeriodsNotUnderSupervisionAuthority(unittest.TestCase):
 
         self.assertEqual(
             [incarceration_period],
-            index.incarceration_periods_not_under_supervision_authority,
+            index.incarceration_periods_that_exclude_person_from_supervision_population,
         )
 
-    def test_incarceration_periods_not_under_supervision_authority_all_authorities(
+    def test_incarceration_periods_that_exclude_person_from_supervision_population_all_authorities(
         self,
     ):
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -1142,13 +1150,16 @@ class TestIncarcerationPeriodsNotUnderSupervisionAuthority(unittest.TestCase):
             expected_periods = (
                 [incarceration_period]
                 if incarceration_period.custodial_authority
-                != StateCustodialAuthority.SUPERVISION_AUTHORITY
+                not in (
+                    StateCustodialAuthority.SUPERVISION_AUTHORITY,
+                    StateCustodialAuthority.COURT,
+                )
                 else []
             )
 
             self.assertEqual(
                 expected_periods,
-                index.incarceration_periods_not_under_supervision_authority,
+                index.incarceration_periods_that_exclude_person_from_supervision_population,
             )
 
 

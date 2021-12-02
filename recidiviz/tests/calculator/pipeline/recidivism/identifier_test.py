@@ -42,6 +42,9 @@ from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
     StateSupervisionPeriod,
 )
+from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_incarceration_delegate import (
+    UsXxIncarcerationDelegate,
+)
 from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_incarceration_period_pre_processing_delegate import (
     UsXxIncarcerationPreProcessingDelegate,
 )
@@ -83,11 +86,20 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         self.mock_supervision_pre_processing_delegate.return_value = (
             UsXxSupervisionPreProcessingDelegate()
         )
+        self.pre_processing_incarceration_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils"
+            ".get_state_specific_incarceration_delegate"
+        )
+        self.mock_incarceration_delegate = (
+            self.pre_processing_incarceration_delegate_patcher.start()
+        )
+        self.mock_incarceration_delegate.return_value = UsXxIncarcerationDelegate()
         self.identifier = identifier.RecidivismIdentifier()
 
     def tearDown(self) -> None:
         self.incarceration_pre_processing_delegate_patcher.stop()
         self.supervision_pre_processing_delegate_patcher.stop()
+        self.pre_processing_incarceration_delegate_patcher.stop()
 
     def _test_find_release_events(
         self,

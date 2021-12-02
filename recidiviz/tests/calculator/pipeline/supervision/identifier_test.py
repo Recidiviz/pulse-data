@@ -131,6 +131,9 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionViolationResponseDecisionEntry,
     StateSupervisionViolationTypeEntry,
 )
+from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_incarceration_delegate import (
+    UsXxIncarcerationDelegate,
+)
 from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_incarceration_period_pre_processing_delegate import (
     UsXxIncarcerationPreProcessingDelegate,
 )
@@ -201,6 +204,15 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         self.mock_supervision_pre_processing_delegate.return_value = (
             UsXxSupervisionPreProcessingDelegate()
         )
+        self.pre_processing_incarceration_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils"
+            ".get_state_specific_incarceration_delegate"
+        )
+        self.mock_incarceration_delegate = (
+            self.pre_processing_incarceration_delegate_patcher.start()
+        )
+        self.mock_incarceration_delegate.return_value = UsXxIncarcerationDelegate()
+
         self.violation_delegate_patcher = mock.patch(
             "recidiviz.calculator.pipeline.supervision.identifier.get_state_specific_violation_delegate"
         )
@@ -234,6 +246,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         self.violation_delegate_patcher.stop()
         self.violation_pre_processing_delegate_patcher.stop()
         self.supervision_delegate_patcher.stop()
+        self.pre_processing_incarceration_delegate_patcher.stop()
 
     def test_find_supervision_events(self) -> None:
         """Tests the find_supervision_population_events function for a single
@@ -752,8 +765,8 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_ND",
-            start_date=date(2017, 3, 5),
-            termination_date=date(2017, 5, 9),
+            start_date=date(2018, 3, 5),
+            termination_date=date(2018, 5, 9),
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
@@ -761,15 +774,17 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             incarceration_period_id=111,
             external_id="ip1",
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            incarceration_type=StateIncarcerationType.COUNTY_JAIL,
+            facility="CJ",
+            custodial_authority=StateCustodialAuthority.COURT,
             state_code="US_ND",
-            admission_date=date(2017, 4, 11),
+            admission_date=date(2018, 4, 11),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
-            release_date=date(2017, 5, 17),
+            release_date=date(2018, 5, 17),
             release_reason=ReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
         )
 
-        admission_date = date(2017, 5, 17)
+        admission_date = date(2018, 5, 17)
         revocation_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=222,
             external_id="ip2",
@@ -785,7 +800,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
             state_code="US_XX",
             supervision_sentence_id=111,
-            start_date=date(2017, 1, 1),
+            start_date=date(2018, 1, 1),
             status=StateSentenceStatus.COMPLETED,
             supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
         )
@@ -810,6 +825,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 supervision_type=first_supervision_type,
                 case_type=StateSupervisionCaseType.GENERAL,
                 in_supervision_population_on_date=True,
+                in_incarceration_population_on_date=False,
             ),
         ]
 
@@ -1475,7 +1491,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             create_termination_event_from_period(
                 first_supervision_period,
                 supervision_type=first_supervision_type,
-                in_incarceration_population_on_date=True,
+                in_incarceration_population_on_date=False,
                 in_supervision_population_on_date=True,
             ),
             create_termination_event_from_period(
@@ -1486,7 +1502,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             create_start_event_from_period(first_supervision_period),
             create_start_event_from_period(
                 second_supervision_period,
-                in_incarceration_population_on_date=True,
+                in_incarceration_population_on_date=False,
             ),
         ]
 
@@ -4334,6 +4350,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                 if incarceration_period.incarceration_period_id
                 else {}
             ),
+            incarceration_delegate=UsXxIncarcerationDelegate(),
         )
         supervision_period_index = PreProcessedSupervisionPeriodIndex(
             supervision_periods=[supervision_period]
@@ -4424,6 +4441,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                 if incarceration_period.incarceration_period_id
                 else {}
             ),
+            incarceration_delegate=UsXxIncarcerationDelegate(),
         )
         supervision_period_index = PreProcessedSupervisionPeriodIndex(
             supervision_periods=[supervision_period]
@@ -4514,6 +4532,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                 if incarceration_period.incarceration_period_id
                 else {}
             ),
+            incarceration_delegate=UsXxIncarcerationDelegate(),
         )
         supervision_period_index = PreProcessedSupervisionPeriodIndex(
             supervision_periods=[supervision_period]
@@ -4613,6 +4632,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                 if incarceration_period.incarceration_period_id
                 else {}
             ),
+            incarceration_delegate=UsXxIncarcerationDelegate(),
         )
         supervision_period_index = PreProcessedSupervisionPeriodIndex(
             supervision_periods=[supervision_period]
@@ -4698,6 +4718,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                 if incarceration_period.incarceration_period_id
                 else {}
             ),
+            incarceration_delegate=UsXxIncarcerationDelegate(),
         )
         supervision_period_index = PreProcessedSupervisionPeriodIndex(
             supervision_periods=[supervision_period]
@@ -4782,7 +4803,9 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
         )
 
         incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
-            incarceration_periods=[], ip_id_to_pfi_subtype={}
+            incarceration_periods=[],
+            ip_id_to_pfi_subtype={},
+            incarceration_delegate=UsXxIncarcerationDelegate(),
         )
         supervision_period_index = PreProcessedSupervisionPeriodIndex(
             supervision_periods=[supervision_period]
@@ -4861,7 +4884,9 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
         )
 
         incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
-            incarceration_periods=[], ip_id_to_pfi_subtype={}
+            incarceration_periods=[],
+            ip_id_to_pfi_subtype={},
+            incarceration_delegate=UsXxIncarcerationDelegate(),
         )
         supervision_period_index = PreProcessedSupervisionPeriodIndex(
             supervision_periods=[supervision_period]
@@ -4937,7 +4962,9 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
         )
 
         incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
-            incarceration_periods=[], ip_id_to_pfi_subtype={}
+            incarceration_periods=[],
+            ip_id_to_pfi_subtype={},
+            incarceration_delegate=UsXxIncarcerationDelegate(),
         )
         supervision_period_index = PreProcessedSupervisionPeriodIndex(
             supervision_periods=[supervision_period]
@@ -5029,6 +5056,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                 if incarceration_period.incarceration_period_id
                 else {}
             ),
+            incarceration_delegate=UsXxIncarcerationDelegate(),
         )
         supervision_period_index = PreProcessedSupervisionPeriodIndex(
             supervision_periods=[supervision_period]
@@ -5119,7 +5147,9 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
         )
 
         incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
-            incarceration_periods=[], ip_id_to_pfi_subtype={}
+            incarceration_periods=[],
+            ip_id_to_pfi_subtype={},
+            incarceration_delegate=UsXxIncarcerationDelegate(),
         )
         supervision_period_index = PreProcessedSupervisionPeriodIndex(
             supervision_periods=[supervision_period]
@@ -5205,7 +5235,9 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
         )
 
         incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
-            incarceration_periods=[], ip_id_to_pfi_subtype={}
+            incarceration_periods=[],
+            ip_id_to_pfi_subtype={},
+            incarceration_delegate=UsXxIncarcerationDelegate(),
         )
         supervision_period_index = PreProcessedSupervisionPeriodIndex(
             supervision_periods=supervision_periods
@@ -5290,7 +5322,9 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
         )
 
         incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
-            incarceration_periods=[], ip_id_to_pfi_subtype={}
+            incarceration_periods=[],
+            ip_id_to_pfi_subtype={},
+            incarceration_delegate=UsXxIncarcerationDelegate(),
         )
         supervision_period_index = PreProcessedSupervisionPeriodIndex(
             supervision_periods=supervision_periods
@@ -5377,7 +5411,9 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             [],
             [supervision_period],
             PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
+                incarceration_periods=[],
+                ip_id_to_pfi_subtype={},
+                incarceration_delegate=UsXxIncarcerationDelegate(),
             ),
             UsXxSupervisionDelegate(),
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
@@ -5459,6 +5495,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                     for ip in incarceration_periods
                     if ip.incarceration_period_id
                 },
+                incarceration_delegate=UsXxIncarcerationDelegate(),
             ),
             UsXxSupervisionDelegate(),
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
@@ -5540,6 +5577,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                     for ip in incarceration_periods
                     if ip.incarceration_period_id
                 },
+                incarceration_delegate=UsXxIncarcerationDelegate(),
             ),
             UsXxSupervisionDelegate(),
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
@@ -5638,6 +5676,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                     for ip in incarceration_periods
                     if ip.incarceration_period_id
                 },
+                incarceration_delegate=UsXxIncarcerationDelegate(),
             ),
             UsXxSupervisionDelegate(),
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
@@ -5753,6 +5792,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                     for ip in incarceration_periods
                     if ip.incarceration_period_id
                 },
+                incarceration_delegate=UsXxIncarcerationDelegate(),
             ),
             UsXxSupervisionDelegate(),
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
@@ -5854,6 +5894,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                     for ip in incarceration_periods
                     if ip.incarceration_period_id
                 },
+                incarceration_delegate=UsXxIncarcerationDelegate(),
             ),
             UsXxSupervisionDelegate(),
             supervision_period_agent_association,
@@ -5941,6 +5982,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                     for ip in incarceration_periods
                     if ip.incarceration_period_id
                 },
+                incarceration_delegate=UsXxIncarcerationDelegate(),
             ),
             UsXxSupervisionDelegate(),
             supervision_period_agent_association,
@@ -6016,6 +6058,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                     for ip in incarceration_periods
                     if ip.incarceration_period_id
                 },
+                incarceration_delegate=UsXxIncarcerationDelegate(),
             ),
             UsXxSupervisionDelegate(),
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
@@ -6072,6 +6115,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
             incarceration_periods=incarceration_periods,
             ip_id_to_pfi_subtype={},
+            incarceration_delegate=UsXxIncarcerationDelegate(),
         )
 
         projected_completion_events = self.identifier._classify_supervision_success(
@@ -6112,6 +6156,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
             incarceration_periods=incarceration_periods,
             ip_id_to_pfi_subtype={},
+            incarceration_delegate=UsXxIncarcerationDelegate(),
         )
 
         projected_completion_events = self.identifier._classify_supervision_success(
@@ -6153,6 +6198,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
             incarceration_periods=incarceration_periods,
             ip_id_to_pfi_subtype={},
+            incarceration_delegate=UsXxIncarcerationDelegate(),
         )
 
         projected_completion_events = self.identifier._classify_supervision_success(
@@ -6217,6 +6263,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                     for ip in incarceration_periods
                     if ip.incarceration_period_id
                 },
+                incarceration_delegate=UsXxIncarcerationDelegate(),
             ),
             UsXxSupervisionDelegate(),
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
@@ -6280,7 +6327,9 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             incarceration_sentences,
             [supervision_period],
             PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
+                incarceration_periods=[],
+                ip_id_to_pfi_subtype={},
+                incarceration_delegate=UsXxIncarcerationDelegate(),
             ),
             UsXxSupervisionDelegate(),
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
@@ -6343,7 +6392,9 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             incarceration_sentences,
             [supervision_period],
             PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
+                incarceration_periods=[],
+                ip_id_to_pfi_subtype={},
+                incarceration_delegate=UsXxIncarcerationDelegate(),
             ),
             UsXxSupervisionDelegate(),
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
@@ -6384,7 +6435,9 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             incarceration_sentences,
             [supervision_period],
             PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
+                incarceration_periods=[],
+                ip_id_to_pfi_subtype={},
+                incarceration_delegate=UsXxIncarcerationDelegate(),
             ),
             UsXxSupervisionDelegate(),
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
@@ -6426,7 +6479,9 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             incarceration_sentences,
             [supervision_period],
             PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
+                incarceration_periods=[],
+                ip_id_to_pfi_subtype={},
+                incarceration_delegate=UsXxIncarcerationDelegate(),
             ),
             UsXxSupervisionDelegate(),
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
@@ -6496,7 +6551,9 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             incarceration_sentences,
             [supervision_period, incarceration_supervision_period],
             PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
+                incarceration_periods=[],
+                ip_id_to_pfi_subtype={},
+                incarceration_delegate=UsXxIncarcerationDelegate(),
             ),
             UsXxSupervisionDelegate(),
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
@@ -6589,7 +6646,9 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
         )
 
         incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
-            incarceration_periods=[], ip_id_to_pfi_subtype={}
+            incarceration_periods=[],
+            ip_id_to_pfi_subtype={},
+            incarceration_delegate=UsXxIncarcerationDelegate(),
         )
 
         violation_responses: List[StateSupervisionViolationResponse] = []
@@ -6645,7 +6704,9 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
         )
 
         incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
-            incarceration_periods=[], ip_id_to_pfi_subtype={}
+            incarceration_periods=[],
+            ip_id_to_pfi_subtype={},
+            incarceration_delegate=UsXxIncarcerationDelegate(),
         )
 
         violation_responses: List[StateSupervisionViolationResponse] = []
@@ -6706,7 +6767,9 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
         )
 
         incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
-            incarceration_periods=[], ip_id_to_pfi_subtype={}
+            incarceration_periods=[],
+            ip_id_to_pfi_subtype={},
+            incarceration_delegate=UsXxIncarcerationDelegate(),
         )
 
         violation_responses: List[StateSupervisionViolationResponse] = []
@@ -6757,7 +6820,9 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
         )
 
         incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
-            incarceration_periods=[], ip_id_to_pfi_subtype={}
+            incarceration_periods=[],
+            ip_id_to_pfi_subtype={},
+            incarceration_delegate=UsXxIncarcerationDelegate(),
         )
 
         violation_responses: List[StateSupervisionViolationResponse] = []
@@ -6835,7 +6900,9 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
         )
 
         incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
-            incarceration_periods=[], ip_id_to_pfi_subtype={}
+            incarceration_periods=[],
+            ip_id_to_pfi_subtype={},
+            incarceration_delegate=UsXxIncarcerationDelegate(),
         )
 
         violation_responses: List[StateSupervisionViolationResponse] = []
@@ -6890,7 +6957,9 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
         )
 
         incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
-            incarceration_periods=[], ip_id_to_pfi_subtype={}
+            incarceration_periods=[],
+            ip_id_to_pfi_subtype={},
+            incarceration_delegate=UsXxIncarcerationDelegate(),
         )
 
         termination_event = self.identifier._find_supervision_termination_event(
@@ -7016,7 +7085,9 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
         )
 
         incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
-            incarceration_periods=[], ip_id_to_pfi_subtype={}
+            incarceration_periods=[],
+            ip_id_to_pfi_subtype={},
+            incarceration_delegate=UsXxIncarcerationDelegate(),
         )
 
         violation_responses: List[StateSupervisionViolationResponse] = []
@@ -7111,7 +7182,9 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
         )
 
         incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
-            incarceration_periods=[], ip_id_to_pfi_subtype={}
+            incarceration_periods=[],
+            ip_id_to_pfi_subtype={},
+            incarceration_delegate=UsXxIncarcerationDelegate(),
         )
 
         violation_responses: List[StateSupervisionViolationResponse] = []
@@ -7196,6 +7269,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
                 if incarceration_period.incarceration_period_id
                 else {}
             ),
+            incarceration_delegate=UsXxIncarcerationDelegate(),
         )
 
         violation_responses: List[StateSupervisionViolationResponse] = []
@@ -7262,10 +7336,10 @@ class TestFindSupervisionStartEvent(unittest.TestCase):
         start date has custodial_authority=SUPERVISION_AUTHORITY which means the person
         is counted in the supervision population on that date."""
         self.run_overlapping_periods_test(
-            date(2018, 3, 5),
-            date(2018, 4, 1),
-            True,
-            True,
+            supervision_start_date=date(2018, 3, 5),
+            incarceration_release_date=date(2018, 4, 1),
+            expected_in_incarceration_population_on_date=False,
+            expected_in_supervision_population_on_date=True,
             incarceration_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
         )
 
@@ -7349,7 +7423,9 @@ class TestFindSupervisionStartEvent(unittest.TestCase):
         )
 
         incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
-            incarceration_periods=[], ip_id_to_pfi_subtype={}
+            incarceration_periods=[],
+            ip_id_to_pfi_subtype={},
+            incarceration_delegate=UsXxIncarcerationDelegate(),
         )
 
         start_event = self.identifier._find_supervision_start_event(
@@ -7433,7 +7509,9 @@ class TestFindSupervisionStartEvent(unittest.TestCase):
         )
 
         incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
-            incarceration_periods=[], ip_id_to_pfi_subtype={}
+            incarceration_periods=[],
+            ip_id_to_pfi_subtype={},
+            incarceration_delegate=UsXxIncarcerationDelegate(),
         )
 
         start_event = self.identifier._find_supervision_start_event(
@@ -7509,6 +7587,7 @@ class TestFindSupervisionStartEvent(unittest.TestCase):
                 if incarceration_period.incarceration_period_id
                 else {}
             ),
+            incarceration_delegate=UsXxIncarcerationDelegate(),
         )
 
         start_event = self.identifier._find_supervision_start_event(
@@ -8400,7 +8479,9 @@ def _generate_case_compliances(
         incarceration_period_index=(
             incarceration_period_index
             or PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[], ip_id_to_pfi_subtype={}
+                incarceration_periods=[],
+                ip_id_to_pfi_subtype={},
+                incarceration_delegate=UsXxIncarcerationDelegate(),
             )
         ),
         supervision_delegate=(supervision_delegate or UsXxSupervisionDelegate()),

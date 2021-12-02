@@ -80,6 +80,9 @@ from recidiviz.tests.calculator.pipeline.utils.run_pipeline_test_utils import (
     run_test_pipeline,
     test_pipeline_options,
 )
+from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_incarceration_delegate import (
+    UsXxIncarcerationDelegate,
+)
 from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_incarceration_period_pre_processing_delegate import (
     UsXxIncarcerationPreProcessingDelegate,
 )
@@ -128,6 +131,14 @@ class TestProgramPipeline(unittest.TestCase):
         self.mock_supervision_pre_processing_delegate.return_value = (
             UsXxSupervisionPreProcessingDelegate()
         )
+        self.pre_processing_incarceration_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils"
+            ".get_state_specific_incarceration_delegate"
+        )
+        self.mock_incarceration_delegate = (
+            self.pre_processing_incarceration_delegate_patcher.start()
+        )
+        self.mock_incarceration_delegate.return_value = UsXxIncarcerationDelegate()
         self.supervision_delegate_patcher = mock.patch(
             "recidiviz.calculator.pipeline.program.identifier.get_state_specific_supervision_delegate"
         )
@@ -135,9 +146,13 @@ class TestProgramPipeline(unittest.TestCase):
         self.mock_supervision_delegate.return_value = UsXxSupervisionDelegate()
 
     def tearDown(self) -> None:
+        self._stop_state_specific_delegate_patchers()
+
+    def _stop_state_specific_delegate_patchers(self) -> None:
         self.incarceration_pre_processing_delegate_patcher.stop()
         self.supervision_pre_processing_delegate_patcher.stop()
         self.supervision_delegate_patcher.stop()
+        self.pre_processing_incarceration_delegate_patcher.stop()
 
     @staticmethod
     def build_data_dict(
@@ -475,6 +490,14 @@ class TestClassifyProgramAssignments(unittest.TestCase):
         self.mock_supervision_pre_processing_delegate.return_value = (
             UsXxSupervisionPreProcessingDelegate()
         )
+        self.pre_processing_incarceration_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils"
+            ".get_state_specific_incarceration_delegate"
+        )
+        self.mock_incarceration_delegate = (
+            self.pre_processing_incarceration_delegate_patcher.start()
+        )
+        self.mock_incarceration_delegate.return_value = UsXxIncarcerationDelegate()
         self.supervision_delegate_patcher = mock.patch(
             "recidiviz.calculator.pipeline.program.identifier.get_state_specific_supervision_delegate"
         )
@@ -483,9 +506,13 @@ class TestClassifyProgramAssignments(unittest.TestCase):
         self.identifier = identifier.ProgramIdentifier()
 
     def tearDown(self) -> None:
+        self._stop_state_specific_delegate_patchers()
+
+    def _stop_state_specific_delegate_patchers(self) -> None:
         self.incarceration_pre_processing_delegate_patcher.stop()
         self.supervision_pre_processing_delegate_patcher.stop()
         self.supervision_delegate_patcher.stop()
+        self.pre_processing_incarceration_delegate_patcher.stop()
 
     @freeze_time("2009-10-19")
     def testClassifyProgramAssignments(self) -> None:

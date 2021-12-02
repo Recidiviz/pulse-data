@@ -209,6 +209,15 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         self.mock_supervision_pre_processing_delegate.return_value = (
             UsXxSupervisionPreProcessingDelegate()
         )
+        self.pre_processing_incarceration_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils"
+            ".get_state_specific_incarceration_delegate"
+        )
+        self.mock_incarceration_delegate = (
+            self.pre_processing_incarceration_delegate_patcher.start()
+        )
+        self.mock_incarceration_delegate.return_value = UsXxIncarcerationDelegate()
+
         self.identifier = identifier.IncarcerationIdentifier()
 
         self.commitment_from_supervision_delegate_patcher = mock.patch(
@@ -256,6 +265,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         self.violation_pre_processing_delegate_patcher.stop()
         self.supervision_delegate_patcher.stop()
         self.incarceration_delegate_patcher.stop()
+        self.pre_processing_incarceration_delegate_patcher.stop()
 
     def _run_find_incarceration_events(
         self,
@@ -2161,6 +2171,7 @@ class TestFindIncarcerationStays(unittest.TestCase):
                 if incarceration_period.incarceration_period_id
                 else {}
             ),
+            incarceration_delegate=incarceration_delegate,
         )
 
         return self.identifier._find_incarceration_stays(
@@ -2535,6 +2546,8 @@ class TestFindIncarcerationStays(unittest.TestCase):
 
         ips = [incarceration_period_1, incarceration_period_2]
 
+        incarceration_delegate = UsXxIncarcerationDelegate()
+
         incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
             incarceration_periods=ips,
             ip_id_to_pfi_subtype={
@@ -2542,6 +2555,7 @@ class TestFindIncarcerationStays(unittest.TestCase):
                 for ip in ips
                 if ip.incarceration_period_id
             },
+            incarceration_delegate=incarceration_delegate,
         )
 
         incarceration_delegate = UsXxIncarcerationDelegate()
@@ -2611,6 +2625,7 @@ class TestFindIncarcerationStays(unittest.TestCase):
                 for ip in incarceration_periods
                 if ip.incarceration_period_id is not None
             },
+            incarceration_delegate=incarceration_delegate,
         )
 
         incarceration_events = self.identifier._find_incarceration_stays(
@@ -2689,6 +2704,8 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
         """
         incarceration_sentences = incarceration_sentences or []
         supervision_sentences = supervision_sentences or []
+        incarceration_delegate = incarceration_delegate or UsXxIncarcerationDelegate()
+
         incarceration_period_index = (
             incarceration_period_index
             or PreProcessedIncarcerationPeriodIndex(
@@ -2698,6 +2715,7 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
                     if incarceration_period.incarceration_period_id
                     else {}
                 ),
+                incarceration_delegate=incarceration_delegate,
             )
         )
         supervision_period_index = PreProcessedSupervisionPeriodIndex(
@@ -2709,7 +2727,6 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
             if violation_responses
             else []
         )
-        incarceration_delegate = incarceration_delegate or UsXxIncarcerationDelegate()
 
         return self.identifier._admission_event_for_period(
             incarceration_sentences=incarceration_sentences,
@@ -2996,6 +3013,8 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             commitment_from_supervision_delegate
             or UsXxCommitmentFromSupervisionDelegate()
         )
+        incarceration_delegate = incarceration_delegate or UsXxIncarcerationDelegate()
+
         incarceration_period_index = (
             incarceration_period_index
             or PreProcessedIncarcerationPeriodIndex(
@@ -3005,6 +3024,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
                     if incarceration_period.incarceration_period_id
                     else {}
                 ),
+                incarceration_delegate=incarceration_delegate,
             )
         )
         supervision_period_index = PreProcessedSupervisionPeriodIndex(
@@ -3014,7 +3034,6 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
                 else []
             )
         )
-        incarceration_delegate = incarceration_delegate or UsXxIncarcerationDelegate()
 
         return self.identifier._commitment_from_supervision_event_for_period(
             incarceration_sentences=incarceration_sentences,
@@ -3643,6 +3662,7 @@ class TestReleaseEventForPeriod(unittest.TestCase):
         not require that state specific logic.
         """
 
+        incarceration_delegate = incarceration_delegate or UsXxIncarcerationDelegate()
         incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
             incarceration_periods=[incarceration_period],
             ip_id_to_pfi_subtype=(
@@ -3650,6 +3670,7 @@ class TestReleaseEventForPeriod(unittest.TestCase):
                 if incarceration_period.incarceration_period_id
                 else {}
             ),
+            incarceration_delegate=incarceration_delegate,
         )
 
         supervision_period_index = PreProcessedSupervisionPeriodIndex(
@@ -3800,6 +3821,7 @@ class TestReleaseEventForPeriod(unittest.TestCase):
                 if incarceration_period.incarceration_period_id
                 else {}
             ),
+            incarceration_delegate=UsIdIncarcerationDelegate(),
         )
 
         supervision_period_index = PreProcessedSupervisionPeriodIndex(
@@ -3866,6 +3888,7 @@ class TestReleaseEventForPeriod(unittest.TestCase):
                 if incarceration_period.incarceration_period_id
                 else {}
             ),
+            incarceration_delegate=UsMoIncarcerationDelegate(),
         )
 
         supervision_period_index = PreProcessedSupervisionPeriodIndex(
@@ -3936,6 +3959,7 @@ class TestReleaseEventForPeriod(unittest.TestCase):
                 if incarceration_period.incarceration_period_id
                 else {}
             ),
+            incarceration_delegate=UsNdIncarcerationDelegate(),
         )
 
         supervision_period_index = PreProcessedSupervisionPeriodIndex(

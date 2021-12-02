@@ -23,6 +23,9 @@ from typing import Dict, List, Optional, Set, Tuple
 
 import attr
 
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_incarceration_delegate import (
+    StateSpecificIncarcerationDelegate,
+)
 from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
@@ -41,31 +44,41 @@ class PreProcessedIncarcerationPeriodIndex:
 
     incarceration_periods: List[StateIncarcerationPeriod] = attr.ib()
 
+    # The delegate for state-specific configurations related to incarceration
+    incarceration_delegate: StateSpecificIncarcerationDelegate = attr.ib()
+
     # A dictionary mapping incarceration_period_id values to the
     # purpose_for_incarceration_subtype value associated with the incarceration
     # period. These values are determined at IP pre-processing time, and are used by
     # various calculations.
     ip_id_to_pfi_subtype: Dict[int, Optional[str]] = attr.ib()
 
-    # Incarceration periods during which a person cannot also be counted in the supervision population
-    incarceration_periods_not_under_supervision_authority: List[
+    # Incarceration periods during which a person cannot also be counted in the
+    # supervision population
+    incarceration_periods_that_exclude_person_from_supervision_population: List[
         StateIncarcerationPeriod
     ] = attr.ib()
 
-    @incarceration_periods_not_under_supervision_authority.default
-    def _incarceration_periods_not_under_supervision_authority(
+    @incarceration_periods_that_exclude_person_from_supervision_population.default
+    def _incarceration_periods_that_exclude_person_from_supervision_population(
         self,
     ) -> List[StateIncarcerationPeriod]:
-        """The incarceration periods in the incarceration_periods list during which a person cannot also be counted in
-        the supervision population. If a person is in a facility, but is under the custodial authority of a supervision
-        department, then they can be counted in the supervision population"""
+        """The incarceration periods in the incarceration_periods list during which a
+        person cannot also be counted in the supervision population. If a person is
+        in a facility, but is under the custodial authority of a supervision
+        department or of the courts, then they can be counted in the supervision
+        population."""
         if not self.incarceration_periods:
             return []
 
         return [
             ip
             for ip in self.incarceration_periods
-            if ip.custodial_authority != StateCustodialAuthority.SUPERVISION_AUTHORITY
+            if ip.custodial_authority
+            not in (
+                StateCustodialAuthority.SUPERVISION_AUTHORITY,
+                StateCustodialAuthority.COURT,
+            )
         ]
 
     # A set of tuples in the format (year, month) for each month of which this person has been incarcerated for any
@@ -85,7 +98,7 @@ class PreProcessedIncarcerationPeriodIndex:
 
         for (
             incarceration_period
-        ) in self.incarceration_periods_not_under_supervision_authority:
+        ) in self.incarceration_periods_that_exclude_person_from_supervision_population:
             for (
                 year,
                 month,
@@ -112,7 +125,7 @@ class PreProcessedIncarcerationPeriodIndex:
 
         for (
             incarceration_period
-        ) in self.incarceration_periods_not_under_supervision_authority:
+        ) in self.incarceration_periods_that_exclude_person_from_supervision_population:
             months_overlaps_at_all = (
                 incarceration_period.duration.get_months_range_overlaps_at_all()
             )
@@ -205,7 +218,11 @@ class PreProcessedIncarcerationPeriodIndex:
         """Returns True if this person was counted in the incarcerated population
         on the given date."""
         for period in self.incarceration_periods:
-            if period.duration.contains_day(evaluation_date):
+            if period.duration.contains_day(
+                evaluation_date
+            ) and self.incarceration_delegate.is_period_included_in_state_population(
+                period
+            ):
                 return True
 
         return False
