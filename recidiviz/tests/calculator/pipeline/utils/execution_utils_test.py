@@ -167,13 +167,13 @@ class TestPersonAndKwargsForIdentifier(unittest.TestCase):
         assessment = StateAssessment.new_with_defaults(state_code="US_XX")
 
         arg_to_entities_map: Dict[str, Iterable[Any]] = {
-            "persons": iter([person_input]),
-            "assessments": iter([assessment]),
+            StatePerson.__name__: iter([person_input]),
+            StateAssessment.__name__: iter([assessment]),
         }
 
         person, kwargs = person_and_kwargs_for_identifier(arg_to_entities_map)
 
-        expected_kwargs = {"assessments": [assessment]}
+        expected_kwargs = {StateAssessment.__name__: [assessment]}
 
         self.assertEqual(person, person_input)
         self.assertEqual(expected_kwargs, kwargs)
@@ -191,8 +191,8 @@ class TestPersonAndKwargsForIdentifier(unittest.TestCase):
 
         arg_to_entities_map: Dict[str, Iterable[Any]] = {
             # There should never be two StatePerson entities with the same person_id. This should fail loudly.
-            "persons": iter([person_input_1, person_input_2]),
-            "assessments": iter([assessment]),
+            StatePerson.__name__: iter([person_input_1, person_input_2]),
+            StateAssessment.__name__: iter([assessment]),
         }
 
         with self.assertRaises(ValueError):
@@ -203,7 +203,7 @@ class TestPersonAndKwargsForIdentifier(unittest.TestCase):
 
         arg_to_entities_map: Dict[str, Iterable[Any]] = {
             # There should never be two StatePerson entities with the same person_id. This should fail loudly.
-            "assessments": iter([assessment])
+            StateAssessment.__name__: iter([assessment])
         }
 
         with self.assertRaises(ValueError):
