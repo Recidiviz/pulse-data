@@ -61,8 +61,10 @@ output:
                 # These are relatively rare erroneous values - ignore them.
                 - EW
                 - F
+                - Q
                 - QB
                 - QW
+                - S
                 - U
                 - WSW
                 - WW
@@ -84,8 +86,10 @@ output:
                 # These are relatively rare erroneous values - ignore them.
                 - EW
                 - F
+                - Q
                 - QB
                 - QW
+                - S
                 - U
                 - WSW
                 - WW
