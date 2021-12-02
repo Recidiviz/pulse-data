@@ -36,6 +36,9 @@ from recidiviz.calculator.query.state.views.po_report.report_data_by_person_by_m
 from recidiviz.calculator.query.state.views.po_report.revocation_reports_by_person_by_month import (
     REVOCATION_REPORTS_BY_PERSON_BY_MONTH_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.po_report.sendgrid_po_report_email_events import (
+    SENDGRID_PO_REPORT_EMAIL_EVENTS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.po_report.successful_supervision_completions_by_person_by_month import (
     SUCCESSFUL_SUPERVISION_COMPLETIONS_BY_PERSON_BY_MONTH_VIEW_BUILDER,
 )
@@ -64,4 +67,5 @@ PO_REPORT_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     # PO_MONTHLY_REPORT_DATA_VIEW_BUILDER must be last in this list because it relies on the materialized versions of
     # all of the other PO Report views
     PO_MONTHLY_REPORT_DATA_VIEW_BUILDER,
+    SENDGRID_PO_REPORT_EMAIL_EVENTS_VIEW_BUILDER,
 ]

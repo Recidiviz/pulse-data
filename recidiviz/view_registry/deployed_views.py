@@ -123,6 +123,7 @@ DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED: Set[str] = {
     "public_dashboard_views",
     "reference_views",
     "sessions",
+    "sendgrid_email_data",
     "us_id_raw_data_up_to_date_views",
     "us_mo_raw_data_up_to_date_views",
     "us_nd_raw_data_up_to_date_views",

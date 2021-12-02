@@ -69,3 +69,6 @@ POPULATION_PROJECTION_OUTPUT_DATASET: str = "population_projection_output_data"
 
 # Where the views for the vitals report live
 VITALS_REPORT_DATASET: str = "vitals_report_views"
+
+# Where Sendgrid datasets live
+SENDGRID_EMAIL_DATA_DATASET: str = "sendgrid_email_data"
