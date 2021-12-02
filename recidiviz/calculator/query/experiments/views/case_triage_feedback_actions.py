@@ -47,7 +47,7 @@ CASE_TRIAGE_FEEDBACK_ACTIONS_QUERY_TEMPLATE = """
         COALESCE(district.district, 'INTERNAL_UNKNOWN') AS district,
         client.person_id,
         actions.person_external_id,
-        EXTRACT(DATE from actions.timestamp AT TIME ZONE 'US/Pacific') AS feedback_date,
+        EXTRACT(DATETIME from actions.timestamp AT TIME ZONE 'US/Pacific') AS feedback_date,
         actions.action_taken AS feedback_type,
     FROM `{project_id}.{case_triage_segment_dataset}.frontend_person_action_taken` actions
     INNER JOIN `{project_id}.{static_reference_tables_dataset}.case_triage_users` recipients
