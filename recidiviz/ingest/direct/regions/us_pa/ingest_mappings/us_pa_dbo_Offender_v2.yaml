@@ -31,8 +31,8 @@ output:
       $enum_mapping:
         $raw_text: OffSex
         $mappings:
-          Gender.MALE: M
-          Gender.FEMALE: F
+          Gender.MALE: [M, m]
+          Gender.FEMALE: [F, f]
         $ignore:
           # These are relatively rare erroneous values.
           - "1"
@@ -52,15 +52,14 @@ output:
                 Race.BLACK: B
                 Race.AMERICAN_INDIAN_ALASKAN_NATIVE: I
                 Race.OTHER: N
-                Race.WHITE: W
+                Race.WHITE: [W, w]
               $ignore:
                 # This is an ethnicity value - ignore when mapping to race.
                 - H
-                # This is an erroneous value - ignore it.
-                - M
                 # These are relatively rare erroneous values - ignore them.
                 - EW
                 - F
+                - M
                 - Q
                 - QB
                 - QW
@@ -82,10 +81,11 @@ output:
                 - I
                 - N
                 - W
-                - M
+                - w
                 # These are relatively rare erroneous values - ignore them.
                 - EW
                 - F
+                - M
                 - Q
                 - QB
                 - QW
