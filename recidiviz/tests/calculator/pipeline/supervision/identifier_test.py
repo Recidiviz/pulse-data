@@ -8443,6 +8443,7 @@ def _generate_case_compliances(
     end_date_override: Optional[date] = None,
     next_recommended_assessment_date: Optional[date] = None,
     violation_responses: Optional[List[StateSupervisionViolationResponse]] = None,
+    incarceration_sentences: Optional[List[StateIncarcerationSentence]] = None,
     incarceration_period_index: Optional[PreProcessedIncarcerationPeriodIndex] = None,
     supervision_delegate: Optional[StateSpecificSupervisionDelegate] = None,
 ) -> Dict[date, SupervisionCaseCompliance]:
@@ -8476,6 +8477,7 @@ def _generate_case_compliances(
         assessments or [],
         face_to_face_contacts or [],
         violation_responses or [],
+        incarceration_sentences or [],
         incarceration_period_index=(
             incarceration_period_index
             or PreProcessedIncarcerationPeriodIndex(
