@@ -87,6 +87,8 @@ _CASE_UPDATE_ACTION_TYPE_TO_PROGRESS_CHECKER: Dict[
     # Face to face contact progress checkers
     CaseUpdateActionType.SCHEDULED_FACE_TO_FACE: _in_progress_until_more_recent_date,
     CaseUpdateActionType.INCORRECT_CONTACT_DATA: _in_progress_until_changed,
+    # Home visit contact progress checkers
+    CaseUpdateActionType.INCORRECT_HOME_VISIT_DATA: _in_progress_until_changed,
     # Supervision level progress checkers
     CaseUpdateActionType.DOWNGRADE_INITIATED: _in_progress_until_changed,
     # TODO(#5721): Need to better understand how to detect when DISCHARGE_INITIATED is no longer in-progress.
