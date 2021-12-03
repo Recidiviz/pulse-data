@@ -14,15 +14,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Contains generic implementation of the StateSpecificViolationDelegate
- for used in state-agnostic tests."""
-
-
-from recidiviz.calculator.pipeline.utils.state_utils.state_specific_violations_delegate import (
-    StateSpecificViolationDelegate,
+"""Contains US_XX implementation of the StateSpecificCommitmentFromSupervisionDelegate."""
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_commitment_from_supervision_delegate import (
+    StateSpecificCommitmentFromSupervisionDelegate,
 )
 
 
-class UsXxViolationDelegate(StateSpecificViolationDelegate):
-    """State-agnostic implementation of the
-    StateSpecificViolationDelegate."""
+class UsXxCommitmentFromSupervisionDelegate(
+    StateSpecificCommitmentFromSupervisionDelegate
+):
+    """US_XX implementation of the StateSpecificCommitmentFromSupervisionDelegate."""

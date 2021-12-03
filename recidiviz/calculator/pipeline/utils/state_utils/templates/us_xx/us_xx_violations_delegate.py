@@ -14,17 +14,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Contains generic implementation of the StateSpecificIncarcerationPreProcessingDelegate
- for used in state-agnostic tests."""
-from recidiviz.calculator.pipeline.utils.incarceration_period_pre_processing_manager import (
-    StateSpecificIncarcerationPreProcessingDelegate,
+"""Contains US_XX implementation of the StateSpecificViolationDelegate."""
+
+
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_violations_delegate import (
+    StateSpecificViolationDelegate,
 )
 
 
-class UsXxIncarcerationPreProcessingDelegate(
-    StateSpecificIncarcerationPreProcessingDelegate
-):
-    """Test version of StateSpecificIncarcerationPreProcessingDelegate that uses the
-    default behavior for all functions."""
-
-    # No deviations from default logic for US_XX
+class UsXxViolationDelegate(StateSpecificViolationDelegate):
+    """US_XX implementation of the StateSpecificViolationDelegate."""

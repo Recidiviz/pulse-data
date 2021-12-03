@@ -21,6 +21,9 @@ from typing import List
 
 import attr
 
+from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_violation_response_preprocessing_delegate import (
+    UsXxViolationResponsePreprocessingDelegate,
+)
 from recidiviz.calculator.pipeline.utils.supervision_violation_responses_pre_processing_manager import (
     ViolationResponsePreProcessingManager,
 )
@@ -35,9 +38,6 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionViolation,
     StateSupervisionViolationResponse,
     StateSupervisionViolationTypeEntry,
-)
-from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_violation_response_preprocessing_delegate import (
-    UsXxViolationResponsePreprocessingDelegate,
 )
 
 

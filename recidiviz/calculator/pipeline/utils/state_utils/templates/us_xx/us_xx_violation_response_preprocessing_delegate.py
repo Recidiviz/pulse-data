@@ -14,13 +14,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Generic implementation of the supervision pre-processing delegate for tests"""
-from recidiviz.calculator.pipeline.utils.supervision_period_pre_processing_manager import (
-    StateSpecificSupervisionPreProcessingDelegate,
+"""Contains US_XX implementation of the StateSpecificViolationResponsePreProcessingDelegate."""
+from recidiviz.calculator.pipeline.utils.supervision_violation_responses_pre_processing_manager import (
+    StateSpecificViolationResponsePreProcessingDelegate,
 )
 
 
-class UsXxSupervisionPreProcessingDelegate(
-    StateSpecificSupervisionPreProcessingDelegate
+class UsXxViolationResponsePreprocessingDelegate(
+    StateSpecificViolationResponsePreProcessingDelegate
 ):
-    """Generic implementation of the supervision pre-processing delegate for tests"""
+    """US_XX implementation of the StateSpecificViolationResponsePreProcessingDelegate."""

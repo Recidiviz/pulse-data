@@ -46,6 +46,9 @@ from recidiviz.calculator.pipeline.supervision.supervision_case_compliance impor
     SupervisionCaseCompliance,
 )
 from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
+from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_supervision_delegate import (
+    UsXxSupervisionDelegate,
+)
 from recidiviz.common.constants.person_characteristics import Ethnicity, Gender, Race
 from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_assessment import (
@@ -63,9 +66,6 @@ from recidiviz.persistence.entity.state.entities import (
     StatePerson,
     StatePersonEthnicity,
     StatePersonRace,
-)
-from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_supervision_delegate import (
-    UsXxSupervisionDelegate,
 )
 
 ALL_METRICS_INCLUSIONS_DICT = {

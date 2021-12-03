@@ -39,7 +39,6 @@ from recidiviz.calculator.pipeline.recidivism.events import (
 )
 from recidiviz.calculator.pipeline.recidivism.metrics import (
     ReincarcerationRecidivismCountMetric,
-    ReincarcerationRecidivismMetric,
 )
 from recidiviz.calculator.pipeline.recidivism.metrics import (
     ReincarcerationRecidivismMetricType,
@@ -56,6 +55,15 @@ from recidiviz.calculator.pipeline.utils.person_utils import (
     PERSON_METADATA_KEY,
     ExtractPersonEventsMetadata,
     PersonMetadata,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_incarceration_delegate import (
+    UsXxIncarcerationDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_incarceration_period_pre_processing_delegate import (
+    UsXxIncarcerationPreProcessingDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_supervision_period_pre_processing_delegate import (
+    UsXxSupervisionPreProcessingDelegate,
 )
 from recidiviz.common.constants.person_characteristics import (
     Ethnicity,
@@ -86,15 +94,6 @@ from recidiviz.tests.calculator.pipeline.utils.run_pipeline_test_utils import (
     default_data_dict_for_root_schema_classes,
     run_test_pipeline,
     test_pipeline_options,
-)
-from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_incarceration_delegate import (
-    UsXxIncarcerationDelegate,
-)
-from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_incarceration_period_pre_processing_delegate import (
-    UsXxIncarcerationPreProcessingDelegate,
-)
-from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_supervision_period_pre_processing_delegate import (
-    UsXxSupervisionPreProcessingDelegate,
 )
 from recidiviz.tests.persistence.database import database_test_utils
 
