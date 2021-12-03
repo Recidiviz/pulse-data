@@ -47,6 +47,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodStatus,
     StateSpecializedPurposeForIncarceration,
 )
+from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactLocation,
     StateSupervisionContactStatus,
@@ -65,6 +66,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.state.entities import (
     StateAssessment,
     StateIncarcerationPeriod,
+    StateIncarcerationSentence,
     StatePerson,
     StateSupervisionContact,
     StateSupervisionPeriod,
@@ -140,6 +142,7 @@ class TestAssessmentsInComplianceMonth(unittest.TestCase):
             assessments=assessments,
             supervision_contacts=[],
             violation_responses=[],
+            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsPaSupervisionDelegate(),
         )
@@ -231,6 +234,7 @@ class TestFaceToFaceContactsInComplianceMonth(unittest.TestCase):
             assessments=[],
             supervision_contacts=contacts,
             violation_responses=[],
+            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsPaSupervisionDelegate(),
         )
@@ -289,6 +293,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts,
             violation_responses=[],
+            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsPaSupervisionDelegate(),
         )
@@ -341,6 +346,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts,
             violation_responses=[],
+            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsPaSupervisionDelegate(),
         )
@@ -390,6 +396,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts,
             violation_responses=[],
+            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsPaSupervisionDelegate(),
         )
@@ -441,6 +448,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts,
             violation_responses=[],
+            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsPaSupervisionDelegate(),
         )
@@ -634,6 +642,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts,
             violation_responses=[],
+            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsPaSupervisionDelegate(),
         )
@@ -675,17 +684,18 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts,
             violation_responses=[],
+            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsPaSupervisionDelegate(),
         )
 
-        face_to_face_frequency_sufficient = (
+        next_recommended_face_to_face_date = (
             us_pa_supervision_compliance._next_recommended_face_to_face_date(
                 evaluation_date
             )
         )
 
-        self.assertTrue(face_to_face_frequency_sufficient)
+        self.assertIsNotNone(next_recommended_face_to_face_date)
 
     def test_next_recommended_face_to_face_date_skipped_if_incarcerated(self) -> None:
         start_of_supervision = date(2017, 3, 5)
@@ -709,6 +719,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=[],
             violation_responses=[],
+            incarceration_sentences=[],
             incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
                 incarceration_periods=[
                     StateIncarcerationPeriod.new_with_defaults(
@@ -733,7 +744,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             )
         )
 
-        self.assertEqual(next_face_to_face_date, None)
+        self.assertIsNone(next_face_to_face_date)
 
     def test_next_recommended_face_to_face_date_skipped_if_in_parole_board_hold(
         self,
@@ -759,6 +770,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=[],
             violation_responses=[],
+            incarceration_sentences=[],
             incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
                 incarceration_periods=[
                     StateIncarcerationPeriod.new_with_defaults(
@@ -784,7 +796,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             )
         )
 
-        self.assertEqual(next_face_to_face_date, None)
+        self.assertIsNone(next_face_to_face_date)
 
     def test_next_recommended_face_to_face_date_skipped_if_past_max_date(self) -> None:
         start_of_supervision = date(2017, 3, 5)
@@ -808,17 +820,29 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=[],
             violation_responses=[],
+            incarceration_sentences=[
+                StateIncarcerationSentence.new_with_defaults(
+                    state_code=StateCode.US_PA.value,
+                    external_id="sentence1",
+                    status=StateSentenceStatus.SERVING,
+                    incarceration_type=StateIncarcerationType.STATE_PRISON,
+                    date_imposed=date(2017, 2, 1),
+                    start_date=date(2017, 2, 3),
+                    projected_max_release_date=date(2018, 3, 18),
+                    completion_date=date(2018, 4, 2),
+                )
+            ],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsPaSupervisionDelegate(),
         )
 
-        _ = us_pa_supervision_compliance._next_recommended_face_to_face_date(
-            date(2018, 3, 20)
+        next_face_to_face_date = (
+            us_pa_supervision_compliance._next_recommended_face_to_face_date(
+                date(2018, 3, 20)
+            )
         )
 
-        # TODO(#9882): Update this test to pass in StateIncarcerationSentence entities
-        #  that indicate that the person is past their max date, and uncomment below
-        # self.assertEqual(None, next_face_to_face_date)
+        self.assertIsNone(next_face_to_face_date)
 
     def test_next_recommended_face_to_face_date_skipped_if_actively_absconding(
         self,
@@ -844,6 +868,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=[],
             violation_responses=[],
+            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsPaSupervisionDelegate(),
         )
@@ -854,7 +879,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             )
         )
 
-        self.assertEqual(next_face_to_face_date, None)
+        self.assertIsNone(next_face_to_face_date)
 
 
 class TestNextRecommendedHomeVisitDate(unittest.TestCase):
@@ -902,6 +927,7 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts,
             violation_responses=[],
+            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsPaSupervisionDelegate(),
         )
@@ -950,6 +976,7 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts,
             violation_responses=[],
+            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsPaSupervisionDelegate(),
         )
@@ -1049,6 +1076,7 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts,
             violation_responses=[],
+            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsPaSupervisionDelegate(),
         )
@@ -1083,6 +1111,7 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=[],
             violation_responses=[],
+            incarceration_sentences=[],
             incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
                 incarceration_periods=[
                     StateIncarcerationPeriod.new_with_defaults(
@@ -1107,7 +1136,7 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
             )
         )
 
-        self.assertEqual(next_home_visit_date, None)
+        self.assertIsNone(next_home_visit_date)
 
     def test_next_recommended_home_visit_date_skipped_if_past_max_date(self) -> None:
         start_of_supervision = date(2017, 3, 5)
@@ -1131,6 +1160,7 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=[],
             violation_responses=[],
+            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsPaSupervisionDelegate(),
         )
@@ -1141,7 +1171,7 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
             )
         )
 
-        self.assertEqual(next_home_visit_date, None)
+        self.assertIsNone(next_home_visit_date)
 
     def test_next_recommended_home_visit_date_skipped_if_actively_absconding(
         self,
@@ -1167,6 +1197,7 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=[],
             violation_responses=[],
+            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsPaSupervisionDelegate(),
         )
@@ -1177,7 +1208,7 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
             )
         )
 
-        self.assertEqual(next_home_visit_date, None)
+        self.assertIsNone(next_home_visit_date)
 
 
 class TestNextRecommendedTreatmentCollateralVisitDate(unittest.TestCase):
@@ -1218,6 +1249,7 @@ class TestNextRecommendedTreatmentCollateralVisitDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts,
             violation_responses=[],
+            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsPaSupervisionDelegate(),
         )
@@ -1265,6 +1297,7 @@ class TestNextRecommendedTreatmentCollateralVisitDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts,
             violation_responses=[],
+            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsPaSupervisionDelegate(),
         )
@@ -1374,6 +1407,7 @@ class TestNextRecommendedTreatmentCollateralVisitDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts,
             violation_responses=[],
+            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsPaSupervisionDelegate(),
         )
@@ -1410,6 +1444,7 @@ class TestNextRecommendedTreatmentCollateralVisitDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=[],
             violation_responses=[],
+            incarceration_sentences=[],
             incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
                 incarceration_periods=[
                     StateIncarcerationPeriod.new_with_defaults(
@@ -1432,7 +1467,7 @@ class TestNextRecommendedTreatmentCollateralVisitDate(unittest.TestCase):
             date(2018, 4, 2)
         )
 
-        self.assertEqual(next_treatment_collateral_date, None)
+        self.assertIsNone(next_treatment_collateral_date)
 
     def test_next_recommended_treatment_collateral_contact_date_skipped_if_in_parole_board_hold(
         self,
@@ -1458,6 +1493,7 @@ class TestNextRecommendedTreatmentCollateralVisitDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=[],
             violation_responses=[],
+            incarceration_sentences=[],
             incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
                 incarceration_periods=[
                     StateIncarcerationPeriod.new_with_defaults(
@@ -1481,7 +1517,7 @@ class TestNextRecommendedTreatmentCollateralVisitDate(unittest.TestCase):
             date(2018, 4, 2)
         )
 
-        self.assertEqual(next_treatment_collateral_date, None)
+        self.assertIsNone(next_treatment_collateral_date)
 
     def test_next_recommended_treatment_collateral_contact_date_skipped_if_past_max_date(
         self,
@@ -1507,17 +1543,27 @@ class TestNextRecommendedTreatmentCollateralVisitDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=[],
             violation_responses=[],
+            incarceration_sentences=[
+                StateIncarcerationSentence.new_with_defaults(
+                    state_code=StateCode.US_PA.value,
+                    external_id="sentence1",
+                    status=StateSentenceStatus.SERVING,
+                    incarceration_type=StateIncarcerationType.STATE_PRISON,
+                    date_imposed=date(2017, 2, 1),
+                    start_date=date(2017, 2, 3),
+                    projected_max_release_date=date(2018, 3, 18),
+                    completion_date=date(2018, 4, 2),
+                )
+            ],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsPaSupervisionDelegate(),
         )
 
-        _ = us_pa_supervision_compliance._next_recommended_treatment_collateral_contact_date(
+        next_treatment_collateral_date = us_pa_supervision_compliance._next_recommended_treatment_collateral_contact_date(
             date(2018, 3, 20)
         )
 
-        # TODO(#9882): Update this test to pass in StateIncarcerationSentence entities
-        #  that indicate that the person is past their max date, and uncomment below
-        # self.assertEqual(None, next_treatment_collateral_date)
+        self.assertIsNone(next_treatment_collateral_date)
 
     def test_next_recommended_treatment_collateral_contact_date_present_if_actively_absconding(
         self,
@@ -1548,6 +1594,7 @@ class TestNextRecommendedTreatmentCollateralVisitDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts,
             violation_responses=[],
+            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsPaSupervisionDelegate(),
         )
@@ -1593,6 +1640,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             assessments=[],
             supervision_contacts=[],
             violation_responses=[],
+            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsPaSupervisionDelegate(),
         )
@@ -1626,6 +1674,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             assessments=[],
             supervision_contacts=[],
             violation_responses=[],
+            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsPaSupervisionDelegate(),
         )
@@ -1659,6 +1708,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             assessments=[],
             supervision_contacts=[],
             violation_responses=[],
+            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsPaSupervisionDelegate(),
         )
@@ -1712,6 +1762,7 @@ class TestNextRecommendedReassessment(unittest.TestCase):
             assessments=[assessment],
             supervision_contacts=[],
             violation_responses=[],
+            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsPaSupervisionDelegate(),
         )
@@ -1752,6 +1803,7 @@ class TestNextRecommendedReassessment(unittest.TestCase):
             assessments=[assessment],
             supervision_contacts=[],
             violation_responses=[],
+            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsPaSupervisionDelegate(),
         )
@@ -1793,6 +1845,7 @@ class TestNextRecommendedReassessment(unittest.TestCase):
             assessments=[assessment],
             supervision_contacts=[],
             violation_responses=[],
+            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsPaSupervisionDelegate(),
         )
@@ -1801,7 +1854,7 @@ class TestNextRecommendedReassessment(unittest.TestCase):
             assessment_date, assessment_score, date(2018, 4, 2)
         )
 
-        self.assertEqual(reassessment_date, None)
+        self.assertIsNone(reassessment_date)
 
     def test_next_recommended_reassessment_cannot_skip_reassessment_due_to_violations(
         self,
@@ -1851,6 +1904,7 @@ class TestNextRecommendedReassessment(unittest.TestCase):
                     ],
                 )
             ],
+            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsPaSupervisionDelegate(),
         )
@@ -1894,6 +1948,7 @@ class TestNextRecommendedReassessment(unittest.TestCase):
             assessments=[assessment],
             supervision_contacts=[],
             violation_responses=[],
+            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsPaSupervisionDelegate(),
         )
@@ -1954,6 +2009,7 @@ class TestNextRecommendedReassessment(unittest.TestCase):
                     ],
                 )
             ],
+            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsPaSupervisionDelegate(),
         )
@@ -1962,7 +2018,7 @@ class TestNextRecommendedReassessment(unittest.TestCase):
             assessment_date, assessment_score, date(2018, 4, 2)
         )
 
-        self.assertEqual(reassessment_date, None)
+        self.assertIsNone(reassessment_date)
 
     def test_next_recommended_reassessment_can_skip_reassessment_due_to_non_med_high_violations(
         self,
@@ -2014,6 +2070,7 @@ class TestNextRecommendedReassessment(unittest.TestCase):
                     ],
                 )
             ],
+            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsPaSupervisionDelegate(),
         )
@@ -2022,7 +2079,7 @@ class TestNextRecommendedReassessment(unittest.TestCase):
             assessment_date, assessment_score, date(2018, 4, 2)
         )
 
-        self.assertEqual(reassessment_date, None)
+        self.assertIsNone(reassessment_date)
 
     def test_next_recommended_reassessment_can_skip_reassessment_due_to_incarcerated(
         self,
@@ -2057,6 +2114,7 @@ class TestNextRecommendedReassessment(unittest.TestCase):
             assessments=[assessment],
             supervision_contacts=[],
             violation_responses=[],
+            incarceration_sentences=[],
             incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
                 incarceration_periods=[
                     StateIncarcerationPeriod.new_with_defaults(
@@ -2079,7 +2137,7 @@ class TestNextRecommendedReassessment(unittest.TestCase):
             assessment_date, assessment_score, date(2018, 4, 2)
         )
 
-        self.assertEqual(reassessment_date, None)
+        self.assertIsNone(reassessment_date)
 
     def test_next_recommended_reassessment_can_skip_reassessment_due_to_in_parole_board_hold(
         self,
@@ -2114,6 +2172,7 @@ class TestNextRecommendedReassessment(unittest.TestCase):
             assessments=[assessment],
             supervision_contacts=[],
             violation_responses=[],
+            incarceration_sentences=[],
             incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
                 incarceration_periods=[
                     StateIncarcerationPeriod.new_with_defaults(
@@ -2137,7 +2196,7 @@ class TestNextRecommendedReassessment(unittest.TestCase):
             assessment_date, assessment_score, date(2018, 4, 2)
         )
 
-        self.assertEqual(reassessment_date, None)
+        self.assertIsNone(reassessment_date)
 
     def test_next_recommended_reassessment_can_skip_reassessment_due_to_past_max_date(
         self,
@@ -2172,6 +2231,16 @@ class TestNextRecommendedReassessment(unittest.TestCase):
             assessments=[assessment],
             supervision_contacts=[],
             violation_responses=[],
+            incarceration_sentences=[
+                StateIncarcerationSentence.new_with_defaults(
+                    state_code=StateCode.US_PA.value,
+                    external_id="sentence1",
+                    incarceration_sentence_id=1111,
+                    start_date=start_of_supervision,
+                    projected_max_release_date=date(2018, 3, 29),
+                    status=StateSentenceStatus.SERVING,
+                )
+            ],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsPaSupervisionDelegate(),
         )
@@ -2180,7 +2249,7 @@ class TestNextRecommendedReassessment(unittest.TestCase):
             assessment_date, assessment_score, date(2018, 4, 1)
         )
 
-        self.assertEqual(reassessment_date, None)
+        self.assertIsNone(reassessment_date)
 
     def test_next_recommended_reassessment_can_skip_reassessment_due_to_within_max_date(
         self,
@@ -2215,6 +2284,16 @@ class TestNextRecommendedReassessment(unittest.TestCase):
             assessments=[assessment],
             supervision_contacts=[],
             violation_responses=[],
+            incarceration_sentences=[
+                StateIncarcerationSentence.new_with_defaults(
+                    state_code=StateCode.US_PA.value,
+                    external_id="sentence1",
+                    incarceration_sentence_id=1111,
+                    start_date=start_of_supervision,
+                    projected_max_release_date=date(2018, 4, 20),
+                    status=StateSentenceStatus.SERVING,
+                )
+            ],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsPaSupervisionDelegate(),
         )
@@ -2223,7 +2302,7 @@ class TestNextRecommendedReassessment(unittest.TestCase):
             assessment_date, assessment_score, date(2018, 4, 2)
         )
 
-        self.assertEqual(reassessment_date, None)
+        self.assertIsNone(reassessment_date)
 
 
 class TestSupervisionDowngrades(unittest.TestCase):
@@ -2289,6 +2368,7 @@ class TestSupervisionDowngrades(unittest.TestCase):
             ],  # No downgrade regardless of score
             supervision_contacts=[],
             violation_responses=[],
+            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsPaSupervisionDelegate(),
         )
@@ -2315,6 +2395,7 @@ class TestSupervisionDowngrades(unittest.TestCase):
             assessments=[self._assessment_with_score(score)],
             supervision_contacts=[],
             violation_responses=[],
+            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsPaSupervisionDelegate(),
         )
@@ -2332,6 +2413,7 @@ class TestSupervisionDowngrades(unittest.TestCase):
             assessments=[self._assessment_with_score(score - 1)],
             supervision_contacts=[],
             violation_responses=[],
+            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsPaSupervisionDelegate(),
         )

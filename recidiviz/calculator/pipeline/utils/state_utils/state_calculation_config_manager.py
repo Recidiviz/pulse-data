@@ -142,6 +142,7 @@ from recidiviz.common.constants.state.state_case_type import StateSupervisionCas
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.state.entities import (
     StateAssessment,
+    StateIncarcerationSentence,
     StatePerson,
     StateSupervisionContact,
     StateSupervisionPeriod,
@@ -157,6 +158,7 @@ def get_state_specific_case_compliance_manager(
     assessments: List[StateAssessment],
     supervision_contacts: List[StateSupervisionContact],
     violation_responses: List[StateSupervisionViolationResponse],
+    incarceration_sentences: List[StateIncarcerationSentence],
     incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
     supervision_delegate: StateSpecificSupervisionDelegate,
 ) -> Optional[StateSupervisionCaseComplianceManager]:
@@ -173,6 +175,7 @@ def get_state_specific_case_compliance_manager(
             assessments,
             supervision_contacts,
             violation_responses,
+            incarceration_sentences,
             incarceration_period_index,
             supervision_delegate,
         )
@@ -185,6 +188,7 @@ def get_state_specific_case_compliance_manager(
             assessments,
             supervision_contacts,
             violation_responses,
+            incarceration_sentences,
             incarceration_period_index,
             supervision_delegate,
         )
@@ -197,6 +201,7 @@ def get_state_specific_case_compliance_manager(
             assessments,
             supervision_contacts,
             violation_responses,
+            incarceration_sentences,
             incarceration_period_index,
             supervision_delegate,
         )
