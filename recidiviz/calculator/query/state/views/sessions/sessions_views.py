@@ -90,6 +90,9 @@ from recidiviz.calculator.query.state.views.sessions.revocation_cohort_sessions 
 from recidiviz.calculator.query.state.views.sessions.revocation_sessions import (
     REVOCATION_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.supervision_downgrade_sessions import (
+    SUPERVISION_DOWNGRADE_SESSIONS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.supervision_level_dedup_priority import (
     SUPERVISION_LEVEL_DEDUP_PRIORITY_VIEW_BUILDER,
 )
@@ -101,6 +104,9 @@ from recidiviz.calculator.query.state.views.sessions.supervision_officer_session
 )
 from recidiviz.calculator.query.state.views.sessions.supervision_super_sessions import (
     SUPERVISION_SUPER_SESSIONS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.sessions.supervision_tool_access_sessions import (
+    SUPERVISION_TOOL_ACCESS_SESSIONS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.sessions.system_sessions import (
     SYSTEM_SESSIONS_VIEW_BUILDER,
@@ -176,4 +182,6 @@ SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_ND_RAW_LSIR_ASSESSMENTS_VIEW_BUILDER,
     ASSESSMENT_LSIR_RESPONSES_VIEW_BUILDER,
     ASSESSMENT_LSIR_SCORING_KEY_VIEW_BUILDER,
+    SUPERVISION_TOOL_ACCESS_SESSIONS_VIEW_BUILDER,
+    SUPERVISION_DOWNGRADE_SESSIONS_VIEW_BUILDER,
 ]
