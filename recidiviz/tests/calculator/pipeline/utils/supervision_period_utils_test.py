@@ -19,7 +19,7 @@
 """Tests for supervision_period_utils.py."""
 import unittest
 from datetime import date
-from typing import List, Optional
+from typing import Optional
 
 import attr
 from dateutil.relativedelta import relativedelta
@@ -27,6 +27,9 @@ from dateutil.relativedelta import relativedelta
 from recidiviz.calculator.pipeline.supervision.events import SupervisionPopulationEvent
 from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index import (
     PreProcessedSupervisionPeriodIndex,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_supervision_delegate import (
+    UsXxSupervisionDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_delegate import (
     UsIdSupervisionDelegate,
@@ -59,9 +62,6 @@ from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
     StateSupervisionCaseTypeEntry,
     StateSupervisionPeriod,
-)
-from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_supervision_delegate import (
-    UsXxSupervisionDelegate,
 )
 
 

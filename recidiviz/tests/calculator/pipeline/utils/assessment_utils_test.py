@@ -22,6 +22,9 @@ from typing import List, Optional
 from parameterized import parameterized
 
 from recidiviz.calculator.pipeline.utils import assessment_utils
+from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_supervision_delegate import (
+    UsXxSupervisionDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_delegate import (
     UsIdSupervisionDelegate,
 )
@@ -37,9 +40,6 @@ from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentType,
 )
 from recidiviz.persistence.entity.state.entities import StateAssessment
-from recidiviz.tests.calculator.pipeline.utils.state_utils.state_specific_supervision_delegate_test import (
-    UsXxSupervisionDelegate,
-)
 
 
 # pylint: disable=protected-access

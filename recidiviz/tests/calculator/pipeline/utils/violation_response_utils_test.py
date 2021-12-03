@@ -25,6 +25,12 @@ from recidiviz.calculator.pipeline.utils import violation_response_utils
 from recidiviz.calculator.pipeline.utils.entity_pre_processing_utils import (
     pre_processed_violation_responses_for_calculations,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_violation_response_preprocessing_delegate import (
+    UsXxViolationResponsePreprocessingDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_violations_delegate import (
+    UsXxViolationDelegate,
+)
 from recidiviz.calculator.pipeline.utils.violation_response_utils import (
     identify_most_severe_response_decision,
     violation_responses_in_window,
@@ -38,12 +44,6 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
 )
 from recidiviz.persistence.entity.state.entities import (
     StateSupervisionViolationResponse,
-)
-from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_violation_response_preprocessing_delegate import (
-    UsXxViolationResponsePreprocessingDelegate,
-)
-from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_violations_delegate import (
-    UsXxViolationDelegate,
 )
 
 

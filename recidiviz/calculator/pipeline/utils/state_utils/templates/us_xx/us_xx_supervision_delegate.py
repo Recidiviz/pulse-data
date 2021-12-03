@@ -14,8 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Contains generic implementation of the StateSpecificSupervisionDelegate
- for used in state-agnostic tests."""
+"""Contains generic implementation of the StateSpecificSupervisionDelegate."""
 from typing import List, Optional
 
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_delegate import (
@@ -28,8 +27,7 @@ from recidiviz.common.constants.state.state_assessment import (
 
 
 class UsXxSupervisionDelegate(StateSpecificSupervisionDelegate):
-    """State-agnostic implementation of the
-    StateSpecificSupervisionDelegate."""
+    """US_XX implementation of the StateSpecificSupervisionDelegate."""
 
     def assessment_types_to_include_for_class(
         self, assessment_class: StateAssessmentClass

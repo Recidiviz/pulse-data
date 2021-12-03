@@ -18,6 +18,9 @@
 import unittest
 from datetime import date
 
+from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_incarceration_delegate import (
+    UsXxIncarcerationDelegate,
+)
 from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
@@ -26,9 +29,6 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodStatus,
 )
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
-from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_incarceration_delegate import (
-    UsXxIncarcerationDelegate,
-)
 
 
 class TestStateSpecificIncarcerationDelegate(unittest.TestCase):

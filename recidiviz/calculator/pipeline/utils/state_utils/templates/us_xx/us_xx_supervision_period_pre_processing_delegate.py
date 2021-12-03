@@ -14,3 +14,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
+"""US_XX implementation of the StateSpecificSupervisionPreProcessingDelegate."""
+from recidiviz.calculator.pipeline.utils.supervision_period_pre_processing_manager import (
+    StateSpecificSupervisionPreProcessingDelegate,
+)
+
+
+class UsXxSupervisionPreProcessingDelegate(
+    StateSpecificSupervisionPreProcessingDelegate
+):
+    """US_XX implementation of the StateSpecificSupervisionPreProcessingDelegate."""

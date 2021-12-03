@@ -28,6 +28,9 @@ from recidiviz.calculator.pipeline.supervision.supervision_case_compliance impor
 from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
     PreProcessedIncarcerationPeriodIndex,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_incarceration_delegate import (
+    UsXxIncarcerationDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_compliance import (
     NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS,
     SEX_OFFENSE_LSIR_MINIMUM_SCORE,
@@ -69,9 +72,6 @@ from recidiviz.persistence.entity.state.entities import (
     StatePerson,
     StateSupervisionContact,
     StateSupervisionPeriod,
-)
-from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_incarceration_delegate import (
-    UsXxIncarcerationDelegate,
 )
 
 
