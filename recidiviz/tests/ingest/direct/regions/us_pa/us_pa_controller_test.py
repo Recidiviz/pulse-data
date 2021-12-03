@@ -2616,7 +2616,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         self.assert_expected_db_people(expected_people)
 
         ######################################
-        # dbo_Offender
+        # dbo_Offender_v2
         ######################################
         # Arrange
         person_1.gender_raw_text = "M"

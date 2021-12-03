@@ -492,12 +492,6 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
     ENUM_IGNORE_PREDICATES: Dict[Type[Enum], EnumIgnorePredicate] = {}
 
     def get_file_tag_rank_list(self) -> List[str]:
-        # TODO(#10073): Use dbo_Offender_v2 everywhere
-        if not environment.in_gcp_production():
-            dbo_Offender_tag = "dbo_Offender_v2"
-        else:
-            dbo_Offender_tag = "dbo_Offender"
-
         launched_file_tags = [
             # Data source: Mixed
             "person_external_ids",
@@ -510,7 +504,7 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             # Data source: CCIS
             "ccis_incarceration_period",
             # Data source: PBPP
-            dbo_Offender_tag,
+            "dbo_Offender_v2",
             "dbo_LSIHistory",
             "supervision_violation",
             "supervision_violation_response",
