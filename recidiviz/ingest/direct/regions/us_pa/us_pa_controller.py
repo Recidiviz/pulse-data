@@ -97,7 +97,6 @@ from recidiviz.ingest.direct.state_shared_row_posthooks import (
     gen_convert_person_ids_to_external_id_objects,
     gen_label_single_external_id_hook,
 )
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.extractor.csv_data_extractor import IngestFieldCoordinates
 from recidiviz.ingest.models.ingest_info import (
     IngestObject,
@@ -165,8 +164,6 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
                 self._generate_pbpp_assessment_external_id,
                 self._enrich_pbpp_assessments,
             ],
-            # TODO(#10138): [US_PA] Transition supervision_periods to v4
-            "supervision_period_v3": supervision_period_postprocessors,
             "supervision_period_v4": supervision_period_postprocessors,
             "supervision_contacts": [
                 self._set_supervision_contact_agent,
@@ -186,10 +183,6 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             ],
             "dbo_LSIR": [],
             "dbo_LSIHistory": [],
-            # TODO(#10138): [US_PA] Transition supervision_periods to v4
-            "supervision_period_v3": [
-                gen_convert_person_ids_to_external_id_objects(self._get_id_type),
-            ],
             "supervision_period_v4": [
                 gen_convert_person_ids_to_external_id_objects(self._get_id_type),
             ],
@@ -202,8 +195,6 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             str, IngestPrimaryKeyOverrideCallable
         ] = {
             "sci_incarceration_period": _generate_sci_incarceration_period_primary_key,
-            # TODO(#10138): [US_PA] Transition supervision_periods to v4
-            "supervision_period_v3": _generate_supervision_period_primary_key,
             "supervision_period_v4": _generate_supervision_period_primary_key,
             "supervision_contacts": _generate_supervision_contact_primary_key,
         }
@@ -498,7 +489,7 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             # Data source: DOC
             "doc_person_info",
             "dbo_tblInmTestScore",
-            "dbo_Senrec",
+            "dbo_Senrec_v2",
             "sci_incarceration_period",
             "dbo_Miscon",
             # Data source: CCIS
@@ -510,16 +501,8 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             "supervision_violation_response",
             "board_action",
             "supervision_contacts",
+            "supervision_period_v4",
         ]
-
-        # TODO(#10138): [US_PA] Transition supervision_periods to v4
-        if (
-            not environment.in_gcp_production()
-            or self.ingest_instance is DirectIngestInstance.SECONDARY
-        ):
-            launched_file_tags.append("supervision_period_v4")
-        else:
-            launched_file_tags.append("supervision_period_v3")
 
         unlaunched_file_tags: List[str] = [
             # Empty for now
@@ -528,14 +511,6 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         file_tags = launched_file_tags
         if not environment.in_gcp():
             file_tags += unlaunched_file_tags
-
-        # TODO(#9882): Update to `dbo_Senrec_v2` everywhere once rerun completes.
-        if (
-            not environment.in_gcp_production()
-            or self.ingest_instance == DirectIngestInstance.SECONDARY
-        ):
-            idx_of_senrec = file_tags.index("dbo_Senrec")
-            file_tags[idx_of_senrec] = "dbo_Senrec_v2"
 
         return file_tags
 
@@ -629,9 +604,7 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         ]:
             return US_PA_CONTROL
 
-        # TODO(#10138): [US_PA] Transition supervision_periods to v4
         if file_tag in [
-            "supervision_period_v3",
             "supervision_period_v4",
             "supervision_contacts",
         ]:
