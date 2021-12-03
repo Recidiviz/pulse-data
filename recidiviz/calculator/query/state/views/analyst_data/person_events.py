@@ -281,6 +281,37 @@ FROM
     `{project_id}.{sessions_dataset}.us_id_employment_sessions_materialized`
 WHERE
     is_employed
+
+UNION ALL 
+
+-- Supervision downgrade recommendations surfaced to staff
+SELECT
+    state_code,
+    person_id,
+    "SUPERVISION_DOWNGRADE_SURFACED" AS event,
+    surfaced_date AS event_date,
+    CAST(NULL AS STRING) AS attribute_1,
+    CAST(NULL AS STRING) AS attribute_2,
+FROM
+    `{project_id}.{sessions_dataset}.supervision_downgrade_sessions_materialized`
+WHERE
+    surfaced_date IS NOT NULL
+
+UNION ALL
+
+-- Supervision downgrade recommendations corrected after being surfaced to staff
+SELECT
+    state_code,
+    person_id,
+    "SURFACED_SUPERVISION_DOWNGRADE_CORRECTED" AS event,
+    end_date AS event_date,
+    CAST(NULL AS STRING) AS attribute_1,
+    CAST(NULL AS STRING) AS attribute_2,
+FROM
+    `{project_id}.{sessions_dataset}.supervision_downgrade_sessions_materialized`
+WHERE
+    surfaced_date IS NOT NULL
+    AND mismatch_corrected
 """
 
 PERSON_EVENTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
