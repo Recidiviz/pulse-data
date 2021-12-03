@@ -307,7 +307,13 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             <p>
               Load exported data from{" "}
               <code>{stateCode.toLowerCase()}_secondary</code> into{" "}
-              <code>{stateCode.toLowerCase()}_primary</code>.
+              <code>{stateCode.toLowerCase()}_primary</code>. <br />
+              You can check your progress in the{" "}
+              <NewTabLink href={operationsPageURL}>
+                Operations section
+              </NewTabLink>{" "}
+              of the STATE SQL instance page. If this request times out, but the
+              operation succeeds, just select &#39;Mark Done&#39;.
             </p>
           }
           actionButtonTitle="Import Data"
@@ -327,13 +333,6 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                 Update all rows in operations database that had database{" "}
                 <code>{stateCode.toLowerCase()}_secondary</code> with updated
                 database name <code>{stateCode.toLowerCase()}_primary</code>.
-                <br />
-                You can check your progress in the{" "}
-                <NewTabLink href={operationsPageURL}>
-                  Operations section
-                </NewTabLink>{" "}
-                of the STATE SQL instance page. If this request times out, but
-                the operation succeeds, just select &#39;Mark Done&#39;.
               </p>
               <ol style={{ paddingLeft: 20 }}>
                 <li>
