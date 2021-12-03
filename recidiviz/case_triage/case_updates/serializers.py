@@ -38,6 +38,10 @@ _ACTION_TYPE_TO_MAPPINGS: Dict[CaseUpdateActionType, Dict[str, str]] = {
     # Face to face contact serializers
     CaseUpdateActionType.SCHEDULED_FACE_TO_FACE: contact_mappings,
     CaseUpdateActionType.INCORRECT_CONTACT_DATA: contact_mappings,
+    # home visit serializers
+    CaseUpdateActionType.INCORRECT_HOME_VISIT_DATA: {
+        "last_recorded_date": "most_recent_home_visit_date"
+    },
     # TODO(#5721): Figure out what additional metadata is needed
     CaseUpdateActionType.DISCHARGE_INITIATED: {},
     CaseUpdateActionType.DOWNGRADE_INITIATED: supervision_level_mappings,
