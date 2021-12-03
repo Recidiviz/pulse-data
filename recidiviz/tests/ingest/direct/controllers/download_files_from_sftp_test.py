@@ -327,6 +327,7 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
                     os.path.join(
                         "recidiviz-456-direct-ingest-state-us-xx-sftp",
                         RAW_INGEST_DIRECTORY,
+                        TODAY.astimezone(pytz.UTC).strftime("%Y-%m-%dT%H:%M:%S:%f"),
                         "testToday",
                         item,
                     ),
@@ -370,6 +371,7 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
                     os.path.join(
                         "recidiviz-456-direct-ingest-state-us-xx-sftp",
                         RAW_INGEST_DIRECTORY,
+                        TODAY.astimezone(pytz.UTC).strftime("%Y-%m-%dT%H:%M:%S:%f"),
                         "testToday",
                         item,
                     ),
@@ -438,6 +440,9 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
                                 os.path.join(
                                     "recidiviz-456-direct-ingest-state-us-xx-sftp",
                                     RAW_INGEST_DIRECTORY,
+                                    TODAY.astimezone(pytz.UTC).strftime(
+                                        "%Y-%m-%dT%H:%M:%S:%f"
+                                    ),
                                     "testToday",
                                     item,
                                 ),
@@ -447,6 +452,9 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
                                 os.path.join(
                                     "recidiviz-456-direct-ingest-state-us-xx-sftp",
                                     RAW_INGEST_DIRECTORY,
+                                    TWO_DAYS_AGO.astimezone(pytz.UTC).strftime(
+                                        "%Y-%m-%dT%H:%M:%S:%f"
+                                    ),
                                     "testTwoDaysAgo",
                                     item,
                                 ),
@@ -490,6 +498,7 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
                     os.path.join(
                         "recidiviz-456-direct-ingest-state-us-xx-sftp",
                         RAW_INGEST_DIRECTORY,
+                        TODAY.astimezone(pytz.UTC).strftime("%Y-%m-%dT%H:%M:%S:%f"),
                         "testToday",
                         "file1.txt",
                     ),

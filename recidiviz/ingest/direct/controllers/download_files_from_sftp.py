@@ -43,9 +43,6 @@ from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
     to_normalized_unprocessed_file_path,
 )
-from recidiviz.ingest.direct.types.direct_ingest_instance import (
-    DirectIngestInstance,
-)
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsDirectIngestFileType,
     gcsfs_sftp_download_bucket_path_for_region,
@@ -56,6 +53,7 @@ from recidiviz.ingest.direct.controllers.postgres_direct_ingest_file_metadata_ma
 from recidiviz.ingest.direct.sftp_download_delegate_factory import (
     SftpDownloadDelegateFactory,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils import secrets
 
 RAW_INGEST_DIRECTORY = "raw_data"
@@ -231,7 +229,11 @@ class DownloadFilesFromSftpController:
             )
             try:
                 path = GcsfsFilePath.from_directory_and_file_name(
-                    dir_path=self.download_dir, file_name=normalized_sftp_path
+                    dir_path=GcsfsDirectoryPath.from_dir_and_subdir(
+                        dir_path=self.download_dir,
+                        subdir=file_timestamp.strftime("%Y-%m-%dT%H:%M:%S:%f"),
+                    ),
+                    file_name=normalized_sftp_path,
                 )
                 self.gcsfs.upload_from_contents_handle_stream(
                     path=path,
