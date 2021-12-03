@@ -52,6 +52,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
 )
 from recidiviz.persistence.entity.state.entities import (
     StateAssessment,
+    StateIncarcerationSentence,
     StatePerson,
     StateSupervisionContact,
     StateSupervisionPeriod,
@@ -71,6 +72,7 @@ class StateSupervisionCaseComplianceManager:
         assessments: List[StateAssessment],
         supervision_contacts: List[StateSupervisionContact],
         violation_responses: List[StateSupervisionViolationResponse],
+        incarceration_sentences: List[StateIncarcerationSentence],
         incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
         supervision_delegate: StateSpecificSupervisionDelegate,
     ):
@@ -81,6 +83,7 @@ class StateSupervisionCaseComplianceManager:
         self.assessments = assessments
         self.supervision_contacts = supervision_contacts
         self.violation_responses = violation_responses
+        self.incarceration_sentences = incarceration_sentences
         self.incarceration_period_index = incarceration_period_index
         self.supervision_delegate = supervision_delegate
 
