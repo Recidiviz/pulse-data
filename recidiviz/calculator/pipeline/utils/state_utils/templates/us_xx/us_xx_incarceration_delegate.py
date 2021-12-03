@@ -14,15 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Contains generic implementation of the StateSpecificCommitmentFromSupervisionDelegate
- for used in state-agnostic tests."""
-from recidiviz.calculator.pipeline.utils.state_utils.state_specific_commitment_from_supervision_delegate import (
-    StateSpecificCommitmentFromSupervisionDelegate,
+"""Contains US_XX implementation of the StateSpecificIncarcerationDelegate."""
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_incarceration_delegate import (
+    StateSpecificIncarcerationDelegate,
 )
 
 
-class UsXxCommitmentFromSupervisionDelegate(
-    StateSpecificCommitmentFromSupervisionDelegate
-):
-    """State-agnostic implementation of the
-    StateSpecificCommitmentFromSupervisionDelegate."""
+class UsXxIncarcerationDelegate(StateSpecificIncarcerationDelegate):
+    """US_XX implementation of the StateSpecificIncarcerationDelegate."""

@@ -19,6 +19,9 @@ import datetime
 import unittest
 
 from recidiviz.calculator.pipeline.utils import violation_utils
+from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_violations_delegate import (
+    UsXxViolationDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_violations_delegate import (
     UsMoViolationDelegate,
 )
@@ -38,9 +41,6 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionViolationResponse,
     StateSupervisionViolationResponseDecisionEntry,
     StateSupervisionViolationTypeEntry,
-)
-from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_violations_delegate import (
-    UsXxViolationDelegate,
 )
 
 _DEFAULT_SSVR_ID = 999

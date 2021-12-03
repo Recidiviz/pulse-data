@@ -34,6 +34,12 @@ from recidiviz.calculator.pipeline.utils.incarceration_period_pre_processing_man
 from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index import (
     PreProcessedSupervisionPeriodIndex,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_incarceration_delegate import (
+    UsXxIncarcerationDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_incarceration_period_pre_processing_delegate import (
+    UsXxIncarcerationPreProcessingDelegate,
+)
 from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
@@ -45,12 +51,6 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 )
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
-from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_incarceration_delegate import (
-    UsXxIncarcerationDelegate,
-)
-from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_incarceration_period_pre_processing_delegate import (
-    UsXxIncarcerationPreProcessingDelegate,
-)
 
 
 class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
@@ -1066,10 +1066,10 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
         self.assertEqual([expected_period], validated_incarceration_periods)
 
     @mock.patch(
-        "recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_incarceration_period_pre_processing_delegate.UsXxIncarcerationPreProcessingDelegate.get_pfi_info_for_period_if_commitment_from_supervision"
+        "recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_incarceration_period_pre_processing_delegate.UsXxIncarcerationPreProcessingDelegate.get_pfi_info_for_period_if_commitment_from_supervision"
     )
     @mock.patch(
-        "recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_incarceration_period_pre_processing_delegate.UsXxIncarcerationPreProcessingDelegate.normalize_period_if_commitment_from_supervision"
+        "recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_incarceration_period_pre_processing_delegate.UsXxIncarcerationPreProcessingDelegate.normalize_period_if_commitment_from_supervision"
     )
     def test_standardize_purpose_for_incarceration_values_propagate_pfi(
         self, mock_normalization, mock_get_pfi_info
@@ -1178,10 +1178,10 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
         self.assertEqual(expected_periods, validated_incarceration_periods)
 
     @mock.patch(
-        "recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_incarceration_period_pre_processing_delegate.UsXxIncarcerationPreProcessingDelegate.get_pfi_info_for_period_if_commitment_from_supervision"
+        "recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_incarceration_period_pre_processing_delegate.UsXxIncarcerationPreProcessingDelegate.get_pfi_info_for_period_if_commitment_from_supervision"
     )
     @mock.patch(
-        "recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_incarceration_period_pre_processing_delegate.UsXxIncarcerationPreProcessingDelegate.normalize_period_if_commitment_from_supervision"
+        "recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_incarceration_period_pre_processing_delegate.UsXxIncarcerationPreProcessingDelegate.normalize_period_if_commitment_from_supervision"
     )
     def test_standardize_purpose_for_incarceration_values_propagate_pfi_avoid_status_changes(
         self, mock_normalization, mock_get_pfi_info

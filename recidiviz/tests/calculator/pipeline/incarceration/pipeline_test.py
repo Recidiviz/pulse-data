@@ -49,6 +49,27 @@ from recidiviz.calculator.pipeline.utils.person_utils import (
     ExtractPersonEventsMetadata,
     PersonMetadata,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_commitment_from_supervision_utils import (
+    UsXxCommitmentFromSupervisionDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_incarceration_delegate import (
+    UsXxIncarcerationDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_incarceration_period_pre_processing_delegate import (
+    UsXxIncarcerationPreProcessingDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_supervision_delegate import (
+    UsXxSupervisionDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_supervision_period_pre_processing_delegate import (
+    UsXxSupervisionPreProcessingDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_violation_response_preprocessing_delegate import (
+    UsXxViolationResponsePreprocessingDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_violations_delegate import (
+    UsXxViolationDelegate,
+)
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
@@ -92,27 +113,6 @@ from recidiviz.tests.calculator.pipeline.utils.run_pipeline_test_utils import (
     default_data_dict_for_root_schema_classes,
     run_test_pipeline,
     test_pipeline_options,
-)
-from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_commitment_from_supervision_utils import (
-    UsXxCommitmentFromSupervisionDelegate,
-)
-from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_incarceration_delegate import (
-    UsXxIncarcerationDelegate,
-)
-from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_incarceration_period_pre_processing_delegate import (
-    UsXxIncarcerationPreProcessingDelegate,
-)
-from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_supervision_delegate import (
-    UsXxSupervisionDelegate,
-)
-from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_supervision_period_pre_processing_delegate import (
-    UsXxSupervisionPreProcessingDelegate,
-)
-from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_violation_response_preprocessing_delegate import (
-    UsXxViolationResponsePreprocessingDelegate,
-)
-from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_violations_delegate import (
-    UsXxViolationDelegate,
 )
 from recidiviz.tests.persistence.database import database_test_utils
 

@@ -31,6 +31,12 @@ from recidiviz.calculator.pipeline.utils.person_utils import (
     ExtractPersonEventsMetadata,
     PersonMetadata,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_violation_response_preprocessing_delegate import (
+    UsXxViolationResponsePreprocessingDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_violations_delegate import (
+    UsXxViolationDelegate,
+)
 from recidiviz.calculator.pipeline.violation.events import ViolationWithResponseEvent
 from recidiviz.calculator.pipeline.violation.identifier import ViolationIdentifier
 from recidiviz.calculator.pipeline.violation.metrics import (
@@ -61,12 +67,6 @@ from recidiviz.tests.calculator.pipeline.utils.run_pipeline_test_utils import (
     default_data_dict_for_root_schema_classes,
     run_test_pipeline,
     test_pipeline_options,
-)
-from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_violation_response_preprocessing_delegate import (
-    UsXxViolationResponsePreprocessingDelegate,
-)
-from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_violations_delegate import (
-    UsXxViolationDelegate,
 )
 
 ALL_METRIC_INCLUSIONS_DICT = {metric_type: True for metric_type in ViolationMetricType}

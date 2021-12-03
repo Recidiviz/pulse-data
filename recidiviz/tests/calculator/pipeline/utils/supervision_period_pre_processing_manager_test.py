@@ -24,6 +24,9 @@ from typing import List, Optional
 import attr
 from freezegun import freeze_time
 
+from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_supervision_period_pre_processing_delegate import (
+    UsXxSupervisionPreProcessingDelegate,
+)
 from recidiviz.calculator.pipeline.utils.supervision_period_pre_processing_manager import (
     SupervisionPreProcessingManager,
 )
@@ -32,9 +35,6 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
-from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_supervision_period_pre_processing_delegate import (
-    UsXxSupervisionPreProcessingDelegate,
-)
 
 
 class TestPreProcessedSupervisionPeriodsForCalculations(unittest.TestCase):
