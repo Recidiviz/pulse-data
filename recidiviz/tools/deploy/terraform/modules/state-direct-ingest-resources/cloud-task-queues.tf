@@ -72,13 +72,3 @@ module "process-job-queue-secondary" {
   region                    = var.region
   max_dispatches_per_second = 100
 }
-
-# TODO(#9713): Delete this once all tasks have been migrated to use raw-data-import and
-#  ingest-view-export queues.
-module "bq-import-export-queue" {
-  source = "../serial-task-queue"
-
-  queue_name                = "${local.direct_ingest_formatted_str}-bq-import-export"
-  region                    = var.region
-  max_dispatches_per_second = 100
-}
