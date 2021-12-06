@@ -27,12 +27,20 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionPeriodAdmissionReason,
+    StateSupervisionPeriodSupervisionType,
+    StateSupervisionPeriodTerminationReason,
+)
 from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
     get_all_entities_from_tree,
 )
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.entity.state.entities import StateIncarcerationSentence
+from recidiviz.persistence.entity.state.entities import (
+    StateIncarcerationSentence,
+    StateSupervisionSentence,
+)
 
 
 def populate_person_backedges(persons: List[entities.StatePerson]) -> None:
@@ -115,6 +123,28 @@ def add_sentence_group_to_person_and_build_incarceration_sentence(
 
     person.sentence_groups.append(sentence_group)
     return incarceration_sentence
+
+
+def add_sentence_group_to_person_and_build_supervision_sentence(
+    state_code: str, person: entities.StatePerson
+) -> StateSupervisionSentence:
+    """Append sentence group to person and return supervision_sentence"""
+    sentence_group = entities.StateSentenceGroup.new_with_defaults(
+        state_code=state_code,
+        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+        person=person,
+    )
+
+    supervision_sentence = entities.StateSupervisionSentence.new_with_defaults(
+        state_code=state_code,
+        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+        person=person,
+        sentence_group=sentence_group,
+    )
+    sentence_group.supervision_sentences.append(supervision_sentence)
+
+    person.sentence_groups.append(sentence_group)
+    return supervision_sentence
 
 
 def add_race_to_person(
@@ -214,3 +244,42 @@ def add_incarceration_period_to_person(
     )
 
     incarceration_sentence.incarceration_periods.append(incarceration_period)
+
+
+def add_supervision_period_to_person(
+    person: entities.StatePerson,
+    state_code: str,
+    supervision_sentence: entities.StateSupervisionSentence,
+    external_id: str,
+    supervision_type: StateSupervisionPeriodSupervisionType,
+    supervision_type_raw_text: str,
+    start_date: datetime.date,
+    termination_date: Optional[datetime.date],
+    supervision_site: str,
+    supervising_officer: Optional[entities.StateAgent],
+    admission_reason: Optional[StateSupervisionPeriodAdmissionReason],
+    admission_reason_raw_text: str,
+    termination_reason: Optional[StateSupervisionPeriodTerminationReason],
+    termination_reason_raw_text: Optional[str],
+) -> None:
+    """Append a supervision period to the person (updates the person entity in place)."""
+
+    supervision_period = entities.StateSupervisionPeriod.new_with_defaults(
+        external_id=external_id,
+        state_code=state_code,
+        supervision_type=supervision_type,
+        supervision_type_raw_text=supervision_type_raw_text,
+        start_date=start_date,
+        termination_date=termination_date,
+        county_code=None,
+        supervision_site=supervision_site,
+        supervising_officer=supervising_officer,
+        admission_reason=admission_reason,
+        admission_reason_raw_text=admission_reason_raw_text,
+        termination_reason=termination_reason,
+        termination_reason_raw_text=termination_reason_raw_text,
+        person=person,
+        supervision_sentences=[supervision_sentence],
+    )
+
+    supervision_sentence.supervision_periods.append(supervision_period)
