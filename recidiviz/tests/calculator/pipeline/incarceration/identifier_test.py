@@ -110,6 +110,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_violations_dele
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_incarceration_period_pre_processing_delegate import (
     SHOCK_INCARCERATION_9_MONTHS,
 )
+from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentLevel,
     StateAssessmentType,
@@ -994,23 +995,26 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         self.assertCountEqual([], incarceration_events)
 
     def testFindIncarcerationEvents_usNd_tempCustodyFollowedByRevocation(self) -> None:
-        """Tests that with state code US_ND, temporary custody periods are dropped
-        before finding all incarceration events.
+        """Tests that with state code US_ND, only periods with a custodial_authority of
+        STATE_PRISON are included in the population.
         """
         self._stop_state_specific_delegate_patchers()
 
         temp_custody_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             external_id="1",
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            incarceration_type=StateIncarcerationType.EXTERNAL_UNKNOWN,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_ND",
-            facility="PRISON",
-            admission_date=date(2008, 11, 20),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
-            admission_reason_raw_text="INCARCERATION_ADMISSION",
-            release_date=date(2008, 12, 20),
-            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+            facility="NTAD",
+            custodial_authority=StateCustodialAuthority.EXTERNAL_UNKNOWN,
+            admission_date=date(2018, 11, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            admission_reason_raw_text="ADMN",
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
+            release_date=date(2018, 12, 20),
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+            release_reason_raw_text="RPAR",
         )
 
         supervision_violation = StateSupervisionViolation.new_with_defaults(
@@ -1103,61 +1107,98 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             violation_responses=[ssvr, duplicate_ssvr],
         )
 
+        assert temp_custody_period.admission_date is not None
+        assert temp_custody_period.admission_reason is not None
+        assert temp_custody_period.release_reason is not None
+        assert temp_custody_period.release_date is not None
         assert revocation_period.release_date is not None
         assert revocation_period.release_reason is not None
         assert revocation_period.admission_date is not None
         assert revocation_period.admission_reason is not None
+
+        expected_events: List[IncarcerationEvent] = [
+            *expected_incarceration_stay_events(
+                temp_custody_period,
+                original_admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+                included_in_state_population=False,
+            ),
+            IncarcerationStandardAdmissionEvent(
+                state_code=temp_custody_period.state_code,
+                event_date=temp_custody_period.admission_date,
+                facility=temp_custody_period.facility,
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+                admission_reason_raw_text=temp_custody_period.admission_reason_raw_text,
+                specialized_purpose_for_incarceration=temp_custody_period.specialized_purpose_for_incarceration,
+                included_in_state_population=False,
+            ),
+            IncarcerationReleaseEvent(
+                state_code=temp_custody_period.state_code,
+                event_date=temp_custody_period.release_date,
+                facility=temp_custody_period.facility,
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+                release_reason_raw_text=temp_custody_period.release_reason_raw_text,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+                total_days_incarcerated=(
+                    temp_custody_period.release_date
+                    - temp_custody_period.admission_date
+                ).days,
+                purpose_for_incarceration=temp_custody_period.specialized_purpose_for_incarceration,
+                included_in_state_population=False,
+                supervision_type_at_release=StateSupervisionPeriodSupervisionType.PROBATION,
+            ),
+            IncarcerationStayEvent(
+                admission_reason=revocation_period.admission_reason,
+                admission_reason_raw_text=revocation_period.admission_reason_raw_text,
+                state_code=revocation_period.state_code,
+                event_date=revocation_period.admission_date,
+                facility=revocation_period.facility,
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                judicial_district_code="NW",
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+                commitment_from_supervision_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            ),
+            IncarcerationCommitmentFromSupervisionAdmissionEvent(
+                state_code=revoked_supervision_period.state_code,
+                event_date=revocation_period.admission_date,
+                facility=revocation_period.facility,
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                admission_reason=revocation_period.admission_reason,
+                admission_reason_raw_text=revocation_period.admission_reason_raw_text,
+                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+                case_type=StateSupervisionCaseType.GENERAL,
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+                most_severe_violation_type=StateSupervisionViolationType.FELONY,
+                most_severe_violation_type_subtype=StateSupervisionViolationType.FELONY.value,
+                # Duplicate responses were merged in pre-processing
+                response_count=1,
+                violation_history_description="1felony",
+                violation_type_frequency_counter=[["FELONY"]],
+                supervising_officer_external_id="XXX",
+                supervising_district_external_id="X",
+                level_1_supervision_location_external_id="X",
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+            ),
+            IncarcerationReleaseEvent(
+                state_code=revocation_period.state_code,
+                event_date=revocation_period.release_date,
+                facility=revocation_period.facility,
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                release_reason=revocation_period.release_reason,
+                release_reason_raw_text=revocation_period.release_reason_raw_text,
+                supervision_type_at_release=StateSupervisionPeriodSupervisionType.PROBATION,
+                commitment_from_supervision_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+                admission_reason=revocation_period.admission_reason,
+                total_days_incarcerated=(
+                    revocation_period.release_date - revocation_period.admission_date
+                ).days,
+                purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            ),
+        ]
+
         self.assertCountEqual(
-            [
-                IncarcerationStayEvent(
-                    admission_reason=revocation_period.admission_reason,
-                    admission_reason_raw_text=revocation_period.admission_reason_raw_text,
-                    state_code=revocation_period.state_code,
-                    event_date=revocation_period.admission_date,
-                    facility=revocation_period.facility,
-                    county_of_residence=_COUNTY_OF_RESIDENCE,
-                    judicial_district_code="NW",
-                    specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
-                    commitment_from_supervision_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-                ),
-                IncarcerationCommitmentFromSupervisionAdmissionEvent(
-                    state_code=revoked_supervision_period.state_code,
-                    event_date=revocation_period.admission_date,
-                    facility=revocation_period.facility,
-                    county_of_residence=_COUNTY_OF_RESIDENCE,
-                    admission_reason=revocation_period.admission_reason,
-                    admission_reason_raw_text=revocation_period.admission_reason_raw_text,
-                    supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-                    case_type=StateSupervisionCaseType.GENERAL,
-                    specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
-                    most_severe_violation_type=StateSupervisionViolationType.FELONY,
-                    most_severe_violation_type_subtype=StateSupervisionViolationType.FELONY.value,
-                    # Duplicate responses were merged in pre-processing
-                    response_count=1,
-                    violation_history_description="1felony",
-                    violation_type_frequency_counter=[["FELONY"]],
-                    supervising_officer_external_id="XXX",
-                    supervising_district_external_id="X",
-                    level_1_supervision_location_external_id="X",
-                    assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
-                ),
-                IncarcerationReleaseEvent(
-                    state_code=revocation_period.state_code,
-                    event_date=revocation_period.release_date,
-                    facility=revocation_period.facility,
-                    county_of_residence=_COUNTY_OF_RESIDENCE,
-                    release_reason=revocation_period.release_reason,
-                    release_reason_raw_text=revocation_period.release_reason_raw_text,
-                    supervision_type_at_release=StateSupervisionPeriodSupervisionType.PROBATION,
-                    commitment_from_supervision_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-                    admission_reason=revocation_period.admission_reason,
-                    total_days_incarcerated=(
-                        revocation_period.release_date
-                        - revocation_period.admission_date
-                    ).days,
-                    purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
-                ),
-            ],
+            expected_events,
             incarceration_events,
         )
 
@@ -3937,7 +3978,8 @@ class TestReleaseEventForPeriod(unittest.TestCase):
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_ND",
-            facility="PRISON3",
+            facility="NDSP",
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
             admission_date=admission_date,
             admission_reason=admission_reason,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
@@ -3980,7 +4022,7 @@ class TestReleaseEventForPeriod(unittest.TestCase):
             IncarcerationReleaseEvent(
                 state_code=incarceration_period.state_code,
                 event_date=release_date,
-                facility="PRISON3",
+                facility=incarceration_period.facility,
                 county_of_residence=_COUNTY_OF_RESIDENCE,
                 release_reason=release_reason,
                 release_reason_raw_text=incarceration_period.release_reason_raw_text,
@@ -4001,6 +4043,7 @@ def expected_incarceration_stay_events(
     commitment_from_supervision_supervision_type: Optional[
         StateSupervisionPeriodSupervisionType
     ] = None,
+    included_in_state_population: bool = True,
 ) -> List[IncarcerationStayEvent]:
     """Returns the expected incarceration stay events based on the provided |incarceration_period|."""
 
@@ -4049,6 +4092,7 @@ def expected_incarceration_stay_events(
                 judicial_district_code=judicial_district_code,
                 specialized_purpose_for_incarceration=purpose_for_incarceration,
                 commitment_from_supervision_supervision_type=commitment_from_supervision_supervision_type,
+                included_in_state_population=included_in_state_population,
             )
 
             expected_incarceration_events.append(event)
