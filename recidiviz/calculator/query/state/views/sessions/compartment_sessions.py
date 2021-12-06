@@ -335,8 +335,7 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
             metric_source = 'INFERRED'
                 AND inflow_from_level_1 = 'SUPERVISION'
                 AND (prev_end_reason in ('REVOCATION','RETURN_TO_INCARCERATION') 
-                    -- TODO(#9866): Change to '=REVOCATION' once the admission reason enum is REVOCATION.
-                    OR (next_start_reason LIKE '%REVOCATION' or next_start_reason = 'SANCTION_ADMISSION')) AS inferred_pending_custody,
+                    OR (next_start_reason = 'REVOCATION' or next_start_reason = 'SANCTION_ADMISSION')) AS inferred_pending_custody,
             metric_source = 'INFERRED'
                 AND inflow_from_level_1 = 'INCARCERATION'
                 AND prev_end_reason = 'CONDITIONAL_RELEASE' AS inferred_pending_supervision,
