@@ -58,8 +58,7 @@ INCARCERATION_LENGTHS_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = """
         FROM
           `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_release_metrics_included_in_state_population_materialized` releases
         WHERE release_reason in ('COMMUTED', 'COMPASSIONATE', 'CONDITIONAL_RELEASE', 'SENTENCE_SERVED', 'DEATH', 'EXECUTION')
-          -- TODO(#9866): Change to '=REVOCATION' once the admission reason enum is REVOCATION.
-          AND (admission_reason = 'NEW_ADMISSION' OR (admission_reason LIKE '%REVOCATION' and commitment_from_supervision_supervision_type = 'PROBATION'))
+          AND (admission_reason = 'NEW_ADMISSION' OR (admission_reason = 'REVOCATION' and commitment_from_supervision_supervision_type = 'PROBATION'))
     ), ranked_releases_by_period AS (
         SELECT
           *,
