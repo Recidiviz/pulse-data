@@ -31,7 +31,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 from recidiviz.common.date import DateRangeDiff
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 
-VALID_TRANSFER_THRESHOLD_DAYS: int = 1
+DEFAULT_VALID_TRANSFER_THRESHOLD_DAYS: int = 1
 
 
 def _is_active_period(period: StateIncarcerationPeriod) -> bool:
@@ -60,6 +60,7 @@ def standard_date_sort_for_incarceration_periods(
 def periods_are_temporally_adjacent(
     first_incarceration_period: StateIncarcerationPeriod,
     second_incarceration_period: StateIncarcerationPeriod,
+    valid_adjacency_threshold_override: Optional[int] = None,
 ) -> bool:
     """Returns whether two incarceration periods are temporally adjacent, meaning they
     can be treated as a continuous stint of incarceration, even if their edges do not
@@ -69,6 +70,9 @@ def periods_are_temporally_adjacent(
     |second_incarceration_period|."""
     release_date = first_incarceration_period.release_date
     admission_date = second_incarceration_period.admission_date
+    adjacency_threshold_days = (
+        valid_adjacency_threshold_override or DEFAULT_VALID_TRANSFER_THRESHOLD_DAYS
+    )
 
     if not release_date or not admission_date:
         # If there are missing dates, then this is not a valid period edge
@@ -76,7 +80,7 @@ def periods_are_temporally_adjacent(
 
     days_between_periods = (admission_date - release_date).days
 
-    return days_between_periods <= VALID_TRANSFER_THRESHOLD_DAYS
+    return days_between_periods <= adjacency_threshold_days
 
 
 def period_edges_are_valid_transfer(

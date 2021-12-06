@@ -78,6 +78,10 @@ class TestUsNdIncarcerationDelegate(unittest.TestCase):
             if custodial_authority == StateCustodialAuthority.STATE_PRISON:
                 continue
 
+            # TODO(#3723): Delete this once OOS periods are no longer being included
+            if custodial_authority == StateCustodialAuthority.OTHER_STATE:
+                continue
+
             incarceration_period.custodial_authority = custodial_authority
 
             self.assertFalse(
@@ -102,8 +106,6 @@ class TestUsNdIncarcerationDelegate(unittest.TestCase):
             release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
         )
 
-        # TODO(#3641): Change this to assert False once we're setting the
-        #  custodial_authority field at ingest for US_ND
-        self.assertTrue(
+        self.assertFalse(
             self.delegate.is_period_included_in_state_population(incarceration_period)
         )
