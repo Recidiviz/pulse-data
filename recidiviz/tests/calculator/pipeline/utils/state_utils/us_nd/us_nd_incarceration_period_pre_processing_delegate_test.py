@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests the US_ND-specific UsNdIncarcerationPreProcessingManager."""
+import datetime
 import unittest
 from datetime import date
 from itertools import permutations
@@ -32,22 +33,14 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_incarceration_d
     UsNdIncarcerationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_incarceration_period_pre_processing_delegate import (
+    PAROLE_REVOCATION_PREPROCESSING_PREFIX,
     UsNdIncarcerationPreProcessingDelegate,
 )
+from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
-)
-from recidiviz.common.constants.state.state_incarceration_period import (
-    StateIncarcerationPeriodAdmissionReason as AdmissionReason,
-)
-from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodReleaseReason,
-)
-from recidiviz.common.constants.state.state_incarceration_period import (
-    StateIncarcerationPeriodReleaseReason as ReleaseReason,
-)
-from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodStatus,
     StateSpecializedPurposeForIncarceration,
 )
@@ -61,6 +54,8 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionPeriod,
     StateSupervisionViolationResponse,
 )
+
+_STATE_CODE = "US_ND"
 
 
 class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
@@ -98,32 +93,38 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             overwrite_facility_information_in_transfers=overwrite_facility_information_in_transfers,
         ).incarceration_periods
 
-    def test_pre_processed_incarceration_periods_for_calculations_multiple_temporary_and_valid(
+    # TODO(#10152): Delete this test once we've done a re-run in prod for US_ND with the
+    #  new IP ingest views
+    def test_multiple_temporary_and_valid_v1(
         self,
     ) -> None:
-        state_code = "US_ND"
+        state_code = _STATE_CODE
         temporary_custody_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
             external_id="111",
             incarceration_type=StateIncarcerationType.COUNTY_JAIL,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
-            admission_date=date(2008, 11, 20),
-            admission_reason=AdmissionReason.TEMPORARY_CUSTODY,
-            release_date=date(2010, 12, 4),
-            release_reason=ReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+            admission_date=date(2018, 11, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            admission_reason_raw_text="PV",
+            facility="CJ",
+            release_date=date(2018, 12, 4),
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
         )
 
         temporary_custody_2 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=112,
             external_id="222",
-            incarceration_type=StateIncarcerationType.COUNTY_JAIL,
+            incarceration_type=StateIncarcerationType.EXTERNAL_UNKNOWN,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
-            admission_date=date(2008, 12, 20),
-            admission_reason=AdmissionReason.TEMPORARY_CUSTODY,
-            release_date=date(2008, 12, 24),
-            release_reason=ReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+            admission_date=date(2018, 12, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            admission_reason_raw_text="PV",
+            facility="NTAD",
+            release_date=date(2018, 12, 24),
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
         )
 
         valid_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -132,11 +133,23 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             incarceration_type=StateIncarcerationType.COUNTY_JAIL,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
-            admission_date=date(2016, 11, 20),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
-            release_date=date(2017, 12, 4),
-            release_reason=ReleaseReason.SENTENCE_SERVED,
+            admission_date=date(2019, 11, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            release_date=date(2019, 12, 4),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+
+        updated_temp_1 = attr.evolve(
+            temporary_custody_1,
+            custodial_authority=StateCustodialAuthority.COURT,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
+        )
+
+        updated_temp_2 = attr.evolve(
+            temporary_custody_2,
+            custodial_authority=StateCustodialAuthority.EXTERNAL_UNKNOWN,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
         )
 
         incarceration_periods = [
@@ -155,22 +168,109 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             )
 
             self.assertEqual(
-                [valid_incarceration_period], validated_incarceration_periods
+                [updated_temp_1, updated_temp_2, valid_incarceration_period],
+                validated_incarceration_periods,
             )
 
-    def test_pre_processed_incarceration_periods_for_calculations_multiple_temporary_and_transfer(
+    def test_multiple_temporary_and_valid(
         self,
     ) -> None:
-        state_code = "US_ND"
+        state_code = _STATE_CODE
+        temporary_custody_1 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=111,
+            external_id="111",
+            incarceration_type=StateIncarcerationType.COUNTY_JAIL,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code=state_code,
+            admission_date=date(2018, 11, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
+            admission_reason_raw_text="ADMN",
+            custodial_authority=StateCustodialAuthority.COURT,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
+            facility="CJ",
+            release_date=date(2018, 12, 4),
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+            release_reason_raw_text="RPAR",
+        )
+
+        temporary_custody_2 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=112,
+            external_id="222",
+            incarceration_type=StateIncarcerationType.EXTERNAL_UNKNOWN,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code=state_code,
+            admission_date=date(2018, 12, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            custodial_authority=StateCustodialAuthority.EXTERNAL_UNKNOWN,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
+            admission_reason_raw_text="ADMN",
+            facility="NTAD",
+            release_date=date(2018, 12, 24),
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+        )
+
+        valid_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            external_id="333",
+            incarceration_type=StateIncarcerationType.COUNTY_JAIL,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code=state_code,
+            admission_date=date(2019, 11, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            release_date=date(2019, 12, 4),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+
+        updated_temp_1 = attr.evolve(
+            temporary_custody_1,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+        )
+
+        updated_temp_2 = attr.evolve(
+            temporary_custody_2,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+        )
+
+        incarceration_periods = [
+            temporary_custody_1,
+            temporary_custody_2,
+            valid_incarceration_period,
+        ]
+
+        for ip_order_combo in permutations(incarceration_periods):
+            ips_for_test = [attr.evolve(ip) for ip in ip_order_combo]
+
+            validated_incarceration_periods = (
+                self._pre_processed_incarceration_periods_for_calculations(
+                    incarceration_periods=ips_for_test,
+                )
+            )
+
+            self.assertEqual(
+                [updated_temp_1, updated_temp_2, valid_incarceration_period],
+                validated_incarceration_periods,
+            )
+
+    # TODO(#10152): Delete this test once we've done a re-run in prod for US_ND with the
+    #  new IP ingest views
+    def test_multiple_temporary_and_transfer_v1(
+        self,
+    ) -> None:
+        state_code = _STATE_CODE
         temporary_custody_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             external_id="1",
             state_code=state_code,
-            admission_date=date(2008, 11, 20),
-            admission_reason=AdmissionReason.TEMPORARY_CUSTODY,
-            release_date=date(2010, 12, 4),
-            release_reason=ReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+            facility="NTAD",
+            incarceration_type=StateIncarcerationType.EXTERNAL_UNKNOWN,
+            admission_date=date(2018, 11, 20),
+            admission_reason_raw_text="NTAD",
+            release_date=date(2018, 12, 4),
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
         )
 
         temporary_custody_2 = StateIncarcerationPeriod.new_with_defaults(
@@ -178,10 +278,13 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             external_id="2",
             state_code=state_code,
-            admission_date=date(2008, 12, 20),
-            admission_reason=AdmissionReason.TEMPORARY_CUSTODY,
-            release_date=date(2008, 12, 24),
-            release_reason=ReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+            facility="CJ",
+            incarceration_type=StateIncarcerationType.COUNTY_JAIL,
+            admission_date=date(2018, 12, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            admission_reason_raw_text="ADMN",
+            release_date=date(2018, 12, 24),
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
         )
 
         valid_incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
@@ -189,10 +292,10 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             external_id="3",
             state_code=state_code,
-            admission_date=date(2011, 11, 20),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
-            release_date=date(2012, 12, 4),
-            release_reason=ReleaseReason.TRANSFER,
+            admission_date=date(2020, 11, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            release_date=date(2020, 12, 4),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
         valid_incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
@@ -200,10 +303,10 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             external_id="4",
             state_code=state_code,
-            admission_date=date(2012, 12, 4),
-            admission_reason=AdmissionReason.TRANSFER,
-            release_date=date(2012, 12, 24),
-            release_reason=ReleaseReason.TRANSFER,
+            admission_date=date(2020, 12, 4),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            release_date=date(2020, 12, 24),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
         valid_incarceration_period_3 = StateIncarcerationPeriod.new_with_defaults(
@@ -211,10 +314,10 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             external_id="5",
             state_code=state_code,
-            admission_date=date(2012, 12, 24),
-            admission_reason=AdmissionReason.TRANSFER,
-            release_date=date(2012, 12, 30),
-            release_reason=ReleaseReason.SENTENCE_SERVED,
+            admission_date=date(2020, 12, 24),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            release_date=date(2020, 12, 30),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
         incarceration_periods = [
@@ -224,6 +327,19 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             valid_incarceration_period_2,
             valid_incarceration_period_3,
         ]
+
+        updated_temp_1 = attr.evolve(
+            temporary_custody_1,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            custodial_authority=StateCustodialAuthority.EXTERNAL_UNKNOWN,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
+        )
+
+        updated_temp_2 = attr.evolve(
+            temporary_custody_2,
+            custodial_authority=StateCustodialAuthority.COURT,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
+        )
 
         collapsed_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=valid_incarceration_period_1.incarceration_period_id,
@@ -247,41 +363,111 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             )
 
             self.assertEqual(
-                [collapsed_incarceration_period], validated_incarceration_periods
+                [updated_temp_1, updated_temp_2, collapsed_incarceration_period],
+                validated_incarceration_periods,
             )
 
-    def test_pre_processed_incarceration_periods_for_calculations_valid_then_temporary(
+    def test_multiple_temporary_and_transfer(
         self,
     ) -> None:
-        state_code = "US_ND"
-        valid_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=1111,
+        state_code = _STATE_CODE
+        temporary_custody_1 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=111,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             external_id="1",
             state_code=state_code,
-            admission_date=date(2008, 11, 20),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
-            release_date=date(2009, 12, 4),
-            release_reason=ReleaseReason.SENTENCE_SERVED,
+            facility="NTAD",
+            custodial_authority=StateCustodialAuthority.EXTERNAL_UNKNOWN,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
+            incarceration_type=StateIncarcerationType.EXTERNAL_UNKNOWN,
+            admission_date=date(2018, 11, 20),
+            admission_reason_raw_text="NTAD",
+            release_date=date(2018, 12, 4),
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+            release_reason_raw_text="RPAR",
         )
 
-        temporary_custody = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=111,
+        temporary_custody_2 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=112,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             external_id="2",
             state_code=state_code,
-            admission_date=date(2010, 1, 20),
-            admission_reason=AdmissionReason.TEMPORARY_CUSTODY,
-            release_date=date(2010, 1, 24),
-            release_reason=ReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+            facility="CJ",
+            incarceration_type=StateIncarcerationType.COUNTY_JAIL,
+            custodial_authority=StateCustodialAuthority.COURT,
+            admission_date=date(2018, 12, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            admission_reason_raw_text="ADMN",
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
+            release_date=date(2018, 12, 24),
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+            release_reason_raw_text="RPAR",
         )
 
-        updated_valid_period = attr.evolve(
-            valid_incarceration_period,
+        valid_incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            external_id="3",
+            state_code=state_code,
+            admission_date=date(2020, 11, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            release_date=date(2020, 12, 4),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+        )
+
+        valid_incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1112,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            external_id="4",
+            state_code=state_code,
+            admission_date=date(2020, 12, 4),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            release_date=date(2020, 12, 24),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+        )
+
+        valid_incarceration_period_3 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1113,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            external_id="5",
+            state_code=state_code,
+            admission_date=date(2020, 12, 24),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            release_date=date(2020, 12, 30),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+        )
+
+        incarceration_periods = [
+            temporary_custody_1,
+            temporary_custody_2,
+            valid_incarceration_period_1,
+            valid_incarceration_period_2,
+            valid_incarceration_period_3,
+        ]
+
+        updated_temp_1 = attr.evolve(
+            temporary_custody_1,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+        )
+
+        updated_temp_2 = attr.evolve(
+            temporary_custody_2,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+        )
+
+        collapsed_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=valid_incarceration_period_1.incarceration_period_id,
+            external_id=valid_incarceration_period_1.external_id,
+            status=valid_incarceration_period_3.status,
+            state_code=valid_incarceration_period_1.state_code,
+            admission_date=valid_incarceration_period_1.admission_date,
+            admission_reason=valid_incarceration_period_1.admission_reason,
+            release_date=valid_incarceration_period_3.release_date,
+            release_reason=valid_incarceration_period_3.release_reason,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
-
-        incarceration_periods = [valid_incarceration_period, temporary_custody]
 
         for ip_order_combo in permutations(incarceration_periods):
             ips_for_test = [attr.evolve(ip) for ip in ip_order_combo]
@@ -292,22 +478,164 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
                 )
             )
 
-            self.assertEqual([updated_valid_period], validated_incarceration_periods)
+            self.assertEqual(
+                [updated_temp_1, updated_temp_2, collapsed_incarceration_period],
+                validated_incarceration_periods,
+            )
 
-    def test_pre_processed_incarceration_periods_for_calculations_invalid_board_hold(
+    def test_handle_temporary_custody(
         self,
     ) -> None:
-        state_code = "US_ND"
+        state_code = _STATE_CODE
+
+        county_jail_pre_2017 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=112,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            external_id="2",
+            state_code=state_code,
+            facility="CJ",
+            incarceration_type=StateIncarcerationType.COUNTY_JAIL,
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+            admission_date=date(2008, 12, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            admission_reason_raw_text="ADMN",
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            release_date=date(2008, 12, 24),
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+            release_reason_raw_text="RPAR",
+        )
+
+        temporary_custody_1 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=111,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            external_id="1",
+            state_code=state_code,
+            facility="NTAD",
+            custodial_authority=StateCustodialAuthority.EXTERNAL_UNKNOWN,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
+            incarceration_type=StateIncarcerationType.EXTERNAL_UNKNOWN,
+            admission_date=date(2018, 11, 20),
+            admission_reason_raw_text="NTAD",
+            release_date=date(2018, 12, 4),
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+            release_reason_raw_text="RPAR",
+        )
+
+        temporary_custody_2 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=112,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            external_id="2",
+            state_code=state_code,
+            facility="CJ",
+            incarceration_type=StateIncarcerationType.COUNTY_JAIL,
+            custodial_authority=StateCustodialAuthority.COURT,
+            admission_date=date(2018, 12, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            admission_reason_raw_text="ADMN",
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
+            release_date=date(2018, 12, 24),
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+            release_reason_raw_text="RPAR",
+        )
+
+        # TODO(#10152): Delete this IP from the test once we've done a re-run in prod
+        #  for US_ND with the new IP ingest views
+        temporary_custody_1_deprecated = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=111,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            external_id="1",
+            state_code=state_code,
+            facility="NTAD",
+            incarceration_type=StateIncarcerationType.EXTERNAL_UNKNOWN,
+            admission_date=date(2020, 11, 20),
+            admission_reason_raw_text="NTAD",
+            release_date=date(2020, 12, 4),
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+        )
+
+        # TODO(#10152): Delete this IP from the test once we've done a re-run in prod
+        #  for US_ND with the new IP ingest views
+        temporary_custody_2_deprecated = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=112,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            external_id="2",
+            state_code=state_code,
+            facility="CJ",
+            incarceration_type=StateIncarcerationType.COUNTY_JAIL,
+            admission_date=date(2020, 12, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            admission_reason_raw_text="ADMN",
+            release_date=date(2020, 12, 24),
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+        )
+
+        incarceration_periods = [
+            county_jail_pre_2017,
+            temporary_custody_1,
+            temporary_custody_2,
+            temporary_custody_1_deprecated,
+            temporary_custody_2_deprecated,
+        ]
+
+        updated_temp_1 = attr.evolve(
+            temporary_custody_1,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+        )
+
+        updated_temp_2 = attr.evolve(
+            temporary_custody_2,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+        )
+
+        updated_temp_1_deprecated = attr.evolve(
+            temporary_custody_1_deprecated,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            custodial_authority=StateCustodialAuthority.EXTERNAL_UNKNOWN,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
+        )
+
+        updated_temp_2_deprecated = attr.evolve(
+            temporary_custody_2_deprecated,
+            custodial_authority=StateCustodialAuthority.COURT,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
+        )
+
+        for ip_order_combo in permutations(incarceration_periods):
+            ips_for_test = [attr.evolve(ip) for ip in ip_order_combo]
+
+            validated_incarceration_periods = (
+                self._pre_processed_incarceration_periods_for_calculations(
+                    incarceration_periods=ips_for_test,
+                )
+            )
+
+            self.assertEqual(
+                [
+                    county_jail_pre_2017,
+                    updated_temp_1,
+                    updated_temp_2,
+                    updated_temp_1_deprecated,
+                    updated_temp_2_deprecated,
+                ],
+                validated_incarceration_periods,
+            )
+
+    def test_invalid_board_hold(
+        self,
+    ) -> None:
+        state_code = _STATE_CODE
         invalid_board_hold = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             external_id="1",
             state_code=state_code,
             admission_date=date(2008, 11, 20),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
             release_date=date(2009, 12, 4),
-            release_reason=ReleaseReason.SENTENCE_SERVED,
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
         incarceration_periods = [invalid_board_hold]
@@ -317,7 +645,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
                 incarceration_periods=incarceration_periods,
             )
 
-    def test_pre_processed_incarceration_periods_for_calculations_NewAdmissionAfterProbationRevocation(
+    def test_NewAdmissionAfterProbationRevocation(
         self,
     ) -> None:
         """Tests that when a NEW_ADMISSION incarceration follows a PROBATION+REVOCATION
@@ -326,7 +654,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
-            state_code="US_ND",
+            state_code=_STATE_CODE,
             start_date=date(2019, 3, 5),
             termination_date=date(2019, 6, 9),
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
@@ -336,7 +664,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=222,
             external_id="ip2",
-            state_code="US_ND",
+            state_code=_STATE_CODE,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             admission_date=date(2019, 6, 17),
@@ -358,7 +686,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         self.assertEqual([updated_period], validated_incarceration_periods)
 
-    def test_pre_processed_incarceration_periods_for_calculations_NewAdmissionAfterParoleRevocation(
+    def test_NewAdmissionAfterParoleRevocation(
         self,
     ) -> None:
         """Tests that when a NEW_ADMISSION incarceration follows a PAROLE+REVOCATION
@@ -367,7 +695,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
-            state_code="US_ND",
+            state_code=_STATE_CODE,
             start_date=date(2019, 3, 5),
             termination_date=date(2019, 6, 9),
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
@@ -377,7 +705,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=222,
             external_id="ip2",
-            state_code="US_ND",
+            state_code=_STATE_CODE,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             admission_date=date(2019, 6, 17),
@@ -399,7 +727,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         self.assertEqual([updated_period], validated_incarceration_periods)
 
-    def test_pre_processed_incarceration_periods_for_calculations_NewAdmissionAfterIrrelevantSupervisionType(
+    def test_NewAdmissionAfterIrrelevantSupervisionType(
         self,
     ) -> None:
         """Tests that when a NEW_ADMISSION incarceration follows a
@@ -408,7 +736,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
-            state_code="US_ND",
+            state_code=_STATE_CODE,
             start_date=date(2019, 3, 5),
             termination_date=date(2019, 6, 9),
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
@@ -418,7 +746,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=222,
             external_id="ip2",
-            state_code="US_ND",
+            state_code=_STATE_CODE,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             admission_date=date(2019, 6, 17),
@@ -439,7 +767,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         self.assertEqual([updated_period], validated_incarceration_periods)
 
-    def test_pre_processed_incarceration_periods_for_calculations_NewAdmissionNotAfterRevocation(
+    def test_NewAdmissionNotAfterRevocation(
         self,
     ) -> None:
         """Tests that when a NEW_ADMISSION incarceration follows a PROBATION+NOT REVOCATION
@@ -447,7 +775,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
-            state_code="US_ND",
+            state_code=_STATE_CODE,
             start_date=date(2019, 3, 5),
             termination_date=date(2019, 6, 9),
             termination_reason=StateSupervisionPeriodTerminationReason.EXPIRATION,
@@ -457,7 +785,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=222,
             external_id="ip2",
-            state_code="US_ND",
+            state_code=_STATE_CODE,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             admission_date=date(2019, 6, 17),
@@ -478,7 +806,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         self.assertEqual([updated_period], validated_incarceration_periods)
 
-    def test_pre_processed_incarceration_periods_for_calculations_NewAdmissionNotDirectlyAfterProbationRevocation(
+    def test_NewAdmissionNotDirectlyAfterProbationRevocation(
         self,
     ) -> None:
         """Tests that when a NEW_ADMISSION incarceration follows a PROBATION+REVOCATION
@@ -488,7 +816,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
         earlier_probation_supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
-            state_code="US_ND",
+            state_code=_STATE_CODE,
             start_date=date(2019, 3, 5),
             termination_date=date(2019, 5, 4),
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
@@ -498,7 +826,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
         later_parole_supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
-            state_code="US_ND",
+            state_code=_STATE_CODE,
             start_date=date(2019, 3, 5),
             termination_date=date(2019, 6, 9),
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
@@ -508,7 +836,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=222,
             external_id="ip2",
-            state_code="US_ND",
+            state_code=_STATE_CODE,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             admission_date=date(2019, 6, 17),
@@ -532,7 +860,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         self.assertEqual([updated_period], validated_incarceration_periods)
 
-    def test_pre_processed_incarceration_periods_for_calculations_NewAdmissionAfterRevocationAndIntermediateAdmissionToStatePrison(
+    def test_NewAdmissionAfterRevocationAndIntermediateAdmissionToStatePrison(
         self,
     ) -> None:
         """Tests that when a NEW_ADMISSION incarceration follows a PROBATION+REVOCATION
@@ -542,7 +870,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
-            state_code="US_ND",
+            state_code=_STATE_CODE,
             start_date=date(1996, 3, 5),
             termination_date=date(2000, 1, 9),
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
@@ -553,7 +881,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=222,
                 external_id="ip2",
-                state_code="US_ND",
+                state_code=_STATE_CODE,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 admission_date=date(2000, 2, 9),
@@ -566,7 +894,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
         subsequent_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=222,
             external_id="ip2",
-            state_code="US_ND",
+            state_code=_STATE_CODE,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             admission_date=date(2001, 10, 14),
@@ -599,20 +927,22 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             validated_incarceration_periods,
         )
 
-    def test_pre_processed_incarceration_periods_for_calculations_NewAdmissionAfterRevocationAndIntermediateAdmissionToCountyJail(
+    # TODO(#10152): Delete this test once we've done a re-run in prod for US_ND with the
+    #  new IP ingest views
+    def test_NewAdmissionAfterRevocationAndIntermediateAdmissionToCountyJail_v1(
         self,
     ) -> None:
         """Tests that when a NEW_ADMISSION incarceration follows a PROBATION+REVOCATION
         supervision period, but not directly, as there is a separate incarceration
         admission in the interim, but that admission is to a county jail (i.e. is a
-        temporary hold while revocation proceedings take place, then the
+        temporary hold while revocation proceedings take place), then the
         admission_reason on the period is updated to be REVOCATION."""
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
-            state_code="US_ND",
+            state_code=_STATE_CODE,
             start_date=date(1996, 3, 5),
-            termination_date=date(2000, 1, 9),
+            termination_date=date(2018, 1, 9),
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
@@ -620,22 +950,93 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
         initial_commitment_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=222,
             external_id="ip2",
-            state_code="US_ND",
+            state_code=_STATE_CODE,
             incarceration_type=StateIncarcerationType.COUNTY_JAIL,
+            facility="CJ",
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            admission_date=date(2000, 1, 9),
+            admission_date=date(2018, 1, 9),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
-            release_date=date(2000, 4, 24),
+            release_date=date(2018, 4, 24),
             release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
         )
 
         subsequent_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=222,
             external_id="ip2",
-            state_code="US_ND",
+            state_code=_STATE_CODE,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.IN_CUSTODY,
-            admission_date=date(2000, 4, 24),
+            admission_date=date(2018, 4, 24),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+        )
+
+        updated_initial_commitment = attr.evolve(
+            initial_commitment_incarceration_period,
+            custodial_authority=StateCustodialAuthority.COURT,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
+        )
+
+        updated_period = attr.evolve(
+            subsequent_incarceration_period,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+
+        validated_incarceration_periods = (
+            self._pre_processed_incarceration_periods_for_calculations(
+                incarceration_periods=[
+                    initial_commitment_incarceration_period,
+                    subsequent_incarceration_period,
+                ],
+                supervision_periods=[supervision_period],
+            )
+        )
+
+        self.assertEqual(
+            [updated_initial_commitment, updated_period],
+            validated_incarceration_periods,
+        )
+
+    def test_NewAdmissionAfterRevocationAndIntermediateAdmissionToCountyJail(
+        self,
+    ) -> None:
+        """Tests that when a NEW_ADMISSION incarceration follows a PROBATION+REVOCATION
+        supervision period, but not directly, as there is a separate incarceration
+        admission in the interim, but that admission is to a county jail (i.e. is a
+        temporary hold while revocation proceedings take place), then the
+        admission_reason on the period is updated to be REVOCATION."""
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            state_code=_STATE_CODE,
+            start_date=date(1996, 3, 5),
+            termination_date=date(2018, 1, 9),
+            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+        )
+
+        initial_commitment_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id="ip2",
+            state_code=_STATE_CODE,
+            incarceration_type=StateIncarcerationType.COUNTY_JAIL,
+            facility="CJ",
+            custodial_authority=StateCustodialAuthority.COURT,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=date(2018, 1, 9),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            release_date=date(2018, 4, 24),
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+        )
+
+        subsequent_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id="ip2",
+            state_code=_STATE_CODE,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+            admission_date=date(2018, 4, 24),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
         )
 
@@ -655,4 +1056,291 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             )
         )
 
-        self.assertEqual([updated_period], validated_incarceration_periods)
+        self.assertEqual(
+            [initial_commitment_incarceration_period, updated_period],
+            validated_incarceration_periods,
+        )
+
+    def test_TakeNewAdmissionFromTemporaryCustody(self) -> None:
+        # Too long of a time gap between date_1 and date_2 to be
+        # considered consecutive
+        date_1 = date(2020, 1, 1)
+        date_2 = date_1 + datetime.timedelta(days=3)
+        date_3 = date_2 + datetime.timedelta(days=1)
+
+        ip = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1,
+            external_id="1",
+            state_code=_STATE_CODE,
+            admission_date=date_1,
+            incarceration_type=StateIncarcerationType.COUNTY_JAIL,
+            facility="CJ",
+            custodial_authority=StateCustodialAuthority.COURT,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
+            admission_reason_raw_text="PV",
+            release_date=date_1,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+        ip_2 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=2,
+            external_id="2",
+            state_code=_STATE_CODE,
+            incarceration_type=StateIncarcerationType.COUNTY_JAIL,
+            facility="CJ",
+            custodial_authority=StateCustodialAuthority.COURT,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
+            admission_date=date_2,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            release_date=date_2,
+            admission_reason_raw_text="ADMN",
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+        ip_3 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=3,
+            external_id="3",
+            state_code=_STATE_CODE,
+            facility="NDSP",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            admission_date=date_3,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            admission_reason_raw_text="INT",
+            release_date=date_3,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        expected_ip = attr.evolve(
+            ip,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+        )
+        expected_ip_2 = attr.evolve(
+            ip_2,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+        )
+        expected_ip_3 = attr.evolve(
+            ip_3,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+        )
+
+        validated_incarceration_periods = (
+            self._pre_processed_incarceration_periods_for_calculations(
+                incarceration_periods=[ip, ip_2, ip_3],
+            )
+        )
+
+        self.assertEqual(
+            [expected_ip, expected_ip_2, expected_ip_3],
+            validated_incarceration_periods,
+        )
+
+    def test_TakeRevocationFromTemporaryCustody(self) -> None:
+        # All periods are consecutive
+        date_1 = date(2020, 1, 1)
+        date_2 = date_1 + datetime.timedelta(days=1)
+        date_3 = date_2 + datetime.timedelta(days=1)
+
+        ip = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1,
+            external_id="1",
+            state_code=_STATE_CODE,
+            admission_date=date_1,
+            incarceration_type=StateIncarcerationType.COUNTY_JAIL,
+            facility="CJ",
+            custodial_authority=StateCustodialAuthority.COURT,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
+            admission_reason_raw_text="PV",
+            release_date=date_1,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+        ip_2 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=2,
+            external_id="2",
+            state_code=_STATE_CODE,
+            incarceration_type=StateIncarcerationType.COUNTY_JAIL,
+            facility="CJ",
+            custodial_authority=StateCustodialAuthority.COURT,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
+            admission_date=date_2,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            release_date=date_2,
+            admission_reason_raw_text="ADMN",
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+        ip_3 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=3,
+            external_id="3",
+            state_code=_STATE_CODE,
+            facility="NDSP",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            admission_date=date_3,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            admission_reason_raw_text="INT",
+            release_date=date_3,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        expected_ip = attr.evolve(
+            ip,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+        )
+        expected_ip_2 = attr.evolve(
+            ip_2,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+        )
+
+        assert ip_3.admission_reason_raw_text is not None
+        expected_ip_3 = attr.evolve(
+            ip_3,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
+            admission_reason_raw_text=(
+                PAROLE_REVOCATION_PREPROCESSING_PREFIX
+                + "-"
+                + ip_3.admission_reason_raw_text
+            ),
+        )
+
+        validated_incarceration_periods = (
+            self._pre_processed_incarceration_periods_for_calculations(
+                incarceration_periods=[ip, ip_2, ip_3], collapse_transfers=False
+            )
+        )
+
+        self.assertEqual(
+            [expected_ip, expected_ip_2, expected_ip_3],
+            validated_incarceration_periods,
+        )
+
+    def test_doNotTakeNullAdmissionFromTemporaryCustody(self) -> None:
+        # Periods are consecutive
+        date_1 = date(2020, 1, 1)
+        date_2 = date_1 + datetime.timedelta(days=1)
+
+        ip = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1,
+            external_id="1",
+            state_code=_STATE_CODE,
+            admission_date=date_1,
+            incarceration_type=StateIncarcerationType.EXTERNAL_UNKNOWN,
+            facility="NTAD",
+            custodial_authority=StateCustodialAuthority.EXTERNAL_UNKNOWN,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
+            admission_reason=None,
+            # This raw text value is in the enum ignores
+            admission_reason_raw_text="NTAD",
+            release_date=date_1,
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+        ip_2 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=3,
+            external_id="3",
+            state_code=_STATE_CODE,
+            facility="NDSP",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            admission_date=date_2,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            admission_reason_raw_text="INT",
+            release_date=date_2,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        expected_ip = attr.evolve(
+            ip,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+        )
+        # We won't take the admission reason from the first adjacent temp custody
+        # period if there's no admission reason on it
+        expected_ip_2 = attr.evolve(
+            ip_2,
+        )
+
+        validated_incarceration_periods = (
+            self._pre_processed_incarceration_periods_for_calculations(
+                incarceration_periods=[ip, ip_2], collapse_transfers=False
+            )
+        )
+
+        self.assertEqual(
+            [expected_ip, expected_ip_2],
+            validated_incarceration_periods,
+        )
+
+    def test_HandleErroneouslySetTemporaryCustody(self) -> None:
+        # Periods are consecutive
+        date_1 = date(2020, 1, 1)
+        date_2 = date_1 + datetime.timedelta(days=1)
+
+        ip_1 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1,
+            external_id="1",
+            state_code=_STATE_CODE,
+            facility="NDSP",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            admission_date=date_1,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            admission_reason_raw_text="INT",
+            release_date=date_1,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+        # This period isn't actually a temporary custody period since it follows
+        # directly after a state prisonn stay.
+        ip_2 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=3,
+            external_id="3",
+            state_code=_STATE_CODE,
+            admission_date=date_2,
+            incarceration_type=StateIncarcerationType.EXTERNAL_UNKNOWN,
+            facility="NTAD",
+            custodial_authority=StateCustodialAuthority.EXTERNAL_UNKNOWN,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
+            admission_reason=None,
+            # This raw text value is in the enum ignores
+            admission_reason_raw_text="NTAD",
+            release_date=date_2,
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        expected_ip_1 = attr.evolve(
+            ip_1,
+        )
+
+        expected_ip_2 = attr.evolve(
+            ip_2,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+
+        validated_incarceration_periods = (
+            self._pre_processed_incarceration_periods_for_calculations(
+                incarceration_periods=[ip_1, ip_2], collapse_transfers=False
+            )
+        )
+
+        self.assertEqual(
+            [expected_ip_1, expected_ip_2],
+            validated_incarceration_periods,
+        )

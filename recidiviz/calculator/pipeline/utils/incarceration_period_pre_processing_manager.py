@@ -38,6 +38,7 @@ from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index 
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_incarceration_delegate import (
     StateSpecificIncarcerationDelegate,
 )
+from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     SANCTION_ADMISSION_PURPOSE_FOR_INCARCERATION_VALUES,
@@ -91,17 +92,6 @@ class StateSpecificIncarcerationPreProcessingDelegate:
     """Interface for state-specific decisions involved in pre-processing
     incarceration periods for calculations."""
 
-    def admission_reasons_to_filter(
-        self,
-    ) -> Set[StateIncarcerationPeriodAdmissionReason]:
-        """State-specific implementations of this class should return a non-empty set if
-        there are certain admission reasons that indicate a period should be dropped
-        entirely from calculations.
-
-        By default, returns an empty set.
-        """
-        return set()
-
     def normalize_period_if_commitment_from_supervision(  # pylint: disable=unused-argument
         self,
         incarceration_period_list_index: int,
@@ -147,6 +137,24 @@ class StateSpecificIncarcerationPreProcessingDelegate:
         By default, returns an empty set.
         """
         return set()
+
+    def handle_erroneously_set_temporary_custody_period(  # pylint: disable=unused-argument
+        self,
+        incarceration_period: StateIncarcerationPeriod,
+        previous_incarceration_period: Optional[StateIncarcerationPeriod],
+    ) -> StateIncarcerationPeriod:
+        """State-specific implementations of this class should return a new
+        StateIncarcerationPeriod with updated attributes if this period was
+        erroneously set as a temporary custody period during ingest and requires
+        updated attributes.
+
+        This happens when there are limitations in ingest mapping logic. For example,
+        logic that requires looking at more than one period to determine the correct
+        pfi value.
+
+        By default, returns the original period unchanged.
+        """
+        return incarceration_period
 
     def period_is_parole_board_hold(
         self,
@@ -214,6 +222,56 @@ class StateSpecificIncarcerationPreProcessingDelegate:
         Default is False.
         """
         return False
+
+    # TODO(#10152): Remove this once we've done a re-run in prod for US_ND with the
+    #  new IP ingest views
+    def pre_processing_incarceration_period_admission_reason_mapper(
+        self,
+        incarceration_period: StateIncarcerationPeriod,
+    ) -> Optional[StateIncarcerationPeriodAdmissionReason]:
+        """State-specific implementations of this class should return an updated ingest
+        mapping of the admission_reason value of the StateIncarcerationPeriod if
+        there is a need to re-map admission reasons for the state (this happens in
+        the case when the enum mappings have changed for a state, but we have yet to
+        do a re-run with the new mappings).
+
+        Default behavior is to return the admission_reason on the incarceration_period.
+        """
+        return incarceration_period.admission_reason
+
+    # TODO(#10152): Remove this once we've done a re-run in prod for US_ND with the
+    #  new IP ingest views
+    def pre_processing_incarceration_period_custodial_authority_mapper(
+        self,
+        incarceration_period: StateIncarcerationPeriod,
+    ) -> Optional[StateCustodialAuthority]:
+        """State-specific implementations of this class should return an updated ingest
+        mapping of the custodial_authority value of the StateIncarcerationPeriod if
+        there is a need to re-map these values for the state (this happens in
+        the case when the enum mappings have changed for a state, but we have yet to
+        do a re-run with the new mappings).
+
+        Default behavior is to return the custodial_authority on the
+        incarceration_period.
+        """
+        return incarceration_period.custodial_authority
+
+    # TODO(#10152): Remove this once we've done a re-run in prod for US_ND with the
+    #  new IP ingest views
+    def pre_processing_incarceration_period_pfi_mapper(
+        self,
+        incarceration_period: StateIncarcerationPeriod,
+    ) -> Optional[StateSpecializedPurposeForIncarceration]:
+        """State-specific implementations of this class should return an updated ingest
+        mapping of the specialized_purpose_for_incarceration value of the
+        StateIncarcerationPeriod if there is a need to re-map these values for
+        the state (this happens in the case when the enum mappings have changed for a
+        state, but we have yet to do a re-run with the new mappings).
+
+        Default behavior is to return the specialized_purpose_for_incarceration on the
+        incarceration_period.
+        """
+        return incarceration_period.specialized_purpose_for_incarceration
 
 
 class IncarcerationPreProcessingManager:
@@ -308,9 +366,27 @@ class IncarcerationPreProcessingManager:
                     mid_processing_periods
                 )
 
+                # TODO(#10152): Stop doing this once we've done a re-run in prod for
+                #  US_ND with the new IP ingest views
+                mid_processing_periods = (
+                    self._apply_ingest_mappings_to_incarceration_periods(
+                        mid_processing_periods
+                    )
+                )
+
                 # Sort periods, and infer as much missing information as possible
                 mid_processing_periods = (
                     self._sort_and_infer_missing_dates_and_statuses(
+                        mid_processing_periods
+                    )
+                )
+
+                # Handle any periods that may have been erroneously set to have a
+                # TEMPORARY_CUSTODY pfi at ingest due to limitations in ingest
+                # mapping logic. (For example, logic that requires looking at more
+                # than one period to determine the correct pfi value.)
+                mid_processing_periods = (
+                    self._handle_erroneously_set_temporary_custody_periods(
                         mid_processing_periods
                     )
                 )
@@ -393,6 +469,38 @@ class IncarcerationPreProcessingManager:
             if ip.start_date_inclusive or ip.end_date_exclusive
         ]
 
+    def _apply_ingest_mappings_to_incarceration_periods(
+        self,
+        incarceration_periods: List[StateIncarcerationPeriod],
+    ) -> List[StateIncarcerationPeriod]:
+        """Re-maps various values of the |incarceration_period| if there is a need to
+        re-map admission reasons for the state (this happens in the case when the
+        enum mappings have changed for a state, but we have yet to do a re-run with
+        the new mappings)."""
+        updated_periods: List[StateIncarcerationPeriod] = []
+
+        for ip in incarceration_periods:
+            re_mapped_admission_reason = self.pre_processing_delegate.pre_processing_incarceration_period_admission_reason_mapper(
+                ip
+            )
+            re_mapped_custodial_authority = self.pre_processing_delegate.pre_processing_incarceration_period_custodial_authority_mapper(
+                ip
+            )
+            re_mapped_pfi = self.pre_processing_delegate.pre_processing_incarceration_period_pfi_mapper(
+                ip
+            )
+
+            updated_periods.append(
+                attr.evolve(
+                    ip,
+                    admission_reason=re_mapped_admission_reason,
+                    custodial_authority=re_mapped_custodial_authority,
+                    specialized_purpose_for_incarceration=re_mapped_pfi,
+                )
+            )
+
+        return updated_periods
+
     def _drop_periods_from_calculations(
         self, incarceration_periods: List[StateIncarcerationPeriod]
     ) -> List[StateIncarcerationPeriod]:
@@ -402,11 +510,6 @@ class IncarcerationPreProcessingManager:
         filtered_periods: List[StateIncarcerationPeriod] = []
 
         for idx, ip in enumerate(incarceration_periods):
-            if (
-                ip.admission_reason
-                in self.pre_processing_delegate.admission_reasons_to_filter()
-            ):
-                continue
             if (
                 ip.incarceration_type
                 in self.pre_processing_delegate.incarceration_types_to_filter()
@@ -815,7 +918,7 @@ class IncarcerationPreProcessingManager:
                     in valid_temporary_custody_admission_pfi_values
                 ):
                     # Periods should not have PAROLE_BOARD_HOLD or TEMPORARY_CUSTODY
-                    # periods if they are parole board holds or other periods of
+                    # pfi values if they are not parole board holds or other periods of
                     # temporary custody.
                     updated_pfi = (
                         StateSpecializedPurposeForIncarceration.INTERNAL_UNKNOWN
@@ -1164,3 +1267,26 @@ class IncarcerationPreProcessingManager:
         )
 
         return collapsed_incarceration_period
+
+    def _handle_erroneously_set_temporary_custody_periods(
+        self,
+        incarceration_periods: List[StateIncarcerationPeriod],
+    ):
+        """For periods with a pfi of TEMPORARY_CUSTODY, sends the period to the
+        state-specific pre-processing delegate to be updated if necessary."""
+        updated_periods: List[StateIncarcerationPeriod] = []
+
+        for idx, ip in enumerate(incarceration_periods):
+            if (
+                ip.specialized_purpose_for_incarceration
+                == StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY
+            ):
+                ip = self.pre_processing_delegate.handle_erroneously_set_temporary_custody_period(
+                    incarceration_period=ip,
+                    previous_incarceration_period=updated_periods[-1]
+                    if idx > 0
+                    else None,
+                )
+            updated_periods.append(ip)
+
+        return updated_periods

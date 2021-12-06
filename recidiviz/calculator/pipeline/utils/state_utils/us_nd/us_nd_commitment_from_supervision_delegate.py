@@ -17,7 +17,7 @@
 """Utils for state-specific logic related to identifying commitments from
 supervision in US_ND."""
 import datetime
-from typing import Dict, List, Optional, Set
+from typing import List, Optional, Set
 
 from dateutil.relativedelta import relativedelta
 
@@ -26,6 +26,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_specific_commitment_f
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_incarceration_period_pre_processing_delegate import (
     PAROLE_REVOCATION_PREPROCESSING_PREFIX,
+    PREVIOUS_SUPERVISION_TYPE_TO_INCARCERATION_ADMISSION_REASON_RAW_TEXT,
     PROBATION_REVOCATION_PREPROCESSING_PREFIX,
 )
 from recidiviz.common.constants.state.state_incarceration_period import (
@@ -43,26 +44,6 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionSentence,
     StateSupervisionViolationResponse,
 )
-
-# Maps commitment from supervision admission reasons to the corresponding supervision
-# type of the period that preceded the admission, as inferred from the admission reason raw text
-PREVIOUS_SUPERVISION_TYPE_TO_INCARCERATION_ADMISSION_REASON_RAW_TEXT: Dict[
-    str, StateSupervisionPeriodSupervisionType
-] = {
-    "PARL": StateSupervisionPeriodSupervisionType.PAROLE,
-    "PV": StateSupervisionPeriodSupervisionType.PAROLE,
-    # TODO(#9633): We are temporarily casting "INT" as parole revocations. There aren't that many of these (<20), and
-    # there's only 1 instance of this being a probation revocation.
-    "INT": StateSupervisionPeriodSupervisionType.PAROLE,
-    "NPRB": StateSupervisionPeriodSupervisionType.PROBATION,
-    "NPROB": StateSupervisionPeriodSupervisionType.PROBATION,
-    "RPRB": StateSupervisionPeriodSupervisionType.PROBATION,
-    "PRB": StateSupervisionPeriodSupervisionType.PROBATION,
-    # The following are prefixes set in pre-processing. The admission reason raw texts may be prefixed with one of the
-    # following.
-    PROBATION_REVOCATION_PREPROCESSING_PREFIX: StateSupervisionPeriodSupervisionType.PROBATION,
-    PAROLE_REVOCATION_PREPROCESSING_PREFIX: StateSupervisionPeriodSupervisionType.PAROLE,
-}
 
 
 class UsNdCommitmentFromSupervisionDelegate(
