@@ -238,7 +238,10 @@ class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
 
         # TODO(#10152): Delete elite_externalmovements once
         #  elite_externalmovements_incarceration_periods has shipped to prod
-        if self.ingest_instance == DirectIngestInstance.SECONDARY:
+        if (
+            environment.in_gcp_staging()
+            or self.ingest_instance == DirectIngestInstance.SECONDARY
+        ):
             tags.append("elite_externalmovements_incarceration_periods")
         else:
             tags.append("elite_externalmovements")

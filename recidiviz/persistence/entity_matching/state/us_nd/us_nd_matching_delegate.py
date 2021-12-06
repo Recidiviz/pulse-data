@@ -38,6 +38,7 @@ from recidiviz.persistence.entity_matching.state.us_nd.us_nd_matching_utils impo
     merge_incomplete_periods,
     update_temporary_holds,
 )
+from recidiviz.utils import environment
 
 
 class UsNdMatchingDelegate(BaseStateMatchingDelegate):
@@ -54,7 +55,8 @@ class UsNdMatchingDelegate(BaseStateMatchingDelegate):
     #  shipped to prod
     def _is_v2_incarceration_periods_shipped(self) -> bool:
         return (
-            self.ingest_metadata.database_key
+            environment.in_gcp_staging()
+            or self.ingest_metadata.database_key
             == DirectIngestInstance.SECONDARY.database_key_for_state(StateCode.US_ND)
         )
 
