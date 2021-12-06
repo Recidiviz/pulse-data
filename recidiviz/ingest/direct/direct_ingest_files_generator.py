@@ -22,12 +22,24 @@ from shutil import copytree, ignore_patterns, rmtree
 from typing import Dict
 
 import recidiviz
+from recidiviz.calculator.pipeline.utils import (
+    state_utils as state_specific_calculation_module,
+)
+from recidiviz.calculator.pipeline.utils.state_utils import (
+    templates as state_specific_calculation_templates_module,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import regions as regions_module
 from recidiviz.ingest.direct import templates as ingest_templates_module
 from recidiviz.persistence.entity_matching import state as state_module
 from recidiviz.persistence.entity_matching import (
     templates as persistence_templates_module,
+)
+from recidiviz.tests.calculator.pipeline.utils import (
+    state_utils as state_specific_calculation_tests_module,
+)
+from recidiviz.tests.calculator.pipeline.utils.state_utils import (
+    templates as state_specific_calculation_test_templates_module,
 )
 from recidiviz.tests.ingest.direct import (
     direct_ingest_fixtures as regions_test_fixtures_module,
@@ -46,8 +58,18 @@ REGIONS_DIR_PATH = os.path.dirname(
 PERSISTENCE_DIR_PATH = os.path.dirname(
     os.path.relpath(state_module.__file__, start=DEFAULT_WORKING_DIR)
 )
-TESTS_DIR_PATH = os.path.dirname(
+INGEST_TESTS_DIR_PATH = os.path.dirname(
     os.path.relpath(regions_test_module.__file__, start=DEFAULT_WORKING_DIR)
+)
+STATE_SPECIFIC_CALCULATION_DIR_PATH = os.path.dirname(
+    os.path.relpath(
+        state_specific_calculation_module.__file__, start=DEFAULT_WORKING_DIR
+    )
+)
+STATE_SPECIFIC_CALCULATION_TESTS_DIR_PATH = os.path.dirname(
+    os.path.relpath(
+        state_specific_calculation_tests_module.__file__, start=DEFAULT_WORKING_DIR
+    )
 )
 TEST_FIXTURES_DIR_PATH = os.path.dirname(
     os.path.relpath(regions_test_fixtures_module.__file__, start=DEFAULT_WORKING_DIR)
@@ -87,7 +109,15 @@ class DirectIngestFilesGenerator:
             self.curr_directory, PERSISTENCE_DIR_PATH, self.region_code
         )
         new_region_tests_dir_path = os.path.join(
-            self.curr_directory, TESTS_DIR_PATH, self.region_code
+            self.curr_directory, INGEST_TESTS_DIR_PATH, self.region_code
+        )
+        new_region_state_specific_calculation_dir_path = os.path.join(
+            self.curr_directory, STATE_SPECIFIC_CALCULATION_DIR_PATH, self.region_code
+        )
+        new_region_state_specific_calculation_tests_dir_path = os.path.join(
+            self.curr_directory,
+            STATE_SPECIFIC_CALCULATION_TESTS_DIR_PATH,
+            self.region_code,
         )
         new_region_test_fixtures_dir_path = os.path.join(
             self.curr_directory, TEST_FIXTURES_DIR_PATH, self.region_code
@@ -100,6 +130,8 @@ class DirectIngestFilesGenerator:
             new_region_dir_path,
             new_region_persistence_dir_path,
             new_region_tests_dir_path,
+            new_region_state_specific_calculation_dir_path,
+            new_region_state_specific_calculation_tests_dir_path,
             new_region_test_fixtures_dir_path,
             new_region_docs_dir_path,
         ]
@@ -116,6 +148,12 @@ class DirectIngestFilesGenerator:
                 persistence_templates_module.__file__
             ): new_region_persistence_dir_path,
             os.path.dirname(test_templates_module.__file__): new_region_tests_dir_path,
+            os.path.dirname(
+                state_specific_calculation_templates_module.__file__
+            ): new_region_state_specific_calculation_dir_path,
+            os.path.dirname(
+                state_specific_calculation_test_templates_module.__file__
+            ): new_region_state_specific_calculation_tests_dir_path,
             os.path.dirname(
                 test_fixtures_templates_module.__file__
             ): new_region_test_fixtures_dir_path,
@@ -170,6 +208,11 @@ class DirectIngestFilesGenerator:
                 line = re.sub(
                     r"from recidiviz\.ingest\.direct\.templates",
                     "from recidiviz.ingest.direct.regions",
+                    line,
+                )
+                line = re.sub(
+                    r"from recidiviz\.calculator\.pipeline\.utils\.state_utils\.templates",
+                    "from recidiviz.calculator.pipeline.utils.state_utils",
                     line,
                 )
                 line = re.sub(r"(, )?region_module_override=templates", "", line)
