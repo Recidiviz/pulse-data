@@ -38,7 +38,6 @@ from recidiviz.persistence.entity_matching.state.us_nd.us_nd_matching_utils impo
     merge_incomplete_periods,
     update_temporary_holds,
 )
-from recidiviz.utils import environment
 
 
 class UsNdMatchingDelegate(BaseStateMatchingDelegate):
@@ -55,9 +54,8 @@ class UsNdMatchingDelegate(BaseStateMatchingDelegate):
     #  shipped to prod
     def _is_v2_incarceration_periods_shipped(self) -> bool:
         return (
-            environment.in_gcp_production()
-            or self.ingest_metadata.database_key
-            == DirectIngestInstance.PRIMARY.database_key_for_state(StateCode.US_ND)
+            self.ingest_metadata.database_key
+            == DirectIngestInstance.SECONDARY.database_key_for_state(StateCode.US_ND)
         )
 
     # TODO(#10152): Delete once elite_externalmovements_incarceration_periods has
@@ -68,7 +66,7 @@ class UsNdMatchingDelegate(BaseStateMatchingDelegate):
             - Transform IncarcerationPeriods periods of temporary custody
               (holds), when appropriate.
         """
-        if self._is_v2_incarceration_periods_shipped():
+        if not self._is_v2_incarceration_periods_shipped():
             logging.info("[Entity matching] Transform incarceration periods into holds")
             update_temporary_holds(matched_persons)
 
@@ -79,7 +77,7 @@ class UsNdMatchingDelegate(BaseStateMatchingDelegate):
         |ingested_persons| directly before they are entity matched:
             - Merge incomplete IncarcerationPeriods when possible.
         """
-        if self._is_v2_incarceration_periods_shipped():
+        if not self._is_v2_incarceration_periods_shipped():
             logging.info(
                 "[Entity matching] Pre-processing: Merge incarceration periods"
             )
@@ -92,7 +90,7 @@ class UsNdMatchingDelegate(BaseStateMatchingDelegate):
         |db_entity_trees| that does not rely solely on matching by external_id.
         If such a match is found, it is returned.
         """
-        if self._is_v2_incarceration_periods_shipped():
+        if not self._is_v2_incarceration_periods_shipped():
             if isinstance(ingested_entity_tree.entity, schema.StateIncarcerationPeriod):
                 return entity_matching_utils.get_only_match(
                     ingested_entity_tree,
@@ -127,7 +125,7 @@ class UsNdMatchingDelegate(BaseStateMatchingDelegate):
         """Returns ND specific callable to handle merging of entities of type
         |cls|, if a specialized merge is necessary.
         """
-        if self._is_v2_incarceration_periods_shipped():
+        if not self._is_v2_incarceration_periods_shipped():
             if isinstance(from_entity, schema.StateIncarcerationPeriod):
                 if not isinstance(to_entity, schema.StateIncarcerationPeriod):
                     raise ValueError(f"Unexpected type for to_entity: {to_entity}")

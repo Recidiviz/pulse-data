@@ -159,6 +159,7 @@ def pipeline_module_name_and_arguments(arguments: List[str]) -> Tuple[str, List[
     run_arguments_to_validate, remaining_pipeline_args = parse_run_arguments(
         arguments[1:]
     )
+    print(run_arguments_to_validate)
 
     pipeline_module_name = run_arguments_to_validate.pipeline
 
