@@ -35,4 +35,8 @@ class UsTnController(BaseDirectIngestController):
         super().__init__(ingest_bucket_path)
 
     def get_file_tag_rank_list(self) -> List[str]:
-        return ["OffenderName", "OffenderMovementIncarcerationPeriod"]
+        return [
+            "OffenderName",
+            "OffenderMovementIncarcerationPeriod",
+            "AssignedStaffSupervisionPeriod",
+        ]
