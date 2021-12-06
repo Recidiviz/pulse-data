@@ -20,22 +20,31 @@ from typing import Type
 
 from recidiviz.common.constants.person_characteristics import Ethnicity, Gender, Race
 from recidiviz.common.constants.state.external_id_types import US_TN_DOC
+from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
     StateIncarcerationPeriodStatus,
+)
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionPeriodAdmissionReason,
+    StateSupervisionPeriodSupervisionType,
+    StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
 )
 from recidiviz.ingest.direct.regions.us_tn.us_tn_controller import UsTnController
 from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.entity.state import entities
 from recidiviz.tests.ingest.direct.regions.base_direct_ingest_controller_tests import (
     BaseDirectIngestControllerTests,
 )
 from recidiviz.tests.ingest.direct.regions.utils import (
     add_incarceration_period_to_person,
     add_sentence_group_to_person_and_build_incarceration_sentence,
+    add_sentence_group_to_person_and_build_supervision_sentence,
+    add_supervision_period_to_person,
     build_state_person_entity,
 )
 
@@ -205,6 +214,107 @@ class TestUsTnController(BaseDirectIngestControllerTests):
 
         # Act
         self._run_ingest_job_for_filename("OffenderMovementIncarcerationPeriod")
+
+        # Assert
+        self.assert_expected_db_people(expected_people)
+
+        ######################################
+        # AssignedStaffSupervisionPeriod
+        ######################################
+
+        shared_supervising_officer: entities.StateAgent = (
+            entities.StateAgent.new_with_defaults(
+                external_id="ABCDEF01",
+                agent_type=StateAgentType.SUPERVISION_OFFICER,
+                state_code=_STATE_CODE_UPPER,
+            )
+        )
+
+        supervision_sentence_2 = (
+            add_sentence_group_to_person_and_build_supervision_sentence(
+                _STATE_CODE_UPPER, person_2
+            )
+        )
+
+        add_supervision_period_to_person(
+            person=person_2,
+            state_code=_STATE_CODE_UPPER,
+            supervision_sentence=supervision_sentence_2,
+            external_id="00000002-1",
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type_raw_text="PRO",
+            start_date=datetime.date(year=2015, month=7, day=13),
+            termination_date=datetime.date(year=2015, month=11, day=9),
+            supervision_site="P39F",
+            supervising_officer=shared_supervising_officer,
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            admission_reason_raw_text="NEWCS",
+            termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
+            termination_reason_raw_text="RNO",
+        )
+
+        add_supervision_period_to_person(
+            person=person_2,
+            state_code=_STATE_CODE_UPPER,
+            supervision_sentence=supervision_sentence_2,
+            external_id="00000002-2",
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type_raw_text="PRO",
+            start_date=datetime.date(year=2015, month=11, day=9),
+            termination_date=datetime.date(year=2016, month=10, day=10),
+            supervision_site="SDR",
+            supervising_officer=shared_supervising_officer,
+            admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
+            admission_reason_raw_text="TRANS",
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            termination_reason_raw_text="DIS",
+        )
+
+        supervision_sentence_3 = (
+            add_sentence_group_to_person_and_build_supervision_sentence(
+                _STATE_CODE_UPPER, person_3
+            )
+        )
+
+        add_supervision_period_to_person(
+            person=person_3,
+            state_code=_STATE_CODE_UPPER,
+            supervision_sentence=supervision_sentence_3,
+            external_id="00000003-1",
+            supervision_type=StateSupervisionPeriodSupervisionType.COMMUNITY_CONFINEMENT,
+            supervision_type_raw_text="CCC",
+            start_date=datetime.date(year=2011, month=1, day=26),
+            termination_date=datetime.date(year=2011, month=2, day=8),
+            supervision_site="PDR",
+            supervising_officer=shared_supervising_officer,
+            admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
+            admission_reason_raw_text="MULRE",
+            termination_reason=StateSupervisionPeriodTerminationReason.EXPIRATION,
+            termination_reason_raw_text="EXP",
+        )
+
+        add_supervision_period_to_person(
+            person=person_3,
+            state_code=_STATE_CODE_UPPER,
+            supervision_sentence=supervision_sentence_3,
+            external_id="00000003-2",
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type_raw_text="PAO",
+            start_date=datetime.date(year=2017, month=7, day=22),
+            termination_date=None,
+            supervision_site="SDR",
+            supervising_officer=shared_supervising_officer,
+            admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
+            admission_reason_raw_text="TRPRB",
+            termination_reason=None,
+            termination_reason_raw_text=None,
+        )
+
+        # Only person 2 and 3 have supervision periods.
+        expected_people = [person_1, person_2, person_3, person_4]
+
+        # Act
+        self._run_ingest_job_for_filename("AssignedStaffSupervisionPeriod")
 
         # Assert
         self.assert_expected_db_people(expected_people)

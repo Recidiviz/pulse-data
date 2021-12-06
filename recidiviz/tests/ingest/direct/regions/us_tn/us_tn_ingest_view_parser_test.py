@@ -21,6 +21,7 @@ import unittest
 
 from recidiviz.cloud_storage.gcs_file_system import GcsfsFileContentsHandle
 from recidiviz.common.constants.person_characteristics import Ethnicity, Gender, Race
+from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
@@ -28,8 +29,14 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodStatus,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionPeriodAdmissionReason,
+    StateSupervisionPeriodSupervisionType,
+    StateSupervisionPeriodTerminationReason,
+)
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.entity.state.entities import (
+    StateAgent,
     StateIncarcerationPeriod,
     StateIncarcerationSentence,
     StatePerson,
@@ -37,6 +44,8 @@ from recidiviz.persistence.entity.state.entities import (
     StatePersonExternalId,
     StatePersonRace,
     StateSentenceGroup,
+    StateSupervisionPeriod,
+    StateSupervisionSentence,
 )
 from recidiviz.tests.ingest.direct.fixture_util import direct_ingest_fixture_path
 from recidiviz.tests.ingest.direct.regions.state_ingest_view_parser_test_base import (
@@ -398,3 +407,207 @@ class UsTnIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
         # is also present in the list of Release reasons. This is to confirm that we properly handle all potential
         # (valid or invalid) release reasons.
         self.assertTrue(set(admission_reasons) <= set(release_reasons))
+
+    def test_parse_AssignedStaffSupervisionPeriod(self) -> None:
+        expected_output = [
+            # Person 2 starts a new supervision period.
+            StatePerson(
+                state_code="US_TN",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_TN", external_id="00000002", id_type="US_TN_DOC"
+                    )
+                ],
+                sentence_groups=[
+                    StateSentenceGroup(
+                        state_code="US_TN",
+                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                        supervision_sentences=[
+                            StateSupervisionSentence(
+                                state_code="US_TN",
+                                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                                supervision_periods=[
+                                    StateSupervisionPeriod(
+                                        external_id="00000002-1",
+                                        state_code="US_TN",
+                                        start_date=datetime.date(2015, 7, 13),
+                                        termination_date=datetime.date(2015, 11, 9),
+                                        supervision_site="P39F",
+                                        supervising_officer=StateAgent(
+                                            external_id="ABCDEF01",
+                                            agent_type=StateAgentType.SUPERVISION_OFFICER,
+                                            state_code="US_TN",
+                                        ),
+                                        admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+                                        admission_reason_raw_text="NEWCS",
+                                        termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
+                                        termination_reason_raw_text="RNO",
+                                        supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+                                        supervision_type_raw_text="PRO",
+                                    )
+                                ],
+                            )
+                        ],
+                    )
+                ],
+            ),
+            # Person 2 moves from one facility to another, and then is discharged.
+            StatePerson(
+                state_code="US_TN",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_TN", external_id="00000002", id_type="US_TN_DOC"
+                    )
+                ],
+                sentence_groups=[
+                    StateSentenceGroup(
+                        state_code="US_TN",
+                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                        supervision_sentences=[
+                            StateSupervisionSentence(
+                                state_code="US_TN",
+                                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                                supervision_periods=[
+                                    StateSupervisionPeriod(
+                                        external_id="00000002-2",
+                                        state_code="US_TN",
+                                        start_date=datetime.date(2015, 11, 9),
+                                        termination_date=datetime.date(2016, 10, 10),
+                                        supervision_site="SDR",
+                                        supervising_officer=StateAgent(
+                                            external_id="ABCDEF01",
+                                            agent_type=StateAgentType.SUPERVISION_OFFICER,
+                                            state_code="US_TN",
+                                        ),
+                                        admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
+                                        admission_reason_raw_text="TRANS",
+                                        termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+                                        termination_reason_raw_text="DIS",
+                                        supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+                                        supervision_type_raw_text="PRO",
+                                    )
+                                ],
+                            )
+                        ],
+                    )
+                ],
+            ),
+            # Person 3 has one supervision period in community corrections.
+            StatePerson(
+                state_code="US_TN",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_TN", external_id="00000003", id_type="US_TN_DOC"
+                    )
+                ],
+                sentence_groups=[
+                    StateSentenceGroup(
+                        state_code="US_TN",
+                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                        supervision_sentences=[
+                            StateSupervisionSentence(
+                                state_code="US_TN",
+                                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                                supervision_periods=[
+                                    StateSupervisionPeriod(
+                                        external_id="00000003-1",
+                                        state_code="US_TN",
+                                        start_date=datetime.date(2011, 1, 26),
+                                        termination_date=datetime.date(2011, 2, 8),
+                                        supervision_site="PDR",
+                                        supervising_officer=StateAgent(
+                                            external_id="ABCDEF01",
+                                            agent_type=StateAgentType.SUPERVISION_OFFICER,
+                                            state_code="US_TN",
+                                        ),
+                                        admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
+                                        admission_reason_raw_text="MULRE",
+                                        termination_reason=StateSupervisionPeriodTerminationReason.EXPIRATION,
+                                        termination_reason_raw_text="EXP",
+                                        supervision_type=StateSupervisionPeriodSupervisionType.COMMUNITY_CONFINEMENT,
+                                        supervision_type_raw_text="CCC",
+                                    )
+                                ],
+                            )
+                        ],
+                    )
+                ],
+            ),
+            # Person 3 has one open supervision period in parole.
+            StatePerson(
+                state_code="US_TN",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_TN", external_id="00000003", id_type="US_TN_DOC"
+                    )
+                ],
+                sentence_groups=[
+                    StateSentenceGroup(
+                        state_code="US_TN",
+                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                        supervision_sentences=[
+                            StateSupervisionSentence(
+                                state_code="US_TN",
+                                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                                supervision_periods=[
+                                    StateSupervisionPeriod(
+                                        external_id="00000003-2",
+                                        state_code="US_TN",
+                                        start_date=datetime.date(2017, 7, 22),
+                                        termination_date=None,
+                                        supervision_site="SDR",
+                                        supervising_officer=StateAgent(
+                                            external_id="ABCDEF01",
+                                            agent_type=StateAgentType.SUPERVISION_OFFICER,
+                                            state_code="US_TN",
+                                        ),
+                                        admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
+                                        admission_reason_raw_text="TRPRB",
+                                        termination_reason=None,
+                                        termination_reason_raw_text=None,
+                                        supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+                                        supervision_type_raw_text="PAO",
+                                    )
+                                ],
+                            )
+                        ],
+                    )
+                ],
+            ),
+        ]
+
+        self._run_parse_ingest_view_test(
+            "AssignedStaffSupervisionPeriod", expected_output
+        )
+
+    def test_parse_AssignedStaffSupervisionPeriod_AdmissionReasons(self) -> None:
+        manifest_ast = self._parse_manifest("AssignedStaffSupervisionPeriod")
+        enum_parser_manifest = (
+            # Drill down to get admission reasons.
+            manifest_ast.field_manifests["sentence_groups"]
+            .child_manifests[0]  # type: ignore[attr-defined]
+            .field_manifests["supervision_sentences"]
+            .child_manifests[0]  # type: ignore[attr-defined]
+            .field_manifests["supervision_periods"]
+            .child_manifests[0]  # type: ignore[attr-defined]
+            .field_manifests["admission_reason"]
+        )
+        self._parse_enum_manifest_test(
+            "AssignedStaffSupervisionPeriod_AdmissionReasons", enum_parser_manifest
+        )
+
+    def test_parse_AssignedStaffSupervisionPeriod_TerminationReasons(self) -> None:
+        manifest_ast = self._parse_manifest("AssignedStaffSupervisionPeriod")
+        enum_parser_manifest = (
+            # Drill down to get termination reasons.
+            manifest_ast.field_manifests["sentence_groups"]
+            .child_manifests[0]  # type: ignore[attr-defined]
+            .field_manifests["supervision_sentences"]
+            .child_manifests[0]  # type: ignore[attr-defined]
+            .field_manifests["supervision_periods"]
+            .child_manifests[0]  # type: ignore[attr-defined]
+            .field_manifests["termination_reason"]
+        )
+        self._parse_enum_manifest_test(
+            "AssignedStaffSupervisionPeriod_TerminationReasons", enum_parser_manifest
+        )
