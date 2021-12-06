@@ -52,6 +52,8 @@ OVERDUE_DISCHARGE_ALERT_DATASET: str = "overdue_discharge_alert"
 # Where the views for the PO Monthly report live
 PO_REPORT_DATASET: str = "po_report_views"
 
+LINESTAFF_DATA_VALIDATION: str = "linestaff_data_validation"
+
 # Where the views for the public dashboard live
 PUBLIC_DASHBOARD_VIEWS_DATASET: str = "public_dashboard_views"
 

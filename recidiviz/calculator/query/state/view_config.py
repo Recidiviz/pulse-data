@@ -52,6 +52,9 @@ from recidiviz.calculator.query.state.views.sessions.sessions_views import (
 from recidiviz.calculator.query.state.views.vitals_report.vitals_report_views import (
     VITALS_REPORT_VIEW_BUILDERS,
 )
+from recidiviz.calculator.query.state.views.line_staff_validation.line_staff_validation_views import (
+    LINE_STAFF_VALIDATION_VIEW_BUILDERS,
+)
 
 VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = list(
     itertools.chain.from_iterable(
@@ -60,6 +63,7 @@ VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = list(
             COVID_DASHBOARD_VIEW_BUILDERS,
             DASHBOARD_VIEW_BUILDERS,
             DATAFLOW_METRICS_MATERIALIZED_VIEW_BUILDERS,
+            LINE_STAFF_VALIDATION_VIEW_BUILDERS,
             OVERDUE_DISCHARGE_ALERT_VIEW_BUILDERS,
             PO_REPORT_VIEW_BUILDERS,
             POPULATION_PROJECTION_VIEW_BUILDERS,
