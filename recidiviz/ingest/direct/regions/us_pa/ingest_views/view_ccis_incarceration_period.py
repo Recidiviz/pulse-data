@@ -27,7 +27,8 @@ from recidiviz.utils.metadata import local_project_id_override
 # statuses first when both 'ADM' and 'REL' appear for the same movement_sequence number (e.g. when it's a transfer).
 # We order by movement_date first since movement_sequences does not guarantee correct date sequence, and has lead to
 # release dates prior to the admission dates in some periods.
-PARTITION_CLAUSE = "OVER (PARTITION BY inmate_number ORDER BY movement_date, movement_sequence, movement_type DESC)"
+MOVEMENT_PARTITION_CLAUSE = "OVER (PARTITION BY inmate_number ORDER BY movement_date, movement_sequence, movement_type DESC)"
+PERIOD_PARTITION_CLAUSE = "OVER (PARTITION BY inmate_number ORDER BY start_date, movement_sequence, movement_type DESC)"
 
 VIEW_QUERY_TEMPLATE = f"""
 WITH inmate_number_with_control_numbers AS (
@@ -172,7 +173,7 @@ WITH inmate_number_with_control_numbers AS (
   FROM
    (SELECT
       *,
-      LAG(movement_type) {PARTITION_CLAUSE} AS preceding_movement_type
+      LAG(movement_type) {MOVEMENT_PARTITION_CLAUSE} AS preceding_movement_type
     FROM 
         all_movements
    )
@@ -211,8 +212,8 @@ WITH inmate_number_with_control_numbers AS (
     location,
     program_id,
     movement_type,
-    LEAD(movement_status_code) {PARTITION_CLAUSE} AS end_status_code,
-    LEAD(movement_date) {PARTITION_CLAUSE} as end_date,
+    LEAD(movement_status_code) {MOVEMENT_PARTITION_CLAUSE} AS end_status_code,
+    LEAD(movement_date) {MOVEMENT_PARTITION_CLAUSE} as end_date,
   FROM
     all_movements_without_invalid_edges
   LEFT JOIN
@@ -222,10 +223,10 @@ WITH inmate_number_with_control_numbers AS (
   SELECT
     * EXCEPT(movement_type, movement_sequence),
     -- We need to know the previous program_id to determine if a new admission to an ACT 122 program occurred
-    LAG(program_id) {PARTITION_CLAUSE} AS previous_program_id,
+    LAG(program_id) {PERIOD_PARTITION_CLAUSE} AS previous_program_id,
     -- We need to know the previous end_date to determine if a transfer occurred, since they don't reliably use
     -- transfer admission codes to indicate transfers between CCIS facilities
-    LAG(end_date) {PARTITION_CLAUSE} AS previous_end_date
+    LAG(end_date) {PERIOD_PARTITION_CLAUSE} AS previous_end_date
   FROM full_periods
   WHERE movement_type = 'ADM'
 ), periods AS (
