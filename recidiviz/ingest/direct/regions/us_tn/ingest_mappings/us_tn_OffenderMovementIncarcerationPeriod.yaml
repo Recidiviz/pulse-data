@@ -7,6 +7,7 @@ input_columns:
   - StartDateTime
   - EndDateTime
   - Site
+  - SiteType
   - StartMovementType
   - StartMovementReason
   - EndMovementType
@@ -36,6 +37,28 @@ output:
                       admission_date: StartDateTime
                       release_date: EndDateTime
                       facility: Site
+                      custodial_authority:
+                        $enum_mapping:
+                          $raw_text: SiteType
+                          $mappings:
+                            StateCustodialAuthority.COURT:
+                              - JA  # Jail
+                            StateCustodialAuthority.STATE_PRISON:
+                              - IN  # Institution
+                            StateCustodialAuthority.SUPERVISION_AUTHORITY:
+                              - PA  # Parole Office
+                              - PR  # Probation Office
+                              - PX  # Parole and Probation Office
+                            StateCustodialAuthority.INTERNAL_UNKNOWN:
+                               # TODO(#10291): Map null to INTERNAL_UNKNOWN once we
+                               #  have support for mapping null values
+                              - BC  # Bootcamp (No longer in use)
+                              # TODO(#9421): Update mapping when we have support for
+                              #  community corrections
+                              - CC  # Usually, but not always, describes a community corrections facility.
+                              - CV  # Conversion (Deprecated after 1992)
+                              - IJ  # Institutional Juvenile
+                              - TC  # TN DOC Central Office
                       admission_reason:
                         $enum_mapping:
                           $raw_text:

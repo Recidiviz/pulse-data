@@ -162,17 +162,22 @@ WITH all_incarceration_periods AS (
             COALESCE(NextMovementDateTime, DeathDate)
         ) AS EndDateTime,
         StartToLocationID as Site,
+        site_info.SiteType,
         StartMovementType,
         StartMovementReason,
         NextMovementType as EndMovementType,
         NextMovementReason as EndMovementReason,
     FROM filter_out_erroneous_rows
+    LEFT JOIN 
+        {Site} site_info
+    ON StartToLocationID = SiteID
 )
 SELECT 
     OffenderID,
     StartDateTime,
     EndDateTime,
     Site,
+    SiteType,
     StartMovementType,
     StartMovementReason,
     EndMovementType,
