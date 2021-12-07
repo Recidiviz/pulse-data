@@ -23,8 +23,10 @@ num_allowed_rows_overrides:
     hard_num_allowed_rows_override: 300
     override_reason: In MO we rely on a table where they build incarceration period spans for us; some older rows have issues with overlap.
   - validation_name: overlapping_supervision_periods
-    hard_num_allowed_rows_override: 900
-    override_reason: Older raw data from MO contains overlapping period information that we do not correct.
+    hard_num_allowed_rows_override: 1800
+    override_reason: Older raw data from MO contains overlapping period information that we do not correct. TODO(#9848) - In addition,
+      we do a lot of preprocessing for supervision periods that is not yet persisted, which corrects almost all supervision periods
+      that do follow standard formats.
   - validation_name: supervision_termination_prior_to_start
     hard_num_allowed_rows_override: 5
     override_reason: TODO(#5073) - Edge case related to ids shifting because we're filtering out investigative periods
