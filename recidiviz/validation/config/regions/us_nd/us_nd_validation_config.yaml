@@ -32,14 +32,20 @@ max_allowed_error_overrides:
 num_allowed_rows_overrides:
   - validation_name: overlapping_incarceration_periods
     hard_num_allowed_rows_override: 550
-    override_reason: TODO(#3641) - These bad periods likely were created due to weirdnesses with how we merge periods
-      in entity matching in ND.
+    override_reason: TODO(#5803) - Needs investigation. Likely related to shifting IP
+      external ids / not handling object deletion properly.
   - validation_name: incarceration_admission_after_open_period
     hard_num_allowed_rows_override: 250
     override_reason: TODO(#5803) - Needs investigation.
-  - validation_name: incarceration_release_prior_to_admission
+  - validation_name: invalid_admission_reason_and_pfi
     hard_num_allowed_rows_override: 10
-    override_reason: TODO(#5803) - Needs investigation.
+    override_reason: TODO(#3723) - As of 12/07/2021 there are 4 REVOCATION admission to
+      OOS (out of state) which maps to INTERNAL_UNKNOWN PFI. This should be fixed when
+      we have a comprehensive fix for handling OOS in ND.
+  - validation_name: incarceration_release_prior_to_admission
+    hard_num_allowed_rows_override: 20
+    override_reason: TODO(#5803) - Needs investigation. Likely related to shifting IP
+      external ids / not handling object deletion properly.
   - validation_name: incarceration_admission_nulls
     hard_num_allowed_rows_override: 1500
     override_reason: TODO(#5803) - Needs investigation.
@@ -49,6 +55,3 @@ num_allowed_rows_overrides:
   - validation_name: supervision_termination_prior_to_start
     hard_num_allowed_rows_override: 300
     override_reason: TODO(#5803) - Needs investigation.
-  - validation_name: invalid_admission_reasons_for_temporary_custody
-    hard_num_allowed_rows_override: 100
-    override_reason: Needs investigation.

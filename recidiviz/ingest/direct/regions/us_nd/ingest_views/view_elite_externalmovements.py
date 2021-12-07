@@ -22,7 +22,7 @@ from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-# TODO(#3641): Update this query to generate full incarceration period spans.
+# TODO(#10152): Delete this file once v2 IPs ship to prod.
 VIEW_QUERY_TEMPLATE = """
 SELECT *
 FROM {elite_externalmovements}
