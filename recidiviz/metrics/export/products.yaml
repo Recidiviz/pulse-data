@@ -73,6 +73,8 @@ products:
         environment: production
       - state_code: US_PA
         environment: staging
+      - state_code: US_MO
+        environment: staging
   - name: Public Dashboard
     description: The Public Dashboard (Spotlight) is a public data portal designed to make criminal justice data more accessible to public stakeholders. It accomplishes this through a series of interactive data visualizations on key metrics (such as populations or admission reasons) and holistic, data-driven narratives on what's happening in the system as a whole.
     exports:

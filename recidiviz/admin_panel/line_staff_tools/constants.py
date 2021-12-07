@@ -18,6 +18,6 @@
 from recidiviz.case_triage.util import CASE_TRIAGE_STATES
 from recidiviz.common.constants.states import StateCode
 
-EMAIL_STATE_CODES = [StateCode.US_ID, StateCode.US_PA]
+EMAIL_STATE_CODES = [StateCode.US_ID, StateCode.US_PA, StateCode.US_MO]
 CASE_TRIAGE_STATE_CODES = [StateCode(code) for code in CASE_TRIAGE_STATES]
 ROSTER_STATE_CODES = {*CASE_TRIAGE_STATE_CODES, *EMAIL_STATE_CODES}
