@@ -129,7 +129,7 @@ VALIDATION_RESULTS_BIGQUERY_ADDRESS = BigQueryAddress(
 )
 
 
-def store_validation_results(
+def store_validation_results_in_big_query(
     validation_results: List[ValidationResultForStorage],
 ) -> None:
     if not environment.in_gcp():
