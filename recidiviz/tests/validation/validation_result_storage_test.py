@@ -38,7 +38,7 @@ from recidiviz.validation.validation_models import (
 )
 from recidiviz.validation.validation_result_storage import (
     ValidationResultForStorage,
-    store_validation_results,
+    store_validation_results_in_big_query,
 )
 
 
@@ -359,7 +359,7 @@ class TestValidationResultStorage(unittest.TestCase):
         mock_bigquery_client.get_table.return_value = "table_object"
 
         # Act
-        store_validation_results(
+        store_validation_results_in_big_query(
             [
                 ValidationResultForStorage(
                     run_id="abc123",
@@ -395,7 +395,7 @@ class TestValidationResultStorage(unittest.TestCase):
         mock_bigquery_client.get_table.return_value = "table_object"
 
         # Act
-        store_validation_results(
+        store_validation_results_in_big_query(
             [
                 ValidationResultForStorage(
                     run_id="abc123",
