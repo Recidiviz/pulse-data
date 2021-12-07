@@ -26,8 +26,8 @@ output:
             - StateIncarcerationSentence:
                 incarceration_periods:
                   # TODO(#2912): include facility type once pulled in from `Site` table.
-                  # NOTE: We hydrate `specialized_purpose_for_incarceration` in calculation incarceration period
-                  # preprocessing because the inference requires looking at other incarceration periods.
+                  # NOTE: We hydrate `specialized_purpose_for_incarceration` in
+                  # incarceration period preprocessing.
                   - StateIncarcerationPeriod:
                       external_id:
                         $concat:
