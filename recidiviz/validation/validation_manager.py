@@ -43,7 +43,7 @@ from recidiviz.validation.validation_models import (
 )
 from recidiviz.validation.validation_result_storage import (
     ValidationResultForStorage,
-    store_validation_results,
+    store_validation_results_in_big_query,
 )
 from recidiviz.view_registry.dataset_overrides import (
     dataset_overrides_for_view_builders,
@@ -196,8 +196,30 @@ def execute_validation(
                 )
                 failed_to_run_validations.append(job)
 
-    store_validation_results(results_to_store)
+    store_validation_results_in_big_query(results_to_store)
+    if failed_to_run_validations or failed_hard_validations:
+        # Emit metrics for all hard and total failures
+        _emit_opencensus_failure_events(
+            failed_to_run_validations,
+            failed_hard_validations,
+        )
+    # Log results to console
+    _log_results(
+        failed_to_run_validations=failed_to_run_validations,
+        failed_soft_validations=failed_soft_validations,
+        failed_hard_validations=failed_hard_validations,
+    )
+    logging.info(
+        "Validation run complete. Analyzed a total of %s jobs.", len(validation_jobs)
+    )
 
+
+def _log_results(
+    *,
+    failed_to_run_validations: List[DataValidationJob],
+    failed_soft_validations: List[DataValidationJobResult],
+    failed_hard_validations: List[DataValidationJobResult],
+) -> None:
     if failed_hard_validations or failed_soft_validations or failed_to_run_validations:
         logging.error(
             "Found a total of [%s] failure(s). There were [%s] soft failure(s), [%s] hard failure(s), "
@@ -209,15 +231,14 @@ def execute_validation(
             len(failed_hard_validations),
             len(failed_to_run_validations),
         )
-        # Emit metrics for all hard and total failures
-        if failed_hard_validations or failed_to_run_validations:
-            _emit_failures(failed_to_run_validations, failed_hard_validations)
+        for validation_job in failed_to_run_validations:
+            logging.error("Failed to run data validation job: %s", validation_job)
+        for result in failed_hard_validations:
+            logging.error("Failed data validation HARD threshold: %s", result)
+        for result in failed_soft_validations:
+            logging.error("Failed data validation SOFT threshold: %s", result)
     else:
         logging.info("Found no failed validations...")
-
-    logging.info(
-        "Validation run complete. Analyzed a total of %s jobs.", len(validation_jobs)
-    )
 
 
 def _run_job(job: DataValidationJob) -> DataValidationJobResult:
@@ -263,9 +284,9 @@ def _fetch_validation_jobs_to_perform(
     return validation_jobs
 
 
-def _emit_failures(
+def _emit_opencensus_failure_events(
     failed_to_run_validations: List[DataValidationJob],
-    failed_validations: List[DataValidationJobResult],
+    failed_hard_validations: List[DataValidationJobResult],
 ) -> None:
     def tags_for_job(job: DataValidationJob) -> Dict[str, Any]:
         return {
@@ -275,15 +296,11 @@ def _emit_failures(
         }
 
     for validation_job in failed_to_run_validations:
-        logging.error("Failed to run data validation job: %s", validation_job)
-
         monitoring_tags = tags_for_job(validation_job)
         with monitoring.measurements(monitoring_tags) as measurements:
             measurements.measure_int_put(m_failed_to_run_validations, 1)
 
-    for result in failed_validations:
-        logging.error("Failed data validation: %s", result)
-
+    for result in failed_hard_validations:
         monitoring_tags = tags_for_job(result.validation_job)
         with monitoring.measurements(monitoring_tags) as measurements:
             measurements.measure_int_put(m_failed_validations, 1)
