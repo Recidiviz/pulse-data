@@ -129,6 +129,27 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_violation_respo
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_violations_delegate import (
     UsPaViolationDelegate,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.us_tn.us_tn_commitment_from_supervision_utils import (
+    UsTnCommitmentFromSupervisionDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_tn.us_tn_incarceration_delegate import (
+    UsTnIncarcerationDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_tn.us_tn_incarceration_period_pre_processing_delegate import (
+    UsTnIncarcerationPreProcessingDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_tn.us_tn_supervision_delegate import (
+    UsTnSupervisionDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_tn.us_tn_supervision_period_pre_processing_delegate import (
+    UsTnSupervisionPreProcessingDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_tn.us_tn_violation_response_preprocessing_delegate import (
+    UsTnViolationResponsePreprocessingDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_tn.us_tn_violations_delegate import (
+    UsTnViolationDelegate,
+)
 from recidiviz.calculator.pipeline.utils.supervision_case_compliance_manager import (
     StateSupervisionCaseComplianceManager,
 )
@@ -222,6 +243,8 @@ def get_state_specific_incarceration_period_pre_processing_delegate(
         return UsNdIncarcerationPreProcessingDelegate()
     if state_code == StateCode.US_PA.value:
         return UsPaIncarcerationPreProcessingDelegate()
+    if state_code == StateCode.US_TN.value:
+        return UsTnIncarcerationPreProcessingDelegate()
 
     raise ValueError(f"Unexpected state code [{state_code}]")
 
@@ -239,6 +262,8 @@ def get_state_specific_supervision_period_pre_processing_delegate(
         return UsNdSupervisionPreProcessingDelegate()
     if state_code == StateCode.US_PA.value:
         return UsPaSupervisionPreProcessingDelegate()
+    if state_code == StateCode.US_TN.value:
+        return UsTnSupervisionPreProcessingDelegate()
 
     raise ValueError(f"Unexpected state code [{state_code}]")
 
@@ -256,6 +281,8 @@ def get_state_specific_commitment_from_supervision_delegate(
         return UsNdCommitmentFromSupervisionDelegate()
     if state_code == StateCode.US_PA.value:
         return UsPaCommitmentFromSupervisionDelegate()
+    if state_code == StateCode.US_TN.value:
+        return UsTnCommitmentFromSupervisionDelegate()
 
     raise ValueError(f"Unexpected state code [{state_code}]")
 
@@ -273,6 +300,8 @@ def get_state_specific_violation_delegate(
         return UsNdViolationDelegate()
     if state_code == StateCode.US_PA.value:
         return UsPaViolationDelegate()
+    if state_code == StateCode.US_TN.value:
+        return UsTnViolationDelegate()
 
     raise ValueError(f"Unexpected state code [{state_code}]")
 
@@ -290,6 +319,8 @@ def get_state_specific_violation_response_preprocessing_delegate(
         return UsNdViolationResponsePreprocessingDelegate()
     if state_code == StateCode.US_PA.value:
         return UsPaViolationResponsePreprocessingDelegate()
+    if state_code == StateCode.US_TN.value:
+        return UsTnViolationResponsePreprocessingDelegate()
 
     raise ValueError(f"Unexpected state code [{state_code}]")
 
@@ -307,6 +338,8 @@ def get_state_specific_incarceration_delegate(
         return UsNdIncarcerationDelegate()
     if state_code == StateCode.US_PA.value:
         return UsPaIncarcerationDelegate()
+    if state_code == StateCode.US_TN.value:
+        return UsTnIncarcerationDelegate()
 
     raise ValueError(f"Unexpected state code [{state_code}]")
 
@@ -324,5 +357,7 @@ def get_state_specific_supervision_delegate(
         return UsNdSupervisionDelegate()
     if state_code == StateCode.US_PA.value:
         return UsPaSupervisionDelegate()
+    if state_code == StateCode.US_TN.value:
+        return UsTnSupervisionDelegate()
 
     raise ValueError(f"Unexpected state code [{state_code}]")
