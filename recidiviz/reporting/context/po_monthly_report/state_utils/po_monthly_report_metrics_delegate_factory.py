@@ -23,6 +23,9 @@ from recidiviz.reporting.context.po_monthly_report.state_utils.po_monthly_report
 from recidiviz.reporting.context.po_monthly_report.state_utils.us_id.us_id_metrics_delegate import (
     UsIdMetricsDelegate,
 )
+from recidiviz.reporting.context.po_monthly_report.state_utils.us_mo.us_mo_metrics_delegate import (
+    UsMoMetricsDelegate,
+)
 from recidiviz.reporting.context.po_monthly_report.state_utils.us_pa.us_pa_metrics_delegate import (
     UsPaMetricsDelegate,
 )
@@ -35,4 +38,6 @@ class PoMonthlyReportMetricsDelegateFactory:
             return UsIdMetricsDelegate()
         if state_code == StateCode.US_PA:
             return UsPaMetricsDelegate()
+        if state_code == StateCode.US_MO:
+            return UsMoMetricsDelegate()
         raise ValueError(f"Unexpected state_code provided: {state_code}")
