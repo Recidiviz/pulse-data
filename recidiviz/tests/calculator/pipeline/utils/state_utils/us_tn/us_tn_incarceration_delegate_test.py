@@ -16,11 +16,19 @@
 #  =============================================================================
 """Tests us_tn_incarceration_delegate.py."""
 import unittest
+from datetime import date
 
 from recidiviz.calculator.pipeline.utils.state_utils.us_tn.us_tn_incarceration_delegate import (
     UsTnIncarcerationDelegate,
 )
+from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateIncarcerationPeriodAdmissionReason,
+    StateIncarcerationPeriodReleaseReason,
+    StateIncarcerationPeriodStatus,
+)
 from recidiviz.common.constants.states import StateCode
+from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 
 _STATE_CODE = StateCode.US_TN.value
 
@@ -31,4 +39,66 @@ class TestUsTnIncarcerationDelegate(unittest.TestCase):
     def setUp(self) -> None:
         self.delegate = UsTnIncarcerationDelegate()
 
-    # ~~ Add new tests here ~~
+    def test_is_period_included_in_state_population_state_prison_custodial_authority(
+        self,
+    ) -> None:
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1112,
+            external_id="2",
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+            state_code=_STATE_CODE,
+            admission_date=date(2008, 12, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            release_date=date(2010, 12, 21),
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+        )
+
+        self.assertTrue(
+            self.delegate.is_period_included_in_state_population(incarceration_period)
+        )
+
+    def test_is_period_included_in_state_population_not_state_prison_custodial_authority(
+        self,
+    ) -> None:
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1112,
+            external_id="2",
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code=_STATE_CODE,
+            admission_date=date(2008, 12, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            release_date=date(2010, 12, 21),
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+        )
+
+        for custodial_authority in StateCustodialAuthority:
+            if custodial_authority == StateCustodialAuthority.STATE_PRISON:
+                continue
+
+            incarceration_period.custodial_authority = custodial_authority
+
+            self.assertFalse(
+                self.delegate.is_period_included_in_state_population(
+                    incarceration_period
+                )
+            )
+
+    def test_is_period_included_in_state_population_null_custodial_authority(
+        self,
+    ) -> None:
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1112,
+            external_id="2",
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            custodial_authority=None,
+            state_code=_STATE_CODE,
+            admission_date=date(2008, 12, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            release_date=date(2010, 12, 21),
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+        )
+
+        self.assertFalse(
+            self.delegate.is_period_included_in_state_population(incarceration_period)
+        )

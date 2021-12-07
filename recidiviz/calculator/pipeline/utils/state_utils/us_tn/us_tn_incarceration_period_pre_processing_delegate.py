@@ -15,12 +15,27 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains US_TN implementation of the StateSpecificIncarcerationPreProcessingDelegate."""
+from typing import List
+
 from recidiviz.calculator.pipeline.utils.incarceration_period_pre_processing_manager import (
     StateSpecificIncarcerationPreProcessingDelegate,
 )
+from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 
 
 class UsTnIncarcerationPreProcessingDelegate(
     StateSpecificIncarcerationPreProcessingDelegate
 ):
     """US_TN implementation of the StateSpecificIncarcerationPreProcessingDelegate."""
+
+    def period_is_parole_board_hold(
+        self,
+        incarceration_period_list_index: int,
+        sorted_incarceration_periods: List[StateIncarcerationPeriod],
+    ) -> bool:
+        """There are no parole board hold incarceration periods in US_TN."""
+        # TODO(#10294): It's unclear whether there are IPs in TN that represent time
+        #  spent in a parole board hold. We need to get more information from US_TN,
+        #  and then update this logic accordingly to classify the parole board periods
+        #  if they do exist.
+        return False

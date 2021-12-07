@@ -52,6 +52,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.state.entities import (
     StatePerson,
     StatePersonEthnicity,
@@ -837,12 +838,12 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
         ".PRIMARY_PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE",
         {
             "incarceration": {
-                "US_XX": "US_XX_DOC",
-                "US_YY": "US_YY_DOC",
+                StateCode.US_XX: "US_XX_DOC",
+                StateCode.US_WW: "US_WW_DOC",
             },
             "other_pipeline": {
-                "US_XX": "US_XX_SID",
-                "US_YY": "US_YY_SID",
+                StateCode.US_XX: "US_XX_SID",
+                StateCode.US_WW: "US_WW_SID",
             },
         },
     )
@@ -851,12 +852,12 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
         ".SECONDARY_PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE",
         {
             "incarceration": {
-                "US_XX": "US_XX_SID",
-                "US_YY": "US_YY_SID",
+                StateCode.US_XX: "US_XX_SID",
+                StateCode.US_WW: "US_WW_SID",
             },
             "other_pipeline": {
-                "US_XX": "US_XX_DOC",
-                "US_YY": "US_YY_DOC",
+                StateCode.US_XX: "US_XX_DOC",
+                StateCode.US_WW: "US_WW_DOC",
             },
         },
     )

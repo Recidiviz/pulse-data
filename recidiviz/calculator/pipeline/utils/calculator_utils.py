@@ -38,7 +38,9 @@ from recidiviz.common.constants.state.external_id_types import (
     US_ND_SID,
     US_PA_CONTROL,
     US_PA_PBPP,
+    US_TN_DOC,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.common.date import (
     first_day_of_month,
     last_day_of_month,
@@ -48,27 +50,32 @@ from recidiviz.persistence.entity.state.entities import StatePerson
 
 PRIMARY_PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE = {
     "incarceration": {
-        "US_ID": US_ID_DOC,
-        "US_MO": US_MO_DOC,
-        "US_ND": US_ND_ELITE,
-        "US_PA": US_PA_CONTROL,
+        StateCode.US_ID: US_ID_DOC,
+        StateCode.US_MO: US_MO_DOC,
+        StateCode.US_ND: US_ND_ELITE,
+        StateCode.US_PA: US_PA_CONTROL,
+        StateCode.US_TN: US_TN_DOC,
     },
-    "recidivism": {"US_ND": US_ND_ELITE},
+    "recidivism": {StateCode.US_ND: US_ND_ELITE},
     "supervision": {
-        "US_ID": US_ID_DOC,
-        "US_MO": US_MO_DOC,
-        "US_ND": US_ND_SID,
-        "US_PA": US_PA_PBPP,
+        StateCode.US_ID: US_ID_DOC,
+        StateCode.US_MO: US_MO_DOC,
+        StateCode.US_ND: US_ND_SID,
+        StateCode.US_PA: US_PA_PBPP,
+        StateCode.US_TN: US_TN_DOC,
     },
 }
 
-# For certain metrics we may record multiple kinds of external IDs for a person
+# For certain metrics we may record multiple kinds of external IDs for a person. If
+# there's only one ID type for a state, this will be the same as what is in the
+# PRIMARY map for the corresponding pipeline.
 SECONDARY_PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE = {
     "incarceration": {
-        "US_ID": US_ID_DOC,
-        "US_MO": US_MO_DOC,
-        "US_ND": US_ND_SID,
-        "US_PA": US_PA_PBPP,
+        StateCode.US_ID: US_ID_DOC,
+        StateCode.US_MO: US_MO_DOC,
+        StateCode.US_ND: US_ND_SID,
+        StateCode.US_PA: US_PA_PBPP,
+        StateCode.US_TN: US_TN_DOC,
     }
 }
 
@@ -156,13 +163,15 @@ def person_external_id_to_include(
         else PRIMARY_PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE.get(pipeline)
     )
 
+    state_code_enum = StateCode(state_code)
+
     if (
         not id_types_to_include_for_pipeline
-        or state_code not in id_types_to_include_for_pipeline
+        or state_code_enum not in id_types_to_include_for_pipeline
     ):
         return None
 
-    id_type_to_include = id_types_to_include_for_pipeline.get(state_code)
+    id_type_to_include = id_types_to_include_for_pipeline.get(state_code_enum)
 
     if not id_type_to_include:
         return None
