@@ -54,6 +54,7 @@ class OffenderMovementIncarcerationPeriodTest(BaseViewTest):
             "startdatetime",
             "enddatetime",
             "site",
+            "sitetype",
             "startmovementtype",
             "startmovementreason",
             "endmovementtype",
@@ -66,6 +67,7 @@ class OffenderMovementIncarcerationPeriodTest(BaseViewTest):
         offender_name: List[Tuple[Any, ...]],
         offender_attribute: List[Tuple[Any, ...]],
         offender_movement: List[Tuple[Any, ...]],
+        site: List[Tuple[Any, ...]],
         expected_output: List[List[Any]],
     ) -> None:
         """Runs a test that executes the OffenderMovementIncarcerationPeriod query given the provided
@@ -91,6 +93,12 @@ class OffenderMovementIncarcerationPeriodTest(BaseViewTest):
             region_code=STATE_CODE,
             file_config=raw_file_configs["OffenderMovement"],
             mock_data=offender_movement,
+        )
+
+        self.create_mock_raw_file(
+            region_code=STATE_CODE,
+            file_config=raw_file_configs["Site"],
+            mock_data=site,
         )
 
         # Act
@@ -196,12 +204,63 @@ class OffenderMovementIncarcerationPeriodTest(BaseViewTest):
                     "2020-05-15 09:20:05.212820",  # LastUpdateDate
                 ),
             ],
+            site=[
+                (
+                    "088",  # SiteID
+                    "VAN BUREN COUNTY JAIL",  # SiteName
+                    "JA",  # SiteType
+                    "A",  # Status,
+                    None,  # StatusDate
+                    None,  # AddressLine1
+                    None,  # AddressLine2
+                    None,  # AddressCity
+                    None,  # AddressState
+                    None,  # AddressZip
+                    None,  # PhoneNumber
+                    None,  # SecurityLevel
+                    "V",  # Region
+                    None,  # Division
+                    None,  # District
+                    "TDOC",  # Agency
+                    None,  # NCICAgencyID
+                    None,  # InChargeStaffID
+                    "B",  # SexTypesAllowed
+                    None,  # ContactPerson
+                    None,  # LastUpdateUserID
+                    None,  # LastUpdateDate
+                ),
+                (
+                    "024",  # SiteID
+                    "FAYETTE COUNTY JAIL",  # SiteName
+                    "JA",  # SiteType
+                    "A",  # Status,
+                    None,  # StatusDate
+                    None,  # AddressLine1
+                    None,  # AddressLine2
+                    None,  # AddressCity
+                    None,  # AddressState
+                    None,  # AddressZip
+                    None,  # PhoneNumber
+                    None,  # SecurityLevel
+                    "R",  # Region
+                    None,  # Division
+                    None,  # District
+                    "TDOC",  # Agency
+                    None,  # NCICAgencyID
+                    None,  # InChargeStaffID
+                    "B",  # SexTypesAllowed
+                    None,  # ContactPerson
+                    None,  # LastUpdateUserID
+                    None,  # LastUpdateDate
+                ),
+            ],
             expected_output=[
                 [
                     "12345678",  # OffenderID
                     "2020-12-30 03:30:00.000000",  # StartDateTime
                     "2021-05-15 10:30:00.000000",  # EndDateTime
                     "024",  # Site
+                    "JA",  # SiteType
                     "CTFA",  # StartMovementType
                     "NEWAD",  # StartMovementReason
                     "FAFA",  # EndMovementInfo
@@ -213,6 +272,7 @@ class OffenderMovementIncarcerationPeriodTest(BaseViewTest):
                     "2021-05-15 10:30:00.000000",  # StartDateTime
                     None,  # EndDateTime
                     "088",  # Site
+                    "JA",  # SiteType
                     "FAFA",  # StartMovementType
                     "INCIB",  # StartMovementReason
                     None,  # EndMovementType
@@ -312,12 +372,63 @@ class OffenderMovementIncarcerationPeriodTest(BaseViewTest):
                     "2020-05-15 09:20:05.212820",  # LastUpdateDate
                 ),
             ],
+            site=[
+                (
+                    "088",  # SiteID
+                    "VAN BUREN COUNTY JAIL",  # SiteName
+                    "JA",  # SiteType
+                    "A",  # Status,
+                    None,  # StatusDate
+                    None,  # AddressLine1
+                    None,  # AddressLine2
+                    None,  # AddressCity
+                    None,  # AddressState
+                    None,  # AddressZip
+                    None,  # PhoneNumber
+                    None,  # SecurityLevel
+                    "V",  # Region
+                    None,  # Division
+                    None,  # District
+                    "TDOC",  # Agency
+                    None,  # NCICAgencyID
+                    None,  # InChargeStaffID
+                    "B",  # SexTypesAllowed
+                    None,  # ContactPerson
+                    None,  # LastUpdateUserID
+                    None,  # LastUpdateDate
+                ),
+                (
+                    "024",  # SiteID
+                    "FAYETTE COUNTY JAIL",  # SiteName
+                    "JA",  # SiteType
+                    "A",  # Status,
+                    None,  # StatusDate
+                    None,  # AddressLine1
+                    None,  # AddressLine2
+                    None,  # AddressCity
+                    None,  # AddressState
+                    None,  # AddressZip
+                    None,  # PhoneNumber
+                    None,  # SecurityLevel
+                    "R",  # Region
+                    None,  # Division
+                    None,  # District
+                    "TDOC",  # Agency
+                    None,  # NCICAgencyID
+                    None,  # InChargeStaffID
+                    "B",  # SexTypesAllowed
+                    None,  # ContactPerson
+                    None,  # LastUpdateUserID
+                    None,  # LastUpdateDate
+                ),
+            ],
             expected_output=[
                 [
                     "12345678",  # OffenderID
                     "2020-12-30 03:30:00.000000",  # StartDateTime
                     "2021-05-15 10:30:00.000000",  # EndDateTime
                     "024",  # Site
+                    "JA",  # SiteType
                     "CTFA",  # StartMovementInfo
                     "NEWAD",  # StartMovementReason
                     "FAFA",  # EndMovementType
@@ -329,6 +440,7 @@ class OffenderMovementIncarcerationPeriodTest(BaseViewTest):
                     "2021-05-15 10:30:00.000000",  # StartDateTime
                     "2021-06-01 10:30:00",  # EndDateTime (decimals get truncated in postgres version of query)
                     "088",  # Site
+                    "JA",  # SiteType
                     "FAFA",  # StartMovementType
                     "INCIB",  # StartMovementReason
                     None,  # EndMovementType
@@ -430,12 +542,64 @@ class OffenderMovementIncarcerationPeriodTest(BaseViewTest):
                     "2020-08-15 09:20:05.212820",  # LastUpdateDate
                 ),
             ],
+            site=[
+                # Division	District	Agency	NCICAgencyID	InChargeStaffID	SexTypesAllowed	ContactPerson	LastUpdateUserID	LastUpdateDate
+                (
+                    "088",  # SiteID
+                    "VAN BUREN COUNTY JAIL",  # SiteName
+                    "JA",  # SiteType
+                    "A",  # Status,
+                    None,  # StatusDate
+                    None,  # AddressLine1
+                    None,  # AddressLine2
+                    None,  # AddressCity
+                    None,  # AddressState
+                    None,  # AddressZip
+                    None,  # PhoneNumber
+                    None,  # SecurityLevel
+                    "V",  # Region
+                    None,  # Division
+                    None,  # District
+                    "TDOC",  # Agency
+                    None,  # NCICAgencyID
+                    None,  # InChargeStaffID
+                    "B",  # SexTypesAllowed
+                    None,  # ContactPerson
+                    None,  # LastUpdateUserID
+                    None,  # LastUpdateDate
+                ),
+                (
+                    "024",  # SiteID
+                    "FAYETTE COUNTY JAIL",  # SiteName
+                    "JA",  # SiteType
+                    "A",  # Status,
+                    None,  # StatusDate
+                    None,  # AddressLine1
+                    None,  # AddressLine2
+                    None,  # AddressCity
+                    None,  # AddressState
+                    None,  # AddressZip
+                    None,  # PhoneNumber
+                    None,  # SecurityLevel
+                    "R",  # Region
+                    None,  # Division
+                    None,  # District
+                    "TDOC",  # Agency
+                    None,  # NCICAgencyID
+                    None,  # InChargeStaffID
+                    "B",  # SexTypesAllowed
+                    None,  # ContactPerson
+                    None,  # LastUpdateUserID
+                    None,  # LastUpdateDate
+                ),
+            ],
             expected_output=[
                 [
                     "12345678",  # OffenderID
                     "2020-12-30 03:30:00.000000",  # StartDateTime
                     "2021-06-01 10:30:00",  # EndDateTime (= death date, truncated without decimals)
                     "024",  # Site
+                    "JA",  # SiteType
                     "CTFA",  # StartMovementType
                     "NEWAD",  # StartMovementReason
                     None,  # EndMovementType

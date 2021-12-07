@@ -21,6 +21,7 @@ import unittest
 
 from recidiviz.cloud_storage.gcs_file_system import GcsfsFileContentsHandle
 from recidiviz.common.constants.person_characteristics import Ethnicity, Gender, Race
+from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
@@ -198,6 +199,8 @@ class UsTnIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                                         release_date=None,
                                         county_code=None,
                                         facility="088",
+                                        custodial_authority=StateCustodialAuthority.COURT,
+                                        custodial_authority_raw_text="JA",
                                         admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
                                         admission_reason_raw_text="CTFA-NEWAD",
                                         release_reason=None,
@@ -237,6 +240,8 @@ class UsTnIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                                         release_date=datetime.date(2010, 2, 26),
                                         county_code=None,
                                         facility="79A",
+                                        custodial_authority=StateCustodialAuthority.COURT,
+                                        custodial_authority_raw_text="JA",
                                         admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
                                         admission_reason_raw_text="PAFA-VIOLW",
                                         release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
@@ -276,6 +281,8 @@ class UsTnIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                                         release_date=datetime.date(2010, 4, 6),
                                         county_code=None,
                                         facility="WTSP",
+                                        custodial_authority=StateCustodialAuthority.STATE_PRISON,
+                                        custodial_authority_raw_text="IN",
                                         admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
                                         admission_reason_raw_text="FAFA-JAILT",
                                         release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
@@ -315,6 +322,8 @@ class UsTnIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                                         release_date=datetime.date(2010, 11, 4),
                                         county_code=None,
                                         facility="WTSP",
+                                        custodial_authority=StateCustodialAuthority.STATE_PRISON,
+                                        custodial_authority_raw_text="IN",
                                         admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
                                         admission_reason_raw_text="PAFA-PAVOK",
                                         release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_TO_SUPERVISION,

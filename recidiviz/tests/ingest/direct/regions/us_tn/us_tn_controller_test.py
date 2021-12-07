@@ -20,6 +20,7 @@ from typing import Type
 
 from recidiviz.common.constants.person_characteristics import Ethnicity, Gender, Race
 from recidiviz.common.constants.state.external_id_types import US_TN_DOC
+from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
@@ -152,6 +153,8 @@ class TestUsTnController(BaseDirectIngestControllerTests):
             admission_date=datetime.date(year=2021, month=6, day=20),
             release_date=None,
             facility="088",
+            custodial_authority=StateCustodialAuthority.COURT,
+            custodial_authority_raw_text="JA",
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             admission_reason_raw_text="CTFA-NEWAD",
             release_reason=None,
@@ -174,6 +177,8 @@ class TestUsTnController(BaseDirectIngestControllerTests):
             admission_date=datetime.date(year=2010, month=2, day=5),
             release_date=datetime.date(year=2010, month=2, day=26),
             facility="79A",
+            custodial_authority=StateCustodialAuthority.COURT,
+            custodial_authority_raw_text="JA",
             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
             admission_reason_raw_text="PAFA-VIOLW",
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
@@ -189,6 +194,8 @@ class TestUsTnController(BaseDirectIngestControllerTests):
             admission_date=datetime.date(year=2010, month=2, day=26),
             release_date=datetime.date(year=2010, month=4, day=6),
             facility="WTSP",
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+            custodial_authority_raw_text="IN",
             admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
             admission_reason_raw_text="FAFA-JAILT",
             release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
@@ -204,6 +211,8 @@ class TestUsTnController(BaseDirectIngestControllerTests):
             admission_date=datetime.date(year=2010, month=4, day=6),
             release_date=datetime.date(year=2010, month=11, day=4),
             facility="WTSP",
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+            custodial_authority_raw_text="IN",
             admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
             admission_reason_raw_text="PAFA-PAVOK",
             release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_TO_SUPERVISION,
