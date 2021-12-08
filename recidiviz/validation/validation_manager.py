@@ -24,6 +24,7 @@ from concurrent import futures
 from http import HTTPStatus
 from typing import Any, Dict, List, Optional, Pattern, Tuple
 
+import pytz
 from flask import Blueprint
 from opencensus.stats import aggregation, measure, view
 
@@ -141,7 +142,7 @@ def execute_validation(
         dataset_overrides=sandbox_dataset_overrides,
     )
 
-    run_datetime = datetime.datetime.today()
+    run_datetime = datetime.datetime.now(tz=pytz.UTC)
     run_id = uuid.uuid4().hex
     logging.info(
         "Performing a total of %s validation jobs [run_datetime: %s, run_id: %s]...",

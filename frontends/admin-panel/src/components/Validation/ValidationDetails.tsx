@@ -29,6 +29,7 @@ import SamenessPerRowDetails from "./SamenessPerRowDetails";
 import SamenessPerViewDetails from "./SamenessPerViewDetails";
 import {
   convertResultStatus,
+  formatDatetime,
   formatStatusAmount,
   getBadgeStatusForRecordStatus,
   getDaysActive,
@@ -72,7 +73,7 @@ const ValidationDetails: React.FC<ValidationDetailsProps> = ({
               {latestRecord?.getRunId()}
             </Descriptions.Item>
             <Descriptions.Item label="Run Datetime">
-              {latestRecord?.getRunDatetime()?.toDate().toISOString()}
+              {formatDatetime(latestRecord?.getRunDatetime()?.toDate())}
             </Descriptions.Item>
             <Descriptions.Item label="System Version">
               {latestRecord?.getSystemVersion()}
@@ -182,10 +183,11 @@ const ValidationDetails: React.FC<ValidationDetailsProps> = ({
                         {latestRecord?.getLastBetterStatusRunId()}
                       </Descriptions.Item>
                       <Descriptions.Item label="Run Datetime">
-                        {latestRecord
-                          ?.getLastBetterStatusRunDatetime()
-                          ?.toDate()
-                          .toISOString()}
+                        {formatDatetime(
+                          latestRecord
+                            ?.getLastBetterStatusRunDatetime()
+                            ?.toDate()
+                        )}
                       </Descriptions.Item>
                       <Descriptions.Item label="Status">
                         <Badge
