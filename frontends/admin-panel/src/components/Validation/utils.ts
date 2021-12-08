@@ -40,6 +40,14 @@ export const getDaysActive = (record: ValidationStatusRecord): number => {
   return daysBetweenDates(runDate, lastSuccessDate);
 };
 
+export const formatDatetime = (date?: Date): string | undefined => {
+  return date?.toLocaleString("en-US", { timeZoneName: "short" });
+};
+
+export const formatDate = (date?: Date): string | undefined => {
+  return date?.toLocaleDateString();
+};
+
 export const formatStatusAmount = (
   amount: number | null | undefined,
   isPercent: boolean | undefined

@@ -18,6 +18,7 @@
 import datetime
 import unittest
 
+import pytz
 from mock import MagicMock, patch
 
 from recidiviz.big_query import big_query_client
@@ -78,7 +79,7 @@ class TestValidationResultStorage(unittest.TestCase):
         # Act
         result = ValidationResultForStorage.from_validation_result(
             run_id="abc123",
-            run_datetime=datetime.datetime(2000, 1, 1, 0, 0, 0),
+            run_datetime=datetime.datetime(2000, 1, 1, 0, 0, 0, tzinfo=pytz.UTC),
             result=job_result,
         )
 
@@ -87,7 +88,7 @@ class TestValidationResultStorage(unittest.TestCase):
             ValidationResultForStorage(
                 run_id="abc123",
                 run_date=datetime.date(2000, 1, 1),
-                run_datetime=datetime.datetime(2000, 1, 1, 0, 0, 0),
+                run_datetime=datetime.datetime(2000, 1, 1, 0, 0, 0, tzinfo=pytz.UTC),
                 system_version="v1.0.0",
                 check_type=ValidationCheckType.SAMENESS,
                 validation_name="test_view",
@@ -158,7 +159,7 @@ class TestValidationResultStorage(unittest.TestCase):
         # Act
         result = ValidationResultForStorage.from_validation_result(
             run_id="abc123",
-            run_datetime=datetime.datetime(2000, 1, 1, 0, 0, 0),
+            run_datetime=datetime.datetime(2000, 1, 1, 0, 0, 0, tzinfo=pytz.UTC),
             result=job_result,
         )
 
@@ -167,7 +168,7 @@ class TestValidationResultStorage(unittest.TestCase):
             ValidationResultForStorage(
                 run_id="abc123",
                 run_date=datetime.date(2000, 1, 1),
-                run_datetime=datetime.datetime(2000, 1, 1, 0, 0, 0),
+                run_datetime=datetime.datetime(2000, 1, 1, 0, 0, 0, tzinfo=pytz.UTC),
                 system_version="v1.0.0",
                 check_type=ValidationCheckType.SAMENESS,
                 validation_name="test_view",
@@ -231,7 +232,7 @@ class TestValidationResultStorage(unittest.TestCase):
         # Act
         result = ValidationResultForStorage.from_validation_result(
             run_id="abc123",
-            run_datetime=datetime.datetime(2000, 1, 1, 0, 0, 0),
+            run_datetime=datetime.datetime(2000, 1, 1, 0, 0, 0, tzinfo=pytz.UTC),
             result=job_result,
         )
 
@@ -240,7 +241,7 @@ class TestValidationResultStorage(unittest.TestCase):
             ValidationResultForStorage(
                 run_id="abc123",
                 run_date=datetime.date(2000, 1, 1),
-                run_datetime=datetime.datetime(2000, 1, 1, 0, 0, 0),
+                run_datetime=datetime.datetime(2000, 1, 1, 0, 0, 0, tzinfo=pytz.UTC),
                 system_version="v1.0.0",
                 check_type=ValidationCheckType.SAMENESS,
                 validation_name="test_view",
@@ -306,7 +307,7 @@ class TestValidationResultStorage(unittest.TestCase):
         # Act
         result = ValidationResultForStorage.from_validation_job(
             run_id="abc123",
-            run_datetime=datetime.datetime(2000, 1, 1, 0, 0, 0),
+            run_datetime=datetime.datetime(2000, 1, 1, 0, 0, 0, tzinfo=pytz.UTC),
             job=validation_job,
         )
 
@@ -315,7 +316,7 @@ class TestValidationResultStorage(unittest.TestCase):
             ValidationResultForStorage(
                 run_id="abc123",
                 run_date=datetime.date(2000, 1, 1),
-                run_datetime=datetime.datetime(2000, 1, 1, 0, 0, 0),
+                run_datetime=datetime.datetime(2000, 1, 1, 0, 0, 0, tzinfo=pytz.UTC),
                 system_version="v1.0.0",
                 check_type=ValidationCheckType.SAMENESS,
                 validation_name="test_view",
@@ -364,7 +365,9 @@ class TestValidationResultStorage(unittest.TestCase):
                 ValidationResultForStorage(
                     run_id="abc123",
                     run_date=datetime.date(2000, 1, 1),
-                    run_datetime=datetime.datetime(2000, 1, 1, 0, 0, 0),
+                    run_datetime=datetime.datetime(
+                        2000, 1, 1, 0, 0, 0, tzinfo=pytz.UTC
+                    ),
                     system_version="v1.0.0",
                     check_type=ValidationCheckType.SAMENESS,
                     validation_name="test_view",
@@ -384,7 +387,7 @@ class TestValidationResultStorage(unittest.TestCase):
         )
 
         # Assert
-        # mock_bigquery_client.insert_rows.assert_not_called()
+        mock_bigquery_client.insert_rows.assert_not_called()
 
     @patch("recidiviz.utils.environment.in_gcp", MagicMock(return_value=True))
     @patch("recidiviz.big_query.big_query_client.bigquery.Client")
@@ -400,7 +403,9 @@ class TestValidationResultStorage(unittest.TestCase):
                 ValidationResultForStorage(
                     run_id="abc123",
                     run_date=datetime.date(2000, 1, 1),
-                    run_datetime=datetime.datetime(2000, 1, 1, 0, 0, 0),
+                    run_datetime=datetime.datetime(
+                        2000, 1, 1, 0, 0, 0, tzinfo=pytz.UTC
+                    ),
                     system_version="v1.0.0",
                     check_type=ValidationCheckType.SAMENESS,
                     validation_name="test_view",
@@ -419,7 +424,9 @@ class TestValidationResultStorage(unittest.TestCase):
                 ValidationResultForStorage(
                     run_id="abc123",
                     run_date=datetime.date(2000, 1, 1),
-                    run_datetime=datetime.datetime(2000, 1, 1, 0, 0, 0),
+                    run_datetime=datetime.datetime(
+                        2000, 1, 1, 0, 0, 0, tzinfo=pytz.UTC
+                    ),
                     system_version="v1.0.0",
                     check_type=ValidationCheckType.SAMENESS,
                     validation_name="test_view",
@@ -447,7 +454,9 @@ class TestValidationResultStorage(unittest.TestCase):
                 ValidationResultForStorage(
                     run_id="abc123",
                     run_date=datetime.date(2000, 1, 1),
-                    run_datetime=datetime.datetime(2000, 1, 1, 0, 0, 0),
+                    run_datetime=datetime.datetime(
+                        2000, 1, 1, 0, 0, 0, tzinfo=pytz.UTC
+                    ),
                     system_version="v1.0.0",
                     check_type=ValidationCheckType.SAMENESS,
                     validation_name="test_view",
