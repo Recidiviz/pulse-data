@@ -30,11 +30,17 @@ from recidiviz.calculator.query.state.views.line_staff_validation.looker_dashboa
 from recidiviz.calculator.query.state.views.line_staff_validation.metrics import (
     METRICS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.line_staff_validation.metrics_from_po_report import (
+    METRICS_FROM_PO_REPORT_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.line_staff_validation.offense_types import (
     OFFENSE_TYPES_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.line_staff_validation.overdue_discharges import (
     OVERDUE_DISCHARGES_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.line_staff_validation.po_events import (
+    PO_EVENTS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.line_staff_validation.recommended_downgrades import (
     RECOMMENDED_DOWNGRADES_VIEW_BUILDER,
@@ -50,8 +56,10 @@ LINE_STAFF_VALIDATION_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     CONTACTS_AND_ASSESSMENTS_VIEW_BUILDER,
     METRICS_VIEW_BUILDER,
     LOOKER_DASHBOARD_VIEW_BUILDER,
+    METRICS_FROM_PO_REPORT_VIEW_BUILDER,
     OFFENSE_TYPES_VIEW_BUILDER,
     OVERDUE_DISCHARGES_VIEW_BUILDER,
+    PO_EVENTS_VIEW_BUILDER,
     RECOMMENDED_DOWNGRADES_VIEW_BUILDER,
     VIOLATIONS_VIEW_BUILDER,
 ]
