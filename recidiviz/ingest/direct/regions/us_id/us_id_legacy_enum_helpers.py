@@ -213,6 +213,10 @@ def purpose_for_incarceration_mapper(
         "PB" in statuses
     ):  # Probation -- happens VERY infrequently (occurs as a data error from ID)
         return StateSpecializedPurposeForIncarceration.INTERNAL_UNKNOWN
+    if (
+        "PR" in statuses
+    ):  # Parole -- happens VERY infrequently (occurs as a data error from ID)
+        return StateSpecializedPurposeForIncarceration.INTERNAL_UNKNOWN
     return None
 
 
@@ -252,6 +256,8 @@ def supervision_period_supervision_type_mapper(
     if "PV" in statuses:  # Parole violator
         return StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
     if "TM" in statuses:  # Termer
+        return StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
+    if "RJ" in statuses:  # Rider
         return StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
 
     return None
