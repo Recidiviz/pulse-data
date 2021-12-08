@@ -30,6 +30,9 @@ from recidiviz.calculator.query.state.views.po_report.officer_supervision_distri
 from recidiviz.calculator.query.state.views.po_report.po_monthly_report_data import (
     PO_MONTHLY_REPORT_DATA_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.po_report.report_data_by_officer_by_month import (
+    REPORT_DATA_BY_OFFICER_BY_MONTH_DATA_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.po_report.report_data_by_person_by_month import (
     REPORT_DATA_BY_PERSON_BY_MONTH_VIEW_BUILDER,
 )
@@ -63,6 +66,7 @@ PO_REPORT_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     SUPERVISION_DOWNGRADES_BY_PERSON_BY_MONTH_VIEW_BUILDER,
     SUPERVISION_EARNED_DISCHARGE_REQUESTS_BY_PERSON_BY_MONTH_VIEW_BUILDER,
     REPORT_DATA_BY_PERSON_BY_MONTH_VIEW_BUILDER,
+    REPORT_DATA_BY_OFFICER_BY_MONTH_DATA_VIEW_BUILDER,
     CURRENT_ACTION_ITEMS_BY_PERSON_VIEW_BUILDER,
     # PO_MONTHLY_REPORT_DATA_VIEW_BUILDER must be last in this list because it relies on the materialized versions of
     # all of the other PO Report views
