@@ -23,32 +23,42 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-    SELECT DISTINCT 
+    WITH normalized_rows AS (
+        SELECT
+            OffenderID,
+            FirstName,
+            MiddleName,
+            LastName,
+            CASE 
+                WHEN Race in ('W', 'B', 'A', 'I') THEN Race
+                ELSE NULL
+            END AS Race,
+            CASE 
+                WHEN Race in ('H') THEN 'HISPANIC'
+                ELSE 'NOT_HISPANIC'
+            END AS Ethnicity,
+            CASE 
+                WHEN Sex in ('F', 'M') THEN Sex
+                ELSE NULL
+            END AS Sex,
+            BirthDate,
+            ROW_NUMBER() OVER (PARTITION BY OffenderID ORDER BY LastUpdateDate DESC, CAST(SequenceNumber AS INT64) DESC) AS recency_rank
+        FROM
+            {OffenderName}
+        -- Filter out nicknames.
+        Where NameType != 'N'
+    )
+    SELECT
         OffenderID,
-        OffenderStatus,
-        # A lot of the names in the original CSVs have typos, so select 
-        # the names that are alphabetically first.
-        MIN(COALESCE(FirstName)) as FirstName,
-        MIN(COALESCE(MiddleName)) as MiddleName,
-        MIN(COALESCE(LastName)) as LastName,
-        CASE 
-            WHEN Race in ("W", "B", "A", "I") THEN Race
-            ELSE NULL
-        END AS Race,
-        CASE 
-            WHEN Race in ("H") THEN "HISPANIC"
-            ELSE "NOT_HISPANIC"
-        END AS Ethnicity,
-        CASE 
-            WHEN Sex in ("F", "M") THEN Sex
-            ELSE NULL
-        END AS Sex,
-        # There are a number of people for whom there are two entries, one with the 
-        # birthdate, and one without. Choose the one with a birthdate set, if present.
-        # There are also a number of corrupted entries for BirthDate, so set those instead to be null.
-         MAX(COALESCE(IF(BirthDate in ("A", "B", "F", "H", "I", "M", "W"), NULL, BirthDate), NULL)) as BirthDate,
-    FROM {OffenderName} 
-    GROUP BY OffenderID, OffenderStatus, Race, Ethnicity, Sex
+        FirstName,
+        MiddleName,
+        LastName,
+        Race,
+        Ethnicity,
+        Sex,
+        BirthDate
+    FROM normalized_rows
+    WHERE recency_rank = 1
 """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
