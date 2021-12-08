@@ -11,9 +11,7 @@ input_columns:
   - BirthDate
   - Race
   - Ethnicity
-  - OffenderStatus
-unused_columns:
-  - OffenderStatus  #  Not used for now -- needs further investigation.
+unused_columns: []
 output:
   StatePerson:
     external_ids:

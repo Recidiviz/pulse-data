@@ -26,8 +26,13 @@ columns:
   - name: NameType
     description: |-
       Indicator that tells if a name is an alias or a nickname.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: O
+        description: Original, always used for the first row for a person (row with SequenceNumber 0), never for any other rows.
+      - value: N
+        description: Nickname, used for any rows with nicknames, never the first row for a person.
+      - value: A
+        description: Alias, used for any subsequent rows with alternate legal names or spellings, never the first row for a person.
   - name: OffenderStatus
     description: |-
       The code indicating the current status of an offender.

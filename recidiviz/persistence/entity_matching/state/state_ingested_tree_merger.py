@@ -137,7 +137,7 @@ class StateIngestedTreeMerger:
             # If there is more than one string representation of the flat fields, then
             # we have objects with conflicting info that we are trying to merge.
             raise EntityMatchingError(
-                f"Found multiple different ingested entites of type "
+                f"Found multiple different ingested entities of type "
                 f"[{primary_entity.__class__.__name__}] with conflicting "
                 f"information: {[e.limited_pii_repr() for e in entity_group]}",
                 entity_name=primary_entity.get_entity_name(),

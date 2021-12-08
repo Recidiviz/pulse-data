@@ -656,7 +656,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         session = self._session()
         with self.assertRaisesRegex(
             EntityMatchingError,
-            r"Found multiple different ingested entites of type \[StateSentenceGroup\] "
+            r"Found multiple different ingested entities of type \[StateSentenceGroup\] "
             r"with conflicting information",
         ):
             _ = self._match(session, [person, person_2])
