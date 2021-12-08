@@ -42,6 +42,7 @@ import uniqueStates from "../Utilities/UniqueStates";
 import { RecordStatus } from "./constants";
 import {
   chooseIdNameForCategory,
+  formatDatetime,
   formatStatusAmount,
   getClassNameForRecordStatus,
   getDaysActive,
@@ -217,7 +218,7 @@ const ValidationStatusView = (): JSX.Element => {
     { key: "Run Id", value: initialRecord?.getRunId() },
     {
       key: "Run Datetime",
-      value: initialRecord?.getRunDatetime()?.toDate().toISOString(),
+      value: formatDatetime(initialRecord?.getRunDatetime()?.toDate()),
     },
     { key: "System Version", value: initialRecord?.getSystemVersion() },
   ];

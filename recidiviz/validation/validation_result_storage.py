@@ -18,7 +18,7 @@
 import datetime
 import json
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 
 import attr
 import cattr
@@ -121,6 +121,14 @@ class ValidationResultForStorage:
         # serializing so they don't scale linearly.
         if details := unstructured["result_details"]:
             unstructured["result_details"] = json.dumps(details)
+        # BigQuery doesn't store timezone information so we have to strip it off,
+        # ensuring that we are passing it UTC.
+        run_datetime = cast(str, unstructured["run_datetime"])
+        if run_datetime.endswith("+00:00"):
+            unstructured["run_datetime"] = run_datetime[: -len("+00:00")]
+        else:
+            raise ValueError(f"Datetime {run_datetime=} is not UTC.")
+
         return unstructured
 
 

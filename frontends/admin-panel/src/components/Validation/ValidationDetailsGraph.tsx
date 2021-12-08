@@ -22,7 +22,7 @@ import React from "react";
 import XYFrame from "semiotic/lib/XYFrame";
 import ColorLegend from "../Utilities/ColorLegend";
 import { ValidationDetailsGraphProps } from "./constants";
-import { formatStatusAmount } from "./utils";
+import { formatDate, formatDatetime, formatStatusAmount } from "./utils";
 
 const ValidationDetailsGraph: React.FC<ValidationDetailsGraphProps> = ({
   records,
@@ -91,7 +91,7 @@ const ValidationDetailsGraph: React.FC<ValidationDetailsGraphProps> = ({
 
     return (
       <Card className="tooltip-content" style={{ transform: transformStyle }}>
-        <Descriptions title={d.time.toLocaleString()} column={1} bordered>
+        <Descriptions title={formatDatetime(d.time)} column={1} bordered>
           {points.map((point, i) => (
             <Descriptions.Item label={point.title}>
               <Badge
@@ -116,7 +116,7 @@ const ValidationDetailsGraph: React.FC<ValidationDetailsGraphProps> = ({
           },
           {
             orient: "bottom",
-            tickFormat: (time: Date) => time.toLocaleDateString(),
+            tickFormat: (time: Date) => formatDate(time),
             ticks: 5,
             tickSize: 0,
           },
