@@ -21,6 +21,17 @@ module "sftp-storage-bucket" {
   project_id  = var.project_id
   name_suffix = local.direct_ingest_sftp_str
   location    = var.region
+
+  lifecycle_rules = [
+    {
+      action = {
+        type = "Delete"
+      }
+      condition = {
+        age = 14
+      }
+    }
+  ]
 }
 
 module "sftp-download-queue" {

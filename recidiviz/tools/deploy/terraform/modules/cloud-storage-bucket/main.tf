@@ -14,6 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
+terraform {
+  experiments = [module_variable_optional_attrs]
+}
 
 # The project id associated with the buckets and service accounts (ex: "recidiviz-123").
 variable "project_id" {
@@ -44,18 +47,45 @@ variable "uniform_bucket_level_access" {
   default = true
 }
 
+# See https://cloud.google.com/storage/docs/lifecycle
+variable "lifecycle_rules" {
+  type = list(object({
+    action = object({
+      type = string
+    }),
+    condition = object({
+      age                = optional(number)
+      num_newer_versions = optional(number)
+    })
+  }))
+  default = [
+    {
+      action = {
+        type = "Delete"
+      }
+      condition = {
+        num_newer_versions = 3
+      }
+    }
+  ]
+}
+
 resource "google_storage_bucket" "bucket" {
   name                        = "${var.project_id}-${var.name_suffix}"
   location                    = var.location
   storage_class               = var.storage_class
   uniform_bucket_level_access = var.uniform_bucket_level_access
 
-  lifecycle_rule {
-    action {
-      type = "Delete"
-    }
-    condition {
-      num_newer_versions = 3
+  dynamic "lifecycle_rule" {
+    for_each = var.lifecycle_rules
+    content {
+      action {
+        type = lifecycle_rule.value["action"].type
+      }
+      condition {
+        age                = lifecycle_rule.value["condition"].age
+        num_newer_versions = lifecycle_rule.value["condition"].num_newer_versions
+      }
     }
   }
 

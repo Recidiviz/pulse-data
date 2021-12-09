@@ -1079,7 +1079,6 @@ class TestDirectIngestControl(unittest.TestCase):
             skipped=[],
         ),
     )
-    @patch.object(DownloadFilesFromSftpController, "clean_up", lambda _: None)
     @patch.object(
         UploadStateFilesToIngestBucketController,
         "do_upload",
@@ -1164,7 +1163,6 @@ class TestDirectIngestControl(unittest.TestCase):
             skipped=[],
         ),
     )
-    @patch.object(DownloadFilesFromSftpController, "clean_up", lambda _: None)
     @patch.object(
         UploadStateFilesToIngestBucketController,
         "do_upload",
@@ -1234,7 +1232,6 @@ class TestDirectIngestControl(unittest.TestCase):
             skipped=[],
         ),
     )
-    @patch.object(DownloadFilesFromSftpController, "clean_up", lambda _: None)
     @patch.object(
         UploadStateFilesToIngestBucketController,
         "do_upload",
@@ -1305,7 +1302,6 @@ class TestDirectIngestControl(unittest.TestCase):
             skipped=[],
         ),
     )
-    @patch.object(DownloadFilesFromSftpController, "clean_up", lambda _: None)
     @patch.object(
         UploadStateFilesToIngestBucketController,
         "do_upload",
@@ -1406,7 +1402,6 @@ class TestDirectIngestControl(unittest.TestCase):
             "/upload_from_sftp", query_string=request_args, headers=headers
         )
         mock_upload_controller.do_upload().assert_not_called()
-        mock_download_controller.clean_up().assert_not_called()
         self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
 
     @patch.object(
@@ -1442,7 +1437,6 @@ class TestDirectIngestControl(unittest.TestCase):
             skipped=[],
         ),
     )
-    @patch.object(DownloadFilesFromSftpController, "clean_up", lambda _: None)
     @patch.object(
         UploadStateFilesToIngestBucketController,
         "do_upload",
@@ -1550,7 +1544,6 @@ class TestDirectIngestControl(unittest.TestCase):
             "/upload_from_sftp", query_string=request_args, headers=headers
         )
         mock_upload_controller.do_upload().assert_not_called()
-        mock_download_controller.clean_up().assert_not_called()
         self.assertEqual(HTTPStatus.OK, response.status_code)
 
     @patch.object(
@@ -1617,7 +1610,6 @@ class TestDirectIngestControl(unittest.TestCase):
             "/upload_from_sftp", query_string=request_args, headers=headers
         )
         mock_upload_controller.do_upload().assert_not_called()
-        mock_download_controller.clean_up().assert_not_called()
         self.assertEqual(HTTPStatus.OK, response.status_code)
 
     @patch.object(
@@ -1653,7 +1645,6 @@ class TestDirectIngestControl(unittest.TestCase):
             skipped=[],
         ),
     )
-    @patch.object(DownloadFilesFromSftpController, "clean_up", lambda _: None)
     @patch.object(
         UploadStateFilesToIngestBucketController,
         "do_upload",
