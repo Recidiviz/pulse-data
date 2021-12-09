@@ -160,7 +160,7 @@ class ClientTest(BaseViewTest):
             [
                 "987654321",
                 "FIRST",
-                None,
+                "",
                 "LAST",
                 "6/18/1990 12:00:00 AM",
                 "1",
@@ -193,31 +193,31 @@ class ClientTest(BaseViewTest):
     ) -> Tuple[Optional[str], ...]:
         return tuple(
             [
-                None,  # Adult_Ind
+                "",  # Adult_Ind
                 birth_date,  # Birth_Date
             ]
-            + [None] * 3
+            + [""] * 3
             + [race_code]  # Cis_1006_Race_Cd
-            + [None] * 5
+            + [""] * 5
             + [ethnicity_code]  # Cis_1016_Hispanic_Cd
-            + [None] * 7
+            + [""] * 7
             + [
                 gender_code,  # Cis_9012_Gender_Cd
-                None,
-                None,
+                "",
+                "",
                 client_id,  # Client_ID
             ]
-            + [None] * 15
+            + [""] * 15
             + [
                 first_name,  # First_Name
             ]
-            + [None] * 8
+            + [""] * 8
             + [
                 last_name,  # Last_Name
             ]
-            + [None] * 9
+            + [""] * 9
             + [
                 middle_name,  # Middle_Name
             ]
-            + [None] * 38
+            + [""] * 38
         )

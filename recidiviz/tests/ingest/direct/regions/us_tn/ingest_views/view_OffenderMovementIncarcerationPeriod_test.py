@@ -123,15 +123,15 @@ class OffenderMovementIncarcerationPeriodTest(BaseViewTest):
                     "FIRST",  # FirstName
                     "MIDDLE",  # MiddleName
                     "LAST",  # LastName
-                    None,  # Suffix
+                    "",  # Suffix
                     "O",  # NameType
                     "INAC",  # OffenderStatus
-                    None,  # ActualSiteID
+                    "",  # ActualSiteID
                     "W",  # Race
                     "M",  # Sex
                     "1998-12-04 00:00:00",  # BirthDate
-                    None,  # SocialSecurityNumber
-                    None,  # STGNicknameFLag
+                    "",  # SocialSecurityNumber
+                    "",  # STGNicknameFLag
                     "AB12345",  # LastUpdateUserID
                     "2019-08-02 08:49:21.161200",  # LastUpdateDate
                 )
@@ -142,38 +142,38 @@ class OffenderMovementIncarcerationPeriodTest(BaseViewTest):
                     "0",  # Weight
                     "0",  # HeightFeet
                     "0",  # HeightInches
-                    None,  # EyeColor
-                    None,  # HairColor
-                    None,  # Complexion
+                    "",  # EyeColor
+                    "",  # HairColor
+                    "",  # Complexion
                     "M",  # MaritalStatus
                     "TX",  # DriverLicenseState
                     "1234567",  # DriverLicenseNumber
-                    None,  # ScarsMarksTattoos
+                    "",  # ScarsMarksTattoos
                     "52",  # Religion
-                    None,  # BirthCounty
+                    "",  # BirthCounty
                     "IN",  # BirthState
-                    None,  # NCICFingerprintID
-                    None,  # TennesseeFingerprintID
-                    None,  # DeathType
+                    "",  # NCICFingerprintID
+                    "",  # TennesseeFingerprintID
+                    "",  # DeathType
                     None,  # DeathDate
-                    None,  # DeathLocation
-                    None,  # DisposalType
-                    None,  # DisposalDate
-                    None,  # DisposalLocation
-                    None,  # DeathPostedByStaffID
+                    "",  # DeathLocation
+                    "",  # DisposalType
+                    "",  # DisposalDate
+                    "",  # DisposalLocation
+                    "",  # DeathPostedByStaffID
                     "ABCDEF12",  # OBSCISID
                     None,  # RestoreDate
-                    None,  # DeathSiteID
-                    None,  # DeathCertificateFlag
+                    "",  # DeathSiteID
+                    "",  # DeathCertificateFlag
                     "Y",  # OldFBINumber
-                    None,  # OldSTGAffiliation
-                    None,  # OldSTG
-                    None,  # OldSTGComments
-                    None,  # CitizenshipCountry
-                    None,  # BirthPlace
-                    None,  # AlienID
-                    None,  # FBINumber
-                    None,  # SIDNumber
+                    "",  # OldSTGAffiliation
+                    "",  # OldSTG
+                    "",  # OldSTGComments
+                    "",  # CitizenshipCountry
+                    "",  # BirthPlace
+                    "",  # AlienID
+                    "",  # FBINumber
+                    "",  # SIDNumber
                     "29301",  # LastUpdateUserID
                     "2020-02-04 12:43:43.823350",  # LastUpdateDate
                 )
@@ -270,13 +270,13 @@ class OffenderMovementIncarcerationPeriodTest(BaseViewTest):
                 [
                     "12345678",  # OffenderID
                     "2021-05-15 10:30:00.000000",  # StartDateTime
-                    None,  # EndDateTime
+                    "",  # EndDateTime
                     "088",  # Site
                     "JA",  # SiteType
                     "FAFA",  # StartMovementType
                     "INCIB",  # StartMovementReason
-                    None,  # EndMovementType
-                    None,  # EndMovementReason
+                    "",  # EndMovementType
+                    "",  # EndMovementReason
                     2,  # IncarcerationPeriodSequenceNumber
                 ],
             ],
@@ -291,15 +291,15 @@ class OffenderMovementIncarcerationPeriodTest(BaseViewTest):
                     "FIRST",  # FirstName
                     "MIDDLE",  # MiddleName
                     "LAST",  # LastName
-                    None,  # Suffix
+                    "",  # Suffix
                     "O",  # NameType
                     "INAC",  # OffenderStatus
-                    None,  # ActualSiteID
+                    "",  # ActualSiteID
                     "W",  # Race
                     "M",  # Sex
                     "1998-12-04 00:00:00",  # BirthDate
-                    None,  # SocialSecurityNumber
-                    None,  # STGNicknameFLag
+                    "",  # SocialSecurityNumber
+                    "",  # STGNicknameFLag
                     "AB12345",  # LastUpdateUserID
                     "2019-08-02 08:49:21.161200",  # LastUpdateDate
                 )
@@ -310,38 +310,38 @@ class OffenderMovementIncarcerationPeriodTest(BaseViewTest):
                     "0",  # Weight
                     "0",  # HeightFeet
                     "0",  # HeightInches
-                    None,  # EyeColor
-                    None,  # HairColor
-                    None,  # Complexion
+                    "",  # EyeColor
+                    "",  # HairColor
+                    "",  # Complexion
                     "M",  # MaritalStatus
                     "TX",  # DriverLicenseState
                     "1234567",  # DriverLicenseNumber
-                    None,  # ScarsMarksTattoos
+                    "",  # ScarsMarksTattoos
                     "52",  # Religion
-                    None,  # BirthCounty
+                    "",  # BirthCounty
                     "IN",  # BirthState
-                    None,  # NCICFingerprintID
-                    None,  # TennesseeFingerprintID
-                    None,  # DeathType
+                    "",  # NCICFingerprintID
+                    "",  # TennesseeFingerprintID
+                    "",  # DeathType
                     "2021-06-01 10:30:00.000000",  # DeathDate
-                    None,  # DeathLocation
-                    None,  # DisposalType
-                    None,  # DisposalDate
-                    None,  # DisposalLocation
-                    None,  # DeathPostedByStaffID
+                    "",  # DeathLocation
+                    "",  # DisposalType
+                    "",  # DisposalDate
+                    "",  # DisposalLocation
+                    "",  # DeathPostedByStaffID
                     "ABCDEF12",  # OBSCISID
-                    None,  # RestoreDate
-                    None,  # DeathSiteID
-                    None,  # DeathCertificateFlag
+                    "",  # RestoreDate
+                    "",  # DeathSiteID
+                    "",  # DeathCertificateFlag
                     "Y",  # OldFBINumber
-                    None,  # OldSTGAffiliation
-                    None,  # OldSTG
-                    None,  # OldSTGComments
-                    None,  # CitizenshipCountry
-                    None,  # BirthPlace
-                    None,  # AlienID
-                    None,  # FBINumber
-                    None,  # SIDNumber
+                    "",  # OldSTGAffiliation
+                    "",  # OldSTG
+                    "",  # OldSTGComments
+                    "",  # CitizenshipCountry
+                    "",  # BirthPlace
+                    "",  # AlienID
+                    "",  # FBINumber
+                    "",  # SIDNumber
                     "29301",  # LastUpdateUserID
                     "2020-05-20 12:43:43.823350",  # LastUpdateDate
                 )
@@ -443,8 +443,8 @@ class OffenderMovementIncarcerationPeriodTest(BaseViewTest):
                     "JA",  # SiteType
                     "FAFA",  # StartMovementType
                     "INCIB",  # StartMovementReason
-                    None,  # EndMovementType
-                    None,  # EndMovementReason
+                    "",  # EndMovementType
+                    "",  # EndMovementReason
                     2,  # IncarcerationPeriodSequenceNumber
                 ],
             ],
@@ -461,15 +461,15 @@ class OffenderMovementIncarcerationPeriodTest(BaseViewTest):
                     "FIRST",  # FirstName
                     "MIDDLE",  # MiddleName
                     "LAST",  # LastName
-                    None,  # Suffix
+                    "",  # Suffix
                     "O",  # NameType
                     "INAC",  # OffenderStatus
-                    None,  # ActualSiteID
+                    "",  # ActualSiteID
                     "W",  # Race
                     "M",  # Sex
                     "1998-12-04 00:00:00",  # BirthDate
-                    None,  # SocialSecurityNumber
-                    None,  # STGNicknameFLag
+                    "",  # SocialSecurityNumber
+                    "",  # STGNicknameFLag
                     "AB12345",  # LastUpdateUserID
                     "2019-08-02 08:49:21.161200",  # LastUpdateDate
                 )
@@ -480,38 +480,38 @@ class OffenderMovementIncarcerationPeriodTest(BaseViewTest):
                     "0",  # Weight
                     "0",  # HeightFeet
                     "0",  # HeightInches
-                    None,  # EyeColor
-                    None,  # HairColor
-                    None,  # Complexion
+                    "",  # EyeColor
+                    "",  # HairColor
+                    "",  # Complexion
                     "M",  # MaritalStatus
                     "TX",  # DriverLicenseState
                     "1234567",  # DriverLicenseNumber
-                    None,  # ScarsMarksTattoos
+                    "",  # ScarsMarksTattoos
                     "52",  # Religion
-                    None,  # BirthCounty
+                    "",  # BirthCounty
                     "IN",  # BirthState
-                    None,  # NCICFingerprintID
-                    None,  # TennesseeFingerprintID
-                    None,  # DeathType
+                    "",  # NCICFingerprintID
+                    "",  # TennesseeFingerprintID
+                    "",  # DeathType
                     "2021-06-01 10:30:00.000000",  # DeathDate
-                    None,  # DeathLocation
-                    None,  # DisposalType
-                    None,  # DisposalDate
-                    None,  # DisposalLocation
-                    None,  # DeathPostedByStaffID
+                    "",  # DeathLocation
+                    "",  # DisposalType
+                    "",  # DisposalDate
+                    "",  # DisposalLocation
+                    "",  # DeathPostedByStaffID
                     "ABCDEF12",  # OBSCISID
-                    None,  # RestoreDate
-                    None,  # DeathSiteID
-                    None,  # DeathCertificateFlag
+                    "",  # RestoreDate
+                    "",  # DeathSiteID
+                    "",  # DeathCertificateFlag
                     "Y",  # OldFBINumber
-                    None,  # OldSTGAffiliation
-                    None,  # OldSTG
-                    None,  # OldSTGComments
-                    None,  # CitizenshipCountry
-                    None,  # BirthPlace
-                    None,  # AlienID
-                    None,  # FBINumber
-                    None,  # SIDNumber
+                    "",  # OldSTGAffiliation
+                    "",  # OldSTG
+                    "",  # OldSTGComments
+                    "",  # CitizenshipCountry
+                    "",  # BirthPlace
+                    "",  # AlienID
+                    "",  # FBINumber
+                    "",  # SIDNumber
                     "29301",  # LastUpdateUserID
                     "2020-05-20 12:43:43.823350",  # LastUpdateDate
                 )
@@ -602,8 +602,8 @@ class OffenderMovementIncarcerationPeriodTest(BaseViewTest):
                     "JA",  # SiteType
                     "CTFA",  # StartMovementType
                     "NEWAD",  # StartMovementReason
-                    None,  # EndMovementType
-                    None,  # EndMovementReason
+                    "",  # EndMovementType
+                    "",  # EndMovementReason
                     1,  # IncarcerationPeriodSequenceNumber
                 ],
             ],

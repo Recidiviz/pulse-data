@@ -66,8 +66,8 @@ class TemplatesPeriodsTest(BaseViewTest):
                     "1",
                     "1",
                     "A",
-                    None,
-                    None,
+                    "",
+                    "",
                 )
             ],
         )
@@ -99,14 +99,14 @@ class TemplatesPeriodsTest(BaseViewTest):
                     "1",
                     date(2020, 1, 1),
                     date(9999, 12, 31),
-                    None,
-                    None,
-                    None,
+                    "",
+                    "",
+                    "",
                     "1",
                 ]
-                + [None] * 6
+                + [""] * 6
                 + ["10000001"]
-                + [None] * 9
+                + [""] * 9
             ],
             columns=dimensions
             + [
@@ -148,9 +148,9 @@ class TemplatesPeriodsTest(BaseViewTest):
             "us_id",
             raw_file_configs["facility"],
             [
-                ("D0", None, "P", "A", "DIST 0", "District 0"),
-                ("II", None, "I", "A", "IC", "Incarceration Center"),
-                ("HS", None, "H", "A", "HISTORY", "HISTORY"),
+                ("D0", "", "P", "A", "DIST 0", "District 0"),
+                ("II", "", "I", "A", "IC", "Incarceration Center"),
+                ("HS", "", "H", "A", "HISTORY", "HISTORY"),
             ],
         )
         self.create_mock_raw_file("us_id", raw_file_configs["location"], [])
@@ -173,8 +173,8 @@ class TemplatesPeriodsTest(BaseViewTest):
                     "A",
                     "1",
                     "B",
-                    None,
-                    None,
+                    "",
+                    "",
                 ),
                 (
                     # Later move_srl
@@ -187,12 +187,12 @@ class TemplatesPeriodsTest(BaseViewTest):
                     "D0",
                     "DP",
                     "002",
-                    None,
-                    None,
-                    None,
-                    None,
-                    None,
-                    None,
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
                 ),
                 (
                     # Earlier move_srl
@@ -205,12 +205,12 @@ class TemplatesPeriodsTest(BaseViewTest):
                     "HS",
                     "HS",
                     "908",
-                    None,
-                    None,
-                    None,
-                    None,
-                    None,
-                    None,
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
                 ),
             ],
         )
@@ -242,17 +242,17 @@ class TemplatesPeriodsTest(BaseViewTest):
                     "1",
                     date(2020, 1, 1),
                     date(2020, 1, 14),
-                    None,
-                    None,
-                    None,
+                    "",
+                    "",
+                    "",
                     "II",
                     "I",
                     "Incarceration Center",
                 ]
-                + [None] * 4
+                + [""] * 4
                 + ["10000001"]
-                + [None] * 6
-                + ["P", "D0", None],
+                + [""] * 6
+                + ["P", "D0", ""],
                 [
                     "11111",
                     "1",
@@ -260,15 +260,15 @@ class TemplatesPeriodsTest(BaseViewTest):
                     date(2020, 1, 14),
                     "I",
                     "II",
-                    None,
+                    "",
                     "D0",
                     "P",
                     "District 0",
                 ]
-                + [None] * 4
+                + [""] * 4
                 + ["10000003"]
-                + [None] * 6
-                + ["H", "HS", None],
+                + [""] * 6
+                + ["H", "HS", ""],
                 [
                     "11111",
                     "1",
@@ -276,14 +276,14 @@ class TemplatesPeriodsTest(BaseViewTest):
                     date(9999, 12, 31),
                     "P",
                     "D0",
-                    None,
+                    "",
                     "HS",
                     "H",
                     "HISTORY",
                 ]
-                + [None] * 4
+                + [""] * 4
                 + ["10000002"]
-                + [None] * 9,
+                + [""] * 9,
             ],
             columns=dimensions
             + [

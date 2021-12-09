@@ -167,7 +167,7 @@ class ViewPersonExternalIdsTest(BaseViewTest):
                     "RECIDIVIZ_PRIMARY_CONTROL_NUMBER_12345678",
                     "12345678",  # control_numbers
                     "AB1234",  # inmate_numbers
-                    None,  # parole_numbers
+                    "",  # parole_numbers
                 ]
             ],
         )
@@ -182,7 +182,7 @@ class ViewPersonExternalIdsTest(BaseViewTest):
             expected_output=[
                 [
                     "RECIDIVIZ_PRIMARY_PAROLE_NUMBER_0420X",
-                    None,  # control_numbers
+                    "",  # control_numbers
                     "AB1234",  # inmate_numbers
                     "0420X",  # parole_numbers
                 ]
@@ -192,23 +192,23 @@ class ViewPersonExternalIdsTest(BaseViewTest):
     def test_view_person_external_ids_null_inmate_numbers(self) -> None:
         self.run_test(
             dbo_parole_count_ids=[
-                ParoleCountIds(ParoleNumber="0420X", ParoleInstNumber=None)
+                ParoleCountIds(ParoleNumber="0420X", ParoleInstNumber="")
             ],
             dbo_tbl_search_inmate_info_ids=[
-                TblSearchInmateInfoIds(inmate_number=None, control_number="12345678")
+                TblSearchInmateInfoIds(inmate_number="", control_number="12345678")
             ],
             recidiviz_reference_linking_ids=[],
             expected_output=[
                 [
                     "RECIDIVIZ_PRIMARY_CONTROL_NUMBER_12345678",
                     "12345678",  # control_numbers
-                    None,  # inmate_numbers
-                    None,  # parole_numbers
+                    "",  # inmate_numbers
+                    "",  # parole_numbers
                 ],
                 [
                     "RECIDIVIZ_PRIMARY_PAROLE_NUMBER_0420X",
-                    None,  # control_numbers
-                    None,  # inmate_numbers
+                    "",  # control_numbers
+                    "",  # inmate_numbers
                     "0420X",  # parole_numbers
                 ],
             ],
@@ -217,7 +217,7 @@ class ViewPersonExternalIdsTest(BaseViewTest):
     def test_view_person_external_ids_clean_bad_inmate_numbers(self) -> None:
         self.run_test(
             dbo_parole_count_ids=[
-                ParoleCountIds(ParoleNumber="0420X", ParoleInstNumber=None),
+                ParoleCountIds(ParoleNumber="0420X", ParoleInstNumber=""),
                 ParoleCountIds(ParoleNumber="0420X", ParoleInstNumber="AB1234"),
                 ParoleCountIds(ParoleNumber="0420X", ParoleInstNumber="FG7899"),
                 ParoleCountIds(ParoleNumber="0420X", ParoleInstNumber="XBADX"),
@@ -230,19 +230,19 @@ class ViewPersonExternalIdsTest(BaseViewTest):
             expected_output=[
                 [
                     "RECIDIVIZ_PRIMARY_PAROLE_NUMBER_0420X",
-                    None,  # control_numbers
+                    "",  # control_numbers
                     "AB1234,FG7899",  # inmate_numbers
                     "0420X",  # parole_numbers
                 ],
                 [
                     "RECIDIVIZ_PRIMARY_PAROLE_NUMBER_2171K",
-                    None,  # control_numbers
-                    None,  # inmate_numbers
+                    "",  # control_numbers
+                    "",  # inmate_numbers
                     "2171K",  # parole_numbers
                 ],
                 [
                     "RECIDIVIZ_PRIMARY_PAROLE_NUMBER_3141Y",
-                    None,  # control_numbers
+                    "",  # control_numbers
                     "CD4567",  # inmate_numbers
                     "3141Y",  # parole_numbers
                 ],
@@ -335,9 +335,9 @@ class ViewPersonExternalIdsTest(BaseViewTest):
     def test_view_person_external_ids_join_on_parole_2(self) -> None:
         self.run_test(
             dbo_parole_count_ids=[
-                ParoleCountIds(ParoleNumber="1234R", ParoleInstNumber=None),
+                ParoleCountIds(ParoleNumber="1234R", ParoleInstNumber=""),
                 ParoleCountIds(ParoleNumber="444GS", ParoleInstNumber="KS0000"),
-                ParoleCountIds(ParoleNumber="444GS", ParoleInstNumber=None),
+                ParoleCountIds(ParoleNumber="444GS", ParoleInstNumber=""),
             ],
             dbo_tbl_search_inmate_info_ids=[
                 TblSearchInmateInfoIds(inmate_number="KS0000", control_number="280123"),
@@ -352,8 +352,8 @@ class ViewPersonExternalIdsTest(BaseViewTest):
                 ],
                 [
                     "RECIDIVIZ_PRIMARY_PAROLE_NUMBER_1234R",
-                    None,  # control_numbers
-                    None,  # inmate_numbers
+                    "",  # control_numbers
+                    "",  # inmate_numbers
                     "1234R",  # parole_numbers
                 ],
             ],
@@ -427,7 +427,7 @@ class ViewPersonExternalIdsTest(BaseViewTest):
                     "RECIDIVIZ_PRIMARY_CONTROL_NUMBER_080808",
                     "080808,121212",  # control_numbers
                     "OA3333,OD6666",  # inmate_numbers
-                    None,  # parole_numbers
+                    "",  # parole_numbers
                 ]
             ],
         )
