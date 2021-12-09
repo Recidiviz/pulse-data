@@ -324,22 +324,6 @@ class DownloadFilesFromSftpController:
 
         return files_to_download_with_timestamps
 
-    def clean_up(self) -> None:
-        """Attempts to recursively remove any downloaded folders created as part of do_fetch."""
-        try:
-            logging.info("Cleaning up items in %s.", self.download_dir.uri())
-            files_to_delete = self.gcsfs.ls_with_blob_prefix(
-                bucket_name=self.bucket.abs_path(), blob_prefix=RAW_INGEST_DIRECTORY
-            )
-            for file in files_to_delete:
-                self.gcsfs.delete(GcsfsFilePath.from_absolute_path(file.abs_path()))
-        except Exception as e:
-            logging.info(
-                "%s could not be cleaned up due to an error %s.",
-                self.download_dir.uri(),
-                e.args,
-            )
-
     def fetch_files(
         self, files_to_download_with_timestamps: List[Tuple[str, datetime.datetime]]
     ) -> None:
