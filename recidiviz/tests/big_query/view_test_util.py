@@ -346,6 +346,10 @@ class BaseViewTest(unittest.TestCase):
         # (below) we should likely just define a full output schema.
         results = pd.read_sql_query(view_query, con=self.postgres_engine)
         results = results.astype(data_types)
+        # If data types are not provided, transform 'nan' values to empty strings. These occur
+        # when reading null values into a dataframe.
+        if not data_types:
+            results = results.fillna("")
         # TODO(#5533): If we add `dimensions` to all `BigQueryViewBuilder`, instead of just
         # `MetricBigQueryViewBuilder`, then we can reuse that here instead of forcing the caller to specify them
         # manually.
