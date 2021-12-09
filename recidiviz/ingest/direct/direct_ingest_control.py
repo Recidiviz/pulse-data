@@ -726,8 +726,6 @@ def upload_from_sftp() -> Tuple[str, HTTPStatus]:
                 m_sftp_errors, len(upload_result.failures)
             )
 
-        sftp_controller.clean_up()
-
         unable_to_upload_text = (
             f"Unable to upload the following files: {upload_result.failures}"
             if upload_result.failures
