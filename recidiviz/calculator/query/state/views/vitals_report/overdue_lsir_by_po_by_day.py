@@ -47,7 +47,7 @@ WITH overdue_lsir AS (
         IFNULL(level_1_supervision_location_external_id, 'UNKNOWN') as level_1_supervision_location_external_id,
         IFNULL(level_2_supervision_location_external_id, 'UNKNOWN') as level_2_supervision_location_external_id,
         COUNT (DISTINCT(IF(next_recommended_assessment_date < date_of_supervision, person_id, NULL))) as total_overdue,
-    FROM `{project_id}.{vitals_views_dataset}.vitals_supervision_case_compliance_metrics` compliance,
+    FROM `{project_id}.{reference_views_dataset}.supervision_case_compliance_metrics_materialized` compliance,
     UNNEST ([compliance.level_1_supervision_location_external_id, 'ALL']) AS level_1_supervision_location_external_id,
     UNNEST ([compliance.level_2_supervision_location_external_id, 'ALL']) AS level_2_supervision_location_external_id,
     UNNEST ([supervising_officer_external_id, 'ALL']) AS supervising_officer_external_id
@@ -87,6 +87,7 @@ OVERDUE_LSIR_BY_PO_BY_DAY_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=OVERDUE_LSIR_BY_PO_BY_DAY_VIEW_NAME,
     view_query_template=OVERDUE_LSIR_BY_PO_BY_DAY_QUERY_TEMPLATE,
     description=OVERDUE_LSIR_BY_PO_BY_DAY_DESCRIPTION,
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     vitals_views_dataset=dataset_config.VITALS_REPORT_DATASET,
     vitals_state_specific_join_with_supervision_population=state_specific_query_strings.vitals_state_specific_join_with_supervision_population(
         "overdue_lsir"

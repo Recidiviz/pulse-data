@@ -72,8 +72,14 @@ from recidiviz.calculator.query.state.views.reference.single_day_incarceration_p
 from recidiviz.calculator.query.state.views.reference.single_day_supervision_population_for_spotlight import (
     SINGLE_DAY_SUPERVISION_POPULATION_FOR_SPOTLIGHT_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.reference.supervision_case_compliance_metrics import (
+    SUPERVISION_CASE_COMPLIANCE_METRICS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.reference.supervision_matrix_by_person import (
     SUPERVISION_MATRIX_BY_PERSON_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.reference.supervision_mismatches_by_day import (
+    SUPERVISION_MISMATCHES_BY_DAY_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.reference.supervision_period_judicial_district_association import (
     SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_BUILDER,
@@ -120,4 +126,6 @@ REFERENCE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     AGENT_EXTERNAL_ID_TO_FULL_NAMES_VIEW_BUILDER,
     SUPERVISION_TO_LIBERTY_TRANSITIONS_VIEW_BUILDER,
     SUPERVISION_TO_PRISON_TRANSITIONS_VIEW_BUILDER,
+    SUPERVISION_CASE_COMPLIANCE_METRICS_VIEW_BUILDER,
+    SUPERVISION_MISMATCHES_BY_DAY_VIEW_BUILDER,
 ]
