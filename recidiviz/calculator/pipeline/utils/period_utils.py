@@ -46,16 +46,15 @@ def sort_period_by_external_id(p_a: PeriodType, p_b: PeriodType) -> int:
 
 def sort_periods_by_set_dates_and_statuses(
     periods: List[PeriodType],
-    # TODO(#9128): Remove this arg entirely once neither period type has a status field.
-    has_active_status_function: Optional[Callable[[PeriodType], int]],
     is_transfer_start_function: Callable[[PeriodType], int],
     is_transfer_end_function: Callable[[PeriodType], int],
 ) -> None:
     """Sorts periods chronologically by the start and end dates according to this logic:
     - Sorts by start_date_inclusive, if set, else by end_date_exclusive
     - For periods with the same start_date_inclusive:
-        - If neither have a end_date_exclusive, sorts by the status
-        - Else, sorts by end_date_exclusive, with unset end_date_exclusives before set end_date_exclusives
+        - If neither have a end_date_exclusive, sorts by the external_id
+        - Else, sorts by end_date_exclusive, with unset end_date_exclusives before set
+            end_date_exclusives
     """
 
     def _sort_period_by_external_id(p_a: PeriodType, p_b: PeriodType) -> int:
@@ -120,23 +119,6 @@ def sort_periods_by_set_dates_and_statuses(
         # They have the same start and end dates. Sort by transfer starts.
         return _sort_by_transfer_start(period_a, period_b)
 
-    def _sort_by_active_status(period_a: PeriodType, period_b: PeriodType) -> int:
-        if has_active_status_function is None:
-            raise ValueError("Expected nonnull has_active_status_function.")
-
-        period_a_active = has_active_status_function(period_a)
-        period_b_active = has_active_status_function(period_b)
-
-        if period_a_active == period_b_active:
-            return sort_period_by_external_id(period_a, period_b)
-        # Sort by status of the period. Order periods that are active (no end date)
-        # after periods that have ended.
-        if period_a_active:
-            return 1
-        if period_b_active:
-            return -1
-        raise ValueError("One status should be active at this point")
-
     def _sort_equal_start_date(period_a: PeriodType, period_b: PeriodType) -> int:
         if period_a.start_date_inclusive != period_b.start_date_inclusive:
             raise ValueError("Expected equal start dates")
@@ -151,11 +133,11 @@ def sort_periods_by_set_dates_and_statuses(
                 "period that has a null ending and null starting reason."
             )
         if period_a.end_date_exclusive is None and period_b.end_date_exclusive is None:
-            if has_active_status_function is None:
-                return sort_period_by_external_id(period_a, period_b)
-            return _sort_by_active_status(period_a, period_b)
-        # Sort by end dates, with unset end dates coming first if the following period is greater than 0 days
-        # long (we assume in this case that we forgot to close this open period).
+            return sort_period_by_external_id(period_a, period_b)
+
+        # Sort by end dates, with unset end dates coming first if the following period
+        # is greater than 0 days long (we assume in this case that we forgot to close
+        # this open period).
         if period_a.end_date_exclusive:
             return (
                 1

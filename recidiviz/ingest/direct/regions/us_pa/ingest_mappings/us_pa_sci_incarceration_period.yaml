@@ -21,3 +21,4 @@ keys_to_ignore:
   - end_is_admin_edge # Indicates if period is ending due to an administrative update  - handled manually in the controller
   - sentence_type # Sentence type (general vs treatment) - handled manually in the controller
   - inmate_number # Unused - another external ID for the person
+

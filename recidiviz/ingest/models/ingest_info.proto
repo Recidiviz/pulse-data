@@ -345,7 +345,6 @@ message StateCourtCase {
 
 message StateIncarcerationPeriod {
     optional string state_incarceration_period_id = 1;
-    optional string status = 2;
     optional string incarceration_type = 3;
     optional string admission_date = 4;
     optional string release_date = 5;

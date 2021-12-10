@@ -27,7 +27,6 @@ from recidiviz.common.constants.state.state_incarceration import StateIncarcerat
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
-    StateIncarcerationPeriodStatus,
 )
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
@@ -64,7 +63,6 @@ class TestPreCommitmentSupervisionTypeIdentification(unittest.TestCase):
             incarceration_period_id=1112,
             external_id="2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_PA",
             admission_date=date(2008, 12, 20),
             admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
@@ -101,7 +99,6 @@ class TestPreCommitmentSupervisionTypeIdentification(unittest.TestCase):
             incarceration_period_id=1112,
             external_id="2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_PA",
             admission_date=date(2008, 12, 20),
             admission_reason=StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
@@ -127,7 +124,6 @@ class TestPreCommitmentSupervisionTypeIdentification(unittest.TestCase):
             incarceration_period_id=1112,
             external_id="2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_PA",
             admission_date=date(2008, 12, 20),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,

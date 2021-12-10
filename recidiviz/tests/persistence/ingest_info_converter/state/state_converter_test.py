@@ -34,9 +34,6 @@ from recidiviz.common.constants.state.state_incarceration_incident import (
     StateIncarcerationIncidentOutcomeType,
     StateIncarcerationIncidentType,
 )
-from recidiviz.common.constants.state.state_incarceration_period import (
-    StateIncarcerationPeriodStatus,
-)
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentDischargeReason,
     StateProgramAssignmentParticipationStatus,
@@ -619,7 +616,6 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                 incarceration_periods=[
                     StateIncarcerationPeriod.new_with_defaults(
                         external_id="I_PERIOD_ID",
-                        status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
                         incarceration_type=StateIncarcerationType.STATE_PRISON,
                         state_code="US_XX",
                         parole_decisions=[

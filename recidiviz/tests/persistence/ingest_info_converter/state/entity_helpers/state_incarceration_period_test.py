@@ -25,7 +25,6 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationFacilitySecurityLevel,
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
-    StateIncarcerationPeriodStatus,
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.ingest.models import ingest_info_pb2
@@ -49,7 +48,6 @@ class StateIncarcerationPeriodConverterTest(unittest.TestCase):
     def testParseStateIncarcerationPeriod(self):
         # Arrange
         ingest_incarceration = ingest_info_pb2.StateIncarcerationPeriod(
-            status="NOT_IN_CUSTODY",
             incarceration_type="STATE_PRISON",
             facility_security_level="MEDIUM",
             admission_reason="REVOCATION",
@@ -77,8 +75,6 @@ class StateIncarcerationPeriodConverterTest(unittest.TestCase):
 
         # Assert
         expected_result = entities.StateIncarcerationPeriod(
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            status_raw_text="NOT_IN_CUSTODY",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             incarceration_type_raw_text="STATE_PRISON",
             facility_security_level=StateIncarcerationFacilitySecurityLevel.MEDIUM,
@@ -121,7 +117,6 @@ class StateIncarcerationPeriodConverterTest(unittest.TestCase):
 
         # Assert
         expected_result = entities.StateIncarcerationPeriod.new_with_defaults(
-            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             incarceration_type_raw_text="STATE_PRISON",
             state_code="US_ND",
@@ -149,7 +144,6 @@ class StateIncarcerationPeriodConverterTest(unittest.TestCase):
 
         # Assert
         expected_result = entities.StateIncarcerationPeriod.new_with_defaults(
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             incarceration_type_raw_text="STATE_PRISON",
             admission_date=date(year=2111, month=1, day=2),
@@ -178,7 +172,6 @@ class StateIncarcerationPeriodConverterTest(unittest.TestCase):
 
         # Assert
         expected_result = entities.StateIncarcerationPeriod.new_with_defaults(
-            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             incarceration_type_raw_text="STATE_PRISON",
             admission_date=date(year=2111, month=1, day=2),

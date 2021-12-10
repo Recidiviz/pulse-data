@@ -113,9 +113,6 @@ state_incarceration_incident_outcome_treatment = "TREATMENT"
 state_incarceration_incident_outcome_warning = "WARNING"
 
 # state_incarceration_period.py
-state_incarceration_period_status_in_custody = "IN_CUSTODY"
-state_incarceration_period_status_not_in_custody = "NOT_IN_CUSTODY"
-
 state_incarceration_facility_security_level_maximum = "MAXIMUM"
 state_incarceration_facility_security_level_medium = "MEDIUM"
 state_incarceration_facility_security_level_minimum = "MINIMUM"

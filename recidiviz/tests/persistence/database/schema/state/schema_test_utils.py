@@ -21,14 +21,10 @@ from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_court_case import StateCourtCaseStatus
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
-from recidiviz.common.constants.state.state_incarceration_period import (
-    StateIncarcerationPeriodStatus,
-)
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
-
 from recidiviz.persistence.database.schema.state import schema
 
 _ID_TYPE = "ID_TYPE"
@@ -98,7 +94,6 @@ def generate_incarceration_sentence(
 
 def generate_incarceration_period(person, **kwargs) -> schema.StateIncarcerationPeriod:
     args = {
-        "status": StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO.value,
         "state_code": _STATE_CODE,
         "incarceration_type": StateIncarcerationType.STATE_PRISON.value,
     }

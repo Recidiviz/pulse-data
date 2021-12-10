@@ -48,7 +48,6 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationFacilitySecurityLevel,
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
-    StateIncarcerationPeriodStatus,
 )
 from recidiviz.common.constants.state.state_parole_decision import (
     StateParoleDecisionOutcome,
@@ -373,8 +372,6 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
     ]
 
     incarceration_period = entities.StateIncarcerationPeriod.new_with_defaults(
-        status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-        status_raw_text="IN CUSTODY",
         incarceration_type=StateIncarcerationType.STATE_PRISON,
         incarceration_type_raw_text=None,
         admission_date=datetime.date(year=2003, month=8, day=1),

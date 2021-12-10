@@ -2308,7 +2308,6 @@ global___StateCourtCase = StateCourtCase
 class StateIncarcerationPeriod(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
     STATE_INCARCERATION_PERIOD_ID_FIELD_NUMBER: builtins.int
-    STATUS_FIELD_NUMBER: builtins.int
     INCARCERATION_TYPE_FIELD_NUMBER: builtins.int
     ADMISSION_DATE_FIELD_NUMBER: builtins.int
     RELEASE_DATE_FIELD_NUMBER: builtins.int
@@ -2324,7 +2323,6 @@ class StateIncarcerationPeriod(google.protobuf.message.Message):
     CUSTODIAL_AUTHORITY_FIELD_NUMBER: builtins.int
     STATE_PAROLE_DECISION_IDS_FIELD_NUMBER: builtins.int
     state_incarceration_period_id: typing.Text = ...
-    status: typing.Text = ...
     incarceration_type: typing.Text = ...
     admission_date: typing.Text = ...
     release_date: typing.Text = ...
@@ -2348,7 +2346,6 @@ class StateIncarcerationPeriod(google.protobuf.message.Message):
         self,
         *,
         state_incarceration_period_id: typing.Optional[typing.Text] = ...,
-        status: typing.Optional[typing.Text] = ...,
         incarceration_type: typing.Optional[typing.Text] = ...,
         admission_date: typing.Optional[typing.Text] = ...,
         release_date: typing.Optional[typing.Text] = ...,
@@ -2395,8 +2392,6 @@ class StateIncarcerationPeriod(google.protobuf.message.Message):
             b"state_code",
             "state_incarceration_period_id",
             b"state_incarceration_period_id",
-            "status",
-            b"status",
         ],
     ) -> builtins.bool: ...
     def ClearField(
@@ -2432,8 +2427,6 @@ class StateIncarcerationPeriod(google.protobuf.message.Message):
             b"state_incarceration_period_id",
             "state_parole_decision_ids",
             b"state_parole_decision_ids",
-            "status",
-            b"status",
         ],
     ) -> None: ...
 

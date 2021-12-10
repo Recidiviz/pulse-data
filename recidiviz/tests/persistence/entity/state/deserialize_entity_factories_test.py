@@ -62,7 +62,6 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationFacilitySecurityLevel,
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
-    StateIncarcerationPeriodStatus,
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_parole_decision import (
@@ -803,7 +802,6 @@ class TestDeserializeEntityFactories(unittest.TestCase):
         )
         result = (
             deserialize_entity_factories.StateIncarcerationPeriodFactory.deserialize(
-                status=None,
                 incarceration_type=StrictEnumParser(
                     "P", StateIncarcerationType, overrides
                 ),
@@ -840,8 +838,6 @@ class TestDeserializeEntityFactories(unittest.TestCase):
 
         # Assert
         expected_result = entities.StateIncarcerationPeriod(
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            status_raw_text=None,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             incarceration_type_raw_text="P",
             facility_security_level=StateIncarcerationFacilitySecurityLevel.MEDIUM,
