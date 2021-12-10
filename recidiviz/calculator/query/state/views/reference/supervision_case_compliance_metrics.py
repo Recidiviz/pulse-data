@@ -24,27 +24,26 @@ from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-VITALS_SUPERVISION_CASE_COMPLIANCE_METRICS_VIEW_NAME = (
-    "vitals_supervision_case_compliance_metrics"
-)
+SUPERVISION_CASE_COMPLIANCE_METRICS_VIEW_NAME = "supervision_case_compliance_metrics"
 
-VITALS_SUPERVISION_CASE_COMPLIANCE_METRICS_DESCRIPTION = """
+SUPERVISION_CASE_COMPLIANCE_METRICS_DESCRIPTION = """
 Case compliance metrics with supervising_officer_external_id pulled directly from raw data table for US_ID.
 """
 
-VITALS_SUPERVISION_CASE_COMPLIANCE_METRICS_TEMPLATE = f"""
+SUPERVISION_CASE_COMPLIANCE_METRICS_TEMPLATE = f"""
 /*{{description}}*/
     {hack_us_id_supervising_officer_external_id('most_recent_supervision_case_compliance_metrics_materialized')}
 """
 
-VITALS_SUPERVISION_CASE_COMPLIANCE_METRICS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
-    dataset_id=dataset_config.VITALS_REPORT_DATASET,
-    view_id=VITALS_SUPERVISION_CASE_COMPLIANCE_METRICS_VIEW_NAME,
-    view_query_template=VITALS_SUPERVISION_CASE_COMPLIANCE_METRICS_TEMPLATE,
-    description=VITALS_SUPERVISION_CASE_COMPLIANCE_METRICS_DESCRIPTION,
+SUPERVISION_CASE_COMPLIANCE_METRICS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+    dataset_id=dataset_config.REFERENCE_VIEWS_DATASET,
+    view_id=SUPERVISION_CASE_COMPLIANCE_METRICS_VIEW_NAME,
+    view_query_template=SUPERVISION_CASE_COMPLIANCE_METRICS_TEMPLATE,
+    description=SUPERVISION_CASE_COMPLIANCE_METRICS_DESCRIPTION,
+    should_materialize=True,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
 )
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        VITALS_SUPERVISION_CASE_COMPLIANCE_METRICS_VIEW_BUILDER.build_and_print()
+        SUPERVISION_CASE_COMPLIANCE_METRICS_VIEW_BUILDER.build_and_print()
