@@ -63,7 +63,8 @@ output:
                         - NF  # Non-Return Furlough
                         - NR  # [Unlisted]
                         - NW  # Non-Return Work Release
-                        - P  # Paroled
+                        - P   # Paroled
+                        - PC  # Program Completed - Seems to be used instead of SC for some State Drug Treatment Program sentences
                         - RP  # Re-paroled (extremely rare)
                         - SC  # Sentence Complete
                         - SP  # Serve Previous
@@ -94,9 +95,6 @@ output:
                         - VS # Vacated Sentence
                       StateSentenceStatus.EXTERNAL_UNKNOWN:
                         - O # ??? (this is PA's own label; it means unknown within their own system)
-                    $ignore:
-                      # TODO(#10053): Need to determine the actual mapping for PC
-                      - PC # This is a new unknown status code that needs to be mapped properly
                 incarceration_type:
                   $enum_mapping:
                     $raw_text: type_of_sent
