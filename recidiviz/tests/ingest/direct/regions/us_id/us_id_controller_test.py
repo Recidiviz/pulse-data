@@ -801,92 +801,74 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                             state_person_external_id_id="1111", id_type=US_ID_DOC
                         )
                     ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_sentence_group_id="1111-1",
-                            state_supervision_sentences=[
-                                StateSupervisionSentence(
-                                    state_supervision_periods=[
-                                        StateSupervisionPeriod(
-                                            state_supervision_period_id="1111-1",
-                                            supervision_site="DISTRICT 1|OFFICE 1",
-                                            admission_reason="COURT_SENTENCE",
-                                            start_date="2007-10-01",
-                                            termination_reason="I",
-                                            termination_date="2008-01-01",
-                                            supervision_type="PS",
-                                            custodial_authority="D1",
-                                            supervising_officer=StateAgent(
-                                                state_agent_id="po1",
-                                                full_name="NAME1",
-                                                agent_type="SUPERVISION_OFFICER",
-                                            ),
-                                        ),
-                                    ],
-                                )
-                            ],
+                    state_supervision_periods=[
+                        StateSupervisionPeriod(
+                            state_supervision_period_id="1111-1",
+                            supervision_site="DISTRICT 1|OFFICE 1",
+                            admission_reason="COURT_SENTENCE",
+                            start_date="2007-10-01",
+                            termination_reason="I",
+                            termination_date="2008-01-01",
+                            supervision_type="PS",
+                            custodial_authority="D1",
+                            supervising_officer=StateAgent(
+                                state_agent_id="po1",
+                                full_name="NAME1",
+                                agent_type="SUPERVISION_OFFICER",
+                            ),
                         ),
-                        StateSentenceGroup(
-                            state_sentence_group_id="1111-2",
-                            state_supervision_sentences=[
-                                StateSupervisionSentence(
-                                    state_supervision_periods=[
-                                        StateSupervisionPeriod(
-                                            state_supervision_period_id="1111-2",
-                                            supervision_site="DISTRICT 1|OFFICE 1",
-                                            admission_reason="H",
-                                            start_date="2017-10-01",
-                                            termination_reason="P",
-                                            termination_date="2018-01-01",
-                                            supervision_type="PS",
-                                            custodial_authority="D1",
-                                            supervising_officer=StateAgent(
-                                                state_agent_id="po1",
-                                                full_name="NAME1",
-                                                agent_type="SUPERVISION_OFFICER",
-                                            ),
-                                        ),
-                                        StateSupervisionPeriod(
-                                            state_supervision_period_id="1111-3",
-                                            supervision_site="DISTRICT 0|LIMITED SUPERVISION UNIT",
-                                            admission_reason="P",
-                                            start_date="2018-01-01",
-                                            termination_reason="I",
-                                            termination_date="2018-12-31",
-                                            supervision_type="PB",
-                                            supervision_level="UNCLASSIFIED",
-                                            custodial_authority="D0",
-                                        ),
-                                        StateSupervisionPeriod(
-                                            state_supervision_period_id="1111-4",
-                                            supervision_site="DISTRICT 1|OFFICE 2",
-                                            admission_reason="I",
-                                            supervision_type="PR",
-                                            start_date="2020-01-01",
-                                            termination_date="2020-06-01",
-                                            termination_reason="DEPORTED",
-                                            supervision_level="SO TO GENERAL HIGH",
-                                            custodial_authority="D1",
-                                            supervising_officer=StateAgent(
-                                                state_agent_id="po2",
-                                                full_name="NAME2",
-                                                agent_type="SUPERVISION_OFFICER",
-                                            ),
-                                        ),
-                                        StateSupervisionPeriod(
-                                            state_supervision_period_id="1111-5",
-                                            supervision_site="DISTRICT 1|OFFICE 2",
-                                            admission_reason="DEPORTED",
-                                            supervision_type="PR",
-                                            start_date="2020-06-01",
-                                            termination_date="2020-12-31",
-                                            termination_reason="H-PARDONED",
-                                            supervision_level="LEVEL 4",
-                                            custodial_authority="DEPORTED",
-                                        ),
-                                    ]
-                                )
-                            ],
+                        StateSupervisionPeriod(
+                            state_supervision_period_id="1111-2",
+                            supervision_site="DISTRICT 1|OFFICE 1",
+                            admission_reason="H",
+                            start_date="2017-10-01",
+                            termination_reason="P",
+                            termination_date="2018-01-01",
+                            supervision_type="PS",
+                            custodial_authority="D1",
+                            supervising_officer=StateAgent(
+                                state_agent_id="po1",
+                                full_name="NAME1",
+                                agent_type="SUPERVISION_OFFICER",
+                            ),
+                        ),
+                        StateSupervisionPeriod(
+                            state_supervision_period_id="1111-3",
+                            supervision_site="DISTRICT 0|LIMITED SUPERVISION UNIT",
+                            admission_reason="P",
+                            start_date="2018-01-01",
+                            termination_reason="I",
+                            termination_date="2018-12-31",
+                            supervision_type="PB",
+                            supervision_level="UNCLASSIFIED",
+                            custodial_authority="D0",
+                        ),
+                        StateSupervisionPeriod(
+                            state_supervision_period_id="1111-4",
+                            supervision_site="DISTRICT 1|OFFICE 2",
+                            admission_reason="I",
+                            supervision_type="PR",
+                            start_date="2020-01-01",
+                            termination_date="2020-06-01",
+                            termination_reason="DEPORTED",
+                            supervision_level="SO TO GENERAL HIGH",
+                            custodial_authority="D1",
+                            supervising_officer=StateAgent(
+                                state_agent_id="po2",
+                                full_name="NAME2",
+                                agent_type="SUPERVISION_OFFICER",
+                            ),
+                        ),
+                        StateSupervisionPeriod(
+                            state_supervision_period_id="1111-5",
+                            supervision_site="DISTRICT 1|OFFICE 2",
+                            admission_reason="DEPORTED",
+                            supervision_type="PR",
+                            start_date="2020-06-01",
+                            termination_date="2020-12-31",
+                            termination_reason="H-PARDONED",
+                            supervision_level="LEVEL 4",
+                            custodial_authority="DEPORTED",
                         ),
                     ],
                 ),
@@ -897,73 +879,60 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                             state_person_external_id_id="2222", id_type=US_ID_DOC
                         )
                     ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_sentence_group_id="2222-1",
-                            state_supervision_sentences=[
-                                StateSupervisionSentence(
-                                    state_supervision_periods=[
-                                        StateSupervisionPeriod(
-                                            state_supervision_period_id="2222-1",
-                                            supervision_site="DISTRICT 2|UNKNOWN",
-                                            admission_reason="COURT_SENTENCE",
-                                            start_date="2009-01-01",
-                                            termination_reason="F",
-                                            termination_date="2009-07-01",
-                                            supervision_type="CP",
-                                            supervision_level="UNSUPV/COURT PROB",
-                                            custodial_authority="D2",
-                                        ),
-                                        StateSupervisionPeriod(
-                                            state_supervision_period_id="2222-2",
-                                            admission_reason="ABSCONSION",
-                                            start_date="2009-07-01",
-                                            termination_reason="RETURN_FROM_ABSCONSION",
-                                            termination_date="2009-12-01",
-                                            supervision_type="PB",
-                                            supervision_level="SEX OFFENSE",
-                                            state_supervision_case_type_entries=[
-                                                StateSupervisionCaseTypeEntry(
-                                                    case_type="SEX OFFENSE"
-                                                ),
-                                            ],
-                                            custodial_authority="FI",
-                                        ),
-                                        StateSupervisionPeriod(
-                                            state_supervision_period_id="2222-3",
-                                            supervision_site="DISTRICT 2|OFFICE 3",
-                                            admission_reason="F",
-                                            start_date="2009-12-01",
-                                            termination_reason="I",
-                                            termination_date="2009-12-31",
-                                            supervision_type="PB,PR",
-                                            supervision_level="SO MODERATE",
-                                            state_supervision_case_type_entries=[
-                                                StateSupervisionCaseTypeEntry(
-                                                    case_type="SO MODERATE"
-                                                ),
-                                            ],
-                                            custodial_authority="D2",
-                                            supervising_officer=StateAgent(
-                                                state_agent_id="po3",
-                                                full_name="NAME3",
-                                                agent_type="SUPERVISION_OFFICER",
-                                            ),
-                                        ),
-                                        StateSupervisionPeriod(
-                                            state_supervision_period_id="2222-4",
-                                            supervision_site="PAROLE COMMISSION OFFICE|"
-                                            "U.S. IMMIGRATION NATURALIZATION DETAINER",
-                                            admission_reason="I",
-                                            start_date="2012-06-06",
-                                            termination_reason="I",
-                                            termination_date="2012-12-07",
-                                            supervision_type="PR",
-                                            custodial_authority="FED",
-                                        ),
-                                    ]
-                                )
+                    state_supervision_periods=[
+                        StateSupervisionPeriod(
+                            state_supervision_period_id="2222-1",
+                            supervision_site="DISTRICT 2|UNKNOWN",
+                            admission_reason="COURT_SENTENCE",
+                            start_date="2009-01-01",
+                            termination_reason="F",
+                            termination_date="2009-07-01",
+                            supervision_type="CP",
+                            supervision_level="UNSUPV/COURT PROB",
+                            custodial_authority="D2",
+                        ),
+                        StateSupervisionPeriod(
+                            state_supervision_period_id="2222-2",
+                            admission_reason="ABSCONSION",
+                            start_date="2009-07-01",
+                            termination_reason="RETURN_FROM_ABSCONSION",
+                            termination_date="2009-12-01",
+                            supervision_type="PB",
+                            supervision_level="SEX OFFENSE",
+                            state_supervision_case_type_entries=[
+                                StateSupervisionCaseTypeEntry(case_type="SEX OFFENSE"),
                             ],
+                            custodial_authority="FI",
+                        ),
+                        StateSupervisionPeriod(
+                            state_supervision_period_id="2222-3",
+                            supervision_site="DISTRICT 2|OFFICE 3",
+                            admission_reason="F",
+                            start_date="2009-12-01",
+                            termination_reason="I",
+                            termination_date="2009-12-31",
+                            supervision_type="PB,PR",
+                            supervision_level="SO MODERATE",
+                            state_supervision_case_type_entries=[
+                                StateSupervisionCaseTypeEntry(case_type="SO MODERATE"),
+                            ],
+                            custodial_authority="D2",
+                            supervising_officer=StateAgent(
+                                state_agent_id="po3",
+                                full_name="NAME3",
+                                agent_type="SUPERVISION_OFFICER",
+                            ),
+                        ),
+                        StateSupervisionPeriod(
+                            state_supervision_period_id="2222-4",
+                            supervision_site="PAROLE COMMISSION OFFICE|"
+                            "U.S. IMMIGRATION NATURALIZATION DETAINER",
+                            admission_reason="I",
+                            start_date="2012-06-06",
+                            termination_reason="I",
+                            termination_date="2012-12-07",
+                            supervision_type="PR",
+                            custodial_authority="FED",
                         ),
                     ],
                 ),
@@ -974,40 +943,29 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                             state_person_external_id_id="3333", id_type=US_ID_DOC
                         )
                     ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_sentence_group_id="3333-1",
-                            state_supervision_sentences=[
-                                StateSupervisionSentence(
-                                    state_supervision_periods=[
-                                        StateSupervisionPeriod(
-                                            state_supervision_period_id="3333-1",
-                                            supervision_site="DISTRICT 4|UNKNOWN",
-                                            admission_reason="COURT_SENTENCE",
-                                            start_date="2015-01-01",
-                                            termination_reason="IS",
-                                            termination_date="2018-01-01",
-                                            supervision_type="BW",
-                                            supervision_level="DRUG COURT",
-                                            state_supervision_case_type_entries=[
-                                                StateSupervisionCaseTypeEntry(
-                                                    case_type="DRUG COURT"
-                                                ),
-                                            ],
-                                            custodial_authority="D4",
-                                        ),
-                                        StateSupervisionPeriod(
-                                            state_supervision_period_id="3333-2",
-                                            admission_reason="IS",
-                                            supervision_site="INTERSTATE PROBATION|WASHINGTON",
-                                            supervision_level="INTERSTATE",
-                                            supervision_type="PB",
-                                            start_date="2018-01-01",
-                                            custodial_authority="IS",
-                                        ),
-                                    ]
-                                )
+                    state_supervision_periods=[
+                        StateSupervisionPeriod(
+                            state_supervision_period_id="3333-1",
+                            supervision_site="DISTRICT 4|UNKNOWN",
+                            admission_reason="COURT_SENTENCE",
+                            start_date="2015-01-01",
+                            termination_reason="IS",
+                            termination_date="2018-01-01",
+                            supervision_type="BW",
+                            supervision_level="DRUG COURT",
+                            state_supervision_case_type_entries=[
+                                StateSupervisionCaseTypeEntry(case_type="DRUG COURT"),
                             ],
+                            custodial_authority="D4",
+                        ),
+                        StateSupervisionPeriod(
+                            state_supervision_period_id="3333-2",
+                            admission_reason="IS",
+                            supervision_site="INTERSTATE PROBATION|WASHINGTON",
+                            supervision_level="INTERSTATE",
+                            supervision_type="PB",
+                            start_date="2018-01-01",
+                            custodial_authority="IS",
                         ),
                     ],
                 ),
@@ -1919,7 +1877,6 @@ class TestUsIdController(BaseDirectIngestControllerTests):
         #################################################################
         # MOVEMENT_FACILITY_OFFSTAT_SUPERVISION_PERIODS
         #################################################################
-        # TODO(#2492): Remove dangling placeholders from expected graph once functionality is in entity matching.
         # Arrange
         po_1 = entities.StateAgent.new_with_defaults(
             external_id="PO1",
@@ -1942,12 +1899,6 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             agent_type=StateAgentType.SUPERVISION_OFFICER,
             agent_type_raw_text="SUPERVISION_OFFICER",
         )
-        ss_1111_1_placeholder = entities.StateSupervisionSentence.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            sentence_group=sg_1111_1,
-            person=sg_1111_1.person,
-        )
         sp_1111_1 = entities.StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id="1111-1",
@@ -1962,19 +1913,11 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             termination_date=datetime.date(year=2008, month=1, day=1),
             supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,
             supervision_type_raw_text="PS",
-            supervision_sentences=[ss_1111_1_placeholder],
-            person=ss_1111_1_placeholder.person,
+            person=person_1,
             supervising_officer=po_1,
         )
-        sg_1111_1.supervision_sentences.append(ss_1111_1_placeholder)
-        ss_1111_1_placeholder.supervision_periods.append(sp_1111_1)
+        person_1.supervision_periods.append(sp_1111_1)
 
-        ss_1111_2_placeholder = entities.StateSupervisionSentence.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            sentence_group=sg_1111_2,
-            person=sg_1111_2.person,
-        )
         sp_1111_2 = entities.StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id="1111-2",
@@ -1989,8 +1932,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             termination_date=datetime.date(year=2018, month=1, day=1),
             supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,
             supervision_type_raw_text="PS",
-            supervision_sentences=[ss_1111_2_placeholder],
-            person=ss_1111_2_placeholder.person,
+            person=person_1,
             supervising_officer=attr.evolve(po_1),
         )
         sp_1111_3 = entities.StateSupervisionPeriod.new_with_defaults(
@@ -2009,8 +1951,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             supervision_level=StateSupervisionLevel.UNASSIGNED,
             supervision_level_raw_text="UNCLASSIFIED",
             termination_date=datetime.date(year=2018, month=12, day=31),
-            supervision_sentences=[ss_1111_2],
-            person=ss_1111_2.person,
+            person=person_1,
         )
         sp_1111_4 = entities.StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -2028,8 +1969,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             supervision_type_raw_text="PR",
             supervision_level=StateSupervisionLevel.HIGH,
             supervision_level_raw_text="SO TO GENERAL HIGH",
-            incarceration_sentences=[is_1111_3],
-            person=is_1111_3.person,
+            person=person_1,
             supervising_officer=po_2,
         )
         sp_1111_5 = entities.StateSupervisionPeriod.new_with_defaults(
@@ -2048,20 +1988,12 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             supervision_type_raw_text="PR",
             supervision_level=StateSupervisionLevel.MAXIMUM,
             supervision_level_raw_text="LEVEL 4",
-            incarceration_sentences=[is_1111_3],
-            person=is_1111_3.person,
+            person=person_1,
         )
-        sg_1111_2.supervision_sentences.append(ss_1111_2_placeholder)
-        ss_1111_2.supervision_periods.append(sp_1111_3)
-        ss_1111_2_placeholder.supervision_periods.append(sp_1111_2)
-        is_1111_3.supervision_periods.extend([sp_1111_4, sp_1111_5])
+        person_1.supervision_periods.extend(
+            [sp_1111_3, sp_1111_2, sp_1111_4, sp_1111_5]
+        )
 
-        ss_2222_1_placeholder = entities.StateSupervisionSentence.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            sentence_group=sg_2222_1,
-            person=sg_2222_1.person,
-        )
         sp_2222_1 = entities.StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id="2222-1",
@@ -2078,8 +2010,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             termination_date=datetime.date(year=2009, month=7, day=1),
             supervision_type=StateSupervisionPeriodSupervisionType.INFORMAL_PROBATION,
             supervision_type_raw_text="CP",
-            supervision_sentences=[ss_2222_1],
-            person=ss_2222_1.person,
+            person=person_2,
         )
         sp_2222_2 = entities.StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -2096,8 +2027,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             supervision_level=StateSupervisionLevel.INTERNAL_UNKNOWN,
             supervision_level_raw_text="SEX OFFENSE",
             termination_date=datetime.date(year=2009, month=12, day=1),
-            supervision_sentences=[ss_2222_1],
-            person=ss_2222_1.person,
+            person=person_2,
         )
         sc_2222_2_so = entities.StateSupervisionCaseTypeEntry.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -2122,8 +2052,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             supervision_type_raw_text="PB,PR",
             supervision_level=StateSupervisionLevel.MEDIUM,
             supervision_level_raw_text="SO MODERATE",
-            supervision_sentences=[ss_2222_1],
-            person=ss_2222_1.person,
+            person=person_2,
             supervising_officer=po_3,
         )
         sc_2222_3_so = entities.StateSupervisionCaseTypeEntry.new_with_defaults(
@@ -2147,22 +2076,15 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             termination_date=datetime.date(year=2012, month=12, day=7),
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             supervision_type_raw_text="PR",
-            incarceration_sentences=[is_2222_2],
-            person=ss_2222_1.person,
+            person=person_2,
         )
 
         sp_2222_2.case_type_entries.append(sc_2222_2_so)
         sp_2222_3.case_type_entries.append(sc_2222_3_so)
-        sg_2222_1.supervision_sentences.append(ss_2222_1_placeholder)
-        ss_2222_1.supervision_periods.extend([sp_2222_1, sp_2222_2, sp_2222_3])
-        is_2222_2.supervision_periods.append(sp_2222_4)
-
-        ss_3333_1_placeholder = entities.StateSupervisionSentence.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            sentence_group=sg_3333_1,
-            person=sg_3333_1.person,
+        person_2.supervision_periods.extend(
+            [sp_2222_1, sp_2222_2, sp_2222_3, sp_2222_4]
         )
+
         sp_3333_1 = entities.StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id="3333-1",
@@ -2179,8 +2101,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             supervision_level_raw_text="DRUG COURT",
             supervision_type=StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN,
             supervision_type_raw_text="BW",
-            supervision_sentences=[ss_3333_1],
-            person=ss_3333_1.person,
+            person=person_3,
         )
         sc_3333_1_dc = entities.StateSupervisionCaseTypeEntry.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -2202,12 +2123,10 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             supervision_type_raw_text="PB",
             supervision_level=StateSupervisionLevel.INTERSTATE_COMPACT,
             supervision_level_raw_text="INTERSTATE",
-            supervision_sentences=[ss_3333_1],
-            person=ss_3333_1.person,
+            person=person_3,
         )
         sp_3333_1.case_type_entries.append(sc_3333_1_dc)
-        sg_3333_1.supervision_sentences.append(ss_3333_1_placeholder)
-        ss_3333_1.supervision_periods.extend([sp_3333_1, sp_3333_2])
+        person_3.supervision_periods.extend([sp_3333_1, sp_3333_2])
 
         # Act
         self._run_ingest_job_for_filename(

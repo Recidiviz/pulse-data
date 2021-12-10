@@ -15,17 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains logic for US_ID specific entity matching overrides."""
-import logging
-from typing import List
-
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.ingest_metadata import IngestMetadata
-from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity_matching.state.base_state_matching_delegate import (
     BaseStateMatchingDelegate,
-)
-from recidiviz.persistence.entity_matching.state.state_date_based_matching_utils import (
-    move_periods_onto_sentences_by_date,
 )
 
 
@@ -34,13 +27,3 @@ class UsIdMatchingDelegate(BaseStateMatchingDelegate):
 
     def __init__(self, ingest_metadata: IngestMetadata):
         super().__init__(StateCode.US_ID.value.lower(), ingest_metadata)
-
-    def perform_match_postprocessing(self, matched_persons: List[schema.StatePerson]):
-        """Performs the following ID specific postprocessing on the provided |matched_persons| directly after they have
-        been entity matched:
-            - Moves supervision periods onto non-placeholder sentences by date.
-        """
-        logging.info("[Entity matching] Move periods onto sentences by date.")
-        move_periods_onto_sentences_by_date(
-            matched_persons, field_index=self.field_index
-        )

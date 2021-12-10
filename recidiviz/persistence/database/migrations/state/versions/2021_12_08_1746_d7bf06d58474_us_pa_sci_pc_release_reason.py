@@ -2,7 +2,7 @@
 """us_pa_sci_pc_release_reason
 
 Revision ID: d7bf06d58474
-Revises: b6f1fc45c89c
+Revises: f0080b6d385c
 Create Date: 2021-12-08 17:46:58.466869
 
 """
@@ -15,7 +15,7 @@ from recidiviz.utils.string import StrictStringFormatter
 
 # revision identifiers, used by Alembic.
 revision = "d7bf06d58474"
-down_revision = "b6f1fc45c89c"
+down_revision = "f0080b6d385c"
 branch_labels = None
 depends_on = None
 

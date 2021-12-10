@@ -208,32 +208,6 @@ class ExtractDataForPipeline(beam.PTransform):
                     # of the python objects.
                     continue
 
-                # TODO(#9567): Stop checking for the relationship between
-                #  StateSupervisionPeriod and sentences once this entity is on
-                #  the StatePerson
-                # TODO(#9568): Stop checking for the relationship between
-                #  StateIncarcerationPeriod and sentences once this entity is on
-                #  the StatePerson
-                if (
-                    root_entity_class
-                    in (
-                        state_entities.StateIncarcerationSentence,
-                        state_entities.StateSupervisionSentence,
-                    )
-                    and "periods" in property_name
-                ) or (
-                    root_entity_class
-                    in (
-                        state_entities.StateIncarcerationPeriod,
-                        state_entities.StateSupervisionPeriod,
-                    )
-                    and "sentences" in property_name
-                ):
-                    # We are temporarily avoiding hydrating the period to sentence
-                    # relationship to avoid memory issues with this memory-intensive
-                    # relationship
-                    continue
-
                 if property_entity_class in self._required_entities:
                     is_property_forward_edge = self._direction_checker.is_higher_ranked(
                         root_schema_class, property_schema_class

@@ -1196,20 +1196,12 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                     supervising_officer=StateAgent(
                         state_agent_id="74", agent_type="SUPERVISION_OFFICER"
                     ),
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_supervision_sentences=[
-                                StateSupervisionSentence(
-                                    state_supervision_periods=[
-                                        StateSupervisionPeriod(
-                                            state_supervision_case_type_entries=[
-                                                StateSupervisionCaseTypeEntry(
-                                                    case_type="0",
-                                                    state_supervision_case_type_entry_id="241896",
-                                                )
-                                            ]
-                                        )
-                                    ]
+                    state_supervision_periods=[
+                        StateSupervisionPeriod(
+                            state_supervision_case_type_entries=[
+                                StateSupervisionCaseTypeEntry(
+                                    case_type="0",
+                                    state_supervision_case_type_entry_id="241896",
                                 )
                             ]
                         )
@@ -1249,20 +1241,12 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                     supervising_officer=StateAgent(
                         state_agent_id="40", agent_type="SUPERVISION_OFFICER"
                     ),
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_supervision_sentences=[
-                                StateSupervisionSentence(
-                                    state_supervision_periods=[
-                                        StateSupervisionPeriod(
-                                            state_supervision_case_type_entries=[
-                                                StateSupervisionCaseTypeEntry(
-                                                    case_type="0",
-                                                    state_supervision_case_type_entry_id="92237",
-                                                )
-                                            ]
-                                        )
-                                    ]
+                    state_supervision_periods=[
+                        StateSupervisionPeriod(
+                            state_supervision_case_type_entries=[
+                                StateSupervisionCaseTypeEntry(
+                                    case_type="0",
+                                    state_supervision_case_type_entry_id="92237",
                                 )
                             ]
                         )
@@ -1293,20 +1277,12 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                     supervising_officer=StateAgent(
                         state_agent_id="70", agent_type="SUPERVISION_OFFICER"
                     ),
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_supervision_sentences=[
-                                StateSupervisionSentence(
-                                    state_supervision_periods=[
-                                        StateSupervisionPeriod(
-                                            state_supervision_case_type_entries=[
-                                                StateSupervisionCaseTypeEntry(
-                                                    case_type="-1",
-                                                    state_supervision_case_type_entry_id="92307",
-                                                )
-                                            ]
-                                        )
-                                    ]
+                    state_supervision_periods=[
+                        StateSupervisionPeriod(
+                            state_supervision_case_type_entries=[
+                                StateSupervisionCaseTypeEntry(
+                                    case_type="-1",
+                                    state_supervision_case_type_entry_id="92307",
                                 )
                             ]
                         )
@@ -1337,20 +1313,12 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                     supervising_officer=StateAgent(
                         state_agent_id="22", agent_type="SUPERVISION_OFFICER"
                     ),
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_supervision_sentences=[
-                                StateSupervisionSentence(
-                                    state_supervision_periods=[
-                                        StateSupervisionPeriod(
-                                            state_supervision_case_type_entries=[
-                                                StateSupervisionCaseTypeEntry(
-                                                    case_type="0",
-                                                    state_supervision_case_type_entry_id="40404",
-                                                )
-                                            ]
-                                        )
-                                    ]
+                    state_supervision_periods=[
+                        StateSupervisionPeriod(
+                            state_supervision_case_type_entries=[
+                                StateSupervisionCaseTypeEntry(
+                                    case_type="0",
+                                    state_supervision_case_type_entry_id="40404",
                                 )
                             ]
                         )
@@ -3071,25 +3039,10 @@ class TestUsNdController(BaseDirectIngestControllerTests):
         person_1.current_address = "123 2ND ST N, FARGO, ND, 58102"
         person_1.residency_status = ResidencyStatus.PERMANENT
         person_1.supervising_officer = agent_40
-        person_1_sentence_group_placeholder = (
-            entities.StateSentenceGroup.new_with_defaults(
-                state_code=_STATE_CODE,
-                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                person=person_1,
-            )
-        )
-        person_1_supervision_sentence_placeholder = (
-            entities.StateSupervisionSentence.new_with_defaults(
-                state_code=_STATE_CODE,
-                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                sentence_group=person_1_sentence_group_placeholder,
-                person=person_1,
-            )
-        )
+
         person_1_supervision_period_placeholder = (
             entities.StateSupervisionPeriod.new_with_defaults(
                 state_code=_STATE_CODE,
-                supervision_sentences=[person_1_supervision_sentence_placeholder],
                 person=person_1,
             )
         )
@@ -3102,13 +3055,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             external_id="92237",
         )
         person_1_supervision_period_placeholder.case_type_entries = [person_1_case_type]
-        person_1_supervision_sentence_placeholder.supervision_periods = [
-            person_1_supervision_period_placeholder
-        ]
-        person_1_sentence_group_placeholder.supervision_sentences = [
-            person_1_supervision_sentence_placeholder
-        ]
-        person_1.sentence_groups.append(person_1_sentence_group_placeholder)
+        person_1.supervision_periods.append(person_1_supervision_period_placeholder)
 
         person_2_supervising_officer = entities.StateAgent.new_with_defaults(
             agent_type=StateAgentType.SUPERVISION_OFFICER,
@@ -3146,25 +3093,10 @@ class TestUsNdController(BaseDirectIngestControllerTests):
         person_2.gender_raw_text = "2"
         person_2.residency_status = ResidencyStatus.PERMANENT
         person_2.supervising_officer = person_2_supervising_officer
-        person_2_sentence_group_placeholder = (
-            entities.StateSentenceGroup.new_with_defaults(
-                state_code=_STATE_CODE,
-                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                person=person_2,
-            )
-        )
-        person_2_supervision_sentence_placeholder = (
-            entities.StateSupervisionSentence.new_with_defaults(
-                state_code=_STATE_CODE,
-                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                sentence_group=person_2_sentence_group_placeholder,
-                person=person_2,
-            )
-        )
+
         person_2_supervision_period_placeholder = (
             entities.StateSupervisionPeriod.new_with_defaults(
                 state_code=_STATE_CODE,
-                supervision_sentences=[person_2_supervision_sentence_placeholder],
                 person=person_2,
             )
         )
@@ -3177,13 +3109,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             external_id="241896",
         )
         person_2_supervision_period_placeholder.case_type_entries = [person_2_case_type]
-        person_2_supervision_sentence_placeholder.supervision_periods = [
-            person_2_supervision_period_placeholder
-        ]
-        person_2_sentence_group_placeholder.supervision_sentences = [
-            person_2_supervision_sentence_placeholder
-        ]
-        person_2.sentence_groups.append(person_2_sentence_group_placeholder)
+        person_2.supervision_periods = [person_2_supervision_period_placeholder]
 
         person_6 = entities.StatePerson.new_with_defaults(
             full_name='{"given_names": "MIKE", "surname": "SANDISON"}',
@@ -3223,25 +3149,10 @@ class TestUsNdController(BaseDirectIngestControllerTests):
         person_6.external_ids = [person_6_external_id]
         person_6.ethnicities = [person_6_ethnicity]
         person_6.supervising_officer = person_6_supervising_officer
-        person_6_sentence_group_placeholder = (
-            entities.StateSentenceGroup.new_with_defaults(
-                state_code=_STATE_CODE,
-                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                person=person_6,
-            )
-        )
-        person_6_supervision_sentence_placeholder = (
-            entities.StateSupervisionSentence.new_with_defaults(
-                state_code=_STATE_CODE,
-                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                sentence_group=person_6_sentence_group_placeholder,
-                person=person_6,
-            )
-        )
+
         person_6_supervision_period_placeholder = (
             entities.StateSupervisionPeriod.new_with_defaults(
                 state_code=_STATE_CODE,
-                supervision_sentences=[person_6_supervision_sentence_placeholder],
                 person=person_6,
             )
         )
@@ -3254,13 +3165,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             external_id="92307",
         )
         person_6_supervision_period_placeholder.case_type_entries = [person_6_case_type]
-        person_6_supervision_sentence_placeholder.supervision_periods = [
-            person_6_supervision_period_placeholder
-        ]
-        person_6_sentence_group_placeholder.supervision_sentences = [
-            person_6_supervision_sentence_placeholder
-        ]
-        person_6.sentence_groups = [person_6_sentence_group_placeholder]
+        person_6.supervision_periods = [person_6_supervision_period_placeholder]
 
         expected_people.append(person_6)
 
@@ -3296,25 +3201,9 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             person=person_7,
         )
 
-        person_7_sentence_group_placeholder = (
-            entities.StateSentenceGroup.new_with_defaults(
-                state_code=_STATE_CODE,
-                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                person=person_7,
-            )
-        )
-        person_7_supervision_sentence_placeholder = (
-            entities.StateSupervisionSentence.new_with_defaults(
-                state_code=_STATE_CODE,
-                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                sentence_group=person_7_sentence_group_placeholder,
-                person=person_7,
-            )
-        )
         person_7_supervision_period_placeholder = (
             entities.StateSupervisionPeriod.new_with_defaults(
                 state_code=_STATE_CODE,
-                supervision_sentences=[person_7_supervision_sentence_placeholder],
                 person=person_7,
             )
         )
@@ -3341,13 +3230,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
         person_7.supervising_officer = person_7_supervising_officer
 
         person_7_supervision_period_placeholder.case_type_entries = [person_7_case_type]
-        person_7_supervision_sentence_placeholder.supervision_periods = [
-            person_7_supervision_period_placeholder
-        ]
-        person_7_sentence_group_placeholder.supervision_sentences = [
-            person_7_supervision_sentence_placeholder
-        ]
-        person_7.sentence_groups = [person_7_sentence_group_placeholder]
+        person_7.supervision_periods = [person_7_supervision_period_placeholder]
 
         expected_people.append(person_7)
 
@@ -3415,12 +3298,9 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             state_code=_STATE_CODE,
             county_code="US_ND_CASS",
             supervision_site="4",
-            supervision_sentences=[supervision_sentence_117109],
-            person=supervision_sentence_117109.person,
+            person=person_1,
         )
-        supervision_sentence_117109.supervision_periods.append(
-            supervision_period_117109
-        )
+        person_1.supervision_periods.append(supervision_period_117109)
         sentence_group_placeholder_ss.supervision_sentences.append(
             supervision_sentence_117109
         )
@@ -3449,8 +3329,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             county_code="US_ND_CASS",
             supervision_site="4",
             supervising_officer=agent_154,
-            supervision_sentences=[supervision_sentence_117110],
-            person=supervision_sentence_117110.person,
+            person=person_1,
         )
         charge_117110 = entities.StateCharge.new_with_defaults(
             state_code=_STATE_CODE,
@@ -3473,9 +3352,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
         )
         charge_117110.court_case = court_case_117110
         supervision_sentence_117110.charges = [charge_117110]
-        supervision_sentence_117110.supervision_periods.append(
-            supervision_period_117110
-        )
+        person_1.supervision_periods.append(supervision_period_117110)
         sentence_group_placeholder_ss.supervision_sentences.append(
             supervision_sentence_117110
         )
@@ -3525,8 +3402,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             county_code="INVALID",
             supervision_site="4",
             supervising_officer=agent_63,
-            supervision_sentences=[supervision_sentence_117111],
-            person=supervision_sentence_117111.person,
+            person=person_1,
         )
         supervision_violation_117111 = (
             entities.StateSupervisionViolation.new_with_defaults(
@@ -3576,9 +3452,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             supervision_violation_type_entry_117111
         )
         person_1.supervision_violations.append(supervision_violation_117111)
-        supervision_sentence_117111.supervision_periods.append(
-            supervision_period_117111
-        )
+        person_1.supervision_periods.append(supervision_period_117111)
         sentence_group_placeholder_ss.supervision_sentences.append(
             supervision_sentence_117111
         )
@@ -3618,8 +3492,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             county_code="US_ND_GRIGGS",
             supervision_site="2",
             supervising_officer=agent_77,
-            supervision_sentences=[supervision_sentence_140408],
-            person=supervision_sentence_140408.person,
+            person=person_2,
         )
         supervision_violation_140408 = (
             entities.StateSupervisionViolation.new_with_defaults(
@@ -3709,7 +3582,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             county_code="US_ND_GRIGGS",
             supervision_site="2",
             supervising_officer=agent_77,
-            supervision_sentences=[supervision_sentence_147777],
             person=supervision_sentence_147777.person,
         )
         supervision_violation_147777 = (
@@ -3781,9 +3653,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             supervision_violation_response_147777
         )
         person_2.supervision_violations.append(supervision_violation_147777)
-        supervision_sentence_147777.supervision_periods.append(
-            supervision_period_147777
-        )
+        person_2.supervision_periods.append(supervision_period_147777)
         sentence_group_person_2_placeholder_ss.supervision_sentences.append(
             supervision_sentence_147777
         )
@@ -3817,7 +3687,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             county_code="US_ND_GRAND_FORKS",
             supervision_site="5",
             supervising_officer=agent_76,
-            supervision_sentences=[supervision_sentence_147778],
             person=supervision_sentence_147778.person,
         )
 
@@ -3881,9 +3750,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
 
         charge_147778.court_case = court_case_147778
         supervision_sentence_147778.charges = [charge_147778]
-        supervision_sentence_147778.supervision_periods.append(
-            supervision_period_147778
-        )
+        person_2.supervision_periods.append(supervision_period_147778)
 
         person_2.sentence_groups.append(sentence_group_person_2_placeholder_ss)
 
@@ -3896,9 +3763,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             supervision_violation_response_140408
         )
         person_2.supervision_violations.append(supervision_violation_140408)
-        supervision_sentence_140408.supervision_periods.append(
-            supervision_period_140408
-        )
+        person_2.supervision_periods.append(supervision_period_140408)
         sentence_group_person_2_placeholder_ss.supervision_sentences.append(
             supervision_sentence_140408
         )

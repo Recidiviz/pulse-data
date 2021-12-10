@@ -276,7 +276,7 @@ def generate_test_charge(
 
 
 def generate_test_supervision_sentence(
-    person_id, charges, supervision_periods, early_discharges=None
+    person_id, charges, early_discharges=None
 ) -> state_schema.StateSupervisionSentence:
     instance = state_schema.StateSupervisionSentence(
         supervision_sentence_id=1111,
@@ -284,7 +284,6 @@ def generate_test_supervision_sentence(
         state_code="US_XX",
         person_id=person_id,
         charges=charges,
-        supervision_periods=supervision_periods,
         early_discharges=(early_discharges if early_discharges else []),
     )
 
@@ -354,6 +353,7 @@ def generate_test_person(
     supervision_violations: List[state_schema.StateSupervisionViolation],
     supervision_contacts: List[state_schema.StateSupervisionContact],
     incarceration_periods: List[state_schema.StateIncarcerationPeriod],
+    supervision_periods: List[state_schema.StateSupervisionPeriod],
 ) -> state_schema.StatePerson:
     """Returns a StatePerson to be used for testing."""
     instance = state_schema.StatePerson(
@@ -401,6 +401,7 @@ def generate_test_person(
         supervision_violations=supervision_violations,
         supervision_contacts=supervision_contacts,
         incarceration_periods=incarceration_periods,
+        supervision_periods=supervision_periods,
         assessments=[
             state_schema.StateAssessment(
                 assessment_id=456,
@@ -467,7 +468,6 @@ def generate_schema_state_person_obj_tree() -> state_schema.StatePerson:
     test_supervision_sentence = generate_test_supervision_sentence(
         test_person_id,
         [test_charge_1, test_charge_2],
-        [test_supervision_period],
         [test_early_discharge],
     )
 
@@ -513,6 +513,7 @@ def generate_schema_state_person_obj_tree() -> state_schema.StatePerson:
         [test_supervision_violation],
         [test_contact],
         [test_incarceration_period],
+        [test_supervision_period],
     )
 
     test_sentence_group.person = test_person

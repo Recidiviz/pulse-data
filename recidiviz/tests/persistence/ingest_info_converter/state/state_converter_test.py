@@ -176,6 +176,11 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             state_supervision_contact_ids=["SUPERVISION_CONTACT_ID"],
             state_sentence_group_ids=["GROUP_ID1", "GROUP_ID2"],
             state_incarceration_period_ids=["I_PERIOD_ID"],
+            state_supervision_period_ids=[
+                "S_PERIOD_ID1",
+                "S_PERIOD_ID2",
+                "S_PERIOD_ID3",
+            ],
             supervising_officer_id="AGENT_ID_SUPERVISING",
         )
         ingest_info.state_person_races.add(
@@ -231,12 +236,10 @@ class TestIngestInfoStateConverter(unittest.TestCase):
         ingest_info.state_supervision_sentences.add(
             state_supervision_sentence_id="SUPERVISION_SENTENCE_ID1",
             state_charge_ids=["CHARGE_ID1", "CHARGE_ID2"],
-            state_supervision_period_ids=["S_PERIOD_ID1"],
         )
         ingest_info.state_supervision_sentences.add(
             state_supervision_sentence_id="SUPERVISION_SENTENCE_ID2",
             state_charge_ids=["CHARGE_ID2"],
-            state_supervision_period_ids=["S_PERIOD_ID2"],
         )
         ingest_info.state_incarceration_sentences.add(
             state_incarceration_sentence_id="INCARCERATION_SENTENCE_ID1",
@@ -245,7 +248,6 @@ class TestIngestInfoStateConverter(unittest.TestCase):
         ingest_info.state_incarceration_sentences.add(
             state_incarceration_sentence_id="INCARCERATION_SENTENCE_ID2",
             state_charge_ids=["CHARGE_ID2", "CHARGE_ID3"],
-            state_supervision_period_ids=["S_PERIOD_ID3"],
         )
         ingest_info.state_charges.add(
             state_charge_id="CHARGE_ID1",
@@ -540,28 +542,6 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             charges=[charge_2, charge_3],
-            supervision_periods=[
-                StateSupervisionPeriod.new_with_defaults(
-                    external_id="S_PERIOD_ID3",
-                    state_code="US_XX",
-                    supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-                    supervision_type_raw_text="PROBATION",
-                    supervising_officer=StateAgent.new_with_defaults(
-                        external_id="AGENT_ID_PO",
-                        state_code="US_XX",
-                        agent_type=StateAgentType.PRESENT_WITHOUT_INFO,
-                        full_name='{"full_name": "AGENT PAROLEY"}',
-                    ),
-                    case_type_entries=[
-                        StateSupervisionCaseTypeEntry.new_with_defaults(
-                            case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
-                            case_type_raw_text="DOMESTIC_VIOLENCE",
-                            state_code="US_XX",
-                            external_id="CASE_TYPE_ID",
-                        )
-                    ],
-                )
-            ],
         )
 
         expected_result = [
@@ -640,6 +620,42 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                         ],
                     )
                 ],
+                supervision_periods=[
+                    StateSupervisionPeriod.new_with_defaults(
+                        external_id="S_PERIOD_ID3",
+                        state_code="US_XX",
+                        supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+                        supervision_type_raw_text="PROBATION",
+                        supervising_officer=StateAgent.new_with_defaults(
+                            external_id="AGENT_ID_PO",
+                            state_code="US_XX",
+                            agent_type=StateAgentType.PRESENT_WITHOUT_INFO,
+                            full_name='{"full_name": "AGENT PAROLEY"}',
+                        ),
+                        case_type_entries=[
+                            StateSupervisionCaseTypeEntry.new_with_defaults(
+                                case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
+                                case_type_raw_text="DOMESTIC_VIOLENCE",
+                                state_code="US_XX",
+                                external_id="CASE_TYPE_ID",
+                            )
+                        ],
+                    ),
+                    StateSupervisionPeriod.new_with_defaults(
+                        external_id="S_PERIOD_ID1",
+                        supervision_level=StateSupervisionLevel.MEDIUM,
+                        supervision_level_raw_text="MED",
+                        state_code="US_XX",
+                        supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+                        supervision_type_raw_text="PAROLE",
+                    ),
+                    StateSupervisionPeriod.new_with_defaults(
+                        external_id="S_PERIOD_ID2",
+                        state_code="US_XX",
+                        supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+                        supervision_type_raw_text="PAROLE",
+                    ),
+                ],
                 sentence_groups=[
                     StateSentenceGroup.new_with_defaults(
                         external_id="GROUP_ID1",
@@ -651,16 +667,6 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                                 state_code="US_XX",
                                 status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
                                 charges=[charge_1, charge_2],
-                                supervision_periods=[
-                                    StateSupervisionPeriod.new_with_defaults(
-                                        external_id="S_PERIOD_ID1",
-                                        supervision_level=StateSupervisionLevel.MEDIUM,
-                                        supervision_level_raw_text="MED",
-                                        state_code="US_XX",
-                                        supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                                        supervision_type_raw_text="PAROLE",
-                                    )
-                                ],
                             )
                         ],
                         incarceration_sentences=[
@@ -678,14 +684,6 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                                 state_code="US_XX",
                                 status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
                                 charges=[charge_2],
-                                supervision_periods=[
-                                    StateSupervisionPeriod.new_with_defaults(
-                                        external_id="S_PERIOD_ID2",
-                                        state_code="US_XX",
-                                        supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                                        supervision_type_raw_text="PAROLE",
-                                    )
-                                ],
                             )
                         ],
                     ),

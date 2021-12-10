@@ -23,24 +23,17 @@ from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
     is_placeholder,
 )
-from recidiviz.persistence.entity_matching.state.state_matching_utils import (
-    get_all_entities_of_cls,
-)
 
 
 def set_current_supervising_officer_from_supervision_periods(
     matched_persons: List[schema.StatePerson], field_index: CoreEntityFieldIndex
 ):
-    """For every matched person, update the supervising_officer field to pull in the supervising_officer from the latest
-    supervision period (sorted by termination date).
+    """For every matched person, update the supervising_officer field to pull in the
+    supervising_officer from the latest supervision period (sorted by termination date).
     """
     for person in matched_persons:
 
-        sps = get_all_entities_of_cls(
-            person.sentence_groups,
-            schema.StateSupervisionPeriod,
-            field_index=field_index,
-        )
+        sps = person.supervision_periods
 
         non_placeholder_sps = [sp for sp in sps if not is_placeholder(sp, field_index)]
 

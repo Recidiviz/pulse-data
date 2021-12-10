@@ -450,7 +450,6 @@ class TestIncarcerationPipeline(unittest.TestCase):
             schema.StateSupervisionViolationResponse.__tablename__: supervision_violation_response_data,
             schema.StateSupervisionViolation.__tablename__: supervision_violation_data,
             schema.StateSupervisionPeriod.__tablename__: supervision_periods_data,
-            schema.state_incarceration_sentence_supervision_period_association_table.name: [],
             schema.StateAssessment.__tablename__: assessment_data,
             "persons_to_recent_county_of_residence": fake_person_id_to_county_query_result,
             "incarceration_period_judicial_district_association": incarceration_period_judicial_district_association_data,

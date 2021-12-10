@@ -1226,44 +1226,17 @@ class TestUsMoController(BaseDirectIngestControllerTests):
                             state_person_external_id_id="110035", id_type=US_MO_DOC
                         ),
                     ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_sentence_group_id="110035-19890901",
-                            state_supervision_sentences=[
-                                StateSupervisionSentence(
-                                    state_supervision_periods=[
-                                        sp_110035_19890901_2_0,
-                                        sp_110035_19890901_4_0,
-                                        sp_110035_19890901_6_0,
-                                    ]
-                                )
-                            ],
-                        ),
-                        StateSentenceGroup(
-                            state_sentence_group_id="110035-20010414",
-                            state_supervision_sentences=[
-                                StateSupervisionSentence(
-                                    state_supervision_periods=[
-                                        sp_110035_20010414_1_0,
-                                        sp_110035_20010414_3_0,
-                                        sp_110035_20010414_5_0,
-                                        sp_110035_20010414_6_0,
-                                    ]
-                                )
-                            ],
-                        ),
-                        StateSentenceGroup(
-                            state_sentence_group_id="110035-20040712",
-                            state_supervision_sentences=[
-                                StateSupervisionSentence(
-                                    state_supervision_periods=[
-                                        sp_110035_20040712_1_0,
-                                        sp_110035_20040712_1_8,
-                                        sp_110035_20040712_1_9,
-                                    ]
-                                )
-                            ],
-                        ),
+                    state_supervision_periods=[
+                        sp_110035_19890901_2_0,
+                        sp_110035_19890901_4_0,
+                        sp_110035_19890901_6_0,
+                        sp_110035_20010414_1_0,
+                        sp_110035_20010414_3_0,
+                        sp_110035_20010414_5_0,
+                        sp_110035_20010414_6_0,
+                        sp_110035_20040712_1_0,
+                        sp_110035_20040712_1_8,
+                        sp_110035_20040712_1_9,
                     ],
                 ),
                 StatePerson(
@@ -1273,19 +1246,10 @@ class TestUsMoController(BaseDirectIngestControllerTests):
                             state_person_external_id_id="710448", id_type=US_MO_DOC
                         ),
                     ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_sentence_group_id="710448-20010414",
-                            state_supervision_sentences=[
-                                StateSupervisionSentence(
-                                    state_supervision_periods=[
-                                        sp_710448_20010414_2_0,
-                                        sp_710448_20010414_3_0,
-                                        sp_710448_20010414_4_0,
-                                    ]
-                                ),
-                            ],
-                        )
+                    state_supervision_periods=[
+                        sp_710448_20010414_2_0,
+                        sp_710448_20010414_3_0,
+                        sp_710448_20010414_4_0,
                     ],
                 ),
                 StatePerson(
@@ -1295,16 +1259,7 @@ class TestUsMoController(BaseDirectIngestControllerTests):
                             state_person_external_id_id="910324", id_type=US_MO_DOC
                         ),
                     ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_sentence_group_id="910324-19890825",
-                            state_supervision_sentences=[
-                                StateSupervisionSentence(
-                                    state_supervision_periods=[sp_910324_19890825_2_0]
-                                )
-                            ],
-                        )
-                    ],
+                    state_supervision_periods=[sp_910324_19890825_2_0],
                 ),
                 StatePerson(
                     state_person_id="624624",
@@ -1313,16 +1268,7 @@ class TestUsMoController(BaseDirectIngestControllerTests):
                             state_person_external_id_id="624624", id_type=US_MO_DOC
                         ),
                     ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_sentence_group_id="624624-19890617",
-                            state_supervision_sentences=[
-                                StateSupervisionSentence(
-                                    state_supervision_periods=[sp_624624_19890617_1_0]
-                                )
-                            ],
-                        )
-                    ],
+                    state_supervision_periods=[sp_624624_19890617_1_0],
                 ),
             ]
         )
@@ -2739,17 +2685,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
         person_710448.supervising_officer = agent_567
         person_910324.supervising_officer = agent_234
 
-        placeholder_sss_110035_19890901 = (
-            entities.StateSupervisionSentence.new_with_defaults(
-                state_code=_STATE_CODE_UPPER,
-                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                sentence_group=sg_110035_19890901,
-                person=person_110035,
-            )
-        )
-
-        sg_110035_19890901.supervision_sentences.append(placeholder_sss_110035_19890901)
-
         sp_110035_19890901_2_0 = entities.StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id="110035-19890901-2-0",
@@ -2763,7 +2698,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             supervision_level=StateSupervisionLevel.MAXIMUM,
             supervision_level_raw_text="ISP",
             person=person_110035,
-            supervision_sentences=[placeholder_sss_110035_19890901],
             supervising_officer=agent_123,
         )
         sp_110035_19890901_4_0 = entities.StateSupervisionPeriod.new_with_defaults(
@@ -2777,7 +2711,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             termination_reason_raw_text="40I1050,45O1010",
             supervision_site="14",
             person=person_110035,
-            supervision_sentences=[placeholder_sss_110035_19890901],
             supervising_officer=agent_123,
         )
         sp_110035_19890901_6_0 = entities.StateSupervisionPeriod.new_with_defaults(
@@ -2791,25 +2724,14 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             termination_reason_raw_text="99O2010",
             supervision_site="14",
             person=person_110035,
-            supervision_sentences=[placeholder_sss_110035_19890901],
             supervising_officer=agent_123,
         )
 
-        placeholder_sss_110035_19890901.supervision_periods = [
+        person_110035.supervision_periods = [
             sp_110035_19890901_2_0,
             sp_110035_19890901_4_0,
             sp_110035_19890901_6_0,
         ]
-
-        placeholder_sss_110035_20010414 = (
-            entities.StateSupervisionSentence.new_with_defaults(
-                state_code=_STATE_CODE_UPPER,
-                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                sentence_group=sg_110035_20010414,
-                person=person_110035,
-            )
-        )
-        sg_110035_20010414.supervision_sentences.append(placeholder_sss_110035_20010414)
 
         sp_110035_20010414_1_0 = entities.StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -2822,7 +2744,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             termination_reason_raw_text="65O2015",
             supervision_site="14",
             person=person_110035,
-            supervision_sentences=[placeholder_sss_110035_20010414],
             supervising_officer=agent_123,
         )
         sp_110035_20010414_3_0 = entities.StateSupervisionPeriod.new_with_defaults(
@@ -2836,7 +2757,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             termination_reason_raw_text="45O0050,65N9999,40I0050",
             supervision_site="14",
             person=person_110035,
-            supervision_sentences=[placeholder_sss_110035_20010414],
             supervising_officer=agent_123,
         )
         sp_110035_20010414_5_0 = entities.StateSupervisionPeriod.new_with_defaults(
@@ -2850,7 +2770,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             termination_reason_raw_text="65L9100",
             supervision_site="14",
             person=person_110035,
-            supervision_sentences=[placeholder_sss_110035_20010414],
             supervising_officer=agent_123,
         )
         sp_110035_20010414_6_0 = entities.StateSupervisionPeriod.new_with_defaults(
@@ -2864,16 +2783,17 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             termination_reason_raw_text="45O1010,40I1010",
             supervision_site="14",
             person=person_110035,
-            supervision_sentences=[placeholder_sss_110035_20010414],
             supervising_officer=agent_123,
         )
 
-        placeholder_sss_110035_20010414.supervision_periods = [
-            sp_110035_20010414_1_0,
-            sp_110035_20010414_3_0,
-            sp_110035_20010414_5_0,
-            sp_110035_20010414_6_0,
-        ]
+        person_110035.supervision_periods.extend(
+            [
+                sp_110035_20010414_1_0,
+                sp_110035_20010414_3_0,
+                sp_110035_20010414_5_0,
+                sp_110035_20010414_6_0,
+            ]
+        )
 
         sp_710448_20010414_2_0 = entities.StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -2887,9 +2807,8 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             supervision_site="ERA",
             supervising_officer=agent_567,
             person=person_710448,
-            incarceration_sentences=[sis_710448_20010414_1],
         )
-        sis_710448_20010414_1.supervision_periods = [sp_710448_20010414_2_0]
+        person_710448.supervision_periods = [sp_710448_20010414_2_0]
 
         sp_710448_20010414_3_0 = entities.StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -2903,9 +2822,8 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             supervision_site="14",
             supervising_officer=agent_123,
             person=person_710448,
-            incarceration_sentences=[sis_710448_20010414_1],
         )
-        sis_710448_20010414_1.supervision_periods.append(sp_710448_20010414_3_0)
+        person_710448.supervision_periods.append(sp_710448_20010414_3_0)
 
         sp_710448_20010414_4_0 = entities.StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -2919,26 +2837,8 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             supervision_site="ERA",
             supervising_officer=agent_567,
             person=person_710448,
-            incarceration_sentences=[
-                sis_710448_20010414_1,
-                sis_710448_20010414_2,
-                sis_710448_20010414_3,
-            ],
         )
-        sis_710448_20010414_1.supervision_periods.append(sp_710448_20010414_4_0)
-        sis_710448_20010414_2.supervision_periods.append(sp_710448_20010414_4_0)
-        sis_710448_20010414_3.supervision_periods.append(sp_710448_20010414_4_0)
-
-        placeholder_sss_710448_20010414 = (
-            entities.StateSupervisionSentence.new_with_defaults(
-                state_code=_STATE_CODE_UPPER,
-                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                sentence_group=sg_710448_20010414,
-                person=person_710448,
-            )
-        )
-
-        sg_710448_20010414.supervision_sentences.append(placeholder_sss_710448_20010414)
+        person_710448.supervision_periods.append(sp_710448_20010414_4_0)
 
         sp_910324_19890825_2_0 = entities.StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -2951,8 +2851,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             person=person_910324,
             supervision_level=StateSupervisionLevel.INTERNAL_UNKNOWN,
             supervision_level_raw_text="IAP",
-            incarceration_sentences=[sis_910324_19890825_1],
-            supervision_sentences=[sss_910324_19890825_1],
         )
         ct_910324_19890825_2_0_dso = entities.StateSupervisionCaseTypeEntry(
             case_type=StateSupervisionCaseType.SEX_OFFENSE,
@@ -2962,8 +2860,7 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             person=person_910324,
         )
         sp_910324_19890825_2_0.case_type_entries.append(ct_910324_19890825_2_0_dso)
-        sis_910324_19890825_1.supervision_periods = [sp_910324_19890825_2_0]
-        sss_910324_19890825_1.supervision_periods = [sp_910324_19890825_2_0]
+        person_910324.supervision_periods = [sp_910324_19890825_2_0]
 
         person_624624 = entities.StatePerson.new_with_defaults(
             state_code=_STATE_CODE_UPPER
@@ -2976,26 +2873,7 @@ class TestUsMoController(BaseDirectIngestControllerTests):
         )
         person_624624.external_ids.append(spei_624624)
 
-        sg_624624_19890617 = entities.StateSentenceGroup.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            external_id="624624-19890617",
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            person=person_624624,
-        )
-        person_624624.sentence_groups.append(sg_624624_19890617)
         person_624624.supervising_officer = agent_234
-
-        placeholder_sss_624624_19890617_1 = (
-            entities.StateSupervisionSentence.new_with_defaults(
-                state_code=_STATE_CODE_UPPER,
-                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                person=person_624624,
-                sentence_group=sg_624624_19890617,
-            )
-        )
-        sg_624624_19890617.supervision_sentences.append(
-            placeholder_sss_624624_19890617_1
-        )
 
         sp_624624_19890617_1_0 = entities.StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -3008,7 +2886,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             person=person_624624,
             supervision_level=StateSupervisionLevel.HIGH,
             supervision_level_raw_text="III",
-            supervision_sentences=[placeholder_sss_624624_19890617_1],
         )
         ct_624624_19890617_1_0_dom = entities.StateSupervisionCaseTypeEntry(
             case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
@@ -3038,22 +2915,9 @@ class TestUsMoController(BaseDirectIngestControllerTests):
                 ct_624624_19890617_1_0_smi,
             ]
         )
-        placeholder_sss_624624_19890617_1.supervision_periods.append(
-            sp_624624_19890617_1_0
-        )
+        person_624624.supervision_periods.append(sp_624624_19890617_1_0)
 
         expected_people.append(person_624624)
-
-        placeholder_sss_110035_20040712 = (
-            entities.StateSupervisionSentence.new_with_defaults(
-                state_code=_STATE_CODE_UPPER,
-                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                sentence_group=sg_110035_20040712,
-                person=person_110035,
-            )
-        )
-
-        sg_110035_20040712.supervision_sentences.append(placeholder_sss_110035_20040712)
 
         sp_110035_20040712_1_0 = entities.StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -3069,7 +2933,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             supervision_level=StateSupervisionLevel.INCARCERATED,
             supervision_level_raw_text="ITC",
             person=person_110035,
-            supervision_sentences=[sss_110035_20040712_1, sss_110035_20040712_3],
         )
         ct_110035_20040712_1_0_dso = entities.StateSupervisionCaseTypeEntry(
             case_type=StateSupervisionCaseType.SEX_OFFENSE,
@@ -3102,7 +2965,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             supervision_level=StateSupervisionLevel.INCARCERATED,
             supervision_level_raw_text="ITC",
             person=person_110035,
-            supervision_sentences=[sss_110035_20040712_1, sss_110035_20040712_3],
         )
         ct_110035_20040712_1_8_dso = entities.StateSupervisionCaseTypeEntry(
             case_type=StateSupervisionCaseType.SEX_OFFENSE,
@@ -3135,7 +2997,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             supervision_level=StateSupervisionLevel.INCARCERATED,
             supervision_level_raw_text="ITC",
             person=person_110035,
-            supervision_sentences=[sss_110035_20040712_1, sss_110035_20040712_3],
         )
         ct_110035_20040712_1_9_dso = entities.StateSupervisionCaseTypeEntry(
             case_type=StateSupervisionCaseType.SEX_OFFENSE,
@@ -3155,23 +3016,9 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             [ct_110035_20040712_1_9_dso, ct_110035_20040712_1_9_dvs]
         )
 
-        sss_110035_20040712_1.supervision_periods.extend(
+        person_110035.supervision_periods.extend(
             [sp_110035_20040712_1_0, sp_110035_20040712_1_8, sp_110035_20040712_1_9]
         )
-        sss_110035_20040712_3.supervision_periods.extend(
-            [sp_110035_20040712_1_0, sp_110035_20040712_1_8, sp_110035_20040712_1_9]
-        )
-
-        placeholder_sss_910324_19890825 = (
-            entities.StateSupervisionSentence.new_with_defaults(
-                state_code=_STATE_CODE_UPPER,
-                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                sentence_group=sg_910324_19890825,
-                person=person_910324,
-            )
-        )
-
-        sg_910324_19890825.supervision_sentences.append(placeholder_sss_910324_19890825)
 
         # SQL Preprocessing View
         # Act

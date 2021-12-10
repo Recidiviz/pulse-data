@@ -98,11 +98,6 @@ class TestUsMoMatchingUtils(BaseStateMatchingUtilsTest):
             state_code=_STATE_CODE,
             external_id=_EXTERNAL_ID,
             supervision_sentence_id=_ID,
-            supervision_periods=[
-                open_supervision_period,
-                placeholder_supervision_period,
-                closed_supervision_period,
-            ],
         )
         sentence_group = generate_sentence_group(
             external_id=_EXTERNAL_ID,
@@ -112,6 +107,11 @@ class TestUsMoMatchingUtils(BaseStateMatchingUtilsTest):
         )
         person.external_ids = [external_id]
         person.sentence_groups = [sentence_group]
+        person.supervision_periods = [
+            open_supervision_period,
+            placeholder_supervision_period,
+            closed_supervision_period,
+        ]
 
         # Act
         set_current_supervising_officer_from_supervision_periods(

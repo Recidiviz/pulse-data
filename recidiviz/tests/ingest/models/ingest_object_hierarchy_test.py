@@ -50,7 +50,7 @@ class TestIngestObjectHierarchy(unittest.TestCase):
 
     def test_get_sequence_for_class_multiple_parents_enforced(self) -> None:
         actual = get_ancestor_class_sequence(
-            "state_supervision_period",
+            "state_early_discharge",
             enforced_ancestor_choices={
                 "state_sentence": "state_incarceration_sentence"
             },
@@ -66,20 +66,20 @@ class TestIngestObjectHierarchy(unittest.TestCase):
     def test_get_sequence_for_class_multiple_parents_enforced_bad_key(self) -> None:
         with self.assertRaises(ValueError):
             get_ancestor_class_sequence(
-                "state_supervision_period",
+                "state_early_discharge",
                 enforced_ancestor_choices={"nonsense": "whatever"},
             )
 
     def test_get_sequence_for_class_multiple_parents_enforced_bad_choice(self) -> None:
         with self.assertRaises(ValueError):
             get_ancestor_class_sequence(
-                "state_supervision_period",
+                "state_early_discharge",
                 enforced_ancestor_choices={"state_sentence": "bogus"},
             )
 
     def test_get_sequence_for_class_multiple_parents_enforced_over_chain(self) -> None:
         actual = get_ancestor_class_sequence(
-            "state_supervision_period",
+            "state_early_discharge",
             ancestor_chain={"state_person": "12345"},
             enforced_ancestor_choices={"state_sentence": "state_supervision_sentence"},
         )
@@ -93,7 +93,7 @@ class TestIngestObjectHierarchy(unittest.TestCase):
 
     def test_get_sequence_for_class_multiple_parents_chain(self) -> None:
         actual = get_ancestor_class_sequence(
-            "state_supervision_period",
+            "state_early_discharge",
             ancestor_chain={
                 "state_person": "12345",
                 "state_incarceration_sentence": "45678",

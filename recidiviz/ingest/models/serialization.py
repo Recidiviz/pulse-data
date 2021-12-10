@@ -177,46 +177,6 @@ def convert_ingest_info_to_proto(
                     )
                     proto_court_case.judge_id = proto_judge.state_agent_id
 
-    def _populate_supervision_period_protos(parent_ingest_object, parent_proto):
-        """Populates SupervisionPeriod proto fields for some parent object,
-        e.g. SupervisionSentence and IncarcerationSentence, which both
-        reference SupervisionPeriod.
-        """
-        for supervision_period in parent_ingest_object.state_supervision_periods:
-            proto_period = _populate_proto(
-                "state_supervision_periods",
-                supervision_period,
-                "state_supervision_period_id",
-                state_supervision_period_map,
-            )
-            parent_proto.state_supervision_period_ids.append(
-                proto_period.state_supervision_period_id
-            )
-
-            if supervision_period.supervising_officer:
-                proto_supervising_officer = _populate_proto(
-                    "state_agents",
-                    supervision_period.supervising_officer,
-                    "state_agent_id",
-                    state_agent_map,
-                )
-                proto_period.supervising_officer_id = (
-                    proto_supervising_officer.state_agent_id
-                )
-
-            for (
-                case_type_entries
-            ) in supervision_period.state_supervision_case_type_entries:
-                proto_case_type_entry = _populate_proto(
-                    "state_supervision_case_type_entries",
-                    case_type_entries,
-                    "state_supervision_case_type_entry_id",
-                    state_case_type_map,
-                )
-                proto_period.state_supervision_case_type_entry_ids.append(
-                    proto_case_type_entry.state_supervision_case_type_entry_id
-                )
-
     for person in ingest_info_py.people:
         proto_person = _populate_proto("people", person, "person_id", person_map)
         for booking in person.bookings:
@@ -358,6 +318,41 @@ def convert_ingest_info_to_proto(
                     proto_decision.decision_agent_ids.append(
                         proto_decision_agent.state_agent_id
                     )
+
+        for supervision_period in state_person.state_supervision_periods:
+            proto_period = _populate_proto(
+                "state_supervision_periods",
+                supervision_period,
+                "state_supervision_period_id",
+                state_supervision_period_map,
+            )
+            proto_state_person.state_supervision_period_ids.append(
+                proto_period.state_supervision_period_id
+            )
+
+            if supervision_period.supervising_officer:
+                proto_supervising_officer = _populate_proto(
+                    "state_agents",
+                    supervision_period.supervising_officer,
+                    "state_agent_id",
+                    state_agent_map,
+                )
+                proto_period.supervising_officer_id = (
+                    proto_supervising_officer.state_agent_id
+                )
+
+            for (
+                case_type_entries
+            ) in supervision_period.state_supervision_case_type_entries:
+                proto_case_type_entry = _populate_proto(
+                    "state_supervision_case_type_entries",
+                    case_type_entries,
+                    "state_supervision_case_type_entry_id",
+                    state_case_type_map,
+                )
+                proto_period.state_supervision_case_type_entry_ids.append(
+                    proto_case_type_entry.state_supervision_case_type_entry_id
+                )
 
         for program_assignment in state_person.state_program_assignments:
             proto_program_assignment = _populate_proto(
@@ -523,10 +518,6 @@ def convert_ingest_info_to_proto(
                     supervision_sentence, proto_supervision_sentence
                 )
 
-                _populate_supervision_period_protos(
-                    supervision_sentence, proto_supervision_sentence
-                )
-
                 for early_discharge in supervision_sentence.state_early_discharges:
                     proto_early_discharge = _populate_proto(
                         "state_early_discharges",
@@ -553,9 +544,6 @@ def convert_ingest_info_to_proto(
                     incarceration_sentence, proto_incarceration_sentence
                 )
 
-                _populate_supervision_period_protos(
-                    incarceration_sentence, proto_incarceration_sentence
-                )
                 for early_discharge in incarceration_sentence.state_early_discharges:
                     proto_early_discharge = _populate_proto(
                         "state_early_discharges",
@@ -835,11 +823,6 @@ def convert_proto_to_ingest_info(
             state_charge_map[proto_id] for proto_id in proto_sentence.state_charge_ids
         ]
 
-        sentence.state_supervision_periods = [
-            state_supervision_period_map[proto_id]
-            for proto_id in proto_sentence.state_supervision_period_ids
-        ]
-
         sentence.state_early_discharges = [
             state_early_discharge_map[proto_id]
             for proto_id in proto_sentence.state_early_discharge_ids
@@ -1041,6 +1024,11 @@ def convert_proto_to_ingest_info(
         state_person.state_incarceration_periods = [
             state_incarceration_period_map[proto_id]
             for proto_id in proto_state_person.state_incarceration_period_ids
+        ]
+
+        state_person.state_supervision_periods = [
+            state_supervision_period_map[proto_id]
+            for proto_id in proto_state_person.state_supervision_period_ids
         ]
 
         state_person.state_program_assignments = [

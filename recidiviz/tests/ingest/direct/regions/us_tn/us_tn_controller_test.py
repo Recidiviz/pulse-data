@@ -42,7 +42,6 @@ from recidiviz.tests.ingest.direct.regions.base_direct_ingest_controller_tests i
 )
 from recidiviz.tests.ingest.direct.regions.utils import (
     add_incarceration_period_to_person,
-    add_sentence_group_to_person_and_build_supervision_sentence,
     add_supervision_period_to_person,
     build_state_person_entity,
 )
@@ -217,16 +216,9 @@ class TestUsTnController(BaseDirectIngestControllerTests):
             )
         )
 
-        supervision_sentence_2 = (
-            add_sentence_group_to_person_and_build_supervision_sentence(
-                _STATE_CODE_UPPER, person_2
-            )
-        )
-
         add_supervision_period_to_person(
             person=person_2,
             state_code=_STATE_CODE_UPPER,
-            supervision_sentence=supervision_sentence_2,
             external_id="00000002-1",
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_type_raw_text="PRO",
@@ -243,7 +235,6 @@ class TestUsTnController(BaseDirectIngestControllerTests):
         add_supervision_period_to_person(
             person=person_2,
             state_code=_STATE_CODE_UPPER,
-            supervision_sentence=supervision_sentence_2,
             external_id="00000002-2",
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_type_raw_text="PRO",
@@ -257,16 +248,9 @@ class TestUsTnController(BaseDirectIngestControllerTests):
             termination_reason_raw_text="DIS",
         )
 
-        supervision_sentence_3 = (
-            add_sentence_group_to_person_and_build_supervision_sentence(
-                _STATE_CODE_UPPER, person_3
-            )
-        )
-
         add_supervision_period_to_person(
             person=person_3,
             state_code=_STATE_CODE_UPPER,
-            supervision_sentence=supervision_sentence_3,
             external_id="00000003-1",
             supervision_type=StateSupervisionPeriodSupervisionType.COMMUNITY_CONFINEMENT,
             supervision_type_raw_text="CCC",
@@ -283,7 +267,6 @@ class TestUsTnController(BaseDirectIngestControllerTests):
         add_supervision_period_to_person(
             person=person_3,
             state_code=_STATE_CODE_UPPER,
-            supervision_sentence=supervision_sentence_3,
             external_id="00000003-2",
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             supervision_type_raw_text="PAO",

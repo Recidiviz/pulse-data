@@ -244,7 +244,6 @@ def add_incarceration_period_to_person(
 def add_supervision_period_to_person(
     person: entities.StatePerson,
     state_code: str,
-    supervision_sentence: entities.StateSupervisionSentence,
     external_id: str,
     supervision_type: StateSupervisionPeriodSupervisionType,
     supervision_type_raw_text: str,
@@ -274,7 +273,6 @@ def add_supervision_period_to_person(
         termination_reason=termination_reason,
         termination_reason_raw_text=termination_reason_raw_text,
         person=person,
-        supervision_sentences=[supervision_sentence],
     )
 
-    supervision_sentence.supervision_periods.append(supervision_period)
+    person.supervision_periods.append(supervision_period)

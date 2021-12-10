@@ -83,10 +83,8 @@ from recidiviz.ingest.models.ingest_info import (
     StateIncarcerationPeriod,
     StatePerson,
     StatePersonExternalId,
-    StateSentenceGroup,
     StateSupervisionContact,
     StateSupervisionPeriod,
-    StateSupervisionSentence,
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.entity.state import entities
@@ -344,17 +342,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                             state_person_external_id_id="111111", id_type=US_PA_CONTROL
                         ),
                     ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_sentence_group_id="AB1234",
-                            state_incarceration_sentences=[
-                                StateIncarcerationSentence(
-                                    state_incarceration_sentence_id="AB1234-01",
-                                    state_incarceration_periods=ab1234_incarceration_periods,
-                                )
-                            ],
-                        ),
-                    ],
+                    state_incarceration_periods=ab1234_incarceration_periods,
                 ),
                 StatePerson(
                     state_person_id="778899",
@@ -686,17 +674,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                             state_person_external_id_id="111111", id_type=US_PA_CONTROL
                         ),
                     ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_sentence_group_id="AB1234",
-                            state_incarceration_sentences=[
-                                StateIncarcerationSentence(
-                                    state_incarceration_sentence_id="AB1234-01",
-                                    state_incarceration_periods=ab1234_incarceration_periods,
-                                )
-                            ],
-                        ),
-                    ],
+                    state_incarceration_periods=ab1234_incarceration_periods,
                 ),
                 StatePerson(
                     state_person_id="445566",
@@ -837,65 +815,57 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                             state_person_external_id_id="456B", id_type=US_PA_PBPP
                         ),
                     ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_supervision_sentences=[
-                                StateSupervisionSentence(
-                                    state_supervision_periods=[
-                                        StateSupervisionPeriod(
-                                            state_supervision_period_id="456B-1",
-                                            supervision_type="C2",
-                                            admission_reason="C2",
-                                            start_date="2012-03-16",
-                                            termination_reason="TRANSFER_WITHIN_STATE",
-                                            termination_date="2013-04-01",
-                                            county_code="ALLEGH",
-                                            supervision_site="02|02 - North Shore|7124",
-                                            supervision_level="MAX",
-                                            custodial_authority="C2",
-                                            conditions="MEST, ACT35, GPAR, MVICT, REMC, END",
-                                            supervising_officer=StateAgent(
-                                                state_agent_id="876555",
-                                                given_names="Cosmo",
-                                                surname="Kramer",
-                                                agent_type="SUPERVISION_OFFICER",
-                                            ),
-                                        ),
-                                        StateSupervisionPeriod(
-                                            state_supervision_period_id="456B-2",
-                                            supervision_type="04,C2",
-                                            admission_reason="TRANSFER_WITHIN_STATE",
-                                            start_date="2013-04-01",
-                                            termination_reason="TRANSFER_WITHIN_STATE",
-                                            termination_date="2014-08-10",
-                                            county_code="ALLEGH",
-                                            supervision_site="02||",
-                                            supervision_level="MAX",
-                                            custodial_authority="04",
-                                            conditions="MEST, ACT35, GPAR, MVICT, REMC, END",
-                                        ),
-                                        StateSupervisionPeriod(
-                                            state_supervision_period_id="456B-3",
-                                            supervision_type="04",
-                                            admission_reason="TRANSFER_WITHIN_STATE",
-                                            start_date="2014-08-10",
-                                            termination_reason="43",
-                                            termination_date="2018-01-01",
-                                            county_code="ALLEGH",
-                                            supervision_site="02|02 - North Shore|7115",
-                                            supervision_level="MED",
-                                            custodial_authority="04",
-                                            conditions="PN, EST, BL, END, SUBD, AANA",
-                                            supervising_officer=StateAgent(
-                                                state_agent_id="321444",
-                                                given_names="Elaine",
-                                                surname="Benes",
-                                                agent_type="SUPERVISION_OFFICER",
-                                            ),
-                                        ),
-                                    ]
-                                ),
-                            ],
+                    state_supervision_periods=[
+                        StateSupervisionPeriod(
+                            state_supervision_period_id="456B-1",
+                            supervision_type="C2",
+                            admission_reason="C2",
+                            start_date="2012-03-16",
+                            termination_reason="TRANSFER_WITHIN_STATE",
+                            termination_date="2013-04-01",
+                            county_code="ALLEGH",
+                            supervision_site="02|02 - North Shore|7124",
+                            supervision_level="MAX",
+                            custodial_authority="C2",
+                            conditions="MEST, ACT35, GPAR, MVICT, REMC, END",
+                            supervising_officer=StateAgent(
+                                state_agent_id="876555",
+                                given_names="Cosmo",
+                                surname="Kramer",
+                                agent_type="SUPERVISION_OFFICER",
+                            ),
+                        ),
+                        StateSupervisionPeriod(
+                            state_supervision_period_id="456B-2",
+                            supervision_type="04,C2",
+                            admission_reason="TRANSFER_WITHIN_STATE",
+                            start_date="2013-04-01",
+                            termination_reason="TRANSFER_WITHIN_STATE",
+                            termination_date="2014-08-10",
+                            county_code="ALLEGH",
+                            supervision_site="02||",
+                            supervision_level="MAX",
+                            custodial_authority="04",
+                            conditions="MEST, ACT35, GPAR, MVICT, REMC, END",
+                        ),
+                        StateSupervisionPeriod(
+                            state_supervision_period_id="456B-3",
+                            supervision_type="04",
+                            admission_reason="TRANSFER_WITHIN_STATE",
+                            start_date="2014-08-10",
+                            termination_reason="43",
+                            termination_date="2018-01-01",
+                            county_code="ALLEGH",
+                            supervision_site="02|02 - North Shore|7115",
+                            supervision_level="MED",
+                            custodial_authority="04",
+                            conditions="PN, EST, BL, END, SUBD, AANA",
+                            supervising_officer=StateAgent(
+                                state_agent_id="321444",
+                                given_names="Elaine",
+                                surname="Benes",
+                                agent_type="SUPERVISION_OFFICER",
+                            ),
                         ),
                     ],
                 ),
@@ -906,67 +876,59 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                             state_person_external_id_id="789C", id_type=US_PA_PBPP
                         ),
                     ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_supervision_sentences=[
-                                StateSupervisionSentence(
-                                    state_supervision_periods=[
-                                        StateSupervisionPeriod(
-                                            state_supervision_period_id="789C-1",
-                                            supervision_type="05",
-                                            admission_reason="05",
-                                            start_date="2003-10-10",
-                                            termination_reason="42",
-                                            termination_date="2004-08-10",
-                                            county_code="MERCER",
-                                            supervision_site="08|08 - Mercer DO|7307",
-                                            supervision_level="MIN",
-                                            custodial_authority="05",
-                                            conditions="START, EST, END, AANA, REL, DAM, PARAB, ACT35, BL, MISC, DDU, URI, GPAR, EMP, ALC, PM, PF, PA",
-                                            supervising_officer=StateAgent(
-                                                state_agent_id="888888",
-                                                given_names="K",
-                                                surname="Bania",
-                                                agent_type="SUPERVISION_OFFICER",
-                                            ),
-                                        ),
-                                        StateSupervisionPeriod(
-                                            state_supervision_period_id="789C-2",
-                                            supervision_type="05",
-                                            admission_reason="05",
-                                            start_date="2004-08-10",
-                                            termination_reason="44",
-                                            termination_date="2005-12-31",
-                                            county_code="MERCER",
-                                            supervision_site="08|08 - Mercer DO|7307",
-                                            supervision_level="MIN",
-                                            custodial_authority="05",
-                                            supervising_officer=StateAgent(
-                                                state_agent_id="555",
-                                                given_names="Jerry",
-                                                surname="Seinfeld",
-                                                agent_type="SUPERVISION_OFFICER",
-                                            ),
-                                        ),
-                                        StateSupervisionPeriod(
-                                            state_supervision_period_id="789C-3",
-                                            supervision_type="04",
-                                            admission_reason="04",
-                                            start_date="2005-12-31",
-                                            termination_reason="43",
-                                            termination_date="2006-10-10",
-                                            county_code="MERCER",
-                                            supervision_level="ADM",
-                                            custodial_authority="04",
-                                            supervising_officer=StateAgent(
-                                                state_agent_id="247",
-                                                full_name="Newman",
-                                                agent_type="SUPERVISION_OFFICER",
-                                            ),
-                                        ),
-                                    ]
-                                ),
-                            ],
+                    state_supervision_periods=[
+                        StateSupervisionPeriod(
+                            state_supervision_period_id="789C-1",
+                            supervision_type="05",
+                            admission_reason="05",
+                            start_date="2003-10-10",
+                            termination_reason="42",
+                            termination_date="2004-08-10",
+                            county_code="MERCER",
+                            supervision_site="08|08 - Mercer DO|7307",
+                            supervision_level="MIN",
+                            custodial_authority="05",
+                            conditions="START, EST, END, AANA, REL, DAM, PARAB, ACT35, BL, MISC, DDU, URI, GPAR, EMP, ALC, PM, PF, PA",
+                            supervising_officer=StateAgent(
+                                state_agent_id="888888",
+                                given_names="K",
+                                surname="Bania",
+                                agent_type="SUPERVISION_OFFICER",
+                            ),
+                        ),
+                        StateSupervisionPeriod(
+                            state_supervision_period_id="789C-2",
+                            supervision_type="05",
+                            admission_reason="05",
+                            start_date="2004-08-10",
+                            termination_reason="44",
+                            termination_date="2005-12-31",
+                            county_code="MERCER",
+                            supervision_site="08|08 - Mercer DO|7307",
+                            supervision_level="MIN",
+                            custodial_authority="05",
+                            supervising_officer=StateAgent(
+                                state_agent_id="555",
+                                given_names="Jerry",
+                                surname="Seinfeld",
+                                agent_type="SUPERVISION_OFFICER",
+                            ),
+                        ),
+                        StateSupervisionPeriod(
+                            state_supervision_period_id="789C-3",
+                            supervision_type="04",
+                            admission_reason="04",
+                            start_date="2005-12-31",
+                            termination_reason="43",
+                            termination_date="2006-10-10",
+                            county_code="MERCER",
+                            supervision_level="ADM",
+                            custodial_authority="04",
+                            supervising_officer=StateAgent(
+                                state_agent_id="247",
+                                full_name="Newman",
+                                agent_type="SUPERVISION_OFFICER",
+                            ),
                         ),
                     ],
                 ),
@@ -977,31 +939,23 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                             state_person_external_id_id="345E", id_type=US_PA_PBPP
                         ),
                     ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_supervision_sentences=[
-                                StateSupervisionSentence(
-                                    state_supervision_periods=[
-                                        StateSupervisionPeriod(
-                                            state_supervision_period_id="345E-1",
-                                            supervision_type="03",
-                                            admission_reason="03",
-                                            start_date="2016-01-14",
-                                            county_code="PHILAD",
-                                            supervision_site="01|01 - Northwest|5112",
-                                            supervision_level="MED",
-                                            custodial_authority="03",
-                                            conditions="DOMV, AUTO, DDU, REFR, MNOAM, END, RI, RC, MEMON, MCURF, REFC",
-                                            supervising_officer=StateAgent(
-                                                state_agent_id="10101",
-                                                given_names="Close",
-                                                surname="Talker",
-                                                agent_type="SUPERVISION_OFFICER",
-                                            ),
-                                        ),
-                                    ]
-                                ),
-                            ],
+                    state_supervision_periods=[
+                        StateSupervisionPeriod(
+                            state_supervision_period_id="345E-1",
+                            supervision_type="03",
+                            admission_reason="03",
+                            start_date="2016-01-14",
+                            county_code="PHILAD",
+                            supervision_site="01|01 - Northwest|5112",
+                            supervision_level="MED",
+                            custodial_authority="03",
+                            conditions="DOMV, AUTO, DDU, REFR, MNOAM, END, RI, RC, MEMON, MCURF, REFC",
+                            supervising_officer=StateAgent(
+                                state_agent_id="10101",
+                                given_names="Close",
+                                surname="Talker",
+                                agent_type="SUPERVISION_OFFICER",
+                            ),
                         ),
                     ],
                 ),
@@ -2361,8 +2315,6 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             external_id="AB1234-1",
             state_code=_STATE_CODE_UPPER,
             person=person_9,
-            incarceration_sentences=[p9_is],
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             admission_date=datetime.date(year=2020, month=1, day=1),
             release_date=datetime.date(year=2021, month=1, day=1),
             facility="123",
@@ -2378,7 +2330,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             custodial_authority_raw_text=StateCustodialAuthority.STATE_PRISON.value,
         )
 
-        p9_is.incarceration_periods.append(p9_is_ip1)
+        person_9.incarceration_periods.append(p9_is_ip1)
 
         populate_person_backedges(expected_people)
 
@@ -2656,8 +2608,6 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             external_id="11111",
             state_code=_STATE_CODE_UPPER,
             person=person_9,
-            incarceration_sentences=[p9_is],
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             admission_date=datetime.date(year=2020, month=1, day=1),
             release_date=datetime.date(year=2021, month=1, day=1),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
@@ -2673,7 +2623,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             custodial_authority_raw_text="64",
         )
 
-        p9_is.incarceration_periods.append(p9_is_ip_2_ccis)
+        person_9.incarceration_periods.append(p9_is_ip_2_ccis)
 
         # Act
         self._run_ingest_job_for_filename("ccis_incarceration_period.csv")
@@ -3467,21 +3417,6 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         ######################################
 
         # Arrange
-        p2_sg_ph = entities.StateSentenceGroup.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            person=person_2,
-        )
-        person_2.sentence_groups.append(p2_sg_ph)
-
-        p2_ss_ph = entities.StateSupervisionSentence.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            person=person_2,
-            sentence_group=p2_sg_ph,
-        )
-        p2_sg_ph.supervision_sentences.append(p2_ss_ph)
-
         p2_sp_1_1 = entities.StateSupervisionPeriod.new_with_defaults(
             external_id="456B-1",
             state_code=_STATE_CODE_UPPER,
@@ -3507,7 +3442,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                 agent_type=StateAgentType.SUPERVISION_OFFICER,
                 agent_type_raw_text="SUPERVISION_OFFICER",
             ),
-            supervision_sentences=[p2_ss_ph],
+            person=person_2,
         )
 
         p2_sp_1_2 = entities.StateSupervisionPeriod.new_with_defaults(
@@ -3528,7 +3463,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             supervision_level=StateSupervisionLevel.MAXIMUM,
             supervision_level_raw_text="MAX",
             conditions="MEST, ACT35, GPAR, MVICT, REMC, END",
-            supervision_sentences=[p2_ss_ph],
+            person=person_2,
         )
 
         p2_sp_2_1 = entities.StateSupervisionPeriod.new_with_defaults(
@@ -3550,25 +3485,10 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             supervision_level_raw_text="MED",
             conditions="PN, EST, BL, END, SUBD, AANA",
             supervising_officer=supervising_officer_1,
-            supervision_sentences=[p2_ss_ph],
+            person=person_2,
         )
 
-        p2_ss_ph.supervision_periods.extend([p2_sp_1_1, p2_sp_1_2, p2_sp_2_1])
-
-        p5_sg_ph = entities.StateSentenceGroup.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            person=person_5,
-        )
-        person_5.sentence_groups.append(p5_sg_ph)
-
-        p5_ss_ph = entities.StateSupervisionSentence.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            person=person_5,
-            sentence_group=p5_sg_ph,
-        )
-        p5_sg_ph.supervision_sentences.append(p5_ss_ph)
+        person_2.supervision_periods.extend([p2_sp_1_1, p2_sp_1_2, p2_sp_2_1])
 
         p5_sp_1_1 = entities.StateSupervisionPeriod.new_with_defaults(
             external_id="789C-1",
@@ -3595,7 +3515,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                 agent_type=StateAgentType.SUPERVISION_OFFICER,
                 agent_type_raw_text="SUPERVISION_OFFICER",
             ),
-            supervision_sentences=[p5_ss_ph],
+            person=person_5,
         )
         p5_sp_2_1 = entities.StateSupervisionPeriod.new_with_defaults(
             external_id="789C-2",
@@ -3621,7 +3541,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                 agent_type=StateAgentType.SUPERVISION_OFFICER,
                 agent_type_raw_text="SUPERVISION_OFFICER",
             ),
-            supervision_sentences=[p5_ss_ph],
+            person=person_5,
         )
         p5_sp_3_1 = entities.StateSupervisionPeriod.new_with_defaults(
             external_id="789C-3",
@@ -3646,24 +3566,9 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                 agent_type=StateAgentType.SUPERVISION_OFFICER,
                 agent_type_raw_text="SUPERVISION_OFFICER",
             ),
-            supervision_sentences=[p5_ss_ph],
+            person=person_5,
         )
-        p5_ss_ph.supervision_periods.extend([p5_sp_1_1, p5_sp_2_1, p5_sp_3_1])
-
-        p4_sg_ph = entities.StateSentenceGroup.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            person=person_4,
-        )
-        person_4.sentence_groups.append(p4_sg_ph)
-
-        p4_ss_ph = entities.StateSupervisionSentence.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            person=person_4,
-            sentence_group=p4_sg_ph,
-        )
-        p4_sg_ph.supervision_sentences.append(p4_ss_ph)
+        person_5.supervision_periods.extend([p5_sp_1_1, p5_sp_2_1, p5_sp_3_1])
 
         p4_sp_1_1 = entities.StateSupervisionPeriod.new_with_defaults(
             external_id="345E-1",
@@ -3687,10 +3592,10 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                 agent_type=StateAgentType.SUPERVISION_OFFICER,
                 agent_type_raw_text="SUPERVISION_OFFICER",
             ),
-            supervision_sentences=[p4_ss_ph],
+            person=person_4,
         )
 
-        p4_ss_ph.supervision_periods.append(p4_sp_1_1)
+        person_4.supervision_periods.append(p4_sp_1_1)
 
         populate_person_backedges(expected_people)
 
