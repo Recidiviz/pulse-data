@@ -60,6 +60,9 @@ PUBLIC_DASHBOARD_VIEWS_DATASET: str = "public_dashboard_views"
 # Where analyst datasets live
 ANALYST_VIEWS_DATASET: str = "analyst_data"
 
+# Where analyst dataset scratch space views live
+ANALYST_DATA_SCRATCH_SPACE_DATASET: str = "analyst_data_scratch_space"
+
 # Where sessions datasets live
 SESSIONS_DATASET: str = "sessions"
 

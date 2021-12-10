@@ -24,6 +24,7 @@ from recidiviz.calculator.query.experiments.dataset_config import (
 )
 from recidiviz.calculator.query.operations.dataset_config import OPERATIONS_BASE_DATASET
 from recidiviz.calculator.query.state.dataset_config import (
+    ANALYST_DATA_SCRATCH_SPACE_DATASET,
     COVID_DASHBOARD_REFERENCE_DATASET,
     DATAFLOW_METRICS_DATASET,
     POPULATION_PROJECTION_OUTPUT_DATASET,
@@ -58,6 +59,7 @@ OTHER_SOURCE_TABLE_DATASETS = {
     EXTERNAL_REFERENCE_DATASET,
     OPERATIONS_BASE_DATASET,
     POPULATION_PROJECTION_OUTPUT_DATASET,
+    ANALYST_DATA_SCRATCH_SPACE_DATASET,
     SENDGRID_EMAIL_DATA_DATASET,
     STATE_BASE_DATASET,
     STATIC_REFERENCE_TABLES_DATASET,
@@ -80,6 +82,7 @@ SUPPLEMENTAL_DATASETS_TO_DESCRIPTIONS = {
 }
 
 OTHER_SOURCE_TABLE_DATASETS_TO_DESCRIPTIONS = {
+    ANALYST_DATA_SCRATCH_SPACE_DATASET: "Analyst data scratch space. Contains views for scrappy impact",
     CASE_TRIAGE_FEDERATED_DATASET: "Case Triage data. This dataset is a copy of the case-triage postgres database.",
     CASE_TRIAGE_SEGMENT_DATASET: "Stores metrics about users on case triage",
     COUNTY_BASE_DATASET: "Ingested county jail data. This dataset is a copy of the jails postgres database.",
