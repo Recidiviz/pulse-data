@@ -28,7 +28,7 @@ VIEW_QUERY_TEMPLATE = """
         First_Name,
         -- Remove matches for names like (cd-01-03), **Warrant**, and '--'
         -- Formats middle names to remove digits, colons, parenthesis, or "maiden", i.e. (First), A:, FIRST (maiden: LAST)
-        IF(REGEXP_CONTAINS(Middle_Name, r'[\\*~\\d]|\\(cd|^[-]+'), NULL, TRIM(REGEXP_REPLACE(Middle_Name, r'["\\d\\(\\):]|maiden', ''))) AS Middle_Name,
+        IF(REGEXP_CONTAINS(Middle_Name, r'[\\*~\\d]|\\(cd|^[-]+'), NULL, TRIM(REGEXP_REPLACE(Middle_Name, r'["\\d\\(\\):]|maiden:\\s', ''))) AS Middle_Name,
         Last_Name,
         Birth_Date,
         Cis_9012_Gender_Cd AS Gender,

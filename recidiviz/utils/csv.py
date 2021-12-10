@@ -16,11 +16,28 @@
 # =============================================================================
 """Utilities for working with CSV files."""
 import csv
-from typing import Dict, Iterator
+from typing import Dict, Iterator, Tuple
 
 
-def get_rows_from_csv(csv_filename: str) -> Iterator[Dict[str, str]]:
+def get_rows_as_key_value_pairs(csv_filename: str) -> Iterator[Dict[str, str]]:
+    """Generator that reads a CSV file and yields a key/value dictionary for each row the file."""
     with open(csv_filename, mode="r", encoding="utf-8") as csv_file:
         csv_reader = csv.DictReader(csv_file)
         for row in csv_reader:
             yield row
+
+
+def get_rows_as_tuples(
+    csv_filename: str, skip_header_row: bool = True
+) -> Iterator[Tuple[str, ...]]:
+    """Generator that reads a CSV file and yields a list of tuples for each row in the file. This utility skips the
+    header row by default with the skip_header_row parameter."""
+    with open(csv_filename, mode="r", encoding="utf-8") as csv_file:
+        csv_reader = csv.reader(csv_file)
+        if skip_header_row:
+            try:
+                next(csv_reader)
+            except StopIteration:
+                return
+        for row in csv_reader:
+            yield tuple(row)
