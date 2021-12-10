@@ -16,7 +16,7 @@
 # ============================================================================
 """Specific entity matching utils for date based matching of entities."""
 import datetime
-from typing import List, Optional, Type
+from typing import List
 
 from recidiviz.common.common_utils import date_spans_overlap_exclusive
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
@@ -31,34 +31,23 @@ from recidiviz.persistence.entity_matching.state.state_matching_utils import (
 )
 
 
+# TODO(#9567): Delete this once StateSupervisionPeriod is on the StatePerson
 def move_periods_onto_sentences_by_date(
     matched_persons: List[schema.StatePerson],
     field_index: CoreEntityFieldIndex,
-    period_filter: Optional[Type[schema.SchemaPeriodType]] = None,
 ) -> None:
     """Given a list of |matched_persons|, for each SentenceGroup associates all periods (incarceration or supervision)
-    in that sentence group with the corresponding Sentence (incarceration or supervision) based on date. If
-    |period_filter| is not None, this method will only move periods whose type matches |period_filter|.
+    in that sentence group with the corresponding Sentence (incarceration or supervision) based on date.
     """
     for person in matched_persons:
         for sentence_group in person.sentence_groups:
-            if period_filter:
-                _move_periods_onto_sentences_for_sentence_group(
-                    sentence_group, period_filter, field_index=field_index
-                )
-            else:
-                _move_periods_onto_sentences_for_sentence_group(
-                    sentence_group,
-                    schema.StateSupervisionPeriod,
-                    field_index=field_index,
-                )
-                _move_periods_onto_sentences_for_sentence_group(
-                    sentence_group,
-                    schema.StateIncarcerationPeriod,
-                    field_index=field_index,
-                )
+            _move_supervision_periods_onto_sentences_for_sentence_group(
+                sentence_group,
+                field_index=field_index,
+            )
 
 
+# TODO(#9567): Delete this once StateSupervisionPeriod is on the StatePerson
 def _get_period_start_date(
     period: schema.SchemaPeriodType, default=datetime.date.min
 ) -> datetime.date:
@@ -69,6 +58,7 @@ def _get_period_start_date(
     return start_date if start_date else default
 
 
+# TODO(#9567): Delete this once StateSupervisionPeriod is on the StatePerson
 def _get_period_end_date(
     period: schema.SchemaPeriodType, default=datetime.date.max
 ) -> datetime.date:
@@ -79,37 +69,30 @@ def _get_period_end_date(
     return end_date if end_date else default
 
 
-def _add_period_to_sentence(
-    period: schema.SchemaPeriodType, sentence: schema.SchemaSentenceType
+# TODO(#9567): Delete this once StateSupervisionPeriod is on the StatePerson
+def _add_supervision_period_to_sentence(
+    supervision_period: schema.StateSupervisionPeriod,
+    sentence: schema.SchemaSentenceType,
 ) -> None:
-    if isinstance(period, schema.StateSupervisionPeriod):
-        sentence.supervision_periods.append(period)
-    else:
-        sentence.incarceration_periods.append(period)
+    sentence.supervision_periods.append(supervision_period)
 
 
+# TODO(#9567): Delete this once StateSupervisionPeriod is on the StatePerson
 def _only_keep_placeholder_periods_on_sentence(
     sentence: schema.SchemaSentenceType,
-    period_type: Type[schema.SchemaPeriodType],
     field_index: CoreEntityFieldIndex,
 ) -> None:
-    """Removes all non placeholder periods of type |period_type| from the provided |sentence|."""
-    sentence_periods = (
-        sentence.supervision_periods
-        if period_type == schema.StateSupervisionPeriod
-        else sentence.incarceration_periods
-    )
+    """Removes all non placeholder supervision_periods from the provided |sentence|."""
+    sentence_periods = sentence.supervision_periods
 
     placeholder_periods = [
         p for p in sentence_periods if is_placeholder(p, field_index)
     ]
 
-    if period_type == schema.StateSupervisionPeriod:
-        sentence.supervision_periods = placeholder_periods
-    else:
-        sentence.incarceration_periods = placeholder_periods
+    sentence.supervision_periods = placeholder_periods
 
 
+# TODO(#9567): Delete this once StateSupervisionPeriod is on the StatePerson
 def _is_sentence_ended_by_status(sentence: schema.SchemaSentenceType) -> bool:
     """Returns True if the provided |sentence| has a status that indicates the sentence has been ended."""
     if sentence.status is None or sentence.status in (
@@ -132,6 +115,7 @@ def _is_sentence_ended_by_status(sentence: schema.SchemaSentenceType) -> bool:
     )
 
 
+# TODO(#9567): Delete this once StateSupervisionPeriod is on the StatePerson
 def _get_date_matchable_sentences(
     sentences: List[schema.SchemaSentenceType], field_index: CoreEntityFieldIndex
 ) -> List[schema.SchemaSentenceType]:
@@ -152,28 +136,26 @@ def _get_date_matchable_sentences(
     return valid_sentences
 
 
-def _move_periods_onto_sentences_for_sentence_group(
+# TODO(#9567): Delete this once StateSupervisionPeriod is on the StatePerson
+def _move_supervision_periods_onto_sentences_for_sentence_group(
     sentence_group: schema.StateSentenceGroup,
-    period_type: Type[schema.SchemaPeriodType],
     field_index: CoreEntityFieldIndex,
 ) -> None:
-    """Looks at all SupervisionPeriods in the provided |sentence_group|, and attempts to match them to any
-    corresponding sentences, based on date.
+    """Looks at all SupervisionPeriods in the provided |sentence_group|, and attempts to
+    match them to any corresponding sentences, based on date.
     """
     sentences = (
         sentence_group.supervision_sentences + sentence_group.incarceration_sentences
     )
 
-    # Get all periods from sentence group
+    # Get all supervision periods from sentence group
     periods = get_all_entities_of_cls(
-        [sentence_group], period_type, field_index=field_index
+        [sentence_group], schema.StateSupervisionPeriod, field_index=field_index
     )
 
     # Clear non-placeholder links from sentence to period. We will re-add/update these relationships below.
     for sentence in sentences:
-        _only_keep_placeholder_periods_on_sentence(
-            sentence, period_type, field_index=field_index
-        )
+        _only_keep_placeholder_periods_on_sentence(sentence, field_index=field_index)
 
     unmatched_periods = []
     matchable_sentences = _get_date_matchable_sentences(
@@ -204,7 +186,7 @@ def _move_periods_onto_sentences_for_sentence_group(
                 end_2=s_completion_date,
             ):
                 matched = True
-                _add_period_to_sentence(p, s)
+                _add_supervision_period_to_sentence(p, s)
 
         # Unmatched periods will be re-added to a placeholder sentence at the end.
         if not matched:
@@ -226,4 +208,4 @@ def _move_periods_onto_sentences_for_sentence_group(
         else:
             placeholder_sentence = placeholder_sentences[0]
         for unmatched_period in unmatched_periods:
-            _add_period_to_sentence(unmatched_period, placeholder_sentence)
+            _add_supervision_period_to_sentence(unmatched_period, placeholder_sentence)

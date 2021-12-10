@@ -456,7 +456,6 @@ class TestIncarcerationPipeline(unittest.TestCase):
             schema.StateSupervisionPeriod.__tablename__: supervision_periods_data,
             schema.state_incarceration_sentence_supervision_period_association_table.name: [],
             schema.StateAssessment.__tablename__: assessment_data,
-            schema.state_incarceration_sentence_incarceration_period_association_table.name: [],
             "persons_to_recent_county_of_residence": fake_person_id_to_county_query_result,
             "incarceration_period_judicial_district_association": incarceration_period_judicial_district_association_data,
             "state_race_ethnicity_population_counts": state_race_ethnicity_population_count_data,
@@ -612,8 +611,6 @@ class TestIncarcerationPipeline(unittest.TestCase):
             normalized_database_base_dict(supervision_sentence)
         ]
 
-        incarceration_periods_data: Dict[str, Any] = {}
-
         fake_person_id_to_county_query_result = [
             {
                 "state_code": "US_XX",
@@ -669,8 +666,6 @@ class TestIncarcerationPipeline(unittest.TestCase):
             schema.StatePerson.__tablename__: persons_data,
             schema.StateIncarcerationSentence.__tablename__: incarceration_sentence_data,
             schema.StateSupervisionSentence.__tablename__: supervision_sentence_data,
-            schema.StateIncarcerationPeriod.__tablename__: incarceration_periods_data,
-            schema.state_incarceration_sentence_incarceration_period_association_table.name: [],
             "persons_to_recent_county_of_residence": fake_person_id_to_county_query_result,
             "incarceration_period_judicial_district_association": incarceration_period_judicial_district_association_data,
             "state_race_ethnicity_population_counts": state_race_ethnicity_population_count_data,

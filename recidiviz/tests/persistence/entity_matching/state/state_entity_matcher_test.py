@@ -28,7 +28,6 @@ from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
-    StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodStatus,
 )
 from recidiviz.common.constants.state.state_parole_decision import (
@@ -57,7 +56,6 @@ from recidiviz.persistence.entity.state.entities import (
     StateCourtCase,
     StateIncarcerationIncident,
     StateIncarcerationIncidentOutcome,
-    StateIncarcerationPeriod,
     StateIncarcerationSentence,
     StatePerson,
     StatePersonAlias,
@@ -1781,7 +1779,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             state_code=_STATE_CODE,
             county_code="county_code",
             charges=[db_charge_1, db_charge_2],
-            incarceration_periods=[db_incarceration_period],
         )
         entity_incarceration_sentence = self.to_entity(db_incarceration_sentence)
         db_case_type_dv = generate_supervision_case_type_entry(
@@ -1824,6 +1821,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         entity_external_id = self.to_entity(db_external_id)
         db_person.external_ids = [db_external_id]
         db_person.sentence_groups = [db_sentence_group]
+        db_person.incarceration_periods = [db_incarceration_period]
         entity_person = self.to_entity(db_person)
 
         self._commit_to_db(db_person)
@@ -1893,7 +1891,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             incarceration_sentence_id=None,
             county_code="county_code-updated",
             charges=[charge_1, charge_2],
-            incarceration_periods=[incarceration_period],
         )
         supervision_violation_response_decision = attr.evolve(
             entity_supervision_violation_response_decision,
@@ -1960,6 +1957,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             assessments=[assessment, assessment_2],
             incarceration_incidents=[incarceration_incident],
             supervision_violations=[supervision_violation],
+            incarceration_periods=[incarceration_period],
         )
 
         expected_court_case = attr.evolve(court_case, court_case_id=_ID)
@@ -1997,7 +1995,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             incarceration_sentence,
             incarceration_sentence_id=_ID,
             charges=[expected_charge_1, expected_charge_2],
-            incarceration_periods=[expected_incarceration_period],
         )
         expected_supervision_violation_response_decision = attr.evolve(
             supervision_violation_response_decision,
@@ -2054,6 +2051,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             assessments=[expected_assessment, expected_assessment_2],
             incarceration_incidents=[expected_incarceration_incident],
             supervision_violations=[expected_supervision_violation],
+            incarceration_periods=[expected_incarceration_period],
         )
 
         # Act 1 - Match
@@ -4052,126 +4050,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             matched_entities.people,
             session,
             expected_unmatched_db_people=[expected_person_2],
-        )
-        self.assert_no_errors(matched_entities)
-        self.assertEqual(1, matched_entities.total_root_entities)
-
-    def test_mergeIncarcerationPeriod_multipleSentenceParents(self) -> None:
-        """This tests that ingesting an incarceration period that is the same
-        as one we've seen before, but is now being referenced by a different
-        sentence object, will be pointed to by both sentence objects. This
-        should be supported as the relationship between sentence and period is
-        many-to-many."""
-        # Arrange
-        db_person = generate_person(state_code=_STATE_CODE)
-        db_incarceration_period = generate_incarceration_period(
-            person=db_person,
-            state_code=_STATE_CODE,
-            external_id=_EXTERNAL_ID_2,
-            admission_date=_DATE_1,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION.value,
-        )
-        entity_incarceration_period = self.to_entity(db_incarceration_period)
-        db_incarceration_sentence = generate_incarceration_sentence(
-            person=db_person,
-            status=StateSentenceStatus.SERVING.value,
-            external_id=_EXTERNAL_ID,
-            state_code=_STATE_CODE,
-            county_code="county_code",
-            incarceration_periods=[db_incarceration_period],
-        )
-        entity_incarceration_sentence = self.to_entity(db_incarceration_sentence)
-        db_supervision_sentence = generate_supervision_sentence(
-            person=db_person,
-            status=StateSentenceStatus.SERVING.value,
-            external_id=_EXTERNAL_ID,
-            state_code=_STATE_CODE,
-            county_code="county_code",
-        )
-        entity_supervision_sentence = self.to_entity(db_supervision_sentence)
-        db_sentence_group = generate_sentence_group(
-            status=StateSentenceStatus.SERVING.value,
-            external_id=_EXTERNAL_ID,
-            state_code=_STATE_CODE,
-            county_code="county_code",
-            incarceration_sentences=[db_incarceration_sentence],
-            supervision_sentences=[db_supervision_sentence],
-        )
-        entity_sentence_group = self.to_entity(db_sentence_group)
-        db_external_id = generate_external_id(
-            state_code=_STATE_CODE, external_id=_EXTERNAL_ID, id_type=_ID_TYPE
-        )
-        db_person.external_ids = [db_external_id]
-        db_person.sentence_groups = [db_sentence_group]
-        entity_person = self.to_entity(db_person)
-
-        self._commit_to_db(db_person)
-
-        # Now we ingest the exact same period but with a flat field update and
-        # with a new reference to a parent supervision sentence, since it is
-        # related to both sentences
-        updated_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
-            external_id=entity_incarceration_period.external_id,
-            state_code=_STATE_CODE,
-            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
-            release_date=_DATE_2,
-            incarceration_period_id=None,
-        )
-        supervision_sentence = StateSupervisionSentence.new_with_defaults(
-            external_id=entity_supervision_sentence.external_id,
-            state_code=_STATE_CODE,
-            incarceration_periods=[updated_incarceration_period],
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-        )
-        sentence_group = StateSentenceGroup.new_with_defaults(
-            external_id=entity_sentence_group.external_id,
-            state_code=_STATE_CODE,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            supervision_sentences=[supervision_sentence],
-        )
-        external_id = StatePersonExternalId.new_with_defaults(
-            state_code=_STATE_CODE, external_id=_EXTERNAL_ID, id_type=_ID_TYPE
-        )
-        person = StatePerson.new_with_defaults(
-            state_code=_STATE_CODE,
-            external_ids=[external_id],
-            sentence_groups=[sentence_group],
-        )
-
-        expected_incarceration_period = attr.evolve(
-            entity_incarceration_period,
-            release_date=_DATE_2,
-            incarceration_period_id=entity_incarceration_period.incarceration_period_id,
-        )
-        # db_incarceration_sentence still points to the updated incarceration
-        # period
-        expected_incarceration_sentence = attr.evolve(
-            entity_incarceration_sentence,
-            incarceration_periods=[expected_incarceration_period],
-        )
-        # db_supervision_sentence did NOT point to incarceration period before
-        # but it does now
-        expected_supervision_sentence = attr.evolve(
-            entity_supervision_sentence,
-            supervision_sentence_id=entity_supervision_sentence.supervision_sentence_id,
-            incarceration_periods=[expected_incarceration_period],
-        )
-        expected_sentence_group = attr.evolve(
-            entity_sentence_group,
-            incarceration_sentences=[expected_incarceration_sentence],
-            supervision_sentences=[expected_supervision_sentence],
-        )
-        expected_person = attr.evolve(
-            entity_person, sentence_groups=[expected_sentence_group]
-        )
-
-        # Act
-        session = self._session()
-        matched_entities = self._match(session, ingested_people=[person])
-
-        # Assert
-        self.assert_people_match_pre_and_post_commit(
-            [expected_person], matched_entities.people, session
         )
         self.assert_no_errors(matched_entities)
         self.assertEqual(1, matched_entities.total_root_entities)

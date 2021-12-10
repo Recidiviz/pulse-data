@@ -93,7 +93,7 @@ class TestIngestObjectHierarchy(unittest.TestCase):
 
     def test_get_sequence_for_class_multiple_parents_chain(self) -> None:
         actual = get_ancestor_class_sequence(
-            "state_incarceration_period",
+            "state_supervision_period",
             ancestor_chain={
                 "state_person": "12345",
                 "state_incarceration_sentence": "45678",

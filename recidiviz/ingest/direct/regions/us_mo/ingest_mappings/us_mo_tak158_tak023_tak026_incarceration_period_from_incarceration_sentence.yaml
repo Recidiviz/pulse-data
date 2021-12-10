@@ -10,9 +10,6 @@ key_mappings:
 ancestor_keys:
   BT_DOC: state_person.state_person_id
 
-enforced_ancestor_types:
-  state_sentence: state_incarceration_sentence
-
 keys_to_ignore:
   - BT_DOC  # Offender DOC Number - Handled manually in the controller
   - BT_CYC  # Offender Cycle Number - Handled manually in the controller

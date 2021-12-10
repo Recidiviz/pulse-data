@@ -296,7 +296,7 @@ def generate_test_supervision_sentence(
 
 
 def generate_test_incarceration_sentence(
-    person_id, charges=None, incarceration_periods=None, early_discharges=None
+    person_id, charges=None, early_discharges=None
 ) -> state_schema.StateIncarcerationSentence:
     instance = state_schema.StateIncarcerationSentence(
         incarceration_sentence_id=2222,
@@ -305,7 +305,6 @@ def generate_test_incarceration_sentence(
         person_id=person_id,
         is_capital_punishment=False,
         charges=(charges if charges else []),
-        incarceration_periods=(incarceration_periods if incarceration_periods else []),
         early_discharges=(early_discharges if early_discharges else []),
     )
 
@@ -358,6 +357,7 @@ def generate_test_person(
     incarceration_incidents: List[state_schema.StateIncarcerationIncident],
     supervision_violations: List[state_schema.StateSupervisionViolation],
     supervision_contacts: List[state_schema.StateSupervisionContact],
+    incarceration_periods: List[state_schema.StateIncarcerationPeriod],
 ) -> state_schema.StatePerson:
     """Returns a StatePerson to be used for testing."""
     instance = state_schema.StatePerson(
@@ -404,6 +404,7 @@ def generate_test_person(
         incarceration_incidents=incarceration_incidents,
         supervision_violations=supervision_violations,
         supervision_contacts=supervision_contacts,
+        incarceration_periods=incarceration_periods,
         assessments=[
             state_schema.StateAssessment(
                 assessment_id=456,
@@ -475,7 +476,8 @@ def generate_schema_state_person_obj_tree() -> state_schema.StatePerson:
     )
 
     test_incarceration_sentence = generate_test_incarceration_sentence(
-        test_person_id, [test_charge_1, test_charge_2], [test_incarceration_period]
+        test_person_id,
+        [test_charge_1, test_charge_2],
     )
 
     test_sentence_group = generate_test_sentence_group(
@@ -514,6 +516,7 @@ def generate_schema_state_person_obj_tree() -> state_schema.StatePerson:
         [test_incarceration_incident],
         [test_supervision_violation],
         [test_contact],
+        [test_incarceration_period],
     )
 
     test_sentence_group.person = test_person

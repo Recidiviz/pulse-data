@@ -372,6 +372,40 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
         supervision_violation_response
     ]
 
+    incarceration_period = entities.StateIncarcerationPeriod.new_with_defaults(
+        status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+        status_raw_text="IN CUSTODY",
+        incarceration_type=StateIncarcerationType.STATE_PRISON,
+        incarceration_type_raw_text=None,
+        admission_date=datetime.date(year=2003, month=8, day=1),
+        release_date=datetime.date(year=2004, month=8, day=1),
+        state_code="US_XX",
+        county_code="US_XX_COUNTY",
+        facility="ALCATRAZ",
+        housing_unit="BLOCK A",
+        facility_security_level=StateIncarcerationFacilitySecurityLevel.MAXIMUM,
+        facility_security_level_raw_text="MAX",
+        admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+        admission_reason_raw_text="NEW ADMISSION",
+        projected_release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+        projected_release_reason_raw_text="CONDITIONAL RELEASE",
+        release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+        release_reason_raw_text="CONDITIONAL RELEASE",
+    )
+
+    person.incarceration_periods = [incarceration_period]
+
+    parole_decision = entities.StateParoleDecision.new_with_defaults(
+        decision_date=datetime.date(year=2004, month=7, day=1),
+        corrective_action_deadline=None,
+        state_code="US_XX",
+        decision_outcome=StateParoleDecisionOutcome.PAROLE_GRANTED,
+        decision_reasoning="GOOD BEHAVIOR",
+        corrective_action=None,
+    )
+
+    incarceration_period.parole_decisions = [parole_decision]
+
     sentence_group = entities.StateSentenceGroup.new_with_defaults(
         external_id="BOOK_ID1234",
         status=StateSentenceStatus.SERVING,
@@ -549,41 +583,6 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
     supervision_sentence.early_discharges = [early_discharge_1, early_discharge_2]
     incarceration_sentence.early_discharges = [early_discharge_3]
 
-    incarceration_period = entities.StateIncarcerationPeriod.new_with_defaults(
-        status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-        status_raw_text="IN CUSTODY",
-        incarceration_type=StateIncarcerationType.STATE_PRISON,
-        incarceration_type_raw_text=None,
-        admission_date=datetime.date(year=2003, month=8, day=1),
-        release_date=datetime.date(year=2004, month=8, day=1),
-        state_code="US_XX",
-        county_code="US_XX_COUNTY",
-        facility="ALCATRAZ",
-        housing_unit="BLOCK A",
-        facility_security_level=StateIncarcerationFacilitySecurityLevel.MAXIMUM,
-        facility_security_level_raw_text="MAX",
-        admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-        admission_reason_raw_text="NEW ADMISSION",
-        projected_release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
-        projected_release_reason_raw_text="CONDITIONAL RELEASE",
-        release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
-        release_reason_raw_text="CONDITIONAL RELEASE",
-    )
-
-    incarceration_sentence.incarceration_periods = [incarceration_period]
-    supervision_sentence.incarceration_periods = [incarceration_period]
-
-    parole_decision = entities.StateParoleDecision.new_with_defaults(
-        decision_date=datetime.date(year=2004, month=7, day=1),
-        corrective_action_deadline=None,
-        state_code="US_XX",
-        decision_outcome=StateParoleDecisionOutcome.PAROLE_GRANTED,
-        decision_reasoning="GOOD BEHAVIOR",
-        corrective_action=None,
-    )
-
-    incarceration_period.parole_decisions = [parole_decision]
-
     supervision_case_type_entry = (
         entities.StateSupervisionCaseTypeEntry.new_with_defaults(
             state_code="US_XX",
@@ -624,6 +623,7 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
             *person.incarceration_incidents,
             *person.supervision_violations,
             *person.supervision_contacts,
+            *person.incarceration_periods,
         )
         for child in person_children:
             child.person = person  # type: ignore[attr-defined]
@@ -638,7 +638,6 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
 
         incarceration_sentence_children: Sequence[Entity] = (
             *incarceration_sentence.charges,
-            *incarceration_sentence.incarceration_periods,
             *incarceration_sentence.supervision_periods,
             *incarceration_sentence.early_discharges,
         )
@@ -652,7 +651,6 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
 
         supervision_sentence_children: Sequence[Entity] = (
             *supervision_sentence.charges,
-            *supervision_sentence.incarceration_periods,
             *supervision_sentence.supervision_periods,
             *supervision_sentence.early_discharges,
         )

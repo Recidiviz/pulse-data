@@ -573,34 +573,6 @@ state_supervision_contact_method = Enum(
 
 # Join tables
 
-state_supervision_sentence_incarceration_period_association_table = Table(
-    "state_supervision_sentence_incarceration_period_association",
-    StateBase.metadata,
-    Column(
-        "supervision_sentence_id",
-        Integer,
-        ForeignKey("state_supervision_sentence.supervision_sentence_id"),
-        index=True,
-        comment=StrictStringFormatter().format(
-            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="supervision sentence"
-        ),
-    ),
-    Column(
-        "incarceration_period_id",
-        Integer,
-        ForeignKey("state_incarceration_period.incarceration_period_id"),
-        index=True,
-        comment=StrictStringFormatter().format(
-            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="incarceration period"
-        ),
-    ),
-    comment=StrictStringFormatter().format(
-        ASSOCIATON_TABLE_COMMENT_TEMPLATE,
-        first_object_name_plural="supervision sentences",
-        second_object_name_plural="incarceration periods",
-    ),
-)
-
 state_supervision_sentence_supervision_period_association_table = Table(
     "state_supervision_sentence_supervision_period_association",
     StateBase.metadata,
@@ -629,33 +601,6 @@ state_supervision_sentence_supervision_period_association_table = Table(
     ),
 )
 
-state_incarceration_sentence_incarceration_period_association_table = Table(
-    "state_incarceration_sentence_incarceration_period_association",
-    StateBase.metadata,
-    Column(
-        "incarceration_sentence_id",
-        Integer,
-        ForeignKey("state_incarceration_sentence.incarceration_sentence_id"),
-        index=True,
-        comment=StrictStringFormatter().format(
-            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="incarceration sentence"
-        ),
-    ),
-    Column(
-        "incarceration_period_id",
-        Integer,
-        ForeignKey("state_incarceration_period.incarceration_period_id"),
-        index=True,
-        comment=StrictStringFormatter().format(
-            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="incarceration period"
-        ),
-    ),
-    comment=StrictStringFormatter().format(
-        ASSOCIATON_TABLE_COMMENT_TEMPLATE,
-        first_object_name_plural="incarceration sentences",
-        second_object_name_plural="incarceration periods",
-    ),
-)
 
 state_incarceration_sentence_supervision_period_association_table = Table(
     "state_incarceration_sentence_supervision_period_association",
@@ -1267,6 +1212,9 @@ class StatePerson(StateBase, _StatePersonSharedColumns):
         "StatePersonEthnicity", backref="person", lazy="selectin"
     )
     assessments = relationship("StateAssessment", backref="person", lazy="selectin")
+    incarceration_periods = relationship(
+        "StateIncarcerationPeriod", backref="person", lazy="selectin"
+    )
     program_assignments = relationship(
         "StateProgramAssignment", backref="person", lazy="selectin"
     )
@@ -1930,12 +1878,6 @@ class StateSupervisionSentence(StateBase, _StateSupervisionSentenceSharedColumns
         backref="supervision_sentences",
         lazy="selectin",
     )
-    incarceration_periods = relationship(
-        "StateIncarcerationPeriod",
-        secondary=state_supervision_sentence_incarceration_period_association_table,
-        backref="supervision_sentences",
-        lazy="selectin",
-    )
     supervision_periods = relationship(
         "StateSupervisionPeriod",
         secondary=state_supervision_sentence_supervision_period_association_table,
@@ -2118,13 +2060,6 @@ class StateIncarcerationSentence(StateBase, _StateIncarcerationSentenceSharedCol
         backref="incarceration_sentences",
         lazy="selectin",
     )
-    incarceration_periods = relationship(
-        "StateIncarcerationPeriod",
-        secondary=state_incarceration_sentence_incarceration_period_association_table,
-        backref="incarceration_sentences",
-        lazy="selectin",
-    )
-
     supervision_periods = relationship(
         "StateSupervisionPeriod",
         secondary=state_incarceration_sentence_supervision_period_association_table,
@@ -2324,7 +2259,6 @@ class StateIncarcerationPeriod(StateBase, _StateIncarcerationPeriodSharedColumns
         ),
     )
 
-    person = relationship("StatePerson", uselist=False)
     # TODO(#5411): DEPRECATED - Relationship to be moved to the StatePerson
     parole_decisions = relationship(
         "StateParoleDecision", backref="incarceration_period", lazy="selectin"

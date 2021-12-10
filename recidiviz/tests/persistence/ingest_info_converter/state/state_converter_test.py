@@ -178,6 +178,7 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             state_supervision_violation_ids=["VIOLATION_ID"],
             state_supervision_contact_ids=["SUPERVISION_CONTACT_ID"],
             state_sentence_group_ids=["GROUP_ID1", "GROUP_ID2"],
+            state_incarceration_period_ids=["I_PERIOD_ID"],
             supervising_officer_id="AGENT_ID_SUPERVISING",
         )
         ingest_info.state_person_races.add(
@@ -243,7 +244,6 @@ class TestIngestInfoStateConverter(unittest.TestCase):
         ingest_info.state_incarceration_sentences.add(
             state_incarceration_sentence_id="INCARCERATION_SENTENCE_ID1",
             state_charge_ids=["CHARGE_ID1"],
-            state_incarceration_period_ids=["I_PERIOD_ID"],
         )
         ingest_info.state_incarceration_sentences.add(
             state_incarceration_sentence_id="INCARCERATION_SENTENCE_ID2",
@@ -535,34 +535,6 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             charges=[charge_1],
-            incarceration_periods=[
-                StateIncarcerationPeriod.new_with_defaults(
-                    external_id="I_PERIOD_ID",
-                    status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
-                    incarceration_type=StateIncarcerationType.STATE_PRISON,
-                    state_code="US_XX",
-                    parole_decisions=[
-                        StateParoleDecision.new_with_defaults(
-                            external_id="DECISION_ID",
-                            state_code="US_XX",
-                            decision_agents=[
-                                StateAgent.new_with_defaults(
-                                    external_id="AGENT_ID2",
-                                    agent_type=StateAgentType.PRESENT_WITHOUT_INFO,
-                                    state_code="US_XX",
-                                    full_name='{"full_name": "AGENT HERNANDEZ"}',
-                                ),
-                                StateAgent.new_with_defaults(
-                                    external_id="AGENT_ID3",
-                                    state_code="US_XX",
-                                    agent_type=StateAgentType.PRESENT_WITHOUT_INFO,
-                                    full_name='{"full_name": "AGENT SMITH"}',
-                                ),
-                            ],
-                        )
-                    ],
-                )
-            ],
         )
 
         incarceration_sentence_2 = StateIncarcerationSentence.new_with_defaults(
@@ -644,6 +616,34 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                 incarceration_incidents=[incident],
                 supervision_violations=[violation],
                 supervision_contacts=[supervision_contact],
+                incarceration_periods=[
+                    StateIncarcerationPeriod.new_with_defaults(
+                        external_id="I_PERIOD_ID",
+                        status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
+                        incarceration_type=StateIncarcerationType.STATE_PRISON,
+                        state_code="US_XX",
+                        parole_decisions=[
+                            StateParoleDecision.new_with_defaults(
+                                external_id="DECISION_ID",
+                                state_code="US_XX",
+                                decision_agents=[
+                                    StateAgent.new_with_defaults(
+                                        external_id="AGENT_ID2",
+                                        agent_type=StateAgentType.PRESENT_WITHOUT_INFO,
+                                        state_code="US_XX",
+                                        full_name='{"full_name": "AGENT HERNANDEZ"}',
+                                    ),
+                                    StateAgent.new_with_defaults(
+                                        external_id="AGENT_ID3",
+                                        state_code="US_XX",
+                                        agent_type=StateAgentType.PRESENT_WITHOUT_INFO,
+                                        full_name='{"full_name": "AGENT SMITH"}',
+                                    ),
+                                ],
+                            )
+                        ],
+                    )
+                ],
                 sentence_groups=[
                     StateSentenceGroup.new_with_defaults(
                         external_id="GROUP_ID1",

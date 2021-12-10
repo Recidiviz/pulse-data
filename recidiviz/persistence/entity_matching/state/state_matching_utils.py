@@ -394,13 +394,7 @@ def get_multiparent_classes() -> List[Type[DatabaseEntity]]:
     cls_list: List[Type[DatabaseEntity]] = [
         schema.StateCharge,
         schema.StateCourtCase,
-        schema.StateIncarcerationPeriod,
-        schema.StateParoleDecision,
         schema.StateSupervisionPeriod,
-        schema.StateSupervisionContact,
-        schema.StateSupervisionViolation,
-        schema.StateSupervisionViolationResponse,
-        schema.StateProgramAssignment,
         schema.StateAgent,
     ]
     direction_checker = SchemaEdgeDirectionChecker.state_direction_checker()

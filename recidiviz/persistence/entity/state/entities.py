@@ -300,6 +300,9 @@ class StatePerson(Entity, BuildableAttr, DefaultableAttr):
     assessments: List["StateAssessment"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
+    incarceration_periods: List["StateIncarcerationPeriod"] = attr.ib(
+        factory=list, validator=attr_validators.is_list
+    )
     program_assignments: List["StateProgramAssignment"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
@@ -684,11 +687,6 @@ class StateSupervisionSentence(ExternalIdEntity, BuildableAttr, DefaultableAttr)
         factory=list, validator=attr_validators.is_list
     )
 
-    # NOTE: A person might have an incarceration period associated with a supervision
-    # sentence if they violate the terms of the sentence and are sent back to prison.
-    incarceration_periods: List["StateIncarcerationPeriod"] = attr.ib(
-        factory=list, validator=attr_validators.is_list
-    )
     supervision_periods: List["StateSupervisionPeriod"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
@@ -796,10 +794,6 @@ class StateIncarcerationSentence(ExternalIdEntity, BuildableAttr, DefaultableAtt
     person: Optional["StatePerson"] = attr.ib(default=None)
     sentence_group: Optional["StateSentenceGroup"] = attr.ib(default=None)
     charges: List["StateCharge"] = attr.ib(
-        factory=list, validator=attr_validators.is_list
-    )
-
-    incarceration_periods: List["StateIncarcerationPeriod"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
     supervision_periods: List["StateSupervisionPeriod"] = attr.ib(
@@ -924,14 +918,6 @@ class StateIncarcerationPeriod(
 
     # Cross-entity relationships
     person: Optional["StatePerson"] = attr.ib(default=None)
-
-    # NOTE: An incarceration period might count towards multiple sentences
-    incarceration_sentences: List["StateIncarcerationSentence"] = attr.ib(
-        factory=list, validator=attr_validators.is_list
-    )
-    supervision_sentences: List["StateSupervisionSentence"] = attr.ib(
-        factory=list, validator=attr_validators.is_list
-    )
 
     parole_decisions: List["StateParoleDecision"] = attr.ib(
         factory=list, validator=attr_validators.is_list
