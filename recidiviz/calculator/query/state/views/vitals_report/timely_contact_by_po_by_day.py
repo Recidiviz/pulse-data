@@ -44,7 +44,7 @@ WITH overdue_contacts AS (
         IFNULL(level_1_supervision_location_external_id, 'UNKNOWN') as level_1_supervision_location_external_id,
         IFNULL(level_2_supervision_location_external_id, 'UNKNOWN') as level_2_supervision_location_external_id,
         COUNT (DISTINCT( IF(next_recommended_face_to_face_date <= date_of_supervision, person_id, NULL))) as total_overdue,
-    FROM `{project_id}.{vitals_views_dataset}.vitals_supervision_case_compliance_metrics` compliance,
+    FROM `{project_id}.{reference_views_dataset}.supervision_case_compliance_metrics_materialized` compliance,
     UNNEST ([compliance.level_1_supervision_location_external_id, 'ALL']) AS level_1_supervision_location_external_id,
     UNNEST ([compliance.level_2_supervision_location_external_id, 'ALL']) AS level_2_supervision_location_external_id,
     UNNEST ([supervising_officer_external_id, 'ALL']) AS supervising_officer_external_id

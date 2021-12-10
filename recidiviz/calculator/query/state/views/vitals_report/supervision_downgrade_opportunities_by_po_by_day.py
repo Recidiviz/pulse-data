@@ -37,34 +37,24 @@ SUPERVISION_DOWNGRADE_OPPORTUNITIES_BY_PO_BY_DAY_VIEW_NAME = (
 
 SUPERVISION_DOWNGRADE_OPPORTUNITIES_BY_PO_BY_DAY_DESCRIPTION = """
 Number of supervisees who can have their supervision level downgraded by PO by day
+compared to the PO's total caseload
 """
 
 SUPERVISION_DOWNGRADE_OPPORTUNITIES_BY_PO_BY_DAY_QUERY_TEMPLATE = """
     /*{description}*/
-WITH downgrade_opportunities AS (
-    SELECT
-        compliance.state_code,
-        compliance.date_of_supervision,
-        supervising_officer_external_id,
-        IFNULL(level_1_supervision_location_external_id, 'UNKNOWN') as level_1_supervision_location_external_id,
-        IFNULL(level_2_supervision_location_external_id, 'UNKNOWN') as level_2_supervision_location_external_id,
-        COUNT (DISTINCT(IF(recommended_supervision_downgrade_level IS NOT NULL, person_id, NULL))) as total_downgrade_opportunities,
-    FROM `{project_id}.{vitals_views_dataset}.vitals_supervision_case_compliance_metrics` compliance,
-    UNNEST ([compliance.level_1_supervision_location_external_id, 'ALL']) AS level_1_supervision_location_external_id,
-    UNNEST ([compliance.level_2_supervision_location_external_id, 'ALL']) AS level_2_supervision_location_external_id,
-    UNNEST ([supervising_officer_external_id, 'ALL']) AS supervising_officer_external_id
-    WHERE date_of_supervision > DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL 210 DAY)
+    WITH downgrade_opportunities AS (
+        SELECT
+            state_code,
+            date_of_supervision,
+            supervising_officer_external_id,
+            level_1_supervision_location_external_id,
+            level_2_supervision_location_external_id,
+            COUNT (DISTINCT(person_id)) as total_downgrade_opportunities,
+        FROM `{project_id}.{reference_views_dataset}.supervision_mismatches_by_day_materialized`
         -- 210 is 6 months (180 days) for the 6 month time series chart + 30 days for monthly average on the first day
-        AND level_2_supervision_location_external_id IS NOT NULL
-        -- Remove duplicate entries created when unnesting a state that does not have L2 locations
-    GROUP BY
-        state_code,
-        date_of_supervision,
-        supervising_officer_external_id,
-        level_1_supervision_location_external_id,
-        level_2_supervision_location_external_id
+        WHERE date_of_supervision > DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL 210 DAY)
+        GROUP BY 1, 2, 3, 4, 5
     )
-
     SELECT
         downgrade_opportunities.state_code,
         downgrade_opportunities.date_of_supervision,
@@ -82,6 +72,7 @@ WITH downgrade_opportunities AS (
         AND {vitals_state_specific_join_with_supervision_population}
     WHERE downgrade_opportunities.level_1_supervision_location_external_id = 'ALL'
         OR downgrade_opportunities.state_code IN {vitals_level_1_state_codes}
+        
     """
 
 SUPERVISION_DOWNGRADE_OPPORTUNITIES_BY_PO_BY_DAY_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -89,6 +80,7 @@ SUPERVISION_DOWNGRADE_OPPORTUNITIES_BY_PO_BY_DAY_VIEW_BUILDER = SimpleBigQueryVi
     view_id=SUPERVISION_DOWNGRADE_OPPORTUNITIES_BY_PO_BY_DAY_VIEW_NAME,
     view_query_template=SUPERVISION_DOWNGRADE_OPPORTUNITIES_BY_PO_BY_DAY_QUERY_TEMPLATE,
     description=SUPERVISION_DOWNGRADE_OPPORTUNITIES_BY_PO_BY_DAY_DESCRIPTION,
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     vitals_views_dataset=dataset_config.VITALS_REPORT_DATASET,
     vitals_state_specific_join_with_supervision_population=state_specific_query_strings.vitals_state_specific_join_with_supervision_population(
         "downgrade_opportunities"
