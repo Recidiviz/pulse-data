@@ -1,4 +1,5 @@
 control_number,inmate_number,sequence_number,start_movement_date,end_movement_date,location,start_sentence_status_code,end_sentence_status_code,start_parole_status_code,end_parole_status_code,start_movement_code,end_movement_code,start_is_new_revocation,start_is_admin_edge,end_is_admin_edge,sentence_type
+111111,AB1234,1,20200101,20210101,123,AS,PC,NA,NA,TRN,D,false,false,,S
 445566,CJ1991,1,20161011,20161022,GRA,DC,DC,NA,NA,AC,TRN,false,FALSE,FALSE,S
 445566,CJ1991,2,20161022,20170602,CAM,DC,AS,NA,NA,TRN,TRN,false,FALSE,FALSE,S
 445566,CJ1991,4,20170602,20170714,WAM,AS,P,NA,SP,TRN,D,false,FALSE,FALSE,S

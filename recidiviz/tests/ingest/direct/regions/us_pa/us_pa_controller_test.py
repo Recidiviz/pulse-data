@@ -260,6 +260,20 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         self.run_legacy_parse_file_test(expected, "dbo_tblInmTestScore")
 
     def test_populate_data_ccis_incarceration_period(self) -> None:
+        ab1234_incarceration_periods = [
+            StateIncarcerationPeriod(
+                state_incarceration_period_id="11111",
+                admission_date="2020-01-01 00:00:00",
+                admission_reason="CCIS-false-PRCH",
+                release_date="2021-01-01 00:00:00",
+                release_reason="CCIS-SENC",
+                facility="123: NOWHERE",
+                incarceration_type="CCIS",
+                specialized_purpose_for_incarceration="CCIS-64",
+                custodial_authority="64",
+            ),
+        ]
+
         je1989_incarceration_periods = [
             StateIncarcerationPeriod(
                 state_incarceration_period_id="12345",
@@ -325,6 +339,25 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         expected = IngestInfo(
             state_people=[
                 StatePerson(
+                    state_person_id="111111",
+                    state_person_external_ids=[
+                        StatePersonExternalId(
+                            state_person_external_id_id="111111", id_type=US_PA_CONTROL
+                        ),
+                    ],
+                    state_sentence_groups=[
+                        StateSentenceGroup(
+                            state_sentence_group_id="AB1234",
+                            state_incarceration_sentences=[
+                                StateIncarcerationSentence(
+                                    state_incarceration_sentence_id="AB1234-01",
+                                    state_incarceration_periods=ab1234_incarceration_periods,
+                                )
+                            ],
+                        ),
+                    ],
+                ),
+                StatePerson(
                     state_person_id="778899",
                     state_person_external_ids=[
                         StatePersonExternalId(
@@ -348,6 +381,20 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         self.run_legacy_parse_file_test(expected, "ccis_incarceration_period")
 
     def test_populate_data_sci_incarceration_period(self) -> None:
+        ab1234_incarceration_periods = [
+            StateIncarcerationPeriod(
+                state_incarceration_period_id="AB1234-1",
+                admission_date="20200101",
+                admission_reason="NA-false-TRN-false",
+                release_date="20210101",
+                release_reason="PC-NA-D-None",
+                facility="123",
+                incarceration_type="SCI",
+                specialized_purpose_for_incarceration="NA-S",
+                custodial_authority="STATE_PRISON",
+            )
+        ]
+
         gf3374_incarceration_periods = [
             StateIncarcerationPeriod(
                 state_incarceration_period_id="GF3374-1",
@@ -633,6 +680,25 @@ class TestUsPaController(BaseDirectIngestControllerTests):
 
         expected = IngestInfo(
             state_people=[
+                StatePerson(
+                    state_person_id="111111",
+                    state_person_external_ids=[
+                        StatePersonExternalId(
+                            state_person_external_id_id="111111", id_type=US_PA_CONTROL
+                        ),
+                    ],
+                    state_sentence_groups=[
+                        StateSentenceGroup(
+                            state_sentence_group_id="AB1234",
+                            state_incarceration_sentences=[
+                                StateIncarcerationSentence(
+                                    state_incarceration_sentence_id="AB1234-01",
+                                    state_incarceration_periods=ab1234_incarceration_periods,
+                                )
+                            ],
+                        ),
+                    ],
+                ),
                 StatePerson(
                     state_person_id="445566",
                     state_person_external_ids=[
@@ -1175,7 +1241,24 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             ],
         )
 
+        person_9 = entities.StatePerson.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            external_ids=[
+                entities.StatePersonExternalId.new_with_defaults(
+                    state_code=_STATE_CODE_UPPER,
+                    external_id="111111",
+                    id_type=US_PA_CONTROL,
+                ),
+                entities.StatePersonExternalId.new_with_defaults(
+                    state_code=_STATE_CODE_UPPER,
+                    external_id="AB1234",
+                    id_type=US_PA_INMATE,
+                ),
+            ],
+        )
+
         expected_people = [
+            person_9,
             person_1,
             person_2,
             person_3,
@@ -1323,6 +1406,35 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             person=person_4,
         )
         person_4.sentence_groups.append(p4_sg)
+
+        person_9.full_name = '{"given_names": "IMMANUEL", "middle_names": "", "name_suffix": "", "surname": "KANT"}'
+        person_9.gender = Gender.MALE
+        person_9.gender_raw_text = "MALE"
+        person_9.birthdate = datetime.date(year=1970, month=1, day=1)
+        person_9.current_address = "987 NOT HERE, PITTSBURGH, PA 16161"
+        person_9.residency_status = ResidencyStatus.PERMANENT
+        person_9.residency_status_raw_text = "987 NOT HERE"
+        person_9.state_code = _STATE_CODE_UPPER
+        person_9.aliases = [
+            entities.StatePersonAlias.new_with_defaults(
+                full_name='{"given_names": "IMMANUEL", "middle_names": "", "name_suffix": "", "surname": "KANT"}',
+                state_code=_STATE_CODE_UPPER,
+                alias_type=StatePersonAliasType.GIVEN_NAME,
+            )
+        ]
+        person_9.races = [
+            entities.StatePersonRace.new_with_defaults(
+                state_code=_STATE_CODE_UPPER, race=Race.WHITE, race_raw_text="WHITE"
+            ),
+        ]
+
+        p9_sg = entities.StateSentenceGroup.new_with_defaults(
+            external_id="AB1234",
+            state_code=_STATE_CODE_UPPER,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            person=person_9,
+        )
+        person_9.sentence_groups.append(p9_sg)
 
         populate_person_backedges(expected_people)
 
@@ -1702,6 +1814,45 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             incarceration_sentences=[p4_is_2],
         )
         p4_is_2.charges.append(p4_is_2_charge)
+
+        # Person 9 updates
+        p9_is = entities.StateIncarcerationSentence.new_with_defaults(
+            external_id="AB1234-01",
+            state_code=_STATE_CODE_UPPER,
+            county_code="PHI",
+            status=StateSentenceStatus.COMPLETED,
+            status_raw_text="PC",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            incarceration_type_raw_text="S",
+            date_imposed=datetime.date(2020, 1, 1),
+            start_date=datetime.date(2020, 1, 1),
+            completion_date=datetime.date(2021, 1, 1),
+            projected_min_release_date=datetime.date(2021, 1, 1),
+            projected_max_release_date=datetime.date(2021, 1, 1),
+            min_length_days=821,
+            max_length_days=3653,
+            is_life=False,
+            is_capital_punishment=False,
+            person=person_9,
+            sentence_group=p9_sg,
+        )
+        p9_sg.incarceration_sentences.append(p9_is)
+
+        p9_is_charge = entities.StateCharge.new_with_defaults(
+            external_id="X0000000",
+            statute="VC3802D",
+            description="DUI: CONTROLLED SUBSTANCES - 1ST OFFENSE",
+            offense_type="DUI-ALCOHOL",
+            classification_type=StateChargeClassificationType.MISDEMEANOR,
+            classification_type_raw_text="MISDEMEANOR",
+            classification_subtype="M1",
+            is_violent=False,
+            status=ChargeStatus.PRESENT_WITHOUT_INFO,
+            state_code=_STATE_CODE_UPPER,
+            person=person_9,
+            incarceration_sentences=[p9_is],
+        )
+        p9_is.charges.append(p9_is_charge)
 
         populate_person_backedges(expected_people)
 
@@ -2231,6 +2382,30 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             ]
         )
 
+        # Person 9 Incarceration Periods
+        p9_is_ip1 = entities.StateIncarcerationPeriod.new_with_defaults(
+            external_id="AB1234-1",
+            state_code=_STATE_CODE_UPPER,
+            person=person_9,
+            incarceration_sentences=[p9_is],
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=datetime.date(year=2020, month=1, day=1),
+            release_date=datetime.date(year=2021, month=1, day=1),
+            facility="123",
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            admission_reason_raw_text="NA-FALSE-TRN-FALSE",
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+            release_reason_raw_text="PC-NA-D-NONE",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            incarceration_type_raw_text="SCI",
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            specialized_purpose_for_incarceration_raw_text="NA-S",
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+            custodial_authority_raw_text=StateCustodialAuthority.STATE_PRISON.value,
+        )
+
+        p9_is.incarceration_periods.append(p9_is_ip1)
+
         populate_person_backedges(expected_people)
 
         # Act
@@ -2507,6 +2682,29 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         )
 
         person_4.incarceration_periods.extend([p4_is_1_ip_25, p4_is_1_ip_26_ccis])
+
+        p9_is_ip_2_ccis = entities.StateIncarcerationPeriod.new_with_defaults(
+            external_id="11111",
+            state_code=_STATE_CODE_UPPER,
+            person=person_9,
+            incarceration_sentences=[p9_is],
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=datetime.date(year=2020, month=1, day=1),
+            release_date=datetime.date(year=2021, month=1, day=1),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            admission_reason_raw_text="CCIS-FALSE-PRCH",
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+            release_reason_raw_text="CCIS-SENC",
+            facility="123: NOWHERE",
+            incarceration_type=StateIncarcerationType.COUNTY_JAIL,
+            incarceration_type_raw_text="CCIS",
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
+            specialized_purpose_for_incarceration_raw_text="CCIS-64",
+            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+            custodial_authority_raw_text="64",
+        )
+
+        p9_is.incarceration_periods.append(p9_is_ip_2_ccis)
 
         # Act
         self._run_ingest_job_for_filename("ccis_incarceration_period.csv")

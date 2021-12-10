@@ -129,6 +129,81 @@ columns:
   - name: sent_status_code
     description: |-
       Current sentence status.
+    known_values:
+      - value: AS
+        description: Actively Serving
+      - value: B
+        description: Bailed
+      - value: CS
+        description: Change other Sentence
+      - value: CT
+        description: In Court
+      - value: DA
+        description: Deceased - Assault
+      - value: DC
+        description: Diag/Class (Diagnostics / Classification)
+      - value: DN
+        description: Deceased - Natural
+      - value: DS
+        description: Deceased - Suicide
+      - value: DX
+        description: Deceased - Accident
+      - value: DZ
+        description: Deceased - Non DOC Location
+      - value: EC
+        description: Escape CSC
+      - value: EI
+        description: Escape Institution
+      - value: EX
+        description: Executed
+      - value: F
+        description: Furloughed
+      - value: FR
+        description: Federal Release
+      - value: IC
+        description: In Custody Elsewhere
+      - value: MH
+        description: Mental Health
+      - value: NC
+        description: Non-Return CSC
+      - value: NF
+        description: Non-Return Furlough
+      - value: NR
+        description: Unknown (internal - This wasn't listed in their documentation)
+      - value: NW
+        description: Non-Return Work Release
+      - value: O
+        description: Unknown (external - PA uses this to mark unknown)
+      - value: P
+        description: Paroled
+      - value: PC
+        description: Program Completed (Seems to be used instead of SC for some State Drug Treatment Program sentences)
+      - value: PD
+        description: Pardoned
+      - value: RD
+        description: Release Detentioner
+      - value: RE
+        description: Received in Error
+      - value: RP
+        description: Re-paroled (extremely rare)
+      - value: SC
+        description: Sentence Complete
+      - value: SH
+        description: State Hospital
+      - value: SP
+        description: Serve Previous
+      - value: TC
+        description: Transfer to County
+      - value: TS
+        description: Transfer to Other State
+      - value: VC
+        description: Vacated Conviction
+      - value: VS
+        description: Vacated Sentence
+      - value: W
+        description: Waiting
+      - value: WT
+        description: WRIT/ATA
   - name: sent_status_date
     is_datetime: True
     description: |-

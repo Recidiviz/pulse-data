@@ -90,6 +90,17 @@ class UsPaIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                 state_code="US_PA",
                 external_ids=[
                     StatePersonExternalId(
+                        state_code="US_PA", external_id="111111", id_type=US_PA_CONTROL
+                    ),
+                    StatePersonExternalId(
+                        state_code="US_PA", external_id="AB1234", id_type=US_PA_INMATE
+                    ),
+                ],
+            ),
+            StatePerson(
+                state_code="US_PA",
+                external_ids=[
+                    StatePersonExternalId(
                         state_code="US_PA", external_id="123456", id_type=US_PA_CONTROL
                     ),
                     StatePersonExternalId(
@@ -206,6 +217,40 @@ class UsPaIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
 
     def test_parse_doc_person_info(self) -> None:
         expected_output = [
+            StatePerson(
+                state_code="US_PA",
+                current_address="987 NOT HERE, PITTSBURGH, PA 16161",
+                full_name='{"given_names": "IMMANUEL", "middle_names": "", "name_suffix": "", "surname": "KANT"}',
+                birthdate=datetime.date(1970, 1, 1),
+                gender=Gender.MALE,
+                gender_raw_text="MALE",
+                residency_status=ResidencyStatus.PERMANENT,
+                residency_status_raw_text="987 NOT HERE",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_PA", external_id="111111", id_type="US_PA_CONT"
+                    )
+                ],
+                aliases=[
+                    StatePersonAlias(
+                        state_code="US_PA",
+                        alias_type=StatePersonAliasType.GIVEN_NAME,
+                        full_name='{"given_names": "IMMANUEL", "middle_names": "", "name_suffix": "", "surname": "KANT"}',
+                    )
+                ],
+                races=[
+                    StatePersonRace(
+                        state_code="US_PA", race=Race.WHITE, race_raw_text="WHITE"
+                    )
+                ],
+                sentence_groups=[
+                    StateSentenceGroup(
+                        external_id="AB1234",
+                        state_code="US_PA",
+                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                    ),
+                ],
+            ),
             StatePerson(
                 state_code="US_PA",
                 current_address="123 EASY STREET, PITTSBURGH, PA 16161",
@@ -1143,6 +1188,55 @@ class UsPaIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
 
     def test_parse_dbo_Senrec_v2(self) -> None:
         expected_output = [
+            StatePerson(
+                state_code="US_PA",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_PA", external_id="AB1234", id_type=US_PA_INMATE
+                    ),
+                ],
+                sentence_groups=[
+                    StateSentenceGroup(
+                        state_code="US_PA",
+                        external_id="AB1234",
+                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                        incarceration_sentences=[
+                            StateIncarcerationSentence(
+                                state_code="US_PA",
+                                external_id="AB1234-01",
+                                status=StateSentenceStatus.COMPLETED,
+                                status_raw_text="PC",
+                                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                                incarceration_type_raw_text="S",
+                                county_code="PHI",
+                                date_imposed=datetime.date(2020, 1, 1),
+                                start_date=datetime.date(2020, 1, 1),
+                                completion_date=datetime.date(2021, 1, 1),
+                                projected_min_release_date=datetime.date(2021, 1, 1),
+                                projected_max_release_date=datetime.date(2021, 1, 1),
+                                min_length_days=821,
+                                max_length_days=3653,
+                                is_life=False,
+                                is_capital_punishment=False,
+                                charges=[
+                                    StateCharge(
+                                        state_code="US_PA",
+                                        external_id="X0000000",
+                                        statute="VC3802D",
+                                        status=ChargeStatus.PRESENT_WITHOUT_INFO,
+                                        description="DUI: CONTROLLED SUBSTANCES - 1ST OFFENSE",
+                                        offense_type="DUI-ALCOHOL",
+                                        classification_type=StateChargeClassificationType.MISDEMEANOR,
+                                        classification_type_raw_text="MISDEMEANOR",
+                                        classification_subtype="M1",
+                                        is_violent=False,
+                                    )
+                                ],
+                            )
+                        ],
+                    )
+                ],
+            ),
             StatePerson(
                 state_code="US_PA",
                 external_ids=[
