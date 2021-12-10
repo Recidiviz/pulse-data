@@ -41,8 +41,6 @@ from recidiviz.common.constants.state.state_incarceration_incident import (
 )
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
-    StateIncarcerationPeriodReleaseReason,
-    StateIncarcerationPeriodStatus,
 )
 from recidiviz.common.constants.state.state_person_alias import StatePersonAliasType
 from recidiviz.common.constants.state.state_program_assignment import (
@@ -59,29 +57,6 @@ from recidiviz.common.constants.state.state_supervision_contact import (
 from recidiviz.ingest.direct.direct_ingest_controller_utils import (
     update_overrides_from_maps,
 )
-
-
-# TODO(#10152): Delete once elite_externalmovements_incarceration_periods has shipped
-#  to prod
-def incarceration_period_status_mapper(label: str) -> StateIncarcerationPeriodStatus:
-    """Parses the custody status from a string containing the external movement edge direction and active flag."""
-
-    # TODO(#9369): Update to split on a dash instead of spaces when we migrate the view
-    #  that uses this function to ingest mappings v2.
-    direction_code, active_flag = label.split(" ")
-
-    if direction_code == "OUT":
-        return StateIncarcerationPeriodStatus.NOT_IN_CUSTODY
-
-    if direction_code == "IN":
-        if active_flag == "Y":
-            return StateIncarcerationPeriodStatus.IN_CUSTODY
-        if active_flag == "N":
-            # If the active flag is 'N' we know that the person has left this period of custody, even if the table
-            # happens to be missing an OUT edge.
-            return StateIncarcerationPeriodStatus.NOT_IN_CUSTODY
-
-    raise ValueError(f"Unexpected incarceration period raw text value [{label}]")
 
 
 def supervision_contact_type_mapper(raw_text: str) -> StateSupervisionContactType:
@@ -160,16 +135,10 @@ def supervision_contact_location_mapper(
 IGNORES: Dict[Type[Enum], List[str]] = {
     # TODO(#2305): What are the appropriate court case statuses?
     StateCourtCaseStatus: ["A", "STEP"],
-    # TODO(#10152): Delete all StateIncarcerationPeriod ignores once
-    #  elite_externalmovements_incarceration_periods has shipped to prod.
+    # TODO(#10152): Delete the StateIncarcerationPeriodAdmissionReason mappings
+    #  once the dependency on this logic has been removed from US_ND Dataflow
+    #  pre-processing.
     StateIncarcerationPeriodAdmissionReason: ["COM", "CONT", "CONV", "NTAD"],
-    StateIncarcerationPeriodReleaseReason: [
-        "ADMN",
-        "CONT",
-        "CONV",
-        "REC",
-        "4139",
-    ],
 }
 
 
@@ -198,8 +167,9 @@ def generate_enum_overrides() -> EnumOverrides:
         StateSentenceStatus.SERVING: ["O"],
         StateChargeClassificationType.FELONY: ["IF"],
         StateChargeClassificationType.MISDEMEANOR: ["IM"],
-        # TODO(#10152): Delete all StateIncarcerationPeriod enums once
-        #  elite_externalmovements_incarceration_periods has shipped to prod
+        # TODO(#10152): Delete the StateIncarcerationPeriodAdmissionReason mappings
+        #  once the dependency on this logic has been removed from US_ND Dataflow
+        #  pre-processing.
         StateIncarcerationPeriodAdmissionReason.ADMITTED_IN_ERROR: ["ADM ERROR"],
         StateIncarcerationPeriodAdmissionReason.EXTERNAL_UNKNOWN: ["OTHER", "PREA"],
         StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION: [
@@ -237,36 +207,6 @@ def generate_enum_overrides() -> EnumOverrides:
         StateIncarcerationPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION: [
             "OOS"
         ],
-        StateIncarcerationPeriodReleaseReason.ESCAPE: ["ESC", "ESCP", "ABSC"],
-        StateIncarcerationPeriodReleaseReason.RELEASED_IN_ERROR: ["ERR"],
-        StateIncarcerationPeriodReleaseReason.EXTERNAL_UNKNOWN: ["OTHER"],
-        StateIncarcerationPeriodReleaseReason.COMMUTED: ["CMM"],
-        StateIncarcerationPeriodReleaseReason.COMPASSIONATE: ["COM"],
-        StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE: [
-            "PARL",
-            "PRB",
-            "PV",
-            "RPAR",
-            "RPRB",
-        ],
-        StateIncarcerationPeriodReleaseReason.COURT_ORDER: ["CO"],
-        StateIncarcerationPeriodReleaseReason.DEATH: ["DECE"],
-        StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED: ["XSNT"],
-        StateIncarcerationPeriodReleaseReason.TRANSFER: [
-            "CONF",
-            "CRT",
-            "DETOX",
-            "HOSP",
-            "HOSPS",
-            "HOSPU",
-            "INT",
-            "JOB",
-            "MED",
-            "PROG",
-            "RB",
-            "SUPL",
-        ],
-        StateIncarcerationPeriodReleaseReason.TRANSFER_TO_OTHER_JURISDICTION: ["TRN"],
         StateIncarcerationIncidentType.DISORDERLY_CONDUCT: [
             "DAMAGE",
             "DISCON",
@@ -347,7 +287,6 @@ def generate_enum_overrides() -> EnumOverrides:
     }
 
     override_mappers: Dict[Type[Enum], EnumMapperFn] = {
-        StateIncarcerationPeriodStatus: incarceration_period_status_mapper,
         StateSupervisionContactStatus: supervision_contact_status_mapper,
         StateSupervisionContactLocation: supervision_contact_location_mapper,
         StateSupervisionContactType: supervision_contact_type_mapper,
