@@ -17,11 +17,12 @@
 """Utility methods for working with fixture files specific to direct ingest"""
 
 import os
-from typing import Union
+from typing import Optional, Union
 
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
+    GcsfsDirectIngestFileType,
     filename_parts_from_path,
 )
 from recidiviz.ingest.direct.errors import DirectIngestError, DirectIngestErrorType
@@ -64,12 +65,33 @@ def _get_fixture_for_direct_ingest_path(path: GcsfsFilePath, region_code: str) -
         # use the path file name directly.
         file_name = path.file_name
 
+    # TODO(#10301): Move the fixture files used by parser / integration tests to ingest view subdir
     return direct_ingest_fixture_path(region_code=region_code, file_name=file_name)
 
 
-def direct_ingest_fixture_path(region_code: str, file_name: str) -> str:
-    directory_path = os.path.join(
-        os.path.dirname(direct_ingest_fixtures.__file__),
-        region_code.lower(),
+def direct_ingest_fixture_path(
+    *,
+    region_code: str,
+    file_type: Optional[GcsfsDirectIngestFileType] = None,
+    file_tag: Optional[str] = None,
+    file_name: str,
+) -> str:
+    region_fixtures_directory_path = os.path.join(
+        os.path.dirname(direct_ingest_fixtures.__file__), region_code.lower()
     )
+
+    if file_type is None:
+        directory_path = region_fixtures_directory_path
+    elif file_type in (
+        GcsfsDirectIngestFileType.RAW_DATA,
+        GcsfsDirectIngestFileType.INGEST_VIEW,
+    ):
+        if file_tag is None:
+            raise ValueError(f"File tag cannot be none for file_type [{file_type}]")
+        directory_path = os.path.join(
+            region_fixtures_directory_path, file_type.value.lower(), file_tag
+        )
+    else:
+        raise ValueError(f"Unexpected file_type [{file_type}]")
+
     return os.path.join(directory_path, file_name)

@@ -21,6 +21,8 @@ region.
 import os
 from typing import List
 
+from more_itertools import one
+
 import recidiviz
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
@@ -61,6 +63,13 @@ class DirectIngestPreProcessedIngestViewCollector(
         self._validate_ingest_views(ingest_view_builders)
 
         return ingest_view_builders
+
+    def get_view_builder_by_file_tag(
+        self, file_tag: str
+    ) -> DirectIngestPreProcessedIngestViewBuilder:
+        return one(
+            view for view in self.collect_view_builders() if view.file_tag == file_tag
+        )
 
     def _validate_ingest_views(
         self, ingest_view_builders: List[DirectIngestPreProcessedIngestViewBuilder]
