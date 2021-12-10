@@ -21,108 +21,105 @@ output:
       - StatePersonExternalId:
           external_id: OffenderID
           id_type: $literal("US_TN_DOC")
-    sentence_groups:
-      - StateSentenceGroup:
-          supervision_sentences:
-            - StateSupervisionSentence:
-                supervision_periods:
-                  - StateSupervisionPeriod:
-                      external_id:
-                        $concat:
-                          $values:
-                            - OffenderID
-                            - SupervisionPeriodSequenceNumber
-                      start_date: StartDate
-                      termination_date: EndDate
-                      supervision_site: Site
-                      supervising_officer:
-                        StateAgent:
-                          # TODO(#9974): Hydrate supervision officer name.
-                          external_id: SupervisionOfficer
-                          agent_type: $literal_enum(StateAgentType.SUPERVISION_OFFICER)
-                      admission_reason:
-                        $enum_mapping:
-                          $raw_text: AdmissionReason
-                          $mappings:
-                            StateSupervisionPeriodAdmissionReason.COURT_SENTENCE:
-                              - NEWCS  # New Case
+    supervision_periods:
+      - StateSupervisionPeriod:
+          external_id:
+            $concat:
+              $values:
+                - OffenderID
+                - SupervisionPeriodSequenceNumber
+          start_date: StartDate
+          termination_date: EndDate
+          supervision_site: Site
+          supervising_officer:
+            StateAgent:
+              # TODO(#9974): Hydrate supervision officer name.
+              external_id: SupervisionOfficer
+              agent_type: $literal_enum(StateAgentType.SUPERVISION_OFFICER)
+          admission_reason:
+            $enum_mapping:
+              $raw_text: AdmissionReason
+              $mappings:
+                StateSupervisionPeriodAdmissionReason.COURT_SENTENCE:
+                  - NEWCS  # New Case
 
-                            StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE:
-                              - TRANS  # Transfer Case
-                              - TRPAR  # Transfer to Parole
-                              - TRPRB  # Transfer to Probation
-                              # Only 102 instances, all before 2001.
-                              - TRINS  # Transfer to other institution
-                              - RENEO  # Reassign to new officer
-                              - RENEC  # Reassign to new counselor
-                              - MULRE  # Multiple reassign
-                      termination_reason:
-                        $enum_mapping:
-                          $raw_text: TerminationReason
-                          $mappings:
-                            StateSupervisionPeriodTerminationReason.TRANSFER_TO_OTHER_JURISDICTION:
-                              - ISC  # Transfer to interstate compact
+                StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE:
+                  - TRANS  # Transfer Case
+                  - TRPAR  # Transfer to Parole
+                  - TRPRB  # Transfer to Probation
+                  # Only 102 instances, all before 2001.
+                  - TRINS  # Transfer to other institution
+                  - RENEO  # Reassign to new officer
+                  - RENEC  # Reassign to new counselor
+                  - MULRE  # Multiple reassign
+          termination_reason:
+            $enum_mapping:
+              $raw_text: TerminationReason
+              $mappings:
+                StateSupervisionPeriodTerminationReason.TRANSFER_TO_OTHER_JURISDICTION:
+                  - ISC  # Transfer to interstate compact
 
-                            StateSupervisionPeriodTerminationReason.DISCHARGE:
-                              - DIS  # Discharge
-                              - RBC  # Released by court order
+                StateSupervisionPeriodTerminationReason.DISCHARGE:
+                  - DIS  # Discharge
+                  - RBC  # Released by court order
 
-                            StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE:
-                              - RNO  # Reassigned to new officer
-                              - MRE  # Multiple reassign
-                              - CRA  # Counselor reassignment
-                              - TRS  # Transfer to new office
-                              - TRR  # Transfer to probation
-                              # TODO(#9976): add calc logic to update depending on if the facility is an
-                              # incarceration or supervision facility.
-                              - TRF  # Transfer to other facility
-                              - TSP  # Transfer to supervision
-                              - TRP  # Transfer to parole
-                              # Every instance of CNV is on 2001-08-11. There was a system-wide conversion done
-                              - CNV  # Conversion
+                StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE:
+                  - RNO  # Reassigned to new officer
+                  - MRE  # Multiple reassign
+                  - CRA  # Counselor reassignment
+                  - TRS  # Transfer to new office
+                  - TRR  # Transfer to probation
+                  # TODO(#9976): add calc logic to update depending on if the facility is an
+                  # incarceration or supervision facility.
+                  - TRF  # Transfer to other facility
+                  - TSP  # Transfer to supervision
+                  - TRP  # Transfer to parole
+                  # Every instance of CNV is on 2001-08-11. There was a system-wide conversion done
+                  - CNV  # Conversion
 
-                            StateSupervisionPeriodTerminationReason.REVOCATION:
-                              - RVD  # Revoked
-                              - RVC  # Revocation, new charge
-                              - REV  # Revocation/rescinded
-                              - RVT  # Technical revocation
-                              - RVP  # Technical revocation, pending new charge
+                StateSupervisionPeriodTerminationReason.REVOCATION:
+                  - RVD  # Revoked
+                  - RVC  # Revocation, new charge
+                  - REV  # Revocation/rescinded
+                  - RVT  # Technical revocation
+                  - RVP  # Technical revocation, pending new charge
 
-                            StateSupervisionPeriodTerminationReason.ABSCONSION:
-                              - EIC  # Escape information center
-                              - TRE  # Transfer to escape
+                StateSupervisionPeriodTerminationReason.ABSCONSION:
+                  - EIC  # Escape information center
+                  - TRE  # Transfer to escape
 
-                            StateSupervisionPeriodTerminationReason.EXPIRATION:
-                              - EXP  # Expiration
+                StateSupervisionPeriodTerminationReason.EXPIRATION:
+                  - EXP  # Expiration
 
 
-                            StateSupervisionPeriodTerminationReason.DEATH:
-                              - DEA  # Death
+                StateSupervisionPeriodTerminationReason.DEATH:
+                  - DEA  # Death
 
-                            StateSupervisionPeriodTerminationReason.EXTERNAL_UNKNOWN:
-                              # Only 100 instances of this, and they're all before 2000.
-                              - ICA  # Initial counselor assignment
-                              # Only 2 instances, both before 2000.
-                              - TPR  # Transfer to pre-release
-                              # Only 60 instances, all before 2002.
-                              - DEN  # Denied
-                              # Only 1 instance, in 2001.
-                              - TER  # Transfer to education release
-                              # Only 1 instance, in 2001.
-                              - TWR  # Transfer to work release
+                StateSupervisionPeriodTerminationReason.EXTERNAL_UNKNOWN:
+                  # Only 100 instances of this, and they're all before 2000.
+                  - ICA  # Initial counselor assignment
+                  # Only 2 instances, both before 2000.
+                  - TPR  # Transfer to pre-release
+                  # Only 60 instances, all before 2002.
+                  - DEN  # Denied
+                  # Only 1 instance, in 2001.
+                  - TER  # Transfer to education release
+                  # Only 1 instance, in 2001.
+                  - TWR  # Transfer to work release
 
-                            StateSupervisionPeriodTerminationReason.DISMISSED:
-                              - RVR  # Rescinded
-                      supervision_type:
-                        $enum_mapping:
-                          $raw_text: AssignmentType
-                          $mappings:
-                            StateSupervisionPeriodSupervisionType.PROBATION:
-                              - PRO  # Probation
+                StateSupervisionPeriodTerminationReason.DISMISSED:
+                  - RVR  # Rescinded
+          supervision_type:
+            $enum_mapping:
+              $raw_text: AssignmentType
+              $mappings:
+                StateSupervisionPeriodSupervisionType.PROBATION:
+                  - PRO  # Probation
 
-                            StateSupervisionPeriodSupervisionType.PAROLE:
-                              - PAO  # Parole
+                StateSupervisionPeriodSupervisionType.PAROLE:
+                  - PAO  # Parole
 
-                            # TODO(#9421): update mapping, when community centers are standardized.
-                            StateSupervisionPeriodSupervisionType.COMMUNITY_CONFINEMENT:
-                              - CCC  # Community corrections
+                # TODO(#9421): update mapping, when community centers are standardized.
+                StateSupervisionPeriodSupervisionType.COMMUNITY_CONFINEMENT:
+                  - CCC  # Community corrections
+

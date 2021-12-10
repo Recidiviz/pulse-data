@@ -4,8 +4,6 @@ key_mappings:
 child_key_mappings:
   docno: state_person_external_id.state_person_external_id_id
 
-  incrno: state_sentence_group.state_sentence_group_id
-
   end_date: state_supervision_period.termination_date
   fac_ldesc: state_supervision_period.supervision_site
   next_fac_typ: state_supervision_period.termination_reason
@@ -18,8 +16,6 @@ child_key_mappings:
 primary_key:
   docno: state_person.state_person_id
 
-enforced_ancestor_types:
-  state_sentence: state_supervision_sentence
 
 keys_to_ignore:
   - next_fac_cd             # Next facility code - handled manually in controller.
@@ -38,3 +34,4 @@ keys_to_ignore:
   - empl_title              # Unused - Supervising officer role
   - loc_ldesc               # Unused - Location name
   - lu_ldesc                # Unused - Living unit named.
+  - incrno                  # Unused - Incarceration number, leftover from when we connected this period to StateSentenceGroup entities

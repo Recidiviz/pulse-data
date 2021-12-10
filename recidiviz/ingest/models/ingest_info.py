@@ -575,6 +575,7 @@ class StatePerson(IngestObject):
         state_assessments=None,
         state_sentence_groups=None,
         state_incarceration_periods=None,
+        state_supervision_periods=None,
         state_program_assignments=None,
         state_incarceration_incidents=None,
         state_supervision_violations=None,
@@ -609,6 +610,9 @@ class StatePerson(IngestObject):
         )
         self.state_incarceration_periods: List[StateIncarcerationPeriod] = (
             state_incarceration_periods or []
+        )
+        self.state_supervision_periods: List[StateSupervisionPeriod] = (
+            state_supervision_periods or []
         )
         self.state_program_assignments: List[StateProgramAssignment] = (
             state_program_assignments or []
@@ -661,6 +665,11 @@ class StatePerson(IngestObject):
         incarceration_period = StateIncarcerationPeriod(**kwargs)
         self.state_incarceration_periods.append(incarceration_period)
         return incarceration_period
+
+    def create_state_supervision_period(self, **kwargs) -> "StateSupervisionPeriod":
+        supervision_period = StateSupervisionPeriod(**kwargs)
+        self.state_supervision_periods.append(supervision_period)
+        return supervision_period
 
     def create_state_program_assignment(self, **kwargs) -> "StateProgramAssignment":
         program_assignment = StateProgramAssignment(**kwargs)
@@ -756,6 +765,18 @@ class StatePerson(IngestObject):
             None,
         )
 
+    def get_state_supervision_period_by_id(
+        self, state_supervision_period_id
+    ) -> Optional["StateSupervisionPeriod"]:
+        return next(
+            (
+                sc
+                for sc in self.state_supervision_periods
+                if sc.state_supervision_period_id == state_supervision_period_id
+            ),
+            None,
+        )
+
     def get_state_program_assignment_by_id(
         self, state_program_assignment_id
     ) -> Optional["StateProgramAssignment"]:
@@ -823,6 +844,9 @@ class StatePerson(IngestObject):
         self.state_incarceration_periods = [
             ip.prune() for ip in self.state_incarceration_periods if ip
         ]
+        self.state_supervision_periods = [
+            sp.prune() for sp in self.state_supervision_periods if sp
+        ]
         self.state_assessments = [a.prune() for a in self.state_assessments if a]
         self.state_program_assignments = [
             p for p in self.state_program_assignments if p
@@ -858,6 +882,10 @@ class StatePerson(IngestObject):
         for incarceration_period in self.state_incarceration_periods:
             incarceration_period.sort()
         self.state_incarceration_periods.sort()
+
+        for supervision_period in self.state_supervision_periods:
+            supervision_period.sort()
+        self.state_supervision_periods.sort()
 
 
 class StatePersonExternalId(IngestObject):
@@ -1071,7 +1099,6 @@ class StateSupervisionSentence(IngestObject):
         min_length=None,
         max_length=None,
         state_charges=None,
-        state_supervision_periods=None,
         state_early_discharges=None,
     ):
         self.state_supervision_sentence_id: Optional[
@@ -1089,9 +1116,6 @@ class StateSupervisionSentence(IngestObject):
         self.max_length: Optional[str] = max_length
 
         self.state_charges: List[StateCharge] = state_charges or []
-        self.state_supervision_periods: List[StateSupervisionPeriod] = (
-            state_supervision_periods or []
-        )
         self.state_early_discharges: List[StateEarlyDischarge] = (
             state_early_discharges or []
         )
@@ -1104,11 +1128,6 @@ class StateSupervisionSentence(IngestObject):
         self.state_charges.append(charge)
         return charge
 
-    def create_state_supervision_period(self, **kwargs) -> "StateSupervisionPeriod":
-        supervision_period = StateSupervisionPeriod(**kwargs)
-        self.state_supervision_periods.append(supervision_period)
-        return supervision_period
-
     def create_state_early_discharge(self, **kwargs) -> "StateEarlyDischarge":
         early_discharge = StateEarlyDischarge(**kwargs)
         self.state_early_discharges.append(early_discharge)
@@ -1117,18 +1136,6 @@ class StateSupervisionSentence(IngestObject):
     def get_state_charge_by_id(self, state_charge_id) -> Optional["StateCharge"]:
         return next(
             (sc for sc in self.state_charges if sc.state_charge_id == state_charge_id),
-            None,
-        )
-
-    def get_state_supervision_period_by_id(
-        self, state_supervision_period_id
-    ) -> Optional["StateSupervisionPeriod"]:
-        return next(
-            (
-                sc
-                for sc in self.state_supervision_periods
-                if sc.state_supervision_period_id == state_supervision_period_id
-            ),
             None,
         )
 
@@ -1146,18 +1153,11 @@ class StateSupervisionSentence(IngestObject):
 
     def prune(self) -> "StateSupervisionSentence":
         self.state_charges = [sc.prune() for sc in self.state_charges if sc]
-        self.state_supervision_periods = [
-            sp.prune() for sp in self.state_supervision_periods if sp
-        ]
 
         return self
 
     def sort(self):
         self.state_charges.sort()
-
-        for supervision_period in self.state_supervision_periods:
-            supervision_period.sort()
-        self.state_supervision_periods.sort()
 
 
 class StateIncarcerationSentence(IngestObject):
@@ -1185,7 +1185,6 @@ class StateIncarcerationSentence(IngestObject):
         good_time=None,
         earned_time=None,
         state_charges=None,
-        state_supervision_periods=None,
         state_early_discharges=None,
     ):
         self.state_incarceration_sentence_id: Optional[
@@ -1211,9 +1210,6 @@ class StateIncarcerationSentence(IngestObject):
         self.earned_time: Optional[str] = earned_time
 
         self.state_charges: List[StateCharge] = state_charges or []
-        self.state_supervision_periods: List[StateSupervisionPeriod] = (
-            state_supervision_periods or []
-        )
         self.state_early_discharges: List[StateEarlyDischarge] = (
             state_early_discharges or []
         )
@@ -1226,11 +1222,6 @@ class StateIncarcerationSentence(IngestObject):
         self.state_charges.append(state_charge)
         return state_charge
 
-    def create_state_supervision_period(self, **kwargs) -> "StateSupervisionPeriod":
-        supervision_period = StateSupervisionPeriod(**kwargs)
-        self.state_supervision_periods.append(supervision_period)
-        return supervision_period
-
     def create_state_early_discharge(self, **kwargs) -> "StateEarlyDischarge":
         early_discharge = StateEarlyDischarge(**kwargs)
         self.state_early_discharges.append(early_discharge)
@@ -1239,18 +1230,6 @@ class StateIncarcerationSentence(IngestObject):
     def get_state_charge_by_id(self, state_charge_id) -> Optional["StateCharge"]:
         return next(
             (sc for sc in self.state_charges if sc.state_charge_id == state_charge_id),
-            None,
-        )
-
-    def get_state_supervision_period_by_id(
-        self, supervision_period_id
-    ) -> Optional["StateSupervisionPeriod"]:
-        return next(
-            (
-                sp
-                for sp in self.state_supervision_periods
-                if sp.state_supervision_period_id == supervision_period_id
-            ),
             None,
         )
 
@@ -1269,18 +1248,10 @@ class StateIncarcerationSentence(IngestObject):
     def prune(self) -> "StateIncarcerationSentence":
         self.state_charges = [sc.prune() for sc in self.state_charges if sc]
 
-        self.state_supervision_periods = [
-            sp.prune() for sp in self.state_supervision_periods if sp
-        ]
-
         return self
 
     def sort(self):
         self.state_charges.sort()
-
-        for supervision_period in self.state_supervision_periods:
-            supervision_period.sort()
-        self.state_supervision_periods.sort()
 
 
 class StateCharge(IngestObject):

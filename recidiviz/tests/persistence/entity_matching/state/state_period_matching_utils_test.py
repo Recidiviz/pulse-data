@@ -26,7 +26,6 @@ from recidiviz.tests.persistence.database.schema.state.schema_test_utils import 
     generate_person,
     generate_sentence_group,
     generate_supervision_period,
-    generate_supervision_sentence,
 )
 from recidiviz.tests.persistence.entity_matching.state.base_state_entity_matcher_test_classes import (
     BaseStateMatchingUtilsTest,
@@ -82,25 +81,18 @@ class TestStatePeriodMatchingUtils(BaseStateMatchingUtilsTest):
             termination_date=_DATE_4,
             state_code=_STATE_CODE,
         )
-        supervision_sentence = generate_supervision_sentence(
-            person=person,
-            state_code=_STATE_CODE,
-            external_id=_EXTERNAL_ID,
-            supervision_sentence_id=_ID,
-            supervision_periods=[
-                open_supervision_period,
-                placeholder_supervision_period,
-                closed_supervision_period,
-            ],
-        )
         sentence_group = generate_sentence_group(
             external_id=_EXTERNAL_ID,
             state_code=_STATE_CODE,
             sentence_group_id=_ID,
-            supervision_sentences=[supervision_sentence],
         )
         person.external_ids = [external_id]
         person.sentence_groups = [sentence_group]
+        person.supervision_periods = [
+            open_supervision_period,
+            placeholder_supervision_period,
+            closed_supervision_period,
+        ]
 
         # Act
         add_supervising_officer_to_open_supervision_periods(

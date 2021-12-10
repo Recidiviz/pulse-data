@@ -239,6 +239,12 @@ class StateConverter(BaseConverter[entities.StatePerson]):
         ]
         state_person_builder.incarceration_periods = converted_incarceration_periods
 
+        converted_supervision_periods = [
+            self._convert_supervision_period(self.supervision_periods[period_id])
+            for period_id in ingest_person.state_supervision_period_ids
+        ]
+        state_person_builder.supervision_periods = converted_supervision_periods
+
         converted_program_assignments = [
             self._convert_program_assignment(self.program_assignments[assignment_id])
             for assignment_id in ingest_person.state_program_assignment_ids
@@ -372,7 +378,6 @@ class StateConverter(BaseConverter[entities.StatePerson]):
         self,
         sentence_builder,
         ingest_sentence,
-        copy_periods=True,
         copy_early_discharges=True,
     ):
         """Copies all entity children from the provided |ingest_sentence| onto the |sentence_builder|. If |copy_periods|
@@ -391,13 +396,6 @@ class StateConverter(BaseConverter[entities.StatePerson]):
                 for early_discharge_id in ingest_sentence.state_early_discharge_ids
             ]
             sentence_builder.early_discharges = converted_early_discharges
-
-        if copy_periods:
-            converted_supervision_periods = [
-                self._convert_supervision_period(self.supervision_periods[period_id])
-                for period_id in ingest_sentence.state_supervision_period_ids
-            ]
-            sentence_builder.supervision_periods = converted_supervision_periods
 
     def _convert_charge(self, ingest_charge: StateCharge) -> entities.StateCharge:
         """Converts an ingest_info proto StateCharge to a persistence entity."""

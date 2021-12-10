@@ -302,6 +302,9 @@ class StatePerson(Entity, BuildableAttr, DefaultableAttr):
     incarceration_periods: List["StateIncarcerationPeriod"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
+    supervision_periods: List["StateSupervisionPeriod"] = attr.ib(
+        factory=list, validator=attr_validators.is_list
+    )
     program_assignments: List["StateProgramAssignment"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
@@ -685,10 +688,6 @@ class StateSupervisionSentence(ExternalIdEntity, BuildableAttr, DefaultableAttr)
     charges: List["StateCharge"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
-
-    supervision_periods: List["StateSupervisionPeriod"] = attr.ib(
-        factory=list, validator=attr_validators.is_list
-    )
     early_discharges: List["StateEarlyDischarge"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
@@ -793,9 +792,6 @@ class StateIncarcerationSentence(ExternalIdEntity, BuildableAttr, DefaultableAtt
     person: Optional["StatePerson"] = attr.ib(default=None)
     sentence_group: Optional["StateSentenceGroup"] = attr.ib(default=None)
     charges: List["StateCharge"] = attr.ib(
-        factory=list, validator=attr_validators.is_list
-    )
-    supervision_periods: List["StateSupervisionPeriod"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
     early_discharges: List["StateEarlyDischarge"] = attr.ib(
@@ -1026,14 +1022,6 @@ class StateSupervisionPeriod(
     # Cross-entity relationships
     person: Optional["StatePerson"] = attr.ib(default=None)
     supervising_officer: Optional["StateAgent"] = attr.ib(default=None)
-
-    # NOTE: A supervision period might count towards multiple sentences
-    incarceration_sentences: List["StateIncarcerationSentence"] = attr.ib(
-        factory=list, validator=attr_validators.is_list
-    )
-    supervision_sentences: List["StateSupervisionSentence"] = attr.ib(
-        factory=list, validator=attr_validators.is_list
-    )
     case_type_entries: List["StateSupervisionCaseTypeEntry"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )

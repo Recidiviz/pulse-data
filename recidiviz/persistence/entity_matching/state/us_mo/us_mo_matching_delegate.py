@@ -25,9 +25,6 @@ from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity_matching.state.base_state_matching_delegate import (
     BaseStateMatchingDelegate,
 )
-from recidiviz.persistence.entity_matching.state.state_date_based_matching_utils import (
-    move_periods_onto_sentences_by_date,
-)
 from recidiviz.persistence.entity_matching.state.us_mo.us_mo_matching_utils import (
     set_current_supervising_officer_from_supervision_periods,
 )
@@ -40,14 +37,6 @@ class UsMoMatchingDelegate(BaseStateMatchingDelegate):
         super().__init__(StateCode.US_MO.value.lower(), ingest_metadata)
 
     def perform_match_postprocessing(self, matched_persons: List[schema.StatePerson]):
-        logging.info(
-            "[Entity matching] Move supervision periods onto sentences by date."
-        )
-        move_periods_onto_sentences_by_date(
-            matched_persons,
-            field_index=self.field_index,
-        )
-
         logging.info(
             "[Entity matching] Set current / last supervising officer from supervision periods."
         )

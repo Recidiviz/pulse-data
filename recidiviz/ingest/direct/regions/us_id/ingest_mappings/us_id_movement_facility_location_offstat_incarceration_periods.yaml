@@ -25,4 +25,4 @@ keys_to_ignore:
   - loc_cd                  # Unused - location code - analogous to loc_ldesc
   - next_fac_cd             # Unused - next facility code
   - prev_fac_cd             # Unused - previous facility code
-  - incrno                  # Unused - leftover from when we connected this period to StateSentenceGroup entities
+  - incrno                  # Unused - Incarceration number, leftover from when we connected this period to StateSentenceGroup entities

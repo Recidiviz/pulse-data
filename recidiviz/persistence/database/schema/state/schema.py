@@ -564,64 +564,6 @@ state_supervision_contact_method = Enum(
 )
 
 # Join tables
-
-state_supervision_sentence_supervision_period_association_table = Table(
-    "state_supervision_sentence_supervision_period_association",
-    StateBase.metadata,
-    Column(
-        "supervision_sentence_id",
-        Integer,
-        ForeignKey("state_supervision_sentence.supervision_sentence_id"),
-        index=True,
-        comment=StrictStringFormatter().format(
-            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="supervision sentence"
-        ),
-    ),
-    Column(
-        "supervision_period_id",
-        Integer,
-        ForeignKey("state_supervision_period.supervision_period_id"),
-        index=True,
-        comment=StrictStringFormatter().format(
-            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="supervision period"
-        ),
-    ),
-    comment=StrictStringFormatter().format(
-        ASSOCIATON_TABLE_COMMENT_TEMPLATE,
-        first_object_name_plural="supervision sentences",
-        second_object_name_plural="supervision periods",
-    ),
-)
-
-
-state_incarceration_sentence_supervision_period_association_table = Table(
-    "state_incarceration_sentence_supervision_period_association",
-    StateBase.metadata,
-    Column(
-        "incarceration_sentence_id",
-        Integer,
-        ForeignKey("state_incarceration_sentence.incarceration_sentence_id"),
-        index=True,
-        comment=StrictStringFormatter().format(
-            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="incarceration sentence"
-        ),
-    ),
-    Column(
-        "supervision_period_id",
-        Integer,
-        ForeignKey("state_supervision_period.supervision_period_id"),
-        index=True,
-        comment=StrictStringFormatter().format(
-            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="supervision period"
-        ),
-    ),
-    comment=StrictStringFormatter().format(
-        ASSOCIATON_TABLE_COMMENT_TEMPLATE,
-        first_object_name_plural="incarceration sentences",
-        second_object_name_plural="supervision periods",
-    ),
-)
-
 state_charge_incarceration_sentence_association_table = Table(
     "state_charge_incarceration_sentence_association",
     StateBase.metadata,
@@ -1206,6 +1148,9 @@ class StatePerson(StateBase, _StatePersonSharedColumns):
     assessments = relationship("StateAssessment", backref="person", lazy="selectin")
     incarceration_periods = relationship(
         "StateIncarcerationPeriod", backref="person", lazy="selectin"
+    )
+    supervision_periods = relationship(
+        "StateSupervisionPeriod", backref="person", lazy="selectin"
     )
     program_assignments = relationship(
         "StateProgramAssignment", backref="person", lazy="selectin"
@@ -1870,12 +1815,6 @@ class StateSupervisionSentence(StateBase, _StateSupervisionSentenceSharedColumns
         backref="supervision_sentences",
         lazy="selectin",
     )
-    supervision_periods = relationship(
-        "StateSupervisionPeriod",
-        secondary=state_supervision_sentence_supervision_period_association_table,
-        backref="supervision_sentences",
-        lazy="selectin",
-    )
     early_discharges = relationship(
         "StateEarlyDischarge", backref="supervision_sentence", lazy="selectin"
     )
@@ -2052,13 +1991,6 @@ class StateIncarcerationSentence(StateBase, _StateIncarcerationSentenceSharedCol
         backref="incarceration_sentences",
         lazy="selectin",
     )
-    supervision_periods = relationship(
-        "StateSupervisionPeriod",
-        secondary=state_incarceration_sentence_supervision_period_association_table,
-        backref="incarceration_sentences",
-        lazy="selectin",
-    )
-
     early_discharges = relationship(
         "StateEarlyDischarge", backref="incarceration_sentence", lazy="selectin"
     )
@@ -2417,7 +2349,6 @@ class StateSupervisionPeriod(StateBase, _StateSupervisionPeriodSharedColumns):
         ),
     )
 
-    person = relationship("StatePerson", uselist=False)
     supervising_officer = relationship("StateAgent", uselist=False, lazy="selectin")
     case_type_entries = relationship(
         "StateSupervisionCaseTypeEntry", backref="supervision_period", lazy="selectin"

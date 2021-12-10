@@ -573,7 +573,6 @@ class TestExtractDataForPipeline(unittest.TestCase):
         schema_sentence = database_test_utils.generate_test_supervision_sentence(
             person_id=person_id,
             charges=[schema_charge_1, schema_charge_2],
-            supervision_periods=[],
             early_discharges=[],
         )
 
@@ -872,7 +871,6 @@ class TestExtractDataForPipeline(unittest.TestCase):
         schema_sentence_1 = database_test_utils.generate_test_supervision_sentence(
             person_id=person_id_1,
             charges=[schema_charge_1, schema_charge_2],
-            supervision_periods=[],
             early_discharges=[],
         )
 
@@ -899,7 +897,6 @@ class TestExtractDataForPipeline(unittest.TestCase):
         schema_sentence_2 = database_test_utils.generate_test_supervision_sentence(
             person_id=person_id_2,
             charges=[schema_charge_2, schema_charge_4],
-            supervision_periods=[],
             early_discharges=[],
         )
 
@@ -1180,7 +1177,7 @@ class TestExtractAllEntitiesOfType(unittest.TestCase):
     def testExtractAllEntitiesOfType(self):
         person = remove_relationship_properties(
             database_test_utils.generate_test_person(
-                123, "US_XX", [], None, [], [], [], []
+                123, "US_XX", [], None, [], [], [], [], []
             )
         )
 
@@ -1225,7 +1222,7 @@ class TestExtractAllEntitiesOfType(unittest.TestCase):
     def testExtractAllEntitiesOfType_InvalidUnifyingIdField(self):
         person = remove_relationship_properties(
             database_test_utils.generate_test_person(
-                123, "US_XX", [], None, [], [], [], []
+                123, "US_XX", [], None, [], [], [], [], []
             )
         )
 
