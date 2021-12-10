@@ -2669,18 +2669,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
         # ELITE EXTERNAL MOVEMENTS INCARCERATION PERIODS
         ######################################
         # Arrange
-        incarceration_sentence_113377_ips = (
-            entities.StateIncarcerationSentence.new_with_defaults(
-                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                incarceration_type=StateIncarcerationType.STATE_PRISON,
-                state_code=_STATE_CODE,
-                sentence_group=sentence_group_113377,
-                person=sentence_group_113377.person,
-            )
-        )
-        sentence_group_113377.incarceration_sentences.append(
-            incarceration_sentence_113377_ips
-        )
         incarceration_period_113377_1 = entities.StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
@@ -2698,8 +2686,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             release_date=datetime.date(year=2016, month=7, day=26),
             release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
             release_reason_raw_text="RPAR",
-            incarceration_sentences=[incarceration_sentence_113377_ips],
-            person=incarceration_sentence_113377_ips.person,
+            person=person_2,
         )
 
         incarceration_period_113377_2 = entities.StateIncarcerationPeriod.new_with_defaults(
@@ -2719,21 +2706,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             release_date=datetime.date(year=2016, month=10, day=20),
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
             release_reason_raw_text="INT",
-            incarceration_sentences=[incarceration_sentence_113377_ips],
-            person=incarceration_sentence_113377_ips.person,
-        )
-
-        incarceration_sentence_114909_ips = (
-            entities.StateIncarcerationSentence.new_with_defaults(
-                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                incarceration_type=StateIncarcerationType.STATE_PRISON,
-                state_code=_STATE_CODE,
-                sentence_group=sentence_group_114909,
-                person=sentence_group_114909.person,
-            )
-        )
-        sentence_group_114909.incarceration_sentences.append(
-            incarceration_sentence_114909_ips
+            person=person_2,
         )
 
         incarceration_period_114909_1 = entities.StateIncarcerationPeriod.new_with_defaults(
@@ -2753,22 +2726,14 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             release_date=datetime.date(year=2019, month=1, day=8),
             release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
             release_reason_raw_text="RPRB",
-            incarceration_sentences=[incarceration_sentence_114909_ips],
-            person=incarceration_sentence_114909_ips.person,
+            person=person_2,
         )
 
-        incarceration_sentence_105640_ips = (
-            entities.StateIncarcerationSentence.new_with_defaults(
-                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                state_code=_STATE_CODE,
-                incarceration_type=StateIncarcerationType.STATE_PRISON,
-                sentence_group=sentence_group_105640,
-                person=sentence_group_105640.person,
-            )
-        )
-        sentence_group_105640.incarceration_sentences.append(
-            incarceration_sentence_105640_ips
-        )
+        person_2.incarceration_periods = [
+            incarceration_period_113377_1,
+            incarceration_period_113377_2,
+            incarceration_period_114909_1,
+        ]
 
         incarceration_period_105640_1 = entities.StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE,
@@ -2787,8 +2752,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             release_date=datetime.date(year=2019, month=2, day=1),
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
             release_reason_raw_text="INT",
-            incarceration_sentences=[incarceration_sentence_105640_ips],
-            person=incarceration_sentence_105640_ips.person,
+            person=person_1,
         )
 
         incarceration_period_105640_2 = entities.StateIncarcerationPeriod.new_with_defaults(
@@ -2808,8 +2772,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             release_date=datetime.date(year=2019, month=3, day=1),
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
             release_reason_raw_text="HOSPS",
-            incarceration_sentences=[incarceration_sentence_105640_ips],
-            person=incarceration_sentence_105640_ips.person,
+            person=person_1,
         )
 
         incarceration_period_105640_3 = entities.StateIncarcerationPeriod.new_with_defaults(
@@ -2826,9 +2789,14 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             admission_date=datetime.date(year=2019, month=4, day=1),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
             admission_reason_raw_text="HOSPS",
-            incarceration_sentences=[incarceration_sentence_105640_ips],
-            person=incarceration_sentence_105640_ips.person,
+            person=person_1,
         )
+
+        person_1.incarceration_periods = [
+            incarceration_period_105640_1,
+            incarceration_period_105640_2,
+            incarceration_period_105640_3,
+        ]
 
         person_555555 = entities.StatePerson.new_with_defaults(state_code=_STATE_CODE)
         person_555555_external_id = entities.StatePersonExternalId.new_with_defaults(
@@ -2838,25 +2806,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             person=person_555555,
         )
         person_555555.external_ids = [person_555555_external_id]
-        sentence_group_555555 = entities.StateSentenceGroup.new_with_defaults(
-            external_id="555555",
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            state_code=_STATE_CODE,
-            person=person_555555,
-        )
-        person_555555.sentence_groups.append(sentence_group_555555)
-        incarceration_sentence_555555_ips = (
-            entities.StateIncarcerationSentence.new_with_defaults(
-                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                incarceration_type=StateIncarcerationType.STATE_PRISON,
-                state_code=_STATE_CODE,
-                sentence_group=sentence_group_555555,
-                person=sentence_group_555555.person,
-            )
-        )
-        sentence_group_555555.incarceration_sentences.append(
-            incarceration_sentence_555555_ips
-        )
 
         incarceration_period_555555_1 = entities.StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE,
@@ -2875,8 +2824,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             release_date=datetime.date(year=2018, month=3, day=1),
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
             release_reason_raw_text="INT",
-            incarceration_sentences=[incarceration_sentence_555555_ips],
-            person=incarceration_sentence_555555_ips.person,
+            person=person_555555,
         )
 
         incarceration_period_555555_2 = entities.StateIncarcerationPeriod.new_with_defaults(
@@ -2896,8 +2844,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             release_date=datetime.date(year=2018, month=3, day=8),
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
             release_reason_raw_text="INT",
-            incarceration_sentences=[incarceration_sentence_555555_ips],
-            person=incarceration_sentence_555555_ips.person,
+            person=person_555555,
         )
 
         incarceration_period_555555_3 = entities.StateIncarcerationPeriod.new_with_defaults(
@@ -2914,39 +2861,16 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             admission_date=datetime.date(year=2018, month=3, day=8),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
             admission_reason_raw_text="INT",
-            incarceration_sentences=[incarceration_sentence_555555_ips],
-            person=incarceration_sentence_555555_ips.person,
+            person=person_555555,
         )
+
+        person_555555.incarceration_periods = [
+            incarceration_period_555555_1,
+            incarceration_period_555555_2,
+            incarceration_period_555555_3,
+        ]
 
         expected_people.append(person_555555)
-
-        incarceration_sentence_113377_ips.incarceration_periods.append(
-            incarceration_period_113377_1
-        )
-        incarceration_sentence_113377_ips.incarceration_periods.append(
-            incarceration_period_113377_2
-        )
-        incarceration_sentence_105640_ips.incarceration_periods.append(
-            incarceration_period_105640_1
-        )
-        incarceration_sentence_105640_ips.incarceration_periods.append(
-            incarceration_period_105640_2
-        )
-        incarceration_sentence_105640_ips.incarceration_periods.append(
-            incarceration_period_105640_3
-        )
-        incarceration_sentence_114909_ips.incarceration_periods.append(
-            incarceration_period_114909_1
-        )
-        incarceration_sentence_555555_ips.incarceration_periods.append(
-            incarceration_period_555555_1
-        )
-        incarceration_sentence_555555_ips.incarceration_periods.append(
-            incarceration_period_555555_2
-        )
-        incarceration_sentence_555555_ips.incarceration_periods.append(
-            incarceration_period_555555_3
-        )
 
         # Act
         self._run_ingest_job_for_filename(

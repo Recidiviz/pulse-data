@@ -7,10 +7,6 @@ key_mappings:
 
 ancestor_keys:
   control_number: state_person.state_person_id
-  inmate_number: state_sentence_group.state_sentence_group_id
-
-enforced_ancestor_types:
-  state_sentence: state_incarceration_sentence
 
 keys_to_ignore:
   - sequence_number # Move sequence number - handled manually in the controller
@@ -24,3 +20,4 @@ keys_to_ignore:
   - start_is_admin_edge # Indicates if period is starting due to an administrative update  - handled manually in the controller
   - end_is_admin_edge # Indicates if period is ending due to an administrative update  - handled manually in the controller
   - sentence_type # Sentence type (general vs treatment) - handled manually in the controller
+  - inmate_number # Unused - another external ID for the person

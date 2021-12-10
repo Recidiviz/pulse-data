@@ -55,7 +55,6 @@ from recidiviz.persistence.entity.state.entities import (
     StateCharge,
     StateCourtCase,
     StateIncarcerationPeriod,
-    StateIncarcerationSentence,
     StatePerson,
     StatePersonExternalId,
     StateSentenceGroup,
@@ -874,21 +873,7 @@ class UsNdIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         id_type=US_ND_ELITE_BOOKING,
                     )
                 ],
-                sentence_groups=[
-                    StateSentenceGroup(
-                        state_code=self.state_code,
-                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                        external_id="113377",
-                        incarceration_sentences=[
-                            StateIncarcerationSentence(
-                                state_code=self.state_code,
-                                incarceration_type=StateIncarcerationType.STATE_PRISON,
-                                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                                incarceration_periods=[incarceration_period_113377_1],
-                            )
-                        ],
-                    )
-                ],
+                incarceration_periods=[incarceration_period_113377_1],
             ),
             StatePerson(
                 state_code=self.state_code,
@@ -899,21 +884,7 @@ class UsNdIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         id_type=US_ND_ELITE_BOOKING,
                     )
                 ],
-                sentence_groups=[
-                    StateSentenceGroup(
-                        state_code=self.state_code,
-                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                        external_id="113377",
-                        incarceration_sentences=[
-                            StateIncarcerationSentence(
-                                state_code=self.state_code,
-                                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                                incarceration_type=StateIncarcerationType.STATE_PRISON,
-                                incarceration_periods=[incarceration_period_113377_2],
-                            )
-                        ],
-                    )
-                ],
+                incarceration_periods=[incarceration_period_113377_2],
             ),
             StatePerson(
                 state_code=self.state_code,
@@ -924,21 +895,7 @@ class UsNdIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         id_type=US_ND_ELITE_BOOKING,
                     )
                 ],
-                sentence_groups=[
-                    StateSentenceGroup(
-                        state_code=self.state_code,
-                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                        external_id="114909",
-                        incarceration_sentences=[
-                            StateIncarcerationSentence(
-                                state_code=self.state_code,
-                                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                                incarceration_type=StateIncarcerationType.STATE_PRISON,
-                                incarceration_periods=[incarceration_period_114909_1],
-                            )
-                        ],
-                    )
-                ],
+                incarceration_periods=[incarceration_period_114909_1],
             ),
             StatePerson(
                 state_code=self.state_code,
@@ -949,21 +906,7 @@ class UsNdIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         id_type=US_ND_ELITE_BOOKING,
                     )
                 ],
-                sentence_groups=[
-                    StateSentenceGroup(
-                        state_code=self.state_code,
-                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                        external_id="555555",
-                        incarceration_sentences=[
-                            StateIncarcerationSentence(
-                                state_code=self.state_code,
-                                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                                incarceration_type=StateIncarcerationType.STATE_PRISON,
-                                incarceration_periods=[incarceration_period_555555_1],
-                            )
-                        ],
-                    )
-                ],
+                incarceration_periods=[incarceration_period_555555_1],
             ),
             StatePerson(
                 state_code=self.state_code,
@@ -974,21 +917,7 @@ class UsNdIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         id_type=US_ND_ELITE_BOOKING,
                     )
                 ],
-                sentence_groups=[
-                    StateSentenceGroup(
-                        state_code=self.state_code,
-                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                        external_id="555555",
-                        incarceration_sentences=[
-                            StateIncarcerationSentence(
-                                state_code=self.state_code,
-                                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                                incarceration_type=StateIncarcerationType.STATE_PRISON,
-                                incarceration_periods=[incarceration_period_555555_2],
-                            )
-                        ],
-                    )
-                ],
+                incarceration_periods=[incarceration_period_555555_2],
             ),
             StatePerson(
                 state_code=self.state_code,
@@ -999,21 +928,7 @@ class UsNdIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         id_type=US_ND_ELITE_BOOKING,
                     )
                 ],
-                sentence_groups=[
-                    StateSentenceGroup(
-                        state_code=self.state_code,
-                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                        external_id="555555",
-                        incarceration_sentences=[
-                            StateIncarcerationSentence(
-                                state_code=self.state_code,
-                                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                                incarceration_type=StateIncarcerationType.STATE_PRISON,
-                                incarceration_periods=[incarceration_period_555555_3],
-                            )
-                        ],
-                    )
-                ],
+                incarceration_periods=[incarceration_period_555555_3],
             ),
             StatePerson(
                 state_code=self.state_code,
@@ -1024,21 +939,7 @@ class UsNdIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         id_type=US_ND_ELITE_BOOKING,
                     )
                 ],
-                sentence_groups=[
-                    StateSentenceGroup(
-                        state_code=self.state_code,
-                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                        external_id="105640",
-                        incarceration_sentences=[
-                            StateIncarcerationSentence(
-                                state_code=self.state_code,
-                                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                                incarceration_type=StateIncarcerationType.STATE_PRISON,
-                                incarceration_periods=[incarceration_period_105640_1],
-                            )
-                        ],
-                    )
-                ],
+                incarceration_periods=[incarceration_period_105640_1],
             ),
             StatePerson(
                 state_code=self.state_code,
@@ -1049,21 +950,7 @@ class UsNdIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         id_type=US_ND_ELITE_BOOKING,
                     )
                 ],
-                sentence_groups=[
-                    StateSentenceGroup(
-                        state_code=self.state_code,
-                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                        external_id="105640",
-                        incarceration_sentences=[
-                            StateIncarcerationSentence(
-                                state_code=self.state_code,
-                                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                                incarceration_type=StateIncarcerationType.STATE_PRISON,
-                                incarceration_periods=[incarceration_period_105640_2],
-                            )
-                        ],
-                    )
-                ],
+                incarceration_periods=[incarceration_period_105640_2],
             ),
             StatePerson(
                 state_code=self.state_code,
@@ -1074,21 +961,7 @@ class UsNdIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         id_type=US_ND_ELITE_BOOKING,
                     )
                 ],
-                sentence_groups=[
-                    StateSentenceGroup(
-                        state_code=self.state_code,
-                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                        external_id="105640",
-                        incarceration_sentences=[
-                            StateIncarcerationSentence(
-                                state_code=self.state_code,
-                                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                                incarceration_type=StateIncarcerationType.STATE_PRISON,
-                                incarceration_periods=[incarceration_period_105640_3],
-                            )
-                        ],
-                    )
-                ],
+                incarceration_periods=[incarceration_period_105640_3],
             ),
         ]
 

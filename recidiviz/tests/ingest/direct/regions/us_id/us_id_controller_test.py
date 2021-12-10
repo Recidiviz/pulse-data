@@ -710,64 +710,46 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                             state_person_external_id_id="1111", id_type=US_ID_DOC
                         )
                     ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_sentence_group_id="1111-1",
-                            state_incarceration_sentences=[
-                                StateIncarcerationSentence(
-                                    state_incarceration_periods=[
-                                        StateIncarcerationPeriod(
-                                            state_incarceration_period_id="1111-1",
-                                            incarceration_type="STATE_PRISON",
-                                            facility="FACILITY 1",
-                                            admission_reason="NEW_ADMISSION",
-                                            admission_date="2008-01-01",
-                                            release_reason="I",
-                                            release_date="2008-10-01",
-                                            specialized_purpose_for_incarceration="TM",
-                                        ),
-                                        StateIncarcerationPeriod(
-                                            state_incarceration_period_id="1111-2",
-                                            incarceration_type="COUNTY_JAIL",
-                                            facility="SHERIFF DEPT 1",
-                                            admission_reason="I",
-                                            admission_date="2008-10-01",
-                                            release_reason="H-COMMUTED SENTENCE",
-                                            release_date="2009-01-01",
-                                            specialized_purpose_for_incarceration="TM",
-                                        ),
-                                    ]
-                                )
-                            ],
+                    state_incarceration_periods=[
+                        StateIncarcerationPeriod(
+                            state_incarceration_period_id="1111-1",
+                            incarceration_type="STATE_PRISON",
+                            facility="FACILITY 1",
+                            admission_reason="NEW_ADMISSION",
+                            admission_date="2008-01-01",
+                            release_reason="I",
+                            release_date="2008-10-01",
+                            specialized_purpose_for_incarceration="TM",
                         ),
-                        StateSentenceGroup(
-                            state_sentence_group_id="1111-2",
-                            state_incarceration_sentences=[
-                                StateIncarcerationSentence(
-                                    state_incarceration_periods=[
-                                        StateIncarcerationPeriod(
-                                            state_incarceration_period_id="1111-3",
-                                            facility="FACILITY 1",
-                                            incarceration_type="STATE_PRISON",
-                                            admission_reason="P",
-                                            admission_date="2019-01-01",
-                                            release_reason="I",
-                                            release_date="2019-02-01",
-                                            specialized_purpose_for_incarceration="TM",
-                                        ),
-                                        StateIncarcerationPeriod(
-                                            state_incarceration_period_id="1111-4",
-                                            facility="FACILITY 1",
-                                            incarceration_type="STATE_PRISON",
-                                            admission_reason="I",
-                                            admission_date="2019-02-01",
-                                            release_reason="P",
-                                            release_date="2020-01-01",
-                                            specialized_purpose_for_incarceration="RJ,PB",
-                                        ),
-                                    ]
-                                )
-                            ],
+                        StateIncarcerationPeriod(
+                            state_incarceration_period_id="1111-2",
+                            incarceration_type="COUNTY_JAIL",
+                            facility="SHERIFF DEPT 1",
+                            admission_reason="I",
+                            admission_date="2008-10-01",
+                            release_reason="H-COMMUTED SENTENCE",
+                            release_date="2009-01-01",
+                            specialized_purpose_for_incarceration="TM",
+                        ),
+                        StateIncarcerationPeriod(
+                            state_incarceration_period_id="1111-3",
+                            facility="FACILITY 1",
+                            incarceration_type="STATE_PRISON",
+                            admission_reason="P",
+                            admission_date="2019-01-01",
+                            release_reason="I",
+                            release_date="2019-02-01",
+                            specialized_purpose_for_incarceration="TM",
+                        ),
+                        StateIncarcerationPeriod(
+                            state_incarceration_period_id="1111-4",
+                            facility="FACILITY 1",
+                            incarceration_type="STATE_PRISON",
+                            admission_reason="I",
+                            admission_date="2019-02-01",
+                            release_reason="P",
+                            release_date="2020-01-01",
+                            specialized_purpose_for_incarceration="RJ,PB",
                         ),
                     ],
                 ),
@@ -778,35 +760,26 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                             state_person_external_id_id="2222", id_type=US_ID_DOC
                         )
                     ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_sentence_group_id="2222-1",
-                            state_incarceration_sentences=[
-                                StateIncarcerationSentence(
-                                    state_incarceration_periods=[
-                                        StateIncarcerationPeriod(
-                                            state_incarceration_period_id="2222-1",
-                                            facility="SHERIFF DEPT 2",
-                                            incarceration_type="COUNTY_JAIL",
-                                            admission_reason="P",
-                                            admission_date="2010-01-01",
-                                            release_reason="I",
-                                            release_date="2010-06-01",
-                                            specialized_purpose_for_incarceration="PV",
-                                        ),
-                                        StateIncarcerationPeriod(
-                                            state_incarceration_period_id="2222-2",
-                                            facility="FACILITY 3",
-                                            incarceration_type="STATE_PRISON",
-                                            admission_reason="I",
-                                            admission_date="2010-06-01",
-                                            release_reason="F",
-                                            release_date="2011-01-01",
-                                            specialized_purpose_for_incarceration="TM",
-                                        ),
-                                    ]
-                                )
-                            ],
+                    state_incarceration_periods=[
+                        StateIncarcerationPeriod(
+                            state_incarceration_period_id="2222-1",
+                            facility="SHERIFF DEPT 2",
+                            incarceration_type="COUNTY_JAIL",
+                            admission_reason="P",
+                            admission_date="2010-01-01",
+                            release_reason="I",
+                            release_date="2010-06-01",
+                            specialized_purpose_for_incarceration="PV",
+                        ),
+                        StateIncarcerationPeriod(
+                            state_incarceration_period_id="2222-2",
+                            facility="FACILITY 3",
+                            incarceration_type="STATE_PRISON",
+                            admission_reason="I",
+                            admission_date="2010-06-01",
+                            release_reason="F",
+                            release_date="2011-01-01",
+                            specialized_purpose_for_incarceration="TM",
                         ),
                     ],
                 ),
@@ -1833,15 +1806,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
         #################################################################
         # MOVEMENT_FACILITY_OFFSTAT_INCARCERATION_PERIODS
         #################################################################
-        # TODO(#2492): Remove dangling placeholders from expected graph once functionality is in entity matching.
         # Arrange
-        is_1111_1_placeholder = entities.StateIncarcerationSentence.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            sentence_group=sg_1111_1,
-            person=sg_1111_1.person,
-        )
         ip_1111_1 = entities.StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id="1111-1",
@@ -1855,10 +1820,9 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
             release_reason_raw_text="I",
             release_date=datetime.date(year=2008, month=10, day=1),
-            incarceration_sentences=[is_1111_1],
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             specialized_purpose_for_incarceration_raw_text="TM",
-            person=is_1111_1.person,
+            person=person_1,
         )
         ip_1111_2 = entities.StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -1873,21 +1837,12 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             release_reason=StateIncarcerationPeriodReleaseReason.COMMUTED,
             release_reason_raw_text="H-COMMUTED SENTENCE",
             release_date=datetime.date(year=2009, month=1, day=1),
-            incarceration_sentences=[is_1111_1],
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             specialized_purpose_for_incarceration_raw_text="TM",
-            person=is_1111_1.person,
+            person=person_1,
         )
-        sg_1111_1.incarceration_sentences.append(is_1111_1_placeholder)
-        is_1111_1.incarceration_periods.extend([ip_1111_1, ip_1111_2])
+        person_1.incarceration_periods.extend([ip_1111_1, ip_1111_2])
 
-        is_1111_2_placeholder = entities.StateIncarcerationSentence.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            sentence_group=sg_1111_2,
-            person=sg_1111_2.person,
-        )
         ip_1111_3 = entities.StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id="1111-3",
@@ -1901,10 +1856,9 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
             release_reason_raw_text="I",
             release_date=datetime.date(year=2019, month=2, day=1),
-            incarceration_sentences=[is_1111_3],
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             specialized_purpose_for_incarceration_raw_text="TM",
-            person=is_1111_3.person,
+            person=person_1,
         )
         ip_1111_4 = entities.StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -1921,19 +1875,10 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             release_date=datetime.date(year=2020, month=1, day=1),
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
             specialized_purpose_for_incarceration_raw_text="RJ,PB",
-            incarceration_sentences=[is_1111_3],
-            person=is_1111_3.person,
+            person=person_1,
         )
-        sg_1111_2.incarceration_sentences.append(is_1111_2_placeholder)
-        is_1111_3.incarceration_periods.extend([ip_1111_3, ip_1111_4])
+        person_1.incarceration_periods.extend([ip_1111_3, ip_1111_4])
 
-        is_2222_1_placeholder = entities.StateIncarcerationSentence.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            sentence_group=sg_2222_1,
-            person=sg_2222_1.person,
-        )
         ip_2222_1 = entities.StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id="2222-1",
@@ -1949,8 +1894,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             release_date=datetime.date(year=2010, month=6, day=1),
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
             specialized_purpose_for_incarceration_raw_text="PV",
-            incarceration_sentences=[is_2222_2],
-            person=is_2222_2.person,
+            person=person_2,
         )
         ip_2222_2 = entities.StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -1967,11 +1911,9 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             release_date=datetime.date(year=2011, month=1, day=1),
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             specialized_purpose_for_incarceration_raw_text="TM",
-            incarceration_sentences=[is_2222_2],
-            person=is_2222_2.person,
+            person=person_2,
         )
-        is_2222_2.incarceration_periods.extend([ip_2222_1, ip_2222_2])
-        sg_2222_1.incarceration_sentences.append(is_2222_1_placeholder)
+        person_2.incarceration_periods.extend([ip_2222_1, ip_2222_2])
 
         # Act
         self._run_ingest_job_for_filename(

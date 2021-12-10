@@ -9,9 +9,6 @@ key_mappings:
 ancestor_keys:
   BU_DOC: state_person.state_person_id
 
-enforced_ancestor_types:
-  state_sentence: state_supervision_sentence
-
 keys_to_ignore:
   - BU_DOC  # Offender DOC Number - Handled manually in the controller
   - BU_CYC  # Offender Cycle Number - Handled manually in the controller

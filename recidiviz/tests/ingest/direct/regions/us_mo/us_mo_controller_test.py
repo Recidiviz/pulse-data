@@ -796,6 +796,8 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             expected, "tak022_tak024_tak025_tak026_offender_sentence_supervision"
         )
 
+    # TODO(#10302): Consolidate the two IP ingest views into one query that doesn't
+    #  bring in sentence information
     def test_populate_data_tak158_tak023_tak026_incarceration_period_from_incarceration_sentence(
         self,
     ) -> None:
@@ -873,34 +875,14 @@ class TestUsMoController(BaseDirectIngestControllerTests):
                             state_person_external_id_id="110035", id_type=US_MO_DOC
                         ),
                     ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_sentence_group_id="110035-19890901",
-                            state_incarceration_sentences=[
-                                StateIncarcerationSentence(
-                                    state_incarceration_sentence_id="110035-19890901-1",
-                                    state_incarceration_periods=[
-                                        ip_110035_19890901_1_0,
-                                        ip_110035_19890901_3_0,
-                                        ip_110035_19890901_5_0,
-                                    ],
-                                )
-                            ],
-                        ),
-                        StateSentenceGroup(
-                            state_sentence_group_id="110035-20010414",
-                            state_incarceration_sentences=[
-                                StateIncarcerationSentence(
-                                    state_incarceration_sentence_id="110035-20010414-1",
-                                    state_incarceration_periods=[
-                                        ip_110035_20010414_2_0,
-                                        ip_110035_20010414_4_0,
-                                        ip_110035_20010414_7_0,
-                                        ip_110035_20010414_7_3,
-                                    ],
-                                )
-                            ],
-                        ),
+                    state_incarceration_periods=[
+                        ip_110035_19890901_1_0,
+                        ip_110035_19890901_3_0,
+                        ip_110035_19890901_5_0,
+                        ip_110035_20010414_2_0,
+                        ip_110035_20010414_4_0,
+                        ip_110035_20010414_7_0,
+                        ip_110035_20010414_7_3,
                     ],
                 ),
                 StatePerson(
@@ -910,23 +892,13 @@ class TestUsMoController(BaseDirectIngestControllerTests):
                             state_person_external_id_id="310261", id_type=US_MO_DOC
                         ),
                     ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_sentence_group_id="310261-19890821",
-                            state_incarceration_sentences=[
-                                StateIncarcerationSentence(
-                                    state_incarceration_sentence_id="310261-19890821-3",
-                                    state_incarceration_periods=[
-                                        StateIncarcerationPeriod(
-                                            state_incarceration_period_id="310261-19890821-1-0",
-                                            status="IN_CUSTODY",
-                                            admission_date="19900329",
-                                            admission_reason="10I1000",
-                                            specialized_purpose_for_incarceration="S",
-                                        )
-                                    ],
-                                )
-                            ],
+                    state_incarceration_periods=[
+                        StateIncarcerationPeriod(
+                            state_incarceration_period_id="310261-19890821-1-0",
+                            status="IN_CUSTODY",
+                            admission_date="19900329",
+                            admission_reason="10I1000",
+                            specialized_purpose_for_incarceration="S",
                         )
                     ],
                 ),
@@ -937,40 +909,25 @@ class TestUsMoController(BaseDirectIngestControllerTests):
                             state_person_external_id_id="710448", id_type=US_MO_DOC
                         ),
                     ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_sentence_group_id="710448-20010414",
-                            state_incarceration_sentences=[
-                                StateIncarcerationSentence(
-                                    state_incarceration_sentence_id="710448-20010414-1",
-                                    state_incarceration_periods=[
-                                        StateIncarcerationPeriod(
-                                            state_incarceration_period_id="710448-20010414-1-0",
-                                            status="NOT_IN_CUSTODY",
-                                            admission_date="20010705",
-                                            admission_reason="10I1000",
-                                            release_date="20020117",
-                                            release_reason="IT-EM",
-                                            specialized_purpose_for_incarceration="S",
-                                        )
-                                    ],
-                                ),
-                                StateIncarcerationSentence(
-                                    state_incarceration_sentence_id="710448-20010414-3",
-                                    state_incarceration_periods=[
-                                        StateIncarcerationPeriod(
-                                            state_incarceration_period_id="710448-20010414-3-0",
-                                            status="NOT_IN_CUSTODY",
-                                            admission_date="20020912",
-                                            admission_reason="40I1060",
-                                            release_date="20040928",
-                                            release_reason="IT-BP",
-                                            specialized_purpose_for_incarceration="S",
-                                        )
-                                    ],
-                                ),
-                            ],
-                        )
+                    state_incarceration_periods=[
+                        StateIncarcerationPeriod(
+                            state_incarceration_period_id="710448-20010414-1-0",
+                            status="NOT_IN_CUSTODY",
+                            admission_date="20010705",
+                            admission_reason="10I1000",
+                            release_date="20020117",
+                            release_reason="IT-EM",
+                            specialized_purpose_for_incarceration="S",
+                        ),
+                        StateIncarcerationPeriod(
+                            state_incarceration_period_id="710448-20010414-3-0",
+                            status="NOT_IN_CUSTODY",
+                            admission_date="20020912",
+                            admission_reason="40I1060",
+                            release_date="20040928",
+                            release_reason="IT-BP",
+                            specialized_purpose_for_incarceration="S",
+                        ),
                     ],
                 ),
                 StatePerson(
@@ -980,25 +937,15 @@ class TestUsMoController(BaseDirectIngestControllerTests):
                             state_person_external_id_id="910324", id_type=US_MO_DOC
                         ),
                     ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_sentence_group_id="910324-19890825",
-                            state_incarceration_sentences=[
-                                StateIncarcerationSentence(
-                                    state_incarceration_sentence_id="910324-19890825-1",
-                                    state_incarceration_periods=[
-                                        StateIncarcerationPeriod(
-                                            state_incarceration_period_id="910324-19890825-1-0",
-                                            status="NOT_IN_CUSTODY",
-                                            admission_date="19891023",
-                                            admission_reason="10I1000",
-                                            release_date="19890516",
-                                            release_reason="IE-IE",
-                                            specialized_purpose_for_incarceration="O",
-                                        )
-                                    ],
-                                )
-                            ],
+                    state_incarceration_periods=[
+                        StateIncarcerationPeriod(
+                            state_incarceration_period_id="910324-19890825-1-0",
+                            status="NOT_IN_CUSTODY",
+                            admission_date="19891023",
+                            admission_reason="10I1000",
+                            release_date="19890516",
+                            release_reason="IE-IE",
+                            specialized_purpose_for_incarceration="O",
                         )
                     ],
                 ),
@@ -1009,24 +956,14 @@ class TestUsMoController(BaseDirectIngestControllerTests):
                             state_person_external_id_id="523523", id_type=US_MO_DOC
                         ),
                     ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_sentence_group_id="523523-19890617",
-                            state_incarceration_sentences=[
-                                StateIncarcerationSentence(
-                                    state_incarceration_sentence_id="523523-19890617-1",
-                                    state_incarceration_periods=[
-                                        StateIncarcerationPeriod(
-                                            state_incarceration_period_id="523523-19890617-1-0",
-                                            status="NOT_IN_CUSTODY",
-                                            admission_date="19890617",
-                                            admission_reason="10I1000",
-                                            release_date="20101020",
-                                            specialized_purpose_for_incarceration="S",
-                                        )
-                                    ],
-                                )
-                            ],
+                    state_incarceration_periods=[
+                        StateIncarcerationPeriod(
+                            state_incarceration_period_id="523523-19890617-1-0",
+                            status="NOT_IN_CUSTODY",
+                            admission_date="19890617",
+                            admission_reason="10I1000",
+                            release_date="20101020",
+                            specialized_purpose_for_incarceration="S",
                         )
                     ],
                 ),
@@ -1037,25 +974,15 @@ class TestUsMoController(BaseDirectIngestControllerTests):
                             state_person_external_id_id="867530", id_type=US_MO_DOC
                         ),
                     ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_sentence_group_id="867530-19970224",
-                            state_incarceration_sentences=[
-                                StateIncarcerationSentence(
-                                    state_incarceration_sentence_id="867530-19970224-1",
-                                    state_incarceration_periods=[
-                                        StateIncarcerationPeriod(
-                                            state_incarceration_period_id="867530-19970224-1-0",
-                                            status="NOT_IN_CUSTODY",
-                                            admission_date="19970224",
-                                            admission_reason="10I1000",
-                                            release_date="20161031",
-                                            release_reason="DE-EX",
-                                            specialized_purpose_for_incarceration="S",
-                                        )
-                                    ],
-                                )
-                            ],
+                    state_incarceration_periods=[
+                        StateIncarcerationPeriod(
+                            state_incarceration_period_id="867530-19970224-1-0",
+                            status="NOT_IN_CUSTODY",
+                            admission_date="19970224",
+                            admission_reason="10I1000",
+                            release_date="20161031",
+                            release_reason="DE-EX",
+                            specialized_purpose_for_incarceration="S",
                         )
                     ],
                 ),
@@ -1067,6 +994,8 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             "tak158_tak023_tak026_incarceration_period_from_incarceration_sentence",
         )
 
+    # TODO(#10302): Consolidate the two IP ingest views into one query that doesn't
+    #  bring in sentence information
     def test_populate_data_tak158_tak024_tak026_incarceration_period_from_supervision_sentence(
         self,
     ) -> None:
@@ -1079,25 +1008,15 @@ class TestUsMoController(BaseDirectIngestControllerTests):
                             state_person_external_id_id="910324", id_type=US_MO_DOC
                         ),
                     ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_sentence_group_id="910324-19890825",
-                            state_supervision_sentences=[
-                                StateSupervisionSentence(
-                                    state_supervision_sentence_id="910324-19890825-1",
-                                    state_incarceration_periods=[
-                                        StateIncarcerationPeriod(
-                                            state_incarceration_period_id="910324-19890825-1-0",
-                                            status="NOT_IN_CUSTODY",
-                                            admission_date="19891023",
-                                            admission_reason="10I1000",
-                                            release_date="19890516",
-                                            release_reason="IE-IE",
-                                            specialized_purpose_for_incarceration="O",
-                                        )
-                                    ],
-                                )
-                            ],
+                    state_incarceration_periods=[
+                        StateIncarcerationPeriod(
+                            state_incarceration_period_id="910324-19890825-1-0",
+                            status="NOT_IN_CUSTODY",
+                            admission_date="19891023",
+                            admission_reason="10I1000",
+                            release_date="19890516",
+                            release_reason="IE-IE",
+                            specialized_purpose_for_incarceration="O",
                         )
                     ],
                 ),
@@ -1108,24 +1027,14 @@ class TestUsMoController(BaseDirectIngestControllerTests):
                             state_person_external_id_id="523523", id_type=US_MO_DOC
                         ),
                     ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_sentence_group_id="523523-19890617",
-                            state_supervision_sentences=[
-                                StateSupervisionSentence(
-                                    state_supervision_sentence_id="523523-19890617-1",
-                                    state_incarceration_periods=[
-                                        StateIncarcerationPeriod(
-                                            state_incarceration_period_id="523523-19890617-1-0",
-                                            status="NOT_IN_CUSTODY",
-                                            admission_date="19890617",
-                                            admission_reason="10I1000",
-                                            release_date="20101020",
-                                            specialized_purpose_for_incarceration="S",
-                                        )
-                                    ],
-                                )
-                            ],
+                    state_incarceration_periods=[
+                        StateIncarcerationPeriod(
+                            state_incarceration_period_id="523523-19890617-1-0",
+                            status="NOT_IN_CUSTODY",
+                            admission_date="19890617",
+                            admission_reason="10I1000",
+                            release_date="20101020",
+                            specialized_purpose_for_incarceration="S",
                         )
                     ],
                 ),
@@ -2561,7 +2470,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             specialized_purpose_for_incarceration_raw_text="S",
             person=person_110035,
-            incarceration_sentences=[sis_110035_19890901_1],
         )
 
         ip_110035_19890901_3_0 = entities.StateIncarcerationPeriod.new_with_defaults(
@@ -2579,7 +2487,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
             specialized_purpose_for_incarceration_raw_text="I",
             person=person_110035,
-            incarceration_sentences=[sis_110035_19890901_1],
         )
 
         ip_110035_19890901_5_0 = entities.StateIncarcerationPeriod.new_with_defaults(
@@ -2597,10 +2504,9 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             specialized_purpose_for_incarceration_raw_text="S",
             person=person_110035,
-            incarceration_sentences=[sis_110035_19890901_1],
         )
 
-        sis_110035_19890901_1.incarceration_periods = [
+        person_110035.incarceration_periods = [
             ip_110035_19890901_1_0,
             ip_110035_19890901_3_0,
             ip_110035_19890901_5_0,
@@ -2620,7 +2526,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             release_reason_raw_text="IT-BP",
             specialized_purpose_for_incarceration_raw_text="X",
             person=person_110035,
-            incarceration_sentences=[sis_110035_20010414_1],
         )
 
         ip_110035_20010414_4_0 = entities.StateIncarcerationPeriod.new_with_defaults(
@@ -2638,7 +2543,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             specialized_purpose_for_incarceration_raw_text="S",
             person=person_110035,
-            incarceration_sentences=[sis_110035_20010414_1],
         )
         ip_110035_20010414_7_0 = entities.StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -2655,7 +2559,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             specialized_purpose_for_incarceration_raw_text="S",
             person=person_110035,
-            incarceration_sentences=[sis_110035_20010414_1],
         )
 
         ip_110035_20010414_7_3 = entities.StateIncarcerationPeriod.new_with_defaults(
@@ -2673,15 +2576,16 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             specialized_purpose_for_incarceration_raw_text="S",
             person=person_110035,
-            incarceration_sentences=[sis_110035_20010414_1],
         )
 
-        sis_110035_20010414_1.incarceration_periods = [
-            ip_110035_20010414_2_0,
-            ip_110035_20010414_4_0,
-            ip_110035_20010414_7_0,
-            ip_110035_20010414_7_3,
-        ]
+        person_110035.incarceration_periods.extend(
+            [
+                ip_110035_20010414_2_0,
+                ip_110035_20010414_4_0,
+                ip_110035_20010414_7_0,
+                ip_110035_20010414_7_3,
+            ]
+        )
 
         ip_310261_19890821_1_0 = entities.StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -2695,9 +2599,8 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             specialized_purpose_for_incarceration_raw_text="S",
             person=person_310261,
-            incarceration_sentences=[sis_310261_19890821_3],
         )
-        sis_310261_19890821_3.incarceration_periods = [ip_310261_19890821_1_0]
+        person_310261.incarceration_periods = [ip_310261_19890821_1_0]
 
         ip_710448_20010414_1_0 = entities.StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -2714,9 +2617,8 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             specialized_purpose_for_incarceration_raw_text="S",
             person=person_710448,
-            incarceration_sentences=[sis_710448_20010414_1],
         )
-        sis_710448_20010414_1.incarceration_periods = [ip_710448_20010414_1_0]
+        person_710448.incarceration_periods = [ip_710448_20010414_1_0]
 
         ip_710448_20010414_3_0 = entities.StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -2733,10 +2635,9 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             specialized_purpose_for_incarceration_raw_text="S",
             person=person_710448,
-            incarceration_sentences=[sis_710448_20010414_3],
         )
 
-        sis_710448_20010414_3.incarceration_periods = [ip_710448_20010414_3_0]
+        person_710448.incarceration_periods.extend([ip_710448_20010414_3_0])
 
         ip_910324_19890825_1_0 = entities.StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -2753,9 +2654,8 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
             specialized_purpose_for_incarceration_raw_text="O",
             person=person_910324,
-            incarceration_sentences=[sis_910324_19890825_1],
         )
-        sis_910324_19890825_1.incarceration_periods = [ip_910324_19890825_1_0]
+        person_910324.incarceration_periods = [ip_910324_19890825_1_0]
 
         # New person and entity tree introduced at this point
         person_523523 = entities.StatePerson.new_with_defaults(
@@ -2769,24 +2669,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
         )
         person_523523.external_ids.append(spei_523523)
 
-        sg_523523_19890617 = entities.StateSentenceGroup.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            external_id="523523-19890617",
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            person=person_523523,
-        )
-        person_523523.sentence_groups.append(sg_523523_19890617)
-
-        sis_523523_19890617_1 = entities.StateIncarcerationSentence.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            external_id="523523-19890617-1",
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            person=person_523523,
-            sentence_group=sg_523523_19890617,
-        )
-        sg_523523_19890617.incarceration_sentences.append(sis_523523_19890617_1)
-
         ip_523523_19890617_1_0 = entities.StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id="523523-19890617-1-0",
@@ -2799,9 +2681,8 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             specialized_purpose_for_incarceration_raw_text="S",
             person=person_523523,
-            incarceration_sentences=[sis_523523_19890617_1],
         )
-        sis_523523_19890617_1.incarceration_periods.append(ip_523523_19890617_1_0)
+        person_523523.incarceration_periods.append(ip_523523_19890617_1_0)
 
         expected_people.append(person_523523)
 
@@ -2816,24 +2697,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             person=person_867530,
         )
         person_867530.external_ids.append(spei_867530)
-
-        sg_867530_19970224 = entities.StateSentenceGroup.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            external_id="867530-19970224",
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            person=person_867530,
-        )
-        person_867530.sentence_groups.append(sg_867530_19970224)
-
-        sis_867530_19970224_1 = entities.StateIncarcerationSentence.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            external_id="867530-19970224-1",
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            person=person_867530,
-            sentence_group=sg_867530_19970224,
-        )
-        sg_867530_19970224.incarceration_sentences.append(sis_867530_19970224_1)
 
         ip_867530_19970224_1_0 = entities.StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -2850,9 +2713,8 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             specialized_purpose_for_incarceration_raw_text="S",
             person=person_867530,
-            incarceration_sentences=[sis_867530_19970224_1],
         )
-        sis_867530_19970224_1.incarceration_periods.append(ip_867530_19970224_1_0)
+        person_867530.incarceration_periods.append(ip_867530_19970224_1_0)
 
         expected_people.append(person_867530)
 
@@ -2873,20 +2735,11 @@ class TestUsMoController(BaseDirectIngestControllerTests):
         # TAK158_TAK024 INCARCERATION PERIOD FROM SUPERVISION SENTENCE
         ################################################################
         # Arrange
-        ip_910324_19890825_1_0.supervision_sentences = [sss_910324_19890825_1]
-        sss_910324_19890825_1.incarceration_periods = [ip_910324_19890825_1_0]
-
-        sss_523523_19890617_1 = entities.StateSupervisionSentence.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            external_id="523523-19890617-1",
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            person=person_523523,
-            sentence_group=sg_523523_19890617,
-        )
-
-        sg_523523_19890617.supervision_sentences.append(sss_523523_19890617_1)
-        ip_523523_19890617_1_0.supervision_sentences = [sss_523523_19890617_1]
-        sss_523523_19890617_1.incarceration_periods = [ip_523523_19890617_1_0]
+        # Note: The incarceration periods in this fixture file are also contained in
+        # the tak158_tak023_tak026_incarceration_period_from_incarceration_sentence
+        # fixture, which is why processing this file doesn't add any new entities.
+        # TODO(#10302): Consolidate the two IP ingest views into one query that doesn't
+        #  bring in sentence information
 
         # SQL Preprocessing View
         # Act
@@ -3799,12 +3652,10 @@ class TestUsMoController(BaseDirectIngestControllerTests):
 
         compliant_periods = 0
         for person in found_people:
-            for sg in person.sentence_groups:
-                for sentence in sg.incarceration_sentences:
-                    for period in sentence.incarceration_periods:
-                        self.assertIsNotNone(period.admission_reason)
-                        self.assertIsNotNone(period.admission_reason_raw_text)
-                        compliant_periods += 1
+            for period in person.incarceration_periods:
+                self.assertIsNotNone(period.admission_reason)
+                self.assertIsNotNone(period.admission_reason_raw_text)
+                compliant_periods += 1
 
         # Asserting that we processed every row in the file successfully
         self.assertEqual(compliant_periods, 13)

@@ -37,7 +37,6 @@ from recidiviz.tests.ingest.direct.regions.base_direct_ingest_controller_tests i
 )
 from recidiviz.tests.ingest.direct.regions.utils import (
     add_incarceration_period_to_person,
-    add_sentence_group_to_person_and_build_incarceration_sentence,
     build_state_person_entity,
 )
 
@@ -196,17 +195,10 @@ class TestUsMeController(BaseDirectIngestControllerTests):
         # CURRENT_STATUS_incarceration_period
         ######################################
 
-        incarceration_sentence = (
-            add_sentence_group_to_person_and_build_incarceration_sentence(
-                _REGION_CODE_UPPER, person_1
-            )
-        )
-
         # Person 1 starts new period and is released to SCCP
         add_incarceration_period_to_person(
             person=person_1,
             state_code=_REGION_CODE_UPPER,
-            incarceration_sentence=incarceration_sentence,
             external_id="00000001-1",
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             admission_date=datetime.date(year=2014, month=10, day=12),
@@ -227,7 +219,6 @@ class TestUsMeController(BaseDirectIngestControllerTests):
         add_incarceration_period_to_person(
             person=person_1,
             state_code=_REGION_CODE_UPPER,
-            incarceration_sentence=incarceration_sentence,
             external_id="00000001-2",
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             admission_date=datetime.date(year=2015, month=9, day=20),
@@ -248,7 +239,6 @@ class TestUsMeController(BaseDirectIngestControllerTests):
         add_incarceration_period_to_person(
             person=person_1,
             state_code=_REGION_CODE_UPPER,
-            incarceration_sentence=incarceration_sentence,
             external_id="00000001-3",
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             admission_date=datetime.date(year=2016, month=9, day=20),
@@ -270,7 +260,6 @@ class TestUsMeController(BaseDirectIngestControllerTests):
         add_incarceration_period_to_person(
             person=person_1,
             state_code=_REGION_CODE_UPPER,
-            incarceration_sentence=incarceration_sentence,
             external_id="00000001-4",
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             admission_date=datetime.date(year=2016, month=9, day=20),
@@ -291,7 +280,6 @@ class TestUsMeController(BaseDirectIngestControllerTests):
         add_incarceration_period_to_person(
             person=person_1,
             state_code=_REGION_CODE_UPPER,
-            incarceration_sentence=incarceration_sentence,
             external_id="00000001-5",
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             admission_date=datetime.date(year=2016, month=9, day=20),
@@ -312,7 +300,6 @@ class TestUsMeController(BaseDirectIngestControllerTests):
         add_incarceration_period_to_person(
             person=person_1,
             state_code=_REGION_CODE_UPPER,
-            incarceration_sentence=incarceration_sentence,
             external_id="00000001-6",
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             admission_date=datetime.date(year=2016, month=9, day=20),

@@ -45,7 +45,6 @@ class UsMoMatchingDelegate(BaseStateMatchingDelegate):
         )
         move_periods_onto_sentences_by_date(
             matched_persons,
-            period_filter=schema.StateSupervisionPeriod,
             field_index=self.field_index,
         )
 

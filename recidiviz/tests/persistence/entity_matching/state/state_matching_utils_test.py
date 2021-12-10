@@ -400,14 +400,8 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
 
     def test_getRootEntity_allPlaceholders_raises(self) -> None:
         placeholder_incarceration_period = schema.StateIncarcerationPeriod()
-        placeholder_incarceration_sentence = schema.StateIncarcerationSentence(
-            incarceration_periods=[placeholder_incarceration_period]
-        )
-        placeholder_sentence_group = schema.StateSentenceGroup(
-            incarceration_sentences=[placeholder_incarceration_sentence]
-        )
         placeholder_person = schema.StatePerson(
-            sentence_groups=[placeholder_sentence_group]
+            incarceration_periods=[placeholder_incarceration_period]
         )
         with self.assertRaises(EntityMatchingError):
             get_root_entity_cls([placeholder_person], field_index=self.field_index)

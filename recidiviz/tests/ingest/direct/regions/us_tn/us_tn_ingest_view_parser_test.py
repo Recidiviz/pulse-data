@@ -39,7 +39,6 @@ from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.entity.state.entities import (
     StateAgent,
     StateIncarcerationPeriod,
-    StateIncarcerationSentence,
     StatePerson,
     StatePersonEthnicity,
     StatePersonExternalId,
@@ -178,37 +177,24 @@ class UsTnIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         state_code="US_TN", external_id="00000002", id_type="US_TN_DOC"
                     )
                 ],
-                sentence_groups=[
-                    StateSentenceGroup(
+                incarceration_periods=[
+                    StateIncarcerationPeriod(
+                        external_id="00000002-2",
                         state_code="US_TN",
-                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                        incarceration_sentences=[
-                            StateIncarcerationSentence(
-                                state_code="US_TN",
-                                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                                incarceration_type=StateIncarcerationType.STATE_PRISON,
-                                incarceration_periods=[
-                                    StateIncarcerationPeriod(
-                                        external_id="00000002-2",
-                                        state_code="US_TN",
-                                        status=StateIncarcerationPeriodStatus.IN_CUSTODY,
-                                        status_raw_text=None,
-                                        incarceration_type=StateIncarcerationType.STATE_PRISON,
-                                        incarceration_type_raw_text=None,
-                                        admission_date=datetime.date(2021, 6, 20),
-                                        release_date=None,
-                                        county_code=None,
-                                        facility="088",
-                                        custodial_authority=StateCustodialAuthority.COURT,
-                                        custodial_authority_raw_text="JA",
-                                        admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-                                        admission_reason_raw_text="CTFA-NEWAD",
-                                        release_reason=None,
-                                        release_reason_raw_text="NONE-NONE",
-                                    )
-                                ],
-                            )
-                        ],
+                        status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+                        status_raw_text=None,
+                        incarceration_type=StateIncarcerationType.STATE_PRISON,
+                        incarceration_type_raw_text=None,
+                        admission_date=datetime.date(2021, 6, 20),
+                        release_date=None,
+                        county_code=None,
+                        facility="088",
+                        custodial_authority=StateCustodialAuthority.COURT,
+                        custodial_authority_raw_text="JA",
+                        admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+                        admission_reason_raw_text="CTFA-NEWAD",
+                        release_reason=None,
+                        release_reason_raw_text="NONE-NONE",
                     )
                 ],
             ),
@@ -220,36 +206,23 @@ class UsTnIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         state_code="US_TN", external_id="00000003", id_type="US_TN_DOC"
                     )
                 ],
-                sentence_groups=[
-                    StateSentenceGroup(
+                incarceration_periods=[
+                    StateIncarcerationPeriod(
+                        external_id="00000003-1",
                         state_code="US_TN",
-                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                        incarceration_sentences=[
-                            StateIncarcerationSentence(
-                                state_code="US_TN",
-                                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                                incarceration_type=StateIncarcerationType.STATE_PRISON,
-                                incarceration_periods=[
-                                    StateIncarcerationPeriod(
-                                        external_id="00000003-1",
-                                        state_code="US_TN",
-                                        incarceration_type=StateIncarcerationType.STATE_PRISON,
-                                        status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                                        status_raw_text=None,
-                                        admission_date=datetime.date(2010, 2, 5),
-                                        release_date=datetime.date(2010, 2, 26),
-                                        county_code=None,
-                                        facility="79A",
-                                        custodial_authority=StateCustodialAuthority.COURT,
-                                        custodial_authority_raw_text="JA",
-                                        admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
-                                        admission_reason_raw_text="PAFA-VIOLW",
-                                        release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
-                                        release_reason_raw_text="FAFA-JAILT",
-                                    )
-                                ],
-                            )
-                        ],
+                        incarceration_type=StateIncarcerationType.STATE_PRISON,
+                        status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                        status_raw_text=None,
+                        admission_date=datetime.date(2010, 2, 5),
+                        release_date=datetime.date(2010, 2, 26),
+                        county_code=None,
+                        facility="79A",
+                        custodial_authority=StateCustodialAuthority.COURT,
+                        custodial_authority_raw_text="JA",
+                        admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+                        admission_reason_raw_text="PAFA-VIOLW",
+                        release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+                        release_reason_raw_text="FAFA-JAILT",
                     )
                 ],
             ),
@@ -261,36 +234,23 @@ class UsTnIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         state_code="US_TN", external_id="00000003", id_type="US_TN_DOC"
                     )
                 ],
-                sentence_groups=[
-                    StateSentenceGroup(
+                incarceration_periods=[
+                    StateIncarcerationPeriod(
+                        external_id="00000003-2",
                         state_code="US_TN",
-                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                        incarceration_sentences=[
-                            StateIncarcerationSentence(
-                                state_code="US_TN",
-                                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                                incarceration_type=StateIncarcerationType.STATE_PRISON,
-                                incarceration_periods=[
-                                    StateIncarcerationPeriod(
-                                        external_id="00000003-2",
-                                        state_code="US_TN",
-                                        status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                                        incarceration_type=StateIncarcerationType.STATE_PRISON,
-                                        status_raw_text=None,
-                                        admission_date=datetime.date(2010, 2, 26),
-                                        release_date=datetime.date(2010, 4, 6),
-                                        county_code=None,
-                                        facility="WTSP",
-                                        custodial_authority=StateCustodialAuthority.STATE_PRISON,
-                                        custodial_authority_raw_text="IN",
-                                        admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
-                                        admission_reason_raw_text="FAFA-JAILT",
-                                        release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
-                                        release_reason_raw_text="PAFA-PAVOK",
-                                    )
-                                ],
-                            )
-                        ],
+                        status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                        incarceration_type=StateIncarcerationType.STATE_PRISON,
+                        status_raw_text=None,
+                        admission_date=datetime.date(2010, 2, 26),
+                        release_date=datetime.date(2010, 4, 6),
+                        county_code=None,
+                        facility="WTSP",
+                        custodial_authority=StateCustodialAuthority.STATE_PRISON,
+                        custodial_authority_raw_text="IN",
+                        admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+                        admission_reason_raw_text="FAFA-JAILT",
+                        release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+                        release_reason_raw_text="PAFA-PAVOK",
                     )
                 ],
             ),
@@ -302,36 +262,23 @@ class UsTnIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         state_code="US_TN", external_id="00000003", id_type="US_TN_DOC"
                     )
                 ],
-                sentence_groups=[
-                    StateSentenceGroup(
+                incarceration_periods=[
+                    StateIncarcerationPeriod(
+                        external_id="00000003-3",
                         state_code="US_TN",
-                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                        incarceration_sentences=[
-                            StateIncarcerationSentence(
-                                state_code="US_TN",
-                                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                                incarceration_type=StateIncarcerationType.STATE_PRISON,
-                                incarceration_periods=[
-                                    StateIncarcerationPeriod(
-                                        external_id="00000003-3",
-                                        state_code="US_TN",
-                                        status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                                        incarceration_type=StateIncarcerationType.STATE_PRISON,
-                                        status_raw_text=None,
-                                        admission_date=datetime.date(2010, 4, 6),
-                                        release_date=datetime.date(2010, 11, 4),
-                                        county_code=None,
-                                        facility="WTSP",
-                                        custodial_authority=StateCustodialAuthority.STATE_PRISON,
-                                        custodial_authority_raw_text="IN",
-                                        admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
-                                        admission_reason_raw_text="PAFA-PAVOK",
-                                        release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_TO_SUPERVISION,
-                                        release_reason_raw_text="FAPA-RELEL",
-                                    )
-                                ],
-                            )
-                        ],
+                        status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                        incarceration_type=StateIncarcerationType.STATE_PRISON,
+                        status_raw_text=None,
+                        admission_date=datetime.date(2010, 4, 6),
+                        release_date=datetime.date(2010, 11, 4),
+                        county_code=None,
+                        facility="WTSP",
+                        custodial_authority=StateCustodialAuthority.STATE_PRISON,
+                        custodial_authority_raw_text="IN",
+                        admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
+                        admission_reason_raw_text="PAFA-PAVOK",
+                        release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_TO_SUPERVISION,
+                        release_reason_raw_text="FAPA-RELEL",
                     )
                 ],
             ),
@@ -345,11 +292,7 @@ class UsTnIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
         manifest_ast = self._parse_manifest("OffenderMovementIncarcerationPeriod")
         enum_parser_manifest = (
             # Drill down to get admission reasons.
-            manifest_ast.field_manifests["sentence_groups"]
-            .child_manifests[0]  # type: ignore[attr-defined]
-            .field_manifests["incarceration_sentences"]
-            .child_manifests[0]  # type: ignore[attr-defined]
-            .field_manifests["incarceration_periods"]
+            manifest_ast.field_manifests["incarceration_periods"]
             .child_manifests[0]  # type: ignore[attr-defined]
             .field_manifests["admission_reason"]
         )
@@ -361,11 +304,7 @@ class UsTnIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
         manifest_ast = self._parse_manifest("OffenderMovementIncarcerationPeriod")
         enum_parser_manifest = (
             # Drill down to get release reasons.
-            manifest_ast.field_manifests["sentence_groups"]
-            .child_manifests[0]  # type: ignore[attr-defined]
-            .field_manifests["incarceration_sentences"]
-            .child_manifests[0]  # type: ignore[attr-defined]
-            .field_manifests["incarceration_periods"]
+            manifest_ast.field_manifests["incarceration_periods"]
             .child_manifests[0]  # type: ignore[attr-defined]
             .field_manifests["release_reason"]
         )

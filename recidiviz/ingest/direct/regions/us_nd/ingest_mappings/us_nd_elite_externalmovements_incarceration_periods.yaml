@@ -22,188 +22,179 @@ output:
               $args:
                 dec_str: offender_book_id
           id_type: $literal("US_ND_ELITE_BOOKING")
-    sentence_groups:
-      - StateSentenceGroup:
+    incarceration_periods:
+      - StateIncarcerationPeriod:
           external_id:
-            $custom:
-              $function: us_nd_custom_parsers.decimal_str_as_int_str
-              $args:
-                dec_str: offender_book_id
-          incarceration_sentences:
-            - StateIncarcerationSentence:
-                incarceration_periods:
-                  - StateIncarcerationPeriod:
-                      external_id:
-                        $concat:
-                          $values:
-                            - $custom:
-                                $function: us_nd_custom_parsers.decimal_str_as_int_str
-                                $args:
-                                  dec_str: offender_book_id
-                            - period_sequence
-                      admission_date: admission_date
-                      release_date: release_date
-                      facility: facility
-                      incarceration_type:
-                        $enum_mapping:
-                          $raw_text: facility
-                          $mappings:
-                            StateIncarcerationType.COUNTY_JAIL:
-                              - CJ
-                              - DEFP
-                              # There are only a few of these, and they seem to
-                              # represent judicial districts in ND
-                              - NW
-                              - SC
-                              - SW
-                            StateIncarcerationType.EXTERNAL_UNKNOWN:
-                            # Could be a county jail or another state's facility
-                              - NTAD
-                            StateIncarcerationType.STATE_PRISON:
-                              - BTC
-                              - CONT
-                              - CPP
-                              - DWCRC
-                              - FTPFAR
-                              - FTPMND
-                              - GFC
-                              - HACTC
-                              - HRCC
-                              - INACT
-                              - JRCC
-                              - LRRP
-                              - MRCC
-                              - MTPFAR
-                              - MTPMDN
-                              - MTPMND
-                              - NCCRC
-                              - NDSP
-                              - OOS
-                              - OUT
-                              - PREA
-                              - PROB
-                              - TRC
-                              - TRCC
-                              - TRN
-                              - YCC
-                      custodial_authority:
-                        $enum_mapping:
-                          $raw_text:
-                            $concat:
-                              $values:
-                                - facility
-                                - $conditional:
-                                    - $if:
-                                        $not_null: admission_date
-                                      $then: admission_date
-                                    - $else: release_date
-                          $custom_parser: us_nd_custom_enum_parsers.custodial_authority_from_facility_and_dates
-                      specialized_purpose_for_incarceration:
-                        $enum_mapping:
-                          $raw_text:
-                            $concat:
-                              $values:
-                                - facility
-                                - $conditional:
-                                    - $if:
-                                        $not_null: admission_date
-                                      $then: admission_date
-                                    - $else: release_date
-                          $custom_parser: us_nd_custom_enum_parsers.pfi_from_facility_and_dates
-                      admission_reason:
-                        $enum_mapping:
-                          $raw_text: admission_reason_code
-                          $ignore:
-                            - COM
-                            - CONT
-                            - CONV
-                            - NTAD
-                          $mappings:
-                            StateIncarcerationPeriodAdmissionReason.ADMITTED_IN_ERROR:
-                              - ADM ERROR
-                            StateIncarcerationPeriodAdmissionReason.EXTERNAL_UNKNOWN:
-                              - OTHER
-                              - PREA
-                            StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION:
-                              - ADMN
-                              - RAB
-                              - DEF
-                            StateIncarcerationPeriodAdmissionReason.REVOCATION:
-                              # Parole revocations
-                              - PARL
-                              - PV
-                              # Probation revocations
-                              - NPRB
-                              - NPROB
-                              - PRB
-                              - RPRB
-                            StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE:
-                              - REC
-                              - RECA
-                            StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE:
-                              - READMN
-                            StateIncarcerationPeriodAdmissionReason.TRANSFER:
-                              - CONF
-                              - CRT
-                              - DETOX
-                              - FED
-                              - HOSP
-                              - HOSPS
-                              - HOSPU
-                              - INT
-                              - JOB
-                              - MED
-                              - PROG
-                              - RB
-                              - SUPL
-                            StateIncarcerationPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION:
-                              - OOS
-                      release_reason:
-                        $enum_mapping:
-                          $raw_text: release_reason_code
-                          $ignore:
-                            - ADMN
-                            - CONT
-                            - CONV
-                            - REC
-                            - "4139"
-                          $mappings:
-                            StateIncarcerationPeriodReleaseReason.ESCAPE:
-                              - ESC
-                              - ESCP
-                              - ABSC
-                            StateIncarcerationPeriodReleaseReason.RELEASED_IN_ERROR:
-                              - ERR
-                            StateIncarcerationPeriodReleaseReason.EXTERNAL_UNKNOWN:
-                              - OTHER
-                            StateIncarcerationPeriodReleaseReason.COMMUTED:
-                              - CMM
-                            StateIncarcerationPeriodReleaseReason.COMPASSIONATE:
-                              - COM
-                            StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE:
-                              - PARL
-                              - PRB
-                              - PV
-                              - RPAR
-                              - RPRB
-                            StateIncarcerationPeriodReleaseReason.COURT_ORDER:
-                              - CO
-                            StateIncarcerationPeriodReleaseReason.DEATH:
-                              - DECE
-                            StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED:
-                              - XSNT
-                            StateIncarcerationPeriodReleaseReason.TRANSFER:
-                              - CONF
-                              - CRT
-                              - DETOX
-                              - HOSP
-                              - HOSPS
-                              - HOSPU
-                              - INT
-                              - JOB
-                              - MED
-                              - PROG
-                              - RB
-                              - SUPL
-                            StateIncarcerationPeriodReleaseReason.TRANSFER_TO_OTHER_JURISDICTION:
-                              - TRN
+            $concat:
+              $values:
+                - $custom:
+                    $function: us_nd_custom_parsers.decimal_str_as_int_str
+                    $args:
+                      dec_str: offender_book_id
+                - period_sequence
+          admission_date: admission_date
+          release_date: release_date
+          facility: facility
+          incarceration_type:
+            $enum_mapping:
+              $raw_text: facility
+              $mappings:
+                StateIncarcerationType.COUNTY_JAIL:
+                  - CJ
+                  - DEFP
+                  # There are only a few of these, and they seem to
+                  # represent judicial districts in ND
+                  - NW
+                  - SC
+                  - SW
+                StateIncarcerationType.EXTERNAL_UNKNOWN:
+                # Could be a county jail or another state's facility
+                  - NTAD
+                StateIncarcerationType.STATE_PRISON:
+                  - BTC
+                  - CONT
+                  - CPP
+                  - DWCRC
+                  - FTPFAR
+                  - FTPMND
+                  - GFC
+                  - HACTC
+                  - HRCC
+                  - INACT
+                  - JRCC
+                  - LRRP
+                  - MRCC
+                  - MTPFAR
+                  - MTPMDN
+                  - MTPMND
+                  - NCCRC
+                  - NDSP
+                  - OOS
+                  - OUT
+                  - PREA
+                  - PROB
+                  - TRC
+                  - TRCC
+                  - TRN
+                  - YCC
+          custodial_authority:
+            $enum_mapping:
+              $raw_text:
+                $concat:
+                  $values:
+                    - facility
+                    - $conditional:
+                        - $if:
+                            $not_null: admission_date
+                          $then: admission_date
+                        - $else: release_date
+              $custom_parser: us_nd_custom_enum_parsers.custodial_authority_from_facility_and_dates
+          specialized_purpose_for_incarceration:
+            $enum_mapping:
+              $raw_text:
+                $concat:
+                  $values:
+                    - facility
+                    - $conditional:
+                        - $if:
+                            $not_null: admission_date
+                          $then: admission_date
+                        - $else: release_date
+              $custom_parser: us_nd_custom_enum_parsers.pfi_from_facility_and_dates
+          admission_reason:
+            $enum_mapping:
+              $raw_text: admission_reason_code
+              $ignore:
+                - COM
+                - CONT
+                - CONV
+                - NTAD
+              $mappings:
+                StateIncarcerationPeriodAdmissionReason.ADMITTED_IN_ERROR:
+                  - ADM ERROR
+                StateIncarcerationPeriodAdmissionReason.EXTERNAL_UNKNOWN:
+                  - OTHER
+                  - PREA
+                StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION:
+                  - ADMN
+                  - RAB
+                  - DEF
+                StateIncarcerationPeriodAdmissionReason.REVOCATION:
+                  # Parole revocations
+                  - PARL
+                  - PV
+                  # Probation revocations
+                  - NPRB
+                  - NPROB
+                  - PRB
+                  - RPRB
+                StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE:
+                  - REC
+                  - RECA
+                StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE:
+                  - READMN
+                StateIncarcerationPeriodAdmissionReason.TRANSFER:
+                  - CONF
+                  - CRT
+                  - DETOX
+                  - FED
+                  - HOSP
+                  - HOSPS
+                  - HOSPU
+                  - INT
+                  - JOB
+                  - MED
+                  - PROG
+                  - RB
+                  - SUPL
+                StateIncarcerationPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION:
+                  - OOS
+          release_reason:
+            $enum_mapping:
+              $raw_text: release_reason_code
+              $ignore:
+                - ADMN
+                - CONT
+                - CONV
+                - REC
+                - "4139"
+              $mappings:
+                StateIncarcerationPeriodReleaseReason.ESCAPE:
+                  - ESC
+                  - ESCP
+                  - ABSC
+                StateIncarcerationPeriodReleaseReason.RELEASED_IN_ERROR:
+                  - ERR
+                StateIncarcerationPeriodReleaseReason.EXTERNAL_UNKNOWN:
+                  - OTHER
+                StateIncarcerationPeriodReleaseReason.COMMUTED:
+                  - CMM
+                StateIncarcerationPeriodReleaseReason.COMPASSIONATE:
+                  - COM
+                StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE:
+                  - PARL
+                  - PRB
+                  - PV
+                  - RPAR
+                  - RPRB
+                StateIncarcerationPeriodReleaseReason.COURT_ORDER:
+                  - CO
+                StateIncarcerationPeriodReleaseReason.DEATH:
+                  - DECE
+                StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED:
+                  - XSNT
+                StateIncarcerationPeriodReleaseReason.TRANSFER:
+                  - CONF
+                  - CRT
+                  - DETOX
+                  - HOSP
+                  - HOSPS
+                  - HOSPU
+                  - INT
+                  - JOB
+                  - MED
+                  - PROG
+                  - RB
+                  - SUPL
+                StateIncarcerationPeriodReleaseReason.TRANSFER_TO_OTHER_JURISDICTION:
+                  - TRN

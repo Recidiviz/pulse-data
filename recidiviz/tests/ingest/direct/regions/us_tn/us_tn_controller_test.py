@@ -43,7 +43,6 @@ from recidiviz.tests.ingest.direct.regions.base_direct_ingest_controller_tests i
 )
 from recidiviz.tests.ingest.direct.regions.utils import (
     add_incarceration_period_to_person,
-    add_sentence_group_to_person_and_build_incarceration_sentence,
     add_sentence_group_to_person_and_build_supervision_sentence,
     add_supervision_period_to_person,
     build_state_person_entity,
@@ -138,16 +137,9 @@ class TestUsTnController(BaseDirectIngestControllerTests):
         # OffenderMovementIncarcerationPeriod
         ######################################
 
-        incarceration_sentence_2 = (
-            add_sentence_group_to_person_and_build_incarceration_sentence(
-                _STATE_CODE_UPPER, person_2
-            )
-        )
-
         add_incarceration_period_to_person(
             person=person_2,
             state_code=_STATE_CODE_UPPER,
-            incarceration_sentence=incarceration_sentence_2,
             external_id="00000002-2",
             status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             admission_date=datetime.date(year=2021, month=6, day=20),
@@ -161,17 +153,10 @@ class TestUsTnController(BaseDirectIngestControllerTests):
             release_reason_raw_text="NONE-NONE",
         )
 
-        incarceration_sentence_3 = (
-            add_sentence_group_to_person_and_build_incarceration_sentence(
-                _STATE_CODE_UPPER, person_3
-            )
-        )
-
         # Person 3 moves from parole to facility.
         add_incarceration_period_to_person(
             person=person_3,
             state_code=_STATE_CODE_UPPER,
-            incarceration_sentence=incarceration_sentence_3,
             external_id="00000003-1",
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             admission_date=datetime.date(year=2010, month=2, day=5),
@@ -188,7 +173,6 @@ class TestUsTnController(BaseDirectIngestControllerTests):
         add_incarceration_period_to_person(
             person=person_3,
             state_code=_STATE_CODE_UPPER,
-            incarceration_sentence=incarceration_sentence_3,
             external_id="00000003-2",
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             admission_date=datetime.date(year=2010, month=2, day=26),
@@ -205,7 +189,6 @@ class TestUsTnController(BaseDirectIngestControllerTests):
         add_incarceration_period_to_person(
             person=person_3,
             state_code=_STATE_CODE_UPPER,
-            incarceration_sentence=incarceration_sentence_3,
             external_id="00000003-3",
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             admission_date=datetime.date(year=2010, month=4, day=6),
