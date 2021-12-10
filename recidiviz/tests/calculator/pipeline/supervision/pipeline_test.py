@@ -326,14 +326,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
         )
 
-        incarceration_sentence_incarceration_period_association = [
-            {
-                "incarceration_period_id": ip.incarceration_period_id,
-                "incarceration_sentence_id": incarceration_sentence.incarceration_sentence_id,
-            }
-            for ip in incarceration_sentence.incarceration_periods
-        ]
-
         charge = database_test_utils.generate_test_charge(
             person_id=fake_person_id,
             charge_id=1234523,
@@ -499,7 +491,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             schema.StateIncarcerationSentence.__tablename__: incarceration_sentences_data,
             schema.StateCharge.__tablename__: charge_data,
             schema.state_supervision_sentence_supervision_period_association_table.name: [],
-            schema.state_incarceration_sentence_incarceration_period_association_table.name: incarceration_sentence_incarceration_period_association,
             schema.StateAssessment.__tablename__: assessment_data,
             schema.StateSupervisionContact.__tablename__: supervision_contact_data,
             "supervision_period_to_agent_association": supervision_period_to_agent_data,

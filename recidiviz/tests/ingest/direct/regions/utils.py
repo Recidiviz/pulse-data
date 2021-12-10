@@ -199,7 +199,6 @@ def add_external_id_to_person(
 def add_incarceration_period_to_person(
     person: entities.StatePerson,
     state_code: str,
-    incarceration_sentence: entities.StateIncarcerationSentence,
     external_id: str,
     status: StateIncarcerationPeriodStatus,
     admission_date: datetime.date,
@@ -237,13 +236,12 @@ def add_incarceration_period_to_person(
         release_reason=release_reason,
         release_reason_raw_text=release_reason_raw_text,
         person=person,
-        incarceration_sentences=[incarceration_sentence],
         incarceration_type_raw_text=incarceration_type_raw_text,
         specialized_purpose_for_incarceration=specialized_purpose_for_incarceration,
         specialized_purpose_for_incarceration_raw_text=specialized_purpose_for_incarceration_raw_text,
     )
 
-    incarceration_sentence.incarceration_periods.append(incarceration_period)
+    person.incarceration_periods.append(incarceration_period)
 
 
 def add_supervision_period_to_person(

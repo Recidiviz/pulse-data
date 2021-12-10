@@ -10,12 +10,9 @@ primary_key:
 
 ancestor_keys:
   control_number: state_person.state_person_id
-  inmate_number: state_sentence_group.state_sentence_group_id
-
-enforced_ancestor_types:
-  state_sentence: state_incarceration_sentence
 
 keys_to_ignore:
   - start_status_code                   # Period start reason - handled manually in the controller
   - end_status_code                     # Period end reason - handled manually in the controller
   - start_is_new_act_122_admission      # Whether or not an admission to an Act 122 program occurred - handled manually in the controller
+  - inmate_number                       # Unused - another external ID for the person

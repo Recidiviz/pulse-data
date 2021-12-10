@@ -4,8 +4,6 @@ key_mappings:
 child_key_mappings:
   docno: state_person_external_id.state_person_external_id_id
 
-  incrno: state_sentence_group.state_sentence_group_id
-
   end_date: state_incarceration_period.release_date
   fac_ldesc: state_incarceration_period.facility
   next_fac_typ: state_incarceration_period.release_reason
@@ -17,9 +15,6 @@ child_key_mappings:
 primary_key:
   docno: state_person.state_person_id
 
-enforced_ancestor_types:
-  state_sentence: state_incarceration_sentence
-
 keys_to_ignore:
   - loc_ldesc               # Location name, used sometimes in place of fac_ldesc - handled manually in controller.
   - next_loc_ldesc          # Next location name, used sometimes to augment next_fac_typ - handled manually in
@@ -30,3 +25,4 @@ keys_to_ignore:
   - loc_cd                  # Unused - location code - analogous to loc_ldesc
   - next_fac_cd             # Unused - next facility code
   - prev_fac_cd             # Unused - previous facility code
+  - incrno                  # Unused - leftover from when we connected this period to StateSentenceGroup entities

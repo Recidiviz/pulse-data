@@ -120,6 +120,8 @@ class TestIngestInfo(unittest.TestCase):
             "supervising_officer",
             "state_sentence_group_ids",
             "state_sentence_groups",
+            "state_incarceration_period_ids",
+            "state_incarceration_periods",
         ]
         assessment_fields_ignore = ["conducting_agent_id", "conducting_agent"]
         sentence_group_fields_ignore = [
@@ -131,8 +133,6 @@ class TestIngestInfo(unittest.TestCase):
         supervision_sentence_fields_ignore = [
             "state_charge_ids",
             "state_charges",
-            "state_incarceration_period_ids",
-            "state_incarceration_periods",
             "state_supervision_period_ids",
             "state_supervision_periods",
             "state_early_discharge_ids",
@@ -141,8 +141,6 @@ class TestIngestInfo(unittest.TestCase):
         incarceration_sentence_fields_ignore = [
             "state_charge_ids",
             "state_charges",
-            "state_incarceration_period_ids",
-            "state_incarceration_periods",
             "state_supervision_period_ids",
             "state_supervision_periods",
             "state_early_discharge_ids",

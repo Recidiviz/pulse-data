@@ -197,6 +197,7 @@ message StatePerson {
     repeated string state_person_external_ids_ids = 15;
     repeated string state_assessment_ids = 16;
     repeated string state_sentence_group_ids = 17;
+    repeated string state_incarceration_period_ids = 24;
     repeated string state_program_assignment_ids = 18;
     repeated string state_incarceration_incident_ids = 21;
     repeated string state_supervision_violation_ids = 22;
@@ -275,7 +276,6 @@ message StateSupervisionSentence {
     optional string max_length = 11;
 
     repeated string state_charge_ids = 12;
-    repeated string state_incarceration_period_ids = 13;
     repeated string state_supervision_period_ids = 14;
     repeated string state_early_discharge_ids = 15;
 }
@@ -302,7 +302,6 @@ message StateIncarcerationSentence {
     optional string earned_time = 19;
 
     repeated string state_charge_ids = 20;
-    repeated string state_incarceration_period_ids = 21;
     repeated string state_supervision_period_ids = 22;
     repeated string state_early_discharge_ids = 23;
 }
