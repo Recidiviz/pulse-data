@@ -19,13 +19,14 @@ import datetime
 import logging
 import re
 import unittest
-from typing import Any, Dict, Iterator, List, Optional, Sequence, Tuple, Type
+from typing import Dict, Iterable, Iterator, List, Optional, Sequence, Tuple, Type
 
 import attr
 import pandas as pd
 import pytest
 import sqlalchemy
 from google.cloud import bigquery
+from pandas._testing import assert_frame_equal
 from sqlalchemy.engine import Engine, create_engine
 from sqlalchemy.orm.session import close_all_sessions
 from sqlalchemy.sql import sqltypes
@@ -39,6 +40,12 @@ from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager i
     DirectIngestRawFileConfig,
     augment_raw_data_df_with_metadata_columns,
 )
+from recidiviz.ingest.direct.controllers.direct_ingest_view_collector import (
+    DirectIngestPreProcessedIngestViewCollector,
+)
+from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
+    GcsfsDirectIngestFileType,
+)
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
     UPDATE_DATETIME_PARAM_NAME,
     DirectIngestPreProcessedIngestView,
@@ -46,7 +53,10 @@ from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
     RawTableViewType,
 )
 from recidiviz.persistence.database.session import Session
+from recidiviz.tests.ingest.direct.fixture_util import direct_ingest_fixture_path
 from recidiviz.tools.postgres import local_postgres_helpers
+from recidiviz.utils import csv
+from recidiviz.utils.regions import get_region
 from recidiviz.utils.string import StrictStringFormatter
 
 
@@ -79,8 +89,11 @@ class MockTableSchema:
         return cls(data_types)
 
     @classmethod
+    # TODO(#10301) Remove `include_documented_columns_only` once all raw data fixtures only reference the latest columns.
     def from_raw_file_config(
-        cls, config: DirectIngestRawFileConfig
+        cls,
+        config: DirectIngestRawFileConfig,
+        include_documented_columns_only: bool = False,
     ) -> "MockTableSchema":
         return cls(
             {
@@ -89,6 +102,8 @@ class MockTableSchema:
                 # a query like "SELECT MyCol FROM table;" finds the column "mycol".
                 column.name.lower(): sqltypes.String
                 for column in config.columns
+                if (include_documented_columns_only and column.description)
+                or not include_documented_columns_only
             }
         )
 
@@ -248,6 +263,76 @@ class BaseViewTest(unittest.TestCase):
             cls.temp_db_dir
         )
 
+    @staticmethod
+    def view_builder_for_tag(
+        region_code: str, ingest_view_file_tag: str
+    ) -> DirectIngestPreProcessedIngestViewBuilder:
+        return DirectIngestPreProcessedIngestViewCollector(
+            get_region(region_code, is_direct_ingest=True), []
+        ).get_view_builder_by_file_tag(ingest_view_file_tag)
+
+    def run_ingest_view_test(
+        self,
+        region_code: str,
+        view_builder: DirectIngestPreProcessedIngestViewBuilder,
+        expected_output_fixture_file_name: str,
+    ) -> None:
+        """Reads in the expected output CSV file from the ingest view fixture path and asserts that the results
+        from the raw data ingest view query are equal. Prints out the dataframes for both expected rows and results."""
+        expected_output_fixture_path = direct_ingest_fixture_path(
+            region_code=region_code,
+            file_type=GcsfsDirectIngestFileType.INGEST_VIEW,
+            file_tag=view_builder.file_tag,
+            file_name=expected_output_fixture_file_name,
+        )
+        print(
+            f"Loading expected results for ingest view [{view_builder.file_tag}] from path "
+            f"[{expected_output_fixture_path}]"
+        )
+        expected_output = list(
+            csv.get_rows_as_tuples(expected_output_fixture_path, skip_header_row=False)
+        )
+        expected_columns = [column.lower() for column in expected_output.pop(0)]
+
+        results = self.query_raw_data_view_for_builder(
+            view_builder,
+            dimensions=expected_columns,
+        )
+        expected = pd.DataFrame(expected_output, columns=expected_columns)
+        expected = expected.set_index(expected_columns)
+        print("**** EXPECTED ****")
+        print(expected)
+        print("**** ACTUAL ****")
+        print(results)
+        assert_frame_equal(expected, results)
+
+    def create_mock_raw_bq_tables_from_fixtures(
+        self,
+        region_code: str,
+        ingest_view_builder: DirectIngestPreProcessedIngestViewBuilder,
+        raw_fixtures_name: str,
+    ) -> None:
+        """Loads mock raw data tables from fixture files used by the given ingest view.
+        All raw fixture files must have names matching |raw_fixtures_name|.
+        """
+        ingest_view = ingest_view_builder.build()
+        for raw_file_config in ingest_view.raw_table_dependency_configs:
+            raw_fixture_path = direct_ingest_fixture_path(
+                region_code=region_code,
+                file_type=GcsfsDirectIngestFileType.RAW_DATA,
+                file_tag=raw_file_config.file_tag,
+                file_name=raw_fixtures_name,
+            )
+            print(
+                f"Loading fixture data for raw file [{raw_file_config.file_tag}] from file path [{raw_fixture_path}]."
+            )
+            self.create_mock_raw_file(
+                region_code=region_code,
+                file_config=raw_file_config,
+                mock_data=csv.get_rows_as_tuples(raw_fixture_path),
+                include_documented_columns_only=True,
+            )
+
     def create_mock_bq_table(
         self,
         dataset_id: str,
@@ -269,10 +354,15 @@ class BaseViewTest(unittest.TestCase):
         self,
         region_code: str,
         file_config: DirectIngestRawFileConfig,
-        mock_data: Sequence[Tuple[Any, ...]],
+        mock_data: Iterable[Tuple[Optional[str], ...]],
+        # TODO(#10301) Remove `include_documented_columns_only` once all raw data fixtures only reference the latest
+        #  columns.
+        include_documented_columns_only: bool = False,
         update_datetime: datetime.datetime = DEFAULT_FILE_UPDATE_DATETIME,
     ) -> None:
-        mock_schema = MockTableSchema.from_raw_file_config(file_config)
+        mock_schema = MockTableSchema.from_raw_file_config(
+            file_config, include_documented_columns_only
+        )
 
         raw_data_df = augment_raw_data_df_with_metadata_columns(
             raw_data_df=pd.DataFrame(mock_data, columns=mock_schema.data_types.keys()),
