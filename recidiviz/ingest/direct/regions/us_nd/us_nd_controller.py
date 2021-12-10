@@ -34,7 +34,6 @@ from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentClass,
     StateAssessmentType,
 )
-from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_incident import (
     StateIncarcerationIncidentOutcomeType,
 )
@@ -80,7 +79,6 @@ from recidiviz.ingest.direct.state_shared_row_posthooks import (
     gen_set_is_life_sentence_hook,
     get_normalized_ymd_str,
 )
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.extractor.csv_data_extractor import (
     AncestorChainOverridesCallable,
     IngestFieldCoordinates,
@@ -94,7 +92,6 @@ from recidiviz.ingest.models.ingest_info import (
     StateCourtCase,
     StateIncarcerationIncident,
     StateIncarcerationIncidentOutcome,
-    StateIncarcerationPeriod,
     StateIncarcerationSentence,
     StatePerson,
     StatePersonEthnicity,
@@ -130,7 +127,6 @@ class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             "elite_offendersentenceterms": [self._normalize_id_fields],
             "elite_offenderchargestable": [self._normalize_id_fields],
             "elite_orderstable": [self._normalize_id_fields],
-            "elite_externalmovements": [self._normalize_id_fields],
         }
         self.row_post_processors_by_file: Dict[str, List[IngestRowPosthookCallable]] = {
             "elite_offenders": [copy_name_to_alias],
@@ -162,7 +158,6 @@ class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
                 ),
                 self._normalize_judicial_district_code,
             ],
-            "elite_externalmovements": [self._process_external_movement],
             "elite_offense_in_custody_and_pos_report_data": [
                 self._rationalize_incident_type,
                 self._rationalize_outcome_type,
@@ -203,7 +198,6 @@ class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             str, IngestPrimaryKeyOverrideCallable
         ] = {
             "elite_offendersentences": _generate_sentence_primary_key,
-            "elite_externalmovements": _generate_period_primary_key,
             "elite_offenderchargestable": _generate_charge_primary_key,
             "elite_offense_in_custody_and_pos_report_data": _generate_incident_primary_key,
         }
@@ -212,7 +206,6 @@ class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             str, AncestorChainOverridesCallable
         ] = {
             "elite_offenderchargestable": _state_charge_ancestor_chain_overrides,
-            "elite_externalmovements": _state_person_ancestor_chain_overrides,
             "elite_offendersentenceaggs": _state_person_ancestor_chain_overrides,
             "elite_offendersentences": _state_person_ancestor_chain_overrides,
             "elite_offendersentenceterms": _state_person_ancestor_chain_overrides,
@@ -234,17 +227,8 @@ class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             "elite_offendersentenceterms",
             "elite_offenderchargestable",
             "elite_orderstable",
+            "elite_externalmovements_incarceration_periods",
         ]
-
-        # TODO(#10152): Delete elite_externalmovements once
-        #  elite_externalmovements_incarceration_periods has shipped to prod
-        if (
-            environment.in_gcp_staging()
-            or self.ingest_instance == DirectIngestInstance.SECONDARY
-        ):
-            tags.append("elite_externalmovements_incarceration_periods")
-        else:
-            tags.append("elite_externalmovements")
 
         if not environment.in_gcp():
             # TODO(#2399): Once we are capable of handling historical and nightly ingest of
@@ -507,53 +491,6 @@ class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
                     extracted_object,
                     "state_person_external_ids",
                 )
-
-    @staticmethod
-    def _process_external_movement(
-        _gating_context: IngestGatingContext,
-        row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        """Sets admission- or release-specific fields based on whether this movement represents an admission into or a
-        release from a particular facility."""
-        direction_code = row["DIRECTION_CODE"]
-        is_admission = direction_code == "IN"
-        movement_date = row["MOVEMENT_DATE"]
-        movement_reason = row["MOVEMENT_REASON_CODE"]
-        to_facility = row["TO_AGY_LOC_ID"]
-        from_facility = row["FROM_AGY_LOC_ID"]
-        active_flag = row["ACTIVE_FLAG"]
-
-        # TODO(#2002): If this edge is a transfer in or out of a hospital or other non-prison facility, create extra
-        #  proper edges in and out of those facilities.
-        for extracted_object in extracted_objects:
-            if isinstance(extracted_object, StateIncarcerationPeriod):
-                extracted_object.status = f"{direction_code}-{active_flag}"
-                if is_admission:
-                    extracted_object.admission_date = movement_date
-                    extracted_object.admission_reason = movement_reason
-                    extracted_object.facility = to_facility
-                else:
-                    extracted_object.release_date = movement_date
-                    extracted_object.release_reason = movement_reason
-                    extracted_object.facility = from_facility
-
-                if extracted_object.facility:
-                    facility = extracted_object.facility.upper()
-                    if facility == "NTAD":
-                        # Could be a county jail or another state's facility
-                        extracted_object.incarceration_type = (
-                            StateIncarcerationType.EXTERNAL_UNKNOWN.value
-                        )
-                    elif facility == "CJ":
-                        extracted_object.incarceration_type = (
-                            StateIncarcerationType.COUNTY_JAIL.value
-                        )
-                    elif facility == "DEFP":
-                        extracted_object.incarceration_type = (
-                            StateIncarcerationType.COUNTY_JAIL.value
-                        )
 
     @staticmethod
     def _enrich_addresses(
@@ -938,16 +875,6 @@ def _generate_incident_id(row: Dict[str, str]) -> str:
     person_incident_id = row["OIC_INCIDENT_ID"]
 
     return "-".join([overall_incident_id, person_incident_id])
-
-
-def _generate_period_primary_key(
-    _gating_context: IngestGatingContext, row: Dict[str, str]
-) -> IngestFieldCoordinates:
-    return IngestFieldCoordinates(
-        "state_incarceration_period",
-        "state_incarceration_period_id",
-        _generate_period_id(row),
-    )
 
 
 def _generate_period_id(row: Dict[str, str]) -> str:
