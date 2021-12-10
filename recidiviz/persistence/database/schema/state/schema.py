@@ -248,14 +248,6 @@ state_person_alias_type = Enum(
     name="state_person_alias_type",
 )
 
-state_incarceration_period_status = Enum(
-    enum_strings.external_unknown,
-    state_enum_strings.state_incarceration_period_status_in_custody,
-    state_enum_strings.state_incarceration_period_status_not_in_custody,
-    enum_strings.present_without_info,
-    name="state_incarceration_period_status",
-)
-
 state_incarceration_facility_security_level = Enum(
     state_enum_strings.state_incarceration_facility_security_level_maximum,
     state_enum_strings.state_incarceration_facility_security_level_medium,
@@ -2121,14 +2113,6 @@ class _StateIncarcerationPeriodSharedColumns(_ReferencesStatePersonSharedColumns
         comment=StrictStringFormatter().format(
             EXTERNAL_ID_COMMENT_TEMPLATE, object_name="StateIncarcerationPeriod"
         ),
-    )
-    status = Column(
-        state_incarceration_period_status,
-        nullable=False,
-        comment="The current status of this incarceration period.",
-    )
-    status_raw_text = Column(
-        String(255), comment="The raw text value of the incarceration period status."
     )
     incarceration_type = Column(
         state_incarceration_type,

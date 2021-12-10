@@ -33,7 +33,6 @@ from recidiviz.common.constants.state.state_incarceration import StateIncarcerat
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
-    StateIncarcerationPeriodStatus,
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_person_alias import StatePersonAliasType
@@ -803,7 +802,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
     ) -> None:
         ip_110035_19890901_1_0 = StateIncarcerationPeriod(
             state_incarceration_period_id="110035-19890901-1-0",
-            status="NOT_IN_CUSTODY",
             admission_date="19890901",
             admission_reason="10I1000",
             release_date="19921006",
@@ -812,7 +810,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
         )
         ip_110035_19890901_3_0 = StateIncarcerationPeriod(
             state_incarceration_period_id="110035-19890901-3-0",
-            status="NOT_IN_CUSTODY",
             admission_date="19930701",
             admission_reason="40I1060",
             release_date="19931102",
@@ -821,7 +818,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
         )
         ip_110035_19890901_5_0 = StateIncarcerationPeriod(
             state_incarceration_period_id="110035-19890901-5-0",
-            status="NOT_IN_CUSTODY",
             admission_date="19940609",
             admission_reason="40I1020,40I2000",
             release_date="19950206",
@@ -831,7 +827,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
 
         ip_110035_20010414_2_0 = StateIncarcerationPeriod(
             state_incarceration_period_id="110035-20010414-2-0",
-            status="NOT_IN_CUSTODY",
             admission_date="20010420",
             admission_reason="40I2000,50N1010",
             release_date="20121102",
@@ -840,7 +835,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
         )
         ip_110035_20010414_4_0 = StateIncarcerationPeriod(
             state_incarceration_period_id="110035-20010414-4-0",
-            status="NOT_IN_CUSTODY",
             admission_date="20130521",
             admission_reason="45O0050,40I0050",
             release_date="20131127",
@@ -849,7 +843,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
         )
         ip_110035_20010414_7_0 = StateIncarcerationPeriod(
             state_incarceration_period_id="110035-20010414-7-0",
-            status="NOT_IN_CUSTODY",
             admission_date="20160328",
             admission_reason="45O0050,65N9999,40I1010",
             release_date="20160428",
@@ -858,7 +851,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
         )
         ip_110035_20010414_7_3 = StateIncarcerationPeriod(
             state_incarceration_period_id="110035-20010414-7-3",
-            status="NOT_IN_CUSTODY",
             admission_date="20160428",
             admission_reason="50N1010",
             release_date="20161011",
@@ -895,7 +887,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
                     state_incarceration_periods=[
                         StateIncarcerationPeriod(
                             state_incarceration_period_id="310261-19890821-1-0",
-                            status="IN_CUSTODY",
                             admission_date="19900329",
                             admission_reason="10I1000",
                             specialized_purpose_for_incarceration="S",
@@ -912,7 +903,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
                     state_incarceration_periods=[
                         StateIncarcerationPeriod(
                             state_incarceration_period_id="710448-20010414-1-0",
-                            status="NOT_IN_CUSTODY",
                             admission_date="20010705",
                             admission_reason="10I1000",
                             release_date="20020117",
@@ -921,7 +911,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
                         ),
                         StateIncarcerationPeriod(
                             state_incarceration_period_id="710448-20010414-3-0",
-                            status="NOT_IN_CUSTODY",
                             admission_date="20020912",
                             admission_reason="40I1060",
                             release_date="20040928",
@@ -940,7 +929,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
                     state_incarceration_periods=[
                         StateIncarcerationPeriod(
                             state_incarceration_period_id="910324-19890825-1-0",
-                            status="NOT_IN_CUSTODY",
                             admission_date="19891023",
                             admission_reason="10I1000",
                             release_date="19890516",
@@ -959,7 +947,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
                     state_incarceration_periods=[
                         StateIncarcerationPeriod(
                             state_incarceration_period_id="523523-19890617-1-0",
-                            status="NOT_IN_CUSTODY",
                             admission_date="19890617",
                             admission_reason="10I1000",
                             release_date="20101020",
@@ -977,7 +964,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
                     state_incarceration_periods=[
                         StateIncarcerationPeriod(
                             state_incarceration_period_id="867530-19970224-1-0",
-                            status="NOT_IN_CUSTODY",
                             admission_date="19970224",
                             admission_reason="10I1000",
                             release_date="20161031",
@@ -1011,7 +997,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
                     state_incarceration_periods=[
                         StateIncarcerationPeriod(
                             state_incarceration_period_id="910324-19890825-1-0",
-                            status="NOT_IN_CUSTODY",
                             admission_date="19891023",
                             admission_reason="10I1000",
                             release_date="19890516",
@@ -1030,7 +1015,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
                     state_incarceration_periods=[
                         StateIncarcerationPeriod(
                             state_incarceration_period_id="523523-19890617-1-0",
-                            status="NOT_IN_CUSTODY",
                             admission_date="19890617",
                             admission_reason="10I1000",
                             release_date="20101020",
@@ -2458,8 +2442,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
         ip_110035_19890901_1_0 = entities.StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id="110035-19890901-1-0",
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            status_raw_text="NOT_IN_CUSTODY",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=datetime.date(year=1989, month=9, day=1),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
@@ -2475,8 +2457,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
         ip_110035_19890901_3_0 = entities.StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id="110035-19890901-3-0",
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            status_raw_text="NOT_IN_CUSTODY",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=datetime.date(year=1993, month=7, day=1),
             admission_reason=StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
@@ -2492,8 +2472,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
         ip_110035_19890901_5_0 = entities.StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id="110035-19890901-5-0",
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            status_raw_text="NOT_IN_CUSTODY",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=datetime.date(year=1994, month=6, day=9),
             admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
@@ -2515,8 +2493,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
         ip_110035_20010414_2_0 = entities.StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id="110035-20010414-2-0",
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            status_raw_text="NOT_IN_CUSTODY",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=datetime.date(year=2001, month=4, day=20),
             admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
@@ -2531,8 +2507,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
         ip_110035_20010414_4_0 = entities.StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id="110035-20010414-4-0",
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            status_raw_text="NOT_IN_CUSTODY",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=datetime.date(year=2013, month=5, day=21),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
@@ -2547,8 +2521,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
         ip_110035_20010414_7_0 = entities.StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id="110035-20010414-7-0",
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            status_raw_text="NOT_IN_CUSTODY",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=datetime.date(year=2016, month=3, day=28),
             admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
@@ -2564,8 +2536,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
         ip_110035_20010414_7_3 = entities.StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id="110035-20010414-7-3",
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            status_raw_text="NOT_IN_CUSTODY",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=datetime.date(year=2016, month=4, day=28),
             admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
@@ -2590,8 +2560,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
         ip_310261_19890821_1_0 = entities.StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id="310261-19890821-1-0",
-            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
-            status_raw_text="IN_CUSTODY",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=datetime.date(year=1990, month=3, day=29),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
@@ -2605,8 +2573,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
         ip_710448_20010414_1_0 = entities.StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id="710448-20010414-1-0",
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            status_raw_text="NOT_IN_CUSTODY",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=datetime.date(year=2001, month=7, day=5),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
@@ -2623,8 +2589,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
         ip_710448_20010414_3_0 = entities.StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id="710448-20010414-3-0",
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            status_raw_text="NOT_IN_CUSTODY",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=datetime.date(year=2002, month=9, day=12),
             admission_reason=StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
@@ -2642,8 +2606,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
         ip_910324_19890825_1_0 = entities.StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id="910324-19890825-1-0",
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            status_raw_text="NOT_IN_CUSTODY",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=datetime.date(year=1989, month=10, day=23),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
@@ -2672,8 +2634,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
         ip_523523_19890617_1_0 = entities.StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id="523523-19890617-1-0",
-            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
-            status_raw_text="IN_CUSTODY",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=datetime.date(year=1989, month=6, day=17),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
@@ -2701,8 +2661,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
         ip_867530_19970224_1_0 = entities.StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id="867530-19970224-1-0",
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            status_raw_text="NOT_IN_CUSTODY",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=datetime.date(year=1997, month=2, day=24),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
@@ -2719,8 +2677,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
         expected_people.append(person_867530)
 
         ip_523523_19890617_1_0.release_date = datetime.date(year=2010, month=10, day=20)
-        ip_523523_19890617_1_0.status = StateIncarcerationPeriodStatus.NOT_IN_CUSTODY
-        ip_523523_19890617_1_0.status_raw_text = "NOT_IN_CUSTODY"
 
         # SQL Preprocessing View
         # Act

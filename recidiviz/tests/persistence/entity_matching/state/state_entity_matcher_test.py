@@ -27,9 +27,6 @@ from recidiviz.common.constants.person_characteristics import Ethnicity, Gender,
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
-from recidiviz.common.constants.state.state_incarceration_period import (
-    StateIncarcerationPeriodStatus,
-)
 from recidiviz.common.constants.state.state_parole_decision import (
     StateParoleDecisionOutcome,
 )
@@ -1766,7 +1763,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         db_incarceration_period = generate_incarceration_period(
             person=db_person,
             external_id=_EXTERNAL_ID,
-            status=StateIncarcerationPeriodStatus.IN_CUSTODY.value,
             state_code=_STATE_CODE,
             facility="facility",
             parole_decisions=[db_parole_decision, db_parole_decision_2],

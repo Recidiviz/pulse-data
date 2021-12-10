@@ -44,7 +44,6 @@ from recidiviz.common.constants.state.state_case_type import StateSupervisionCas
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
-    StateIncarcerationPeriodStatus,
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
@@ -725,7 +724,6 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
                     StateIncarcerationPeriod.new_with_defaults(
                         incarceration_period_id=1,
                         state_code=StateCode.US_PA.value,
-                        status=StateIncarcerationPeriodStatus.IN_CUSTODY,
                         incarceration_type=StateIncarcerationType.COUNTY_JAIL,
                         admission_date=date(2018, 4, 1),
                         release_date=date(2018, 4, 30),
@@ -776,7 +774,6 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
                     StateIncarcerationPeriod.new_with_defaults(
                         incarceration_period_id=1,
                         state_code=StateCode.US_PA.value,
-                        status=StateIncarcerationPeriodStatus.IN_CUSTODY,
                         incarceration_type=StateIncarcerationType.EXTERNAL_UNKNOWN,
                         specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
                         admission_date=date(2018, 4, 1),
@@ -1117,7 +1114,6 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
                     StateIncarcerationPeriod.new_with_defaults(
                         incarceration_period_id=1,
                         state_code=StateCode.US_PA.value,
-                        status=StateIncarcerationPeriodStatus.IN_CUSTODY,
                         incarceration_type=StateIncarcerationType.COUNTY_JAIL,
                         admission_date=date(2018, 4, 1),
                         release_date=date(2018, 4, 30),
@@ -1450,7 +1446,6 @@ class TestNextRecommendedTreatmentCollateralVisitDate(unittest.TestCase):
                     StateIncarcerationPeriod.new_with_defaults(
                         incarceration_period_id=1,
                         state_code=StateCode.US_PA.value,
-                        status=StateIncarcerationPeriodStatus.IN_CUSTODY,
                         incarceration_type=StateIncarcerationType.COUNTY_JAIL,
                         admission_date=date(2018, 4, 1),
                         release_date=date(2018, 4, 30),
@@ -1499,7 +1494,6 @@ class TestNextRecommendedTreatmentCollateralVisitDate(unittest.TestCase):
                     StateIncarcerationPeriod.new_with_defaults(
                         incarceration_period_id=1,
                         state_code=StateCode.US_PA.value,
-                        status=StateIncarcerationPeriodStatus.IN_CUSTODY,
                         incarceration_type=StateIncarcerationType.EXTERNAL_UNKNOWN,
                         specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
                         admission_date=date(2018, 4, 1),
@@ -2120,7 +2114,6 @@ class TestNextRecommendedReassessment(unittest.TestCase):
                     StateIncarcerationPeriod.new_with_defaults(
                         incarceration_period_id=1,
                         state_code=StateCode.US_PA.value,
-                        status=StateIncarcerationPeriodStatus.IN_CUSTODY,
                         incarceration_type=StateIncarcerationType.COUNTY_JAIL,
                         admission_date=date(2018, 4, 1),
                         release_date=date(2018, 4, 30),
@@ -2178,7 +2171,6 @@ class TestNextRecommendedReassessment(unittest.TestCase):
                     StateIncarcerationPeriod.new_with_defaults(
                         incarceration_period_id=1,
                         state_code=StateCode.US_PA.value,
-                        status=StateIncarcerationPeriodStatus.IN_CUSTODY,
                         incarceration_type=StateIncarcerationType.EXTERNAL_UNKNOWN,
                         specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
                         admission_date=date(2018, 4, 1),

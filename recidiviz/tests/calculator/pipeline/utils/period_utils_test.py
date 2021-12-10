@@ -40,7 +40,6 @@ from recidiviz.common.constants.state.state_incarceration import StateIncarcerat
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
-    StateIncarcerationPeriodStatus,
 )
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodTerminationReason,
@@ -362,7 +361,6 @@ class TestEarliestPeriodEndingInDeath(unittest.TestCase):
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
             admission_date=date(2005, 1, 1),
-            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
         )
 
         earliest_date_of_period_ending_in_death = (
@@ -391,7 +389,6 @@ class TestEarliestPeriodEndingInDeath(unittest.TestCase):
             admission_date=date(2005, 1, 3),
             release_date=date(2005, 1, 6),
             release_reason=StateIncarcerationPeriodReleaseReason.DEATH,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
         )
 
         earliest_death_incarceration_period = (
@@ -400,7 +397,6 @@ class TestEarliestPeriodEndingInDeath(unittest.TestCase):
                 admission_date=date(2005, 1, 3),
                 release_date=date(2005, 1, 4),
                 release_reason=StateIncarcerationPeriodReleaseReason.DEATH,
-                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             )
         )
 
@@ -430,7 +426,6 @@ class TestEarliestPeriodEndingInDeath(unittest.TestCase):
             state_code="US_XX",
             admission_date=date(2005, 1, 3),
             release_date=date(2005, 1, 6),
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
         )
 
         earliest_date_of_period_ending_in_death = (
@@ -457,7 +452,6 @@ class TestEarliestPeriodEndingInDeath(unittest.TestCase):
             admission_date=date(2003, 1, 3),
             release_date=date(2004, 1, 3),
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
         )
 
         incarceration_period_death = StateIncarcerationPeriod.new_with_defaults(
@@ -465,7 +459,6 @@ class TestEarliestPeriodEndingInDeath(unittest.TestCase):
             admission_date=date(2004, 1, 3),
             release_date=date(2005, 1, 3),
             release_reason=StateIncarcerationPeriodReleaseReason.DEATH,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
         )
 
         earliest_date_of_period_ending_in_death = (
@@ -495,14 +488,12 @@ class TestEarliestPeriodEndingInDeath(unittest.TestCase):
             admission_date=date(2003, 1, 3),
             release_date=date(2004, 1, 3),
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
         )
 
         incarceration_period_death = StateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
             admission_date=date(2004, 1, 3),
             release_reason=StateIncarcerationPeriodReleaseReason.DEATH,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
         )
 
         earliest_period_ending_in_death = find_earliest_date_of_period_ending_in_death(
@@ -555,7 +546,6 @@ class TestSortPeriodsBySetDatesAndStatuses(unittest.TestCase):
         ip_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2008, 11, 20),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
@@ -566,7 +556,6 @@ class TestSortPeriodsBySetDatesAndStatuses(unittest.TestCase):
         ip_2 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=2222,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2011, 3, 4),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
@@ -577,7 +566,6 @@ class TestSortPeriodsBySetDatesAndStatuses(unittest.TestCase):
         ip_3 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=3333,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2012, 2, 4),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
@@ -605,7 +593,6 @@ class TestSortPeriodsBySetDatesAndStatuses(unittest.TestCase):
         ip_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2008, 11, 20),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
@@ -616,7 +603,6 @@ class TestSortPeriodsBySetDatesAndStatuses(unittest.TestCase):
         ip_2 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=2222,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2011, 3, 4),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
@@ -627,7 +613,6 @@ class TestSortPeriodsBySetDatesAndStatuses(unittest.TestCase):
         ip_3 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=3333,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2012, 2, 4),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
@@ -653,7 +638,6 @@ class TestSortPeriodsBySetDatesAndStatuses(unittest.TestCase):
         ip_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2008, 11, 20),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
@@ -664,7 +648,6 @@ class TestSortPeriodsBySetDatesAndStatuses(unittest.TestCase):
         ip_2 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=2222,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2008, 11, 20),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
@@ -675,7 +658,6 @@ class TestSortPeriodsBySetDatesAndStatuses(unittest.TestCase):
         ip_3 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=3333,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2012, 2, 4),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
@@ -698,7 +680,6 @@ class TestSortPeriodsBySetDatesAndStatuses(unittest.TestCase):
             external_id="XXX-9",
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2008, 11, 20),
             admission_reason=StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
@@ -710,7 +691,6 @@ class TestSortPeriodsBySetDatesAndStatuses(unittest.TestCase):
             external_id="XXX-10",
             incarceration_period_id=2222,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2008, 11, 20),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
@@ -722,7 +702,6 @@ class TestSortPeriodsBySetDatesAndStatuses(unittest.TestCase):
             external_id="XXX-11",
             incarceration_period_id=3333,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2008, 11, 20),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
@@ -747,7 +726,6 @@ class TestSortPeriodsBySetDatesAndStatuses(unittest.TestCase):
             external_id="X",
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2008, 11, 20),
             admission_reason=StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
@@ -759,7 +737,6 @@ class TestSortPeriodsBySetDatesAndStatuses(unittest.TestCase):
             external_id="Z",
             incarceration_period_id=2222,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2009, 1, 1),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
@@ -771,7 +748,6 @@ class TestSortPeriodsBySetDatesAndStatuses(unittest.TestCase):
             external_id="Y",
             incarceration_period_id=3333,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2009, 1, 1),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
@@ -796,7 +772,6 @@ class TestSortPeriodsBySetDatesAndStatuses(unittest.TestCase):
             external_id="X",
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2009, 1, 1),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
@@ -808,7 +783,6 @@ class TestSortPeriodsBySetDatesAndStatuses(unittest.TestCase):
             external_id="Y",
             incarceration_period_id=2222,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2009, 1, 1),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
@@ -820,7 +794,6 @@ class TestSortPeriodsBySetDatesAndStatuses(unittest.TestCase):
             external_id="Z",
             incarceration_period_id=3333,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2009, 1, 1),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
@@ -845,7 +818,6 @@ class TestSortPeriodsBySetDatesAndStatuses(unittest.TestCase):
             external_id="X-1",
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2009, 1, 1),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
@@ -854,7 +826,6 @@ class TestSortPeriodsBySetDatesAndStatuses(unittest.TestCase):
             external_id="X-2",
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2009, 1, 1),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
@@ -877,7 +848,6 @@ class TestSortPeriodsBySetDatesAndStatuses(unittest.TestCase):
             external_id="X-1",
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2009, 1, 1),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
@@ -886,7 +856,6 @@ class TestSortPeriodsBySetDatesAndStatuses(unittest.TestCase):
             external_id="X-2",
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2009, 1, 1),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,

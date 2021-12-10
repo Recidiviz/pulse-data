@@ -14,14 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-# pylint: disable=unused-import,wrong-import-order
-
 """Tests for incarceration_period_utils.py."""
 
 import unittest
 from datetime import date
-
-import pytest
 
 from recidiviz.calculator.pipeline.utils.incarceration_period_utils import (
     ip_is_nested_in_previous_period,
@@ -30,8 +26,6 @@ from recidiviz.calculator.pipeline.utils.incarceration_period_utils import (
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
-    StateIncarcerationPeriodStatus,
-    StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 
@@ -43,7 +37,6 @@ class TestIpIsNestedInPreviousPeriod(unittest.TestCase):
         previous_ip = StateIncarcerationPeriod.new_with_defaults(
             external_id="1",
             incarceration_period_id=1111,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_XX",
             admission_date=date(2002, 2, 5),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
@@ -54,7 +47,6 @@ class TestIpIsNestedInPreviousPeriod(unittest.TestCase):
         ip = StateIncarcerationPeriod.new_with_defaults(
             external_id="2",
             incarceration_period_id=2222,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_XX",
             admission_date=date(2002, 3, 13),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
@@ -68,7 +60,6 @@ class TestIpIsNestedInPreviousPeriod(unittest.TestCase):
         previous_ip = StateIncarcerationPeriod.new_with_defaults(
             external_id="1",
             incarceration_period_id=1111,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_XX",
             admission_date=date(2002, 2, 5),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
@@ -79,7 +70,6 @@ class TestIpIsNestedInPreviousPeriod(unittest.TestCase):
         ip = StateIncarcerationPeriod.new_with_defaults(
             external_id="2",
             incarceration_period_id=2222,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_XX",
             admission_date=date(2002, 10, 13),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
@@ -93,7 +83,6 @@ class TestIpIsNestedInPreviousPeriod(unittest.TestCase):
         previous_ip = StateIncarcerationPeriod.new_with_defaults(
             external_id="1",
             incarceration_period_id=1111,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_XX",
             admission_date=date(2002, 2, 5),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
@@ -104,7 +93,6 @@ class TestIpIsNestedInPreviousPeriod(unittest.TestCase):
         ip = StateIncarcerationPeriod.new_with_defaults(
             external_id="2",
             incarceration_period_id=2222,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_XX",
             admission_date=date(2002, 3, 13),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
@@ -118,7 +106,6 @@ class TestIpIsNestedInPreviousPeriod(unittest.TestCase):
         previous_ip = StateIncarcerationPeriod.new_with_defaults(
             external_id="1",
             incarceration_period_id=1111,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_XX",
             admission_date=date(2002, 2, 5),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
@@ -129,7 +116,6 @@ class TestIpIsNestedInPreviousPeriod(unittest.TestCase):
         ip = StateIncarcerationPeriod.new_with_defaults(
             external_id="2",
             incarceration_period_id=2222,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_XX",
             admission_date=date(2002, 3, 13),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
@@ -143,7 +129,6 @@ class TestIpIsNestedInPreviousPeriod(unittest.TestCase):
         previous_ip = StateIncarcerationPeriod.new_with_defaults(
             external_id="1",
             incarceration_period_id=1111,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_XX",
             admission_date=date(2002, 3, 13),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
@@ -154,7 +139,6 @@ class TestIpIsNestedInPreviousPeriod(unittest.TestCase):
         ip = StateIncarcerationPeriod.new_with_defaults(
             external_id="2",
             incarceration_period_id=2222,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_XX",
             admission_date=date(2002, 3, 13),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
@@ -168,7 +152,6 @@ class TestIpIsNestedInPreviousPeriod(unittest.TestCase):
         previous_ip = StateIncarcerationPeriod.new_with_defaults(
             external_id="1",
             incarceration_period_id=1111,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_XX",
             admission_date=date(2002, 1, 13),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
@@ -179,7 +162,6 @@ class TestIpIsNestedInPreviousPeriod(unittest.TestCase):
         ip = StateIncarcerationPeriod.new_with_defaults(
             external_id="2",
             incarceration_period_id=2222,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_XX",
             admission_date=date(2002, 3, 13),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
@@ -194,7 +176,6 @@ class TestIpIsNestedInPreviousPeriod(unittest.TestCase):
         previous_ip = StateIncarcerationPeriod.new_with_defaults(
             external_id="1",
             incarceration_period_id=1111,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_XX",
             admission_date=date(2002, 2, 5),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
@@ -205,7 +186,6 @@ class TestIpIsNestedInPreviousPeriod(unittest.TestCase):
         ip = StateIncarcerationPeriod.new_with_defaults(
             external_id="2",
             incarceration_period_id=2222,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_XX",
             admission_date=date(2002, 1, 1),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
@@ -224,7 +204,6 @@ class TestPeriodEdgesAreValidTransfer(unittest.TestCase):
         ip_1 = StateIncarcerationPeriod.new_with_defaults(
             external_id="1",
             incarceration_period_id=1111,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_XX",
             admission_date=date(2002, 2, 5),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
@@ -235,7 +214,6 @@ class TestPeriodEdgesAreValidTransfer(unittest.TestCase):
         ip_2 = StateIncarcerationPeriod.new_with_defaults(
             external_id="1",
             incarceration_period_id=1111,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_XX",
             admission_date=date(2002, 9, 11),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
@@ -249,7 +227,6 @@ class TestPeriodEdgesAreValidTransfer(unittest.TestCase):
         ip_1 = StateIncarcerationPeriod.new_with_defaults(
             external_id="1",
             incarceration_period_id=1111,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_XX",
             admission_date=date(2002, 2, 5),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
@@ -260,7 +237,6 @@ class TestPeriodEdgesAreValidTransfer(unittest.TestCase):
         ip_2 = StateIncarcerationPeriod.new_with_defaults(
             external_id="1",
             incarceration_period_id=1111,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_XX",
             admission_date=date(2002, 9, 13),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
@@ -274,7 +250,6 @@ class TestPeriodEdgesAreValidTransfer(unittest.TestCase):
         ip_1 = StateIncarcerationPeriod.new_with_defaults(
             external_id="1",
             incarceration_period_id=1111,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_XX",
             admission_date=date(2002, 2, 5),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
@@ -285,7 +260,6 @@ class TestPeriodEdgesAreValidTransfer(unittest.TestCase):
         ip_2 = StateIncarcerationPeriod.new_with_defaults(
             external_id="1",
             incarceration_period_id=1111,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_XX",
             admission_date=date(2002, 9, 11),
             admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,

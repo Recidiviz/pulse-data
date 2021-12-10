@@ -28,7 +28,6 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_supervision_per
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
-    StateIncarcerationPeriodStatus,
 )
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
@@ -152,7 +151,6 @@ class TestUsPaSupervisionPreProcessingDelegate(unittest.TestCase):
                 state_code=StateCode.US_PA.value,
                 admission_date=date(2010, 3, 15),
                 release_date=date(2010, 4, 30),
-                status=StateIncarcerationPeriodStatus.IN_CUSTODY,
                 admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
                 release_reason=StateIncarcerationPeriodReleaseReason.TEMPORARY_RELEASE,
             )
@@ -207,7 +205,6 @@ class TestUsPaSupervisionPreProcessingDelegate(unittest.TestCase):
                 state_code=StateCode.US_PA.value,
                 admission_date=date(2010, 3, 16),
                 release_date=date(2010, 4, 30),
-                status=StateIncarcerationPeriodStatus.IN_CUSTODY,
                 admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
                 release_reason=StateIncarcerationPeriodReleaseReason.TEMPORARY_RELEASE,
             )

@@ -30,7 +30,6 @@ from recidiviz.common.constants.state.state_incarceration import StateIncarcerat
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
-    StateIncarcerationPeriodStatus,
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
@@ -700,7 +699,6 @@ class UsNdIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
     def test_parse_elite_externalmovements_incarceration_periods(self) -> None:
         incarceration_period_113377_1 = StateIncarcerationPeriod(
             state_code=self.state_code,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             external_id="113377-1",
             facility="NDSP",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -719,7 +717,6 @@ class UsNdIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
 
         incarceration_period_113377_2 = StateIncarcerationPeriod(
             state_code=self.state_code,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             external_id="113377-2",
             facility="CJ",
             incarceration_type=StateIncarcerationType.COUNTY_JAIL,
@@ -738,7 +735,6 @@ class UsNdIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
 
         incarceration_period_114909_1 = StateIncarcerationPeriod(
             state_code=self.state_code,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             external_id="114909-1",
             facility="NDSP",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -757,7 +753,6 @@ class UsNdIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
 
         incarceration_period_555555_1 = StateIncarcerationPeriod(
             state_code=self.state_code,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             external_id="555555-1",
             facility="NTAD",
             incarceration_type=StateIncarcerationType.EXTERNAL_UNKNOWN,
@@ -776,7 +771,6 @@ class UsNdIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
 
         incarceration_period_555555_2 = StateIncarcerationPeriod(
             state_code=self.state_code,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             external_id="555555-2",
             facility="CJ",
             incarceration_type=StateIncarcerationType.COUNTY_JAIL,
@@ -795,7 +789,6 @@ class UsNdIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
 
         incarceration_period_555555_3 = StateIncarcerationPeriod(
             state_code=self.state_code,
-            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             external_id="555555-3",
             facility="NDSP",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -811,7 +804,6 @@ class UsNdIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
 
         incarceration_period_105640_1 = StateIncarcerationPeriod(
             state_code=self.state_code,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             external_id="105640-1",
             facility="NDSP",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -830,7 +822,6 @@ class UsNdIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
 
         incarceration_period_105640_2 = StateIncarcerationPeriod(
             state_code=self.state_code,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             external_id="105640-2",
             facility="JRCC",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -849,7 +840,6 @@ class UsNdIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
 
         incarceration_period_105640_3 = StateIncarcerationPeriod(
             state_code=self.state_code,
-            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             external_id="105640-3",
             facility="JRCC",
             incarceration_type=StateIncarcerationType.STATE_PRISON,

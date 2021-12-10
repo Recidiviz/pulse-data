@@ -42,7 +42,6 @@ from recidiviz.common.constants.state.state_incarceration import StateIncarcerat
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
-    StateIncarcerationPeriodStatus,
 )
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
@@ -92,7 +91,6 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         ip = StateIncarcerationPeriod.new_with_defaults(
             state_code="US_ND",
             incarceration_period_id=111,
-            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             admission_date=admission_date,
             admission_reason=admission_reason,
             admission_reason_raw_text=admission_reason_raw_text,
@@ -639,7 +637,6 @@ class TestPreCommitmentSupervisionTypeIdentification(unittest.TestCase):
             incarceration_period_id=1112,
             external_id="2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_ND",
             facility="NDSP",
             admission_date=date(2008, 12, 20),

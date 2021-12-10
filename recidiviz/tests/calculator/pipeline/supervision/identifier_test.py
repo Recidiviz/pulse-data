@@ -113,7 +113,6 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodReleaseReason as ReleaseReason,
 )
 from recidiviz.common.constants.state.state_incarceration_period import (
-    StateIncarcerationPeriodStatus,
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
@@ -773,7 +772,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         temporary_custody_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
             external_id="ip1",
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             incarceration_type=StateIncarcerationType.COUNTY_JAIL,
             facility="CJ",
             custodial_authority=StateCustodialAuthority.COURT,
@@ -790,7 +788,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             external_id="ip2",
             state_code="US_ND",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             admission_date=admission_date,
             admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
             release_date=date(2019, 3, 3),
@@ -975,7 +972,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             external_id="ip2",
             state_code="US_ID",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             admission_date=date(2017, 5, 9),
             admission_reason=StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
             release_date=date(2019, 3, 3),
@@ -1036,7 +1032,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             external_id="ip2",
             state_code="US_ND",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             admission_date=date(2017, 5, 9),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2019, 3, 3),
@@ -1092,7 +1087,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         first_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
             external_id="ip1",
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_XX",
             admission_date=first_admission_date,
             admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
@@ -1114,7 +1108,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             incarceration_period_id=222,
             external_id="ip2",
             state_code="US_XX",
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             admission_date=second_admission_date,
             admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
             release_date=date(2019, 3, 3),
@@ -1222,7 +1215,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         first_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
             external_id="ip1",
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_XX",
             admission_date=first_admission_date,
             admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
@@ -1235,7 +1227,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             incarceration_period_id=222,
             external_id="ip2",
             state_code="US_XX",
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             admission_date=second_admission_date,
             admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
             release_date=date(2019, 3, 3),
@@ -1322,7 +1313,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
             external_id="ip1",
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_XX",
             admission_date=admission_date,
             admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
@@ -1448,7 +1438,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
             external_id="ip1",
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_XX",
             admission_date=date(2017, 5, 15),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
@@ -1660,7 +1649,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
             external_id="ip1",
-            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code="US_XX",
             admission_date=admission_date,
@@ -1759,7 +1747,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         first_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
             external_id="ip1",
-            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             state_code="US_XX",
             admission_date=first_admission_date,
             admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
@@ -1771,7 +1758,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         second_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
             external_id="ip2",
-            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             state_code="US_XX",
             admission_date=second_admission_date,
             admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
@@ -1893,7 +1879,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         first_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
             external_id="ip1",
-            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             state_code="US_XX",
             admission_date=first_admission_date,
             admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
@@ -1905,7 +1890,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         second_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
             external_id="ip2",
-            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             state_code="US_XX",
             admission_date=second_admission_date,
             admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
@@ -2295,7 +2279,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
             external_id="ip1",
-            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             state_code="US_XX",
             admission_date=admission_date,
             admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
@@ -3098,8 +3081,9 @@ class TestClassifySupervisionEvents(unittest.TestCase):
 
     @freeze_time("2019-09-04")
     def test_find_supervision_events_admission_today(self) -> None:
-        """Tests the find_population_events_for_supervision_period function when there is an incarceration period with a
-        revocation admission today, where there is no termination_date on the supervision_period, and no release_date
+        """Tests the find_population_events_for_supervision_period function when there
+        is an incarceration period with a revocation admission today, where there is
+        no termination_date on the supervision_period, and no release_date
         on the incarceration_period."""
 
         supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -3113,7 +3097,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         admission_date = date.today()
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
-            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             external_id="ip1",
             state_code="US_XX",
             admission_date=admission_date,
@@ -3193,7 +3176,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         first_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
             external_id="ip1",
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_XX",
             admission_date=first_admission_date,
             admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
@@ -3204,7 +3186,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         second_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=222,
             external_id="ip2",
-            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             state_code="US_XX",
             admission_date=second_admission_date,
             admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
@@ -4327,7 +4308,6 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
 
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
-            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             external_id="ip1",
             state_code="US_XX",
             admission_date=date(2003, 10, 10),
@@ -4421,7 +4401,6 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
             admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
             release_date=date(2018, 5, 22),
             release_reason=ReleaseReason.SENTENCE_SERVED,
-            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
@@ -4513,7 +4492,6 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
             admission_date=date(2019, 5, 25),
             admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
             release_date=date(2019, 10, 17),
-            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
@@ -4607,7 +4585,6 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
         )
 
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
-            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             incarceration_period_id=111,
             external_id="ip1",
             state_code="US_XX",
@@ -4698,7 +4675,6 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2009, 12, 3),
             release_reason=ReleaseReason.CONDITIONAL_RELEASE,
-            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
@@ -5020,7 +4996,6 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
             admission_date=date(2018, 5, 25),
             admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
             release_date=date(2018, 10, 27),
-            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         assessment_1 = StateAssessment.new_with_defaults(
@@ -5464,7 +5439,6 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             admission_date=date(2018, 6, 1),
             admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
             release_date=date(2018, 6, 21),
-            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         supervision_sentence_projected_completion_date = date(2018, 12, 25)
@@ -6246,7 +6220,6 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             admission_date=date(2017, 6, 1),
             admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
             release_date=date(2017, 10, 5),
-            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         supervision_sentences = [supervision_sentence]
@@ -7248,7 +7221,6 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
             external_id="ip1",
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_XX",
             admission_date=incarceration_admission_date,
             admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
@@ -7567,7 +7539,6 @@ class TestFindSupervisionStartEvent(unittest.TestCase):
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
             external_id="ip1",
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_XX",
             admission_date=incarceration_admission_date,
             admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,

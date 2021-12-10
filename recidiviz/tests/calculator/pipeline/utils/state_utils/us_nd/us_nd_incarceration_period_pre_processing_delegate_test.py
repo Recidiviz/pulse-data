@@ -41,7 +41,6 @@ from recidiviz.common.constants.state.state_incarceration import StateIncarcerat
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
-    StateIncarcerationPeriodStatus,
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_supervision_period import (
@@ -103,7 +102,6 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             incarceration_period_id=111,
             external_id="111",
             incarceration_type=StateIncarcerationType.COUNTY_JAIL,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2018, 11, 20),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
@@ -117,7 +115,6 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             incarceration_period_id=112,
             external_id="222",
             incarceration_type=StateIncarcerationType.EXTERNAL_UNKNOWN,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2018, 12, 20),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
@@ -131,7 +128,6 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             incarceration_period_id=1111,
             external_id="333",
             incarceration_type=StateIncarcerationType.COUNTY_JAIL,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2019, 11, 20),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
@@ -180,7 +176,6 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             incarceration_period_id=111,
             external_id="111",
             incarceration_type=StateIncarcerationType.COUNTY_JAIL,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2018, 11, 20),
             admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
@@ -197,7 +192,6 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             incarceration_period_id=112,
             external_id="222",
             incarceration_type=StateIncarcerationType.EXTERNAL_UNKNOWN,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2018, 12, 20),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
@@ -213,7 +207,6 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             incarceration_period_id=1111,
             external_id="333",
             incarceration_type=StateIncarcerationType.COUNTY_JAIL,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2019, 11, 20),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
@@ -262,7 +255,6 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
         state_code = _STATE_CODE
         temporary_custody_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             external_id="1",
             state_code=state_code,
             facility="NTAD",
@@ -275,7 +267,6 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         temporary_custody_2 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=112,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             external_id="2",
             state_code=state_code,
             facility="CJ",
@@ -289,7 +280,6 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         valid_incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             external_id="3",
             state_code=state_code,
             admission_date=date(2020, 11, 20),
@@ -300,7 +290,6 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         valid_incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1112,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             external_id="4",
             state_code=state_code,
             admission_date=date(2020, 12, 4),
@@ -311,7 +300,6 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         valid_incarceration_period_3 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1113,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             external_id="5",
             state_code=state_code,
             admission_date=date(2020, 12, 24),
@@ -344,7 +332,6 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
         collapsed_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=valid_incarceration_period_1.incarceration_period_id,
             external_id=valid_incarceration_period_1.external_id,
-            status=valid_incarceration_period_3.status,
             state_code=valid_incarceration_period_1.state_code,
             admission_date=valid_incarceration_period_1.admission_date,
             admission_reason=valid_incarceration_period_1.admission_reason,
@@ -373,7 +360,6 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
         state_code = _STATE_CODE
         temporary_custody_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             external_id="1",
             state_code=state_code,
             facility="NTAD",
@@ -389,7 +375,6 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         temporary_custody_2 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=112,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             external_id="2",
             state_code=state_code,
             facility="CJ",
@@ -406,7 +391,6 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         valid_incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             external_id="3",
             state_code=state_code,
             admission_date=date(2020, 11, 20),
@@ -417,7 +401,6 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         valid_incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1112,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             external_id="4",
             state_code=state_code,
             admission_date=date(2020, 12, 4),
@@ -428,7 +411,6 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         valid_incarceration_period_3 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1113,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             external_id="5",
             state_code=state_code,
             admission_date=date(2020, 12, 24),
@@ -460,7 +442,6 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
         collapsed_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=valid_incarceration_period_1.incarceration_period_id,
             external_id=valid_incarceration_period_1.external_id,
-            status=valid_incarceration_period_3.status,
             state_code=valid_incarceration_period_1.state_code,
             admission_date=valid_incarceration_period_1.admission_date,
             admission_reason=valid_incarceration_period_1.admission_reason,
@@ -490,7 +471,6 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         county_jail_pre_2017 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=112,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             external_id="2",
             state_code=state_code,
             facility="CJ",
@@ -507,7 +487,6 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         temporary_custody_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             external_id="1",
             state_code=state_code,
             facility="NTAD",
@@ -523,7 +502,6 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         temporary_custody_2 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=112,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             external_id="2",
             state_code=state_code,
             facility="CJ",
@@ -542,7 +520,6 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
         #  for US_ND with the new IP ingest views
         temporary_custody_1_deprecated = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             external_id="1",
             state_code=state_code,
             facility="NTAD",
@@ -557,7 +534,6 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
         #  for US_ND with the new IP ingest views
         temporary_custody_2_deprecated = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=112,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             external_id="2",
             state_code=state_code,
             facility="CJ",
@@ -628,7 +604,6 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
         state_code = _STATE_CODE
         invalid_board_hold = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             external_id="1",
             state_code=state_code,
             admission_date=date(2008, 11, 20),
@@ -666,7 +641,6 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             external_id="ip2",
             state_code=_STATE_CODE,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             admission_date=date(2019, 6, 17),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
         )
@@ -707,7 +681,6 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             external_id="ip2",
             state_code=_STATE_CODE,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             admission_date=date(2019, 6, 17),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
         )
@@ -748,7 +721,6 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             external_id="ip2",
             state_code=_STATE_CODE,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             admission_date=date(2019, 6, 17),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
         )
@@ -787,7 +759,6 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             external_id="ip2",
             state_code=_STATE_CODE,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             admission_date=date(2019, 6, 17),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
         )
@@ -838,7 +809,6 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             external_id="ip2",
             state_code=_STATE_CODE,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             admission_date=date(2019, 6, 17),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
         )
@@ -883,7 +853,6 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
                 external_id="ip2",
                 state_code=_STATE_CODE,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
-                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 admission_date=date(2000, 2, 9),
                 admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
                 release_date=date(2000, 12, 24),
@@ -896,7 +865,6 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             external_id="ip2",
             state_code=_STATE_CODE,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             admission_date=date(2001, 10, 14),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
         )
@@ -953,7 +921,6 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             state_code=_STATE_CODE,
             incarceration_type=StateIncarcerationType.COUNTY_JAIL,
             facility="CJ",
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             admission_date=date(2018, 1, 9),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
             release_date=date(2018, 4, 24),
@@ -965,7 +932,6 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             external_id="ip2",
             state_code=_STATE_CODE,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             admission_date=date(2018, 4, 24),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
         )
@@ -1023,7 +989,6 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             facility="CJ",
             custodial_authority=StateCustodialAuthority.COURT,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             admission_date=date(2018, 1, 9),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
             release_date=date(2018, 4, 24),
@@ -1035,7 +1000,6 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             external_id="ip2",
             state_code=_STATE_CODE,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             admission_date=date(2018, 4, 24),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
         )
@@ -1081,7 +1045,6 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             admission_reason_raw_text="PV",
             release_date=date_1,
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
-            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
         )
         ip_2 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=2,
@@ -1096,7 +1059,6 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             release_date=date_2,
             admission_reason_raw_text="ADMN",
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
-            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
         )
         ip_3 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=3,
@@ -1111,7 +1073,6 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             admission_reason_raw_text="INT",
             release_date=date_3,
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
-            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         expected_ip = attr.evolve(
@@ -1159,7 +1120,6 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             admission_reason_raw_text="PV",
             release_date=date_1,
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
-            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
         )
         ip_2 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=2,
@@ -1174,7 +1134,6 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             release_date=date_2,
             admission_reason_raw_text="ADMN",
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
-            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
         )
         ip_3 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=3,
@@ -1189,7 +1148,6 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             admission_reason_raw_text="INT",
             release_date=date_3,
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
-            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         expected_ip = attr.evolve(
@@ -1244,7 +1202,6 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             admission_reason_raw_text="NTAD",
             release_date=date_1,
             release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
-            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
         )
         ip_2 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=3,
@@ -1259,7 +1216,6 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             admission_reason_raw_text="INT",
             release_date=date_2,
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
-            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         expected_ip = attr.evolve(
@@ -1302,7 +1258,6 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             admission_reason_raw_text="INT",
             release_date=date_1,
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
-            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
         )
         # This period isn't actually a temporary custody period since it follows
         # directly after a state prisonn stay.
@@ -1320,7 +1275,6 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             admission_reason_raw_text="NTAD",
             release_date=date_2,
             release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
-            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         expected_ip_1 = attr.evolve(

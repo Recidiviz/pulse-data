@@ -56,7 +56,6 @@ from recidiviz.common.constants.state.state_incarceration_incident import (
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
-    StateIncarcerationPeriodStatus,
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_person_alias import StatePersonAliasType
@@ -2671,7 +2670,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
         # Arrange
         incarceration_period_113377_1 = entities.StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             external_id="113377-1",
             facility="NDSP",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -2691,7 +2689,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
 
         incarceration_period_113377_2 = entities.StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             external_id="113377-2",
             facility="CJ",
             incarceration_type=StateIncarcerationType.COUNTY_JAIL,
@@ -2711,7 +2708,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
 
         incarceration_period_114909_1 = entities.StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             external_id="114909-1",
             facility="NDSP",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -2737,7 +2733,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
 
         incarceration_period_105640_1 = entities.StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             external_id="105640-1",
             facility="NDSP",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -2757,7 +2752,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
 
         incarceration_period_105640_2 = entities.StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             external_id="105640-2",
             facility="JRCC",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -2777,7 +2771,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
 
         incarceration_period_105640_3 = entities.StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE,
-            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             external_id="105640-3",
             facility="JRCC",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -2809,7 +2802,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
 
         incarceration_period_555555_1 = entities.StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             external_id="555555-1",
             facility="NTAD",
             incarceration_type=StateIncarcerationType.EXTERNAL_UNKNOWN,
@@ -2829,7 +2821,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
 
         incarceration_period_555555_2 = entities.StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             external_id="555555-2",
             facility="CJ",
             incarceration_type=StateIncarcerationType.COUNTY_JAIL,
@@ -2849,7 +2840,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
 
         incarceration_period_555555_3 = entities.StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE,
-            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             external_id="555555-3",
             facility="NDSP",
             incarceration_type=StateIncarcerationType.STATE_PRISON,

@@ -27,7 +27,6 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationFacilitySecurityLevel,
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
-    StateIncarcerationPeriodStatus,
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.ingest_metadata import LegacyStateAndJailsIngestMetadata
@@ -65,12 +64,6 @@ def copy_fields_to_builder(
     new.housing_unit = getattr(proto, "housing_unit")
 
     # enum values
-    new.status = DefaultingAndNormalizingEnumParser(
-        getattr(proto, "status"),
-        StateIncarcerationPeriodStatus,
-        metadata.enum_overrides,
-    )
-    new.status_raw_text = getattr(proto, "status")
     new.incarceration_type = DefaultingAndNormalizingEnumParser(
         getattr(proto, "incarceration_type"),
         StateIncarcerationType,

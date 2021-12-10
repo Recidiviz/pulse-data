@@ -44,7 +44,6 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     SANCTION_ADMISSION_PURPOSE_FOR_INCARCERATION_VALUES,
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
-    StateIncarcerationPeriodStatus,
     StateSpecializedPurposeForIncarceration,
     is_commitment_from_supervision,
     is_official_admission,
@@ -638,23 +637,25 @@ class IncarcerationPreProcessingManager:
                 if ip.admission_date and self.earliest_death_date <= ip.admission_date:
                     # If a period starts after the earliest_death_date, drop the period.
                     logging.info(
-                        "Dropping incarceration period with with an admission_date after a release due to death: [%s]",
+                        "Dropping incarceration period with with an admission_date "
+                        "after a release due to death: [%s]",
                         ip,
                     )
                     continue
                 if (
                     ip.release_date and ip.release_date > self.earliest_death_date
                 ) or ip.release_date is None:
-                    # If the incarceration period duration exceeds the earliest_death_date or is not terminated,
-                    # set the release date to earliest_death_date, change release_reason to DEATH, update status
+                    # If the incarceration period duration exceeds the
+                    # earliest_death_date or is not terminated, set the release date
+                    # to earliest_death_date, change release_reason to DEATH, update
+                    # status
                     ip.release_date = self.earliest_death_date
                     ip.release_reason = StateIncarcerationPeriodReleaseReason.DEATH
-                    ip.status = StateIncarcerationPeriodStatus.NOT_IN_CUSTODY
 
             if ip.release_date is None:
                 if next_ip:
-                    # This is not the last incarceration period in the list. Set the release date to the next admission or
-                    # release date.
+                    # This is not the last incarceration period in the list. Set the
+                    # release date to the next admission or release date.
                     ip.release_date = (
                         next_ip.admission_date
                         if next_ip.admission_date
@@ -666,44 +667,31 @@ class IncarcerationPreProcessingManager:
                             next_ip.admission_reason
                             == StateIncarcerationPeriodAdmissionReason.TRANSFER
                         ):
-                            # If they were transferred into the next period, infer that this release was a transfer
+                            # If they were transferred into the next period, infer that
+                            # this release was a transfer
                             ip.release_reason = (
                                 StateIncarcerationPeriodReleaseReason.TRANSFER
                             )
-
-                    ip.status = StateIncarcerationPeriodStatus.NOT_IN_CUSTODY
-                else:
-                    # This is the last incarceration period in the list.
-                    if ip.status != StateIncarcerationPeriodStatus.IN_CUSTODY:
-                        # If the person is no longer in custody on this period, set the release date to the admission date.
-                        ip.release_date = ip.admission_date
+                elif ip.release_reason or ip.release_reason_raw_text:
+                    # This is the last incarceration period in the list. The
+                    # existence of a release reason indicates that this period should
+                    # be closed. Set the release date to the admission date.
+                    ip.release_date = ip.admission_date
+                    if not ip.release_reason:
                         ip.release_reason = (
                             StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN
                         )
-                    elif ip.release_reason or ip.release_reason_raw_text:
-                        # There is no release date on this period, but the set release_reason indicates that the person
-                        # is no longer in custody. Set the release date to the admission date.
-                        ip.release_date = ip.admission_date
-                        ip.status = StateIncarcerationPeriodStatus.NOT_IN_CUSTODY
-
-                        logging.warning(
-                            "No release_date for incarceration period (%d) with nonnull release_reason (%s) or "
-                            "release_reason_raw_text (%s)",
-                            ip.incarceration_period_id,
-                            ip.release_reason,
-                            ip.release_reason_raw_text,
-                        )
             elif ip.release_date > date.today():
-                # This is an erroneous release_date in the future. For the purpose of calculations, clear the release_date
-                # and the release_reason.
+                # This is an erroneous release_date in the future. For the purpose of
+                # calculations, clear the release_date and the release_reason.
                 ip.release_date = None
                 ip.release_reason = None
-                ip.status = StateIncarcerationPeriodStatus.IN_CUSTODY
 
             if ip.admission_date is None:
                 if previous_ip:
-                    # If the admission date is not set, and this is not the first incarceration period, then set the
-                    # admission_date to be the same as the release_date or admission_date of the preceding period
+                    # If the admission date is not set, and this is not the first
+                    # incarceration period, then set the admission_date to be the
+                    # same as the release_date or admission_date of the preceding period
                     ip.admission_date = (
                         previous_ip.release_date
                         if previous_ip.release_date
@@ -715,13 +703,15 @@ class IncarcerationPreProcessingManager:
                             previous_ip.release_reason
                             == StateIncarcerationPeriodReleaseReason.TRANSFER
                         ):
-                            # If they were transferred out of the previous period, infer that this admission was a transfer
+                            # If they were transferred out of the previous period, infer
+                            # that this admission was a transfer
                             ip.admission_reason = (
                                 StateIncarcerationPeriodAdmissionReason.TRANSFER
                             )
                 else:
-                    # If the admission date is not set, and this is the first incarceration period, then set the
-                    # admission_date to be the same as the release_date
+                    # If the admission date is not set, and this is the
+                    # first incarceration period, then set the admission_date to be
+                    # the same as the release_date
                     ip.admission_date = ip.release_date
                     ip.admission_reason = (
                         StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN
@@ -734,12 +724,14 @@ class IncarcerationPreProcessingManager:
                 continue
 
             if ip.admission_reason is None:
-                # We have no idea what this admission reason was. Set as INTERNAL_UNKNOWN.
+                # We have no idea what this admission reason was.
+                # Set as INTERNAL_UNKNOWN.
                 ip.admission_reason = (
                     StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN
                 )
             if ip.release_date is not None and ip.release_reason is None:
-                # We have no idea what this release reason was. Set as INTERNAL_UNKNOWN.
+                # We have no idea what this release reason was.
+                # Set as INTERNAL_UNKNOWN.
                 ip.release_reason = (
                     StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN
                 )
@@ -756,7 +748,8 @@ class IncarcerationPreProcessingManager:
                     most_recent_valid_period = updated_periods[-1]
 
                     if ip_is_nested_in_previous_period(ip, most_recent_valid_period):
-                        # This period is entirely nested within the period before it. Do not include in the list of periods.
+                        # This period is entirely nested within the period before it.
+                        # Do not include in the list of periods.
                         logging.info(
                             "Dropping incarceration period [%s] that is nested in period [%s]",
                             ip,
@@ -1253,7 +1246,6 @@ class IncarcerationPreProcessingManager:
                     end.specialized_purpose_for_incarceration_raw_text
                 )
 
-        collapsed_incarceration_period.status = end.status
         collapsed_incarceration_period.release_date = end.release_date
         collapsed_incarceration_period.projected_release_reason = (
             end.projected_release_reason

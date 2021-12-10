@@ -25,7 +25,6 @@ from recidiviz.common.constants.state.state_incarceration import StateIncarcerat
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
-    StateIncarcerationPeriodStatus,
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.states import StateCode
@@ -305,8 +304,6 @@ class UsMeIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                     StateIncarcerationPeriod(
                         external_id="00000001-1",
                         state_code="US_ME",
-                        status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                        status_raw_text=None,
                         incarceration_type=StateIncarcerationType.STATE_PRISON,
                         incarceration_type_raw_text="2",
                         specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
@@ -337,8 +334,6 @@ class UsMeIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                     StateIncarcerationPeriod(
                         external_id="00000001-2",
                         state_code="US_ME",
-                        status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                        status_raw_text=None,
                         incarceration_type=StateIncarcerationType.STATE_PRISON,
                         specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
                         specialized_purpose_for_incarceration_raw_text="INCARCERATED@@VIOLATION OF SCCP@@2",
@@ -369,8 +364,6 @@ class UsMeIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                     StateIncarcerationPeriod(
                         external_id="00000001-3",
                         state_code="US_ME",
-                        status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                        status_raw_text=None,
                         incarceration_type=StateIncarcerationType.STATE_PRISON,
                         specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
                         specialized_purpose_for_incarceration_raw_text="INCARCERATED@@POPULATION DISTRIBUTION@@2",
@@ -400,8 +393,6 @@ class UsMeIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                     StateIncarcerationPeriod(
                         external_id="00000001-4",
                         state_code="US_ME",
-                        status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                        status_raw_text=None,
                         incarceration_type=StateIncarcerationType.STATE_PRISON,
                         specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
                         specialized_purpose_for_incarceration_raw_text="INCARCERATED@@POPULATION DISTRIBUTION@@2",
@@ -431,8 +422,6 @@ class UsMeIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                     StateIncarcerationPeriod(
                         external_id="00000001-5",
                         state_code="US_ME",
-                        status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                        status_raw_text=None,
                         incarceration_type=StateIncarcerationType.STATE_PRISON,
                         specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
                         specialized_purpose_for_incarceration_raw_text="INCARCERATED@@POPULATION DISTRIBUTION@@2",
@@ -462,8 +451,6 @@ class UsMeIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                     StateIncarcerationPeriod(
                         external_id="00000001-6",
                         state_code="US_ME",
-                        status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                        status_raw_text=None,
                         incarceration_type=StateIncarcerationType.STATE_PRISON,
                         specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
                         specialized_purpose_for_incarceration_raw_text="INCARCERATED@@POPULATION DISTRIBUTION@@2",

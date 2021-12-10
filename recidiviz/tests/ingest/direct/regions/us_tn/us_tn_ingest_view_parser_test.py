@@ -27,7 +27,6 @@ from recidiviz.common.constants.state.state_incarceration import StateIncarcerat
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
-    StateIncarcerationPeriodStatus,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_period import (
@@ -181,8 +180,6 @@ class UsTnIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                     StateIncarcerationPeriod(
                         external_id="00000002-2",
                         state_code="US_TN",
-                        status=StateIncarcerationPeriodStatus.IN_CUSTODY,
-                        status_raw_text=None,
                         incarceration_type=StateIncarcerationType.STATE_PRISON,
                         incarceration_type_raw_text=None,
                         admission_date=datetime.date(2021, 6, 20),
@@ -211,8 +208,6 @@ class UsTnIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         external_id="00000003-1",
                         state_code="US_TN",
                         incarceration_type=StateIncarcerationType.STATE_PRISON,
-                        status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                        status_raw_text=None,
                         admission_date=datetime.date(2010, 2, 5),
                         release_date=datetime.date(2010, 2, 26),
                         county_code=None,
@@ -238,9 +233,7 @@ class UsTnIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                     StateIncarcerationPeriod(
                         external_id="00000003-2",
                         state_code="US_TN",
-                        status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                         incarceration_type=StateIncarcerationType.STATE_PRISON,
-                        status_raw_text=None,
                         admission_date=datetime.date(2010, 2, 26),
                         release_date=datetime.date(2010, 4, 6),
                         county_code=None,
@@ -266,9 +259,7 @@ class UsTnIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                     StateIncarcerationPeriod(
                         external_id="00000003-3",
                         state_code="US_TN",
-                        status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                         incarceration_type=StateIncarcerationType.STATE_PRISON,
-                        status_raw_text=None,
                         admission_date=datetime.date(2010, 4, 6),
                         release_date=datetime.date(2010, 11, 4),
                         county_code=None,

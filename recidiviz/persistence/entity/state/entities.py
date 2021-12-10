@@ -64,7 +64,6 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationFacilitySecurityLevel,
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
-    StateIncarcerationPeriodStatus,
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_parole_decision import (
@@ -815,14 +814,6 @@ class StateIncarcerationPeriod(
     # State Code
     state_code: str = attr.ib(validator=attr_validators.is_str)
 
-    # Status
-    status: StateIncarcerationPeriodStatus = attr.ib(
-        validator=attr.validators.instance_of(StateIncarcerationPeriodStatus)
-    )  # non-nullable
-    status_raw_text: Optional[str] = attr.ib(
-        default=None, validator=attr_validators.is_opt_str
-    )
-
     # Type
     incarceration_type: Optional[StateIncarcerationType] = attr.ib(
         default=None, validator=attr_validators.is_opt(StateIncarcerationType)
@@ -933,15 +924,6 @@ class StateIncarcerationPeriod(
             raise ValueError(
                 f"Expected start date for period {self.incarceration_period_id}, "
                 "found None"
-            )
-
-        if (
-            not self.release_date
-            and self.status != StateIncarcerationPeriodStatus.IN_CUSTODY
-        ):
-            raise ValueError(
-                "Unexpected missing release date. IP pre-processing is not properly"
-                " setting missing dates."
             )
 
         return DateRange.from_maybe_open_range(

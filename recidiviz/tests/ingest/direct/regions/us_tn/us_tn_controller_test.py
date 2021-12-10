@@ -25,7 +25,6 @@ from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
-    StateIncarcerationPeriodStatus,
 )
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
@@ -141,7 +140,6 @@ class TestUsTnController(BaseDirectIngestControllerTests):
             person=person_2,
             state_code=_STATE_CODE_UPPER,
             external_id="00000002-2",
-            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             admission_date=datetime.date(year=2021, month=6, day=20),
             release_date=None,
             facility="088",
@@ -158,7 +156,6 @@ class TestUsTnController(BaseDirectIngestControllerTests):
             person=person_3,
             state_code=_STATE_CODE_UPPER,
             external_id="00000003-1",
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             admission_date=datetime.date(year=2010, month=2, day=5),
             release_date=datetime.date(year=2010, month=2, day=26),
             facility="79A",
@@ -174,7 +171,6 @@ class TestUsTnController(BaseDirectIngestControllerTests):
             person=person_3,
             state_code=_STATE_CODE_UPPER,
             external_id="00000003-2",
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             admission_date=datetime.date(year=2010, month=2, day=26),
             release_date=datetime.date(year=2010, month=4, day=6),
             facility="WTSP",
@@ -190,7 +186,6 @@ class TestUsTnController(BaseDirectIngestControllerTests):
             person=person_3,
             state_code=_STATE_CODE_UPPER,
             external_id="00000003-3",
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             admission_date=datetime.date(year=2010, month=4, day=6),
             release_date=datetime.date(year=2010, month=11, day=4),
             facility="WTSP",
