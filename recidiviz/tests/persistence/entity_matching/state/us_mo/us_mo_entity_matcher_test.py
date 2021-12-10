@@ -21,7 +21,6 @@ from typing import List
 import attr
 
 from recidiviz.common.constants.state.state_agent import StateAgentType
-from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session import Session
@@ -30,9 +29,7 @@ from recidiviz.persistence.entity.entities import EntityPersonType
 from recidiviz.persistence.entity.state.entities import (
     StateAgent,
     StatePerson,
-    StateSentenceGroup,
     StateSupervisionPeriod,
-    StateSupervisionSentence,
 )
 from recidiviz.persistence.entity_matching import entity_matching
 from recidiviz.persistence.entity_matching.entity_matching_types import MatchedEntities
@@ -40,9 +37,7 @@ from recidiviz.tests.persistence.database.schema.state.schema_test_utils import 
     generate_agent,
     generate_external_id,
     generate_person,
-    generate_sentence_group,
     generate_supervision_period,
-    generate_supervision_sentence,
 )
 from recidiviz.tests.persistence.entity_matching.state.base_state_entity_matcher_test_classes import (
     BaseStateEntityMatcherTest,
@@ -114,21 +109,13 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
             state_code=_US_MO,
             supervising_officer=db_supervising_officer,
         )
-        db_supervision_sentence = generate_supervision_sentence(
-            person=db_person,
-            external_id=_EXTERNAL_ID,
-            start_date=_DATE_1,
-            supervision_periods=[
-                db_supervision_period,
-                db_supervision_period_another,
-                db_closed_supervision_period,
-            ],
-        )
-        db_sentence_group = generate_sentence_group(
-            external_id=_EXTERNAL_ID, supervision_sentences=[db_supervision_sentence]
-        )
+
         db_person.external_ids = [db_external_id]
-        db_person.sentence_groups = [db_sentence_group]
+        db_person.supervision_periods = [
+            db_supervision_period,
+            db_supervision_period_another,
+            db_closed_supervision_period,
+        ]
         entity_person = self.to_entity(db_person)
         self._commit_to_db(db_person)
 
@@ -190,22 +177,12 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
             supervising_officer=db_supervising_officer,
         )
         entity_supervision_period_open = self.to_entity(db_supervision_period_open)
-        db_supervision_sentence = generate_supervision_sentence(
-            person=db_person,
-            external_id=_EXTERNAL_ID,
-            state_code=_US_MO,
-            start_date=_DATE_1,
-            supervision_periods=[db_supervision_period, db_supervision_period_open],
-        )
-        entity_supervision_sentence = self.to_entity(db_supervision_sentence)
-        db_sentence_group = generate_sentence_group(
-            external_id=_EXTERNAL_ID,
-            state_code=_US_MO,
-            supervision_sentences=[db_supervision_sentence],
-        )
-        entity_sentence_group = self.to_entity(db_sentence_group)
+
         db_person.external_ids = [db_external_id]
-        db_person.sentence_groups = [db_sentence_group]
+        db_person.supervision_periods = [
+            db_supervision_period,
+            db_supervision_period_open,
+        ]
         entity_person = self.to_entity(db_person)
         self._commit_to_db(db_person)
 
@@ -226,31 +203,16 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
             state_code=_US_MO,
             termination_date=_DATE_3,
         )
-        supervision_sentence = StateSupervisionSentence.new_with_defaults(
-            external_id=entity_supervision_sentence.external_id,
-            state_code=_US_MO,
-            supervision_periods=[supervision_period_update, new_supervision_period],
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-        )
-        sentence_group = StateSentenceGroup.new_with_defaults(
-            external_id=entity_sentence_group.external_id,
-            state_code=_US_MO,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            supervision_sentences=[supervision_sentence],
-        )
 
         external_id = attr.evolve(entity_external_id, person_external_id_id=None)
         person = StatePerson.new_with_defaults(
             external_ids=[external_id],
-            sentence_groups=[sentence_group],
+            supervision_periods=[supervision_period_update, new_supervision_period],
             state_code=_US_MO,
         )
 
         expected_person = attr.evolve(entity_person)
         expected_person.supervising_officer = new_supervising_officer
-        expected_supervision_sentence = expected_person.sentence_groups[
-            0
-        ].supervision_sentences[0]
 
         expected_unchanged_supervision_period = attr.evolve(entity_supervision_period)
         expected_updated_supervision_period = attr.evolve(
@@ -258,7 +220,7 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
             termination_date=supervision_period_update.termination_date,
             supervising_officer=expected_unchanged_supervision_period.supervising_officer,
         )
-        expected_supervision_sentence.supervision_periods = [
+        expected_person.supervision_periods = [
             expected_unchanged_supervision_period,
             expected_updated_supervision_period,
             new_supervision_period,

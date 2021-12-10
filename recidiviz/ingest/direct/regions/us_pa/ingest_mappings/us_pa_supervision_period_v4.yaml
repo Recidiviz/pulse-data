@@ -11,9 +11,6 @@ key_mappings:
 ancestor_keys:
   parole_number: state_person.state_person_id
 
-enforced_ancestor_types:
-  state_sentence: state_supervision_sentence
-
 # Primary key override for Supervision Period id defined in controller in format of [parole_number]-[period_sequence_number]
 
 keys_to_ignore:

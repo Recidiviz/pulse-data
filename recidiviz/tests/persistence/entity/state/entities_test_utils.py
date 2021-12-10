@@ -605,8 +605,7 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
         case_type_entries=[supervision_case_type_entry],
     )
 
-    incarceration_sentence.supervision_periods = [supervision_period]
-    supervision_sentence.supervision_periods = [supervision_period]
+    person.supervision_periods = [supervision_period]
 
     if set_back_edges:
         person_children: Sequence[Entity] = (
@@ -621,6 +620,7 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
             *person.supervision_violations,
             *person.supervision_contacts,
             *person.incarceration_periods,
+            *person.supervision_periods,
         )
         for child in person_children:
             child.person = person  # type: ignore[attr-defined]
@@ -635,7 +635,6 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
 
         incarceration_sentence_children: Sequence[Entity] = (
             *incarceration_sentence.charges,
-            *incarceration_sentence.supervision_periods,
             *incarceration_sentence.early_discharges,
         )
 
@@ -648,7 +647,6 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
 
         supervision_sentence_children: Sequence[Entity] = (
             *supervision_sentence.charges,
-            *supervision_sentence.supervision_periods,
             *supervision_sentence.early_discharges,
         )
 

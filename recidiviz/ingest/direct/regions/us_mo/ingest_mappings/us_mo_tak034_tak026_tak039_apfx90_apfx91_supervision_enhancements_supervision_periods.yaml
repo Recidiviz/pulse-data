@@ -10,11 +10,6 @@ key_mappings:
 ancestor_keys:
   DOC: state_person.state_person_id
 
-enforced_ancestor_types:
-  # Hard-code a placeholder supervision sentence - periods will be moved to appropriate sentences via
-  # date-based entity matching.
-  state_sentence: state_supervision_sentence
-
 keys_to_ignore:
   - DOC                       # Offender DOC Number - Handled manually in the controller
   - CYC                       # Offender Cycle Number - Handled manually in the controller

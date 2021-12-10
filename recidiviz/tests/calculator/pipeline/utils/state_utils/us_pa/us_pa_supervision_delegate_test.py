@@ -103,7 +103,6 @@ class TestUsPaSupervisionDelegate(unittest.TestCase):
             state_code="US_PA",
             incarceration_sentence_id=123,
             start_date=date(2018, 5, 1),
-            supervision_periods=[supervision_period],
             projected_max_release_date=date(2018, 5, 10),
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
         )
@@ -136,7 +135,6 @@ class TestUsPaSupervisionDelegate(unittest.TestCase):
             incarceration_sentence_id=123,
             start_date=date(2018, 4, 1),
             completion_date=date(2018, 4, 30),
-            supervision_periods=[],
             projected_max_release_date=date(2018, 5, 10),
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
         )
@@ -169,7 +167,6 @@ class TestUsPaSupervisionDelegate(unittest.TestCase):
             state_code="US_PA",
             incarceration_sentence_id=123,
             start_date=date(2018, 5, 1),
-            supervision_periods=[supervision_period],
             projected_max_release_date=date(2018, 5, 10),
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
         )
@@ -177,7 +174,6 @@ class TestUsPaSupervisionDelegate(unittest.TestCase):
             state_code="US_PA",
             incarceration_sentence_id=123,
             start_date=date(2018, 5, 1),
-            supervision_periods=[supervision_period],
             projected_max_release_date=date(2018, 6, 10),
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
         )

@@ -84,6 +84,8 @@ def generate_entity_documentation() -> bool:
         )
         return writer.dumps()
 
+    old_file_names = set(os.listdir(ENTITY_DOCS_ROOT))
+    generated_file_names = set()
     anything_modified = False
     for t in StateBase.metadata.sorted_tables:
         if t.comment is None:
@@ -94,14 +96,22 @@ def generate_entity_documentation() -> bool:
         documentation = f"## {t.name}\n\n"
         documentation += f"{t.comment}\n\n"
         documentation += f"{_get_fields(t.columns)}\n\n"
-
-        markdown_file_path = os.path.join(ENTITY_DOCS_ROOT, f"{t.name}.md")
+        markdown_file_name = f"{t.name}.md"
+        markdown_file_path = os.path.join(ENTITY_DOCS_ROOT, markdown_file_name)
         anything_modified |= persist_file_contents(documentation, markdown_file_path)
+        generated_file_names.add(markdown_file_name)
+
+    extra_files = old_file_names.difference(generated_file_names)
+    for extra_file in extra_files:
+        anything_modified |= True
+        os.remove(os.path.join(ENTITY_DOCS_ROOT, extra_file))
 
     return anything_modified
 
 
 def main() -> int:
+    """Generates entity documentation, cleaning up any obsolete docs files."""
+
     def _generate_entity_documentation_summary() -> str:
         list_of_tables: str = "\n".join(
             sorted(
@@ -119,13 +129,14 @@ def main() -> int:
         return entity_documentation_summary
 
     # TODO(#7083): Add check that schema.py has been modified before generating entity documentation.
-    modified = False
-    modified |= generate_entity_documentation()
+    modified = generate_entity_documentation()
+
     if modified:
         update_summary_file(
             _generate_summary_strings(),
             "## Schema Catalog",
         )
+
     return 1 if modified else 0
 
 

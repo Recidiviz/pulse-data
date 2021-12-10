@@ -57,7 +57,7 @@ class StateBQTableExportUtilsTest(unittest.TestCase):
                     "tableReference": {
                         "projectId": "recidiviz-456",
                         "datasetId": "state",
-                        "tableId": "state_incarceration_sentence_supervision_period_association",
+                        "tableId": "state_charge_supervision_sentence_association",
                     }
                 }
             ),
@@ -65,11 +65,11 @@ class StateBQTableExportUtilsTest(unittest.TestCase):
         )
 
         expected_query = (
-            "SELECT state_incarceration_sentence_supervision_period_association.incarceration_sentence_id,"
-            "state_incarceration_sentence_supervision_period_association.supervision_period_id,"
-            "state_incarceration_sentence_supervision_period_association.state_code AS state_code "
-            "FROM `recidiviz-456.state.state_incarceration_sentence_supervision_period_association` "
-            "state_incarceration_sentence_supervision_period_association "
+            "SELECT state_charge_supervision_sentence_association.charge_id,"
+            "state_charge_supervision_sentence_association.supervision_sentence_id,"
+            "state_charge_supervision_sentence_association.state_code AS state_code "
+            "FROM `recidiviz-456.state.state_charge_supervision_sentence_association` "
+            "state_charge_supervision_sentence_association "
             "WHERE state_code IN ('US_PA');"
         )
         self.assertEqual(query, expected_query)

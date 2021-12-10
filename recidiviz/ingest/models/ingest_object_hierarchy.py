@@ -54,6 +54,11 @@ _HIERARCHY_MAP: Dict[
     "state_person_external_id": ("state_person",),
     "state_assessment": ("state_person",),
     "state_incarceration_period": ("state_person",),
+    "state_supervision_period": ("state_person",),
+    "state_supervision_case_type_entry": (
+        "state_person",
+        "state_supervision_period",
+    ),
     "state_incarceration_incident": ("state_person",),
     "state_incarceration_incident_outcome": (
         "state_person",
@@ -95,21 +100,6 @@ _HIERARCHY_MAP: Dict[
             },
         ),
     ),
-    "state_supervision_period": (
-        "state_person",
-        "state_sentence_group",
-        AncestorTypeChoices(
-            key="state_sentence",
-            ancestor_choices={
-                "state_incarceration_sentence",
-                "state_supervision_sentence",
-            },
-        ),
-    ),
-    # NOTE: It's a hack that we assume the parent of a
-    #  state_incarceration_period is an state_incarceration_sentence
-    #  here. In theory parent could be state_supervision_sentence that
-    #  has a revocation edge into a state_incarceration_period.
     "state_charge": (
         "state_person",
         "state_sentence_group",
@@ -154,12 +144,6 @@ _HIERARCHY_MAP: Dict[
         ),
         "state_charge",
         "state_court_case",
-    ),
-    "state_supervision_case_type_entry": (
-        "state_person",
-        "state_sentence_group",
-        "state_supervision_sentence",
-        "state_supervision_period",
     ),
 }
 

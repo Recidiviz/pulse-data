@@ -141,7 +141,6 @@ class TestStateSpecificSupervisionDelegate(unittest.TestCase):
             status=StateSentenceStatus.COMPLETED,
             supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
             projected_completion_date=date(2018, 5, 10),
-            supervision_periods=[],
         )
 
         self.assertEqual(
@@ -212,7 +211,6 @@ class TestStateSpecificSupervisionDelegate(unittest.TestCase):
             status=StateSentenceStatus.COMPLETED,
             supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
             projected_completion_date=date(2018, 5, 10),
-            supervision_periods=[supervision_period],
         )
 
         self.assertEqual(
@@ -253,7 +251,6 @@ class TestStateSpecificSupervisionDelegate(unittest.TestCase):
             incarceration_sentence_id=123,
             external_id="is1",
             start_date=date(2018, 5, 1),
-            supervision_periods=[supervision_period],
             projected_max_release_date=date(2018, 5, 10),
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
         )
@@ -301,7 +298,6 @@ class TestStateSpecificSupervisionDelegate(unittest.TestCase):
             status=StateSentenceStatus.COMPLETED,
             supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
             projected_completion_date=date(2018, 5, 10),
-            supervision_periods=[supervision_period],
         )
 
         # The supervision period is within the bounds of the incarceration sentence, and because its projected max
@@ -312,7 +308,6 @@ class TestStateSpecificSupervisionDelegate(unittest.TestCase):
             incarceration_sentence_id=123,
             external_id="is1",
             start_date=date(2018, 5, 1),
-            supervision_periods=[supervision_period],
             projected_max_release_date=date(2018, 5, 20),
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
         )
