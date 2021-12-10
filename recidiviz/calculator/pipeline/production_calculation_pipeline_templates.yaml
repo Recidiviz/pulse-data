@@ -93,6 +93,21 @@ incremental_pipelines:
     metric_types: VIOLATION
     region: us-east1
 
+  # Daily US_TN calculations
+  - pipeline: supervision
+    job_name: us-tn-supervision-calculations-36
+    state_code: US_TN
+    calculation_month_count: 36
+    metric_types: SUPERVISION_POPULATION SUPERVISION_START SUPERVISION_TERMINATION
+    region: us-west1
+  - pipeline: incarceration
+    job_name: us-tn-incarceration-calculations-36
+    state_code: US_TN
+    metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_POPULATION INCARCERATION_RELEASE
+    calculation_month_count: 36
+    region: us-central1
+
+
 historical_pipelines:
   - pipeline: incarceration
     job_name: us-id-historical-incarceration-calculations-240
@@ -165,4 +180,16 @@ historical_pipelines:
     state_code: US_PA
     calculation_month_count: 240
     metric_types: VIOLATION
+    region: us-central1
+  - pipeline: supervision
+    job_name: us-tn-historical-supervision-calculations-240
+    state_code: US_TN
+    calculation_month_count: 240
+    metric_types: SUPERVISION_POPULATION SUPERVISION_START SUPERVISION_TERMINATION
+    region: us-west1
+  - pipeline: incarceration
+    job_name: us-tn-historical-incarceration-calculations-240
+    state_code: US_TN
+    metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_POPULATION INCARCERATION_RELEASE
+    calculation_month_count: 240
     region: us-central1
