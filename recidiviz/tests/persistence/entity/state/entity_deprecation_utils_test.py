@@ -18,10 +18,6 @@
 import unittest
 
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
-from recidiviz.common.constants.state.state_incarceration_period import (
-    StateIncarcerationPeriodStatus,
-)
-
 from recidiviz.persistence.entity.state import entities, entity_deprecation_utils
 
 
@@ -36,7 +32,6 @@ class TestValidateDeprecatedEntityFieldForStates(unittest.TestCase):
 
         ip = entities.StateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
-            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
         )
 
@@ -60,7 +55,6 @@ class TestValidateDeprecatedEntityFieldForStates(unittest.TestCase):
 
         ip = entities.StateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
-            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
             parole_decisions=[
                 entities.StateParoleDecision.new_with_defaults(state_code="US_XX")
             ],
@@ -87,7 +81,6 @@ class TestValidateDeprecatedEntityFieldForStates(unittest.TestCase):
 
         ip = entities.StateIncarcerationPeriod.new_with_defaults(
             state_code="US_ZZ",
-            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
         )
 
@@ -104,7 +97,6 @@ class TestValidateDeprecatedEntityFieldForStates(unittest.TestCase):
         field is empty on the entity."""
         ip = entities.StateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
-            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
             incarceration_type=None,
         )
 
@@ -125,7 +117,6 @@ class TestValidateDeprecatedEntityForStates(unittest.TestCase):
         raise an error if a deprecated entity is instantiated for the given state."""
         ip = entities.StateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
-            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         with self.assertRaises(ValueError) as e:

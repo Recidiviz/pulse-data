@@ -1400,7 +1400,6 @@ class StateIncarcerationPeriod(IngestObject):
     def __init__(
         self,
         state_incarceration_period_id=None,
-        status=None,
         incarceration_type=None,
         admission_date=None,
         release_date=None,
@@ -1419,7 +1418,6 @@ class StateIncarcerationPeriod(IngestObject):
         self.state_incarceration_period_id: Optional[
             str
         ] = state_incarceration_period_id
-        self.status: Optional[str] = status
         self.incarceration_type: Optional[str] = incarceration_type
         self.admission_date: Optional[str] = admission_date
         self.release_date: Optional[str] = release_date

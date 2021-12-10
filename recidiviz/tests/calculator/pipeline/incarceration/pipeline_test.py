@@ -77,7 +77,6 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationFacilitySecurityLevel,
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
-    StateIncarcerationPeriodStatus,
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
@@ -271,7 +270,6 @@ class TestIncarcerationPipeline(unittest.TestCase):
         initial_incarceration = schema.StateIncarcerationPeriod(
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             county_code="124",
             facility="San Quentin",
@@ -300,7 +298,6 @@ class TestIncarcerationPipeline(unittest.TestCase):
         first_reincarceration = schema.StateIncarcerationPeriod(
             incarceration_period_id=2222,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             county_code="124",
             facility="San Quentin",
@@ -316,7 +313,6 @@ class TestIncarcerationPipeline(unittest.TestCase):
         subsequent_reincarceration = schema.StateIncarcerationPeriod(
             incarceration_period_id=3333,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             state_code=state_code,
             county_code="124",
             facility="San Quentin",
@@ -835,7 +831,6 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             facility="PRISON XX",
             admission_date=date(2010, 11, 20),
@@ -989,7 +984,6 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
         incarceration_period_with_death = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_XX",
             facility="PRISON XX",
             admission_date=date(2010, 11, 20),
@@ -1001,7 +995,6 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
         post_mortem_incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_XX",
             facility="PRISON XX",
             admission_date=date(2010, 11, 22),
@@ -1013,7 +1006,6 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
         post_mortem_incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_XX",
             facility="PRISON XX",
             admission_date=date(2010, 11, 24),

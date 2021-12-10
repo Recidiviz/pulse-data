@@ -52,7 +52,6 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodReleaseReason as ReleaseReason,
 )
 from recidiviz.common.constants.state.state_incarceration_period import (
-    StateIncarcerationPeriodStatus,
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.date import DateRange, DateRangeDiff
@@ -152,7 +151,6 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
         for index, incarceration_period in enumerate(incarceration_periods):
             state_code = incarceration_period.state_code
             admission_date = incarceration_period.admission_date
-            status = incarceration_period.status
             release_date = incarceration_period.release_date
             release_reason = incarceration_period.release_reason
             release_facility = incarceration_period.facility
@@ -168,7 +166,6 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
             )
 
             if not self._should_include_in_release_cohort(
-                status,
                 release_date,
                 release_reason,
                 purpose_for_incarceration,
@@ -184,8 +181,8 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
                     " the release_cohort. Error in should_include_in_release_cohort."
                 )
 
-            # Admission data and status have been validated already
-            if admission_date and status:
+            # Admission data has been validated already
+            if admission_date:
                 if index == len(incarceration_periods) - 1:
                     event = self._for_incarceration_period_no_return(
                         state_code,
@@ -386,7 +383,6 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
 
     def _should_include_in_release_cohort(
         self,
-        status: StateIncarcerationPeriodStatus,
         release_date: Optional[date],
         release_reason: Optional[ReleaseReason],
         purpose_for_incarceration: Optional[StateSpecializedPurposeForIncarceration],
@@ -394,14 +390,9 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
     ) -> bool:
         """Identifies whether a period of incarceration with the given features should
         be included in the release cohort."""
-        # If the person is still in custody, there is no release to include in a cohort.
-        if status == StateIncarcerationPeriodStatus.IN_CUSTODY:
-            return False
-
         if not release_date:
-            # If the person is not in custody, there should be a release_date.
-            # This should not happen after validation. Throw error.
-            raise ValueError("release_date is not set where it should be.")
+            # If the person is still in custody, there is no release to include in a cohort.
+            return False
 
         if not release_reason:
             # If there is no recorded release reason, then we cannot classify this as

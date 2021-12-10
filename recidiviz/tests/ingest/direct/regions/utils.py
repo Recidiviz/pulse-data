@@ -23,7 +23,6 @@ from recidiviz.common.constants.state.state_incarceration import StateIncarcerat
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
-    StateIncarcerationPeriodStatus,
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
@@ -200,7 +199,6 @@ def add_incarceration_period_to_person(
     person: entities.StatePerson,
     state_code: str,
     external_id: str,
-    status: StateIncarcerationPeriodStatus,
     admission_date: datetime.date,
     release_date: Optional[datetime.date],
     facility: str,
@@ -222,7 +220,6 @@ def add_incarceration_period_to_person(
     incarceration_period = entities.StateIncarcerationPeriod.new_with_defaults(
         external_id=external_id,
         state_code=state_code,
-        status=status,
         incarceration_type=StateIncarcerationType.STATE_PRISON,
         admission_date=admission_date,
         release_date=release_date,

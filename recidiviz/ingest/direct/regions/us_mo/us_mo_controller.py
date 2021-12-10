@@ -42,7 +42,6 @@ from recidiviz.common.constants.state.state_charge import StateChargeClassificat
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
-    StateIncarcerationPeriodStatus,
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
@@ -447,7 +446,6 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             self._gen_clear_magical_date_value(
                 "release_date", self.PERIOD_MAGICAL_DATES, StateIncarcerationPeriod
             ),
-            self._set_incarceration_period_status,
             gen_set_field_as_concatenated_values_hook(
                 StateIncarcerationPeriod,
                 "release_reason",
@@ -1100,21 +1098,6 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         ):
             return ip_admission_reason_enum
         return None
-
-    @classmethod
-    def _set_incarceration_period_status(
-        cls,
-        _gating_context: IngestGatingContext,
-        _row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        for obj in extracted_objects:
-            if isinstance(obj, StateIncarcerationPeriod):
-                if obj.release_date:
-                    obj.status = StateIncarcerationPeriodStatus.NOT_IN_CUSTODY.value
-                else:
-                    obj.status = StateIncarcerationPeriodStatus.IN_CUSTODY.value
 
     @classmethod
     def _sentence_group_ancestor_chain_override(

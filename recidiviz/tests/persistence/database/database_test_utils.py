@@ -18,9 +18,6 @@ from recidiviz.common.constants.state.state_early_discharge import (
 from recidiviz.common.constants.state.state_incarceration_incident import (
     StateIncarcerationIncidentOutcomeType,
 )
-from recidiviz.common.constants.state.state_incarceration_period import (
-    StateIncarcerationPeriodStatus,
-)
 from recidiviz.common.constants.state.state_parole_decision import (
     StateParoleDecisionOutcome,
 )
@@ -241,7 +238,6 @@ def generate_test_incarceration_period(
 ) -> state_schema.StateIncarcerationPeriod:
     instance = state_schema.StateIncarcerationPeriod(
         incarceration_period_id=5555,
-        status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY.value,
         state_code="US_XX",
         person_id=person_id,
         parole_decisions=parole_decisions,

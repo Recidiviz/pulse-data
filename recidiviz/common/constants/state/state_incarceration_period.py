@@ -27,20 +27,6 @@ from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 # TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass, and delete
 #  _get_default_map() once all state ingest views have been migrated to v2 mappings.
 @unique
-class StateIncarcerationPeriodStatus(EntityEnum, metaclass=EntityEnumMeta):
-    EXTERNAL_UNKNOWN = enum_strings.external_unknown
-    IN_CUSTODY = state_enum_strings.state_incarceration_period_status_in_custody
-    NOT_IN_CUSTODY = state_enum_strings.state_incarceration_period_status_not_in_custody
-    PRESENT_WITHOUT_INFO = enum_strings.present_without_info
-
-    @staticmethod
-    def _get_default_map() -> Dict[str, "StateIncarcerationPeriodStatus"]:
-        return _STATE_INCARCERATION_PERIOD_STATUS_MAP
-
-
-# TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass, and delete
-#  _get_default_map() once all state ingest views have been migrated to v2 mappings.
-@unique
 class StateIncarcerationFacilitySecurityLevel(EntityEnum, metaclass=EntityEnumMeta):
     MAXIMUM = state_enum_strings.state_incarceration_facility_security_level_maximum
     MEDIUM = state_enum_strings.state_incarceration_facility_security_level_medium
@@ -420,14 +406,6 @@ _STATE_INCARCERATION_FACILITY_SECURITY_LEVEL_MAP = {
     "MED": StateIncarcerationFacilitySecurityLevel.MEDIUM,
     "MINIMUM": StateIncarcerationFacilitySecurityLevel.MINIMUM,
     "MIN": StateIncarcerationFacilitySecurityLevel.MINIMUM,
-}
-
-
-_STATE_INCARCERATION_PERIOD_STATUS_MAP = {
-    "EXTERNAL UNKNOWN": StateIncarcerationPeriodStatus.EXTERNAL_UNKNOWN,
-    "IN CUSTODY": StateIncarcerationPeriodStatus.IN_CUSTODY,
-    "NOT IN CUSTODY": StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-    "PRESENT WITHOUT INFO": StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
 }
 
 _STATE_INCARCERATION_PERIOD_ADMISSION_REASON_MAP = {

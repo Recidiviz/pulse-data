@@ -26,7 +26,6 @@ from recidiviz.common.constants.state.state_incarceration import StateIncarcerat
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
-    StateIncarcerationPeriodStatus,
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
@@ -47,7 +46,6 @@ class TestUsPaIncarcerationDelegate(unittest.TestCase):
             incarceration_period_id=1112,
             external_id="2",
             incarceration_type=StateIncarcerationType.COUNTY_JAIL,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_PA",
             admission_date=date(2008, 12, 20),
             admission_reason=StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
@@ -74,7 +72,6 @@ class TestUsPaIncarcerationDelegate(unittest.TestCase):
             incarceration_period_id=1112,
             external_id="2",
             incarceration_type=StateIncarcerationType.COUNTY_JAIL,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_PA",
             admission_date=date(2008, 12, 20),
             admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
@@ -101,7 +98,6 @@ class TestUsPaIncarcerationDelegate(unittest.TestCase):
             incarceration_period_id=1112,
             external_id="2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_PA",
             admission_date=date(2008, 12, 20),
             admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,

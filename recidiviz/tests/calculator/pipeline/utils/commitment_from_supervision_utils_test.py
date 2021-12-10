@@ -68,7 +68,6 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodReleaseReason as ReleaseReason,
 )
 from recidiviz.common.constants.state.state_incarceration_period import (
-    StateIncarcerationPeriodStatus,
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_supervision_period import (
@@ -163,7 +162,6 @@ class TestGetCommitmentDetails(unittest.TestCase):
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
             external_id="ip1",
-            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             state_code="US_XX",
             admission_date=date(2018, 5, 25),
             admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
@@ -207,7 +205,6 @@ class TestGetCommitmentDetails(unittest.TestCase):
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
             external_id="ip1",
-            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             state_code="US_ND",
             admission_date=date(2018, 5, 25),
             admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
@@ -244,7 +241,6 @@ class TestGetCommitmentDetails(unittest.TestCase):
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
             external_id="ip1",
-            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             state_code="US_XX",
             admission_date=date(2018, 5, 25),
             admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
@@ -296,7 +292,6 @@ class TestGetCommitmentDetails(unittest.TestCase):
             external_id="ip2",
             state_code=state_code,
             incarceration_type=StateIncarcerationType.COUNTY_JAIL,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             admission_date=date(2018, 3, 11),
             admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
@@ -354,7 +349,6 @@ class TestGetCommitmentDetails(unittest.TestCase):
             incarceration_period_id=111,
             admission_reason=StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
             admission_date=date(2020, 1, 1),
-            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
         )
 
@@ -527,7 +521,6 @@ class TestCommitmentFromBoardHold(unittest.TestCase):
         ip_1 = StateIncarcerationPeriod.new_with_defaults(
             external_id="1",
             incarceration_period_id=1111,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_XX",
             admission_date=date(2002, 2, 5),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
@@ -539,7 +532,6 @@ class TestCommitmentFromBoardHold(unittest.TestCase):
         ip_2 = StateIncarcerationPeriod.new_with_defaults(
             external_id="1",
             incarceration_period_id=1111,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_XX",
             admission_date=date(2002, 9, 11),
             admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
@@ -557,7 +549,6 @@ class TestCommitmentFromBoardHold(unittest.TestCase):
         ip_1 = StateIncarcerationPeriod.new_with_defaults(
             external_id="1",
             incarceration_period_id=1111,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_XX",
             admission_date=date(2002, 2, 5),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
@@ -569,7 +560,6 @@ class TestCommitmentFromBoardHold(unittest.TestCase):
         ip_2 = StateIncarcerationPeriod.new_with_defaults(
             external_id="1",
             incarceration_period_id=1111,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_XX",
             admission_date=date(2002, 9, 11),
             admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
@@ -587,7 +577,6 @@ class TestCommitmentFromBoardHold(unittest.TestCase):
         ip_1 = StateIncarcerationPeriod.new_with_defaults(
             external_id="1",
             incarceration_period_id=1111,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_XX",
             admission_date=date(2002, 2, 5),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
@@ -599,7 +588,6 @@ class TestCommitmentFromBoardHold(unittest.TestCase):
         ip_2 = StateIncarcerationPeriod.new_with_defaults(
             external_id="1",
             incarceration_period_id=1111,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_XX",
             admission_date=date(2010, 3, 31),
             admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,

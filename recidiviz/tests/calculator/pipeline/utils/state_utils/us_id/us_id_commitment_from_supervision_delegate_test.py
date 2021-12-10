@@ -36,7 +36,6 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_incarceration_d
 )
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
-    StateIncarcerationPeriodStatus,
 )
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
@@ -60,7 +59,6 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         ip = StateIncarcerationPeriod.new_with_defaults(
             state_code="US_ID",
             incarceration_period_id=111,
-            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             admission_date=admission_date,
             admission_reason=admission_reason,
         )

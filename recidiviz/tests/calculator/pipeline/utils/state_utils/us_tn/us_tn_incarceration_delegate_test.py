@@ -25,7 +25,6 @@ from recidiviz.common.constants.state.shared_enums import StateCustodialAuthorit
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
-    StateIncarcerationPeriodStatus,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
@@ -45,7 +44,6 @@ class TestUsTnIncarcerationDelegate(unittest.TestCase):
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1112,
             external_id="2",
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             custodial_authority=StateCustodialAuthority.STATE_PRISON,
             state_code=_STATE_CODE,
             admission_date=date(2008, 12, 20),
@@ -64,7 +62,6 @@ class TestUsTnIncarcerationDelegate(unittest.TestCase):
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1112,
             external_id="2",
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=_STATE_CODE,
             admission_date=date(2008, 12, 20),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
@@ -90,7 +87,6 @@ class TestUsTnIncarcerationDelegate(unittest.TestCase):
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1112,
             external_id="2",
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             custodial_authority=None,
             state_code=_STATE_CODE,
             admission_date=date(2008, 12, 20),

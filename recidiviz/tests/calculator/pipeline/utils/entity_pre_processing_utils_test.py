@@ -36,7 +36,6 @@ from recidiviz.common.constants.state.state_incarceration import StateIncarcerat
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
-    StateIncarcerationPeriodStatus,
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_supervision_period import (
@@ -118,7 +117,6 @@ class TestPreProcessingManagersForCalculations(unittest.TestCase):
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
             external_id="ip1",
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code="US_XX",
             admission_date=datetime.date(2017, 4, 11),
@@ -160,7 +158,6 @@ class TestPreProcessingManagersForCalculations(unittest.TestCase):
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
             external_id="ip1",
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code="US_XX",
             admission_date=datetime.date(2017, 4, 11),
@@ -203,7 +200,6 @@ class TestPreProcessingManagersForCalculations(unittest.TestCase):
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
             external_id="ip1",
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code="US_XX",
             admission_date=datetime.date(2017, 4, 11),
@@ -235,7 +231,6 @@ class TestPreProcessingManagersForCalculations(unittest.TestCase):
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
             external_id="ip1",
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code="US_XX",
             admission_date=datetime.date(2017, 4, 11),

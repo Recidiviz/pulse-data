@@ -101,7 +101,6 @@ from recidiviz.common.constants.state.state_assessment import StateAssessmentCla
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
-    StateIncarcerationPeriodStatus,
     is_commitment_from_supervision,
 )
 from recidiviz.common.constants.state.state_supervision_period import (
@@ -398,14 +397,8 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
         release_date: Optional[date] = incarceration_period.release_date
 
         if release_date is None:
-            if incarceration_period.status != StateIncarcerationPeriodStatus.IN_CUSTODY:
-                # This should not happen after validation.
-                raise ValueError(
-                    "Unexpected missing release date. _infer_missing_dates_and_statuses is not properly"
-                    " setting missing dates."
-                )
-
-            # This person is in custody for this period. Set the release date for tomorrow.
+            # This person is in custody for this period. Set the release date for
+            # tomorrow.
             release_date = date.today() + relativedelta(days=1)
 
         if admission_date is None:

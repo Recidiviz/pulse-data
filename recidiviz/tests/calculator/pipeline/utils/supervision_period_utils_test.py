@@ -53,7 +53,6 @@ from recidiviz.common.constants.state.shared_enums import StateCustodialAuthorit
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodReleaseReason,
-    StateIncarcerationPeriodStatus,
 )
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
@@ -445,7 +444,6 @@ class TestGetPostIncarcerationSupervisionType(unittest.TestCase):
         self.incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1,
             state_code="US_XX",
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             admission_date=self.admission_date,
             release_date=self.release_date,
             release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,

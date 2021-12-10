@@ -79,7 +79,6 @@ def standard_date_sort_for_supervision_periods(
     """Sorts supervision periods chronologically by dates and statuses."""
     sort_periods_by_set_dates_and_statuses(
         supervision_periods,
-        has_active_status_function=None,
         is_transfer_start_function=_is_transfer_start,
         is_transfer_end_function=_is_transfer_end,
     )
