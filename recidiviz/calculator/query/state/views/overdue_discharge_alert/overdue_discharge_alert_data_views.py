@@ -82,7 +82,12 @@ FROM `{project_id}.{analyst_dataset}.projected_discharges_materialized` projecte
 INNER JOIN overdue_discharge_alert_recipients
     ON overdue_discharge_alert_recipients.state_code = projected_discharges.state_code
     AND overdue_discharge_alert_recipients.external_id = projected_discharges.supervising_officer_external_id
-WHERE projected_end_date <= DATE_ADD(CURRENT_DATE(), INTERVAL 60 DAY)
+LEFT OUTER JOIN `{project_id}.{reference_views_dataset}.overdue_discharge_alert_exclusions` overdue_discharge_alert_exclusions
+    ON overdue_discharge_alert_exclusions.state_code = projected_discharges.state_code
+    AND overdue_discharge_alert_exclusions.person_external_id = projected_discharges.person_external_id
+WHERE
+    overdue_discharge_alert_exclusions.state_code IS NULL
+    AND projected_end_date <= DATE_ADD(CURRENT_DATE(), INTERVAL 60 DAY)
 GROUP BY
     overdue_discharge_alert_recipients.state_code,
     overdue_discharge_alert_recipients.district,
