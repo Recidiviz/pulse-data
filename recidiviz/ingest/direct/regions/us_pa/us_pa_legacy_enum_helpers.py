@@ -176,8 +176,6 @@ INCARCERATION_PERIOD_RELEASE_REASON_TO_STR_MAPPINGS: Dict[
         "CS",  # Change Other Sentence
         "RTN",  # (Not in PA data dictionary, no instances after 1996)
         "W",  # Waiting
-        # TODO(#10053): Need to determine the actual mapping for PC
-        "PC",  # This is a new unknown status code that needs to be mapped properly
     ],
     StateIncarcerationPeriodReleaseReason.ESCAPE: [
         # CCIS CODES
@@ -215,6 +213,7 @@ INCARCERATION_PERIOD_RELEASE_REASON_TO_STR_MAPPINGS: Dict[
         "NF",  # Non-return Furlough
         "NR",  # [Unlisted]
         "NW",  # Non-return Work Release
+        "PC",  # Program Completed
     ],
     StateIncarcerationPeriodReleaseReason.TRANSFER: [
         # CCIS CODES
@@ -469,7 +468,16 @@ def incarceration_period_purpose_mapper(
 
         if purpose_for_incarceration in ("26", "46"):
             return StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION
-        if purpose_for_incarceration == "51":
+        if purpose_for_incarceration in (
+            # Detox
+            "51",
+            # State Drug Treatment Programs
+            "62",
+            "63",
+            "64",
+            "65",
+            "66",
+        ):
             return StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON
         # TODO(#9421): Need to revisit and update this once there is a solid design plan
         #  for how to represent community centers
