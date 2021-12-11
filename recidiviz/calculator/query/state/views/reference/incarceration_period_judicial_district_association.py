@@ -14,10 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Maps incarceration_period_ids to the area of jurisdictional coverage of the court that sentenced the person to
-     the incarceration."""
+"""Maps incarceration_period_ids to the area of jurisdictional coverage of the court
+that sentenced the person to the incarceration."""
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -26,45 +25,51 @@ INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME = (
     "incarceration_period_judicial_district_association"
 )
 
-INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_DESCRIPTION = """Maps incarceration_period_ids to the area of jurisdictional coverage of the court that sentenced the person to
-     the incarceration. If there are multiple non-null judicial districts associated with a supervision period,
-    prioritizes ones associated with controlling charges on the sentence."""
+INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_DESCRIPTION = """Maps incarceration_period_ids to the area of jurisdictional coverage of the
+    court that sentenced the person to the incarceration. If there are multiple 
+    non-null judicial districts associated with a supervision period,
+    prioritizes ones associated with controlling charges on the sentence. Uses
+    US_ND-specific external_id matching logic to match incarceration periods to 
+    related sentences."""
 
-# This is formatted first so that the joins can contain arguments that will be formatted later during
-# the creation of the view
-INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_QUERY_TEMPLATE = f"""
-    /*{{description}}*/
-    WITH ips_to_sentence_groups AS (
-      -- Sentence groups from incarceration sentences --
+
+INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_QUERY_TEMPLATE = """
+    /*{description}*/
+    WITH ips_to_all_sentences AS (
+      -- Incarceration periods with all sentences --
       SELECT
         period.state_code,
         period.person_id,
+        period.external_id as period_external_id,
         incarceration_period_id,
-        sentence_group_id
+        sent.external_id as sentence_external_id,
+        offense_date,
+        date_charged,
+        date_convicted,
+        judicial_district_code,
+        is_controlling
       FROM 
-        {bq_utils.period_to_sentence_group_joins("incarceration", "incarceration")}
-      
-      UNION ALL
-      
-      -- Sentence groups from supervision sentences --
-      SELECT
-        period.state_code,
-        period.person_id,
-        incarceration_period_id,
-        sentence_group_id
-      FROM
-        {bq_utils.period_to_sentence_group_joins("incarceration", "supervision")}
+         `{project_id}.{base_dataset}.state_incarceration_period` period
+      LEFT JOIN
+         # We need a set external_id to match to IPs
+        (SELECT * FROM `{project_id}.{reference_views_dataset}.sentence_judicial_district_association` WHERE sentence_type = 'INCARCERATION') sent
+      USING (state_code, person_id)
+    ), overlapping_sentences AS (
+        SELECT
+            *
+        FROM 
+            ips_to_all_sentences 
+        -- FOR USE IN US_ND ONLY --
+        -- Connect IPs to ISs through the external_id --
+        WHERE SPLIT(period_external_id, '-')[SAFE_OFFSET(0)] = SPLIT(sentence_external_id, '-')[SAFE_OFFSET(0)]
     ), ranked_judicial_districts AS (
       SELECT
-        * EXCEPT(sentence_group_id),
+        * ,
         ROW_NUMBER() OVER (PARTITION BY person_id, incarceration_period_id ORDER BY judicial_district_code IS NULL, is_controlling DESC) AS ranking
       FROM
-        ips_to_sentence_groups
-      LEFT JOIN
-        `{{project_id}}.{{reference_views_dataset}}.sentence_group_judicial_district_association`
-      USING (state_code, person_id, sentence_group_id)
+        overlapping_sentences
     )
-    
+
     SELECT
       state_code,
       person_id,
@@ -73,6 +78,8 @@ INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_QUERY_TEMPLATE = f"""
     FROM
       ranked_judicial_districts
     WHERE ranking = 1
+    -- THIS VIEW CAN ONLY BE USED IN US_ND
+    AND state_code = 'US_ND'
     -- This will limit the size of the output, improving Dataflow job speeds
     AND judicial_district_code IS NOT NULL
     """
