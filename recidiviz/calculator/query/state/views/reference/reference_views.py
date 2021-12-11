@@ -66,8 +66,8 @@ from recidiviz.calculator.query.state.views.reference.persons_with_last_known_ad
 from recidiviz.calculator.query.state.views.reference.revocations_matrix_by_person import (
     REVOCATIONS_MATRIX_BY_PERSON_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.reference.sentence_group_judicial_district_association import (
-    SENTENCE_GROUP_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_BUILDER,
+from recidiviz.calculator.query.state.views.reference.sentence_judicial_district_association import (
+    SENTENCE_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.reference.single_day_incarceration_population_for_spotlight import (
     SINGLE_DAY_INCARCERATION_POPULATION_FOR_SPOTLIGHT_VIEW_BUILDER,
@@ -120,7 +120,7 @@ REFERENCE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     ADMISSION_TYPES_PER_STATE_FOR_MATRIX_VIEW_BUILDER,
     US_MO_SENTENCE_STATUSES_VIEW_BUILDER,
     COVID_REPORT_WEEKS_VIEW_BUILDER,
-    SENTENCE_GROUP_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_BUILDER,
+    SENTENCE_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_BUILDER,
     INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_BUILDER,
     SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_BUILDER,
     SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_BUILDER,
