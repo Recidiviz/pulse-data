@@ -12,6 +12,8 @@ columns:
       The unique location ID that is used by other tables to identify the location.
   - name : Cis_900_Employee_Id
   - name : Cis_9009_Region_Cd
+    description: |-
+      The region where this location is located
   - name : Cis_908_Canteen_Location_Id
   - name : Cis_9080_Ccs_Location_Type_Cd
     description: A code that describes the type of location it is.
