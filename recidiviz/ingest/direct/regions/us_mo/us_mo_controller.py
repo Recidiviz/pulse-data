@@ -201,7 +201,14 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
     }
 
     # TODO(#2604): Figure out if we should do anything special with these
-    SENTENCE_MAGICAL_DATES = ["0", "20000000", "66666666", "88888888", "99999999"]
+    SENTENCE_MAGICAL_DATES = [
+        "0",
+        "20000000",
+        "66666666",
+        "77777777",
+        "88888888",
+        "99999999",
+    ]
     PERIOD_MAGICAL_DATES = ["0", "99999999"]
 
     # TODO(#2898): Complete transition to TAK026 for IncarcerationPeriod statuses
