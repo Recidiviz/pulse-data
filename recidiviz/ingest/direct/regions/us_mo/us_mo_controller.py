@@ -203,6 +203,7 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
     # TODO(#2604): Figure out if we should do anything special with these
     SENTENCE_MAGICAL_DATES = [
         "0",
+        "19000000",
         "20000000",
         "66666666",
         "77777777",
