@@ -72,6 +72,16 @@ class DirectIngestRegionRawFileConfigTest(unittest.TestCase):
                 region_module=fake_regions_module,
             )
 
+    def test_no_default_line_terminator(self) -> None:
+        """Assert that given no default_line_terminator, an exception is not raised."""
+        region_config = DirectIngestRegionRawFileConfig(
+            region_code="us_xx",
+            region_module=fake_regions_module,
+        )
+        self.assertIsNone(
+            region_config.raw_file_configs["file_tag_first"].custom_line_terminator
+        )
+
     def test_missing_primary_key_columns(self) -> None:
         with self.assertRaisesRegex(
             ValueError,
@@ -183,6 +193,15 @@ class DirectIngestRegionRawFileConfigTest(unittest.TestCase):
         self.assertEqual(["PRIMARY_COL1"], config_4.primary_key_cols)
         self.assertEqual("ISO-8859-1", config_4.encoding)
         self.assertEqual("|", config_4.separator)
+
+    def test_default_line_terminator(self) -> None:
+        """Assert that a default_line_terminator is parsed correctly."""
+        region_config = DirectIngestRegionRawFileConfig(
+            region_code="us_ww",
+            region_module=fake_regions_module,
+        )
+        config = region_config.raw_file_configs["multiLineDescription"]
+        self.assertEqual(config.custom_line_terminator, "@\n")
 
     def test_custom_line_terminator(self) -> None:
         region_config = DirectIngestRegionRawFileConfig(

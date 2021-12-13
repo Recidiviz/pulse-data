@@ -70,6 +70,7 @@ def initialize_state_directories(state_code: str) -> None:
             [
                 f"default_encoding: {PLACEHOLDER_TO_DO_STRING}\n",
                 f"default_separator: {PLACEHOLDER_TO_DO_STRING}\n",
+                f"default_line_terminator: {PLACEHOLDER_TO_DO_STRING}\n"
                 f"# {PLACEHOLDER_TO_DO_STRING}: Double-check the default_ignore_quotes value\n",
                 "default_ignore_quotes: False\n",
             ]

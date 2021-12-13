@@ -218,6 +218,7 @@ class DirectIngestRawFileConfig:
         file_path: str,
         default_encoding: str,
         default_separator: str,
+        default_line_terminator: Optional[str],
         default_ignore_quotes: bool,
         file_config_dict: YAMLDict,
         yaml_filename: str,
@@ -283,7 +284,9 @@ class DirectIngestRawFileConfig:
             else "",
             encoding=encoding if encoding else default_encoding,
             separator=separator if separator else default_separator,
-            custom_line_terminator=custom_line_terminator,
+            custom_line_terminator=custom_line_terminator
+            if custom_line_terminator
+            else default_line_terminator,
             ignore_quotes=ignore_quotes if ignore_quotes else default_ignore_quotes,
             always_historical_export=always_historical_export
             if always_historical_export
@@ -303,6 +306,11 @@ class DirectIngestRawFileDefaultConfig:
     default_separator: str = attr.ib(validator=attr_validators.is_non_empty_str)
     # The default setting for whether to ignore quotes in files from this region
     default_ignore_quotes: bool = attr.ib(validator=attr_validators.is_bool)
+    # The default line terminator for raw files from this region
+    default_line_terminator: Optional[str] = attr.ib(
+        default=None,
+        validator=attr_validators.is_opt_str,
+    )
 
 
 @attr.s
@@ -326,12 +334,16 @@ class DirectIngestRegionRawFileConfig:
         default_contents = YAMLDict.from_path(default_file_path)
         default_encoding = default_contents.pop("default_encoding", str)
         default_separator = default_contents.pop("default_separator", str)
+        default_line_terminator = default_contents.pop_optional(
+            "default_line_terminator", str
+        )
         default_ignore_quotes = default_contents.pop("default_ignore_quotes", bool)
 
         return DirectIngestRawFileDefaultConfig(
             filename=default_filename,
             default_encoding=default_encoding,
             default_separator=default_separator,
+            default_line_terminator=default_line_terminator,
             default_ignore_quotes=default_ignore_quotes,
         )
 
@@ -384,6 +396,7 @@ class DirectIngestRegionRawFileConfig:
                     yaml_file_path,
                     default_config.default_encoding,
                     default_config.default_separator,
+                    default_config.default_line_terminator,
                     default_config.default_ignore_quotes,
                     yaml_contents,
                     filename,
