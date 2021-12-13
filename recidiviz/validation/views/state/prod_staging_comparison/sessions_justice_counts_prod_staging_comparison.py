@@ -40,7 +40,7 @@ SESSIONS_JUSTICE_COUNTS_PROD_STAGING_COMPARISON_QUERY_TEMPLATE = """
       staging.sessions_value AS staging_sessions_value,
       prod.sessions_value AS prod_sessions_value,
     FROM `{staging_project_id}.{validation_views_dataset}.sessions_justice_counts_comparison_materialized` staging 
-    INNER JOIN `{prod_project_id}.{validation_views_dataset}.sessions_justice_counts_comparison_materialized` prod
+    FULL OUTER JOIN `{prod_project_id}.{validation_views_dataset}.sessions_justice_counts_comparison_materialized` prod
     USING (state_code, metric, date_reported)
 """
 
