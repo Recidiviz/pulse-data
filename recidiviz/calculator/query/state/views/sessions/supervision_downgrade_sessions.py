@@ -23,10 +23,16 @@ python -m recidiviz.calculator.query.state.views.sessions.supervision_downgrade_
 from operator import itemgetter
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.pipeline.utils.calculator_utils import (
+    PRIMARY_PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE,
+)
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
     SESSIONS_DATASET,
+    STATE_BASE_DATASET,
+    STATIC_REFERENCE_TABLES_DATASET,
 )
+from recidiviz.case_triage.opportunities.types import OpportunityType
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
 )
@@ -48,9 +54,24 @@ A mismatch is considered "corrected" if the person's supervision level was reduc
 the recommendation without a reassessment.
 """
 
+_supervision_id_types = PRIMARY_PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE[
+    "supervision"
+].values()
+
 SUPERVISION_DOWNGRADE_SESSIONS_QUERY_TEMPLATE = f"""
     /*{{description}}*/
     WITH 
+    day_zero_reports AS (
+        SELECT
+            day_zero_reports.*,
+            person_id,
+        FROM `{{project_id}}.{{static_reference_dataset}}.day_zero_reports` day_zero_reports
+        INNER JOIN `{{project_id}}.{{state_dataset}}.state_person_external_id` pei
+            ON day_zero_reports.state_code = pei.state_code
+            AND day_zero_reports.person_external_id = pei.external_id
+            AND pei.id_type IN {tuple(_supervision_id_types)}
+        WHERE opportunity_type = '{OpportunityType.OVERDUE_DOWNGRADE.value}'
+    ),
     # identify contiguous blocks of the same downgrade recommendation in daily dataflow observations;
     # we will group these into sessions in the next step
     recommendation_grouped AS (
@@ -61,10 +82,16 @@ SUPERVISION_DOWNGRADE_SESSIONS_QUERY_TEMPLATE = f"""
             supervision_level,
             recommended_supervision_downgrade_level,
             assessment_date,
-            # a date is ineligible for surfacing if there was no recommendation to surface,
-            # or if there was no supervising officer with tool access on that date
+            # date_of_supervision is eligible to be considered a "surfaced date" if: 
+            # 1. there is a recommended downgrade AND
+            # 2. the person was supervised by someone with line staff tool access OR was included in a day zero report on that day
             IF(
-                recommended_supervision_downgrade_level IS NULL OR NOT IFNULL(has_case_triage_access OR has_po_report_access, FALSE),
+                recommended_supervision_downgrade_level IS NULL 
+                OR (
+                    # convoluted logic but this just translates to "no line staff tool access"
+                    NOT IFNULL(has_case_triage_access OR has_po_report_access, FALSE)
+                    AND day_zero_reports.report_date IS NULL
+                ),
                 NULL, 
                 date_of_supervision
             ) AS date_of_surface_eligibility,
@@ -88,6 +115,9 @@ SUPERVISION_DOWNGRADE_SESSIONS_QUERY_TEMPLATE = f"""
         LEFT JOIN `{{project_id}}.{{sessions_dataset}}.supervision_tool_access_sessions_materialized` supervision_tool_access_sessions
             ON compliance_metrics.person_id = supervision_tool_access_sessions.person_id 
             AND date_of_supervision BETWEEN supervision_tool_access_sessions.start_date AND IFNULL(supervision_tool_access_sessions.end_date, CURRENT_DATE())
+        LEFT JOIN day_zero_reports
+            ON compliance_metrics.person_id = day_zero_reports.person_id
+            AND date_of_supervision = day_zero_reports.report_date
     ),
     # this will sessionize the downgrade recommendations themselves;
     # determining the reason why a session ended will require another pass comparing adjacent sessions
@@ -163,10 +193,12 @@ SUPERVISION_DOWNGRADE_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=SUPERVISION_DOWNGRADE_SESSIONS_VIEW_NAME,
     view_query_template=SUPERVISION_DOWNGRADE_SESSIONS_QUERY_TEMPLATE,
     description=SUPERVISION_DOWNGRADE_SESSIONS_VIEW_DESCRIPTION,
-    sessions_dataset=SESSIONS_DATASET,
-    materialized_metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
     clustering_fields=["state_code", "person_id"],
     should_materialize=True,
+    materialized_metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    sessions_dataset=SESSIONS_DATASET,
+    state_dataset=STATE_BASE_DATASET,
+    static_reference_dataset=STATIC_REFERENCE_TABLES_DATASET,
 )
 
 if __name__ == "__main__":
