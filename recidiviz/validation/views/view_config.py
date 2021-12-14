@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2020 Recidiviz, Inc.
+# Copyright (C) 2021 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -241,6 +241,9 @@ from recidiviz.validation.views.state.sessions_validation.session_supervision_st
 from recidiviz.validation.views.state.sessions_validation.session_supervision_terminations_to_dataflow_disaggregated import (
     SESSION_SUPERVISION_TERMINATIONS_TO_DATAFLOW_VIEW_BUILDER_DISAGGREGATED,
 )
+from recidiviz.validation.views.state.sessions_validation.sessions_persons_in_incarceration_or_supervision import (
+    SESSIONS_IN_INCARCERATION_OR_SUPERVISION_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.supervision_period_dates_existence import (
     SUPERVISION_PERIOD_DATES_EXISTENCE_VIEW_BUILDER,
 )
@@ -363,6 +366,7 @@ VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = (
         SESSION_SUPERVISION_STARTS_TO_DATAFLOW_VIEW_BUILDER_DISAGGREGATED,
         SESSION_INCARCERATION_RELEASES_TO_DATAFLOW_VIEW_BUILDER_DISAGGREGATED,
         SESSION_SUPERVISION_TERMINATIONS_TO_DATAFLOW_VIEW_BUILDER_DISAGGREGATED,
+        SESSIONS_IN_INCARCERATION_OR_SUPERVISION_VIEW_BUILDER,
         REINCARCERATIONS_FROM_DATAFLOW_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER,
         REINCARCERATIONS_FROM_SESSIONS_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER,
         REVOCATION_SESSIONS_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER,
