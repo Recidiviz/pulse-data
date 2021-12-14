@@ -57,6 +57,9 @@ from recidiviz.calculator.query.state.views.reference.incarceration_period_judic
 from recidiviz.calculator.query.state.views.reference.overdue_discharge_alert_exclusions import (
     OVERDUE_DISCHARGE_ALERT_EXCLUSIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.reference.overdue_discharge_outcomes import (
+    OVERDUE_DISCHARGE_OUTCOMES_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.reference.persons_to_recent_county_of_residence import (
     PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_BUILDER,
 )
@@ -129,6 +132,7 @@ REFERENCE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     AGENT_EXTERNAL_ID_TO_FULL_NAMES_VIEW_BUILDER,
     SUPERVISION_TO_LIBERTY_TRANSITIONS_VIEW_BUILDER,
     SUPERVISION_TO_PRISON_TRANSITIONS_VIEW_BUILDER,
+    OVERDUE_DISCHARGE_OUTCOMES_VIEW_BUILDER,
     OVERDUE_DISCHARGE_ALERT_EXCLUSIONS_VIEW_BUILDER,
     SUPERVISION_CASE_COMPLIANCE_METRICS_VIEW_BUILDER,
     SUPERVISION_MISMATCHES_BY_DAY_VIEW_BUILDER,

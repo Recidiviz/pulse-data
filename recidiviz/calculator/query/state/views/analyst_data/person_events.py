@@ -21,6 +21,7 @@ from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    REFERENCE_VIEWS_DATASET,
     SESSIONS_DATASET,
     STATE_BASE_DATASET,
 )
@@ -312,6 +313,35 @@ FROM
 WHERE
     surfaced_date IS NOT NULL
     AND mismatch_corrected
+
+UNION ALL 
+
+-- Overdue discharge reports surfaced to staff
+SELECT 
+    state_code, 
+    person_id,
+    "OVERDUE_DISCHARGE_SURFACED" AS event,
+    report_date AS event_date,
+    CAST(NULL AS STRING) AS attribute_1,
+    CAST(NULL AS STRING) AS attribute_2,
+FROM 
+    `{project_id}.{reference_dataset}.overdue_discharge_outcomes`
+
+UNION ALL 
+
+-- Overdue discharge reports corrected (by releasing the person)
+SELECT 
+    state_code, 
+    person_id,
+    "SURFACED_OVERDUE_DISCHARGE_CORRECTED" AS event,
+    discharge_date AS event_date,
+    CAST(NULL AS STRING) AS attribute_1,
+    CAST(NULL AS STRING) AS attribute_2,
+FROM 
+    `{project_id}.{reference_dataset}.overdue_discharge_outcomes`
+WHERE
+    discharge_date IS NOT NULL
+    AND discharge_outflow = "RELEASE"
 """
 
 PERSON_EVENTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -322,6 +352,7 @@ PERSON_EVENTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     analyst_dataset=ANALYST_VIEWS_DATASET,
     case_triage_dataset=CASE_TRIAGE_DATASET,
     dataflow_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    reference_dataset=REFERENCE_VIEWS_DATASET,
     sessions_dataset=SESSIONS_DATASET,
     state_base_dataset=STATE_BASE_DATASET,
     us_id_raw_dataset=US_ID_RAW_DATASET,
