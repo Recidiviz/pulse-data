@@ -28,6 +28,7 @@ from recidiviz.calculator.pipeline.utils.calculator_utils import (
 )
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    PO_REPORT_DATASET,
     SESSIONS_DATASET,
     STATE_BASE_DATASET,
     STATIC_REFERENCE_TABLES_DATASET,
@@ -70,7 +71,16 @@ SUPERVISION_DOWNGRADE_SESSIONS_QUERY_TEMPLATE = f"""
             ON day_zero_reports.state_code = pei.state_code
             AND day_zero_reports.person_external_id = pei.external_id
             AND pei.id_type IN {tuple(_supervision_id_types)}
-        WHERE opportunity_type = '{OpportunityType.OVERDUE_DOWNGRADE.value}'
+        WHERE opportunity_type = "{OpportunityType.OVERDUE_DOWNGRADE.value}"
+    ),
+    po_monthly_reports AS (
+        SELECT
+            DATE(event_datetime) AS date_sent,
+            officer_external_id,
+        FROM `{{project_id}}.{{po_report_dataset}}.sendgrid_po_report_email_events_materialized`
+        INNER JOIN `{{project_id}}.{{static_reference_dataset}}.po_report_recipients`
+            ON email = email_address
+        WHERE event = "delivered"
     ),
     # identify contiguous blocks of the same downgrade recommendation in daily dataflow observations;
     # we will group these into sessions in the next step
@@ -84,16 +94,18 @@ SUPERVISION_DOWNGRADE_SESSIONS_QUERY_TEMPLATE = f"""
             assessment_date,
             # date_of_supervision is eligible to be considered a "surfaced date" if: 
             # 1. there is a recommended downgrade AND
-            # 2. the person was supervised by someone with line staff tool access OR was included in a day zero report on that day
+            # 2. the person was supervised by someone with Case Triage access 
+            # OR was included in a Day Zero Report on that day
+            # OR was included in a PO Monthly Report on that day
             IF(
-                recommended_supervision_downgrade_level IS NULL 
-                OR (
-                    # convoluted logic but this just translates to "no line staff tool access"
-                    NOT IFNULL(has_case_triage_access OR has_po_report_access, FALSE)
-                    AND day_zero_reports.report_date IS NULL
+                recommended_supervision_downgrade_level IS NOT NULL 
+                AND (
+                    has_case_triage_access
+                    OR day_zero_reports.report_date = date_of_supervision
+                    OR po_monthly_reports.date_sent = date_of_supervision
                 ),
-                NULL, 
-                date_of_supervision
+                date_of_supervision,
+                NULL
             ) AS date_of_surface_eligibility,
             # this variable will be used for grouping sessions, its actual value is not necessarily meaningful;
             # it happens to be the start date of a contiguous block of the same recommendation
@@ -118,6 +130,9 @@ SUPERVISION_DOWNGRADE_SESSIONS_QUERY_TEMPLATE = f"""
         LEFT JOIN day_zero_reports
             ON compliance_metrics.person_id = day_zero_reports.person_id
             AND date_of_supervision = day_zero_reports.report_date
+        LEFT JOIN po_monthly_reports
+            ON compliance_metrics.supervising_officer_external_id = po_monthly_reports.officer_external_id
+            AND compliance_metrics.date_of_supervision = po_monthly_reports.date_sent
     ),
     # this will sessionize the downgrade recommendations themselves;
     # determining the reason why a session ended will require another pass comparing adjacent sessions
@@ -196,6 +211,7 @@ SUPERVISION_DOWNGRADE_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     clustering_fields=["state_code", "person_id"],
     should_materialize=True,
     materialized_metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    po_report_dataset=PO_REPORT_DATASET,
     sessions_dataset=SESSIONS_DATASET,
     state_dataset=STATE_BASE_DATASET,
     static_reference_dataset=STATIC_REFERENCE_TABLES_DATASET,
