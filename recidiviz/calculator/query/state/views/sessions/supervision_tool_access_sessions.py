@@ -81,110 +81,112 @@ po_report_access_sessions AS (
     FROM
         `{project_id}.{static_reference_dataset}.case_triage_users`
 )
-# joins supervision officer sessions with that officer's access dates.
-# produces a separate row per session per tool
-, tool_access_sessions_overlapping AS (
-    SELECT 
-        supervision_officer_sessions.state_code,
-        supervision_officer_sessions.person_id,
-        supervision_officer_sessions.supervising_officer_external_id,
-        GREATEST(
-            supervision_officer_sessions.start_date, 
-            COALESCE(po_report_access_sessions.start_date, case_triage_access_sessions.start_date)
-        ) AS start_date,
-        LEAST(
-            COALESCE(supervision_officer_sessions.end_date, '9999-01-01'),
-            COALESCE(po_report_access_sessions.end_date, case_triage_access_sessions.end_date)
-        ) AS end_date,
-        MIN(has_po_report_access) AS has_po_report_access,
-        MIN(has_case_triage_access) AS has_case_triage_access,
-    FROM
-        `{project_id}.{sessions_dataset}.supervision_officer_sessions_materialized` supervision_officer_sessions
-    LEFT JOIN po_report_access_sessions ON (
-        supervision_officer_sessions.state_code = po_report_access_sessions.state_code 
-        AND supervision_officer_sessions.supervising_officer_external_id = po_report_access_sessions.officer_external_id 
-        AND (
-            supervision_officer_sessions.start_date BETWEEN po_report_access_sessions.start_date AND po_report_access_sessions.end_date
-            OR COALESCE(supervision_officer_sessions.end_date, '9999-01-01') BETWEEN po_report_access_sessions.start_date AND po_report_access_sessions.end_date
-        )
-    )
-    LEFT JOIN case_triage_access_sessions ON (
-        supervision_officer_sessions.state_code = case_triage_access_sessions.state_code 
-        AND supervision_officer_sessions.supervising_officer_external_id = case_triage_access_sessions.officer_external_id 
-        AND (
-            supervision_officer_sessions.start_date BETWEEN case_triage_access_sessions.start_date AND case_triage_access_sessions.end_date
-            OR COALESCE(supervision_officer_sessions.end_date, '9999-01-01') BETWEEN case_triage_access_sessions.start_date AND case_triage_access_sessions.end_date
-        )
-    )
-    GROUP BY 1, 2, 3, 4, 5
-)
-# harmonize contiguous access sessions with the same officer by carrying TRUEs forward once they appear
-, tool_access_sessions_dedup_1 AS (
-     SELECT
-        state_code,
-        person_id,
-        start_date,
-        end_date,
-        IFNULL(GREATEST(has_po_report_access, IFNULL(LAG(has_po_report_access) OVER officer_window, FALSE)), FALSE) AS has_po_report_access,
-        IFNULL(GREATEST(has_case_triage_access, IFNULL(LAG(has_case_triage_access) OVER officer_window, FALSE)), FALSE) AS has_case_triage_access,
-     FROM tool_access_sessions_overlapping 
-     WINDOW officer_window AS (
-         PARTITION BY state_code, person_id, supervising_officer_external_id 
-         ORDER BY start_date
-     )
-)
-# Merges neighboring periods with same access level, still potentially overlapping
-, access_sliced AS (
+# Join tools with officer sessions. Can produce more than one row per tool per officer session
+# when officer's access changes during a session.
+, tool_officer_sessions AS (
     SELECT
         state_code,
         person_id,
-        has_po_report_access,
-        has_case_triage_access,
-        MIN(start_date) AS start_date,
-        MAX(end_date) AS end_date,
+        supervising_officer_external_id,
+        start_date,
+        end_date,
+        # rows for one tool will have NULLs for the other;
+        # this carries values forward from their start date across all following rows to fill in those gaps.
+        # when multiple tools have the same start date, the flags may not all match across those rows, 
+        # but this will be corrected in the next step
+        IF(
+            COUNTIF(has_case_triage_access) OVER person_officer > 0,
+            TRUE,
+            FALSE
+        ) AS has_case_triage_access,
+        IF(
+            COUNTIF(has_po_report_access) OVER person_officer > 0,
+            TRUE,
+            FALSE
+        ) AS has_po_report_access,
     FROM (
-        # get IDs of contiguous islands
-        SELECT
-            *,
-            SUM (IF(DATE_ADD(prev_end_date, INTERVAL 1 DAY) >= start_date, 0, 1)) OVER (
-                PARTITION BY state_code, person_id, has_po_report_access, has_case_triage_access ORDER BY start_date, end_date) AS island_id,
-        FROM (
-            # get max end_date in preceding rows
-            SELECT
-                state_code,
-                person_id,
-                has_po_report_access,
-                has_case_triage_access,
-                start_date,
-                end_date,
-                MAX(end_date) OVER (PARTITION BY state_code, person_id, has_po_report_access, has_case_triage_access ORDER BY start_date, end_date
-                    ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING) AS prev_end_date,
-            FROM
-                tool_access_sessions_dedup_1
-            # discard sessions of officers with no access (NULL dates indicate absence from all access tables)
-            WHERE start_date IS NOT NULL
-            AND (has_po_report_access OR has_case_triage_access)
-        )
+        SELECT 
+            supervision_officer_sessions.state_code,
+            supervision_officer_sessions.person_id,
+            supervision_officer_sessions.supervising_officer_external_id,
+            GREATEST(
+                supervision_officer_sessions.start_date, 
+                case_triage_access_sessions.start_date
+            ) AS start_date,
+            LEAST(
+                IFNULL(supervision_officer_sessions.end_date, '9999-01-01'),
+                case_triage_access_sessions.end_date
+            ) AS end_date,
+            has_case_triage_access,
+            NULL as has_po_report_access,
+        FROM
+            `{project_id}.{sessions_dataset}.supervision_officer_sessions_materialized` supervision_officer_sessions
+        LEFT JOIN case_triage_access_sessions 
+            ON supervision_officer_sessions.state_code = case_triage_access_sessions.state_code 
+            AND supervision_officer_sessions.supervising_officer_external_id = case_triage_access_sessions.officer_external_id 
+            # all of the tool sessions either start or end at "infinity" 
+            # so this date check will match all sessions with officers on the access roster
+            AND (
+                supervision_officer_sessions.start_date BETWEEN case_triage_access_sessions.start_date AND case_triage_access_sessions.end_date
+                OR IFNULL(supervision_officer_sessions.end_date, '9999-01-01') BETWEEN case_triage_access_sessions.start_date AND case_triage_access_sessions.end_date
+            )
+        
+
+        UNION ALL 
+
+        SELECT 
+            supervision_officer_sessions.state_code,
+            supervision_officer_sessions.person_id,
+            supervision_officer_sessions.supervising_officer_external_id,
+            GREATEST(
+                supervision_officer_sessions.start_date, 
+                po_report_access_sessions.start_date
+            ) AS start_date,
+            LEAST(
+                IFNULL(supervision_officer_sessions.end_date, '9999-01-01'),
+                po_report_access_sessions.end_date
+            ) AS end_date,
+            NULL as has_case_triage_access,
+            has_po_report_access,
+        FROM
+            `{project_id}.{sessions_dataset}.supervision_officer_sessions_materialized` supervision_officer_sessions
+        LEFT JOIN po_report_access_sessions 
+            ON supervision_officer_sessions.state_code = po_report_access_sessions.state_code 
+            AND supervision_officer_sessions.supervising_officer_external_id = po_report_access_sessions.officer_external_id 
+            # all of the tool sessions either start or end at "infinity" 
+            # so this date check will match all sessions with officers on the access roster
+            AND (
+                supervision_officer_sessions.start_date BETWEEN po_report_access_sessions.start_date AND po_report_access_sessions.end_date
+                OR IFNULL(supervision_officer_sessions.end_date, '9999-01-01') BETWEEN po_report_access_sessions.start_date AND po_report_access_sessions.end_date
+            )
+        
     )
-    GROUP BY 1, 2, 3, 4, island_id
+    # null dates indicate officers who aren't on any tool access roster
+    WHERE start_date IS NOT NULL
+        # we only need to identify periods where there was some access
+        AND has_case_triage_access OR has_po_report_access
+    WINDOW person_officer AS (
+        PARTITION BY state_code, person_id, supervising_officer_external_id 
+        ORDER BY start_date
+        ROWS UNBOUNDED PRECEDING
+    )
 )
-# to represent transitions between access levels across overlapping officer sessions,
-# we have to disassemble the sessions based on officer assignment and then reconstruct them
-# based only on the maximum access level across any overlapping sessions.
+# to represent transitions between access levels across overlapping tool sessions and officer sessions,
+# identify all session boundaries; we will check each one for overlapping values and resolve them
 , all_boundaries AS (
     SELECT 
         state_code,
         person_id,
         start_date AS boundary_date,
         'start' AS boundary_type,
-    FROM access_sliced 
+    FROM tool_officer_sessions 
     UNION ALL 
     SELECT 
         state_code, 
         person_id,
         end_date AS boundary_date,
         'end' AS boundary_type,
-    FROM access_sliced
+    FROM tool_officer_sessions
 )
 # join each boundary with all overlapping sessions to aggregate the access levels
 , maximum_access_at_boundaries AS (
@@ -193,14 +195,15 @@ po_report_access_sessions AS (
         all_boundaries.person_id,
         boundary_date,
         boundary_type,
-        # if any officer has access, that takes precedence over those who don't
-        MAX(access_sliced.has_case_triage_access) as has_case_triage_access,
-        MAX(access_sliced.has_po_report_access) AS has_po_report_access
+        # access from any row in the group takes precedence. this may arise from 
+        # overlapping officer assignments or overlapping tool access sessions
+        MAX(tool_officer_sessions.has_case_triage_access) as has_case_triage_access,
+        MAX(tool_officer_sessions.has_po_report_access) AS has_po_report_access
     FROM all_boundaries 
-    LEFT JOIN access_sliced ON (
-        all_boundaries.state_code = access_sliced.state_code
-        AND all_boundaries.person_id = access_sliced.person_id
-        AND boundary_date BETWEEN access_sliced.start_date AND access_sliced.end_date
+    LEFT JOIN tool_officer_sessions ON (
+        all_boundaries.state_code = tool_officer_sessions.state_code
+        AND all_boundaries.person_id = tool_officer_sessions.person_id
+        AND boundary_date BETWEEN tool_officer_sessions.start_date AND tool_officer_sessions.end_date
     )
     GROUP BY 1, 2, 3, 4
 )
