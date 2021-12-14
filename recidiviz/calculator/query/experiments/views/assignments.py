@@ -46,6 +46,20 @@ WITH last_day_of_data AS (
     GROUP BY 1
 )
 
+-- Dummy "treatment" to get all persons when first observed in sessions
+, first_observed AS (
+    SELECT
+        "FIRST_OBSERVED" AS experiment_id,
+        state_code as state_code,
+        CAST(person_id AS STRING) AS subject_id,
+        "person_id" as id_type,
+        compartment_level_1 AS variant_id,
+        MIN(start_date) AS variant_date,
+    FROM
+        `{project_id}.{sessions_dataset}.compartment_sessions_materialized`
+    GROUP BY 1, 2, 3, 4, 5
+)
+
 -- When clients referred to dosage probation in ID
 , dosage_probation AS (
     SELECT
@@ -199,6 +213,9 @@ WITH last_day_of_data AS (
 
 -- Union all assignment subqueries
 , stacked AS (
+    SELECT *
+    FROM first_observed
+    UNION ALL
     SELECT *
     FROM dosage_probation
     UNION ALL
