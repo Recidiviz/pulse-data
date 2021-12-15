@@ -47,6 +47,9 @@ from recidiviz.ingest.direct.direct_ingest_region_utils import (
     get_direct_ingest_states_with_sftp_queue,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.types.direct_ingest_instance_factory import (
+    DirectIngestInstanceFactory,
+)
 from recidiviz.ingest.direct.types.direct_ingest_types import CloudTaskArgs
 from recidiviz.utils.regions import Region
 
@@ -639,7 +642,7 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
         ingest_bucket: GcsfsBucketPath,
         just_finished_job: bool,
     ) -> None:
-        ingest_instance = DirectIngestInstance.for_ingest_bucket(ingest_bucket)
+        ingest_instance = DirectIngestInstanceFactory.for_ingest_bucket(ingest_bucket)
         task_id = build_scheduler_task_id(region, ingest_instance)
 
         params = {
@@ -662,7 +665,7 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
         ingest_bucket: GcsfsBucketPath,
         can_start_ingest: bool,
     ) -> None:
-        ingest_instance = DirectIngestInstance.for_ingest_bucket(ingest_bucket)
+        ingest_instance = DirectIngestInstanceFactory.for_ingest_bucket(ingest_bucket)
         task_id = build_handle_new_files_task_id(region, ingest_instance)
 
         params = {

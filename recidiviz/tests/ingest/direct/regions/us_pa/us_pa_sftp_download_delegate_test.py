@@ -20,12 +20,12 @@ import unittest
 from mock import patch
 from mock.mock import MagicMock, Mock
 
-from recidiviz.cloud_storage.content_types import (
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.common.io.file_contents_handle import (
     FileContentsHandle,
     FileContentsRowType,
     IoType,
 )
-from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.regions.us_pa.us_pa_sftp_download_delegate import (
     UsPaSftpDownloadDelegate,
 )

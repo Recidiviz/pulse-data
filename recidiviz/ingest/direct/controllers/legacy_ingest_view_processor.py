@@ -23,9 +23,9 @@ import abc
 import logging
 from typing import Callable, Dict, List, Optional
 
-from recidiviz.cloud_storage.gcs_file_system import GcsfsFileContentsHandle
 from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.ingest_metadata import IngestMetadata
+from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsIngestArgs,
 )
@@ -138,7 +138,7 @@ class LegacyIngestViewProcessor(IngestViewProcessor):
     def parse_and_persist_contents(
         self,
         args: GcsfsIngestArgs,
-        contents_handle: GcsfsFileContentsHandle,
+        contents_handle: LocalFileContentsHandle,
         ingest_metadata: IngestMetadata,
     ) -> bool:
         ii = self._parse_ingest_info(args, contents_handle, ingest_metadata)
@@ -162,7 +162,7 @@ class LegacyIngestViewProcessor(IngestViewProcessor):
     def _parse_ingest_info(
         self,
         args: GcsfsIngestArgs,
-        contents_handle: GcsfsFileContentsHandle,
+        contents_handle: LocalFileContentsHandle,
         ingest_metadata: IngestMetadata,
     ) -> ingest_info.IngestInfo:
         """Parses ingest view file contents into an IngestInfo object."""

@@ -26,15 +26,9 @@ from typing import Any, Dict, Iterator, List, Optional, Set, TextIO, Union
 
 import attr
 
-from recidiviz.cloud_storage.content_types import (
-    FileContentsHandle,
-    FileContentsRowType,
-    IoType,
-)
 from recidiviz.cloud_storage.gcs_file_system import (
     GCSBlobDoesNotExistError,
     GCSFileSystem,
-    GcsfsFileContentsHandle,
     generate_random_temp_path,
 )
 from recidiviz.cloud_storage.gcsfs_path import (
@@ -43,6 +37,9 @@ from recidiviz.cloud_storage.gcsfs_path import (
     GcsfsFilePath,
     GcsfsPath,
 )
+from recidiviz.common.io.file_contents_handle import FileContentsHandle
+from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
+from recidiviz.common.io.sftp_file_contents_handle import SftpFileContentsHandle
 
 
 class FakeGCSFileSystemDelegate:
@@ -158,14 +155,14 @@ class FakeGCSFileSystem(GCSFileSystem):
 
     def download_to_temp_file(
         self, path: GcsfsFilePath, retain_original_filename: bool = False
-    ) -> Optional[GcsfsFileContentsHandle]:
+    ) -> Optional[LocalFileContentsHandle]:
         """Downloads file contents into local temporary_file, returning path to
         temp file, or None if the path no-longer exists in the GCS file system.
         """
         if not self.exists(path):
             return None
 
-        return GcsfsFileContentsHandle(self.real_absolute_path_for_path(path))
+        return LocalFileContentsHandle(self.real_absolute_path_for_path(path))
 
     def download_as_string(self, path: GcsfsFilePath, encoding: str = "utf-8") -> str:
         """Downloads file contents into memory, returning the contents as a string,
@@ -198,12 +195,20 @@ class FakeGCSFileSystem(GCSFileSystem):
     def upload_from_contents_handle_stream(
         self,
         path: GcsfsFilePath,
-        contents_handle: FileContentsHandle[FileContentsRowType, IoType],
+        contents_handle: FileContentsHandle,
         content_type: str,
     ) -> None:
         temp_path = generate_random_temp_path()
-        if os.path.exists(contents_handle.local_file_path):
-            shutil.copyfile(contents_handle.local_file_path, temp_path)
+        if isinstance(contents_handle, LocalFileContentsHandle):
+            contents_path = contents_handle.local_file_path
+        elif isinstance(contents_handle, SftpFileContentsHandle):
+            contents_path = contents_handle.sftp_file_path
+        else:
+            raise ValueError(
+                f"Unsupported contents handle type: [{type(contents_handle)}]"
+            )
+        if os.path.exists(contents_path):
+            shutil.copyfile(contents_path, temp_path)
         self._add_entry(FakeGCSFileSystemEntry(path, temp_path, content_type))
         self.uploaded_paths.add(path)
 

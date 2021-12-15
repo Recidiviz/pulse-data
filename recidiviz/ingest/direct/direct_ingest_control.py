@@ -70,6 +70,9 @@ from recidiviz.ingest.direct.errors import (
     DirectIngestInstanceError,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.types.direct_ingest_instance_factory import (
+    DirectIngestInstanceFactory,
+)
 from recidiviz.ingest.direct.types.direct_ingest_types import CloudTaskArgs
 from recidiviz.utils import metadata, monitoring, regions
 from recidiviz.utils.auth.gae import requires_gae_auth
@@ -164,7 +167,9 @@ def handle_direct_ingest_file() -> Tuple[str, HTTPStatus]:
 
     with monitoring.push_region_tag(
         region_code,
-        ingest_instance=DirectIngestInstance.for_ingest_bucket(bucket_path).value,
+        ingest_instance=DirectIngestInstanceFactory.for_ingest_bucket(
+            bucket_path
+        ).value,
     ):
         try:
             controller = DirectIngestControllerFactory.build(
@@ -214,7 +219,9 @@ def handle_new_files() -> Tuple[str, HTTPStatus]:
 
     with monitoring.push_region_tag(
         region_code,
-        ingest_instance=DirectIngestInstance.for_ingest_bucket(bucket_path).value,
+        ingest_instance=DirectIngestInstanceFactory.for_ingest_bucket(
+            bucket_path
+        ).value,
     ):
         try:
             controller = DirectIngestControllerFactory.build(
@@ -307,7 +314,7 @@ def raw_data_import() -> Tuple[str, HTTPStatus]:
 
     with monitoring.push_region_tag(
         region_code,
-        ingest_instance=DirectIngestInstance.for_ingest_bucket(
+        ingest_instance=DirectIngestInstanceFactory.for_ingest_bucket(
             gcsfs_path.bucket_path
         ).value,
     ):
@@ -425,7 +432,7 @@ def ingest_view_export() -> Tuple[str, HTTPStatus]:
 
     with monitoring.push_region_tag(
         region_code,
-        ingest_instance=DirectIngestInstance.for_ingest_bucket(
+        ingest_instance=DirectIngestInstanceFactory.for_ingest_bucket(
             GcsfsBucketPath(output_bucket_name)
         ).value,
     ):
@@ -491,7 +498,7 @@ def process_job() -> Tuple[str, HTTPStatus]:
 
     with monitoring.push_region_tag(
         region_code,
-        ingest_instance=DirectIngestInstance.for_ingest_bucket(
+        ingest_instance=DirectIngestInstanceFactory.for_ingest_bucket(
             gcsfs_path.bucket_path
         ).value,
     ):
@@ -570,7 +577,9 @@ def scheduler() -> Tuple[str, HTTPStatus]:
 
     with monitoring.push_region_tag(
         region_code,
-        ingest_instance=DirectIngestInstance.for_ingest_bucket(bucket_path).value,
+        ingest_instance=DirectIngestInstanceFactory.for_ingest_bucket(
+            bucket_path
+        ).value,
     ):
         try:
             controller = DirectIngestControllerFactory.build(

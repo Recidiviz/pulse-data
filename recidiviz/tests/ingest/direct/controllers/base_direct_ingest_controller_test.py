@@ -28,12 +28,12 @@ import pytz
 from freezegun import freeze_time
 from mock import Mock, patch
 
-from recidiviz.cloud_storage.gcs_file_system import GcsfsFileContentsHandle
 from recidiviz.cloud_storage.gcsfs_path import (
     GcsfsBucketPath,
     GcsfsDirectoryPath,
     GcsfsFilePath,
 )
+from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
 from recidiviz.common.serialization import (
     attr_from_json_dict,
     attr_to_json_dict,
@@ -111,7 +111,7 @@ class BaseDirectIngestControllerForTests(BaseDirectIngestController):
 
     def _get_contents_handle(
         self, args: GcsfsIngestArgs
-    ) -> Optional[GcsfsFileContentsHandle]:
+    ) -> Optional[LocalFileContentsHandle]:
         handle = super()._get_contents_handle(args)
         if handle:
             self.local_paths.add(handle.local_file_path)

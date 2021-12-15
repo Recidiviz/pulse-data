@@ -41,6 +41,9 @@ from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
     build_sftp_download_task_id,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.types.direct_ingest_instance_factory import (
+    DirectIngestInstanceFactory,
+)
 from recidiviz.tests.ingest.direct.fake_direct_ingest_cloud_task_manager import (
     FakeDirectIngestCloudTaskManager,
 )
@@ -245,7 +248,7 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
                 f"registered controller ingest bucket [{self.controller.ingest_bucket_path}]."
             )
 
-        ingest_instance = DirectIngestInstance.for_ingest_bucket(ingest_bucket)
+        ingest_instance = DirectIngestInstanceFactory.for_ingest_bucket(ingest_bucket)
         task_id = build_scheduler_task_id(region, ingest_instance)
         self.scheduler_queue.add_task(
             f"projects/path/to/{task_id}",
@@ -272,14 +275,14 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
                 f"registered controller ingest bucket [{self.controller.ingest_bucket_path}]."
             )
 
-        ingest_instance = DirectIngestInstance.for_ingest_bucket(ingest_bucket)
+        ingest_instance = DirectIngestInstanceFactory.for_ingest_bucket(ingest_bucket)
         task_id = build_handle_new_files_task_id(region, ingest_instance)
 
         self.scheduler_queue.add_task(
             f"projects/path/to/{task_id}",
             with_monitoring(
                 region.region_code,
-                DirectIngestInstance.for_ingest_bucket(ingest_bucket),
+                DirectIngestInstanceFactory.for_ingest_bucket(ingest_bucket),
                 self.controller.handle_new_files,
             ),
             current_task_id=task_id,

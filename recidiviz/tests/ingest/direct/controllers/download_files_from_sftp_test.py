@@ -29,13 +29,13 @@ from mock import MagicMock, Mock, patch
 from paramiko import RSAKey, SFTPAttributes
 from paramiko.hostkeys import HostKeyEntry
 
-from recidiviz.cloud_storage.content_types import (
+from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
+from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
+from recidiviz.common.io.file_contents_handle import (
     FileContentsHandle,
     FileContentsRowType,
     IoType,
 )
-from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
-from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.ingest.direct.base_sftp_download_delegate import BaseSftpDownloadDelegate
 from recidiviz.ingest.direct.controllers.download_files_from_sftp import (
     RAW_INGEST_DIRECTORY,

@@ -41,6 +41,9 @@ from recidiviz.common.date import snake_case_datetime
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.errors import DirectIngestError, DirectIngestErrorType
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.types.direct_ingest_instance_factory import (
+    DirectIngestInstanceFactory,
+)
 from recidiviz.ingest.direct.types.direct_ingest_types import CloudTaskArgs
 from recidiviz.utils import metadata
 
@@ -145,7 +148,7 @@ class GcsfsIngestArgs(CloudTaskArgs):
         return f"ingest_job_{parts.stripped_file_name}_{parts.date_str}"
 
     def ingest_instance(self) -> DirectIngestInstance:
-        return DirectIngestInstance.for_ingest_bucket(self.file_path.bucket_path)
+        return DirectIngestInstanceFactory.for_ingest_bucket(self.file_path.bucket_path)
 
     def job_tag(self) -> str:
         """Returns a (short) string tag to identify an ingest run in logs."""
@@ -173,7 +176,7 @@ class GcsfsRawDataBQImportArgs(CloudTaskArgs):
         return f"raw_data_import_{parts.stripped_file_name}_{parts.date_str}"
 
     def ingest_instance(self) -> DirectIngestInstance:
-        return DirectIngestInstance.for_ingest_bucket(
+        return DirectIngestInstanceFactory.for_ingest_bucket(
             self.raw_data_file_path.bucket_path
         )
 
@@ -205,7 +208,7 @@ class GcsfsIngestViewExportArgs(CloudTaskArgs):
         return tag
 
     def ingest_instance(self) -> DirectIngestInstance:
-        return DirectIngestInstance.for_ingest_bucket(
+        return DirectIngestInstanceFactory.for_ingest_bucket(
             GcsfsBucketPath(self.output_bucket_name)
         )
 

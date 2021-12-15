@@ -19,7 +19,6 @@ import csv
 import datetime
 import unittest
 
-from recidiviz.cloud_storage.gcs_file_system import GcsfsFileContentsHandle
 from recidiviz.common.constants.person_characteristics import Ethnicity, Gender, Race
 from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_agent import StateAgentType
@@ -33,6 +32,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
+from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.entity.state.entities import (
     StateAgent,
@@ -319,7 +319,7 @@ class UsTnIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
             file_name=f"{release_reason_file}.csv",
         )
 
-        admissions_contents_handle = GcsfsFileContentsHandle(
+        admissions_contents_handle = LocalFileContentsHandle(
             admissions_fixture_path, cleanup_file=False
         )
         admission_reasons = []
@@ -329,7 +329,7 @@ class UsTnIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
             )
             admission_reasons.append(admission_reason)
 
-        releases_contents_handle = GcsfsFileContentsHandle(
+        releases_contents_handle = LocalFileContentsHandle(
             releases_fixture_path, cleanup_file=False
         )
         release_reasons = []

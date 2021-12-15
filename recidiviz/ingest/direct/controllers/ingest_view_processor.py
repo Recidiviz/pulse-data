@@ -22,8 +22,8 @@ in Postgres.
 import abc
 from typing import List, cast
 
-from recidiviz.cloud_storage.gcs_file_system import GcsfsFileContentsHandle
 from recidiviz.common.ingest_metadata import IngestMetadata
+from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsIngestArgs,
 )
@@ -48,7 +48,7 @@ class IngestViewProcessor:
     def parse_and_persist_contents(
         self,
         args: GcsfsIngestArgs,
-        contents_handle: GcsfsFileContentsHandle,
+        contents_handle: LocalFileContentsHandle,
         ingest_metadata: IngestMetadata,
     ) -> bool:
         pass
@@ -66,7 +66,7 @@ class IngestViewProcessorImpl(IngestViewProcessor):
     def parse_and_persist_contents(
         self,
         args: GcsfsIngestArgs,
-        contents_handle: GcsfsFileContentsHandle,
+        contents_handle: LocalFileContentsHandle,
         ingest_metadata: IngestMetadata,
     ) -> bool:
         parsed_entities = self.ingest_view_file_parser.parse(
