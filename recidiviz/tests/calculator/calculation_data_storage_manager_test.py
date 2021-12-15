@@ -283,6 +283,55 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
         self.mock_client.list_datasets.assert_called()
         self.mock_client.delete_dataset.assert_not_called()
 
+    # pylint: disable=protected-access
+    @freeze_time("2020-01-03 00:30")
+    def test_delete_empty_datasets_terraform_managed_dataset_and_not(self) -> None:
+        """Test that _delete_empty_datasets does not delete an empty dataset if it has a
+        label identifying it as a Terraform managed dataset, but that the other
+        datasets do get deleted."""
+        terraform_managed_dataset = MockDataset(
+            dataset_id=self.mock_view_dataset_name,
+            created=datetime.datetime(
+                2020, 1, 1, 0, 0, 0, tzinfo=datetime.timezone.utc
+            ),
+            labels={"managed_by_terraform": "true"},
+        )
+
+        empty_dataset_name = "empty_dataset"
+        empty_dataset = MockDataset(
+            empty_dataset_name,
+            datetime.datetime(2020, 1, 1, 0, 0, 0, tzinfo=datetime.timezone.utc),
+        )
+        empty_dataset_ref = bigquery.dataset.DatasetReference(
+            self.project_id, empty_dataset_name
+        )
+
+        self.mock_client.list_datasets.return_value = [
+            bigquery.dataset.DatasetListItem(self.mock_dataset_resource),
+            bigquery.dataset.DatasetListItem(
+                {
+                    "datasetReference": {
+                        "projectId": self.project_id,
+                        "datasetId": empty_dataset_name,
+                    },
+                }
+            ),
+        ]
+        self.mock_client.dataset_ref_for_id.side_effect = [
+            self.mock_dataset,
+            empty_dataset_ref,
+        ]
+        self.mock_client.get_dataset.side_effect = [
+            terraform_managed_dataset,
+            empty_dataset,
+        ]
+        self.mock_client.list_tables.return_value = []
+
+        calculation_data_storage_manager._delete_empty_datasets()
+
+        self.mock_client.list_datasets.assert_called()
+        self.mock_client.delete_dataset.assert_called_with(empty_dataset_ref)
+
     @patch(
         "recidiviz.calculator.calculation_data_storage_manager._delete_empty_datasets"
     )

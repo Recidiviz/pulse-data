@@ -77,13 +77,17 @@ def _delete_empty_datasets() -> None:
         dataset_labels = dataset.labels
 
         # Skip datasets that are managed by terraform
+        managed_by_terraform = False
         for label, value in dataset_labels.items():
             if label == DATASET_MANAGED_BY_TERRAFORM_KEY and value == "true":
-                logging.info(
-                    "Skipping empty dataset that is in Terraform state [%s]",
-                    dataset_ref.dataset_id,
-                )
-                return
+                managed_by_terraform = True
+
+        if managed_by_terraform:
+            logging.info(
+                "Skipping empty dataset that is in Terraform state [%s]",
+                dataset_ref.dataset_id,
+            )
+            continue
 
         tables = peekable(bq_client.list_tables(dataset.dataset_id))
         created_time = dataset.created
