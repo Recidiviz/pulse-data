@@ -274,6 +274,13 @@ def _get_parsed_full_apache_beam_args(
     )
 
     parser.add_argument(
+        "--experiments=use_runner_v2",
+        action="store_true",
+        help="When set, uses the v2 version of the DataflowRunner.",
+        default=True,
+    )
+
+    parser.add_argument(
         "--network=default",
         action="store_true",
         help="The Compute Engine network for launching Compute Engine instances to run"

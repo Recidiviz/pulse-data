@@ -54,7 +54,7 @@ class TestPipelineArgsUtils(unittest.TestCase):
         "subnetwork": "https://www.googleapis.com/compute/v1/projects/recidiviz-staging/"
         "regions/us-west1/subnetworks/default",
         "use_public_ips": False,
-        "experiments": ["shuffle_mode=service", "use_beam_bq_sink"],
+        "experiments": ["shuffle_mode=service", "use_beam_bq_sink", "use_runner_v2"],
         "extra_packages": ["dist/recidiviz-calculation-pipelines.tar.gz"],
         "disk_size_gb": 50,
     }
@@ -186,7 +186,11 @@ class TestPipelineArgsUtils(unittest.TestCase):
             "subnetwork": "https://www.googleapis.com/compute/v1/projects/recidiviz-staging/"
             "regions/us-central1/subnetworks/default",
             "use_public_ips": False,
-            "experiments": ["shuffle_mode=service", "use_beam_bq_sink"],
+            "experiments": [
+                "shuffle_mode=service",
+                "use_beam_bq_sink",
+                "use_runner_v2",
+            ],
             "extra_packages": ["dist/recidiviz-calculation-pipelines.tar.gz"],
             "disk_size_gb": 50,
         }
