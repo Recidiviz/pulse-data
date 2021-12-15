@@ -21,7 +21,7 @@ expected=$(pipenv lock -r --dev | cut -d';' -f1 | sed 's/\[.*\]//' | sed '/^[-#]
 #     https://github.com/pypa/setuptools/blob/main/pkg_resources/__init__.py#L1314)
 # - Make everything lower case
 # - Sort, in case the above affected the sort order
-installed=$(pipenv run pip freeze | tr _ - | tr A-Z a-z | sort) || exit_on_fail
+installed=$(pipenv run pip freeze --all | tr _ - | tr A-Z a-z | sort) || exit_on_fail
 
 # Diff returns 1 if there are differences and >1 if an error occurred. We only want to fail here if there was an actual
 # error.
