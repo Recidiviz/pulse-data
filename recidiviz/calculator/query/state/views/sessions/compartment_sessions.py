@@ -494,11 +494,6 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         CAST(FLOOR(DATE_DIFF(COALESCE(s.end_date, first.last_day_of_data), demographics.birthdate, DAY) / 365.25) AS INT64) AS age_end,     
         demographics.gender,
         demographics.prioritized_race_or_ethnicity,
-        assessment_start.assessment_score AS assessment_score_start,
-        ROW_NUMBER() 
-            OVER(PARTITION BY s.state_code, s.person_id, s.session_id 
-            ORDER BY assessment_start.assessment_date ASC
-            ) AS assmt_score_start_order,
         assessment_end.assessment_score AS assessment_score_end,
     FROM sessions_aggregated_2 s
     LEFT JOIN session_with_ids_2 first
@@ -509,12 +504,32 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         AND COALESCE(s.end_date,'9999-01-01') = COALESCE(last.end_date,'9999-01-01')
     LEFT JOIN `{project_id}.{sessions_dataset}.person_demographics_materialized` demographics
         ON s.person_id = demographics.person_id
-    LEFT JOIN `{project_id}.{sessions_dataset}.assessment_score_sessions_materialized` assessment_start
-        ON COALESCE(assessment_start.assessment_date, '9999-01-01') <= COALESCE(s.end_date, '9999-01-01')
-        AND s.person_id = assessment_start.person_id
+        AND s.state_code = demographics.state_code
     LEFT JOIN `{project_id}.{sessions_dataset}.assessment_score_sessions_materialized` assessment_end
         ON COALESCE(s.end_date, '9999-01-01') BETWEEN assessment_end.assessment_date AND COALESCE(assessment_end.score_end_date, '9999-01-01')
         AND s.person_id = assessment_end.person_id
+        AND s.state_code = assessment_end.state_code
+    ),
+    sessions_with_assessment_score_start AS
+    /*
+    Hydrate the `assessment_score_start` column with the earliest assessment session
+    that overlaps the compartment session. Include assessments that were administered
+    after the compartment session started if no assessment exists prior to the session.
+    */
+    (
+    SELECT
+        sessions.*,
+        assessment_start.assessment_score AS assessment_score_start,
+        ROW_NUMBER()
+            OVER(PARTITION BY sessions.state_code, sessions.person_id, sessions.session_id
+            ORDER BY assessment_start.assessment_date ASC
+            ) AS assmt_score_start_order,
+    FROM sessions_additional_attributes sessions
+    LEFT JOIN `{project_id}.{sessions_dataset}.assessment_score_sessions_materialized` assessment_start
+        ON assessment_start.assessment_date <= COALESCE(sessions.end_date, '9999-01-01')
+        AND sessions.start_date <= COALESCE(assessment_start.score_end_date, '9999-01-01')
+        AND assessment_start.person_id = sessions.person_id
+        AND assessment_start.state_code = sessions.state_code
     WHERE TRUE
     QUALIFY assmt_score_start_order = 1
     )
@@ -585,7 +600,7 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
             WHEN assessment_score_end<=29 THEN '24-29'
             WHEN assessment_score_end<=38 THEN '30-38'
             WHEN assessment_score_end>=39 THEN '39+' END as assessment_score_bucket_end
-    FROM sessions_additional_attributes sessions
+    FROM sessions_with_assessment_score_start sessions
     -- TODO(#8129): Productionalize start/end reason inference tables
     LEFT JOIN `{project_id}.{static_reference_tables_dataset}.session_inferred_start_reasons_materialized` inferred_start
         ON sessions.compartment_level_1 = inferred_start.compartment_level_1 
