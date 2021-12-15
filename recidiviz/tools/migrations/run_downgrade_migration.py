@@ -115,7 +115,7 @@ def main(
     for key in db_keys:
         # Run downgrade
         try:
-            overriden_env_vars = SQLAlchemyEngineManager.update_sqlalchemy_env_vars(
+            overridden_env_vars = SQLAlchemyEngineManager.update_sqlalchemy_env_vars(
                 database_key=key,
                 ssl_cert_path=ssl_cert_path,
                 migration_user=True,
@@ -126,7 +126,7 @@ def main(
             logging.error("Downgrade failed to run: %s", e)
             sys.exit(1)
         finally:
-            local_postgres_helpers.restore_local_env_vars(overriden_env_vars)
+            local_postgres_helpers.restore_local_env_vars(overridden_env_vars)
 
 
 if __name__ == "__main__":
