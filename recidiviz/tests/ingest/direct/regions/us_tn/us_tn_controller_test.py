@@ -147,7 +147,7 @@ class TestUsTnController(BaseDirectIngestControllerTests):
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             admission_reason_raw_text="CTFA-NEWAD",
             release_reason=None,
-            release_reason_raw_text="NONE-NONE",
+            release_reason_raw_text=None,
         )
 
         # Person 3 moves from parole to facility.

@@ -188,7 +188,7 @@ class UsTnIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
                         admission_reason_raw_text="CTFA-NEWAD",
                         release_reason=None,
-                        release_reason_raw_text="NONE-NONE",
+                        release_reason_raw_text=None,
                     )
                 ],
             ),

@@ -195,8 +195,6 @@ output:
                 StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION:
                   - PRFA-WKEND  # Probation to facility - serving weekend
                   - CCFA-WKEND  # Serving weekend
-              $ignore:
-                - "NONE-NONE"
           release_reason:
             $enum_mapping:
               $raw_text:
@@ -204,6 +202,7 @@ output:
                   $values:
                     - EndMovementType
                     - EndMovementReason
+                  $include_nulls: False
               $mappings:
                 StateIncarcerationPeriodReleaseReason.RELEASED_TO_SUPERVISION:
                   # The following are all movements from facility to probation (FAPR).
@@ -401,7 +400,6 @@ output:
                   - CTFA-MISPR
                   - FUFA-INTRS
               $ignore:
-                  - "NONE-NONE"
                   - "CTPR-NEWAD"
                   - "CTCC-NEWAD"
                   - "CTDV-COURT"
