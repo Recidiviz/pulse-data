@@ -20,12 +20,9 @@ import re
 from typing import List
 from zipfile import ZipFile, is_zipfile
 
-from recidiviz.cloud_storage.gcs_file_system import (
-    BYTES_CONTENT_TYPE,
-    GCSFileSystem,
-    ZipFileContentsHandle,
-)
+from recidiviz.cloud_storage.gcs_file_system import BYTES_CONTENT_TYPE, GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
+from recidiviz.common.io.zip_file_contents_handle import ZipFileContentsHandle
 from recidiviz.ingest.direct.base_sftp_download_delegate import BaseSftpDownloadDelegate
 
 

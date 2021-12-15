@@ -39,6 +39,9 @@ from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
     build_sftp_download_task_id,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.types.direct_ingest_instance_factory import (
+    DirectIngestInstanceFactory,
+)
 from recidiviz.tests.ingest.direct.fake_direct_ingest_cloud_task_manager import (
     FakeDirectIngestCloudTaskManager,
 )
@@ -124,7 +127,7 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
             raise ValueError("Controller is null - did you call set_controller()?")
 
         task_id = build_scheduler_task_id(
-            region, DirectIngestInstance.for_ingest_bucket(ingest_bucket)
+            region, DirectIngestInstanceFactory.for_ingest_bucket(ingest_bucket)
         )
         self.scheduler_tasks.append(
             (f"projects/path/to/{task_id}", ingest_bucket, just_finished_job)
@@ -139,7 +142,7 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
         if not self.controller:
             raise ValueError("Controller is null - did you call set_controller()?")
         task_id = build_handle_new_files_task_id(
-            region, DirectIngestInstance.for_ingest_bucket(ingest_bucket)
+            region, DirectIngestInstanceFactory.for_ingest_bucket(ingest_bucket)
         )
         self.scheduler_tasks.append(
             (

@@ -68,10 +68,7 @@ from recidiviz.cloud_functions.cloud_function_utils import (
     IAP_CLIENT_ID,
     make_iap_request,
 )
-from recidiviz.cloud_storage.gcs_file_system import (
-    GCSFileSystem,
-    GcsfsFileContentsHandle,
-)
+from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.common import fips
@@ -89,6 +86,7 @@ from recidiviz.common.date import (
     first_day_of_month,
     last_day_of_month,
 )
+from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
 from recidiviz.common.str_field_utils import to_snake_case
 from recidiviz.persistence.database.base_schema import JusticeCountsBase
 from recidiviz.persistence.database.schema.justice_counts import schema
@@ -2214,7 +2212,7 @@ def open_table_file(
     spreadsheet_name: str,
     table_name: Optional[str],
     table_file: Optional[str],
-) -> GcsfsFileContentsHandle:
+) -> LocalFileContentsHandle:
     table_path = GcsfsFilePath.from_directory_and_file_name(
         directory_path,
         _get_table_filename(spreadsheet_name, name=table_name, file=table_file),
@@ -2498,7 +2496,7 @@ def upload(gcs: GCSFileSystem, manifest_path: str) -> GcsfsFilePath:
     )
     gcs.upload_from_contents_handle_stream(
         path=manifest_gcs_path,
-        contents_handle=GcsfsFileContentsHandle(manifest_path, cleanup_file=False),
+        contents_handle=LocalFileContentsHandle(manifest_path, cleanup_file=False),
         content_type="text/yaml",
     )
     return manifest_gcs_path
@@ -2517,7 +2515,7 @@ def upload_table(
     )
     gcs.upload_from_contents_handle_stream(
         path=GcsfsFilePath.from_directory_and_file_name(gcs_directory, table_filename),
-        contents_handle=GcsfsFileContentsHandle(
+        contents_handle=LocalFileContentsHandle(
             os.path.join(directory, table_filename), cleanup_file=False
         ),
         content_type="text/csv",

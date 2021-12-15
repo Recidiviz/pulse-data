@@ -19,11 +19,6 @@ given region.
 """
 from enum import Enum
 
-from recidiviz.cloud_functions.direct_ingest_bucket_name_utils import (
-    is_primary_ingest_bucket,
-    is_secondary_ingest_bucket,
-)
-from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.errors import DirectIngestInstanceError
@@ -62,13 +57,3 @@ class DirectIngestInstance(Enum):
         db_name = f"{state_code.value.lower()}_{self.value.lower()}"
 
         return SQLAlchemyDatabaseKey(schema_type=SchemaType.STATE, db_name=db_name)
-
-    @classmethod
-    def for_ingest_bucket(
-        cls, ingest_bucket: GcsfsBucketPath
-    ) -> "DirectIngestInstance":
-        if is_primary_ingest_bucket(ingest_bucket.bucket_name):
-            return cls.PRIMARY
-        if is_secondary_ingest_bucket(ingest_bucket.bucket_name):
-            return cls.SECONDARY
-        raise ValueError(f"Unexpected ingest bucket [{ingest_bucket.bucket_name}]")

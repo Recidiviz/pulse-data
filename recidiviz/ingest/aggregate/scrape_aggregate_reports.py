@@ -29,10 +29,11 @@ from requests.adapters import BaseAdapter
 
 from recidiviz.cloud_storage.gcs_file_system import (
     GCSFileSystem,
-    GcsfsFileContentsHandle,
+    generate_random_temp_path,
 )
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
+from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
 from recidiviz.ingest.aggregate.regions.ca import ca_aggregate_site_scraper
 from recidiviz.ingest.aggregate.regions.co import co_aggregate_site_scraper
 from recidiviz.ingest.aggregate.regions.fl import fl_aggregate_site_scraper
@@ -154,7 +155,7 @@ def _get_file_to_upload(
     post_data: Dict,
     verify_ssl: bool,
     adapter: BaseAdapter = None,
-) -> Optional[GcsfsFileContentsHandle]:
+) -> Optional[LocalFileContentsHandle]:
     """This function checks first whether it needs to download, and then
     returns the locally downloaded pdf"""
     # If it already exists in GCS, return.
@@ -170,7 +171,10 @@ def _get_file_to_upload(
     else:
         response = session.get(url, verify=verify_ssl)
     if response.status_code == 200:
+        local_path = generate_random_temp_path()
+        with open(local_path, "wb") as f:
+            f.write(response.content)
         # This is a PDF so use content to get the bytes directly.
-        return GcsfsFileContentsHandle.from_bytes(response.content)
+        return LocalFileContentsHandle(local_path, cleanup_file=True)
 
     raise ScrapeAggregateError(f"Could not download file {pdf_name}")

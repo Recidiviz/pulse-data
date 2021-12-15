@@ -22,8 +22,8 @@ import unittest
 from abc import abstractmethod
 from typing import List, Sequence
 
-from recidiviz.cloud_storage.gcs_file_system import GcsfsFileContentsHandle
 from recidiviz.common.constants.states import StateCode
+from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_file_parser import (
     FileFormat,
     IngestViewFileParser,
@@ -103,7 +103,7 @@ class StateIngestViewParserTestBase:
             file_name=f"{file_tag}.csv",
         )
 
-        contents_handle = GcsfsFileContentsHandle(fixture_path, cleanup_file=False)
+        contents_handle = LocalFileContentsHandle(fixture_path, cleanup_file=False)
         for row in csv.DictReader(contents_handle.get_contents_iterator()):
             _ = enum_parser_manifest.build_from_row(row).parse()
 
@@ -119,7 +119,7 @@ class StateIngestViewParserTestBase:
         )
         parsed_output = parser.parse(
             file_tag=file_tag,
-            contents_handle=GcsfsFileContentsHandle(fixture_path, cleanup_file=False),
+            contents_handle=LocalFileContentsHandle(fixture_path, cleanup_file=False),
             file_format=FileFormat.CSV,
         )
 

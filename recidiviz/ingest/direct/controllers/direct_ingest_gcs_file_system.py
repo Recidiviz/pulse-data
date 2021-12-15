@@ -38,21 +38,19 @@ from typing import (
 
 import pytz
 
-from recidiviz.cloud_storage.content_types import (
-    FileContentsHandle,
-    FileContentsRowType,
-    IoType,
-)
-from recidiviz.cloud_storage.gcs_file_system import (
-    GCSFileSystem,
-    GcsfsFileContentsHandle,
-)
+from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_path import (
     GcsfsBucketPath,
     GcsfsDirectoryPath,
     GcsfsFilePath,
     GcsfsPath,
 )
+from recidiviz.common.io.file_contents_handle import (
+    FileContentsHandle,
+    FileContentsRowType,
+    IoType,
+)
+from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsDirectIngestFileType,
     filename_parts_from_path,
@@ -255,7 +253,7 @@ class DirectIngestGCSFileSystem(Generic[GCSFileSystemType], GCSFileSystem):
 
     def download_to_temp_file(
         self, path: GcsfsFilePath, retain_original_filename: bool = False
-    ) -> Optional[GcsfsFileContentsHandle]:
+    ) -> Optional[LocalFileContentsHandle]:
         return self.gcs_file_system.download_to_temp_file(
             path, retain_original_filename
         )

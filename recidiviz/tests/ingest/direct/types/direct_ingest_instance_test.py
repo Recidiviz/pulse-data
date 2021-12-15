@@ -23,6 +23,9 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
 )
 from recidiviz.ingest.direct.errors import DirectIngestInstanceError
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.types.direct_ingest_instance_factory import (
+    DirectIngestInstanceFactory,
+)
 
 
 class TestDirectIngestInstance(unittest.TestCase):
@@ -38,7 +41,7 @@ class TestDirectIngestInstance(unittest.TestCase):
 
         self.assertEqual(
             DirectIngestInstance.PRIMARY,
-            DirectIngestInstance.for_ingest_bucket(ingest_bucket_path),
+            DirectIngestInstanceFactory.for_ingest_bucket(ingest_bucket_path),
         )
 
         ingest_bucket_path = gcsfs_direct_ingest_bucket_for_region(
@@ -50,7 +53,7 @@ class TestDirectIngestInstance(unittest.TestCase):
 
         self.assertEqual(
             DirectIngestInstance.SECONDARY,
-            DirectIngestInstance.for_ingest_bucket(ingest_bucket_path),
+            DirectIngestInstanceFactory.for_ingest_bucket(ingest_bucket_path),
         )
 
     def test_from_county_ingest_bucket(self) -> None:
@@ -63,7 +66,7 @@ class TestDirectIngestInstance(unittest.TestCase):
 
         self.assertEqual(
             DirectIngestInstance.PRIMARY,
-            DirectIngestInstance.for_ingest_bucket(ingest_bucket_path),
+            DirectIngestInstanceFactory.for_ingest_bucket(ingest_bucket_path),
         )
 
     def test_check_is_valid_system_level(self) -> None:
