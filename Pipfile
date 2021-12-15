@@ -165,6 +165,8 @@ jsonschema = "*"
 #  google-api-core supports protobuf version >= 3.18.0 (might be resolved by upgrading
 #  other google libraries > 2.0.0). Version proto-plus==1.19.7 requires protobuf >= 3.19.0.
 proto-plus = "==1.19.6"
+nltk = "*"
+thefuzz = "*"
 
 [requires]
 python_version = "3.8"
