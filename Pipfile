@@ -16,7 +16,7 @@ pytest-cov = "*"
 mypy = "*"
 coveralls = "*"
 # This should always be pinned to the latest version officially supported by Dataflow: https://cloud.google.com/dataflow/docs/support/sdk-version-support-status#python
-apache-beam = {extras = ["gcp", "test"],version = "<=2.27.0"}
+apache-beam = {extras = ["gcp", "test"],version = "==2.34.0"}
 fakeredis = "*"
 freezegun = "*"
 ipdb = "*"
@@ -111,7 +111,7 @@ pytz = "*"
 tzlocal = "<4.0"
 python-dateutil = "*"
 google-api-core = "*"
-# If the protobuf version changes be sure to update the pinned version in setup.py
+# If the protobuf version changes be sure to update the pinned version in dataflow_setup.py
 protobuf = "*"
 "psycopg2" = "*"
 cryptography = "*"
@@ -140,8 +140,8 @@ psycogreen = "*"
 marshmallow = "*"
 marshmallow_enum = "*"
 cattrs = "*"
-# If the dill version changes be sure to update the pinned version in setup.py
-dill = "*"
+# If the dill version changes be sure to update the pinned version in dataflow_setup.py
+dill = "==0.3.1.1"
 matplotlib = "*"
 pandas_gbq = "*"
 scipy = "*"
