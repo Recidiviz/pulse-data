@@ -30,14 +30,12 @@ from paramiko.hostkeys import HostKeyEntry
 from paramiko.sftp_client import SFTPClient
 from paramiko.transport import Transport
 
-from recidiviz.cloud_storage.gcs_file_system import (
-    BYTES_CONTENT_TYPE,
-    SftpFileContentsHandle,
-)
+from recidiviz.cloud_storage.gcs_file_system import BYTES_CONTENT_TYPE
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.ingest_metadata import SystemLevel
+from recidiviz.common.io.sftp_file_contents_handle import SftpFileContentsHandle
 from recidiviz.common.results import MultiRequestResultWithSkipped
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
@@ -238,7 +236,7 @@ class DownloadFilesFromSftpController:
                 self.gcsfs.upload_from_contents_handle_stream(
                     path=path,
                     contents_handle=SftpFileContentsHandle(
-                        sftp_client=self.sftp_client, local_file_path=file_path
+                        sftp_client=self.sftp_client, sftp_file_path=file_path
                     ),
                     content_type=BYTES_CONTENT_TYPE,
                 )

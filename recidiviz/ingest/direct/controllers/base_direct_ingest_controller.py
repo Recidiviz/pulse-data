@@ -27,10 +27,7 @@ from typing import List, Optional
 import pandas
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
-from recidiviz.cloud_storage.gcs_file_system import (
-    GCSBlobDoesNotExistError,
-    GcsfsFileContentsHandle,
-)
+from recidiviz.cloud_storage.gcs_file_system import GCSBlobDoesNotExistError
 from recidiviz.cloud_storage.gcs_pseudo_lock_manager import GCSPseudoLockAlreadyExists
 from recidiviz.cloud_storage.gcsfs_csv_reader import GcsfsCsvReader
 from recidiviz.cloud_storage.gcsfs_csv_reader_delegates import (
@@ -49,6 +46,7 @@ from recidiviz.common.ingest_metadata import (
     LegacyStateAndJailsIngestMetadata,
     SystemLevel,
 )
+from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
     SPLIT_FILE_SUFFIX,
     DirectIngestGCSFileSystem,
@@ -110,6 +108,9 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_file_parser_delegate im
     yaml_mappings_filepath,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.types.direct_ingest_instance_factory import (
+    DirectIngestInstanceFactory,
+)
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.entity.operations.entities import (
@@ -154,7 +155,7 @@ class BaseDirectIngestController:
         """Initialize the controller."""
         self.region_module_override = region_module_override
         self.cloud_task_manager = DirectIngestCloudTaskManagerImpl()
-        self.ingest_instance = DirectIngestInstance.for_ingest_bucket(
+        self.ingest_instance = DirectIngestInstanceFactory.for_ingest_bucket(
             ingest_bucket_path
         )
         self.region_lock_manager = DirectIngestRegionLockManager.for_direct_ingest(
@@ -658,7 +659,7 @@ class BaseDirectIngestController:
 
     @trace.span
     def _parse_and_persist_contents(
-        self, args: GcsfsIngestArgs, contents_handle: GcsfsFileContentsHandle
+        self, args: GcsfsIngestArgs, contents_handle: LocalFileContentsHandle
     ) -> None:
         """
         Runs the full ingest process for this controller for files with
@@ -706,7 +707,7 @@ class BaseDirectIngestController:
 
     def _get_contents_handle(
         self, args: GcsfsIngestArgs
-    ) -> Optional[GcsfsFileContentsHandle]:
+    ) -> Optional[LocalFileContentsHandle]:
         """Returns a handle to the contents allows us to iterate over the contents and
         also manages cleanup of resources once we are done with the contents.
 
@@ -717,7 +718,7 @@ class BaseDirectIngestController:
 
     def _get_contents_handle_from_path(
         self, path: GcsfsFilePath
-    ) -> Optional[GcsfsFileContentsHandle]:
+    ) -> Optional[LocalFileContentsHandle]:
         return self.fs.download_to_temp_file(path)
 
     def _are_contents_empty(

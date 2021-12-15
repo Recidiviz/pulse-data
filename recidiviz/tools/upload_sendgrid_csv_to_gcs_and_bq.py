@@ -60,12 +60,10 @@ from google.cloud.bigquery import WriteDisposition
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.calculator.query.state.dataset_config import SENDGRID_EMAIL_DATA_DATASET
-from recidiviz.cloud_storage.gcs_file_system import (
-    GCSFileSystem,
-    GcsfsFileContentsHandle,
-)
+from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
 from recidiviz.persistence.database.bq_refresh.bq_refresh import wait_for_table_load
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.string import StrictStringFormatter
@@ -141,7 +139,7 @@ def upload_raw_file_to_gcs(
             bucket_name=bucket_name,
             blob_name=date.today().strftime(DATE_FORMAT),
         ),
-        contents_handle=GcsfsFileContentsHandle(
+        contents_handle=LocalFileContentsHandle(
             local_file_path=local_filepath, cleanup_file=False
         ),
         content_type="text/csv",

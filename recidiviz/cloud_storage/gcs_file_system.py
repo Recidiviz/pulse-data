@@ -23,20 +23,12 @@ import tempfile
 import uuid
 from contextlib import contextmanager
 from io import TextIOWrapper
-from typing import IO, Any, Callable, Dict, Iterator, List, Optional, TextIO, Union
-from zipfile import ZipExtFile, ZipFile
+from typing import Any, Callable, Dict, Iterator, List, Optional, TextIO, Union
 
 from google.api_core import exceptions, retry
 from google.cloud import storage
 from google.cloud.exceptions import NotFound
-from paramiko import SFTPFile
-from paramiko.sftp_client import SFTPClient
 
-from recidiviz.cloud_storage.content_types import (
-    FileContentsHandle,
-    FileContentsRowType,
-    IoType,
-)
 from recidiviz.cloud_storage.gcsfs_path import (
     GcsfsBucketPath,
     GcsfsDirectoryPath,
@@ -44,78 +36,18 @@ from recidiviz.cloud_storage.gcsfs_path import (
     GcsfsPath,
 )
 from recidiviz.cloud_storage.verifiable_bytes_reader import VerifiableBytesReader
+from recidiviz.common.io.file_contents_handle import (
+    FileContentsHandle,
+    FileContentsRowType,
+    IoType,
+)
+from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
 
 BYTES_CONTENT_TYPE = "application/octet-stream"
 
 
 class GCSBlobDoesNotExistError(ValueError):
     pass
-
-
-class GcsfsFileContentsHandle(FileContentsHandle[str, IO]):
-    """Handle to a local copy of a file from (or to be uploaded) to GCS"""
-
-    def __init__(self, local_file_path: str, cleanup_file: bool = True):
-        super().__init__(local_file_path=local_file_path)
-        self.cleanup_file = cleanup_file
-
-    def get_contents_iterator(self) -> Iterator[str]:
-        """Lazy function (generator) to read a file line by line."""
-        with self.open() as f:
-            while line := f.readline():
-                yield line
-
-    @classmethod
-    def from_bytes(cls, contents: bytes) -> "GcsfsFileContentsHandle":
-        local_path = generate_random_temp_path()
-        with open(local_path, "wb") as f:
-            f.write(contents)
-        return cls(local_path, cleanup_file=True)
-
-    @contextmanager
-    def open(self, mode: str = "r") -> Iterator[IO]:
-        encoding = None if "b" in mode else "utf-8"
-        with open(self.local_file_path, mode=mode, encoding=encoding) as f:
-            yield f
-
-    def __del__(self) -> None:
-        """This ensures that the file contents on local disk are deleted when
-        this handle is garbage collected.
-        """
-        if self.cleanup_file and os.path.exists(self.local_file_path):
-            os.remove(self.local_file_path)
-
-
-class SftpFileContentsHandle(FileContentsHandle[bytes, SFTPFile]):
-    def __init__(self, local_file_path: str, sftp_client: SFTPClient):
-        super().__init__(local_file_path=local_file_path)
-        self.sftp_client = sftp_client
-
-    def get_contents_iterator(self) -> Iterator[bytes]:
-        with self.open() as f:
-            while line := f.readline():
-                yield line
-
-    @contextmanager
-    def open(self, mode: str = "r") -> Iterator[SFTPFile]:  # type: ignore
-        with self.sftp_client.open(filename=self.local_file_path, mode=mode) as f:
-            yield f
-
-
-class ZipFileContentsHandle(FileContentsHandle[bytes, ZipExtFile]):
-    def __init__(self, local_file_path: str, zip_file: ZipFile):
-        super().__init__(local_file_path=local_file_path)
-        self.zip_file = zip_file
-
-    def get_contents_iterator(self) -> Iterator[bytes]:
-        with self.open() as f:
-            while line := f.readline():
-                yield line
-
-    @contextmanager
-    def open(self, _: str = "r") -> Iterator[ZipExtFile]:  # type: ignore
-        with self.zip_file.open(self.local_file_path, mode="r") as f:
-            yield f  # type: ignore
 
 
 class GCSFileSystem:
@@ -193,7 +125,7 @@ class GCSFileSystem:
     @abc.abstractmethod
     def download_to_temp_file(
         self, path: GcsfsFilePath, retain_original_filename: bool = False
-    ) -> Optional[GcsfsFileContentsHandle]:
+    ) -> Optional[LocalFileContentsHandle]:
         """Generates a new file in a temporary directory on the local file
         system (App Engine VM when in prod/staging), and downloads file contents
         from the provided GCS path into that file, returning a handle to temp
@@ -379,7 +311,7 @@ class GCSFileSystemImpl(GCSFileSystem):
     @retry.Retry(predicate=retry_predicate)
     def download_to_temp_file(
         self, path: GcsfsFilePath, retain_original_filename: bool = False
-    ) -> Optional[GcsfsFileContentsHandle]:
+    ) -> Optional[LocalFileContentsHandle]:
         temp_file_path = generate_random_temp_path(
             path.file_name if retain_original_filename else None
         )
@@ -398,7 +330,7 @@ class GCSFileSystemImpl(GCSFileSystem):
                 path.abs_path(),
                 temp_file_path,
             )
-            return GcsfsFileContentsHandle(temp_file_path)
+            return LocalFileContentsHandle(temp_file_path)
         except GCSBlobDoesNotExistError:
             return None
 

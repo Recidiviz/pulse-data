@@ -23,9 +23,9 @@ from typing import Callable, Dict, List, Optional, Type, Union
 
 import jsonschema
 
-from recidiviz.cloud_storage.gcs_file_system import GcsfsFileContentsHandle
 from recidiviz.common.constants.enum_parser import EnumParser, EnumParsingError
 from recidiviz.common.constants.states import StateCode
+from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
 from recidiviz.ingest.direct.ingest_mappings.custom_function_registry import (
     CustomFunctionRegistry,
 )
@@ -211,7 +211,7 @@ class IngestViewFileParserTest(unittest.TestCase):
         )
         return parser.parse(
             file_tag=file_tag,
-            contents_handle=GcsfsFileContentsHandle(
+            contents_handle=LocalFileContentsHandle(
                 os.path.join(
                     os.path.dirname(ingest_view_files.__file__), f"{file_tag}.csv"
                 ),

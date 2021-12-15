@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines types used for general cloud storage code."""
+"""Defines an abstract interface that can be used to access file contents."""
 import abc
 from contextlib import contextmanager
 from typing import IO, Generic, Iterator, TypeVar
@@ -25,8 +25,7 @@ IoType = TypeVar("IoType")
 
 
 class FileContentsHandle(Generic[FileContentsRowType, IoType]):
-    def __init__(self, local_file_path: str):
-        self.local_file_path = local_file_path
+    """Defines an abstract interface that can be used to access file contents."""
 
     @abc.abstractmethod
     def get_contents_iterator(self) -> Iterator[FileContentsRowType]:

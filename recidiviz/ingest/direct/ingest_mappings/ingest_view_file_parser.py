@@ -24,8 +24,9 @@ from typing import Dict, Iterator, List, Set, Tuple
 
 from more_itertools import one
 
-from recidiviz.cloud_storage.gcs_file_system import GcsfsFileContentsHandle
 from recidiviz.common.common_utils import bidirectional_set_difference
+from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
+from recidiviz.ingest.direct.ingest_mappings import yaml_schema
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_file_parser_delegate import (
     IngestViewFileParserDelegate,
 )
@@ -33,7 +34,6 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest import (
     EntityTreeManifest,
     EntityTreeManifestFactory,
 )
-from recidiviz.ingest.direct.ingest_mappings import yaml_schema
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.utils.yaml_dict import YAMLDict
 
@@ -57,7 +57,7 @@ class IngestViewFileParser:
 
     @staticmethod
     def _row_iterator(
-        contents_handle: GcsfsFileContentsHandle, file_format: FileFormat
+        contents_handle: LocalFileContentsHandle, file_format: FileFormat
     ) -> Iterator[Dict]:
         if file_format == FileFormat.CSV:
             return csv.DictReader(contents_handle.get_contents_iterator())
@@ -67,7 +67,7 @@ class IngestViewFileParser:
         self,
         *,
         file_tag: str,
-        contents_handle: GcsfsFileContentsHandle,
+        contents_handle: LocalFileContentsHandle,
         file_format: FileFormat,
     ) -> List[Entity]:
         """Parses ingest view file contents into entities based on the manifest file for
