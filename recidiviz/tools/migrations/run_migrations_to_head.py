@@ -45,16 +45,11 @@ from typing import Optional
 import alembic.config
 
 from recidiviz.persistence.database.schema_utils import SchemaType
-from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.persistence.database.sqlalchemy_engine_manager import (
-    SQLAlchemyEngineManager,
-)
-from recidiviz.server_config import database_keys_for_schema_type
 from recidiviz.tools.migrations.migration_helpers import (
     confirm_correct_db_instance,
     confirm_correct_git_branch,
+    iterate_and_connect_to_engines,
 )
-from recidiviz.tools.postgres import local_postgres_helpers
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -126,68 +121,29 @@ def main(
     """
     is_prod = metadata.project_id() == GCP_PROJECT_PRODUCTION
 
-    if dry_run:
-        if not local_postgres_helpers.can_start_on_disk_postgresql_database():
-            logging.error("pg_ctl is not installed. Cannot perform a dry-run.")
-            logging.error("Exiting...")
-            sys.exit(1)
-        logging.info("Creating a dry-run...\n")
-    else:
-        if not ssl_cert_path:
-            logging.error(
-                "SSL certificates are required when running against live databases"
-            )
-            logging.error("Exiting...")
-            sys.exit(1)
-        logging.info("Using SSL certificate path: %s", ssl_cert_path)
-
     if is_prod:
         logging.info("RUNNING AGAINST PRODUCTION\n")
 
     if not skip_db_name_check:
         confirm_correct_db_instance(schema_type)
+
     confirm_correct_git_branch(repo_root, confirm_hash=confirm_hash)
 
-    if dry_run:
-        db_keys = [SQLAlchemyDatabaseKey.canonical_for_schema(schema_type)]
-    else:
-        db_keys = database_keys_for_schema_type(schema_type)
-
     # Run migrations
-    for key in db_keys:
-        if dry_run:
-            overriden_env_vars = (
-                local_postgres_helpers.update_local_sqlalchemy_postgres_env_vars()
-            )
-        else:
-            overriden_env_vars = SQLAlchemyEngineManager.update_sqlalchemy_env_vars(
-                database_key=key,
-                ssl_cert_path=ssl_cert_path,
-                migration_user=True,
-            )
+    for database_key, _engine in iterate_and_connect_to_engines(
+        schema_type, ssl_cert_path=ssl_cert_path, dry_run=dry_run
+    ):
         try:
             logging.info(
                 "*** Starting postgres migrations for schema [%s], db_name [%s] ***",
-                key.schema_type,
-                key.db_name,
+                database_key.schema_type,
+                database_key.db_name,
             )
-            if dry_run:
-                db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
-            config = alembic.config.Config(key.alembic_file)
+            config = alembic.config.Config(database_key.alembic_file)
             alembic.command.upgrade(config, "head")
         except Exception as e:
             logging.error("Migrations failed to run: %s", e)
             sys.exit(1)
-        finally:
-            local_postgres_helpers.restore_local_env_vars(overriden_env_vars)
-            if dry_run:
-                try:
-                    logging.info("Stopping local postgres database")
-                    local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
-                        db_dir
-                    )
-                except Exception as e2:
-                    logging.error("Error cleaning up postgres: %s", e2)
 
 
 if __name__ == "__main__":

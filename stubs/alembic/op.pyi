@@ -64,7 +64,8 @@ def create_index(
 def create_table(
     table_name: str,
     *columns: List[Column],
-    postgresql_ignore_search_path: Optional[bool] = False
+    postgresql_ignore_search_path: Optional[bool] = False,
+    comment: Optional[str] = None,
 ) -> None: ...
 def create_table_comment(
     table_name: str,

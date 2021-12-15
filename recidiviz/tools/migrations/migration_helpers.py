@@ -19,14 +19,18 @@ Helper functions for confirming user input when running migrations.
 """
 import logging
 import sys
-from typing import Optional
+from typing import Generator, Optional, Tuple
 
 from pygit2.repository import Repository
+from sqlalchemy.engine import Engine
 
 from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
+from recidiviz.server_config import database_keys_for_schema_type
+from recidiviz.tools.postgres import local_postgres_helpers
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 
 
@@ -64,3 +68,64 @@ def confirm_correct_git_branch(
         f"This script will execute migrations based on the contents of the current branch ({current_branch}).",
         current_branch,
     )
+
+
+def iterate_and_connect_to_engines(
+    schema_type: SchemaType,
+    *,
+    ssl_cert_path: Optional[str] = None,
+    dry_run: bool = True,
+) -> Generator[Tuple[SQLAlchemyDatabaseKey, Engine], None, None]:
+    """Returns an iterator that contains a `database_key` and corresponding `engine`.
+    The engine is torn down after iteration"""
+    if dry_run:
+        if not local_postgres_helpers.can_start_on_disk_postgresql_database():
+            logging.error("pg_ctl is not installed. Cannot perform a dry-run.")
+            sys.exit(1)
+        logging.info("Creating a dry-run...")
+    else:
+        if not ssl_cert_path:
+            logging.error(
+                "SSL certificates are required when running against live databases"
+            )
+            sys.exit(1)
+        logging.info("Using SSL certificate path: %s", ssl_cert_path)
+
+    database_keys = (
+        [SQLAlchemyDatabaseKey.canonical_for_schema(schema_type)]
+        if dry_run
+        else database_keys_for_schema_type(schema_type)
+    )
+
+    for database_key in database_keys:
+        if dry_run:
+            overridden_env_vars = (
+                local_postgres_helpers.update_local_sqlalchemy_postgres_env_vars()
+            )
+            db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
+        else:
+            overridden_env_vars = SQLAlchemyEngineManager.update_sqlalchemy_env_vars(
+                database_key=database_key,
+                ssl_cert_path=ssl_cert_path,
+                migration_user=True,
+            )
+
+        try:
+            yield database_key, SQLAlchemyEngineManager.init_engine_for_postgres_instance(
+                database_key=database_key,
+                db_url=local_postgres_helpers.postgres_db_url_from_env_vars(),
+            )
+        finally:
+            SQLAlchemyEngineManager.teardown_engine_for_database_key(
+                database_key=database_key
+            )
+            local_postgres_helpers.restore_local_env_vars(overridden_env_vars)
+
+            if dry_run:
+                try:
+                    logging.info("Stopping local postgres database")
+                    local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
+                        db_dir
+                    )
+                except Exception as e2:
+                    logging.error("Error cleaning up postgres: %s", e2)
