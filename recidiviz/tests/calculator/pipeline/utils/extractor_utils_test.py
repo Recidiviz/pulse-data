@@ -1234,33 +1234,30 @@ class TestExtractAllEntitiesOfType(unittest.TestCase):
             entities, "StatePerson"
         )
 
-        with patch("logging.Logger.warning") as mock:
-            dataset = "recidiviz-123.state"
-            with patch(
-                "recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery",
-                self.fake_bq_source_factory.create_fake_bq_source_constructor(
-                    dataset, data_dict
-                ),
-            ):
-                test_pipeline = TestPipeline()
+        dataset = "recidiviz-123.state"
+        with patch(
+            "recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery",
+            self.fake_bq_source_factory.create_fake_bq_source_constructor(
+                dataset, data_dict
+            ),
+        ):
+            test_pipeline = TestPipeline()
 
-                output = (
-                    test_pipeline
-                    | "Extract StatePerson Entity"
-                    >> extractor_utils._ExtractAllEntitiesOfType(
-                        dataset=dataset,
-                        entity_class=entity_class,
-                        unifying_id_field="XX",
-                        unifying_id_field_filter_set=None,
-                        state_code="US_XX",
-                    )
+            output = (
+                test_pipeline
+                | "Extract StatePerson Entity"
+                >> extractor_utils._ExtractAllEntitiesOfType(
+                    dataset=dataset,
+                    entity_class=entity_class,
+                    unifying_id_field="XX",
+                    unifying_id_field_filter_set=None,
+                    state_code="US_XX",
                 )
+            )
 
-                assert_that(output, equal_to([]))
+            assert_that(output, equal_to([]))
 
-                test_pipeline.run()
-
-            mock.assert_not_called()
+            test_pipeline.run()
 
 
 class TestShallowHydrateEntity(unittest.TestCase):
