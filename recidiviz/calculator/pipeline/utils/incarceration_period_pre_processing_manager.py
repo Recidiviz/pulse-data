@@ -38,6 +38,7 @@ from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index 
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_incarceration_delegate import (
     StateSpecificIncarcerationDelegate,
 )
+from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     SANCTION_ADMISSION_PURPOSE_FOR_INCARCERATION_VALUES,
@@ -221,6 +222,56 @@ class StateSpecificIncarcerationPreProcessingDelegate:
         """
         return False
 
+    # TODO(#10152): Remove this once we've done a re-run in prod for US_ND with the
+    #  new IP ingest views
+    def pre_processing_incarceration_period_admission_reason_mapper(
+        self,
+        incarceration_period: StateIncarcerationPeriod,
+    ) -> Optional[StateIncarcerationPeriodAdmissionReason]:
+        """State-specific implementations of this class should return an updated ingest
+        mapping of the admission_reason value of the StateIncarcerationPeriod if
+        there is a need to re-map admission reasons for the state (this happens in
+        the case when the enum mappings have changed for a state, but we have yet to
+        do a re-run with the new mappings).
+
+        Default behavior is to return the admission_reason on the incarceration_period.
+        """
+        return incarceration_period.admission_reason
+
+    # TODO(#10152): Remove this once we've done a re-run in prod for US_ND with the
+    #  new IP ingest views
+    def pre_processing_incarceration_period_custodial_authority_mapper(
+        self,
+        incarceration_period: StateIncarcerationPeriod,
+    ) -> Optional[StateCustodialAuthority]:
+        """State-specific implementations of this class should return an updated ingest
+        mapping of the custodial_authority value of the StateIncarcerationPeriod if
+        there is a need to re-map these values for the state (this happens in
+        the case when the enum mappings have changed for a state, but we have yet to
+        do a re-run with the new mappings).
+
+        Default behavior is to return the custodial_authority on the
+        incarceration_period.
+        """
+        return incarceration_period.custodial_authority
+
+    # TODO(#10152): Remove this once we've done a re-run in prod for US_ND with the
+    #  new IP ingest views
+    def pre_processing_incarceration_period_pfi_mapper(
+        self,
+        incarceration_period: StateIncarcerationPeriod,
+    ) -> Optional[StateSpecializedPurposeForIncarceration]:
+        """State-specific implementations of this class should return an updated ingest
+        mapping of the specialized_purpose_for_incarceration value of the
+        StateIncarcerationPeriod if there is a need to re-map these values for
+        the state (this happens in the case when the enum mappings have changed for a
+        state, but we have yet to do a re-run with the new mappings).
+
+        Default behavior is to return the specialized_purpose_for_incarceration on the
+        incarceration_period.
+        """
+        return incarceration_period.specialized_purpose_for_incarceration
+
 
 class IncarcerationPreProcessingManager:
     """Interface for generalized and state-specific pre-processing of
@@ -312,6 +363,14 @@ class IncarcerationPreProcessingManager:
                 # Drop placeholder IPs with no start and no end dates
                 mid_processing_periods = self._drop_missing_date_periods(
                     mid_processing_periods
+                )
+
+                # TODO(#10152): Stop doing this once we've done a re-run in prod for
+                #  US_ND with the new IP ingest views
+                mid_processing_periods = (
+                    self._apply_ingest_mappings_to_incarceration_periods(
+                        mid_processing_periods
+                    )
                 )
 
                 # Sort periods, and infer as much missing information as possible
@@ -408,6 +467,38 @@ class IncarcerationPreProcessingManager:
             for ip in incarceration_periods
             if ip.start_date_inclusive or ip.end_date_exclusive
         ]
+
+    def _apply_ingest_mappings_to_incarceration_periods(
+        self,
+        incarceration_periods: List[StateIncarcerationPeriod],
+    ) -> List[StateIncarcerationPeriod]:
+        """Re-maps various values of the |incarceration_period| if there is a need to
+        re-map admission reasons for the state (this happens in the case when the
+        enum mappings have changed for a state, but we have yet to do a re-run with
+        the new mappings)."""
+        updated_periods: List[StateIncarcerationPeriod] = []
+
+        for ip in incarceration_periods:
+            re_mapped_admission_reason = self.pre_processing_delegate.pre_processing_incarceration_period_admission_reason_mapper(
+                ip
+            )
+            re_mapped_custodial_authority = self.pre_processing_delegate.pre_processing_incarceration_period_custodial_authority_mapper(
+                ip
+            )
+            re_mapped_pfi = self.pre_processing_delegate.pre_processing_incarceration_period_pfi_mapper(
+                ip
+            )
+
+            updated_periods.append(
+                attr.evolve(
+                    ip,
+                    admission_reason=re_mapped_admission_reason,
+                    custodial_authority=re_mapped_custodial_authority,
+                    specialized_purpose_for_incarceration=re_mapped_pfi,
+                )
+            )
+
+        return updated_periods
 
     def _drop_periods_from_calculations(
         self, incarceration_periods: List[StateIncarcerationPeriod]

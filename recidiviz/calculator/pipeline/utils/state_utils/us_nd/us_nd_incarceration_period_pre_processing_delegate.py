@@ -34,7 +34,6 @@ from recidiviz.calculator.pipeline.utils.period_utils import (
 from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index import (
     PreProcessedSupervisionPeriodIndex,
 )
-from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
@@ -46,20 +45,14 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
-from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_file_parser import (
-    IngestViewFileParser,
+from recidiviz.ingest.direct.regions.us_nd import (
+    us_nd_custom_enum_parsers,
+    us_nd_legacy_enum_helpers,
 )
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_file_parser_delegate import (
-    IngestViewFileParserDelegateImpl,
-)
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
     StateSupervisionPeriod,
 )
-from recidiviz.utils.regions import get_region
 
 # The number of months for the window of time prior to a new admission return to search
 # for a previous probation supervision period that ended due to revocation to which we
@@ -190,6 +183,94 @@ class UsNdIncarcerationPreProcessingDelegate(
         """The apply_commitment_from_supervision_period_overrides function for US_ND
         relies on supervision period entities."""
         return True
+
+    # TODO(#10152): Remove this once we've done a re-run in prod for US_ND with the
+    #  new IP ingest views
+    def pre_processing_incarceration_period_admission_reason_mapper(
+        self,
+        incarceration_period: StateIncarcerationPeriod,
+    ) -> Optional[StateIncarcerationPeriodAdmissionReason]:
+        """We have updated our ingest logic for StateIncarcerationPeriods in US_ND to
+        not handle periods of temporary custody during ingest. These changes require a
+        re-run since they are beyond the scope of a database migration. Until that
+        re-run happens in prod, we will be re-ingesting raw admission_reason_raw_text
+        values so that the rest of IP pre-processing can work with what
+        the incarceration periods will look like with the new form of ingest."""
+        if not incarceration_period.admission_reason_raw_text:
+            return incarceration_period.admission_reason
+
+        enum_overrides = us_nd_legacy_enum_helpers.generate_enum_overrides()
+
+        return StateIncarcerationPeriodAdmissionReason.parse(
+            incarceration_period.admission_reason_raw_text, enum_overrides
+        )
+
+    # TODO(#10152): Remove this once we've done a re-run in prod for US_ND with the
+    #  new IP ingest views
+    def pre_processing_incarceration_period_custodial_authority_mapper(
+        self,
+        incarceration_period: StateIncarcerationPeriod,
+    ) -> Optional[StateCustodialAuthority]:
+        """We have updated our ingest logic for StateIncarcerationPeriods in US_ND to
+        not handle periods of temporary custody during ingest. These changes require a
+        re-run since they are beyond the scope of a database migration. Until that
+        re-run happens in prod, we will be re-mapping custodial_authority
+        values so that the rest of IP pre-processing can work with what
+        the incarceration periods will look like with the new form of ingest."""
+        raw_text_value = _get_facility_date_string_for_mapping(incarceration_period)
+
+        if not raw_text_value:
+            return incarceration_period.custodial_authority
+
+        return us_nd_custom_enum_parsers.custodial_authority_from_facility_and_dates(
+            raw_text=raw_text_value
+        )
+
+    # TODO(#10152): Remove this once we've done a re-run in prod for US_ND with the
+    #  new IP ingest views
+    def pre_processing_incarceration_period_pfi_mapper(
+        self,
+        incarceration_period: StateIncarcerationPeriod,
+    ) -> Optional[StateSpecializedPurposeForIncarceration]:
+        """We have updated our ingest logic for StateIncarcerationPeriods in US_ND to
+        not handle periods of temporary custody during ingest. These changes require a
+        re-run since they are beyond the scope of a database migration. Until that
+        re-run happens in prod, we will be re-mapping
+        specialized_purpose_for_incarceration values so that the rest of IP
+        pre-processing can work with what the incarceration periods will look like
+        with the new form of ingest."""
+        raw_text_value = _get_facility_date_string_for_mapping(incarceration_period)
+
+        if not raw_text_value:
+            return incarceration_period.specialized_purpose_for_incarceration
+
+        return us_nd_custom_enum_parsers.pfi_from_facility_and_dates(
+            raw_text=raw_text_value
+        )
+
+
+# TODO(#10152): Remove this once we've done a re-run in prod for US_ND with the
+#  new IP ingest views
+def _get_facility_date_string_for_mapping(
+    incarceration_period: StateIncarcerationPeriod,
+) -> Optional[str]:
+    """Returns the raw text value that should be used to map custodial_authority and
+    specialized_purpose_for_incarceration values using the new v2 mappings."""
+    if not incarceration_period.facility:
+        return None
+
+    admission_date = incarceration_period.admission_date
+    release_date = incarceration_period.release_date
+
+    date_for_mapping = admission_date or release_date
+
+    # These values are required to map the custodial_authority and the pfi
+    if not date_for_mapping:
+        return None
+
+    date_for_raw_text = date_for_mapping.strftime("%-m/%-d/%Y %-I:%M:%S %p")
+
+    return f"{incarceration_period.facility}-{date_for_raw_text}"
 
 
 def _us_nd_normalize_period_if_commitment_from_supervision(
@@ -343,30 +424,6 @@ def _updated_ip_after_revoked_sp(
     )
 
 
-def _get_admission_reason_overrides() -> EnumOverrides:
-    """Get the enum overrides used to parse the admission reason field on incarceration
-    periods.
-    """
-    region = get_region(StateCode.US_ND.value, is_direct_ingest=True)
-    parser = IngestViewFileParser(
-        delegate=IngestViewFileParserDelegateImpl(
-            region, SchemaType.STATE, DirectIngestInstance.PRIMARY
-        )
-    )
-    manifest_ast, _ = parser.parse_manifest(
-        manifest_path=parser.delegate.get_ingest_view_manifest_path(
-            "elite_externalmovements_incarceration_periods"
-        ),
-    )
-    enum_parser_manifest = (
-        # Drill down to get admission reasons.
-        manifest_ast.field_manifests["incarceration_periods"]
-        .child_manifests[0]  # type: ignore[attr-defined]
-        .field_manifests["admission_reason"]
-    )
-    return enum_parser_manifest.enum_overrides
-
-
 def _update_ip_after_temp_custody(
     incarceration_period: StateIncarcerationPeriod,
     earliest_temp_custody_admission_raw_text: str,
@@ -375,7 +432,7 @@ def _update_ip_after_temp_custody(
     if necessary, admission_reason_raw_text values corresponding to the information
     in the admission_reason_raw_text on the earliest adjacent temporary custody
     period that preceded the |incarceration_period|."""
-    enum_overrides = _get_admission_reason_overrides()
+    enum_overrides = us_nd_legacy_enum_helpers.generate_enum_overrides()
 
     updated_admission_reason = StateIncarcerationPeriodAdmissionReason.parse(
         earliest_temp_custody_admission_raw_text, enum_overrides
