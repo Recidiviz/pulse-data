@@ -49,13 +49,15 @@ from recidiviz.calculator.pipeline.recidivism.metrics import (
 from recidiviz.calculator.pipeline.recidivism.metrics import (
     ReincarcerationRecidivismRateMetric,
 )
-from recidiviz.calculator.pipeline.utils.beam_utils import RecidivizMetricWritableDict
-from recidiviz.calculator.pipeline.utils.person_utils import (
+from recidiviz.calculator.pipeline.utils.beam_utils.bigquery_io_utils import (
+    RecidivizMetricWritableDict,
+)
+from recidiviz.calculator.pipeline.utils.beam_utils.person_utils import (
     PERSON_EVENTS_KEY,
     PERSON_METADATA_KEY,
     ExtractPersonEventsMetadata,
-    PersonMetadata,
 )
+from recidiviz.calculator.pipeline.utils.metric_utils import PersonMetadata
 from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_incarceration_delegate import (
     UsXxIncarcerationDelegate,
 )

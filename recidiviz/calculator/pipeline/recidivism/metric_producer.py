@@ -43,7 +43,7 @@ from recidiviz.calculator.pipeline.recidivism.metrics import (
     ReincarcerationRecidivismRateMetric,
 )
 from recidiviz.calculator.pipeline.utils.calculator_utils import build_metric
-from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
+from recidiviz.calculator.pipeline.utils.metric_utils import PersonMetadata
 from recidiviz.persistence.entity.state.entities import StatePerson
 
 # We measure in 1-year follow up periods up to 10 years after date of release.

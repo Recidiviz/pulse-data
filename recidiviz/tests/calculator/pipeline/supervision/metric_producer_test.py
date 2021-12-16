@@ -45,7 +45,7 @@ from recidiviz.calculator.pipeline.supervision.metrics import (
 from recidiviz.calculator.pipeline.supervision.supervision_case_compliance import (
     SupervisionCaseCompliance,
 )
-from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
+from recidiviz.calculator.pipeline.utils.metric_utils import PersonMetadata
 from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_supervision_delegate import (
     UsXxSupervisionDelegate,
 )

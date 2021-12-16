@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for utils/beam_utils.py."""
+"""Tests for utils/bigquery_io_utils.py."""
 
 import unittest
 
@@ -22,7 +22,7 @@ import apache_beam as beam
 from apache_beam.testing.test_pipeline import TestPipeline
 from apache_beam.testing.util import assert_that, equal_to
 
-from recidiviz.calculator.pipeline.utils import beam_utils
+from recidiviz.calculator.pipeline.utils.beam_utils import bigquery_io_utils
 
 
 class TestBeamUtils(unittest.TestCase):
@@ -40,7 +40,7 @@ class TestBeamUtils(unittest.TestCase):
             test_pipeline
             | beam.Create(test_input)
             | "Test ConvertDictToKVTuple"
-            >> beam.ParDo(beam_utils.ConvertDictToKVTuple(), "key_field")
+            >> beam.ParDo(bigquery_io_utils.ConvertDictToKVTuple(), "key_field")
         )
 
         correct_output = [
@@ -65,7 +65,9 @@ class TestBeamUtils(unittest.TestCase):
                 test_pipeline
                 | beam.Create(test_input)
                 | "Test ConvertDictToKVTuple"
-                >> beam.ParDo(beam_utils.ConvertDictToKVTuple(), "not_the_key_field")
+                >> beam.ParDo(
+                    bigquery_io_utils.ConvertDictToKVTuple(), "not_the_key_field"
+                )
             )
 
             test_pipeline.run()

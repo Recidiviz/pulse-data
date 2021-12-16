@@ -27,10 +27,10 @@ from recidiviz.calculator.pipeline.utils.calculator_utils import (
 )
 from recidiviz.calculator.pipeline.utils.event_utils import IdentifierEvent
 from recidiviz.calculator.pipeline.utils.metric_utils import (
+    PersonMetadata,
     RecidivizMetric,
     RecidivizMetricType,
 )
-from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
 from recidiviz.persistence.entity.state.entities import StatePerson
 
 IdentifierEventResultT = TypeVar("IdentifierEventResultT")

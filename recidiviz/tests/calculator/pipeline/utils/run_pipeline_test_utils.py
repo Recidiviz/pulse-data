@@ -77,11 +77,12 @@ def run_test_pipeline(
         }
 
     with patch(
-        "recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery",
+        "recidiviz.calculator.pipeline.utils.beam_utils.extractor_utils.ReadFromBigQuery",
         read_from_bq_constructor,
     ):
         with patch(
-            "recidiviz.calculator.pipeline.utils.beam_utils.ReadFromBigQuery",
+            "recidiviz.calculator.pipeline.utils.beam_utils"
+            ".bigquery_io_utils.ReadFromBigQuery",
             read_from_bq_constructor,
         ):
             with patch(
