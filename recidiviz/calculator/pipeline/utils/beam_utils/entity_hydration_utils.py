@@ -22,7 +22,7 @@ import apache_beam as beam
 from apache_beam.typehints import with_input_types, with_output_types
 from more_itertools import one
 
-from recidiviz.calculator.pipeline.utils.extractor_utils import (
+from recidiviz.calculator.pipeline.utils.beam_utils.extractor_utils import (
     EntityClassName,
     TableName,
     TableRow,

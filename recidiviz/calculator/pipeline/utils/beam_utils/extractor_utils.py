@@ -36,7 +36,7 @@ from apache_beam import PCollection, Pipeline
 from apache_beam.pvalue import PBegin
 from apache_beam.typehints import with_input_types, with_output_types
 
-from recidiviz.calculator.pipeline.utils.beam_utils import (
+from recidiviz.calculator.pipeline.utils.beam_utils.bigquery_io_utils import (
     ConvertDictToKVTuple,
     ReadFromBigQuery,
 )

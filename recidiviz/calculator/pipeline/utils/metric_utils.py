@@ -150,6 +150,15 @@ class AssessmentMetricMixin(BuildableAttr):
     assessment_type: Optional[StateAssessmentType] = attr.ib(default=None)
 
 
+@attr.s(frozen=True)
+class PersonMetadata(BuildableAttr):
+    """Stores information about the StatePerson that is necessary for the metrics."""
+
+    # The race or ethnicity value of a person that is least represented in the state’s
+    # population
+    prioritized_race_or_ethnicity: Optional[str] = attr.ib(default=None)
+
+
 def json_serializable_metric_key(metric_key: Dict[str, Any]) -> Dict[str, Any]:
     """Converts a metric key into a format that is JSON serializable.
 

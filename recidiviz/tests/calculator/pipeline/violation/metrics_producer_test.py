@@ -23,7 +23,7 @@ from typing import List
 
 from freezegun.api import freeze_time
 
-from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
+from recidiviz.calculator.pipeline.utils.metric_utils import PersonMetadata
 from recidiviz.calculator.pipeline.violation import metric_producer, pipeline
 from recidiviz.calculator.pipeline.violation.events import (
     ViolationEvent,

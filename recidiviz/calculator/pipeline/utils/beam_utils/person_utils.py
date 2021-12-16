@@ -23,6 +23,7 @@ import attr
 from more_itertools import one
 
 from recidiviz.calculator.pipeline.utils.event_utils import IdentifierEvent
+from recidiviz.calculator.pipeline.utils.metric_utils import PersonMetadata
 from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.common.constants.person_characteristics import Ethnicity, Race
 from recidiviz.persistence.entity.state.entities import StatePerson
@@ -57,14 +58,6 @@ class StateRaceEthnicityPopulationCounts(BuildableAttr):
     representation_priority: int = attr.ib()  # non-nullable
 
 
-@attr.s(frozen=True)
-class PersonMetadata(BuildableAttr):
-    """Stores information about the StatePerson that is necessary for the metrics."""
-
-    # The race or ethnicity value of a person that is least represented in the state’s population
-    prioritized_race_or_ethnicity: Optional[str] = attr.ib(default=None)
-
-
 class BuildPersonMetadata(beam.DoFn):
     """Produces a PersonMetadata object storing information about the given StatePerson."""
 
@@ -94,7 +87,7 @@ class BuildPersonMetadata(beam.DoFn):
             for state_race_ethnicity_population_count in state_race_ethnicity_population_counts
         ]
 
-        person_metadata = build_person_metadata(
+        person_metadata = _build_person_metadata(
             person, race_ethnicity_population_counts
         )
 
@@ -141,20 +134,20 @@ class ExtractPersonEventsMetadata(beam.DoFn):
         pass  # Passing unused abstract method.
 
 
-def build_person_metadata(
+def _build_person_metadata(
     person: StatePerson,
     state_race_ethnicity_population_counts: List[StateRaceEthnicityPopulationCounts],
 ) -> PersonMetadata:
     """Loads a PersonMetadata object with information about the StatePerson that is
     necessary for the calculations."""
-    prioritized_race_or_ethnicity = determine_prioritized_race_or_ethnicity(
+    prioritized_race_or_ethnicity = _determine_prioritized_race_or_ethnicity(
         person, state_race_ethnicity_population_counts
     )
 
     return PersonMetadata(prioritized_race_or_ethnicity=prioritized_race_or_ethnicity)
 
 
-def determine_prioritized_race_or_ethnicity(
+def _determine_prioritized_race_or_ethnicity(
     person: StatePerson,
     state_race_ethnicity_population_counts: List[StateRaceEthnicityPopulationCounts],
 ) -> Optional[str]:

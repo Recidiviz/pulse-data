@@ -24,7 +24,7 @@ from typing import List
 
 from recidiviz.calculator import pipeline as pipeline_top_level
 from recidiviz.calculator.pipeline.base_pipeline import BasePipeline
-from recidiviz.calculator.pipeline.utils.pipeline_args_utils import (
+from recidiviz.calculator.pipeline.utils.beam_utils.pipeline_args_utils import (
     get_apache_beam_pipeline_options_from_args,
 )
 

@@ -27,10 +27,10 @@ from recidiviz.calculator.dataflow_config import (
 )
 from recidiviz.calculator.pipeline.utils.event_utils import IdentifierEvent
 from recidiviz.calculator.pipeline.utils.metric_utils import (
+    PersonMetadata,
     RecidivizMetric,
     RecidivizMetricTypeT,
 )
-from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
 from recidiviz.common.constants.state.external_id_types import (
     US_ID_DOC,
     US_MO_DOC,

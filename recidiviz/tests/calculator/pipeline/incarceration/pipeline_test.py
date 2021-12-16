@@ -43,12 +43,12 @@ from recidiviz.calculator.pipeline.incarceration.metrics import (
 from recidiviz.calculator.pipeline.utils.assessment_utils import (
     DEFAULT_ASSESSMENT_SCORE_BUCKET,
 )
-from recidiviz.calculator.pipeline.utils.person_utils import (
+from recidiviz.calculator.pipeline.utils.beam_utils.person_utils import (
     PERSON_EVENTS_KEY,
     PERSON_METADATA_KEY,
     ExtractPersonEventsMetadata,
-    PersonMetadata,
 )
+from recidiviz.calculator.pipeline.utils.metric_utils import PersonMetadata
 from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_commitment_from_supervision_utils import (
     UsXxCommitmentFromSupervisionDelegate,
 )
