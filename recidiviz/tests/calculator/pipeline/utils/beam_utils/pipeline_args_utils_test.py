@@ -19,7 +19,7 @@ import unittest
 from argparse import Namespace
 
 from recidiviz.calculator.pipeline.incarceration.pipeline import IncarcerationPipeline
-from recidiviz.calculator.pipeline.utils.pipeline_args_utils import (
+from recidiviz.calculator.pipeline.utils.beam_utils.pipeline_args_utils import (
     get_apache_beam_pipeline_options_from_args,
 )
 

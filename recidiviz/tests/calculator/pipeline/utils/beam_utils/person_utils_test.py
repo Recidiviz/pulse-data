@@ -18,12 +18,12 @@
 import unittest
 from datetime import date
 
-from recidiviz.calculator.pipeline.utils.person_utils import (
-    PersonMetadata,
+from recidiviz.calculator.pipeline.utils.beam_utils.person_utils import (
     StateRaceEthnicityPopulationCounts,
-    build_person_metadata,
-    determine_prioritized_race_or_ethnicity,
+    _build_person_metadata,
+    _determine_prioritized_race_or_ethnicity,
 )
+from recidiviz.calculator.pipeline.utils.metric_utils import PersonMetadata
 from recidiviz.common.constants.person_characteristics import Ethnicity, Gender, Race
 from recidiviz.persistence.entity.state.entities import (
     StatePerson,
@@ -33,7 +33,7 @@ from recidiviz.persistence.entity.state.entities import (
 
 
 class TestBuildPersonMetadata(unittest.TestCase):
-    """Tests the build_person_metadata function."""
+    """Tests the _build_person_metadata function."""
 
     def setUp(self) -> None:
         self.state_race_ethnicity_population_counts = [
@@ -69,7 +69,7 @@ class TestBuildPersonMetadata(unittest.TestCase):
 
         person.ethnicities = [ethnicity]
 
-        person_metadata = build_person_metadata(
+        person_metadata = _build_person_metadata(
             person, self.state_race_ethnicity_population_counts
         )
 
@@ -87,7 +87,7 @@ class TestBuildPersonMetadata(unittest.TestCase):
             gender=Gender.FEMALE,
         )
 
-        person_metadata = build_person_metadata(
+        person_metadata = _build_person_metadata(
             person, self.state_race_ethnicity_population_counts
         )
 
@@ -97,7 +97,7 @@ class TestBuildPersonMetadata(unittest.TestCase):
 
 
 class TestDeterminePrioritizedRaceOrEthnicity(unittest.TestCase):
-    """Tests the determine_prioritized_race_or_ethnicity function."""
+    """Tests the _determine_prioritized_race_or_ethnicity function."""
 
     def setUp(self) -> None:
         self.state_race_ethnicity_population_counts = [
@@ -144,7 +144,7 @@ class TestDeterminePrioritizedRaceOrEthnicity(unittest.TestCase):
 
         person.races = [race_white, race_black]
 
-        prioritized_race_ethnicity = determine_prioritized_race_or_ethnicity(
+        prioritized_race_ethnicity = _determine_prioritized_race_or_ethnicity(
             person, self.state_race_ethnicity_population_counts
         )
 
@@ -166,7 +166,7 @@ class TestDeterminePrioritizedRaceOrEthnicity(unittest.TestCase):
 
         person.ethnicities = [ethnicity]
 
-        prioritized_race_ethnicity = determine_prioritized_race_or_ethnicity(
+        prioritized_race_ethnicity = _determine_prioritized_race_or_ethnicity(
             person, self.state_race_ethnicity_population_counts
         )
 
@@ -184,7 +184,7 @@ class TestDeterminePrioritizedRaceOrEthnicity(unittest.TestCase):
 
         person.races = []
 
-        prioritized_race_ethnicity = determine_prioritized_race_or_ethnicity(
+        prioritized_race_ethnicity = _determine_prioritized_race_or_ethnicity(
             person, self.state_race_ethnicity_population_counts
         )
 
@@ -208,7 +208,7 @@ class TestDeterminePrioritizedRaceOrEthnicity(unittest.TestCase):
         person.races = [race_white, race_black]
 
         with self.assertRaises(ValueError):
-            _ = determine_prioritized_race_or_ethnicity(
+            _ = _determine_prioritized_race_or_ethnicity(
                 person, self.state_race_ethnicity_population_counts
             )
 
@@ -228,7 +228,7 @@ class TestDeterminePrioritizedRaceOrEthnicity(unittest.TestCase):
         person.races = [race_unsupported]
 
         with self.assertRaises(ValueError):
-            _ = determine_prioritized_race_or_ethnicity(
+            _ = _determine_prioritized_race_or_ethnicity(
                 person, self.state_race_ethnicity_population_counts
             )
 
@@ -246,7 +246,7 @@ class TestDeterminePrioritizedRaceOrEthnicity(unittest.TestCase):
 
         person.races = [race_unsupported]
 
-        prioritized_race_ethnicity = determine_prioritized_race_or_ethnicity(
+        prioritized_race_ethnicity = _determine_prioritized_race_or_ethnicity(
             person, self.state_race_ethnicity_population_counts
         )
 

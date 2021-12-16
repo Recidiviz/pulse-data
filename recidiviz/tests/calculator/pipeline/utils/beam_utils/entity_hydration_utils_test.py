@@ -24,8 +24,10 @@ import apache_beam as beam
 from apache_beam.testing.test_pipeline import TestPipeline
 from apache_beam.testing.util import assert_that
 
-from recidiviz.calculator.pipeline.utils import entity_hydration_utils
-from recidiviz.calculator.pipeline.utils.beam_utils import ConvertDictToKVTuple
+from recidiviz.calculator.pipeline.utils.beam_utils import entity_hydration_utils
+from recidiviz.calculator.pipeline.utils.beam_utils.bigquery_io_utils import (
+    ConvertDictToKVTuple,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_sentence_classification import (
     UsMoIncarcerationSentence,
     UsMoSentenceStatus,

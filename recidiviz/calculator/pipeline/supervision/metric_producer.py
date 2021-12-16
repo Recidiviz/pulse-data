@@ -48,7 +48,7 @@ from recidiviz.calculator.pipeline.utils.calculator_utils import (
     get_calculation_month_upper_bound_date,
     include_in_output,
 )
-from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
+from recidiviz.calculator.pipeline.utils.metric_utils import PersonMetadata
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
     get_state_specific_supervision_delegate,
 )

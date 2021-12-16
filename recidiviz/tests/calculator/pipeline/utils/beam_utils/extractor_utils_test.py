@@ -26,7 +26,7 @@ from apache_beam.testing.test_pipeline import TestPipeline
 from apache_beam.testing.util import assert_that, equal_to
 from mock import patch
 
-from recidiviz.calculator.pipeline.utils import extractor_utils
+from recidiviz.calculator.pipeline.utils.beam_utils import extractor_utils
 from recidiviz.calculator.query.state.views.reference.persons_to_recent_county_of_residence import (
     PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME,
 )
@@ -183,7 +183,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
         dataset = "recidiviz-123.state"
 
         with patch(
-            "recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery",
+            "recidiviz.calculator.pipeline.utils.beam_utils.extractor_utils.ReadFromBigQuery",
             self.fake_bq_source_factory.create_fake_bq_source_constructor(
                 dataset, data_dict
             ),
@@ -347,7 +347,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
         dataset = "recidiviz-123.state"
 
         with patch(
-            "recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery",
+            "recidiviz.calculator.pipeline.utils.beam_utils.extractor_utils.ReadFromBigQuery",
             self.fake_bq_source_factory.create_fake_bq_source_constructor(
                 dataset, data_dict
             ),
@@ -490,7 +490,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
         dataset = "recidiviz-123.state"
 
         with patch(
-            "recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery",
+            "recidiviz.calculator.pipeline.utils.beam_utils.extractor_utils.ReadFromBigQuery",
             self.fake_bq_source_factory.create_fake_bq_source_constructor(
                 dataset, data_dict
             ),
@@ -617,7 +617,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
         dataset = "recidiviz-123.state"
 
         with patch(
-            "recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery",
+            "recidiviz.calculator.pipeline.utils.beam_utils.extractor_utils.ReadFromBigQuery",
             self.fake_bq_source_factory.create_fake_bq_source_constructor(
                 dataset, data_dict
             ),
@@ -782,7 +782,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
         dataset = "recidiviz-123.state"
 
         with patch(
-            "recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery",
+            "recidiviz.calculator.pipeline.utils.beam_utils.extractor_utils.ReadFromBigQuery",
             self.fake_bq_source_factory.create_fake_bq_source_constructor(
                 dataset, data_dict
             ),
@@ -953,7 +953,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
         dataset = "recidiviz-123.state"
 
         with patch(
-            "recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery",
+            "recidiviz.calculator.pipeline.utils.beam_utils.extractor_utils.ReadFromBigQuery",
             self.fake_bq_source_factory.create_fake_bq_source_constructor(
                 dataset, data_dict
             ),
@@ -1133,7 +1133,7 @@ class TestExtractAssociationValues(unittest.TestCase):
         dataset = "recidiviz-123.state"
 
         with patch(
-            "recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery",
+            "recidiviz.calculator.pipeline.utils.beam_utils.extractor_utils.ReadFromBigQuery",
             self.fake_bq_source_factory.create_fake_bq_source_constructor(
                 dataset, data_dict
             ),
@@ -1193,7 +1193,7 @@ class TestExtractAllEntitiesOfType(unittest.TestCase):
 
         dataset = "recidiviz-123.state"
         with patch(
-            "recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery",
+            "recidiviz.calculator.pipeline.utils.beam_utils.extractor_utils.ReadFromBigQuery",
             self.fake_bq_source_factory.create_fake_bq_source_constructor(
                 dataset, data_dict
             ),
@@ -1236,7 +1236,7 @@ class TestExtractAllEntitiesOfType(unittest.TestCase):
 
         dataset = "recidiviz-123.state"
         with patch(
-            "recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery",
+            "recidiviz.calculator.pipeline.utils.beam_utils.extractor_utils.ReadFromBigQuery",
             self.fake_bq_source_factory.create_fake_bq_source_constructor(
                 dataset, data_dict
             ),

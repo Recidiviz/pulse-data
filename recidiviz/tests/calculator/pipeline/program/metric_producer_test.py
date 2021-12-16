@@ -29,8 +29,10 @@ from recidiviz.calculator.pipeline.program.events import (
     ProgramReferralEvent,
 )
 from recidiviz.calculator.pipeline.program.metrics import ProgramMetricType
-from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric
-from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
+from recidiviz.calculator.pipeline.utils.metric_utils import (
+    PersonMetadata,
+    RecidivizMetric,
+)
 from recidiviz.common.constants.person_characteristics import Ethnicity, Gender, Race
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType
 from recidiviz.common.constants.state.state_supervision_period import (

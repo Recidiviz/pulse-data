@@ -25,12 +25,12 @@ from apache_beam.testing.test_pipeline import TestPipeline
 from apache_beam.testing.util import BeamAssertException, assert_that, equal_to
 
 from recidiviz.calculator.pipeline.base_pipeline import ClassifyEvents, ProduceMetrics
-from recidiviz.calculator.pipeline.utils.person_utils import (
+from recidiviz.calculator.pipeline.utils.beam_utils.person_utils import (
     PERSON_EVENTS_KEY,
     PERSON_METADATA_KEY,
     ExtractPersonEventsMetadata,
-    PersonMetadata,
 )
+from recidiviz.calculator.pipeline.utils.metric_utils import PersonMetadata
 from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_violation_response_preprocessing_delegate import (
     UsXxViolationResponsePreprocessingDelegate,
 )

@@ -37,8 +37,10 @@ from recidiviz.calculator.pipeline.incarceration.metrics import (
     IncarcerationCommitmentFromSupervisionMetric,
     IncarcerationMetricType,
 )
-from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric
-from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
+from recidiviz.calculator.pipeline.utils.metric_utils import (
+    PersonMetadata,
+    RecidivizMetric,
+)
 from recidiviz.common.constants.person_characteristics import Ethnicity, Gender, Race
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,

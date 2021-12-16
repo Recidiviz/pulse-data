@@ -35,7 +35,9 @@ from apache_beam.testing.util import BeamAssertException, assert_that, equal_to
 from more_itertools import one
 
 from recidiviz.calculator.dataflow_config import DATAFLOW_METRICS_TO_TABLES
-from recidiviz.calculator.pipeline.utils.extractor_utils import UNIFYING_ID_KEY
+from recidiviz.calculator.pipeline.utils.beam_utils.extractor_utils import (
+    UNIFYING_ID_KEY,
+)
 from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetricType
 from recidiviz.persistence.database.schema_utils import get_state_table_classes
 from recidiviz.tests.calculator.calculator_test_utils import NormalizedDatabaseDict
