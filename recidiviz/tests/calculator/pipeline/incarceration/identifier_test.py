@@ -1052,6 +1052,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             release_date=date(2008, 12, 21),
             release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
             release_reason_raw_text="PV",
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
         )
 
         revoked_supervision_period = StateSupervisionPeriod.new_with_defaults(
