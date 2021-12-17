@@ -57,6 +57,7 @@ from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.utils.params import str_to_bool
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -106,7 +107,7 @@ def create_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--dry-run",
-        type=bool,
+        type=str_to_bool,
         help="Dry run? Migrates a fresh local postgres to HEAD and stamps the target revision",
         default=True,
     )
@@ -174,7 +175,13 @@ def main(
             target_revision,
         )
         config = alembic.config.Config(database_key.alembic_file)
-        alembic.command.stamp(config, target_revision)
+        alembic.command.stamp(
+            config,
+            target_revision,
+            # Purge the `alembic_version` table
+            # The last applied migration may not exist anymore (i.e. it was squashed)
+            purge=True,
+        )
 
 
 if __name__ == "__main__":
