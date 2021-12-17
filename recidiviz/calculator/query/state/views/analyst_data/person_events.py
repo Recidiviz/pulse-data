@@ -40,18 +40,18 @@ PERSON_EVENTS_VIEW_DESCRIPTION = (
 )
 
 PERSON_EVENTS_QUERY_TEMPLATE = """
--- compartment_level_0 starts
+-- compartment_level_1 (in-state only) starts
 SELECT
     state_code,
     person_id,
-    CONCAT(compartment_level_0, "_START") AS event,
+    CONCAT(compartment_level_1, "_START") AS event,
     start_date AS event_date,
     CAST(NULL AS STRING) AS attribute_1,
     CAST(NULL AS STRING) AS attribute_2,
 FROM
-    `{project_id}.{sessions_dataset}.compartment_level_0_super_sessions_materialized`
+    `{project_id}.{sessions_dataset}.compartment_level_1_super_sessions_materialized`
 WHERE
-    compartment_level_0 IN ("SUPERVISION", "INCARCERATION", "RELEASE")
+    compartment_level_1 IN ("SUPERVISION", "INCARCERATION", "RELEASE")
 
 UNION ALL
 
