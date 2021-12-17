@@ -111,14 +111,23 @@ def iterate_and_connect_to_engines(
             )
 
         try:
-            yield database_key, SQLAlchemyEngineManager.init_engine_for_postgres_instance(
-                database_key=database_key,
-                db_url=local_postgres_helpers.postgres_db_url_from_env_vars(),
-            )
+            if dry_run:
+                engine = SQLAlchemyEngineManager.init_engine_for_postgres_instance(
+                    database_key=database_key,
+                    db_url=local_postgres_helpers.postgres_db_url_from_env_vars(),
+                )
+            else:
+                engine = SQLAlchemyEngineManager.get_engine_for_database_with_ssl_certs(
+                    database_key=database_key, ssl_cert_path=ssl_cert_path
+                )
+
+            yield database_key, engine
         finally:
-            SQLAlchemyEngineManager.teardown_engine_for_database_key(
-                database_key=database_key
-            )
+            if dry_run:
+                SQLAlchemyEngineManager.teardown_engine_for_database_key(
+                    database_key=database_key
+                )
+
             local_postgres_helpers.restore_local_env_vars(overridden_env_vars)
 
             if dry_run:
