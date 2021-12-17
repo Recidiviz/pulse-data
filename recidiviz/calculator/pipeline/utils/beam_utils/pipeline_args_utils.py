@@ -162,6 +162,22 @@ def _get_parsed_base_apache_beam_args(argv: List[str]) -> argparse.Namespace:
         required=False,
     )
 
+    parser.add_argument(
+        "--profile_memory",
+        action="store_true",
+        help="When set, indicates that the memory usage of this pipeline should be "
+        "profiled.",
+        default=False,
+    )
+
+    parser.add_argument(
+        "--profile_cpu",
+        action="store_true",
+        help="When set, indicates that the CPU usage of this pipeline should be "
+        "profiled.",
+        default=False,
+    )
+
     base_args = parser.parse_args(argv)
 
     return base_args
@@ -174,6 +190,8 @@ def _get_parsed_full_apache_beam_args(
     parsed_region: str,
     parsed_bucket: Optional[str],
     save_as_template: bool,
+    profile_memory: bool,
+    profile_cpu: bool,
 ) -> argparse.Namespace:
     """Parses and returns the full set of args to pass through to Apache Beam, in the
     form of an argparse.Namespace object."""
@@ -297,6 +315,28 @@ def _get_parsed_full_apache_beam_args(
         default=True,
     )
 
+    if profile_memory:
+        parser.add_argument(
+            "--profile_memory",
+            action="store_true",
+            default=True,
+        )
+
+    if profile_cpu:
+        parser.add_argument(
+            "--profile_cpu",
+            action="store_true",
+            default=True,
+        )
+
+    if profile_memory or profile_cpu:
+        parser.add_argument(
+            "--profile_location",
+            type=str,
+            help="GCS path for where profile log files should be saved.",
+            default=f"gs://{scratch_space_bucket}/profiling/{parsed_job_name}",
+        )
+
     parsed_args, _ = parser.parse_known_args(argv)
 
     return parsed_args
@@ -321,6 +361,8 @@ def _derive_apache_beam_pipeline_args(argv: List[str]) -> List[str]:
         parsed_region=base_args.region,
         parsed_bucket=base_args.bucket,
         save_as_template=base_args.save_as_template,
+        profile_memory=base_args.profile_memory,
+        profile_cpu=base_args.profile_cpu,
     )
 
     # Take the parsed args with all defaults added and transform back to a list of strings
