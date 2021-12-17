@@ -133,18 +133,10 @@ WITH participants AS (
         subject_id,
         id_type,
         variant_date,
-        CAST(ROUND(DATE_DIFF(variant_date, birthdate, DAY)/365.25, 2) AS STRING) AS AGE,
-        b.gender AS GENDER,
-        b.prioritized_race_or_ethnicity AS PRIORITIZED_RACE,
         CAST(IF(assessment_type = "LSIR", assessment_score, NULL) AS STRING) AS LSIR_SCORE,
         CAST(DATE_DIFF(variant_date, assessment_date, DAY) AS STRING) AS LSIR_DAYS_SINCE,
     FROM
         participants a
-    LEFT JOIN
-        `{project_id}.{sessions_dataset}.person_demographics_materialized` b
-    ON
-        a.state_code = b.state_code
-        AND CAST(a.subject_id AS INT64) = b.person_id
     LEFT JOIN
         `{project_id}.{sessions_dataset}.assessment_score_sessions_materialized` c
     ON
@@ -165,7 +157,7 @@ FROM
     person_id_demographics_wide
 UNPIVOT (
     value FOR attribute IN (
-        AGE, GENDER, PRIORITIZED_RACE, LSIR_SCORE, LSIR_DAYS_SINCE
+        LSIR_SCORE, LSIR_DAYS_SINCE
     )
 )
 
