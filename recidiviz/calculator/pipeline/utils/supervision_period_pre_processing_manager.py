@@ -22,6 +22,8 @@ import logging
 from copy import deepcopy
 from typing import List, Optional
 
+import attr
+
 from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index import (
     PreProcessedSupervisionPeriodIndex,
 )
@@ -157,12 +159,18 @@ class SupervisionPreProcessingManager:
 
             # Drop periods that have neither a start nor end date
             mid_processing_periods = self._drop_missing_date_periods(
-                periods_for_pre_processing
+                mid_processing_periods
             )
 
             # Sort periods, and infer as much missing information as possible
             mid_processing_periods = self._infer_missing_dates_and_statuses(
                 mid_processing_periods
+            )
+
+            mid_processing_periods = self.delegate.split_periods_based_on_sentences(
+                mid_processing_periods,
+                self._incarceration_sentences,
+                self._supervision_sentences,
             )
 
             if self.earliest_death_date:
@@ -171,12 +179,6 @@ class SupervisionPreProcessingManager:
                         mid_processing_periods
                     )
                 )
-
-            mid_processing_periods = self.delegate.split_periods_based_on_sentences(
-                mid_processing_periods,
-                self._incarceration_sentences,
-                self._supervision_sentences,
-            )
 
             mid_processing_periods = self.delegate.infer_additional_periods(
                 mid_processing_periods, self._incarceration_periods
@@ -304,6 +306,8 @@ class SupervisionPreProcessingManager:
         updated_periods: List[StateSupervisionPeriod] = []
 
         for sp in supervision_periods:
+            updated_termination_date = None
+            updated_termination_reason = None
             if not sp.start_date:
                 raise ValueError(f"Period cannot have unset start dates: {sp}")
 
@@ -317,10 +321,20 @@ class SupervisionPreProcessingManager:
                 # If the supervision period is open, or if the termination_date is after
                 # the earliest_death_date, set the termination_date to the
                 # earliest_death_date and update the termination_reason and status
-                sp.termination_date = self.earliest_death_date
-                sp.termination_reason = StateSupervisionPeriodTerminationReason.DEATH
+                updated_termination_date = self.earliest_death_date
+                updated_termination_reason = (
+                    StateSupervisionPeriodTerminationReason.DEATH
+                )
 
-            updated_periods.append(sp)
+            updated_periods.append(
+                attr.evolve(
+                    sp,
+                    termination_date=(updated_termination_date or sp.termination_date),
+                    termination_reason=(
+                        updated_termination_reason or sp.termination_reason
+                    ),
+                )
+            )
 
         return updated_periods
 
