@@ -102,6 +102,9 @@ from recidiviz.calculator.query.state.views.reference.supervision_to_liberty_tra
 from recidiviz.calculator.query.state.views.reference.supervision_to_prison_transitions import (
     SUPERVISION_TO_PRISON_TRANSITIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.reference.us_id_case_update_info import (
+    US_ID_CASE_UPDATE_INFO_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.reference.us_mo_sentence_statuses import (
     US_MO_SENTENCE_STATUSES_VIEW_BUILDER,
 )
@@ -136,4 +139,5 @@ REFERENCE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     OVERDUE_DISCHARGE_ALERT_EXCLUSIONS_VIEW_BUILDER,
     SUPERVISION_CASE_COMPLIANCE_METRICS_VIEW_BUILDER,
     SUPERVISION_MISMATCHES_BY_DAY_VIEW_BUILDER,
+    US_ID_CASE_UPDATE_INFO_VIEW_BUILDER,
 ]
