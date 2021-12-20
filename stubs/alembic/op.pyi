@@ -57,6 +57,8 @@ def create_foreign_key(
     local_cols: List[str],
     remote_cols: List[str],
     ondelete: Optional[str] = None,
+    deferrable: Optional[bool] = None,
+    initially: Optional[str] = None,
 ) -> None: ...
 def create_index(
     index_name: str, table_name: str, columns: List[str], unique: bool = False

@@ -45,7 +45,7 @@ class TestIngestObjectHierarchy(unittest.TestCase):
         self.assertEqual(expected, actual)
 
         actual = get_ancestor_class_sequence("state_supervision_sentence")
-        expected = ("state_person", "state_sentence_group")
+        expected = ("state_person",)
         self.assertEqual(expected, actual)
 
     def test_get_sequence_for_class_multiple_parents_enforced(self) -> None:
@@ -58,7 +58,6 @@ class TestIngestObjectHierarchy(unittest.TestCase):
 
         expected = (
             "state_person",
-            "state_sentence_group",
             "state_incarceration_sentence",
         )
         self.assertEqual(expected, actual)
@@ -86,7 +85,6 @@ class TestIngestObjectHierarchy(unittest.TestCase):
 
         expected = (
             "state_person",
-            "state_sentence_group",
             "state_supervision_sentence",
         )
         self.assertEqual(expected, actual)
@@ -102,7 +100,6 @@ class TestIngestObjectHierarchy(unittest.TestCase):
 
         expected = (
             "state_person",
-            "state_sentence_group",
             "state_incarceration_sentence",
         )
         self.assertEqual(expected, actual)

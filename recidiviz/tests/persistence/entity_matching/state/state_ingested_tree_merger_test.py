@@ -351,24 +351,19 @@ class TestStateIngestedTreeMerger(unittest.TestCase):
                 external_ids=[
                     make_person_external_id(external_id="ID_1", id_type="ID_TYPE_1")
                 ],
-                sentence_groups=[
-                    make_sentence_group(
+                incarceration_sentences=[
+                    make_incarceration_sentence(
                         external_id="ID_1",
-                        incarceration_sentences=[
-                            make_incarceration_sentence(
-                                external_id="ID_1",
-                                charges=[
-                                    # Placeholder charge
-                                    make_state_charge(
-                                        # Placeholder court case
-                                        court_case=make_court_case(
-                                            judge=make_agent(
-                                                external_id="ID_1",
-                                                agent_type=StateAgentType.JUDGE,
-                                            )
-                                        ),
+                        charges=[
+                            # Placeholder charge
+                            make_state_charge(
+                                # Placeholder court case
+                                court_case=make_court_case(
+                                    judge=make_agent(
+                                        external_id="ID_1",
+                                        agent_type=StateAgentType.JUDGE,
                                     )
-                                ],
+                                ),
                             )
                         ],
                     )
@@ -378,24 +373,19 @@ class TestStateIngestedTreeMerger(unittest.TestCase):
                 external_ids=[
                     make_person_external_id(external_id="ID_1", id_type="ID_TYPE_1")
                 ],
-                sentence_groups=[
-                    make_sentence_group(
+                incarceration_sentences=[
+                    make_incarceration_sentence(
                         external_id="ID_1",
-                        incarceration_sentences=[
-                            make_incarceration_sentence(
-                                external_id="ID_1",
-                                charges=[
-                                    # Placeholder charge
-                                    make_state_charge(
-                                        # Placeholder court case
-                                        court_case=make_court_case(
-                                            judge=make_agent(
-                                                external_id="ID_1",
-                                                agent_type=StateAgentType.JUDGE,
-                                            )
-                                        ),
+                        charges=[
+                            # Placeholder charge
+                            make_state_charge(
+                                # Placeholder court case
+                                court_case=make_court_case(
+                                    judge=make_agent(
+                                        external_id="ID_1",
+                                        agent_type=StateAgentType.JUDGE,
                                     )
-                                ],
+                                ),
                             )
                         ],
                     )
@@ -416,20 +406,13 @@ class TestStateIngestedTreeMerger(unittest.TestCase):
                 external_ids=[
                     make_person_external_id(external_id="ID_1", id_type="ID_TYPE_1")
                 ],
-                sentence_groups=[
-                    make_sentence_group(
+                incarceration_sentences=[
+                    make_incarceration_sentence(
                         external_id="ID_1",
-                        incarceration_sentences=[
-                            make_incarceration_sentence(
-                                external_id="ID_1",
-                                charges=[
-                                    # Placeholder charge
-                                    make_state_charge(
-                                        court_case=make_court_case(
-                                            county_code="COUNTY"
-                                        ),
-                                    )
-                                ],
+                        charges=[
+                            # Placeholder charge
+                            make_state_charge(
+                                court_case=make_court_case(county_code="COUNTY"),
                             )
                         ],
                     )
@@ -439,20 +422,13 @@ class TestStateIngestedTreeMerger(unittest.TestCase):
                 external_ids=[
                     make_person_external_id(external_id="ID_1", id_type="ID_TYPE_1")
                 ],
-                sentence_groups=[
-                    make_sentence_group(
+                incarceration_sentences=[
+                    make_incarceration_sentence(
                         external_id="ID_1",
-                        incarceration_sentences=[
-                            make_incarceration_sentence(
-                                external_id="ID_1",
-                                charges=[
-                                    # Placeholder charge
-                                    make_state_charge(
-                                        court_case=make_court_case(
-                                            county_code="COUNTY"
-                                        ),
-                                    )
-                                ],
+                        charges=[
+                            # Placeholder charge
+                            make_state_charge(
+                                court_case=make_court_case(county_code="COUNTY"),
                             )
                         ],
                     )
@@ -464,20 +440,13 @@ class TestStateIngestedTreeMerger(unittest.TestCase):
                 external_ids=[
                     make_person_external_id(external_id="ID_1", id_type="ID_TYPE_1")
                 ],
-                sentence_groups=[
-                    make_sentence_group(
+                incarceration_sentences=[
+                    make_incarceration_sentence(
                         external_id="ID_1",
-                        incarceration_sentences=[
-                            make_incarceration_sentence(
-                                external_id="ID_1",
-                                charges=[
-                                    # Placeholder charge
-                                    make_state_charge(
-                                        court_case=make_court_case(
-                                            county_code="COUNTY"
-                                        ),
-                                    )
-                                ],
+                        charges=[
+                            # Placeholder charge
+                            make_state_charge(
+                                court_case=make_court_case(county_code="COUNTY"),
                             )
                         ],
                     )

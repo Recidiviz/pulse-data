@@ -371,6 +371,46 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
         supervision_violation_response
     ]
 
+    incarceration_sentence = entities.StateIncarcerationSentence.new_with_defaults(
+        external_id="BOOK_ID1234-1",
+        status=StateSentenceStatus.COMPLETED,
+        status_raw_text="COMPLETED",
+        incarceration_type=StateIncarcerationType.STATE_PRISON,
+        incarceration_type_raw_text="PRISON",
+        date_imposed=datetime.date(year=2018, month=7, day=3),
+        projected_min_release_date=datetime.date(year=2017, month=5, day=14),
+        projected_max_release_date=None,
+        parole_eligibility_date=datetime.date(year=2018, month=5, day=14),
+        state_code="US_XX",
+        county_code="US_XX_COUNTY",
+        #   - What
+        # These will be None if is_life is true
+        min_length_days=90,
+        max_length_days=900,
+        is_life=False,
+        is_capital_punishment=False,
+        parole_possible=True,
+        initial_time_served_days=None,
+        good_time_days=10,
+        earned_time_days=None,
+    )
+
+    supervision_sentence = entities.StateSupervisionSentence.new_with_defaults(
+        external_id="BOOK_ID1234-2",
+        status=StateSentenceStatus.SERVING,
+        status_raw_text="SERVING",
+        supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
+        supervision_type_raw_text="PAROLE",
+        projected_completion_date=datetime.date(year=2020, month=5, day=14),
+        completion_date=None,
+        state_code="US_XX",
+        min_length_days=None,
+        max_length_days=200,
+    )
+
+    person.incarceration_sentences = [incarceration_sentence]
+    person.supervision_sentences = [supervision_sentence]
+
     incarceration_period = entities.StateIncarcerationPeriod.new_with_defaults(
         incarceration_type=StateIncarcerationType.STATE_PRISON,
         incarceration_type_raw_text=None,
@@ -423,46 +463,6 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
         agent_type=StateAgentType.PRESENT_WITHOUT_INFO,
     )
     person.supervising_officer = person_supervising_officer
-
-    incarceration_sentence = entities.StateIncarcerationSentence.new_with_defaults(
-        external_id="BOOK_ID1234-1",
-        status=StateSentenceStatus.COMPLETED,
-        status_raw_text="COMPLETED",
-        incarceration_type=StateIncarcerationType.STATE_PRISON,
-        incarceration_type_raw_text="PRISON",
-        date_imposed=datetime.date(year=2018, month=7, day=3),
-        projected_min_release_date=datetime.date(year=2017, month=5, day=14),
-        projected_max_release_date=None,
-        parole_eligibility_date=datetime.date(year=2018, month=5, day=14),
-        state_code="US_XX",
-        county_code="US_XX_COUNTY",
-        #   - What
-        # These will be None if is_life is true
-        min_length_days=90,
-        max_length_days=900,
-        is_life=False,
-        is_capital_punishment=False,
-        parole_possible=True,
-        initial_time_served_days=None,
-        good_time_days=10,
-        earned_time_days=None,
-    )
-
-    supervision_sentence = entities.StateSupervisionSentence.new_with_defaults(
-        external_id="BOOK_ID1234-2",
-        status=StateSentenceStatus.SERVING,
-        status_raw_text="SERVING",
-        supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
-        supervision_type_raw_text="PAROLE",
-        projected_completion_date=datetime.date(year=2020, month=5, day=14),
-        completion_date=None,
-        state_code="US_XX",
-        min_length_days=None,
-        max_length_days=200,
-    )
-
-    sentence_group.incarceration_sentences = [incarceration_sentence]
-    sentence_group.supervision_sentences = [supervision_sentence]
 
     judge = entities.StateAgent.new_with_defaults(
         agent_type=StateAgentType.JUDGE,
@@ -619,18 +619,12 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
             *person.incarceration_incidents,
             *person.supervision_violations,
             *person.supervision_contacts,
+            *person.incarceration_sentences,
+            *person.supervision_sentences,
             *person.incarceration_periods,
             *person.supervision_periods,
         )
         for child in person_children:
-            child.person = person  # type: ignore[attr-defined]
-
-        sentence_group_children: Sequence[Entity] = (
-            *sentence_group.incarceration_sentences,
-            *sentence_group.supervision_sentences,
-        )
-        for child in sentence_group_children:
-            child.sentence_group = sentence_group  # type: ignore[attr-defined]
             child.person = person  # type: ignore[attr-defined]
 
         incarceration_sentence_children: Sequence[Entity] = (

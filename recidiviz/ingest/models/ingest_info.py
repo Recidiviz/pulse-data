@@ -574,6 +574,8 @@ class StatePerson(IngestObject):
         state_person_external_ids=None,
         state_assessments=None,
         state_sentence_groups=None,
+        state_supervision_sentences=None,
+        state_incarceration_sentences=None,
         state_incarceration_periods=None,
         state_supervision_periods=None,
         state_program_assignments=None,
@@ -607,6 +609,12 @@ class StatePerson(IngestObject):
         self.state_assessments: List[StateAssessment] = state_assessments or []
         self.state_sentence_groups: List[StateSentenceGroup] = (
             state_sentence_groups or []
+        )
+        self.state_supervision_sentences: List[StateSupervisionSentence] = (
+            state_supervision_sentences or []
+        )
+        self.state_incarceration_sentences: List[StateIncarcerationSentence] = (
+            state_incarceration_sentences or []
         )
         self.state_incarceration_periods: List[StateIncarcerationPeriod] = (
             state_incarceration_periods or []
@@ -660,6 +668,18 @@ class StatePerson(IngestObject):
         sentence_group = StateSentenceGroup(**kwargs)
         self.state_sentence_groups.append(sentence_group)
         return sentence_group
+
+    def create_state_supervision_sentence(self, **kwargs) -> "StateSupervisionSentence":
+        supervision_sentence = StateSupervisionSentence(**kwargs)
+        self.state_supervision_sentences.append(supervision_sentence)
+        return supervision_sentence
+
+    def create_state_incarceration_sentence(
+        self, **kwargs
+    ) -> "StateIncarcerationSentence":
+        incarceration_sentence = StateIncarcerationSentence(**kwargs)
+        self.state_incarceration_sentences.append(incarceration_sentence)
+        return incarceration_sentence
 
     def create_state_incarceration_period(self, **kwargs) -> "StateIncarcerationPeriod":
         incarceration_period = StateIncarcerationPeriod(**kwargs)
@@ -753,6 +773,30 @@ class StatePerson(IngestObject):
             None,
         )
 
+    def get_state_supervision_sentence_by_id(
+        self, supervision_sentence_id
+    ) -> Optional["StateSupervisionSentence"]:
+        return next(
+            (
+                ss
+                for ss in self.state_supervision_sentences
+                if ss.state_supervision_sentence_id == supervision_sentence_id
+            ),
+            None,
+        )
+
+    def get_state_incarceration_sentence_by_id(
+        self, incarceration_sentence_id
+    ) -> Optional["StateIncarcerationSentence"]:
+        return next(
+            (
+                ins
+                for ins in self.state_incarceration_sentences
+                if ins.state_incarceration_sentence_id == incarceration_sentence_id
+            ),
+            None,
+        )
+
     def get_state_incarceration_period_by_id(
         self, incarceration_period_id
     ) -> Optional["StateIncarcerationPeriod"]:
@@ -838,8 +882,15 @@ class StatePerson(IngestObject):
         )
 
     def prune(self) -> "StatePerson":
+        """Prune all children from StatePerson."""
         self.state_sentence_groups = [
             sg.prune() for sg in self.state_sentence_groups if sg
+        ]
+        self.state_supervision_sentences = [
+            ss.prune() for ss in self.state_supervision_sentences if ss
+        ]
+        self.state_incarceration_sentences = [
+            ins.prune() for ins in self.state_incarceration_sentences if ins
         ]
         self.state_incarceration_periods = [
             ip.prune() for ip in self.state_incarceration_periods if ip
@@ -875,9 +926,15 @@ class StatePerson(IngestObject):
         self.state_supervision_violations.sort()
         self.state_supervision_contacts.sort()
 
-        for sentence_group in self.state_sentence_groups:
-            sentence_group.sort()
         self.state_sentence_groups.sort()
+
+        for supervision_sentence in self.state_supervision_sentences:
+            supervision_sentence.sort()
+        self.state_supervision_sentences.sort()
+
+        for incarceration_sentence in self.state_incarceration_sentences:
+            incarceration_sentence.sort()
+        self.state_incarceration_sentences.sort()
 
         for incarceration_period in self.state_incarceration_periods:
             incarceration_period.sort()
@@ -1003,8 +1060,6 @@ class StateSentenceGroup(IngestObject):
         min_length=None,
         max_length=None,
         is_life=None,
-        state_supervision_sentences=None,
-        state_incarceration_sentences=None,
     ):
         self.state_sentence_group_id: Optional[str] = state_sentence_group_id
         self.status: Optional[str] = status
@@ -1015,71 +1070,11 @@ class StateSentenceGroup(IngestObject):
         self.max_length: Optional[str] = max_length
         self.is_life: Optional[str] = is_life
 
-        self.state_supervision_sentences: List[StateSupervisionSentence] = (
-            state_supervision_sentences or []
-        )
-        self.state_incarceration_sentences: List[StateIncarcerationSentence] = (
-            state_incarceration_sentences or []
-        )
-
     def __setattr__(self, name, value):
         restricted_setattr(self, "state_incarceration_sentences", name, value)
 
-    def create_state_supervision_sentence(self, **kwargs) -> "StateSupervisionSentence":
-        supervision_sentence = StateSupervisionSentence(**kwargs)
-        self.state_supervision_sentences.append(supervision_sentence)
-        return supervision_sentence
-
-    def create_state_incarceration_sentence(
-        self, **kwargs
-    ) -> "StateIncarcerationSentence":
-        incarceration_sentence = StateIncarcerationSentence(**kwargs)
-        self.state_incarceration_sentences.append(incarceration_sentence)
-        return incarceration_sentence
-
-    def get_state_supervision_sentence_by_id(
-        self, supervision_sentence_id
-    ) -> Optional["StateSupervisionSentence"]:
-        return next(
-            (
-                ss
-                for ss in self.state_supervision_sentences
-                if ss.state_supervision_sentence_id == supervision_sentence_id
-            ),
-            None,
-        )
-
-    def get_state_incarceration_sentence_by_id(
-        self, incarceration_sentence_id
-    ) -> Optional["StateIncarcerationSentence"]:
-        return next(
-            (
-                ins
-                for ins in self.state_incarceration_sentences
-                if ins.state_incarceration_sentence_id == incarceration_sentence_id
-            ),
-            None,
-        )
-
     def prune(self) -> "StateSentenceGroup":
-        self.state_supervision_sentences = [
-            ss.prune() for ss in self.state_supervision_sentences if ss
-        ]
-
-        self.state_incarceration_sentences = [
-            ins.prune() for ins in self.state_incarceration_sentences if ins
-        ]
-
         return self
-
-    def sort(self):
-        for supervision_sentence in self.state_supervision_sentences:
-            supervision_sentence.sort()
-        self.state_supervision_sentences.sort()
-
-        for incarceration_sentence in self.state_incarceration_sentences:
-            incarceration_sentence.sort()
-        self.state_incarceration_sentences.sort()
 
 
 class StateSupervisionSentence(IngestObject):

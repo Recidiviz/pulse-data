@@ -299,6 +299,12 @@ class StatePerson(Entity, BuildableAttr, DefaultableAttr):
     assessments: List["StateAssessment"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
+    incarceration_sentences: List["StateIncarcerationSentence"] = attr.ib(
+        factory=list, validator=attr_validators.is_list
+    )
+    supervision_sentences: List["StateSupervisionSentence"] = attr.ib(
+        factory=list, validator=attr_validators.is_list
+    )
     incarceration_periods: List["StateIncarcerationPeriod"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
@@ -577,8 +583,6 @@ class StateSentenceGroup(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     # TODO(#1698): Consider including rollup projected completion dates?
 
     #   - What
-    # See |supervision_sentences| and |incarceration_sentences| in entity
-    # relationships below for more of the What.
 
     # Total length periods, either rolled up from individual sentences or directly
     # reported from the ingested source data
@@ -604,14 +608,6 @@ class StateSentenceGroup(ExternalIdEntity, BuildableAttr, DefaultableAttr):
 
     # Cross-entity relationships
     person: Optional["StatePerson"] = attr.ib(default=None)
-    supervision_sentences: List["StateSupervisionSentence"] = attr.ib(
-        factory=list, validator=attr_validators.is_list
-    )
-    incarceration_sentences: List["StateIncarcerationSentence"] = attr.ib(
-        factory=list, validator=attr_validators.is_list
-    )
-    # TODO(#1698): Add information about the time relationship between individual
-    #  sentences (i.e. consecutive vs concurrent).
 
 
 @attr.s(eq=False, kw_only=True)
@@ -684,7 +680,6 @@ class StateSupervisionSentence(ExternalIdEntity, BuildableAttr, DefaultableAttr)
 
     # Cross-entity relationships
     person: Optional["StatePerson"] = attr.ib(default=None)
-    sentence_group: Optional["StateSentenceGroup"] = attr.ib(default=None)
     charges: List["StateCharge"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
@@ -790,7 +785,6 @@ class StateIncarcerationSentence(ExternalIdEntity, BuildableAttr, DefaultableAtt
 
     # Cross-entity relationships
     person: Optional["StatePerson"] = attr.ib(default=None)
-    sentence_group: Optional["StateSentenceGroup"] = attr.ib(default=None)
     charges: List["StateCharge"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
