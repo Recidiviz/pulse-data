@@ -28,11 +28,15 @@ import re
 from re import Pattern
 
 from recidiviz.common import ncic
-from recidiviz.common.str_field_utils import parse_days_from_duration_pieces
+from recidiviz.common.str_field_utils import (
+    parse_days_from_duration_pieces,
+    safe_parse_days_from_duration_str,
+)
 from recidiviz.ingest.direct.regions.us_nd.us_nd_county_code_reference import (
     COUNTY_CODES,
     normalized_county_code,
 )
+from recidiviz.ingest.direct.state_shared_row_posthooks import get_normalized_ymd_str
 
 
 def decimal_str_as_int_str(dec_str: str) -> str:
@@ -101,3 +105,13 @@ def are_new_offenses_violent(
         if code
     ]
     return any(violent_flags)
+
+
+def max_length_days_from_ymd(years: str, months: str, days: str) -> str:
+    normalized_ymd_str = get_normalized_ymd_str(
+        years_numerical_str=years,
+        months_numerical_str=months,
+        days_numerical_str=days,
+    )
+
+    return str(safe_parse_days_from_duration_str(normalized_ymd_str))

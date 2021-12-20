@@ -22,9 +22,15 @@ from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
+# TODO(#10389): Consider updating the exclusion of suspended sentences when we
+#  redesign our sentencing model
 VIEW_QUERY_TEMPLATE = """
 SELECT * 
 FROM {elite_offendersentenceterms}
+-- We avoid bringing in "SUSPENDED" sentences that are placeholders in case someone's 
+-- probation is revoked. We get no info about these sentences other than a length (
+-- start/end dates are null).
+WHERE SENTENCE_TERM_CODE != 'SUSP'
 """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
