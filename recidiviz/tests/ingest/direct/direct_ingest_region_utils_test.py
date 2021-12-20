@@ -72,6 +72,4 @@ class TestDirectIngestRegionUtils(unittest.TestCase):
     def test_get_direct_ingest_states_with_sftp_queue(self) -> None:
         """Tests the get_direct_ingest_states_with_sftp_queue returns the correct state codes"""
         state_codes = set(get_direct_ingest_states_with_sftp_queue())
-        self.assertEqual(
-            state_codes, {StateCode.US_ID, StateCode.US_PA, StateCode.US_ME}
-        )
+        self.assertEqual(state_codes, {StateCode.US_ID, StateCode.US_PA})
