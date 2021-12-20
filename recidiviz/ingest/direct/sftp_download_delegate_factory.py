@@ -21,9 +21,6 @@ from recidiviz.ingest.direct.base_sftp_download_delegate import BaseSftpDownload
 from recidiviz.ingest.direct.regions.us_id.us_id_sftp_download_delegate import (
     UsIdSftpDownloadDelegate,
 )
-from recidiviz.ingest.direct.regions.us_me.us_me_sftp_download_delegate import (
-    UsMeSftpDownloadDelegate,
-)
 from recidiviz.ingest.direct.regions.us_pa.us_pa_sftp_download_delegate import (
     UsPaSftpDownloadDelegate,
 )
@@ -37,6 +34,4 @@ class SftpDownloadDelegateFactory:
             return UsIdSftpDownloadDelegate()
         if region_code == StateCode.US_PA.value:
             return UsPaSftpDownloadDelegate()
-        if region_code == StateCode.US_ME.value:
-            return UsMeSftpDownloadDelegate()
         raise ValueError(f"Unexpected region code provided: {region_code}")
