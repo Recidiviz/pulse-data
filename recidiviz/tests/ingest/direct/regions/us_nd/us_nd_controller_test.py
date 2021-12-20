@@ -571,128 +571,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
 
         self.run_legacy_parse_file_test(expected, "elite_offendersentences")
 
-    def test_populate_data_elite_offendersentenceterms(self) -> None:
-        supervision_sentence_105640_2 = StateSupervisionSentence(
-            state_supervision_sentence_id="105640-2",
-            supervision_type="PROBATION",
-            max_length="10Y 0M 0D",
-        )
-
-        supervision_sentence_105640_6 = StateSupervisionSentence(
-            state_supervision_sentence_id="105640-6",
-            supervision_type="PROBATION",
-            max_length="5Y 0M 0D",
-        )
-
-        incarceration_sentence_105640_1 = StateIncarcerationSentence(
-            state_incarceration_sentence_id="105640-1", max_length="10Y 0M 0D"
-        )
-
-        incarceration_sentence_105640_2 = StateIncarcerationSentence(
-            state_incarceration_sentence_id="105640-2", max_length="10Y 0M 0D"
-        )
-
-        incarceration_sentence_105640_5 = StateIncarcerationSentence(
-            state_incarceration_sentence_id="105640-5", max_length="20Y 0M 0D"
-        )
-
-        incarceration_sentence_105640_6 = StateIncarcerationSentence(
-            state_incarceration_sentence_id="105640-6", max_length="5Y 0M 0D"
-        )
-
-        incarceration_sentence_105640_7 = StateIncarcerationSentence(
-            state_incarceration_sentence_id="105640-7", max_length="2Y 0M 0D"
-        )
-
-        incarceration_sentence_114909_1 = StateIncarcerationSentence(
-            state_incarceration_sentence_id="114909-1", max_length="1Y 0M 1D"
-        )
-
-        incarceration_sentence_114909_2 = StateIncarcerationSentence(
-            state_incarceration_sentence_id="114909-2", max_length="0Y 0M 360D"
-        )
-
-        incarceration_sentence_113377_1 = StateIncarcerationSentence(
-            state_incarceration_sentence_id="113377-1", max_length="1Y 0M 1D"
-        )
-
-        incarceration_sentence_113377_4 = StateIncarcerationSentence(
-            state_incarceration_sentence_id="113377-4", max_length="0Y 0M 360D"
-        )
-
-        incarceration_sentence_113377_5 = StateIncarcerationSentence(
-            state_incarceration_sentence_id="113377-5", max_length="0Y 0M 1000D"
-        )
-
-        expected = IngestInfo(
-            state_people=[
-                StatePerson(
-                    state_person_id="105640",
-                    state_person_external_ids=[
-                        StatePersonExternalId(
-                            state_person_external_id_id="105640",
-                            id_type=US_ND_ELITE_BOOKING,
-                        ),
-                    ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_sentence_group_id="105640",
-                            state_supervision_sentences=[
-                                supervision_sentence_105640_2,
-                                supervision_sentence_105640_6,
-                            ],
-                            state_incarceration_sentences=[
-                                incarceration_sentence_105640_1,
-                                incarceration_sentence_105640_2,
-                                incarceration_sentence_105640_5,
-                                incarceration_sentence_105640_6,
-                                incarceration_sentence_105640_7,
-                            ],
-                        ),
-                    ],
-                ),
-                StatePerson(
-                    state_person_id="114909",
-                    state_person_external_ids=[
-                        StatePersonExternalId(
-                            state_person_external_id_id="114909",
-                            id_type=US_ND_ELITE_BOOKING,
-                        ),
-                    ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_sentence_group_id="114909",
-                            state_incarceration_sentences=[
-                                incarceration_sentence_114909_1,
-                                incarceration_sentence_114909_2,
-                            ],
-                        ),
-                    ],
-                ),
-                StatePerson(
-                    state_person_id="113377",
-                    state_person_external_ids=[
-                        StatePersonExternalId(
-                            state_person_external_id_id="113377",
-                            id_type=US_ND_ELITE_BOOKING,
-                        ),
-                    ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_sentence_group_id="113377",
-                            state_incarceration_sentences=[
-                                incarceration_sentence_113377_1,
-                                incarceration_sentence_113377_4,
-                                incarceration_sentence_113377_5,
-                            ],
-                        ),
-                    ],
-                ),
-            ]
-        )
-
-        self.run_legacy_parse_file_test(expected, "elite_offendersentenceterms")
-
     def test_populate_data_elite_offenderchargestable(self) -> None:
         state_charge_105640_1 = StateCharge(
             state_charge_id="105640-1",
@@ -2197,30 +2075,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
         # ELITE SENTENCE TERMS
         ######################################
         # Arrange
-        supervision_sentence_105640_2 = (
-            entities.StateSupervisionSentence.new_with_defaults(
-                external_id="105640-2",
-                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
-                supervision_type_raw_text="PROBATION",
-                max_length_days=3652,
-                state_code=_STATE_CODE,
-                sentence_group=sentence_group_105640,
-                person=sentence_group_105640.person,
-            )
-        )
-        supervision_sentence_105640_6 = (
-            entities.StateSupervisionSentence.new_with_defaults(
-                external_id="105640-6",
-                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
-                supervision_type_raw_text="PROBATION",
-                max_length_days=1826,
-                state_code=_STATE_CODE,
-                sentence_group=sentence_group_105640,
-                person=sentence_group_105640.person,
-            )
-        )
         incarceration_sentence_113377_1 = (
             entities.StateIncarcerationSentence.new_with_defaults(
                 external_id="113377-1",
@@ -2251,12 +2105,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
         incarceration_sentence_114909_1.max_length_days = 366
         incarceration_sentence_114909_2.max_length_days = 360
         incarceration_sentence_113377_4.max_length_days = 360
-        sentence_group_105640.supervision_sentences.append(
-            supervision_sentence_105640_2
-        )
-        sentence_group_105640.supervision_sentences.append(
-            supervision_sentence_105640_6
-        )
         sentence_group_113377.incarceration_sentences.append(
             incarceration_sentence_113377_1
         )

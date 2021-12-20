@@ -234,7 +234,7 @@ def gen_map_ymd_counts_to_max_length_field_posthook(
         _cache: IngestObjectCache,
     ) -> None:
 
-        length_str = get_normalized_ymd_str(
+        length_str = get_normalized_ymd_str_from_row(
             years_col_name, months_col_name, days_col_name, row
         )
         if test_for_fallback and not test_for_fallback(length_str):
@@ -249,9 +249,9 @@ def gen_map_ymd_counts_to_max_length_field_posthook(
 
 
 def get_normalized_ymd_str(
-    years_col_name: str, months_col_name: str, days_col_name: str, row: Dict[str, str]
+    years_numerical_str: str, months_numerical_str: str, days_numerical_str: str
 ) -> str:
-    """Given a |row| and column names that correspond to fields with year,
+    """Given year, month, and day values that correspond to fields with year,
     month, and day information, returns a single normalized string representing
     this information.
 
@@ -266,11 +266,25 @@ def get_normalized_ymd_str(
 
         return no_commas_str
 
-    years = normalize_numerical_str(row[years_col_name])
-    months = normalize_numerical_str(row[months_col_name])
-    days = normalize_numerical_str(row[days_col_name])
+    years = normalize_numerical_str(years_numerical_str)
+    months = normalize_numerical_str(months_numerical_str)
+    days = normalize_numerical_str(days_numerical_str)
 
     return f"{years}Y {months}M {days}D"
+
+
+def get_normalized_ymd_str_from_row(
+    years_col_name: str, months_col_name: str, days_col_name: str, row: Dict[str, str]
+) -> str:
+    """Given a |row| and column names that correspond to fields with year,
+    month, and day information, returns a single normalized string representing
+    this information.
+
+    Example output: '10Y 5M 0D'
+    """
+    return get_normalized_ymd_str(
+        row[years_col_name], row[months_col_name], row[days_col_name]
+    )
 
 
 def gen_set_is_life_sentence_hook(

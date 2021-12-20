@@ -37,9 +37,6 @@ from recidiviz.common.constants.state.state_assessment import (
 from recidiviz.common.constants.state.state_incarceration_incident import (
     StateIncarcerationIncidentOutcomeType,
 )
-from recidiviz.common.constants.state.state_supervision_sentence import (
-    StateSupervisionSentenceSupervisionType,
-)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.str_field_utils import (
     parse_days_from_duration_pieces,
@@ -77,7 +74,6 @@ from recidiviz.ingest.direct.state_shared_row_posthooks import (
     gen_normalize_county_codes_posthook,
     gen_set_agent_type,
     gen_set_is_life_sentence_hook,
-    get_normalized_ymd_str,
 )
 from recidiviz.ingest.extractor.csv_data_extractor import (
     AncestorChainOverridesCallable,
@@ -100,7 +96,6 @@ from recidiviz.ingest.models.ingest_info import (
     StateSentenceGroup,
     StateSupervisionCaseTypeEntry,
     StateSupervisionContact,
-    StateSupervisionSentence,
 )
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 from recidiviz.utils import environment
@@ -124,7 +119,6 @@ class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             "elite_offenderidentifier": [self._normalize_id_fields],
             "elite_alias": [self._normalize_id_fields],
             "elite_offendersentences": [self._normalize_id_fields],
-            "elite_offendersentenceterms": [self._normalize_id_fields],
             "elite_offenderchargestable": [self._normalize_id_fields],
             "elite_orderstable": [self._normalize_id_fields],
         }
@@ -141,7 +135,6 @@ class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
                     "SENTENCE_CALC_TYPE", "LIFE", StateIncarcerationSentence
                 )
             ],
-            "elite_offendersentenceterms": [self._add_sentence_children],
             "elite_offenderchargestable": [
                 self._parse_elite_charge_classification,
                 self._set_elite_charge_status,
@@ -208,11 +201,8 @@ class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             "elite_offenderchargestable": _state_charge_ancestor_chain_overrides,
             "elite_offendersentenceaggs": _state_person_ancestor_chain_overrides,
             "elite_offendersentences": _state_person_ancestor_chain_overrides,
-            "elite_offendersentenceterms": _state_person_ancestor_chain_overrides,
             "elite_orderstable": _state_person_ancestor_chain_overrides,
         }
-
-        self.files_to_set_with_empty_values = ["elite_offendersentenceterms"]
 
     def get_file_tag_rank_list(self) -> List[str]:
         # NOTE: The order of ingest here is important! Do not change unless you know what you're doing!
@@ -299,7 +289,7 @@ class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         return self.primary_key_override_hook_by_file.get(file, None)
 
     def get_files_to_set_with_empty_values(self) -> List[str]:
-        return self.files_to_set_with_empty_values
+        return []
 
     @staticmethod
     def _get_id_type(file_tag: str) -> Optional[str]:
@@ -710,40 +700,6 @@ class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
                 extracted_object.state_incarceration_incident_outcome_id = "-".join(
                     [incident_id, sanction_seq]
                 )
-
-    @staticmethod
-    def _add_sentence_children(
-        _gating_context: IngestGatingContext,
-        row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        term_code = row.get("SENTENCE_TERM_CODE", None)
-        for extracted_object in extracted_objects:
-            if isinstance(extracted_object, StateSentenceGroup):
-                sentence_id = _generate_sentence_id(row)
-                max_length = get_normalized_ymd_str("YEARS", "MONTHS", "DAYS", row)
-                if term_code == "SUSP":
-                    supervision_sentence = StateSupervisionSentence(
-                        state_supervision_sentence_id=sentence_id,
-                        supervision_type=StateSupervisionSentenceSupervisionType.PROBATION.value,
-                        max_length=max_length,
-                    )
-                    create_if_not_exists(
-                        supervision_sentence,
-                        extracted_object,
-                        "state_supervision_sentences",
-                    )
-                else:
-                    incarceration_sentence = StateIncarcerationSentence(
-                        state_incarceration_sentence_id=sentence_id,
-                        max_length=max_length,
-                    )
-                    create_if_not_exists(
-                        incarceration_sentence,
-                        extracted_object,
-                        "state_incarceration_sentences",
-                    )
 
     @staticmethod
     def _set_elite_charge_status(
