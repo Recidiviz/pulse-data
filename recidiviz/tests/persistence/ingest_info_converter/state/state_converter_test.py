@@ -175,6 +175,14 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             state_supervision_violation_ids=["VIOLATION_ID"],
             state_supervision_contact_ids=["SUPERVISION_CONTACT_ID"],
             state_sentence_group_ids=["GROUP_ID1", "GROUP_ID2"],
+            state_supervision_sentence_ids=[
+                "SUPERVISION_SENTENCE_ID1",
+                "SUPERVISION_SENTENCE_ID2",
+            ],
+            state_incarceration_sentence_ids=[
+                "INCARCERATION_SENTENCE_ID1",
+                "INCARCERATION_SENTENCE_ID2",
+            ],
             state_incarceration_period_ids=["I_PERIOD_ID"],
             state_supervision_period_ids=[
                 "S_PERIOD_ID1",
@@ -223,15 +231,9 @@ class TestIngestInfoStateConverter(unittest.TestCase):
         )
         ingest_info.state_sentence_groups.add(
             state_sentence_group_id="GROUP_ID1",
-            state_supervision_sentence_ids=["SUPERVISION_SENTENCE_ID1"],
-            state_incarceration_sentence_ids=[
-                "INCARCERATION_SENTENCE_ID1",
-                "INCARCERATION_SENTENCE_ID2",
-            ],
         )
         ingest_info.state_sentence_groups.add(
             state_sentence_group_id="GROUP_ID2",
-            state_supervision_sentence_ids=["SUPERVISION_SENTENCE_ID2"],
         )
         ingest_info.state_supervision_sentences.add(
             state_supervision_sentence_id="SUPERVISION_SENTENCE_ID1",
@@ -544,6 +546,21 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             charges=[charge_2, charge_3],
         )
 
+        supervision_sentences = [
+            StateSupervisionSentence.new_with_defaults(
+                external_id="SUPERVISION_SENTENCE_ID1",
+                state_code="US_XX",
+                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                charges=[charge_1, charge_2],
+            ),
+            StateSupervisionSentence.new_with_defaults(
+                external_id="SUPERVISION_SENTENCE_ID2",
+                state_code="US_XX",
+                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                charges=[charge_2],
+            ),
+        ]
+
         expected_result = [
             StatePerson.new_with_defaults(
                 state_code="US_XX",
@@ -593,6 +610,11 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                 incarceration_incidents=[incident],
                 supervision_violations=[violation],
                 supervision_contacts=[supervision_contact],
+                incarceration_sentences=[
+                    incarceration_sentence_1,
+                    incarceration_sentence_2,
+                ],
+                supervision_sentences=supervision_sentences,
                 incarceration_periods=[
                     StateIncarcerationPeriod.new_with_defaults(
                         external_id="I_PERIOD_ID",
@@ -661,31 +683,11 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                         external_id="GROUP_ID1",
                         status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
                         state_code="US_XX",
-                        supervision_sentences=[
-                            StateSupervisionSentence.new_with_defaults(
-                                external_id="SUPERVISION_SENTENCE_ID1",
-                                state_code="US_XX",
-                                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                                charges=[charge_1, charge_2],
-                            )
-                        ],
-                        incarceration_sentences=[
-                            incarceration_sentence_1,
-                            incarceration_sentence_2,
-                        ],
                     ),
                     StateSentenceGroup.new_with_defaults(
                         external_id="GROUP_ID2",
                         status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
                         state_code="US_XX",
-                        supervision_sentences=[
-                            StateSupervisionSentence.new_with_defaults(
-                                external_id="SUPERVISION_SENTENCE_ID2",
-                                state_code="US_XX",
-                                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                                charges=[charge_2],
-                            )
-                        ],
                     ),
                 ],
             )

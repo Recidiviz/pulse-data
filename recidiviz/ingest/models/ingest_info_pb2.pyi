@@ -1163,6 +1163,8 @@ class StatePerson(google.protobuf.message.Message):
     STATE_PERSON_EXTERNAL_IDS_IDS_FIELD_NUMBER: builtins.int
     STATE_ASSESSMENT_IDS_FIELD_NUMBER: builtins.int
     STATE_SENTENCE_GROUP_IDS_FIELD_NUMBER: builtins.int
+    STATE_SUPERVISION_SENTENCE_IDS_FIELD_NUMBER: builtins.int
+    STATE_INCARCERATION_SENTENCE_IDS_FIELD_NUMBER: builtins.int
     STATE_INCARCERATION_PERIOD_IDS_FIELD_NUMBER: builtins.int
     STATE_SUPERVISION_PERIOD_IDS_FIELD_NUMBER: builtins.int
     STATE_PROGRAM_ASSIGNMENT_IDS_FIELD_NUMBER: builtins.int
@@ -1214,6 +1216,18 @@ class StatePerson(google.protobuf.message.Message):
     ]: ...
     @property
     def state_sentence_group_ids(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        typing.Text
+    ]: ...
+    @property
+    def state_supervision_sentence_ids(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        typing.Text
+    ]: ...
+    @property
+    def state_incarceration_sentence_ids(
         self,
     ) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[
         typing.Text
@@ -1278,6 +1292,12 @@ class StatePerson(google.protobuf.message.Message):
         ] = ...,
         state_assessment_ids: typing.Optional[typing.Iterable[typing.Text]] = ...,
         state_sentence_group_ids: typing.Optional[typing.Iterable[typing.Text]] = ...,
+        state_supervision_sentence_ids: typing.Optional[
+            typing.Iterable[typing.Text]
+        ] = ...,
+        state_incarceration_sentence_ids: typing.Optional[
+            typing.Iterable[typing.Text]
+        ] = ...,
         state_incarceration_period_ids: typing.Optional[
             typing.Iterable[typing.Text]
         ] = ...,
@@ -1361,6 +1381,8 @@ class StatePerson(google.protobuf.message.Message):
             b"state_incarceration_incident_ids",
             "state_incarceration_period_ids",
             b"state_incarceration_period_ids",
+            "state_incarceration_sentence_ids",
+            b"state_incarceration_sentence_ids",
             "state_person_ethnicity_ids",
             b"state_person_ethnicity_ids",
             "state_person_external_ids_ids",
@@ -1377,6 +1399,8 @@ class StatePerson(google.protobuf.message.Message):
             b"state_supervision_contact_ids",
             "state_supervision_period_ids",
             b"state_supervision_period_ids",
+            "state_supervision_sentence_ids",
+            b"state_supervision_sentence_ids",
             "state_supervision_violation_ids",
             b"state_supervision_violation_ids",
             "supervising_officer_id",
@@ -1675,8 +1699,6 @@ class StateSentenceGroup(google.protobuf.message.Message):
     MIN_LENGTH_FIELD_NUMBER: builtins.int
     MAX_LENGTH_FIELD_NUMBER: builtins.int
     IS_LIFE_FIELD_NUMBER: builtins.int
-    STATE_SUPERVISION_SENTENCE_IDS_FIELD_NUMBER: builtins.int
-    STATE_INCARCERATION_SENTENCE_IDS_FIELD_NUMBER: builtins.int
     state_sentence_group_id: typing.Text = ...
     status: typing.Text = ...
     date_imposed: typing.Text = ...
@@ -1685,18 +1707,6 @@ class StateSentenceGroup(google.protobuf.message.Message):
     min_length: typing.Text = ...
     max_length: typing.Text = ...
     is_life: typing.Text = ...
-    @property
-    def state_supervision_sentence_ids(
-        self,
-    ) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[
-        typing.Text
-    ]: ...
-    @property
-    def state_incarceration_sentence_ids(
-        self,
-    ) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[
-        typing.Text
-    ]: ...
     def __init__(
         self,
         *,
@@ -1708,12 +1718,6 @@ class StateSentenceGroup(google.protobuf.message.Message):
         min_length: typing.Optional[typing.Text] = ...,
         max_length: typing.Optional[typing.Text] = ...,
         is_life: typing.Optional[typing.Text] = ...,
-        state_supervision_sentence_ids: typing.Optional[
-            typing.Iterable[typing.Text]
-        ] = ...,
-        state_incarceration_sentence_ids: typing.Optional[
-            typing.Iterable[typing.Text]
-        ] = ...,
     ) -> None: ...
     def HasField(
         self,
@@ -1751,12 +1755,8 @@ class StateSentenceGroup(google.protobuf.message.Message):
             b"min_length",
             "state_code",
             b"state_code",
-            "state_incarceration_sentence_ids",
-            b"state_incarceration_sentence_ids",
             "state_sentence_group_id",
             b"state_sentence_group_id",
-            "state_supervision_sentence_ids",
-            b"state_supervision_sentence_ids",
             "status",
             b"status",
         ],

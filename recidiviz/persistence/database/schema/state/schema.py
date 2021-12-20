@@ -710,35 +710,6 @@ class _ReferencesStatePersonSharedColumns:
         )
 
 
-class _ReferencesStateSentenceGroupSharedColumns:
-    """A mixin which defines columns for any table whose rows reference an
-    individual StateSentenceGroup"""
-
-    # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(
-        cls, *_: Any, **__: Any
-    ) -> "_ReferencesStateSentenceGroupSharedColumns":
-        if cls is _ReferencesStateSentenceGroupSharedColumns:
-            raise Exception(f"[{cls}] cannot be instantiated")
-        return super().__new__(cls)  # type: ignore
-
-    @declared_attr
-    def sentence_group_id(self) -> Column:
-        return Column(
-            Integer,
-            ForeignKey(
-                "state_sentence_group.sentence_group_id",
-                deferrable=True,
-                initially="DEFERRED",
-            ),
-            index=True,
-            nullable=False,
-            comment=StrictStringFormatter().format(
-                FOREIGN_KEY_COMMENT_TEMPLATE, object_name="sentence group"
-            ),
-        )
-
-
 # StatePersonExternalId
 
 
@@ -1146,6 +1117,12 @@ class StatePerson(StateBase, _StatePersonSharedColumns):
         "StatePersonEthnicity", backref="person", lazy="selectin"
     )
     assessments = relationship("StateAssessment", backref="person", lazy="selectin")
+    incarceration_sentences = relationship(
+        "StateIncarcerationSentence", backref="person", lazy="selectin"
+    )
+    supervision_sentences = relationship(
+        "StateSupervisionSentence", backref="person", lazy="selectin"
+    )
     incarceration_periods = relationship(
         "StateIncarcerationPeriod", backref="person", lazy="selectin"
     )
@@ -1677,13 +1654,6 @@ class StateSentenceGroup(StateBase, _StateSentenceGroupSharedColumns):
         ),
     )
 
-    supervision_sentences = relationship(
-        "StateSupervisionSentence", backref="sentence_group", lazy="selectin"
-    )
-    incarceration_sentences = relationship(
-        "StateIncarcerationSentence", backref="sentence_group", lazy="selectin"
-    )
-
 
 class StateSentenceGroupHistory(
     StateBase, _StateSentenceGroupSharedColumns, HistoryTableSharedColumns
@@ -1711,9 +1681,7 @@ class StateSentenceGroupHistory(
 # StateSupervisionSentence
 
 
-class _StateSupervisionSentenceSharedColumns(
-    _ReferencesStatePersonSharedColumns, _ReferencesStateSentenceGroupSharedColumns
-):
+class _StateSupervisionSentenceSharedColumns(_ReferencesStatePersonSharedColumns):
     """A mixin which defines all columns common to StateSupervisionSentence and
     StateSupervisionSentenceHistory"""
 
@@ -1808,7 +1776,6 @@ class StateSupervisionSentence(StateBase, _StateSupervisionSentenceSharedColumns
         ),
     )
 
-    person = relationship("StatePerson", uselist=False)
     charges = relationship(
         "StateCharge",
         secondary=state_charge_supervision_sentence_association_table,
@@ -1853,7 +1820,7 @@ class StateSupervisionSentenceHistory(
 
 
 class _StateIncarcerationSentenceSharedColumns(
-    _ReferencesStatePersonSharedColumns, _ReferencesStateSentenceGroupSharedColumns
+    _ReferencesStatePersonSharedColumns,
 ):
     """A mixin which defines all columns common to StateIncarcerationSentence
     and StateIncarcerationSentenceHistory
@@ -1984,7 +1951,6 @@ class StateIncarcerationSentence(StateBase, _StateIncarcerationSentenceSharedCol
         ),
     )
 
-    person = relationship("StatePerson", uselist=False)
     charges = relationship(
         "StateCharge",
         secondary=state_charge_incarceration_sentence_association_table,

@@ -1,11 +1,13 @@
 key_mappings:
-  EARLIEST_SENT_START_DATE: state_sentence_group.date_imposed
+  OFFENDER_BOOK_ID: state_person.state_person_id
 
 child_key_mappings:
+  OFFENDER_BOOK_ID: state_sentence_group.state_sentence_group_id
+  EARLIEST_SENT_START_DATE: state_sentence_group.date_imposed
   PAROLE_DATE: state_incarceration_sentence.parole_eligibility_date
 
 primary_key:
-  OFFENDER_BOOK_ID: state_sentence_group.state_sentence_group_id
+  OFFENDER_BOOK_ID: state_person.state_person_id
 
 keys_to_ignore:
   - MAX_TERM              # Max length of term - handled manually in the controller

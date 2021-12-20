@@ -613,6 +613,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
         entity_charges[0].supervision_sentences = [entity_sentence]
         entity_charges[1].supervision_sentences = [entity_sentence]
         entity_sentence.charges = entity_charges
+        entity_person.supervision_sentences = [entity_sentence]
 
         dataset = "recidiviz-123.state"
 
@@ -949,6 +950,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
         entity_charges[0].supervision_sentences = [entity_sentence]
         entity_charges[1].supervision_sentences = [entity_sentence]
         entity_sentence.charges = entity_charges
+        entity_person.supervision_sentences = [entity_sentence]
 
         dataset = "recidiviz-123.state"
 
@@ -1177,7 +1179,7 @@ class TestExtractAllEntitiesOfType(unittest.TestCase):
     def testExtractAllEntitiesOfType(self):
         person = remove_relationship_properties(
             database_test_utils.generate_test_person(
-                123, "US_XX", [], None, [], [], [], [], []
+                123, "US_XX", [], None, [], [], [], [], [], [], []
             )
         )
 
@@ -1222,7 +1224,7 @@ class TestExtractAllEntitiesOfType(unittest.TestCase):
     def testExtractAllEntitiesOfType_InvalidUnifyingIdField(self):
         person = remove_relationship_properties(
             database_test_utils.generate_test_person(
-                123, "US_XX", [], None, [], [], [], [], []
+                123, "US_XX", [], None, [], [], [], [], [], [], []
             )
         )
 

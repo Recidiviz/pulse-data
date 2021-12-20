@@ -233,6 +233,20 @@ class StateConverter(BaseConverter[entities.StatePerson]):
         ]
         state_person_builder.assessments = converted_assessments
 
+        converted_supervision_sentences = [
+            self._convert_supervision_sentence(self.supervision_sentences[sentence_id])
+            for sentence_id in ingest_person.state_supervision_sentence_ids
+        ]
+        state_person_builder.supervision_sentences = converted_supervision_sentences
+
+        converted_incarceration_sentences = [
+            self._convert_incarceration_sentence(
+                self.incarceration_sentences[sentence_id]
+            )
+            for sentence_id in ingest_person.state_incarceration_sentence_ids
+        ]
+        state_person_builder.incarceration_sentences = converted_incarceration_sentences
+
         converted_incarceration_periods = [
             self._convert_incarceration_period(self.incarceration_periods[period_id])
             for period_id in ingest_person.state_incarceration_period_ids
@@ -304,22 +318,6 @@ class StateConverter(BaseConverter[entities.StatePerson]):
 
         state_sentence_group.copy_fields_to_builder(
             sentence_group_builder, ingest_sentence_group, self.metadata
-        )
-
-        converted_supervision_sentences = [
-            self._convert_supervision_sentence(self.supervision_sentences[sentence_id])
-            for sentence_id in ingest_sentence_group.state_supervision_sentence_ids
-        ]
-        sentence_group_builder.supervision_sentences = converted_supervision_sentences
-
-        converted_incarceration_sentences = [
-            self._convert_incarceration_sentence(
-                self.incarceration_sentences[sentence_id]
-            )
-            for sentence_id in ingest_sentence_group.state_incarceration_sentence_ids
-        ]
-        sentence_group_builder.incarceration_sentences = (
-            converted_incarceration_sentences
         )
 
         return sentence_group_builder.build(StateSentenceGroupFactory.deserialize)
