@@ -102,7 +102,10 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = """
             WHEN state_code = 'US_ND' AND facility = 'CPP' 
                 THEN 'COMMUNITY_PLACEMENT_PROGRAM'
             ELSE COALESCE(specialized_purpose_for_incarceration, 'GENERAL') END as compartment_level_2,
-        facility AS compartment_location,
+        COALESCE(facility,'EXTERNAL_UNKNOWN') AS compartment_location,
+        COALESCE(facility,'EXTERNAL_UNKNOWN') AS facility,
+        CAST(NULL AS STRING) AS supervision_office,
+        CAST(NULL AS STRING) AS supervision_district,    
         CAST(NULL AS STRING) AS correctional_level,
         CAST(NULL AS STRING) AS supervising_officer_external_id,
         CAST(NULL AS STRING) AS case_type
@@ -125,6 +128,9 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = """
         'SUPERVISION' as compartment_level_1,
         supervision_type as compartment_level_2,
         CONCAT(COALESCE(level_1_supervision_location_external_id,'EXTERNAL_UNKNOWN'),'|', COALESCE(level_2_supervision_location_external_id,'EXTERNAL_UNKNOWN')) AS compartment_location,
+        CAST(NULL AS STRING) AS facility,
+        COALESCE(level_1_supervision_location_external_id,'EXTERNAL_UNKNOWN') AS supervision_office,
+        COALESCE(level_2_supervision_location_external_id,'EXTERNAL_UNKNOWN') AS supervision_district,
         supervision_level AS correctional_level,
         supervising_officer_external_id,
         case_type
@@ -153,6 +159,9 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = """
         'SUPERVISION_OUT_OF_STATE' as compartment_level_1,
         supervision_type as compartment_level_2,
         CONCAT(COALESCE(level_1_supervision_location_external_id,'EXTERNAL_UNKNOWN'),'|', COALESCE(level_2_supervision_location_external_id,'EXTERNAL_UNKNOWN')) AS compartment_location,
+        CAST(NULL AS STRING) AS facility,
+        COALESCE(level_1_supervision_location_external_id,'EXTERNAL_UNKNOWN') AS supervision_office,
+        COALESCE(level_2_supervision_location_external_id,'EXTERNAL_UNKNOWN') AS supervision_district,
         supervision_level AS correctional_level,
         supervising_officer_external_id,
         case_type
@@ -205,6 +214,9 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = """
         a.compartment_level_1,
         COALESCE(a.compartment_level_2, b.compartment_level_2) compartment_level_2,
         a.compartment_location,
+        a.facility,
+        a.supervision_office,
+        a.supervision_district,
         a.correctional_level,
         a.supervising_officer_external_id,
         a.case_type 
@@ -253,6 +265,9 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = """
         compartment_level_1,
         CASE WHEN cnt > 1 AND compartment_level_1 = 'SUPERVISION' THEN 'DUAL' ELSE compartment_level_2 END AS compartment_level_2,
         compartment_location,
+        facility,
+        supervision_office,
+        supervision_district,
         supervising_officer_external_id,
         case_type,
         FROM (
@@ -277,6 +292,9 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = """
         compartment_level_1,
         compartment_level_2,
         compartment_location,
+        facility,
+        supervision_office,
+        supervision_district,
         correctional_level,
         supervising_officer_external_id,
         case_type,
@@ -290,9 +308,9 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = """
             compartment_level_2, the highest correctional level and alphabetically first officer name and location name. */
             ROW_NUMBER() OVER(PARTITION BY person_id, date, compartment_level_1, metric_source 
                 ORDER BY COALESCE(dedup.priority,999), supervising_officer_external_id, compartment_location) AS rn,
-            ARRAY_AGG(STRUCT(compartment_level_2, supervising_officer_external_id, compartment_location)) 
+            ARRAY_AGG(STRUCT(compartment_level_2, supervising_officer_external_id, compartment_location, facility, supervision_office, supervision_district)) 
                 OVER(PARTITION BY person_id, date, compartment_level_1, metric_source) AS session_attributes,
-            ARRAY_AGG(TO_JSON_STRING(STRUCT(compartment_level_2, supervising_officer_external_id, compartment_location)))
+            ARRAY_AGG(TO_JSON_STRING(STRUCT(compartment_level_2, supervising_officer_external_id, compartment_location, facility, supervision_office, supervision_district)))
                 OVER(PARTITION BY person_id, date, compartment_level_1, metric_source) AS session_attributes_json,
         FROM dedup_step_2_cte
         LEFT JOIN dedup_correctional_level
@@ -320,6 +338,9 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = """
         compartment_level_1,
         compartment_level_2,
         compartment_location,
+        facility,
+        supervision_office,
+        supervision_district,
         correctional_level,
         supervising_officer_external_id,
         case_type,
@@ -355,6 +376,9 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = """
         compartment_level_1,
         compartment_level_2,
         compartment_location,
+        facility,
+        supervision_office,
+        supervision_district,
         correctional_level,
         supervising_officer_external_id,
         case_type,
@@ -379,7 +403,7 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = """
             FROM dedup_step_4_cte
             )
         )
-    GROUP BY 1,2,3,4,5,6,7,8,9,10
+    GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13
     )
     /*
     Same as sessionized cte with null end dates for active sessions.
@@ -392,6 +416,9 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = """
         s.compartment_level_1,
         s.compartment_level_2,
         s.compartment_location,
+        s.facility,
+        s.supervision_office,
+        s.supervision_district,
         s.correctional_level,
         s.supervising_officer_external_id,
         s.case_type,

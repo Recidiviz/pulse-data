@@ -49,7 +49,10 @@ US_ID_INCARCERATION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
                 WHEN specialized_purpose_for_incarceration IN ('GENERAL','PAROLE_BOARD_HOLD','TREATMENT_IN_PRISON') 
                     THEN specialized_purpose_for_incarceration 
                 ELSE COALESCE(specialized_purpose_for_incarceration, 'GENERAL') END as compartment_level_2,
-            facility AS compartment_location,
+            COALESCE(facility,'EXTERNAL_UNKNOWN') AS compartment_location,
+            COALESCE(facility,'EXTERNAL_UNKNOWN') AS facility,
+            CAST(NULL AS STRING) AS supervision_office,
+            CAST(NULL AS STRING) AS supervision_district,
             CAST(NULL AS STRING) AS correctional_level,
             CAST(NULL AS STRING) AS supervising_officer_external_id,
             CAST(NULL AS STRING) AS case_type
@@ -69,6 +72,9 @@ US_ID_INCARCERATION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
         END AS compartment_level_1,
         pop.compartment_level_2,
         pop.compartment_location,
+        pop.facility,
+        pop.supervision_office,
+        pop.supervision_district,
         pop.correctional_level,
         pop.supervising_officer_external_id,
         pop.case_type
