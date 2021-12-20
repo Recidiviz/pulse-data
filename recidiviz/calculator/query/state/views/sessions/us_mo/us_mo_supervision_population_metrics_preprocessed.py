@@ -56,6 +56,9 @@ US_MO_SUPERVISION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
         'SUPERVISION' AS compartment_level_1,
         COALESCE(abs.supervision_type, population.supervision_type) AS compartment_level_2,
         CONCAT(COALESCE(population.level_1_supervision_location_external_id,'EXTERNAL_UNKNOWN'),'|', COALESCE(population.level_2_supervision_location_external_id,'EXTERNAL_UNKNOWN')) AS compartment_location,
+        CAST(NULL AS STRING) AS facility,
+        COALESCE(level_1_supervision_location_external_id,'EXTERNAL_UNKNOWN') AS supervision_office,
+        COALESCE(level_2_supervision_location_external_id,'EXTERNAL_UNKNOWN') AS supervision_district,
         population.supervision_level AS correctional_level,
         population.supervising_officer_external_id,
         population.case_type
