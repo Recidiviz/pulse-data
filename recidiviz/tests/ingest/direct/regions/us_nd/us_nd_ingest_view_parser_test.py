@@ -57,7 +57,6 @@ from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationSentence,
     StatePerson,
     StatePersonExternalId,
-    StateSentenceGroup,
     StateSupervisionPeriod,
     StateSupervisionSentence,
     StateSupervisionViolation,
@@ -98,20 +97,13 @@ class UsNdIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         id_type=US_ND_ELITE_BOOKING,
                     )
                 ],
-                sentence_groups=[
-                    StateSentenceGroup.new_with_defaults(
-                        external_id="105640",
-                        state_code=self.state_code,
+                incarceration_sentences=[
+                    StateIncarcerationSentence.new_with_defaults(
+                        external_id="105640-1",
                         status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                        incarceration_sentences=[
-                            StateIncarcerationSentence.new_with_defaults(
-                                external_id="105640-1",
-                                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                                incarceration_type=StateIncarcerationType.STATE_PRISON,
-                                state_code=self.state_code,
-                                max_length_days=3652,
-                            ),
-                        ],
+                        incarceration_type=StateIncarcerationType.STATE_PRISON,
+                        state_code=self.state_code,
+                        max_length_days=3652,
                     ),
                 ],
             ),
@@ -124,20 +116,13 @@ class UsNdIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         id_type=US_ND_ELITE_BOOKING,
                     )
                 ],
-                sentence_groups=[
-                    StateSentenceGroup.new_with_defaults(
-                        external_id="105640",
-                        state_code=self.state_code,
+                incarceration_sentences=[
+                    StateIncarcerationSentence.new_with_defaults(
+                        external_id="105640-2",
                         status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                        incarceration_sentences=[
-                            StateIncarcerationSentence.new_with_defaults(
-                                external_id="105640-2",
-                                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                                incarceration_type=StateIncarcerationType.STATE_PRISON,
-                                state_code=self.state_code,
-                                max_length_days=3652,
-                            ),
-                        ],
+                        incarceration_type=StateIncarcerationType.STATE_PRISON,
+                        state_code=self.state_code,
+                        max_length_days=3652,
                     ),
                 ],
             ),
@@ -150,20 +135,13 @@ class UsNdIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         id_type=US_ND_ELITE_BOOKING,
                     )
                 ],
-                sentence_groups=[
-                    StateSentenceGroup.new_with_defaults(
-                        external_id="105640",
-                        state_code=self.state_code,
+                incarceration_sentences=[
+                    StateIncarcerationSentence.new_with_defaults(
+                        external_id="105640-5",
                         status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                        incarceration_sentences=[
-                            StateIncarcerationSentence.new_with_defaults(
-                                external_id="105640-5",
-                                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                                incarceration_type=StateIncarcerationType.STATE_PRISON,
-                                state_code=self.state_code,
-                                max_length_days=7305,
-                            ),
-                        ],
+                        incarceration_type=StateIncarcerationType.STATE_PRISON,
+                        state_code=self.state_code,
+                        max_length_days=7305,
                     ),
                 ],
             ),
@@ -176,20 +154,13 @@ class UsNdIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         id_type=US_ND_ELITE_BOOKING,
                     )
                 ],
-                sentence_groups=[
-                    StateSentenceGroup.new_with_defaults(
-                        external_id="105640",
-                        state_code=self.state_code,
+                incarceration_sentences=[
+                    StateIncarcerationSentence.new_with_defaults(
+                        external_id="105640-6",
                         status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                        incarceration_sentences=[
-                            StateIncarcerationSentence.new_with_defaults(
-                                external_id="105640-6",
-                                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                                incarceration_type=StateIncarcerationType.STATE_PRISON,
-                                state_code=self.state_code,
-                                max_length_days=1826,
-                            ),
-                        ],
+                        incarceration_type=StateIncarcerationType.STATE_PRISON,
+                        state_code=self.state_code,
+                        max_length_days=1826,
                     ),
                 ],
             ),
@@ -202,124 +173,13 @@ class UsNdIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         id_type=US_ND_ELITE_BOOKING,
                     )
                 ],
-                sentence_groups=[
-                    StateSentenceGroup.new_with_defaults(
-                        external_id="114909",
-                        state_code=self.state_code,
+                incarceration_sentences=[
+                    StateIncarcerationSentence.new_with_defaults(
+                        external_id="114909-1",
                         status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                        incarceration_sentences=[
-                            StateIncarcerationSentence.new_with_defaults(
-                                external_id="114909-1",
-                                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                                incarceration_type=StateIncarcerationType.STATE_PRISON,
-                                max_length_days=366,
-                                state_code=self.state_code,
-                            ),
-                        ],
-                    )
-                ],
-            ),
-            StatePerson(
-                state_code=self.state_code,
-                external_ids=[
-                    StatePersonExternalId(
+                        incarceration_type=StateIncarcerationType.STATE_PRISON,
+                        max_length_days=366,
                         state_code=self.state_code,
-                        external_id="113377",
-                        id_type=US_ND_ELITE_BOOKING,
-                    )
-                ],
-                sentence_groups=[
-                    StateSentenceGroup.new_with_defaults(
-                        external_id="113377",
-                        state_code=self.state_code,
-                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                        incarceration_sentences=[
-                            StateIncarcerationSentence.new_with_defaults(
-                                external_id="113377-1",
-                                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                                incarceration_type=StateIncarcerationType.STATE_PRISON,
-                                max_length_days=366,
-                                state_code=self.state_code,
-                            ),
-                        ],
-                    )
-                ],
-            ),
-            StatePerson(
-                state_code=self.state_code,
-                external_ids=[
-                    StatePersonExternalId(
-                        state_code=self.state_code,
-                        external_id="114909",
-                        id_type=US_ND_ELITE_BOOKING,
-                    )
-                ],
-                sentence_groups=[
-                    StateSentenceGroup.new_with_defaults(
-                        external_id="114909",
-                        state_code=self.state_code,
-                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                        incarceration_sentences=[
-                            StateIncarcerationSentence.new_with_defaults(
-                                external_id="114909-2",
-                                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                                incarceration_type=StateIncarcerationType.STATE_PRISON,
-                                max_length_days=360,
-                                state_code=self.state_code,
-                            ),
-                        ],
-                    )
-                ],
-            ),
-            StatePerson(
-                state_code=self.state_code,
-                external_ids=[
-                    StatePersonExternalId(
-                        state_code=self.state_code,
-                        external_id="113377",
-                        id_type=US_ND_ELITE_BOOKING,
-                    )
-                ],
-                sentence_groups=[
-                    StateSentenceGroup.new_with_defaults(
-                        external_id="113377",
-                        state_code=self.state_code,
-                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                        incarceration_sentences=[
-                            StateIncarcerationSentence.new_with_defaults(
-                                external_id="113377-4",
-                                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                                incarceration_type=StateIncarcerationType.STATE_PRISON,
-                                max_length_days=360,
-                                state_code=self.state_code,
-                            ),
-                        ],
-                    )
-                ],
-            ),
-            StatePerson(
-                state_code=self.state_code,
-                external_ids=[
-                    StatePersonExternalId(
-                        state_code=self.state_code,
-                        external_id="105640",
-                        id_type=US_ND_ELITE_BOOKING,
-                    )
-                ],
-                sentence_groups=[
-                    StateSentenceGroup.new_with_defaults(
-                        external_id="105640",
-                        state_code=self.state_code,
-                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                        incarceration_sentences=[
-                            StateIncarcerationSentence.new_with_defaults(
-                                external_id="105640-7",
-                                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                                incarceration_type=StateIncarcerationType.STATE_PRISON,
-                                state_code=self.state_code,
-                                max_length_days=730,
-                            ),
-                        ],
                     ),
                 ],
             ),
@@ -332,21 +192,90 @@ class UsNdIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         id_type=US_ND_ELITE_BOOKING,
                     )
                 ],
-                sentence_groups=[
-                    StateSentenceGroup.new_with_defaults(
-                        external_id="113377",
-                        state_code=self.state_code,
+                incarceration_sentences=[
+                    StateIncarcerationSentence.new_with_defaults(
+                        external_id="113377-1",
                         status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                        incarceration_sentences=[
-                            StateIncarcerationSentence.new_with_defaults(
-                                external_id="113377-5",
-                                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                                incarceration_type=StateIncarcerationType.STATE_PRISON,
-                                max_length_days=1000,
-                                state_code=self.state_code,
-                            ),
-                        ],
+                        incarceration_type=StateIncarcerationType.STATE_PRISON,
+                        max_length_days=366,
+                        state_code=self.state_code,
+                    ),
+                ],
+            ),
+            StatePerson(
+                state_code=self.state_code,
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code=self.state_code,
+                        external_id="114909",
+                        id_type=US_ND_ELITE_BOOKING,
                     )
+                ],
+                incarceration_sentences=[
+                    StateIncarcerationSentence.new_with_defaults(
+                        external_id="114909-2",
+                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                        incarceration_type=StateIncarcerationType.STATE_PRISON,
+                        max_length_days=360,
+                        state_code=self.state_code,
+                    ),
+                ],
+            ),
+            StatePerson(
+                state_code=self.state_code,
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code=self.state_code,
+                        external_id="113377",
+                        id_type=US_ND_ELITE_BOOKING,
+                    )
+                ],
+                incarceration_sentences=[
+                    StateIncarcerationSentence.new_with_defaults(
+                        external_id="113377-4",
+                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                        incarceration_type=StateIncarcerationType.STATE_PRISON,
+                        max_length_days=360,
+                        state_code=self.state_code,
+                    ),
+                ],
+            ),
+            StatePerson(
+                state_code=self.state_code,
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code=self.state_code,
+                        external_id="105640",
+                        id_type=US_ND_ELITE_BOOKING,
+                    )
+                ],
+                incarceration_sentences=[
+                    StateIncarcerationSentence.new_with_defaults(
+                        external_id="105640-7",
+                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                        incarceration_type=StateIncarcerationType.STATE_PRISON,
+                        state_code=self.state_code,
+                        max_length_days=730,
+                    ),
+                ],
+            ),
+            StatePerson(
+                state_code=self.state_code,
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code=self.state_code,
+                        external_id="113377",
+                        id_type=US_ND_ELITE_BOOKING,
+                    )
+                ],
+                incarceration_sentences=[
+                    StateIncarcerationSentence.new_with_defaults(
+                        external_id="113377-5",
+                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                        incarceration_type=StateIncarcerationType.STATE_PRISON,
+                        max_length_days=1000,
+                        state_code=self.state_code,
+                    ),
                 ],
             ),
         ]
@@ -384,23 +313,17 @@ class UsNdIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         ),
                     )
                 ],
-                sentence_groups=[
-                    StateSentenceGroup(
+                supervision_sentences=[
+                    StateSupervisionSentence(
+                        external_id="117109",
                         state_code=self.state_code,
-                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                        supervision_sentences=[
-                            StateSupervisionSentence(
-                                external_id="117109",
-                                state_code=self.state_code,
-                                status=StateSentenceStatus.COMPLETED,
-                                supervision_type=StateSupervisionSentenceSupervisionType.PRE_CONFINEMENT,
-                                supervision_type_raw_text="PRE-TRIAL",
-                                start_date=datetime.date(2013, 1, 1),
-                                projected_completion_date=datetime.date(2013, 3, 3),
-                                completion_date=datetime.date(2013, 2, 2),
-                                max_length_days=59,
-                            )
-                        ],
+                        status=StateSentenceStatus.COMPLETED,
+                        supervision_type=StateSupervisionSentenceSupervisionType.PRE_CONFINEMENT,
+                        supervision_type_raw_text="PRE-TRIAL",
+                        start_date=datetime.date(2013, 1, 1),
+                        projected_completion_date=datetime.date(2013, 3, 3),
+                        completion_date=datetime.date(2013, 2, 2),
+                        max_length_days=59,
                     )
                 ],
             ),
@@ -433,36 +356,30 @@ class UsNdIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         ),
                     )
                 ],
-                sentence_groups=[
-                    StateSentenceGroup(
+                supervision_sentences=[
+                    StateSupervisionSentence(
+                        external_id="117110",
                         state_code=self.state_code,
                         status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                        supervision_sentences=[
-                            StateSupervisionSentence(
-                                external_id="117110",
+                        supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
+                        supervision_type_raw_text="PAROLE",
+                        start_date=datetime.date(2014, 7, 17),
+                        projected_completion_date=datetime.date(2014, 10, 6),
+                        max_length_days=92,
+                        charges=[
+                            StateCharge(
                                 state_code=self.state_code,
-                                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                                supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
-                                supervision_type_raw_text="PAROLE",
-                                start_date=datetime.date(2014, 7, 17),
-                                projected_completion_date=datetime.date(2014, 10, 6),
-                                max_length_days=92,
-                                charges=[
-                                    StateCharge(
+                                status=ChargeStatus.PRESENT_WITHOUT_INFO,
+                                court_case=StateCourtCase(
+                                    state_code=self.state_code,
+                                    status=StateCourtCaseStatus.PRESENT_WITHOUT_INFO,
+                                    court_type=StateCourtType.PRESENT_WITHOUT_INFO,
+                                    judge=StateAgent(
                                         state_code=self.state_code,
-                                        status=ChargeStatus.PRESENT_WITHOUT_INFO,
-                                        court_case=StateCourtCase(
-                                            state_code=self.state_code,
-                                            status=StateCourtCaseStatus.PRESENT_WITHOUT_INFO,
-                                            court_type=StateCourtType.PRESENT_WITHOUT_INFO,
-                                            judge=StateAgent(
-                                                state_code=self.state_code,
-                                                agent_type=StateAgentType.JUDGE,
-                                                full_name='{"full_name": "THE JUDGE"}',
-                                            ),
-                                        ),
-                                    )
-                                ],
+                                        agent_type=StateAgentType.JUDGE,
+                                        full_name='{"full_name": "THE JUDGE"}',
+                                    ),
+                                ),
                             )
                         ],
                     )
@@ -531,37 +448,31 @@ class UsNdIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         ],
                     )
                 ],
-                sentence_groups=[
-                    StateSentenceGroup(
+                supervision_sentences=[
+                    StateSupervisionSentence(
+                        external_id="117111",
                         state_code=self.state_code,
-                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                        supervision_sentences=[
-                            StateSupervisionSentence(
-                                external_id="117111",
+                        status=StateSentenceStatus.COMPLETED,
+                        supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
+                        supervision_type_raw_text="PAROLE",
+                        start_date=datetime.date(2014, 7, 17),
+                        projected_completion_date=datetime.date(2015, 8, 7),
+                        completion_date=datetime.date(2014, 12, 8),
+                        max_length_days=580,
+                        charges=[
+                            StateCharge(
                                 state_code=self.state_code,
-                                status=StateSentenceStatus.COMPLETED,
-                                supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
-                                supervision_type_raw_text="PAROLE",
-                                start_date=datetime.date(2014, 7, 17),
-                                projected_completion_date=datetime.date(2015, 8, 7),
-                                completion_date=datetime.date(2014, 12, 8),
-                                max_length_days=580,
-                                charges=[
-                                    StateCharge(
+                                status=ChargeStatus.PRESENT_WITHOUT_INFO,
+                                court_case=StateCourtCase(
+                                    state_code=self.state_code,
+                                    status=StateCourtCaseStatus.PRESENT_WITHOUT_INFO,
+                                    court_type=StateCourtType.PRESENT_WITHOUT_INFO,
+                                    judge=StateAgent(
                                         state_code=self.state_code,
-                                        status=ChargeStatus.PRESENT_WITHOUT_INFO,
-                                        court_case=StateCourtCase(
-                                            state_code=self.state_code,
-                                            status=StateCourtCaseStatus.PRESENT_WITHOUT_INFO,
-                                            court_type=StateCourtType.PRESENT_WITHOUT_INFO,
-                                            judge=StateAgent(
-                                                state_code=self.state_code,
-                                                agent_type=StateAgentType.JUDGE,
-                                                full_name='{"full_name": "THE JUDGE"}',
-                                            ),
-                                        ),
-                                    )
-                                ],
+                                        agent_type=StateAgentType.JUDGE,
+                                        full_name='{"full_name": "THE JUDGE"}',
+                                    ),
+                                ),
                             )
                         ],
                     )
@@ -630,37 +541,31 @@ class UsNdIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         ],
                     )
                 ],
-                sentence_groups=[
-                    StateSentenceGroup(
+                supervision_sentences=[
+                    StateSupervisionSentence(
+                        external_id="117111",
                         state_code=self.state_code,
-                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                        supervision_sentences=[
-                            StateSupervisionSentence(
-                                external_id="117111",
+                        status=StateSentenceStatus.COMPLETED,
+                        supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
+                        supervision_type_raw_text="PAROLE",
+                        start_date=datetime.date(2014, 7, 17),
+                        projected_completion_date=datetime.date(2015, 8, 7),
+                        completion_date=datetime.date(2014, 12, 8),
+                        max_length_days=580,
+                        charges=[
+                            StateCharge(
                                 state_code=self.state_code,
-                                status=StateSentenceStatus.COMPLETED,
-                                supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
-                                supervision_type_raw_text="PAROLE",
-                                start_date=datetime.date(2014, 7, 17),
-                                projected_completion_date=datetime.date(2015, 8, 7),
-                                completion_date=datetime.date(2014, 12, 8),
-                                max_length_days=580,
-                                charges=[
-                                    StateCharge(
+                                status=ChargeStatus.PRESENT_WITHOUT_INFO,
+                                court_case=StateCourtCase(
+                                    state_code=self.state_code,
+                                    status=StateCourtCaseStatus.PRESENT_WITHOUT_INFO,
+                                    court_type=StateCourtType.PRESENT_WITHOUT_INFO,
+                                    judge=StateAgent(
                                         state_code=self.state_code,
-                                        status=ChargeStatus.PRESENT_WITHOUT_INFO,
-                                        court_case=StateCourtCase(
-                                            state_code=self.state_code,
-                                            status=StateCourtCaseStatus.PRESENT_WITHOUT_INFO,
-                                            court_type=StateCourtType.PRESENT_WITHOUT_INFO,
-                                            judge=StateAgent(
-                                                state_code=self.state_code,
-                                                agent_type=StateAgentType.JUDGE,
-                                                full_name='{"full_name": "THE JUDGE"}',
-                                            ),
-                                        ),
-                                    )
-                                ],
+                                        agent_type=StateAgentType.JUDGE,
+                                        full_name='{"full_name": "THE JUDGE"}',
+                                    ),
+                                ),
                             )
                         ],
                     )
@@ -729,36 +634,30 @@ class UsNdIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         ],
                     )
                 ],
-                sentence_groups=[
-                    StateSentenceGroup(
+                supervision_sentences=[
+                    StateSupervisionSentence(
+                        external_id="140408",
                         state_code=self.state_code,
-                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                        supervision_sentences=[
-                            StateSupervisionSentence(
-                                external_id="140408",
+                        status=StateSentenceStatus.COMPLETED,
+                        supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
+                        supervision_type_raw_text="SUSPENDED",
+                        start_date=datetime.date(2017, 3, 24),
+                        projected_completion_date=datetime.date(2019, 3, 23),
+                        completion_date=datetime.date(2018, 2, 27),
+                        charges=[
+                            StateCharge(
                                 state_code=self.state_code,
-                                status=StateSentenceStatus.COMPLETED,
-                                supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
-                                supervision_type_raw_text="SUSPENDED",
-                                start_date=datetime.date(2017, 3, 24),
-                                projected_completion_date=datetime.date(2019, 3, 23),
-                                completion_date=datetime.date(2018, 2, 27),
-                                charges=[
-                                    StateCharge(
+                                status=ChargeStatus.PRESENT_WITHOUT_INFO,
+                                court_case=StateCourtCase(
+                                    state_code=self.state_code,
+                                    status=StateCourtCaseStatus.PRESENT_WITHOUT_INFO,
+                                    court_type=StateCourtType.PRESENT_WITHOUT_INFO,
+                                    judge=StateAgent(
                                         state_code=self.state_code,
-                                        status=ChargeStatus.PRESENT_WITHOUT_INFO,
-                                        court_case=StateCourtCase(
-                                            state_code=self.state_code,
-                                            status=StateCourtCaseStatus.PRESENT_WITHOUT_INFO,
-                                            court_type=StateCourtType.PRESENT_WITHOUT_INFO,
-                                            judge=StateAgent(
-                                                state_code=self.state_code,
-                                                agent_type=StateAgentType.JUDGE,
-                                                full_name='{"full_name": "JUDGE PERSON"}',
-                                            ),
-                                        ),
-                                    )
-                                ],
+                                        agent_type=StateAgentType.JUDGE,
+                                        full_name='{"full_name": "JUDGE PERSON"}',
+                                    ),
+                                ),
                             )
                         ],
                     )
@@ -828,36 +727,30 @@ class UsNdIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         ],
                     )
                 ],
-                sentence_groups=[
-                    StateSentenceGroup(
+                supervision_sentences=[
+                    StateSupervisionSentence(
+                        external_id="147777",
                         state_code=self.state_code,
-                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                        supervision_sentences=[
-                            StateSupervisionSentence(
-                                external_id="147777",
+                        status=StateSentenceStatus.COMPLETED,
+                        supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
+                        supervision_type_raw_text="SUSPENDED",
+                        start_date=datetime.date(2013, 3, 24),
+                        projected_completion_date=datetime.date(2015, 3, 23),
+                        completion_date=datetime.date(2016, 2, 27),
+                        charges=[
+                            StateCharge(
                                 state_code=self.state_code,
-                                status=StateSentenceStatus.COMPLETED,
-                                supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
-                                supervision_type_raw_text="SUSPENDED",
-                                start_date=datetime.date(2013, 3, 24),
-                                projected_completion_date=datetime.date(2015, 3, 23),
-                                completion_date=datetime.date(2016, 2, 27),
-                                charges=[
-                                    StateCharge(
+                                status=ChargeStatus.PRESENT_WITHOUT_INFO,
+                                court_case=StateCourtCase(
+                                    state_code=self.state_code,
+                                    status=StateCourtCaseStatus.PRESENT_WITHOUT_INFO,
+                                    court_type=StateCourtType.PRESENT_WITHOUT_INFO,
+                                    judge=StateAgent(
                                         state_code=self.state_code,
-                                        status=ChargeStatus.PRESENT_WITHOUT_INFO,
-                                        court_case=StateCourtCase(
-                                            state_code=self.state_code,
-                                            status=StateCourtCaseStatus.PRESENT_WITHOUT_INFO,
-                                            court_type=StateCourtType.PRESENT_WITHOUT_INFO,
-                                            judge=StateAgent(
-                                                state_code=self.state_code,
-                                                agent_type=StateAgentType.JUDGE,
-                                                full_name='{"full_name": "JUDGE PERSON"}',
-                                            ),
-                                        ),
-                                    )
-                                ],
+                                        agent_type=StateAgentType.JUDGE,
+                                        full_name='{"full_name": "JUDGE PERSON"}',
+                                    ),
+                                ),
                             )
                         ],
                     )
@@ -921,37 +814,31 @@ class UsNdIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         ],
                     )
                 ],
-                sentence_groups=[
-                    StateSentenceGroup(
+                supervision_sentences=[
+                    StateSupervisionSentence(
+                        external_id="147778",
                         state_code=self.state_code,
-                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                        supervision_sentences=[
-                            StateSupervisionSentence(
-                                external_id="147778",
+                        status=StateSentenceStatus.COMPLETED,
+                        supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
+                        supervision_type_raw_text="SUSPENDED",
+                        start_date=datetime.date(2000, 9, 14),
+                        projected_completion_date=datetime.date(2005, 9, 14),
+                        completion_date=datetime.date(2002, 12, 13),
+                        max_length_days=1826,
+                        charges=[
+                            StateCharge(
                                 state_code=self.state_code,
-                                status=StateSentenceStatus.COMPLETED,
-                                supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
-                                supervision_type_raw_text="SUSPENDED",
-                                start_date=datetime.date(2000, 9, 14),
-                                projected_completion_date=datetime.date(2005, 9, 14),
-                                completion_date=datetime.date(2002, 12, 13),
-                                max_length_days=1826,
-                                charges=[
-                                    StateCharge(
+                                status=ChargeStatus.PRESENT_WITHOUT_INFO,
+                                court_case=StateCourtCase(
+                                    state_code=self.state_code,
+                                    status=StateCourtCaseStatus.PRESENT_WITHOUT_INFO,
+                                    court_type=StateCourtType.PRESENT_WITHOUT_INFO,
+                                    judge=StateAgent(
                                         state_code=self.state_code,
-                                        status=ChargeStatus.PRESENT_WITHOUT_INFO,
-                                        court_case=StateCourtCase(
-                                            state_code=self.state_code,
-                                            status=StateCourtCaseStatus.PRESENT_WITHOUT_INFO,
-                                            court_type=StateCourtType.PRESENT_WITHOUT_INFO,
-                                            judge=StateAgent(
-                                                state_code=self.state_code,
-                                                agent_type=StateAgentType.JUDGE,
-                                                full_name='{"full_name": "JUDGE PERSON"}',
-                                            ),
-                                        ),
-                                    )
-                                ],
+                                        agent_type=StateAgentType.JUDGE,
+                                        full_name='{"full_name": "JUDGE PERSON"}',
+                                    ),
+                                ),
                             )
                         ],
                     )

@@ -319,15 +319,11 @@ def generate_test_early_discharge(person_id) -> state_schema.StateEarlyDischarge
 
 def generate_test_sentence_group(
     person_id,
-    supervision_sentences,
-    incarceration_sentences,
 ) -> state_schema.StateSentenceGroup:
     instance = state_schema.StateSentenceGroup(
         sentence_group_id=567,
         status=StateSentenceStatus.SUSPENDED.value,
         state_code="US_XX",
-        supervision_sentences=supervision_sentences,
-        incarceration_sentences=incarceration_sentences,
         person_id=person_id,
     )
     return instance
@@ -352,6 +348,8 @@ def generate_test_person(
     incarceration_incidents: List[state_schema.StateIncarcerationIncident],
     supervision_violations: List[state_schema.StateSupervisionViolation],
     supervision_contacts: List[state_schema.StateSupervisionContact],
+    incarceration_sentences: List[state_schema.StateIncarcerationSentence],
+    supervision_sentences: List[state_schema.StateSupervisionSentence],
     incarceration_periods: List[state_schema.StateIncarcerationPeriod],
     supervision_periods: List[state_schema.StateSupervisionPeriod],
 ) -> state_schema.StatePerson:
@@ -400,6 +398,8 @@ def generate_test_person(
         incarceration_incidents=incarceration_incidents,
         supervision_violations=supervision_violations,
         supervision_contacts=supervision_contacts,
+        incarceration_sentences=incarceration_sentences,
+        supervision_sentences=supervision_sentences,
         incarceration_periods=incarceration_periods,
         supervision_periods=supervision_periods,
         assessments=[
@@ -478,8 +478,6 @@ def generate_schema_state_person_obj_tree() -> state_schema.StatePerson:
 
     test_sentence_group = generate_test_sentence_group(
         test_person_id,
-        [test_supervision_sentence],
-        [test_incarceration_sentence],
     )
 
     test_agent = generate_test_assessment_agent()
@@ -512,6 +510,8 @@ def generate_schema_state_person_obj_tree() -> state_schema.StatePerson:
         [test_incarceration_incident],
         [test_supervision_violation],
         [test_contact],
+        [test_incarceration_sentence],
+        [test_supervision_sentence],
         [test_incarceration_period],
         [test_supervision_period],
     )

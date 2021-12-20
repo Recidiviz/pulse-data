@@ -309,60 +309,58 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                             state_person_external_id_id="1111", id_type=US_ID_DOC
                         )
                     ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_sentence_group_id="1111-1",
-                            state_incarceration_sentences=[
-                                StateIncarcerationSentence(
-                                    state_incarceration_sentence_id="1111-1-1",
-                                    status="D",
-                                    date_imposed="1/01/08",
-                                    start_date="1/01/08",
-                                    parole_eligibility_date="01/01/09",
-                                    projected_min_release_date="01/01/09",
-                                    projected_max_release_date="01/01/10",
-                                    completion_date="01/01/09",
-                                    county_code="CNTY_1",
-                                    min_length="398",
-                                    max_length="731",
-                                    is_life="False",
-                                    state_charges=[
-                                        StateCharge(
-                                            state_charge_id="1111-1-1",
-                                            counts="1",
-                                            statute="1-11",
-                                            description="CRIME 1 + DESC",
-                                            offense_type="Murder & Man",
-                                            is_violent="True",
-                                        )
-                                    ],
+                    state_incarceration_sentences=[
+                        StateIncarcerationSentence(
+                            state_incarceration_sentence_id="1111-1-1",
+                            status="D",
+                            date_imposed="1/01/08",
+                            start_date="1/01/08",
+                            parole_eligibility_date="01/01/09",
+                            projected_min_release_date="01/01/09",
+                            projected_max_release_date="01/01/10",
+                            completion_date="01/01/09",
+                            county_code="CNTY_1",
+                            min_length="398",
+                            max_length="731",
+                            is_life="False",
+                            state_charges=[
+                                StateCharge(
+                                    state_charge_id="1111-1-1",
+                                    counts="1",
+                                    statute="1-11",
+                                    description="CRIME 1 + DESC",
+                                    offense_type="Murder & Man",
+                                    is_violent="True",
                                 )
                             ],
                         ),
-                        StateSentenceGroup(
-                            state_sentence_group_id="1111-2",
-                            state_incarceration_sentences=[
-                                StateIncarcerationSentence(
-                                    state_incarceration_sentence_id="1111-2-3",
-                                    status="I",
-                                    date_imposed="1/01/19",
-                                    start_date="1/01/19",
-                                    county_code="CNTY_1",
-                                    is_life="True",
-                                    state_charges=[
-                                        StateCharge(
-                                            state_charge_id="1111-2-3",
-                                            counts="1",
-                                            statute="2-22",
-                                            description="CRIME 2 + DESC",
-                                            offense_date="2018-12-01",
-                                            offense_type="Assault",
-                                            is_violent="True",
-                                            is_sex_offense="True",
-                                        )
-                                    ],
+                        StateIncarcerationSentence(
+                            state_incarceration_sentence_id="1111-2-3",
+                            status="I",
+                            date_imposed="1/01/19",
+                            start_date="1/01/19",
+                            county_code="CNTY_1",
+                            is_life="True",
+                            state_charges=[
+                                StateCharge(
+                                    state_charge_id="1111-2-3",
+                                    counts="1",
+                                    statute="2-22",
+                                    description="CRIME 2 + DESC",
+                                    offense_date="2018-12-01",
+                                    offense_type="Assault",
+                                    is_violent="True",
+                                    is_sex_offense="True",
                                 )
                             ],
+                        ),
+                    ],
+                    state_sentence_groups=[
+                        StateSentenceGroup(
+                            state_sentence_group_id="1111-1",
+                        ),
+                        StateSentenceGroup(
+                            state_sentence_group_id="1111-2",
                         ),
                     ],
                 ),
@@ -373,33 +371,33 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                             state_person_external_id_id="2222", id_type=US_ID_DOC
                         )
                     ],
+                    state_incarceration_sentences=[
+                        StateIncarcerationSentence(
+                            state_incarceration_sentence_id="2222-3-2",
+                            status="I",
+                            date_imposed="1/01/10",
+                            start_date="1/01/10",
+                            county_code="CNTY_2",
+                            parole_eligibility_date="01/01/11",
+                            projected_min_release_date="01/01/11",
+                            projected_max_release_date="01/01/25",
+                            min_length="365",
+                            max_length="5479",
+                            is_life="False",
+                            state_charges=[
+                                StateCharge(
+                                    state_charge_id="2222-3-2",
+                                    counts="1",
+                                    statute="3-33",
+                                    description="CRIME 3 + DESC",
+                                    offense_type="Property",
+                                )
+                            ],
+                        )
+                    ],
                     state_sentence_groups=[
                         StateSentenceGroup(
                             state_sentence_group_id="2222-1",
-                            state_incarceration_sentences=[
-                                StateIncarcerationSentence(
-                                    state_incarceration_sentence_id="2222-3-2",
-                                    status="I",
-                                    date_imposed="1/01/10",
-                                    start_date="1/01/10",
-                                    county_code="CNTY_2",
-                                    parole_eligibility_date="01/01/11",
-                                    projected_min_release_date="01/01/11",
-                                    projected_max_release_date="01/01/25",
-                                    min_length="365",
-                                    max_length="5479",
-                                    is_life="False",
-                                    state_charges=[
-                                        StateCharge(
-                                            state_charge_id="2222-3-2",
-                                            counts="1",
-                                            statute="3-33",
-                                            description="CRIME 3 + DESC",
-                                            offense_type="Property",
-                                        )
-                                    ],
-                                )
-                            ],
                         ),
                     ],
                 ),
@@ -422,34 +420,34 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                             state_person_external_id_id="1111", id_type=US_ID_DOC
                         )
                     ],
+                    state_supervision_sentences=[
+                        StateSupervisionSentence(
+                            state_supervision_sentence_id="1111-1-2",
+                            status="K",
+                            date_imposed="1/01/18",
+                            start_date="01/01/18",
+                            supervision_type="PROBATION",
+                            completion_date="12/31/18",
+                            projected_completion_date="01/01/20",
+                            county_code="CNTY_1",
+                            min_length="365",
+                            max_length="730",
+                            state_charges=[
+                                StateCharge(
+                                    state_charge_id="1111-1-2",
+                                    counts="2",
+                                    statute="4-44",
+                                    description="CRIME 4 + DESC",
+                                    offense_date="2018-12-01",
+                                    offense_type="Murder & Man",
+                                    is_violent="True",
+                                )
+                            ],
+                        )
+                    ],
                     state_sentence_groups=[
                         StateSentenceGroup(
                             state_sentence_group_id="1111-2",
-                            state_supervision_sentences=[
-                                StateSupervisionSentence(
-                                    state_supervision_sentence_id="1111-1-2",
-                                    status="K",
-                                    date_imposed="1/01/18",
-                                    start_date="01/01/18",
-                                    supervision_type="PROBATION",
-                                    completion_date="12/31/18",
-                                    projected_completion_date="01/01/20",
-                                    county_code="CNTY_1",
-                                    min_length="365",
-                                    max_length="730",
-                                    state_charges=[
-                                        StateCharge(
-                                            state_charge_id="1111-1-2",
-                                            counts="2",
-                                            statute="4-44",
-                                            description="CRIME 4 + DESC",
-                                            offense_date="2018-12-01",
-                                            offense_type="Murder & Man",
-                                            is_violent="True",
-                                        )
-                                    ],
-                                )
-                            ],
                         ),
                     ],
                 ),
@@ -460,35 +458,35 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                             state_person_external_id_id="2222", id_type=US_ID_DOC
                         )
                     ],
+                    state_supervision_sentences=[
+                        StateSupervisionSentence(
+                            state_supervision_sentence_id="2222-2-1",
+                            status="K",
+                            date_imposed="1/01/09",
+                            start_date="01/01/09",
+                            supervision_type="PROBATION",
+                            completion_date="12/31/09",
+                            projected_completion_date="01/01/13",
+                            county_code="CNTY_2",
+                            min_length="730",
+                            max_length="1461",
+                            state_charges=[
+                                StateCharge(
+                                    state_charge_id="2222-2-1",
+                                    counts="2",
+                                    statute="5-55",
+                                    description="CRIME 5 + DESC",
+                                    offense_date="2008-12-14",
+                                    offense_type="Assault",
+                                    is_violent="True",
+                                    is_sex_offense="True",
+                                )
+                            ],
+                        )
+                    ],
                     state_sentence_groups=[
                         StateSentenceGroup(
                             state_sentence_group_id="2222-1",
-                            state_supervision_sentences=[
-                                StateSupervisionSentence(
-                                    state_supervision_sentence_id="2222-2-1",
-                                    status="K",
-                                    date_imposed="1/01/09",
-                                    start_date="01/01/09",
-                                    supervision_type="PROBATION",
-                                    completion_date="12/31/09",
-                                    projected_completion_date="01/01/13",
-                                    county_code="CNTY_2",
-                                    min_length="730",
-                                    max_length="1461",
-                                    state_charges=[
-                                        StateCharge(
-                                            state_charge_id="2222-2-1",
-                                            counts="2",
-                                            statute="5-55",
-                                            description="CRIME 5 + DESC",
-                                            offense_date="2008-12-14",
-                                            offense_type="Assault",
-                                            is_violent="True",
-                                            is_sex_offense="True",
-                                        )
-                                    ],
-                                )
-                            ],
                         ),
                     ],
                 ),
@@ -499,31 +497,31 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                             state_person_external_id_id="3333", id_type=US_ID_DOC
                         )
                     ],
+                    state_supervision_sentences=[
+                        StateSupervisionSentence(
+                            state_supervision_sentence_id="3333-3-1",
+                            status="B",
+                            date_imposed="1/01/15",
+                            supervision_type="PROBATION",
+                            start_date="01/01/15",
+                            projected_completion_date="01/01/25",
+                            county_code="CNTY_3",
+                            min_length="365",
+                            max_length="3653",
+                            state_charges=[
+                                StateCharge(
+                                    state_charge_id="3333-3-1",
+                                    counts="2",
+                                    statute="6-66",
+                                    description="CRIME 6 + DESC",
+                                    offense_type="Property",
+                                )
+                            ],
+                        )
+                    ],
                     state_sentence_groups=[
                         StateSentenceGroup(
                             state_sentence_group_id="3333-1",
-                            state_supervision_sentences=[
-                                StateSupervisionSentence(
-                                    state_supervision_sentence_id="3333-3-1",
-                                    status="B",
-                                    date_imposed="1/01/15",
-                                    supervision_type="PROBATION",
-                                    start_date="01/01/15",
-                                    projected_completion_date="01/01/25",
-                                    county_code="CNTY_3",
-                                    min_length="365",
-                                    max_length="3653",
-                                    state_charges=[
-                                        StateCharge(
-                                            state_charge_id="3333-3-1",
-                                            counts="2",
-                                            statute="6-66",
-                                            description="CRIME 6 + DESC",
-                                            offense_type="Property",
-                                        )
-                                    ],
-                                )
-                            ],
                         ),
                     ],
                 ),
@@ -544,33 +542,33 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                             state_person_external_id_id="1111", id_type=US_ID_DOC
                         )
                     ],
+                    state_incarceration_sentences=[
+                        StateIncarcerationSentence(
+                            state_incarceration_sentence_id="1111-2-3",
+                            state_early_discharges=[
+                                StateEarlyDischarge(
+                                    state_early_discharge_id="ed1-1",
+                                    request_date="02/01/2020",
+                                    requesting_body_type="SPECIAL PROGRESS REPORT OFFENDER INITIATED PAROLE "
+                                    "DISCHARGE REQUEST",
+                                    deciding_body_type="PAROLE",
+                                    decision_date="02/05/2020",
+                                    decision="Deny - Programming Needed",
+                                    decision_status="DECIDED",
+                                ),
+                                StateEarlyDischarge(
+                                    state_early_discharge_id="ed2-2",
+                                    request_date="03/01/2020",
+                                    requesting_body_type="SPECIAL PROGRESS REPORT FOR PAROLE COMMUTATION",
+                                    deciding_body_type="PAROLE",
+                                    decision_status="PENDING",
+                                ),
+                            ],
+                        )
+                    ],
                     state_sentence_groups=[
                         StateSentenceGroup(
                             state_sentence_group_id="1111-2",
-                            state_incarceration_sentences=[
-                                StateIncarcerationSentence(
-                                    state_incarceration_sentence_id="1111-2-3",
-                                    state_early_discharges=[
-                                        StateEarlyDischarge(
-                                            state_early_discharge_id="ed1-1",
-                                            request_date="02/01/2020",
-                                            requesting_body_type="SPECIAL PROGRESS REPORT OFFENDER INITIATED PAROLE "
-                                            "DISCHARGE REQUEST",
-                                            deciding_body_type="PAROLE",
-                                            decision_date="02/05/2020",
-                                            decision="Deny - Programming Needed",
-                                            decision_status="DECIDED",
-                                        ),
-                                        StateEarlyDischarge(
-                                            state_early_discharge_id="ed2-2",
-                                            request_date="03/01/2020",
-                                            requesting_body_type="SPECIAL PROGRESS REPORT FOR PAROLE COMMUTATION",
-                                            deciding_body_type="PAROLE",
-                                            decision_status="PENDING",
-                                        ),
-                                    ],
-                                )
-                            ],
                         ),
                     ],
                 ),
@@ -591,32 +589,32 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                             state_person_external_id_id="3333", id_type=US_ID_DOC
                         )
                     ],
+                    state_supervision_sentences=[
+                        StateSupervisionSentence(
+                            state_supervision_sentence_id="3333-3-1",
+                            state_early_discharges=[
+                                StateEarlyDischarge(
+                                    state_early_discharge_id="ed3-3",
+                                    request_date="01/01/2015",
+                                    requesting_body_type="REQUEST FOR DISCHARGE: PROBATION",
+                                    deciding_body_type="PROBATION",
+                                    decision_date="06/01/2015",
+                                    decision="Deny",
+                                    decision_status="DECIDED",
+                                ),
+                                StateEarlyDischarge(
+                                    state_early_discharge_id="ed4-4",
+                                    request_date="01/01/2016",
+                                    requesting_body_type="REQUEST FOR DISCHARGE: PROBATION",
+                                    deciding_body_type="PROBATION",
+                                    decision_status="PENDING",
+                                ),
+                            ],
+                        )
+                    ],
                     state_sentence_groups=[
                         StateSentenceGroup(
                             state_sentence_group_id="3333-1",
-                            state_supervision_sentences=[
-                                StateSupervisionSentence(
-                                    state_supervision_sentence_id="3333-3-1",
-                                    state_early_discharges=[
-                                        StateEarlyDischarge(
-                                            state_early_discharge_id="ed3-3",
-                                            request_date="01/01/2015",
-                                            requesting_body_type="REQUEST FOR DISCHARGE: PROBATION",
-                                            deciding_body_type="PROBATION",
-                                            decision_date="06/01/2015",
-                                            decision="Deny",
-                                            decision_status="DECIDED",
-                                        ),
-                                        StateEarlyDischarge(
-                                            state_early_discharge_id="ed4-4",
-                                            request_date="01/01/2016",
-                                            requesting_body_type="REQUEST FOR DISCHARGE: PROBATION",
-                                            deciding_body_type="PROBATION",
-                                            decision_status="PENDING",
-                                        ),
-                                    ],
-                                )
-                            ],
                         ),
                     ],
                 ),
@@ -639,20 +637,20 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                             state_person_external_id_id="1111", id_type=US_ID_DOC
                         )
                     ],
+                    state_incarceration_sentences=[
+                        StateIncarcerationSentence(
+                            state_incarceration_sentence_id="1111-2-3",
+                            state_early_discharges=[
+                                StateEarlyDischarge(
+                                    state_early_discharge_id="ed2-2",
+                                    decision_status="INVALID",
+                                ),
+                            ],
+                        )
+                    ],
                     state_sentence_groups=[
                         StateSentenceGroup(
                             state_sentence_group_id="1111-2",
-                            state_incarceration_sentences=[
-                                StateIncarcerationSentence(
-                                    state_incarceration_sentence_id="1111-2-3",
-                                    state_early_discharges=[
-                                        StateEarlyDischarge(
-                                            state_early_discharge_id="ed2-2",
-                                            decision_status="INVALID",
-                                        ),
-                                    ],
-                                )
-                            ],
                         ),
                     ],
                 ),
@@ -674,20 +672,20 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                             state_person_external_id_id="3333", id_type=US_ID_DOC
                         )
                     ],
+                    state_supervision_sentences=[
+                        StateSupervisionSentence(
+                            state_supervision_sentence_id="3333-3-1",
+                            state_early_discharges=[
+                                StateEarlyDischarge(
+                                    state_early_discharge_id="ed4-4",
+                                    decision_status="INVALID",
+                                ),
+                            ],
+                        )
+                    ],
                     state_sentence_groups=[
                         StateSentenceGroup(
                             state_sentence_group_id="3333-1",
-                            state_supervision_sentences=[
-                                StateSupervisionSentence(
-                                    state_supervision_sentence_id="3333-3-1",
-                                    state_early_discharges=[
-                                        StateEarlyDischarge(
-                                            state_early_discharge_id="ed4-4",
-                                            decision_status="INVALID",
-                                        ),
-                                    ],
-                                )
-                            ],
                         ),
                     ],
                 ),
@@ -1457,9 +1455,8 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             county_code="CNTY_1",
             min_length_days=398,
             max_length_days=731,
-            sentence_group=sg_1111_1,
             is_life=False,
-            person=sg_1111_1.person,
+            person=person_1,
         )
         c_1111_1 = entities.StateCharge.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -1474,7 +1471,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             person=is_1111_1.person,
         )
         person_1.sentence_groups.append(sg_1111_1)
-        sg_1111_1.incarceration_sentences.append(is_1111_1)
+        person_1.incarceration_sentences.append(is_1111_1)
         is_1111_1.charges.append(c_1111_1)
 
         sg_1111_2 = entities.StateSentenceGroup.new_with_defaults(
@@ -1492,9 +1489,8 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             date_imposed=datetime.date(year=2019, month=1, day=1),
             start_date=datetime.date(year=2019, month=1, day=1),
             county_code="CNTY_1",
-            sentence_group=sg_1111_2,
             is_life=True,
-            person=sg_1111_2.person,
+            person=person_1,
         )
         c_1111_3 = entities.StateCharge.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -1511,7 +1507,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             person=is_1111_3.person,
         )
         person_1.sentence_groups.append(sg_1111_2)
-        sg_1111_2.incarceration_sentences.append(is_1111_3)
+        person_1.incarceration_sentences.append(is_1111_3)
         is_1111_3.charges.append(c_1111_3)
 
         sg_2222_1 = entities.StateSentenceGroup.new_with_defaults(
@@ -1534,9 +1530,8 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             county_code="CNTY_2",
             min_length_days=365,
             max_length_days=5479,
-            sentence_group=sg_2222_1,
             is_life=False,
-            person=sg_2222_1.person,
+            person=person_2,
         )
         c_2222_2 = entities.StateCharge.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -1550,7 +1545,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             person=is_2222_2.person,
         )
         person_2.sentence_groups.append(sg_2222_1)
-        sg_2222_1.incarceration_sentences.append(is_2222_2)
+        person_2.incarceration_sentences.append(is_2222_2)
         is_2222_2.charges.append(c_2222_2)
 
         # Act
@@ -1580,8 +1575,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             county_code="CNTY_1",
             min_length_days=365,
             max_length_days=730,
-            sentence_group=sg_1111_2,
-            person=sg_1111_2.person,
+            person=person_1,
         )
         c_1111_2 = entities.StateCharge.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -1596,7 +1590,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             supervision_sentences=[ss_1111_2],
             person=ss_1111_2.person,
         )
-        sg_1111_2.supervision_sentences.append(ss_1111_2)
+        person_1.supervision_sentences.append(ss_1111_2)
         ss_1111_2.charges.append(c_1111_2)
 
         ss_2222_1 = entities.StateSupervisionSentence.new_with_defaults(
@@ -1613,8 +1607,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             county_code="CNTY_2",
             min_length_days=730,
             max_length_days=1461,
-            sentence_group=sg_2222_1,
-            person=sg_2222_1.person,
+            person=person_2,
         )
         c_2222_1 = entities.StateCharge.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -1630,7 +1623,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             supervision_sentences=[ss_2222_1],
             person=ss_2222_1.person,
         )
-        sg_2222_1.supervision_sentences.append(ss_2222_1)
+        person_2.supervision_sentences.append(ss_2222_1)
         ss_2222_1.charges.append(c_2222_1)
 
         sg_3333_1 = entities.StateSentenceGroup.new_with_defaults(
@@ -1652,8 +1645,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             county_code="CNTY_3",
             min_length_days=365,
             max_length_days=3653,
-            sentence_group=sg_3333_1,
-            person=sg_3333_1.person,
+            person=person_3,
         )
         c_3333_1 = entities.StateCharge.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -1667,7 +1659,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             person=ss_3333_1.person,
         )
         person_3.sentence_groups.append(sg_3333_1)
-        sg_3333_1.supervision_sentences.append(ss_3333_1)
+        person_3.supervision_sentences.append(ss_3333_1)
         ss_3333_1.charges.append(c_3333_1)
 
         # Act

@@ -25,7 +25,6 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodReleaseReason,
     StateSpecializedPurposeForIncarceration,
 )
-from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodSupervisionType,
@@ -36,10 +35,6 @@ from recidiviz.persistence.entity.entity_utils import (
     get_all_entities_from_tree,
 )
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.entity.state.entities import (
-    StateIncarcerationSentence,
-    StateSupervisionSentence,
-)
 
 
 def populate_person_backedges(persons: List[entities.StatePerson]) -> None:
@@ -99,51 +94,6 @@ def build_state_person_entity(
         )
 
     return state_person
-
-
-def add_sentence_group_to_person_and_build_incarceration_sentence(
-    state_code: str, person: entities.StatePerson
-) -> StateIncarcerationSentence:
-    """Append sentence group to person and return incarceration_sentence"""
-    sentence_group = entities.StateSentenceGroup.new_with_defaults(
-        state_code=state_code,
-        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-        person=person,
-    )
-
-    incarceration_sentence = entities.StateIncarcerationSentence.new_with_defaults(
-        state_code=state_code,
-        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-        incarceration_type=StateIncarcerationType.STATE_PRISON,
-        person=person,
-        sentence_group=sentence_group,
-    )
-    sentence_group.incarceration_sentences.append(incarceration_sentence)
-
-    person.sentence_groups.append(sentence_group)
-    return incarceration_sentence
-
-
-def add_sentence_group_to_person_and_build_supervision_sentence(
-    state_code: str, person: entities.StatePerson
-) -> StateSupervisionSentence:
-    """Append sentence group to person and return supervision_sentence"""
-    sentence_group = entities.StateSentenceGroup.new_with_defaults(
-        state_code=state_code,
-        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-        person=person,
-    )
-
-    supervision_sentence = entities.StateSupervisionSentence.new_with_defaults(
-        state_code=state_code,
-        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-        person=person,
-        sentence_group=sentence_group,
-    )
-    sentence_group.supervision_sentences.append(supervision_sentence)
-
-    person.sentence_groups.append(sentence_group)
-    return supervision_sentence
 
 
 def add_race_to_person(

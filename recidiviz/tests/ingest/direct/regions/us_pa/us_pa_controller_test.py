@@ -1601,9 +1601,8 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             is_life=False,
             is_capital_punishment=False,
             person=person_1,
-            sentence_group=p1_sg,
         )
-        p1_sg.incarceration_sentences.append(p1_is)
+        person_1.incarceration_sentences.append(p1_is)
 
         p1_is_charge = entities.StateCharge.new_with_defaults(
             external_id="N7825555",
@@ -1638,9 +1637,8 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             is_life=False,
             is_capital_punishment=False,
             person=person_2,
-            sentence_group=p2_sg,
         )
-        p2_sg.incarceration_sentences.append(p2_is)
+        person_2.incarceration_sentences.append(p2_is)
 
         p2_is_charge = entities.StateCharge.new_with_defaults(
             external_id="U1196666",
@@ -1676,9 +1674,8 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             is_life=False,
             is_capital_punishment=False,
             person=person_3,
-            sentence_group=p3_sg,
         )
-        p3_sg.incarceration_sentences.append(p3_is)
+        person_3.incarceration_sentences.append(p3_is)
 
         p3_is_charge = entities.StateCharge.new_with_defaults(
             external_id="L3947777",
@@ -1713,7 +1710,6 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             is_life=False,
             is_capital_punishment=False,
             person=person_4,
-            sentence_group=p4_sg,
         )
 
         p4_is_2 = entities.StateIncarcerationSentence.new_with_defaults(
@@ -1732,9 +1728,8 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             is_life=False,
             is_capital_punishment=False,
             person=person_4,
-            sentence_group=p4_sg,
         )
-        p4_sg.incarceration_sentences.extend([p4_is_1, p4_is_2])
+        person_4.incarceration_sentences.extend([p4_is_1, p4_is_2])
 
         p4_is_1_charge = entities.StateCharge.new_with_defaults(
             external_id="L7858888",
@@ -1787,9 +1782,8 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             is_life=False,
             is_capital_punishment=False,
             person=person_9,
-            sentence_group=p9_sg,
         )
-        p9_sg.incarceration_sentences.append(p9_is)
+        person_9.incarceration_sentences.append(p9_is)
 
         p9_is_charge = entities.StateCharge.new_with_defaults(
             external_id="X0000000",

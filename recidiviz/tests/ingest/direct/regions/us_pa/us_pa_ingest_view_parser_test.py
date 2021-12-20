@@ -1195,45 +1195,45 @@ class UsPaIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         state_code="US_PA", external_id="AB1234", id_type=US_PA_INMATE
                     ),
                 ],
+                incarceration_sentences=[
+                    StateIncarcerationSentence(
+                        state_code="US_PA",
+                        external_id="AB1234-01",
+                        status=StateSentenceStatus.COMPLETED,
+                        status_raw_text="PC",
+                        incarceration_type=StateIncarcerationType.STATE_PRISON,
+                        incarceration_type_raw_text="S",
+                        county_code="PHI",
+                        date_imposed=datetime.date(2020, 1, 1),
+                        start_date=datetime.date(2020, 1, 1),
+                        completion_date=datetime.date(2021, 1, 1),
+                        projected_min_release_date=datetime.date(2021, 1, 1),
+                        projected_max_release_date=datetime.date(2021, 1, 1),
+                        min_length_days=821,
+                        max_length_days=3653,
+                        is_life=False,
+                        is_capital_punishment=False,
+                        charges=[
+                            StateCharge(
+                                state_code="US_PA",
+                                external_id="X0000000",
+                                statute="VC3802D",
+                                status=ChargeStatus.PRESENT_WITHOUT_INFO,
+                                description="DUI: CONTROLLED SUBSTANCES - 1ST OFFENSE",
+                                offense_type="DUI-ALCOHOL",
+                                classification_type=StateChargeClassificationType.MISDEMEANOR,
+                                classification_type_raw_text="MISDEMEANOR",
+                                classification_subtype="M1",
+                                is_violent=False,
+                            )
+                        ],
+                    )
+                ],
                 sentence_groups=[
                     StateSentenceGroup(
                         state_code="US_PA",
                         external_id="AB1234",
                         status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                        incarceration_sentences=[
-                            StateIncarcerationSentence(
-                                state_code="US_PA",
-                                external_id="AB1234-01",
-                                status=StateSentenceStatus.COMPLETED,
-                                status_raw_text="PC",
-                                incarceration_type=StateIncarcerationType.STATE_PRISON,
-                                incarceration_type_raw_text="S",
-                                county_code="PHI",
-                                date_imposed=datetime.date(2020, 1, 1),
-                                start_date=datetime.date(2020, 1, 1),
-                                completion_date=datetime.date(2021, 1, 1),
-                                projected_min_release_date=datetime.date(2021, 1, 1),
-                                projected_max_release_date=datetime.date(2021, 1, 1),
-                                min_length_days=821,
-                                max_length_days=3653,
-                                is_life=False,
-                                is_capital_punishment=False,
-                                charges=[
-                                    StateCharge(
-                                        state_code="US_PA",
-                                        external_id="X0000000",
-                                        statute="VC3802D",
-                                        status=ChargeStatus.PRESENT_WITHOUT_INFO,
-                                        description="DUI: CONTROLLED SUBSTANCES - 1ST OFFENSE",
-                                        offense_type="DUI-ALCOHOL",
-                                        classification_type=StateChargeClassificationType.MISDEMEANOR,
-                                        classification_type_raw_text="MISDEMEANOR",
-                                        classification_subtype="M1",
-                                        is_violent=False,
-                                    )
-                                ],
-                            )
-                        ],
                     )
                 ],
             ),
@@ -1244,45 +1244,45 @@ class UsPaIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         state_code="US_PA", external_id="AB7413", id_type=US_PA_INMATE
                     ),
                 ],
+                incarceration_sentences=[
+                    StateIncarcerationSentence(
+                        state_code="US_PA",
+                        external_id="AB7413-01",
+                        status=StateSentenceStatus.COMPLETED,
+                        status_raw_text="SC",
+                        incarceration_type=StateIncarcerationType.STATE_PRISON,
+                        incarceration_type_raw_text="S",
+                        county_code="PHI",
+                        date_imposed=datetime.date(2008, 8, 15),
+                        start_date=datetime.date(2008, 8, 15),
+                        completion_date=datetime.date(2009, 1, 4),
+                        projected_min_release_date=datetime.date(2007, 7, 4),
+                        projected_max_release_date=datetime.date(2009, 1, 4),
+                        min_length_days=549,
+                        max_length_days=1095,
+                        is_life=False,
+                        is_capital_punishment=False,
+                        charges=[
+                            StateCharge(
+                                state_code="US_PA",
+                                external_id="N7825555",
+                                statute="CC3502",
+                                status=ChargeStatus.PRESENT_WITHOUT_INFO,
+                                description="BURGLARY (GENERAL)",
+                                offense_type="BURGLARY-VIOLENT-PROPERTY",
+                                classification_type=StateChargeClassificationType.FELONY,
+                                classification_type_raw_text="FELONY",
+                                classification_subtype="F1",
+                                is_violent=True,
+                            )
+                        ],
+                    )
+                ],
                 sentence_groups=[
                     StateSentenceGroup(
                         state_code="US_PA",
                         external_id="AB7413",
                         status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                        incarceration_sentences=[
-                            StateIncarcerationSentence(
-                                state_code="US_PA",
-                                external_id="AB7413-01",
-                                status=StateSentenceStatus.COMPLETED,
-                                status_raw_text="SC",
-                                incarceration_type=StateIncarcerationType.STATE_PRISON,
-                                incarceration_type_raw_text="S",
-                                county_code="PHI",
-                                date_imposed=datetime.date(2008, 8, 15),
-                                start_date=datetime.date(2008, 8, 15),
-                                completion_date=datetime.date(2009, 1, 4),
-                                projected_min_release_date=datetime.date(2007, 7, 4),
-                                projected_max_release_date=datetime.date(2009, 1, 4),
-                                min_length_days=549,
-                                max_length_days=1095,
-                                is_life=False,
-                                is_capital_punishment=False,
-                                charges=[
-                                    StateCharge(
-                                        state_code="US_PA",
-                                        external_id="N7825555",
-                                        statute="CC3502",
-                                        status=ChargeStatus.PRESENT_WITHOUT_INFO,
-                                        description="BURGLARY (GENERAL)",
-                                        offense_type="BURGLARY-VIOLENT-PROPERTY",
-                                        classification_type=StateChargeClassificationType.FELONY,
-                                        classification_type_raw_text="FELONY",
-                                        classification_subtype="F1",
-                                        is_violent=True,
-                                    )
-                                ],
-                            )
-                        ],
                     )
                 ],
             ),
@@ -1293,43 +1293,43 @@ class UsPaIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         state_code="US_PA", external_id="GF3374", id_type=US_PA_INMATE
                     ),
                 ],
+                incarceration_sentences=[
+                    StateIncarcerationSentence(
+                        state_code="US_PA",
+                        external_id="GF3374-01",
+                        status=StateSentenceStatus.SERVING,
+                        status_raw_text="AS",
+                        incarceration_type=StateIncarcerationType.STATE_PRISON,
+                        incarceration_type_raw_text="S",
+                        county_code="PHI",
+                        date_imposed=datetime.date(2008, 8, 16),
+                        projected_min_release_date=datetime.date(2020, 1, 14),
+                        projected_max_release_date=datetime.date(2022, 4, 14),
+                        min_length_days=4287,
+                        max_length_days=5113,
+                        is_life=False,
+                        is_capital_punishment=False,
+                        charges=[
+                            StateCharge(
+                                state_code="US_PA",
+                                external_id="U1196666",
+                                statute="CC4101",
+                                description="FORGERY",
+                                offense_type="FORGERY",
+                                status=ChargeStatus.PRESENT_WITHOUT_INFO,
+                                classification_type=StateChargeClassificationType.FELONY,
+                                classification_type_raw_text="FELONY",
+                                classification_subtype="F2",
+                                is_violent=False,
+                            )
+                        ],
+                    )
+                ],
                 sentence_groups=[
                     StateSentenceGroup(
                         external_id="GF3374",
                         state_code="US_PA",
                         status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                        incarceration_sentences=[
-                            StateIncarcerationSentence(
-                                state_code="US_PA",
-                                external_id="GF3374-01",
-                                status=StateSentenceStatus.SERVING,
-                                status_raw_text="AS",
-                                incarceration_type=StateIncarcerationType.STATE_PRISON,
-                                incarceration_type_raw_text="S",
-                                county_code="PHI",
-                                date_imposed=datetime.date(2008, 8, 16),
-                                projected_min_release_date=datetime.date(2020, 1, 14),
-                                projected_max_release_date=datetime.date(2022, 4, 14),
-                                min_length_days=4287,
-                                max_length_days=5113,
-                                is_life=False,
-                                is_capital_punishment=False,
-                                charges=[
-                                    StateCharge(
-                                        state_code="US_PA",
-                                        external_id="U1196666",
-                                        statute="CC4101",
-                                        description="FORGERY",
-                                        offense_type="FORGERY",
-                                        status=ChargeStatus.PRESENT_WITHOUT_INFO,
-                                        classification_type=StateChargeClassificationType.FELONY,
-                                        classification_type_raw_text="FELONY",
-                                        classification_subtype="F2",
-                                        is_violent=False,
-                                    )
-                                ],
-                            )
-                        ],
                     )
                 ],
             ),
@@ -1340,44 +1340,91 @@ class UsPaIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         state_code="US_PA", external_id="CJ1991", id_type=US_PA_INMATE
                     ),
                 ],
+                incarceration_sentences=[
+                    StateIncarcerationSentence(
+                        state_code="US_PA",
+                        external_id="CJ1991-01",
+                        status=StateSentenceStatus.SERVING,
+                        status_raw_text="AS",
+                        incarceration_type=StateIncarcerationType.STATE_PRISON,
+                        incarceration_type_raw_text="S",
+                        county_code="BUC",
+                        date_imposed=datetime.date(2016, 8, 20),
+                        start_date=datetime.date(2016, 8, 20),
+                        projected_min_release_date=datetime.date(2017, 7, 5),
+                        projected_max_release_date=datetime.date(2018, 10, 5),
+                        min_length_days=457,
+                        max_length_days=914,
+                        is_life=False,
+                        is_capital_punishment=False,
+                        charges=[
+                            StateCharge(
+                                state_code="US_PA",
+                                external_id="L3947777",
+                                statute="CC2502B",
+                                description="MURDER (2ND DEGREE)",
+                                offense_type="MURDER 2-HOMICIDE",
+                                status=ChargeStatus.PRESENT_WITHOUT_INFO,
+                                classification_type=StateChargeClassificationType.FELONY,
+                                classification_type_raw_text="FELONY",
+                                classification_subtype="F",
+                                is_violent=True,
+                            )
+                        ],
+                    )
+                ],
                 sentence_groups=[
                     StateSentenceGroup(
                         external_id="CJ1991",
                         state_code="US_PA",
                         status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                        incarceration_sentences=[
-                            StateIncarcerationSentence(
+                    )
+                ],
+            ),
+            StatePerson(
+                state_code="US_PA",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_PA", external_id="JE1989", id_type=US_PA_INMATE
+                    ),
+                ],
+                incarceration_sentences=[
+                    StateIncarcerationSentence(
+                        state_code="US_PA",
+                        external_id="JE1989-01",
+                        status=StateSentenceStatus.SERVING,
+                        status_raw_text="AS",
+                        incarceration_type=StateIncarcerationType.STATE_PRISON,
+                        incarceration_type_raw_text="S",
+                        county_code="BUC",
+                        date_imposed=datetime.date(2016, 8, 20),
+                        start_date=datetime.date(2016, 8, 20),
+                        projected_min_release_date=datetime.date(2017, 10, 22),
+                        projected_max_release_date=datetime.date(2019, 4, 22),
+                        max_length_days=1095,
+                        is_life=False,
+                        is_capital_punishment=False,
+                        charges=[
+                            StateCharge(
                                 state_code="US_PA",
-                                external_id="CJ1991-01",
-                                status=StateSentenceStatus.SERVING,
-                                status_raw_text="AS",
-                                incarceration_type=StateIncarcerationType.STATE_PRISON,
-                                incarceration_type_raw_text="S",
-                                county_code="BUC",
-                                date_imposed=datetime.date(2016, 8, 20),
-                                start_date=datetime.date(2016, 8, 20),
-                                projected_min_release_date=datetime.date(2017, 7, 5),
-                                projected_max_release_date=datetime.date(2018, 10, 5),
-                                min_length_days=457,
-                                max_length_days=914,
-                                is_life=False,
-                                is_capital_punishment=False,
-                                charges=[
-                                    StateCharge(
-                                        state_code="US_PA",
-                                        external_id="L3947777",
-                                        statute="CC2502B",
-                                        description="MURDER (2ND DEGREE)",
-                                        offense_type="MURDER 2-HOMICIDE",
-                                        status=ChargeStatus.PRESENT_WITHOUT_INFO,
-                                        classification_type=StateChargeClassificationType.FELONY,
-                                        classification_type_raw_text="FELONY",
-                                        classification_subtype="F",
-                                        is_violent=True,
-                                    )
-                                ],
+                                external_id="L7858888",
+                                statute="XX0500",
+                                description="THEFT",
+                                offense_type="THEFT",
+                                status=ChargeStatus.PRESENT_WITHOUT_INFO,
+                                classification_type=StateChargeClassificationType.MISDEMEANOR,
+                                classification_type_raw_text="MISDEMEANOR",
+                                classification_subtype="M1",
+                                is_violent=False,
                             )
                         ],
+                    ),
+                ],
+                sentence_groups=[
+                    StateSentenceGroup(
+                        external_id="JE1989",
+                        state_code="US_PA",
+                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
                     )
                 ],
             ),
@@ -1388,51 +1435,36 @@ class UsPaIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         state_code="US_PA", external_id="JE1989", id_type=US_PA_INMATE
                     ),
                 ],
-                sentence_groups=[
-                    StateSentenceGroup(
-                        external_id="JE1989",
+                incarceration_sentences=[
+                    StateIncarcerationSentence(
                         state_code="US_PA",
-                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                        incarceration_sentences=[
-                            StateIncarcerationSentence(
+                        external_id="JE1989-02",
+                        status=StateSentenceStatus.SERVING,
+                        status_raw_text="AS",
+                        incarceration_type=StateIncarcerationType.STATE_PRISON,
+                        incarceration_type_raw_text="S",
+                        county_code="BUC",
+                        date_imposed=datetime.date(2016, 8, 20),
+                        start_date=datetime.date(2016, 8, 20),
+                        projected_min_release_date=datetime.date(2017, 10, 22),
+                        projected_max_release_date=datetime.date(2019, 4, 22),
+                        min_length_days=549,
+                        is_life=False,
+                        is_capital_punishment=False,
+                        charges=[
+                            StateCharge(
                                 state_code="US_PA",
-                                external_id="JE1989-01",
-                                status=StateSentenceStatus.SERVING,
-                                status_raw_text="AS",
-                                incarceration_type=StateIncarcerationType.STATE_PRISON,
-                                incarceration_type_raw_text="S",
-                                county_code="BUC",
-                                date_imposed=datetime.date(2016, 8, 20),
-                                start_date=datetime.date(2016, 8, 20),
-                                projected_min_release_date=datetime.date(2017, 10, 22),
-                                projected_max_release_date=datetime.date(2019, 4, 22),
-                                max_length_days=1095,
-                                is_life=False,
-                                is_capital_punishment=False,
-                                charges=[
-                                    StateCharge(
-                                        state_code="US_PA",
-                                        external_id="L7858888",
-                                        statute="XX0500",
-                                        description="THEFT",
-                                        offense_type="THEFT",
-                                        status=ChargeStatus.PRESENT_WITHOUT_INFO,
-                                        classification_type=StateChargeClassificationType.MISDEMEANOR,
-                                        classification_type_raw_text="MISDEMEANOR",
-                                        classification_subtype="M1",
-                                        is_violent=False,
-                                    )
-                                ],
-                            ),
+                                external_id="L7858890",
+                                statute="CC2702A1",
+                                description="AGGRAVATED ASSAULT W/SERIOUS BODILY INJURY AGAINST ELDERLY/YOUNG PERSON",
+                                offense_type="AGGRAVATED ASSAULT-ASSAULT",
+                                status=ChargeStatus.PRESENT_WITHOUT_INFO,
+                                classification_type=StateChargeClassificationType.FELONY,
+                                classification_type_raw_text="FELONY",
+                                classification_subtype="F1",
+                                is_violent=True,
+                            )
                         ],
-                    )
-                ],
-            ),
-            StatePerson(
-                state_code="US_PA",
-                external_ids=[
-                    StatePersonExternalId(
-                        state_code="US_PA", external_id="JE1989", id_type=US_PA_INMATE
                     ),
                 ],
                 sentence_groups=[
@@ -1440,38 +1472,6 @@ class UsPaIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         external_id="JE1989",
                         state_code="US_PA",
                         status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                        incarceration_sentences=[
-                            StateIncarcerationSentence(
-                                state_code="US_PA",
-                                external_id="JE1989-02",
-                                status=StateSentenceStatus.SERVING,
-                                status_raw_text="AS",
-                                incarceration_type=StateIncarcerationType.STATE_PRISON,
-                                incarceration_type_raw_text="S",
-                                county_code="BUC",
-                                date_imposed=datetime.date(2016, 8, 20),
-                                start_date=datetime.date(2016, 8, 20),
-                                projected_min_release_date=datetime.date(2017, 10, 22),
-                                projected_max_release_date=datetime.date(2019, 4, 22),
-                                min_length_days=549,
-                                is_life=False,
-                                is_capital_punishment=False,
-                                charges=[
-                                    StateCharge(
-                                        state_code="US_PA",
-                                        external_id="L7858890",
-                                        statute="CC2702A1",
-                                        description="AGGRAVATED ASSAULT W/SERIOUS BODILY INJURY AGAINST ELDERLY/YOUNG PERSON",
-                                        offense_type="AGGRAVATED ASSAULT-ASSAULT",
-                                        status=ChargeStatus.PRESENT_WITHOUT_INFO,
-                                        classification_type=StateChargeClassificationType.FELONY,
-                                        classification_type_raw_text="FELONY",
-                                        classification_subtype="F1",
-                                        is_violent=True,
-                                    )
-                                ],
-                            ),
-                        ],
                     ),
                 ],
             ),
@@ -1482,9 +1482,7 @@ class UsPaIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
     def test_parse_dbo_Senrec_v2_SentenceStatuses(self) -> None:
         manifest_ast = self._parse_manifest("dbo_Senrec_v2")
         enum_parser_manifest = (
-            manifest_ast.field_manifests["sentence_groups"]
-            .child_manifests[0]  # type: ignore[attr-defined]
-            .field_manifests["incarceration_sentences"]
+            manifest_ast.field_manifests["incarceration_sentences"]
             .child_manifests[0]  # type: ignore[attr-defined]
             .field_manifests["status"]
         )
@@ -1493,9 +1491,7 @@ class UsPaIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
     def test_parse_dbo_Senrec_v2_IncarcerationType(self) -> None:
         manifest_ast = self._parse_manifest("dbo_Senrec_v2")
         enum_parser_manifest = (
-            manifest_ast.field_manifests["sentence_groups"]
-            .child_manifests[0]  # type: ignore[attr-defined]
-            .field_manifests["incarceration_sentences"]
+            manifest_ast.field_manifests["incarceration_sentences"]
             .child_manifests[0]  # type: ignore[attr-defined]
             .field_manifests["incarceration_type"]
         )

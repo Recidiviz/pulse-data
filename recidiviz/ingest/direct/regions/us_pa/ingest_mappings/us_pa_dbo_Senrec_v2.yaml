@@ -36,142 +36,141 @@ output:
     sentence_groups:
       - StateSentenceGroup:
           external_id: curr_inmate_num
-          incarceration_sentences:
-            - StateIncarcerationSentence:
-                external_id: 
-                  $concat:
-                    $values:
-                      - curr_inmate_num
-                      - type_number
-                status:
+    incarceration_sentences:
+      - StateIncarcerationSentence:
+          external_id:
+            $concat:
+              $values:
+                - curr_inmate_num
+                - type_number
+          status:
+            $enum_mapping:
+              $raw_text: sent_status_code
+              $mappings:
+                StateSentenceStatus.COMPLETED:
+                  # TODO(#3312): Confirm the COMPLETED codes below. Some may be intermediate and not appropriately mapped as
+                  # final.
+                  - B  # Bailed
+                  - CS  # Change other Sentence
+                  - DA  # Deceased - Assault
+                  - DN  # Deceased - Natural
+                  - DS  # Deceased - Suicide
+                  - DX  # Deceased - Accident
+                  - DZ  # Deceased - Non DOC Location
+                  - EX  # Executed
+                  - FR  # Federal Release
+                  - NC  # Non-Return CSC
+                  - NF  # Non-Return Furlough
+                  - NR  # [Unlisted]
+                  - NW  # Non-Return Work Release
+                  - P   # Paroled
+                  - PC  # Program Completed - Seems to be used instead of SC for some State Drug Treatment Program sentences
+                  - RP  # Re-paroled (extremely rare)
+                  - SC  # Sentence Complete
+                  - SP  # Serve Previous
+                  - TC  # Transfer to County
+                  - TS  # Transfer to Other State
+                StateSentenceStatus.COMMUTED:
+                  - RD # Release Detentioner
+                  - RE # Received in Error
+                StateSentenceStatus.PARDONED:
+                  - PD # Pardoned
+                StateSentenceStatus.SERVING:
+                  - AS  # Actively Serving
+                  - CT  # In Court
+                  - DC  # Diag/Class (Diagnostics / Classification)
+                  - EC  # Escape CSC
+                  - EI  # Escape Institution
+                  - F  # Furloughed
+                  # TODO(#3312): What does it mean when someone else is in custody elsewhere? Does this mean they are no
+                  # longer the responsibility of the PA DOC? Should they also stop being counted towards population counts?
+                  # What does it mean when this code is used with a county code?
+                  - IC  # In Custody Elsewhere
+                  - MH  # Mental Health
+                  - SH  # State Hospital
+                  - W  # Waiting
+                  - WT  # WRIT/ATA
+                StateSentenceStatus.VACATED:
+                  - VC # Vacated Conviction
+                  - VS # Vacated Sentence
+                StateSentenceStatus.EXTERNAL_UNKNOWN:
+                  - O # ??? (this is PA's own label; it means unknown within their own system)
+          incarceration_type:
+            $enum_mapping:
+              $raw_text: type_of_sent
+              $mappings:
+                StateIncarcerationType.COUNTY_JAIL:
+                  - C # County
+                  - CCIS # All CCIS periods are in contracted county facilities
+                StateIncarcerationType.FEDERAL_PRISON:
+                  - F # Federal
+                StateIncarcerationType.OUT_OF_STATE:
+                  - O # Transfer out of Pennsylvania
+                StateIncarcerationType.STATE_PRISON:
+                  - S  # State
+                  - I  # Transfer into Pennsylvania
+                  - T  # County Transfer, i.e. transfer from county to state, usually for mental health services
+                  - P  # SIP Program
+                  - E  # SIP Evaluation
+                  - SCI  # State Correctional Institution
+              $ignore:
+                # The dbo_Senrec table has several rows where the value type_of_sent is a single quotation mark
+                - "'"
+          date_imposed: sent_date
+          start_date: sent_start_date
+          completion_date: sent_stop_date
+          projected_min_release_date: min_expir_date
+          projected_max_release_date: max_expir_date
+          county_code: sentcing_cnty
+          is_life:
+            $in:
+              $value: class_of_sent
+              $options:
+                - $literal("CL")
+                - $literal("LF")
+          is_capital_punishment:
+            $in:
+              $value: class_of_sent
+              $options:
+                - $literal("EX")
+                - $literal("EP")
+          max_length_days:
+            $custom:
+              $function: us_pa_custom_parsers.max_and_min_lengths_days_from_court_sentence_duration
+              $args:
+                years_str: max_cort_sent_yrs
+                months_str: max_cort_sent_mths
+                days_str: max_cort_sent_days
+                start_date_str: sent_start_date
+          min_length_days:
+            $custom:
+              $function: us_pa_custom_parsers.max_and_min_lengths_days_from_court_sentence_duration
+              $args:
+                years_str: min_cort_sent_yrs
+                months_str: min_cort_sent_mths
+                days_str: min_cort_sent_days
+                start_date_str: sent_start_date
+          charges:
+            - StateCharge:
+                external_id: offense_track_num
+                statute: offense_code
+                description: Offense
+                classification_type:
                   $enum_mapping:
-                    $raw_text: sent_status_code
-                    $mappings: 
-                      StateSentenceStatus.COMPLETED:
-                        # TODO(#3312): Confirm the COMPLETED codes below. Some may be intermediate and not appropriately mapped as
-                        # final.
-                        - B  # Bailed
-                        - CS  # Change other Sentence
-                        - DA  # Deceased - Assault
-                        - DN  # Deceased - Natural
-                        - DS  # Deceased - Suicide
-                        - DX  # Deceased - Accident
-                        - DZ  # Deceased - Non DOC Location
-                        - EX  # Executed
-                        - FR  # Federal Release
-                        - NC  # Non-Return CSC
-                        - NF  # Non-Return Furlough
-                        - NR  # [Unlisted]
-                        - NW  # Non-Return Work Release
-                        - P   # Paroled
-                        - PC  # Program Completed - Seems to be used instead of SC for some State Drug Treatment Program sentences
-                        - RP  # Re-paroled (extremely rare)
-                        - SC  # Sentence Complete
-                        - SP  # Serve Previous
-                        - TC  # Transfer to County
-                        - TS  # Transfer to Other State
-                      StateSentenceStatus.COMMUTED:
-                        - RD # Release Detentioner
-                        - RE # Received in Error
-                      StateSentenceStatus.PARDONED:
-                        - PD # Pardoned
-                      StateSentenceStatus.SERVING:
-                        - AS  # Actively Serving
-                        - CT  # In Court
-                        - DC  # Diag/Class (Diagnostics / Classification)
-                        - EC  # Escape CSC
-                        - EI  # Escape Institution
-                        - F  # Furloughed
-                        # TODO(#3312): What does it mean when someone else is in custody elsewhere? Does this mean they are no
-                        # longer the responsibility of the PA DOC? Should they also stop being counted towards population counts?
-                        # What does it mean when this code is used with a county code?
-                        - IC  # In Custody Elsewhere
-                        - MH  # Mental Health
-                        - SH  # State Hospital
-                        - W  # Waiting
-                        - WT  # WRIT/ATA
-                      StateSentenceStatus.VACATED:
-                        - VC # Vacated Conviction
-                        - VS # Vacated Sentence
-                      StateSentenceStatus.EXTERNAL_UNKNOWN:
-                        - O # ??? (this is PA's own label; it means unknown within their own system)
-                incarceration_type:
-                  $enum_mapping:
-                    $raw_text: type_of_sent
+                    $raw_text: Grade_Category
                     $mappings:
-                      StateIncarcerationType.COUNTY_JAIL:
-                        - C # County
-                        - CCIS # All CCIS periods are in contracted county facilities
-                      StateIncarcerationType.FEDERAL_PRISON:
-                        - F # Federal
-                      StateIncarcerationType.OUT_OF_STATE:
-                        - O # Transfer out of Pennsylvania
-                      StateIncarcerationType.STATE_PRISON:
-                        - S  # State
-                        - I  # Transfer into Pennsylvania
-                        - T  # County Transfer, i.e. transfer from county to state, usually for mental health services
-                        - P  # SIP Program
-                        - E  # SIP Evaluation
-                        - SCI  # State Correctional Institution
-                    $ignore:
-                      # The dbo_Senrec table has several rows where the value type_of_sent is a single quotation mark
-                      - "'" 
-                date_imposed: sent_date
-                start_date: sent_start_date
-                completion_date: sent_stop_date 
-                projected_min_release_date: min_expir_date
-                projected_max_release_date: max_expir_date
-                county_code: sentcing_cnty
-                is_life:
-                  $in:
-                    $value: class_of_sent
-                    $options:
-                      - $literal("CL")
-                      - $literal("LF")
-                is_capital_punishment:
-                  $in:
-                    $value: class_of_sent
-                    $options:
-                      - $literal("EX")
-                      - $literal("EP")
-                max_length_days:
-                  $custom:
-                    $function: us_pa_custom_parsers.max_and_min_lengths_days_from_court_sentence_duration
-                    $args:
-                      years_str: max_cort_sent_yrs
-                      months_str: max_cort_sent_mths
-                      days_str: max_cort_sent_days
-                      start_date_str: sent_start_date
-                min_length_days:
-                  $custom:
-                    $function: us_pa_custom_parsers.max_and_min_lengths_days_from_court_sentence_duration
-                    $args:
-                      years_str: min_cort_sent_yrs
-                      months_str: min_cort_sent_mths
-                      days_str: min_cort_sent_days
-                      start_date_str: sent_start_date
-                charges:
-                  - StateCharge:
-                      external_id: offense_track_num
-                      statute: offense_code
-                      description: Offense
-                      classification_type:
-                        $enum_mapping:
-                          $raw_text: Grade_Category
-                          $mappings:
-                            StateChargeClassificationType.FELONY:
-                              - Felony
-                            StateChargeClassificationType.MISDEMEANOR:
-                              - Misdemeanor
-                      classification_subtype: Grade
-                      is_violent:
-                        $equal:
-                          - ASCA_Category___Ranked
-                          - $literal("1-Violent")
-                      offense_type:
-                          $concat:
-                            $values:
-                              - Category
-                              - SubCategory
-                            $include_nulls: False
-                
+                      StateChargeClassificationType.FELONY:
+                        - Felony
+                      StateChargeClassificationType.MISDEMEANOR:
+                        - Misdemeanor
+                classification_subtype: Grade
+                is_violent:
+                  $equal:
+                    - ASCA_Category___Ranked
+                    - $literal("1-Violent")
+                offense_type:
+                    $concat:
+                      $values:
+                        - Category
+                        - SubCategory
+                      $include_nulls: False

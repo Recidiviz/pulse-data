@@ -53,6 +53,8 @@ _HIERARCHY_MAP: Dict[
     "state_alias": ("state_person",),
     "state_person_external_id": ("state_person",),
     "state_assessment": ("state_person",),
+    "state_incarceration_sentence": ("state_person",),
+    "state_supervision_sentence": ("state_person",),
     "state_incarceration_period": ("state_person",),
     "state_supervision_period": ("state_person",),
     "state_supervision_case_type_entry": (
@@ -81,17 +83,8 @@ _HIERARCHY_MAP: Dict[
     "state_supervision_contact": ("state_person",),
     "state_sentence_group": ("state_person",),
     "state_program_assignment": ("state_person",),
-    "state_supervision_sentence": (
-        "state_person",
-        "state_sentence_group",
-    ),
-    "state_incarceration_sentence": (
-        "state_person",
-        "state_sentence_group",
-    ),
     "state_early_discharge": (
         "state_person",
-        "state_sentence_group",
         AncestorTypeChoices(
             key="state_sentence",
             ancestor_choices={
@@ -102,7 +95,6 @@ _HIERARCHY_MAP: Dict[
     ),
     "state_charge": (
         "state_person",
-        "state_sentence_group",
         AncestorTypeChoices(
             key="state_sentence",
             ancestor_choices={
@@ -114,7 +106,6 @@ _HIERARCHY_MAP: Dict[
     ),
     "state_court_case": (
         "state_person",
-        "state_sentence_group",
         AncestorTypeChoices(
             key="state_sentence",
             ancestor_choices={
@@ -133,7 +124,6 @@ _HIERARCHY_MAP: Dict[
     #  we only create one type of StateAgent right now.
     "state_agent": (
         "state_person",
-        "state_sentence_group",
         AncestorTypeChoices(
             key="state_sentence",
             ancestor_choices={
@@ -165,14 +155,14 @@ def get_ancestor_class_sequence(
     are trying to find the ancestor sequence. If |class_name| is state_charge
     and the |ancestor_chain| is a dict containing a key of
     'state_incarceration_sentence', then the returned sequence will be
-    ('state_person', 'state_sentence_group', 'state_incarceration_sentence').
+    ('state_person', 'state_incarceration_sentence').
 
     |enforced_ancestor_choices| is mapping of ancestor classes to specifically
     choose where there are multiple options. If |class_name| is state_charge and
     |enforced_ancestor_choices| is
     {'state_sentence': 'state_supervision_sentence'}, then the returned sequence
     will be
-    ('state_person', 'state_sentence_group', 'state_supervision_sentence').
+    ('state_person', 'state_supervision_sentence').
 
     If there is a valid key in the |ancestor_chain| and there are also
     |enforced_ancestor_choices|, then the key in |ancestor_chain| wins.

@@ -199,7 +199,6 @@ class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             str, AncestorChainOverridesCallable
         ] = {
             "elite_offenderchargestable": _state_charge_ancestor_chain_overrides,
-            "elite_offendersentenceaggs": _state_person_ancestor_chain_overrides,
             "elite_offendersentences": _state_person_ancestor_chain_overrides,
             "elite_orderstable": _state_person_ancestor_chain_overrides,
         }

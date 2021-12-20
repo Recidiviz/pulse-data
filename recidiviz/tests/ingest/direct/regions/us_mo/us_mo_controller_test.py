@@ -329,68 +329,58 @@ class TestUsMoController(BaseDirectIngestControllerTests):
                             state_person_external_id_id="110035", id_type=US_MO_DOC
                         ),
                     ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_sentence_group_id="110035-19890901",
-                            state_incarceration_sentences=[
-                                StateIncarcerationSentence(
-                                    state_incarceration_sentence_id="110035-19890901-1",
-                                    status="COMPLETED",
-                                    date_imposed="19560316",
-                                    start_date="19560425",
-                                    projected_min_release_date=None,
-                                    projected_max_release_date=None,
-                                    completion_date="19800926",
-                                    parole_eligibility_date="1956-04-25",
-                                    county_code="US_MO_ST_LOUIS_CITY",
-                                    max_length="3655253",
-                                    is_life="True",
-                                    is_capital_punishment="Y",
-                                    state_charges=[
-                                        StateCharge(
-                                            state_charge_id="110035-19890901-1",
-                                            offense_date=None,
-                                            county_code="US_MO_JACKSON",
-                                            ncic_code="0904",
-                                            statute="10021040",
-                                            description="TC: MURDER 1ST - FIST",
-                                            is_violent="True",
-                                            classification_type="F",
-                                            classification_subtype="O",
-                                        )
-                                    ],
+                    state_incarceration_sentences=[
+                        StateIncarcerationSentence(
+                            state_incarceration_sentence_id="110035-19890901-1",
+                            status="COMPLETED",
+                            date_imposed="19560316",
+                            start_date="19560425",
+                            projected_min_release_date=None,
+                            projected_max_release_date=None,
+                            completion_date="19800926",
+                            parole_eligibility_date="1956-04-25",
+                            county_code="US_MO_ST_LOUIS_CITY",
+                            max_length="3655253",
+                            is_life="True",
+                            is_capital_punishment="Y",
+                            state_charges=[
+                                StateCharge(
+                                    state_charge_id="110035-19890901-1",
+                                    offense_date=None,
+                                    county_code="US_MO_JACKSON",
+                                    ncic_code="0904",
+                                    statute="10021040",
+                                    description="TC: MURDER 1ST - FIST",
+                                    is_violent="True",
+                                    classification_type="F",
+                                    classification_subtype="O",
                                 )
                             ],
                         ),
-                        StateSentenceGroup(
-                            state_sentence_group_id="110035-20010414",
-                            state_incarceration_sentences=[
-                                StateIncarcerationSentence(
-                                    state_incarceration_sentence_id="110035-20010414-1",
-                                    status="COMPLETED",
-                                    date_imposed="20030110",
-                                    start_date="20030103",
-                                    projected_min_release_date="20070102",
-                                    projected_max_release_date="20070102",
-                                    completion_date="20070102",
-                                    parole_eligibility_date="2003-01-03",
+                        StateIncarcerationSentence(
+                            state_incarceration_sentence_id="110035-20010414-1",
+                            status="COMPLETED",
+                            date_imposed="20030110",
+                            start_date="20030103",
+                            projected_min_release_date="20070102",
+                            projected_max_release_date="20070102",
+                            completion_date="20070102",
+                            parole_eligibility_date="2003-01-03",
+                            county_code="US_MO_ST_LOUIS_CITY",
+                            max_length="4Y 0M 0D",
+                            is_life="False",
+                            is_capital_punishment="N",
+                            state_charges=[
+                                StateCharge(
+                                    state_charge_id="110035-20010414-1",
+                                    offense_date="20000604",
                                     county_code="US_MO_ST_LOUIS_CITY",
-                                    max_length="4Y 0M 0D",
-                                    is_life="False",
-                                    is_capital_punishment="N",
-                                    state_charges=[
-                                        StateCharge(
-                                            state_charge_id="110035-20010414-1",
-                                            offense_date="20000604",
-                                            county_code="US_MO_ST_LOUIS_CITY",
-                                            ncic_code="5299",
-                                            statute="31020990",
-                                            description="UNLAWFUL USE OF WEAPON",
-                                            is_violent="False",
-                                            classification_type="F",
-                                            classification_subtype="D",
-                                        )
-                                    ],
+                                    ncic_code="5299",
+                                    statute="31020990",
+                                    description="UNLAWFUL USE OF WEAPON",
+                                    is_violent="False",
+                                    classification_type="F",
+                                    classification_subtype="D",
                                 )
                             ],
                         ),
@@ -403,35 +393,29 @@ class TestUsMoController(BaseDirectIngestControllerTests):
                             state_person_external_id_id="310261", id_type=US_MO_DOC
                         ),
                     ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_sentence_group_id="310261-19890821",
-                            state_incarceration_sentences=[
-                                StateIncarcerationSentence(
-                                    state_incarceration_sentence_id="310261-19890821-3",
-                                    status="SERVING",
-                                    date_imposed="20150428",
-                                    start_date="20161206",
-                                    projected_min_release_date="20211205",
-                                    projected_max_release_date="20211205",
-                                    parole_eligibility_date="2016-12-06",
+                    state_incarceration_sentences=[
+                        StateIncarcerationSentence(
+                            state_incarceration_sentence_id="310261-19890821-3",
+                            status="SERVING",
+                            date_imposed="20150428",
+                            start_date="20161206",
+                            projected_min_release_date="20211205",
+                            projected_max_release_date="20211205",
+                            parole_eligibility_date="2016-12-06",
+                            county_code="US_MO_ST_LOUIS_COUNTY",
+                            max_length="5Y 0M 0D",
+                            is_life="False",
+                            is_capital_punishment=None,
+                            state_charges=[
+                                StateCharge(
+                                    state_charge_id="310261-19890821-3",
+                                    offense_date="20141004",
                                     county_code="US_MO_ST_LOUIS_COUNTY",
-                                    max_length="5Y 0M 0D",
-                                    is_life="False",
-                                    is_capital_punishment=None,
-                                    state_charges=[
-                                        StateCharge(
-                                            state_charge_id="310261-19890821-3",
-                                            offense_date="20141004",
-                                            county_code="US_MO_ST_LOUIS_COUNTY",
-                                            ncic_code="3599",
-                                            statute="91335990",
-                                            description="POSSESSION OF CONTROLLED "
-                                            "SUBSTANCE",
-                                            is_violent="False",
-                                            classification_type="L",
-                                        )
-                                    ],
+                                    ncic_code="3599",
+                                    statute="91335990",
+                                    description="POSSESSION OF CONTROLLED " "SUBSTANCE",
+                                    is_violent="False",
+                                    classification_type="L",
                                 )
                             ],
                         )
@@ -444,91 +428,86 @@ class TestUsMoController(BaseDirectIngestControllerTests):
                             state_person_external_id_id="710448", id_type=US_MO_DOC
                         ),
                     ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_sentence_group_id="710448-20010414",
-                            state_incarceration_sentences=[
-                                StateIncarcerationSentence(
-                                    state_incarceration_sentence_id="710448-20010414-1",
-                                    status="COMPLETED",
-                                    date_imposed="20010627",
-                                    start_date="20010805",
-                                    projected_min_release_date="20050804",
-                                    projected_max_release_date="20050804",
-                                    parole_eligibility_date="2001-08-05",
-                                    completion_date="20060911",
+                    state_incarceration_sentences=[
+                        StateIncarcerationSentence(
+                            state_incarceration_sentence_id="710448-20010414-1",
+                            status="COMPLETED",
+                            date_imposed="20010627",
+                            start_date="20010805",
+                            projected_min_release_date="20050804",
+                            projected_max_release_date="20050804",
+                            parole_eligibility_date="2001-08-05",
+                            completion_date="20060911",
+                            county_code="US_MO_ST_LOUIS_CITY",
+                            max_length="4Y 0M 0D",
+                            is_life="False",
+                            is_capital_punishment="N",
+                            state_charges=[
+                                StateCharge(
+                                    state_charge_id="710448-20010414-1",
+                                    offense_date="20000731",
                                     county_code="US_MO_ST_LOUIS_CITY",
-                                    max_length="4Y 0M 0D",
-                                    is_life="False",
-                                    is_capital_punishment="N",
-                                    state_charges=[
-                                        StateCharge(
-                                            state_charge_id="710448-20010414-1",
-                                            offense_date="20000731",
-                                            county_code="US_MO_ST_LOUIS_CITY",
-                                            ncic_code="3599",
-                                            statute="32450990",
-                                            description="POSSESSION OF C/S",
-                                            is_violent="False",
-                                            classification_type="F",
-                                            classification_subtype="C",
-                                        )
-                                    ],
-                                ),
-                                StateIncarcerationSentence(
-                                    state_incarceration_sentence_id="710448-20010414-2",
-                                    status="COMPLETED",
-                                    date_imposed="20021031",
-                                    start_date="20021101",
-                                    projected_min_release_date="20061031",
-                                    projected_max_release_date="20061031",
-                                    parole_eligibility_date="2002-11-01",
-                                    completion_date="20060911",
-                                    county_code="US_MO_ST_LOUIS_COUNTY",
-                                    max_length="5Y 0M 0D",
-                                    is_life="False",
-                                    is_capital_punishment="N",
-                                    state_charges=[
-                                        StateCharge(
-                                            state_charge_id="710448-20010414-2",
-                                            offense_date="20010915",
-                                            ncic_code="3599",
-                                            statute="32500990",
-                                            description="TRAFFICKING 2ND DEGREE",
-                                            is_violent="False",
-                                            classification_type="F",
-                                            classification_subtype="B",
-                                        )
-                                    ],
-                                ),
-                                StateIncarcerationSentence(
-                                    state_incarceration_sentence_id="710448-20010414-3",
-                                    status="COMPLETED",
-                                    date_imposed="20021031",
-                                    start_date="20021101",
-                                    projected_min_release_date="20051031",
-                                    projected_max_release_date="20051031",
-                                    parole_eligibility_date="2002-11-01",
-                                    completion_date="20060911",
-                                    county_code="US_MO_ST_LOUIS_COUNTY",
-                                    max_length="4Y 0M 0D",
-                                    is_life="False",
-                                    is_capital_punishment="N",
-                                    state_charges=[
-                                        StateCharge(
-                                            state_charge_id="710448-20010414-3",
-                                            offense_date="20010915",
-                                            ncic_code="4899",
-                                            statute="27020990",
-                                            description="RESISTING ARREST",
-                                            is_violent="False",
-                                            classification_type="F",
-                                            classification_subtype="D",
-                                        )
-                                    ],
-                                ),
+                                    ncic_code="3599",
+                                    statute="32450990",
+                                    description="POSSESSION OF C/S",
+                                    is_violent="False",
+                                    classification_type="F",
+                                    classification_subtype="C",
+                                )
                             ],
-                        )
+                        ),
+                        StateIncarcerationSentence(
+                            state_incarceration_sentence_id="710448-20010414-2",
+                            status="COMPLETED",
+                            date_imposed="20021031",
+                            start_date="20021101",
+                            projected_min_release_date="20061031",
+                            projected_max_release_date="20061031",
+                            parole_eligibility_date="2002-11-01",
+                            completion_date="20060911",
+                            county_code="US_MO_ST_LOUIS_COUNTY",
+                            max_length="5Y 0M 0D",
+                            is_life="False",
+                            is_capital_punishment="N",
+                            state_charges=[
+                                StateCharge(
+                                    state_charge_id="710448-20010414-2",
+                                    offense_date="20010915",
+                                    ncic_code="3599",
+                                    statute="32500990",
+                                    description="TRAFFICKING 2ND DEGREE",
+                                    is_violent="False",
+                                    classification_type="F",
+                                    classification_subtype="B",
+                                )
+                            ],
+                        ),
+                        StateIncarcerationSentence(
+                            state_incarceration_sentence_id="710448-20010414-3",
+                            status="COMPLETED",
+                            date_imposed="20021031",
+                            start_date="20021101",
+                            projected_min_release_date="20051031",
+                            projected_max_release_date="20051031",
+                            parole_eligibility_date="2002-11-01",
+                            completion_date="20060911",
+                            county_code="US_MO_ST_LOUIS_COUNTY",
+                            max_length="4Y 0M 0D",
+                            is_life="False",
+                            is_capital_punishment="N",
+                            state_charges=[
+                                StateCharge(
+                                    state_charge_id="710448-20010414-3",
+                                    offense_date="20010915",
+                                    ncic_code="4899",
+                                    statute="27020990",
+                                    description="RESISTING ARREST",
+                                    is_violent="False",
+                                    classification_type="F",
+                                    classification_subtype="D",
+                                )
+                            ],
+                        ),
                     ],
                 ),
                 StatePerson(
@@ -538,35 +517,30 @@ class TestUsMoController(BaseDirectIngestControllerTests):
                             state_person_external_id_id="910324", id_type=US_MO_DOC
                         ),
                     ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_sentence_group_id="910324-19890825",
-                            state_incarceration_sentences=[
-                                StateIncarcerationSentence(
-                                    state_incarceration_sentence_id="910324-19890825-1",
-                                    status="COMPLETED",
-                                    date_imposed="19890829",
-                                    start_date="19890430",
-                                    projected_min_release_date="19911229",
-                                    projected_max_release_date="19930429",
-                                    parole_eligibility_date="1989-04-30",
-                                    completion_date="19900629",
-                                    county_code="US_MO_LIVINGSTON",
-                                    max_length="4Y 0M 0D",
-                                    is_life="False",
-                                    is_capital_punishment="N",
-                                    state_charges=[
-                                        StateCharge(
-                                            state_charge_id="910324-19890825-1",
-                                            offense_date=None,
-                                            ncic_code="3572",
-                                            statute="32040720",
-                                            description="POSSESSION OF METHAMPHETAMINE",
-                                            is_violent="False",
-                                            classification_type="F",
-                                            classification_subtype="N",
-                                        )
-                                    ],
+                    state_incarceration_sentences=[
+                        StateIncarcerationSentence(
+                            state_incarceration_sentence_id="910324-19890825-1",
+                            status="COMPLETED",
+                            date_imposed="19890829",
+                            start_date="19890430",
+                            projected_min_release_date="19911229",
+                            projected_max_release_date="19930429",
+                            parole_eligibility_date="1989-04-30",
+                            completion_date="19900629",
+                            county_code="US_MO_LIVINGSTON",
+                            max_length="4Y 0M 0D",
+                            is_life="False",
+                            is_capital_punishment="N",
+                            state_charges=[
+                                StateCharge(
+                                    state_charge_id="910324-19890825-1",
+                                    offense_date=None,
+                                    ncic_code="3572",
+                                    statute="32040720",
+                                    description="POSSESSION OF METHAMPHETAMINE",
+                                    is_violent="False",
+                                    classification_type="F",
+                                    classification_subtype="N",
                                 )
                             ],
                         )
@@ -579,32 +553,27 @@ class TestUsMoController(BaseDirectIngestControllerTests):
                             state_person_external_id_id="1152016", id_type=US_MO_DOC
                         ),
                     ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_sentence_group_id="1152016-20060920",
-                            state_incarceration_sentences=[
-                                StateIncarcerationSentence(
-                                    state_incarceration_sentence_id="1152016-20060920-5",
-                                    status="SERVING",
-                                    date_imposed="20180510",
-                                    start_date="20180510",
+                    state_incarceration_sentences=[
+                        StateIncarcerationSentence(
+                            state_incarceration_sentence_id="1152016-20060920-5",
+                            status="SERVING",
+                            date_imposed="20180510",
+                            start_date="20180510",
+                            county_code="US_MO_CALLAWAY",
+                            max_length="50Y 0M 0D",
+                            is_life="False",
+                            is_capital_punishment="N",
+                            state_charges=[
+                                StateCharge(
+                                    state_charge_id="1152016-20060920-5",
+                                    offense_date="20140219",
                                     county_code="US_MO_CALLAWAY",
-                                    max_length="50Y 0M 0D",
-                                    is_life="False",
-                                    is_capital_punishment="N",
-                                    state_charges=[
-                                        StateCharge(
-                                            state_charge_id="1152016-20060920-5",
-                                            offense_date="20140219",
-                                            county_code="US_MO_CALLAWAY",
-                                            ncic_code="5299",
-                                            statute="31010990",
-                                            description="ARMED CRIMINAL ACTION",
-                                            is_violent="False",
-                                            classification_type="F",
-                                            classification_subtype="U",
-                                        )
-                                    ],
+                                    ncic_code="5299",
+                                    statute="31010990",
+                                    description="ARMED CRIMINAL ACTION",
+                                    is_violent="False",
+                                    classification_type="F",
+                                    classification_subtype="U",
                                 )
                             ],
                         )
@@ -629,53 +598,48 @@ class TestUsMoController(BaseDirectIngestControllerTests):
                             state_person_external_id_id="910324", id_type=US_MO_DOC
                         ),
                     ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_sentence_group_id="910324-19890825",
-                            state_supervision_sentences=[
-                                StateSupervisionSentence(
-                                    state_supervision_sentence_id="910324-19890825-1",
-                                    status="REVOKED",
-                                    supervision_type="PROBATION",
-                                    start_date="19870126",
-                                    projected_completion_date="19920125",
-                                    completion_date="19890811",
-                                    county_code="US_MO_DEKALB",
-                                    max_length="5Y 0M 0D",
-                                    state_charges=[
-                                        StateCharge(
-                                            state_charge_id="910324-19890825-1",
-                                            ncic_code="5404",
-                                            statute="47410040",
-                                            description="DRIVING WHILE INTOXICATED - "
-                                            "THIRD OFFENSE",
-                                            is_violent="True",
-                                            classification_type="F",
-                                            classification_subtype="D",
-                                        )
-                                    ],
-                                ),
-                                StateSupervisionSentence(
-                                    state_supervision_sentence_id="910324-19890825-2",
-                                    status="COMPLETED",
-                                    supervision_type="PROBATION",
-                                    start_date="19870416",
-                                    projected_completion_date="19880206",
-                                    completion_date="19880222",
-                                    county_code="US_MO_PLATTE",
-                                    max_length="1Y 0M 0D",
-                                    state_charges=[
-                                        StateCharge(
-                                            state_charge_id="910324-19890825-2",
-                                            ncic_code="5404",
-                                            description="DWI",
-                                            is_violent="True",
-                                            classification_type="F",
-                                        )
-                                    ],
-                                ),
+                    state_supervision_sentences=[
+                        StateSupervisionSentence(
+                            state_supervision_sentence_id="910324-19890825-1",
+                            status="REVOKED",
+                            supervision_type="PROBATION",
+                            start_date="19870126",
+                            projected_completion_date="19920125",
+                            completion_date="19890811",
+                            county_code="US_MO_DEKALB",
+                            max_length="5Y 0M 0D",
+                            state_charges=[
+                                StateCharge(
+                                    state_charge_id="910324-19890825-1",
+                                    ncic_code="5404",
+                                    statute="47410040",
+                                    description="DRIVING WHILE INTOXICATED - "
+                                    "THIRD OFFENSE",
+                                    is_violent="True",
+                                    classification_type="F",
+                                    classification_subtype="D",
+                                )
                             ],
-                        )
+                        ),
+                        StateSupervisionSentence(
+                            state_supervision_sentence_id="910324-19890825-2",
+                            status="COMPLETED",
+                            supervision_type="PROBATION",
+                            start_date="19870416",
+                            projected_completion_date="19880206",
+                            completion_date="19880222",
+                            county_code="US_MO_PLATTE",
+                            max_length="1Y 0M 0D",
+                            state_charges=[
+                                StateCharge(
+                                    state_charge_id="910324-19890825-2",
+                                    ncic_code="5404",
+                                    description="DWI",
+                                    is_violent="True",
+                                    classification_type="F",
+                                )
+                            ],
+                        ),
                     ],
                 ),
                 StatePerson(
@@ -685,26 +649,21 @@ class TestUsMoController(BaseDirectIngestControllerTests):
                             state_person_external_id_id="310261", id_type=US_MO_DOC
                         ),
                     ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_sentence_group_id="310261-19890821",
-                            state_supervision_sentences=[
-                                StateSupervisionSentence(
-                                    state_supervision_sentence_id="310261-19890821-1",
-                                    status="COMPLETED",
-                                    supervision_type="PROBATION",
-                                    projected_completion_date="19801006",
-                                    completion_date="19790607",
-                                    county_code="OUT_OF_STATE",
-                                    max_length="0Y 0M 0D",
-                                    state_charges=[
-                                        StateCharge(
-                                            state_charge_id="310261-19890821-1",
-                                            ncic_code="5707",
-                                            description="BRK & END",
-                                            is_violent="False",
-                                        )
-                                    ],
+                    state_supervision_sentences=[
+                        StateSupervisionSentence(
+                            state_supervision_sentence_id="310261-19890821-1",
+                            status="COMPLETED",
+                            supervision_type="PROBATION",
+                            projected_completion_date="19801006",
+                            completion_date="19790607",
+                            county_code="OUT_OF_STATE",
+                            max_length="0Y 0M 0D",
+                            state_charges=[
+                                StateCharge(
+                                    state_charge_id="310261-19890821-1",
+                                    ncic_code="5707",
+                                    description="BRK & END",
+                                    is_violent="False",
                                 )
                             ],
                         )
@@ -717,72 +676,62 @@ class TestUsMoController(BaseDirectIngestControllerTests):
                             state_person_external_id_id="110035", id_type=US_MO_DOC
                         ),
                     ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_sentence_group_id="110035-20040712",
-                            state_supervision_sentences=[
-                                StateSupervisionSentence(
-                                    state_supervision_sentence_id="110035-20040712-1",
-                                    status="COMPLETED",
-                                    supervision_type="PROBATION",
-                                    start_date="20040201",
-                                    projected_completion_date="20080120",
-                                    completion_date="20080119",
-                                    county_code="US_MO_GREENE",
-                                    max_length="3Y 0M 0D",
-                                    state_charges=[
-                                        StateCharge(
-                                            state_charge_id="110035-20040712-1",
-                                            ncic_code="2399",
-                                            description="BURG&STEAL",
-                                            is_violent="False",
-                                            classification_type="F",
-                                        )
-                                    ],
-                                ),
-                                StateSupervisionSentence(
-                                    state_supervision_sentence_id="110035-20040712-3",
-                                    status="COMPLETED",
-                                    supervision_type="UNKNOWN",
-                                    start_date="20040201",
-                                    completion_date="20061010",
-                                    county_code="US_MO_GREENE",
-                                    max_length="2436835",
-                                    state_charges=[
-                                        StateCharge(
-                                            state_charge_id="110035-20040712-3",
-                                            ncic_code="1399",
-                                            statute="1310099",
-                                            description="ASSAULT OF A LAW ENFORCEMENT OFFICER",
-                                            classification_type="F",
-                                            classification_subtype="A",
-                                        )
-                                    ],
-                                ),
+                    state_supervision_sentences=[
+                        StateSupervisionSentence(
+                            state_supervision_sentence_id="110035-20040712-1",
+                            status="COMPLETED",
+                            supervision_type="PROBATION",
+                            start_date="20040201",
+                            projected_completion_date="20080120",
+                            completion_date="20080119",
+                            county_code="US_MO_GREENE",
+                            max_length="3Y 0M 0D",
+                            state_charges=[
+                                StateCharge(
+                                    state_charge_id="110035-20040712-1",
+                                    ncic_code="2399",
+                                    description="BURG&STEAL",
+                                    is_violent="False",
+                                    classification_type="F",
+                                )
                             ],
                         ),
-                        StateSentenceGroup(
-                            state_sentence_group_id="110035-20081010",
-                            state_supervision_sentences=[
-                                StateSupervisionSentence(
-                                    state_supervision_sentence_id="110035-20081010-1",
-                                    status="COMPLETED",
-                                    supervision_type="PAROLE",
-                                    start_date="20081101",
-                                    projected_completion_date="20100113",
-                                    completion_date="20100213",
+                        StateSupervisionSentence(
+                            state_supervision_sentence_id="110035-20040712-3",
+                            status="COMPLETED",
+                            supervision_type="UNKNOWN",
+                            start_date="20040201",
+                            completion_date="20061010",
+                            county_code="US_MO_GREENE",
+                            max_length="2436835",
+                            state_charges=[
+                                StateCharge(
+                                    state_charge_id="110035-20040712-3",
+                                    ncic_code="1399",
+                                    statute="1310099",
+                                    description="ASSAULT OF A LAW ENFORCEMENT OFFICER",
+                                    classification_type="F",
+                                    classification_subtype="A",
+                                )
+                            ],
+                        ),
+                        StateSupervisionSentence(
+                            state_supervision_sentence_id="110035-20081010-1",
+                            status="COMPLETED",
+                            supervision_type="PAROLE",
+                            start_date="20081101",
+                            projected_completion_date="20100113",
+                            completion_date="20100213",
+                            county_code="OUT_OF_STATE",
+                            max_length="0Y 0M 0D",
+                            state_charges=[
+                                StateCharge(
+                                    state_charge_id="110035-20081010-1",
+                                    ncic_code="3532",
+                                    offense_date="20070701",
                                     county_code="OUT_OF_STATE",
-                                    max_length="0Y 0M 0D",
-                                    state_charges=[
-                                        StateCharge(
-                                            state_charge_id="110035-20081010-1",
-                                            ncic_code="3532",
-                                            offense_date="20070701",
-                                            county_code="OUT_OF_STATE",
-                                            description="POSSESSION OF COCAINE  (SHAWNEE CO 00CR1806)",
-                                            is_violent="False",
-                                        )
-                                    ],
+                                    description="POSSESSION OF COCAINE  (SHAWNEE CO 00CR1806)",
+                                    is_violent="False",
                                 )
                             ],
                         ),
@@ -1851,9 +1800,8 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             is_life=True,
             is_capital_punishment=True,
             person=person_110035,
-            sentence_group=sg_110035_19890901,
         )
-        sg_110035_19890901.incarceration_sentences.append(sis_110035_19890901_1)
+        person_110035.incarceration_sentences.append(sis_110035_19890901_1)
 
         charge_110035_19890901 = entities.StateCharge.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -1889,9 +1837,8 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             is_life=False,
             is_capital_punishment=False,
             person=person_110035,
-            sentence_group=sg_110035_20010414,
         )
-        sg_110035_20010414.incarceration_sentences.append(sis_110035_20010414_1)
+        person_110035.incarceration_sentences.append(sis_110035_20010414_1)
 
         charge_110035_20010414 = entities.StateCharge.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -1929,9 +1876,8 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             is_life=False,
             is_capital_punishment=None,
             person=person_310261,
-            sentence_group=sg_310261_19890821,
         )
-        sg_310261_19890821.incarceration_sentences.append(sis_310261_19890821_3)
+        person_310261.incarceration_sentences.append(sis_310261_19890821_3)
 
         charge_310261 = entities.StateCharge.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -1967,7 +1913,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             is_life=False,
             is_capital_punishment=False,
             person=person_710448,
-            sentence_group=sg_710448_20010414,
         )
         charge_710448_1 = entities.StateCharge.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -2004,7 +1949,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             is_life=False,
             is_capital_punishment=False,
             person=person_710448,
-            sentence_group=sg_710448_20010414,
         )
         charge_710448_2 = entities.StateCharge.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -2040,7 +1984,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             is_life=False,
             is_capital_punishment=False,
             person=person_710448,
-            sentence_group=sg_710448_20010414,
         )
         charge_710448_3 = entities.StateCharge.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -2059,9 +2002,9 @@ class TestUsMoController(BaseDirectIngestControllerTests):
         )
         sis_710448_20010414_3.charges = [charge_710448_3]
 
-        sg_710448_20010414.incarceration_sentences.append(sis_710448_20010414_1)
-        sg_710448_20010414.incarceration_sentences.append(sis_710448_20010414_2)
-        sg_710448_20010414.incarceration_sentences.append(sis_710448_20010414_3)
+        person_710448.incarceration_sentences.append(sis_710448_20010414_1)
+        person_710448.incarceration_sentences.append(sis_710448_20010414_2)
+        person_710448.incarceration_sentences.append(sis_710448_20010414_3)
 
         sg_910324_19890825.person = person_910324
 
@@ -2082,9 +2025,8 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             is_life=False,
             is_capital_punishment=False,
             person=person_910324,
-            sentence_group=sg_910324_19890825,
         )
-        sg_910324_19890825.incarceration_sentences.append(sis_910324_19890825_1)
+        person_910324.incarceration_sentences.append(sis_910324_19890825_1)
 
         charge_910324 = entities.StateCharge.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -2102,18 +2044,9 @@ class TestUsMoController(BaseDirectIngestControllerTests):
         )
         sis_910324_19890825_1.charges = [charge_910324]
 
-        sg_1152016_20060920 = entities.StateSentenceGroup.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            external_id="1152016-20060920",
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-        )
-
         person_1152016 = entities.StatePerson.new_with_defaults(
             state_code="US_MO",
             external_ids=[],
-            sentence_groups=[
-                sg_1152016_20060920,
-            ],
         )
 
         spei_1152016 = entities.StatePersonExternalId.new_with_defaults(
@@ -2124,7 +2057,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
         )
         person_1152016.external_ids.append(spei_1152016)
 
-        sg_1152016_20060920.person = person_1152016
         sis_1152016_20060920_5 = entities.StateIncarcerationSentence.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id="1152016-20060920-5",
@@ -2138,9 +2070,8 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             is_life=False,
             is_capital_punishment=False,
             person=person_1152016,
-            sentence_group=sg_1152016_20060920,
         )
-        sg_1152016_20060920.incarceration_sentences.append(sis_1152016_20060920_5)
+        person_1152016.incarceration_sentences.append(sis_1152016_20060920_5)
 
         charge_1152016 = entities.StateCharge.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -2188,9 +2119,8 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             county_code="US_MO_DEKALB",
             max_length_days=1826,
             person=person_910324,
-            sentence_group=sg_910324_19890825,
         )
-        sg_910324_19890825.supervision_sentences.append(sss_910324_19890825_1)
+        person_910324.supervision_sentences.append(sss_910324_19890825_1)
 
         # A charge already exists in the DB for this external_id, so we just
         # update the fields rather than create a whole new entity
@@ -2217,9 +2147,8 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             county_code="US_MO_PLATTE",
             max_length_days=365,
             person=person_910324,
-            sentence_group=sg_910324_19890825,
         )
-        sg_910324_19890825.supervision_sentences.append(sss_910324_19890825_2)
+        person_910324.supervision_sentences.append(sss_910324_19890825_2)
 
         charge_910324_ss_2 = entities.StateCharge.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -2247,9 +2176,8 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             county_code="OUT_OF_STATE",
             max_length_days=0,
             person=person_310261,
-            sentence_group=sg_310261_19890821,
         )
-        sg_310261_19890821.supervision_sentences.append(sss_310261_19890821_1)
+        person_310261.supervision_sentences.append(sss_310261_19890821_1)
 
         charge_310261_ss_1 = entities.StateCharge.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -2262,14 +2190,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             person=person_310261,
         )
         sss_310261_19890821_1.charges = [charge_310261_ss_1]
-
-        sg_110035_20040712 = entities.StateSentenceGroup.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            external_id="110035-20040712",
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            person=person_110035,
-        )
-        person_110035.sentence_groups.append(sg_110035_20040712)
 
         sss_110035_20040712_1 = entities.StateSupervisionSentence.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -2284,9 +2204,8 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             county_code="US_MO_GREENE",
             max_length_days=1095,
             person=person_110035,
-            sentence_group=sg_110035_20040712,
         )
-        sg_110035_20040712.supervision_sentences.append(sss_110035_20040712_1)
+        person_110035.supervision_sentences.append(sss_110035_20040712_1)
 
         charge_110035_ss_1 = entities.StateCharge.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -2314,9 +2233,8 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             county_code="US_MO_GREENE",
             max_length_days=2436835,
             person=person_110035,
-            sentence_group=sg_110035_20040712,
         )
-        sg_110035_20040712.supervision_sentences.append(sss_110035_20040712_3)
+        person_110035.supervision_sentences.append(sss_110035_20040712_3)
 
         charge_110035_ss_3 = entities.StateCharge.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -2333,14 +2251,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
         )
         sss_110035_20040712_3.charges = [charge_110035_ss_3]
 
-        sg_110035_20081010 = entities.StateSentenceGroup.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            external_id="110035-20081010",
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            person=person_110035,
-        )
-        person_110035.sentence_groups.append(sg_110035_20081010)
-
         sss_110035_20081010_1 = entities.StateSupervisionSentence.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id="110035-20081010-1",
@@ -2354,9 +2264,8 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             county_code="OUT_OF_STATE",
             max_length_days=0,
             person=person_110035,
-            sentence_group=sg_110035_20081010,
         )
-        sg_110035_20081010.supervision_sentences.append(sss_110035_20081010_1)
+        person_110035.supervision_sentences.append(sss_110035_20081010_1)
 
         charge_110035_20081010_1 = entities.StateCharge.new_with_defaults(
             state_code=_STATE_CODE_UPPER,

@@ -289,6 +289,58 @@ def convert_ingest_info_to_proto(
                 )
                 proto_assessment.conducting_agent_id = proto_agent.state_agent_id
 
+        for supervision_sentence in state_person.state_supervision_sentences:
+            proto_supervision_sentence = _populate_proto(
+                "state_supervision_sentences",
+                supervision_sentence,
+                "state_supervision_sentence_id",
+                state_supervision_sentence_map,
+            )
+            proto_state_person.state_supervision_sentence_ids.append(
+                proto_supervision_sentence.state_supervision_sentence_id
+            )
+
+            _populate_state_charge_protos(
+                supervision_sentence, proto_supervision_sentence
+            )
+
+            for early_discharge in supervision_sentence.state_early_discharges:
+                proto_early_discharge = _populate_proto(
+                    "state_early_discharges",
+                    early_discharge,
+                    "state_early_discharge_id",
+                    state_early_discharge_map,
+                )
+                proto_supervision_sentence.state_early_discharge_ids.append(
+                    proto_early_discharge.state_early_discharge_id
+                )
+
+        for incarceration_sentence in state_person.state_incarceration_sentences:
+            proto_incarceration_sentence = _populate_proto(
+                "state_incarceration_sentences",
+                incarceration_sentence,
+                "state_incarceration_sentence_id",
+                state_incarceration_sentence_map,
+            )
+            proto_state_person.state_incarceration_sentence_ids.append(
+                proto_incarceration_sentence.state_incarceration_sentence_id
+            )
+
+            _populate_state_charge_protos(
+                incarceration_sentence, proto_incarceration_sentence
+            )
+
+            for early_discharge in incarceration_sentence.state_early_discharges:
+                proto_early_discharge = _populate_proto(
+                    "state_early_discharges",
+                    early_discharge,
+                    "state_early_discharge_id",
+                    state_early_discharge_map,
+                )
+                proto_incarceration_sentence.state_early_discharge_ids.append(
+                    proto_early_discharge.state_early_discharge_id
+                )
+
         for incarceration_period in state_person.state_incarceration_periods:
             proto_period = _populate_proto(
                 "state_incarceration_periods",
@@ -502,58 +554,6 @@ def convert_ingest_info_to_proto(
             proto_state_person.state_sentence_group_ids.append(
                 proto_sentence_group.state_sentence_group_id
             )
-
-            for supervision_sentence in sentence_group.state_supervision_sentences:
-                proto_supervision_sentence = _populate_proto(
-                    "state_supervision_sentences",
-                    supervision_sentence,
-                    "state_supervision_sentence_id",
-                    state_supervision_sentence_map,
-                )
-                proto_sentence_group.state_supervision_sentence_ids.append(
-                    proto_supervision_sentence.state_supervision_sentence_id
-                )
-
-                _populate_state_charge_protos(
-                    supervision_sentence, proto_supervision_sentence
-                )
-
-                for early_discharge in supervision_sentence.state_early_discharges:
-                    proto_early_discharge = _populate_proto(
-                        "state_early_discharges",
-                        early_discharge,
-                        "state_early_discharge_id",
-                        state_early_discharge_map,
-                    )
-                    proto_supervision_sentence.state_early_discharge_ids.append(
-                        proto_early_discharge.state_early_discharge_id
-                    )
-
-            for incarceration_sentence in sentence_group.state_incarceration_sentences:
-                proto_incarceration_sentence = _populate_proto(
-                    "state_incarceration_sentences",
-                    incarceration_sentence,
-                    "state_incarceration_sentence_id",
-                    state_incarceration_sentence_map,
-                )
-                proto_sentence_group.state_incarceration_sentence_ids.append(
-                    proto_incarceration_sentence.state_incarceration_sentence_id
-                )
-
-                _populate_state_charge_protos(
-                    incarceration_sentence, proto_incarceration_sentence
-                )
-
-                for early_discharge in incarceration_sentence.state_early_discharges:
-                    proto_early_discharge = _populate_proto(
-                        "state_early_discharges",
-                        early_discharge,
-                        "state_early_discharge_id",
-                        state_early_discharge_map,
-                    )
-                    proto_incarceration_sentence.state_early_discharge_ids.append(
-                        proto_early_discharge.state_early_discharge_id
-                    )
 
     return proto
 
@@ -962,7 +962,7 @@ def convert_proto_to_ingest_info(
                 proto_state_charge.state_court_case_id
             ]
 
-    # Wire all state charges and period types to respective sentence types
+    # Wire all state charges to respective sentence types
     for proto_incarceration_sentence in proto.state_incarceration_sentences:
         _wire_sentence_proto(
             proto_incarceration_sentence,
@@ -976,22 +976,6 @@ def convert_proto_to_ingest_info(
             proto_supervision_sentence.state_supervision_sentence_id,
             state_supervision_sentence_map,
         )
-
-    # Wire all sentence types to respective sentence groups
-    for proto_sentence_group in proto.state_sentence_groups:
-        sentence_group = state_sentence_group_map[
-            proto_sentence_group.state_sentence_group_id
-        ]
-
-        sentence_group.state_incarceration_sentences = [
-            state_incarceration_sentence_map[proto_id]
-            for proto_id in proto_sentence_group.state_incarceration_sentence_ids
-        ]
-
-        sentence_group.state_supervision_sentences = [
-            state_supervision_sentence_map[proto_id]
-            for proto_id in proto_sentence_group.state_supervision_sentence_ids
-        ]
 
     # Wire child entities to respective state people
     for proto_state_person in proto.state_people:
@@ -1019,6 +1003,16 @@ def convert_proto_to_ingest_info(
         state_person.state_assessments = [
             state_assessment_map[proto_id]
             for proto_id in proto_state_person.state_assessment_ids
+        ]
+
+        state_person.state_incarceration_sentences = [
+            state_incarceration_sentence_map[proto_id]
+            for proto_id in proto_state_person.state_incarceration_sentence_ids
+        ]
+
+        state_person.state_supervision_sentences = [
+            state_supervision_sentence_map[proto_id]
+            for proto_id in proto_state_person.state_supervision_sentence_ids
         ]
 
         state_person.state_incarceration_periods = [

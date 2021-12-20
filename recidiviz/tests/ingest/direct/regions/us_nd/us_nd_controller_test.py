@@ -370,14 +370,12 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                             id_type=US_ND_ELITE_BOOKING,
                         ),
                     ],
+                    state_incarceration_sentences=[incarceration_sentence_105640],
                     state_sentence_groups=[
                         StateSentenceGroup(
                             state_sentence_group_id="105640",
                             date_imposed="2/12/2004",
                             max_length="759",
-                            state_incarceration_sentences=[
-                                incarceration_sentence_105640
-                            ],
                         ),
                     ],
                 ),
@@ -405,14 +403,12 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                             id_type=US_ND_ELITE_BOOKING,
                         ),
                     ],
+                    state_incarceration_sentences=[incarceration_sentence_113377],
                     state_sentence_groups=[
                         StateSentenceGroup(
                             state_sentence_group_id="113377",
                             date_imposed="3/27/2018",
                             max_length="285",
-                            state_incarceration_sentences=[
-                                incarceration_sentence_113377
-                            ],
                         ),
                     ],
                 ),
@@ -529,12 +525,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                             id_type=US_ND_ELITE_BOOKING,
                         ),
                     ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_sentence_group_id="114909",
-                            state_incarceration_sentences=sentences_114909,
-                        ),
-                    ],
+                    state_incarceration_sentences=sentences_114909,
                 ),
                 StatePerson(
                     state_person_id="105640",
@@ -544,12 +535,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                             id_type=US_ND_ELITE_BOOKING,
                         ),
                     ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_sentence_group_id="105640",
-                            state_incarceration_sentences=sentences_105640,
-                        ),
-                    ],
+                    state_incarceration_sentences=sentences_105640,
                 ),
                 StatePerson(
                     state_person_id="113377",
@@ -559,12 +545,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                             id_type=US_ND_ELITE_BOOKING,
                         ),
                     ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_sentence_group_id="113377",
-                            state_incarceration_sentences=sentences_113377,
-                        ),
-                    ],
+                    state_incarceration_sentences=sentences_113377,
                 ),
             ]
         )
@@ -735,31 +716,26 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                             id_type=US_ND_ELITE_BOOKING,
                         ),
                     ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_sentence_group_id="105640",
-                            state_incarceration_sentences=[
-                                StateIncarcerationSentence(
-                                    state_incarceration_sentence_id="105640-1",
-                                    state_charges=[state_charge_105640_1],
-                                ),
-                                StateIncarcerationSentence(
-                                    state_incarceration_sentence_id="105640-2",
-                                    state_charges=[state_charge_105640_2],
-                                ),
-                                StateIncarcerationSentence(
-                                    state_incarceration_sentence_id="105640-5",
-                                    state_charges=[state_charge_105640_5],
-                                ),
-                                StateIncarcerationSentence(
-                                    state_incarceration_sentence_id="105640-6",
-                                    state_charges=[state_charge_105640_6],
-                                ),
-                                StateIncarcerationSentence(
-                                    state_incarceration_sentence_id="105640-7",
-                                    state_charges=[state_charge_105640_7],
-                                ),
-                            ],
+                    state_incarceration_sentences=[
+                        StateIncarcerationSentence(
+                            state_incarceration_sentence_id="105640-1",
+                            state_charges=[state_charge_105640_1],
+                        ),
+                        StateIncarcerationSentence(
+                            state_incarceration_sentence_id="105640-2",
+                            state_charges=[state_charge_105640_2],
+                        ),
+                        StateIncarcerationSentence(
+                            state_incarceration_sentence_id="105640-5",
+                            state_charges=[state_charge_105640_5],
+                        ),
+                        StateIncarcerationSentence(
+                            state_incarceration_sentence_id="105640-6",
+                            state_charges=[state_charge_105640_6],
+                        ),
+                        StateIncarcerationSentence(
+                            state_incarceration_sentence_id="105640-7",
+                            state_charges=[state_charge_105640_7],
                         ),
                     ],
                 ),
@@ -771,23 +747,18 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                             id_type=US_ND_ELITE_BOOKING,
                         ),
                     ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_sentence_group_id="113377",
-                            state_incarceration_sentences=[
-                                StateIncarcerationSentence(
-                                    state_incarceration_sentence_id="113377-2",
-                                    state_charges=[state_charge_113377_2],
-                                ),
-                                StateIncarcerationSentence(
-                                    state_incarceration_sentence_id="113377-4",
-                                    state_charges=[state_charge_113377_4],
-                                ),
-                                StateIncarcerationSentence(
-                                    state_incarceration_sentence_id="113377-1",
-                                    state_charges=[state_charge_113377_1],
-                                ),
-                            ],
+                    state_incarceration_sentences=[
+                        StateIncarcerationSentence(
+                            state_incarceration_sentence_id="113377-2",
+                            state_charges=[state_charge_113377_2],
+                        ),
+                        StateIncarcerationSentence(
+                            state_incarceration_sentence_id="113377-4",
+                            state_charges=[state_charge_113377_4],
+                        ),
+                        StateIncarcerationSentence(
+                            state_incarceration_sentence_id="113377-1",
+                            state_charges=[state_charge_113377_1],
                         ),
                     ],
                 ),
@@ -799,19 +770,14 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                             id_type=US_ND_ELITE_BOOKING,
                         ),
                     ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_sentence_group_id="114909",
-                            state_incarceration_sentences=[
-                                StateIncarcerationSentence(
-                                    state_incarceration_sentence_id="114909-1",
-                                    state_charges=[state_charge_114909_1],
-                                ),
-                                StateIncarcerationSentence(
-                                    state_incarceration_sentence_id="114909-2",
-                                    state_charges=[state_charge_114909_2],
-                                ),
-                            ],
+                    state_incarceration_sentences=[
+                        StateIncarcerationSentence(
+                            state_incarceration_sentence_id="114909-1",
+                            state_charges=[state_charge_114909_1],
+                        ),
+                        StateIncarcerationSentence(
+                            state_incarceration_sentence_id="114909-2",
+                            state_charges=[state_charge_114909_2],
                         ),
                     ],
                 ),
@@ -871,19 +837,14 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                             id_type=US_ND_ELITE_BOOKING,
                         ),
                     ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_sentence_group_id="105640",
-                            state_incarceration_sentences=[
-                                StateIncarcerationSentence(
-                                    state_charges=[
-                                        StateCharge(state_court_case=court_case_5190),
-                                        StateCharge(state_court_case=court_case_5192),
-                                        StateCharge(state_court_case=court_case_5193),
-                                        StateCharge(state_court_case=court_case_154576),
-                                    ]
-                                ),
-                            ],
+                    state_incarceration_sentences=[
+                        StateIncarcerationSentence(
+                            state_charges=[
+                                StateCharge(state_court_case=court_case_5190),
+                                StateCharge(state_court_case=court_case_5192),
+                                StateCharge(state_court_case=court_case_5193),
+                                StateCharge(state_court_case=court_case_154576),
+                            ]
                         ),
                     ],
                 ),
@@ -1217,48 +1178,44 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                             state_person_external_id_id="92237", id_type=US_ND_SID
                         )
                     ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_supervision_sentences=[
-                                StateSupervisionSentence(
-                                    state_supervision_sentence_id="117111",
-                                    state_charges=[
-                                        StateCharge(
-                                            state_charge_id="122553",
-                                            county_code="US_ND_BURLEIGH",
-                                            ncic_code="3522",
-                                            description="OPIUM OR DERIV-POSSESS",
-                                            classification_type="F",
-                                            is_violent="False",
-                                            counts="1",
-                                        ),
-                                        StateCharge(
-                                            state_charge_id="122554",
-                                            county_code="US_ND_BURLEIGH",
-                                            ncic_code="3550",
-                                            description="NARCOTIC EQUIP-POSSESS",
-                                            classification_type="F",
-                                            is_violent="False",
-                                            counts="1",
-                                        ),
-                                    ],
+                    state_supervision_sentences=[
+                        StateSupervisionSentence(
+                            state_supervision_sentence_id="117111",
+                            state_charges=[
+                                StateCharge(
+                                    state_charge_id="122553",
+                                    county_code="US_ND_BURLEIGH",
+                                    ncic_code="3522",
+                                    description="OPIUM OR DERIV-POSSESS",
+                                    classification_type="F",
+                                    is_violent="False",
+                                    counts="1",
                                 ),
-                                StateSupervisionSentence(
-                                    state_supervision_sentence_id="117110",
-                                    state_charges=[
-                                        StateCharge(
-                                            state_charge_id="122552",
-                                            county_code="US_ND_BURLEIGH",
-                                            ncic_code="3562",
-                                            description="MARIJUANA-POSSESS",
-                                            classification_type="F",
-                                            is_violent="False",
-                                            counts="1",
-                                        )
-                                    ],
+                                StateCharge(
+                                    state_charge_id="122554",
+                                    county_code="US_ND_BURLEIGH",
+                                    ncic_code="3550",
+                                    description="NARCOTIC EQUIP-POSSESS",
+                                    classification_type="F",
+                                    is_violent="False",
+                                    counts="1",
                                 ),
-                            ]
-                        )
+                            ],
+                        ),
+                        StateSupervisionSentence(
+                            state_supervision_sentence_id="117110",
+                            state_charges=[
+                                StateCharge(
+                                    state_charge_id="122552",
+                                    county_code="US_ND_BURLEIGH",
+                                    ncic_code="3562",
+                                    description="MARIJUANA-POSSESS",
+                                    classification_type="F",
+                                    is_violent="False",
+                                    counts="1",
+                                )
+                            ],
+                        ),
                     ],
                 ),
                 StatePerson(
@@ -1268,26 +1225,22 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                             state_person_external_id_id="241896", id_type=US_ND_SID
                         )
                     ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_supervision_sentences=[
-                                StateSupervisionSentence(
-                                    state_supervision_sentence_id="140408",
-                                    state_charges=[
-                                        StateCharge(
-                                            state_charge_id="149349",
-                                            offense_date="7/30/2016",
-                                            county_code="US_ND_GRIGGS",
-                                            ncic_code="2204",
-                                            description="CRIMINAL TRESPASS",
-                                            classification_type="M",
-                                            classification_subtype="A",
-                                            is_violent="False",
-                                            counts="1",
-                                        )
-                                    ],
+                    state_supervision_sentences=[
+                        StateSupervisionSentence(
+                            state_supervision_sentence_id="140408",
+                            state_charges=[
+                                StateCharge(
+                                    state_charge_id="149349",
+                                    offense_date="7/30/2016",
+                                    county_code="US_ND_GRIGGS",
+                                    ncic_code="2204",
+                                    description="CRIMINAL TRESPASS",
+                                    classification_type="M",
+                                    classification_subtype="A",
+                                    is_violent="False",
+                                    counts="1",
                                 )
-                            ]
+                            ],
                         )
                     ],
                 ),
@@ -1851,7 +1804,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                 status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 parole_eligibility_date=datetime.date(year=2005, month=11, day=24),
-                sentence_group=sentence_group_105640,
                 person=person_1,
             )
         )
@@ -1861,15 +1813,14 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                 status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 parole_eligibility_date=datetime.date(year=2018, month=7, day=26),
-                sentence_group=sentence_group_113377,
                 person=person_2,
             )
         )
-        sentence_group_105640.incarceration_sentences.append(incarceration_sentence_1)
+        person_1.incarceration_sentences.append(incarceration_sentence_1)
         sentence_group_105640.date_imposed = datetime.date(year=2004, month=2, day=12)
         sentence_group_105640.max_length_days = 759
 
-        sentence_group_113377.incarceration_sentences.append(incarceration_sentence_2)
+        person_2.incarceration_sentences.append(incarceration_sentence_2)
         sentence_group_113377.date_imposed = datetime.date(year=2018, month=3, day=27)
         sentence_group_113377.max_length_days = 285
 
@@ -1938,8 +1889,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                 projected_min_release_date=datetime.date(year=2018, month=12, day=16),
                 projected_max_release_date=datetime.date(year=2018, month=12, day=26),
                 state_code=_STATE_CODE,
-                sentence_group=sentence_group_114909,
-                person=sentence_group_114909.person,
+                person=person_2,
             )
         )
         incarceration_sentence_114909_2 = (
@@ -1952,8 +1902,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                 projected_min_release_date=datetime.date(year=2019, month=1, day=8),
                 projected_max_release_date=datetime.date(year=2019, month=1, day=8),
                 state_code=_STATE_CODE,
-                sentence_group=sentence_group_114909,
-                person=sentence_group_114909.person,
+                person=person_2,
             )
         )
         incarceration_sentence_105640_1 = (
@@ -1966,8 +1915,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                 projected_min_release_date=datetime.date(year=1996, month=10, day=21),
                 projected_max_release_date=datetime.date(year=1999, month=6, day=18),
                 state_code=_STATE_CODE,
-                sentence_group=sentence_group_105640,
-                person=sentence_group_105640.person,
+                person=person_1,
             )
         )
         incarceration_sentence_105640_2 = (
@@ -1980,8 +1928,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                 projected_min_release_date=datetime.date(year=1996, month=10, day=21),
                 projected_max_release_date=datetime.date(year=1999, month=6, day=18),
                 state_code=_STATE_CODE,
-                sentence_group=sentence_group_105640,
-                person=sentence_group_105640.person,
+                person=person_1,
             )
         )
         incarceration_sentence_105640_5 = (
@@ -1994,8 +1941,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                 projected_min_release_date=datetime.date(year=2012, month=2, day=15),
                 projected_max_release_date=datetime.date(year=2016, month=10, day=21),
                 state_code=_STATE_CODE,
-                sentence_group=sentence_group_105640,
-                person=sentence_group_105640.person,
+                person=person_1,
             )
         )
         incarceration_sentence_105640_6 = (
@@ -2008,8 +1954,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                 projected_min_release_date=datetime.date(year=2015, month=6, day=26),
                 projected_max_release_date=datetime.date(year=2017, month=2, day=15),
                 state_code=_STATE_CODE,
-                sentence_group=sentence_group_105640,
-                person=sentence_group_105640.person,
+                person=person_1,
             )
         )
         incarceration_sentence_105640_7 = (
@@ -2022,8 +1967,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                 projected_min_release_date=datetime.date(year=2013, month=10, day=18),
                 projected_max_release_date=datetime.date(year=2014, month=2, day=15),
                 state_code=_STATE_CODE,
-                sentence_group=sentence_group_105640,
-                person=sentence_group_105640.person,
+                person=person_1,
             )
         )
         incarceration_sentence_113377_4 = (
@@ -2036,33 +1980,25 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                 projected_min_release_date=datetime.date(year=2018, month=9, day=30),
                 projected_max_release_date=datetime.date(year=2018, month=11, day=24),
                 state_code=_STATE_CODE,
-                sentence_group=sentence_group_113377,
-                person=sentence_group_113377.person,
+                person=person_2,
             )
         )
-        sentence_group_114909.incarceration_sentences.append(
-            incarceration_sentence_114909_1
+        person_2.incarceration_sentences.extend(
+            [
+                incarceration_sentence_114909_1,
+                incarceration_sentence_114909_2,
+                incarceration_sentence_113377_4,
+            ]
         )
-        sentence_group_114909.incarceration_sentences.append(
-            incarceration_sentence_114909_2
-        )
-        sentence_group_105640.incarceration_sentences.append(
-            incarceration_sentence_105640_1
-        )
-        sentence_group_105640.incarceration_sentences.append(
-            incarceration_sentence_105640_2
-        )
-        sentence_group_105640.incarceration_sentences.append(
-            incarceration_sentence_105640_5
-        )
-        sentence_group_105640.incarceration_sentences.append(
-            incarceration_sentence_105640_6
-        )
-        sentence_group_105640.incarceration_sentences.append(
-            incarceration_sentence_105640_7
-        )
-        sentence_group_113377.incarceration_sentences.append(
-            incarceration_sentence_113377_4
+
+        person_1.incarceration_sentences.extend(
+            [
+                incarceration_sentence_105640_1,
+                incarceration_sentence_105640_2,
+                incarceration_sentence_105640_5,
+                incarceration_sentence_105640_6,
+                incarceration_sentence_105640_7,
+            ]
         )
 
         # Act
@@ -2082,8 +2018,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 max_length_days=366,
                 state_code=_STATE_CODE,
-                sentence_group=sentence_group_113377,
-                person=sentence_group_113377.person,
+                person=person_2,
             )
         )
         incarceration_sentence_113377_5 = (
@@ -2093,8 +2028,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 max_length_days=1000,
                 state_code=_STATE_CODE,
-                sentence_group=sentence_group_113377,
-                person=sentence_group_113377.person,
+                person=person_2,
             )
         )
         incarceration_sentence_105640_1.max_length_days = 3652
@@ -2105,11 +2039,8 @@ class TestUsNdController(BaseDirectIngestControllerTests):
         incarceration_sentence_114909_1.max_length_days = 366
         incarceration_sentence_114909_2.max_length_days = 360
         incarceration_sentence_113377_4.max_length_days = 360
-        sentence_group_113377.incarceration_sentences.append(
-            incarceration_sentence_113377_1
-        )
-        sentence_group_113377.incarceration_sentences.append(
-            incarceration_sentence_113377_5
+        person_2.incarceration_sentences.extend(
+            [incarceration_sentence_113377_1, incarceration_sentence_113377_5]
         )
 
         # Act
@@ -2128,13 +2059,10 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                 status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 state_code=_STATE_CODE,
-                sentence_group=sentence_group_113377,
-                person=sentence_group_113377.person,
+                person=person_2,
             )
         )
-        sentence_group_113377.incarceration_sentences.append(
-            incarceration_sentence_113377_2
-        )
+        person_2.incarceration_sentences.append(incarceration_sentence_113377_2)
         charge_105640_1 = entities.StateCharge.new_with_defaults(
             external_id="105640-1",
             status=ChargeStatus.SENTENCED,
@@ -2325,7 +2253,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             court_type=StateCourtType.PRESENT_WITHOUT_INFO,
             charges=[charge_105640_1, charge_105640_2],
             state_code=_STATE_CODE,
-            person=sentence_group_105640.person,
+            person=person_1,
         )
         court_case_5192 = entities.StateCourtCase.new_with_defaults(
             external_id="5192",
@@ -2333,7 +2261,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             court_type=StateCourtType.PRESENT_WITHOUT_INFO,
             charges=[charge_105640_5],
             state_code=_STATE_CODE,
-            person=sentence_group_105640.person,
+            person=person_1,
         )
         court_case_5193 = entities.StateCourtCase.new_with_defaults(
             external_id="5193",
@@ -2341,7 +2269,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             court_type=StateCourtType.PRESENT_WITHOUT_INFO,
             charges=[charge_105640_6],
             state_code=_STATE_CODE,
-            person=sentence_group_105640.person,
+            person=person_1,
         )
         court_case_154576 = entities.StateCourtCase.new_with_defaults(
             external_id="154576",
@@ -2349,7 +2277,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             court_type=StateCourtType.PRESENT_WITHOUT_INFO,
             charges=[charge_105640_7],
             state_code=_STATE_CODE,
-            person=sentence_group_105640.person,
+            person=person_1,
         )
         court_case_178768 = entities.StateCourtCase.new_with_defaults(
             external_id="178768",
@@ -2357,7 +2285,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             court_type=StateCourtType.PRESENT_WITHOUT_INFO,
             charges=[charge_113377_1],
             state_code=_STATE_CODE,
-            person=sentence_group_113377.person,
+            person=person_2,
         )
         court_case_178986 = entities.StateCourtCase.new_with_defaults(
             external_id="178986",
@@ -2365,7 +2293,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             court_type=StateCourtType.PRESENT_WITHOUT_INFO,
             charges=[charge_113377_2],
             state_code=_STATE_CODE,
-            person=sentence_group_113377.person,
+            person=person_2,
         )
         court_case_178987 = entities.StateCourtCase.new_with_defaults(
             external_id="178987",
@@ -2373,7 +2301,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             court_type=StateCourtType.PRESENT_WITHOUT_INFO,
             charges=[charge_113377_4],
             state_code=_STATE_CODE,
-            person=sentence_group_113377.person,
+            person=person_2,
         )
         court_case_181820 = entities.StateCourtCase.new_with_defaults(
             external_id="181820",
@@ -2381,7 +2309,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             court_type=StateCourtType.PRESENT_WITHOUT_INFO,
             charges=[charge_114909_1],
             state_code=_STATE_CODE,
-            person=sentence_group_114909.person,
+            person=person_2,
         )
         court_case_181821 = entities.StateCourtCase.new_with_defaults(
             external_id="181821",
@@ -2389,7 +2317,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             court_type=StateCourtType.PRESENT_WITHOUT_INFO,
             charges=[charge_114909_2],
             state_code=_STATE_CODE,
-            person=sentence_group_114909.person,
+            person=person_2,
         )
 
         charge_105640_1.court_case = court_case_5190
@@ -3116,11 +3044,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             agent_type=StateAgentType.SUPERVISION_OFFICER,
             full_name='{"given_names": "JOSEPH", "middle_names": "", "name_suffix": "", "surname": "LUND"}',
         )
-        sentence_group_placeholder_ss = entities.StateSentenceGroup.new_with_defaults(
-            state_code=_STATE_CODE,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            person=person_1,
-        )
         supervision_sentence_117109 = entities.StateSupervisionSentence.new_with_defaults(
             external_id="117109",
             supervision_type=StateSupervisionSentenceSupervisionType.PRE_CONFINEMENT,
@@ -3131,8 +3054,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             max_length_days=59,
             state_code=_STATE_CODE,
             status=StateSentenceStatus.COMPLETED,
-            person=sentence_group_placeholder_ss.person,
-            sentence_group=sentence_group_placeholder_ss,
+            person=person_1,
         )
         supervision_period_117109 = entities.StateSupervisionPeriod.new_with_defaults(
             external_id="117109",
@@ -3149,9 +3071,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             person=person_1,
         )
         person_1.supervision_periods.append(supervision_period_117109)
-        sentence_group_placeholder_ss.supervision_sentences.append(
-            supervision_sentence_117109
-        )
+        person_1.supervision_sentences.append(supervision_sentence_117109)
         supervision_sentence_117110 = (
             entities.StateSupervisionSentence.new_with_defaults(
                 external_id="117110",
@@ -3162,8 +3082,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                 max_length_days=92,
                 state_code=_STATE_CODE,
                 status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                person=sentence_group_placeholder_ss.person,
-                sentence_group=sentence_group_placeholder_ss,
+                person=person_1,
             )
         )
         supervision_period_117110 = entities.StateSupervisionPeriod.new_with_defaults(
@@ -3201,9 +3120,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
         charge_117110.court_case = court_case_117110
         supervision_sentence_117110.charges = [charge_117110]
         person_1.supervision_periods.append(supervision_period_117110)
-        sentence_group_placeholder_ss.supervision_sentences.append(
-            supervision_sentence_117110
-        )
+        person_1.supervision_sentences.append(supervision_sentence_117110)
 
         supervision_sentence_117111 = (
             entities.StateSupervisionSentence.new_with_defaults(
@@ -3216,8 +3133,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                 max_length_days=580,
                 state_code=_STATE_CODE,
                 status=StateSentenceStatus.COMPLETED,
-                person=sentence_group_placeholder_ss.person,
-                sentence_group=sentence_group_placeholder_ss,
+                person=person_1,
             )
         )
         charge_117111 = entities.StateCharge.new_with_defaults(
@@ -3301,18 +3217,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
         )
         person_1.supervision_violations.append(supervision_violation_117111)
         person_1.supervision_periods.append(supervision_period_117111)
-        sentence_group_placeholder_ss.supervision_sentences.append(
-            supervision_sentence_117111
-        )
-        person_1.sentence_groups.append(sentence_group_placeholder_ss)
-
-        sentence_group_person_2_placeholder_ss = (
-            entities.StateSentenceGroup.new_with_defaults(
-                state_code=_STATE_CODE,
-                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                person=person_2,
-            )
-        )
+        person_1.supervision_sentences.append(supervision_sentence_117111)
 
         supervision_sentence_140408 = (
             entities.StateSupervisionSentence.new_with_defaults(
@@ -3324,8 +3229,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                 completion_date=datetime.date(year=2018, month=2, day=27),
                 state_code=_STATE_CODE,
                 status=StateSentenceStatus.COMPLETED,
-                person=sentence_group_person_2_placeholder_ss.person,
-                sentence_group=sentence_group_person_2_placeholder_ss,
+                person=person_2,
             )
         )
         supervision_period_140408 = entities.StateSupervisionPeriod.new_with_defaults(
@@ -3414,8 +3318,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                 completion_date=datetime.date(year=2016, month=2, day=27),
                 state_code=_STATE_CODE,
                 status=StateSentenceStatus.COMPLETED,
-                person=sentence_group_person_2_placeholder_ss.person,
-                sentence_group=sentence_group_person_2_placeholder_ss,
+                person=person_2,
             )
         )
         supervision_period_147777 = entities.StateSupervisionPeriod.new_with_defaults(
@@ -3502,9 +3405,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
         )
         person_2.supervision_violations.append(supervision_violation_147777)
         person_2.supervision_periods.append(supervision_period_147777)
-        sentence_group_person_2_placeholder_ss.supervision_sentences.append(
-            supervision_sentence_147777
-        )
+        person_2.supervision_sentences.append(supervision_sentence_147777)
         charge_147777.court_case = court_case_147777
         supervision_sentence_147777.charges = [charge_147777]
 
@@ -3519,8 +3420,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                 max_length_days=1826,
                 state_code=_STATE_CODE,
                 status=StateSentenceStatus.COMPLETED,
-                person=sentence_group_person_2_placeholder_ss.person,
-                sentence_group=sentence_group_person_2_placeholder_ss,
+                person=person_2,
             )
         )
         supervision_period_147778 = entities.StateSupervisionPeriod.new_with_defaults(
@@ -3591,16 +3491,11 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             supervision_violation_response_147778
         ]
         person_2.supervision_violations.append(supervision_violation_147778)
-
-        sentence_group_person_2_placeholder_ss.supervision_sentences.append(
-            supervision_sentence_147778
-        )
+        person_2.supervision_sentences.append(supervision_sentence_147778)
 
         charge_147778.court_case = court_case_147778
         supervision_sentence_147778.charges = [charge_147778]
         person_2.supervision_periods.append(supervision_period_147778)
-
-        person_2.sentence_groups.append(sentence_group_person_2_placeholder_ss)
 
         charge_140408.court_case = court_case_140408
         supervision_sentence_140408.charges = [charge_140408]
@@ -3612,9 +3507,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
         )
         person_2.supervision_violations.append(supervision_violation_140408)
         person_2.supervision_periods.append(supervision_period_140408)
-        sentence_group_person_2_placeholder_ss.supervision_sentences.append(
-            supervision_sentence_140408
-        )
+        person_2.supervision_sentences.append(supervision_sentence_140408)
 
         # Act
         self._run_ingest_job_for_filename(
