@@ -43,13 +43,11 @@ from typing import List, Optional
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
 from recidiviz.common.ingest_metadata import SystemLevel
-from recidiviz.ingest.direct.types.direct_ingest_instance import (
-    DirectIngestInstance,
-)
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsDirectIngestFileType,
     gcsfs_direct_ingest_storage_directory_path_for_region,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema.operations.schema import (
     DirectIngestIngestFileMetadata,
     DirectIngestRawFileMetadata,
@@ -59,6 +57,8 @@ from recidiviz.tools.ingest.operations.operate_on_storage_ingest_files_controlle
     OperateOnStorageIngestFilesController,
 )
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool
 
 
@@ -236,4 +236,5 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    with local_project_id_override(GCP_PROJECT_STAGING):
+        main()

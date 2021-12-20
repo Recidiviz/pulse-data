@@ -303,7 +303,7 @@ class DownloadFilesFromSftpController:
             else:
                 inner_paths = deque(
                     [
-                        os.path.join(path, inner_path)
+                        os.path.join(root, path, inner_path)
                         for inner_path in self.sftp_client.listdir(path)
                     ]
                 )
