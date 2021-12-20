@@ -1,17 +1,68 @@
-key_mappings:
-  OFFENDER_BOOK_ID: state_sentence_group.state_sentence_group_id
-
-primary_key:
-  OFFENDER_BOOK_ID: state_sentence_group.state_sentence_group_id
-
-keys_to_ignore:
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  - OFFENDER_BOOK_ID
+  - START_DATE
+  - END_DATE
+  - YEARS
+  - MONTHS
+  - DAYS
+  - CREATE_DATETIME
+  - MODIFY_DATETIME
+  - SENTENCE_SEQ
+  - TERM_SEQ
+  - SENTENCE_TERM_CODE
+unused_columns:
   - START_DATE            # TODO(#1759) Should this live on a Sentence?
   - END_DATE              # TODO(#1759) Should this live on a Sentence?
-  - SENTENCE_SEQ          # Handled manually within us_nd_scraper
-  - TERM_SEQ              # Handled manually within us_nd_scraper
-  - SENTENCE_TERM_CODE    # Handled manually within us_nd_scraper
-  - YEARS                 # Handled manually within us_nd_scraper
-  - MONTHS                # Handled manually within us_nd_scraper
-  - DAYS                  # Handled manually within us_nd_scraper
+  - TERM_SEQ
   - CREATE_DATETIME       # No apparent use for these at the moment
   - MODIFY_DATETIME       # No apparent use for these at the moment
+output:
+
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id:
+            $custom:
+              $function: us_nd_custom_parsers.decimal_str_as_int_str
+              $args:
+                dec_str: OFFENDER_BOOK_ID
+          id_type: $literal("US_ND_ELITE_BOOKING")
+    sentence_groups:
+      # TODO(#10389): Consider updating the exclusion of suspended sentences when we redesign our sentencing model
+      - $conditional:
+          - $if:
+              $not_in:
+                $value: SENTENCE_TERM_CODE
+                $options:
+                  - $literal("SUSP")
+            $then:
+              StateSentenceGroup:
+                external_id:
+                  $custom:
+                    $function: us_nd_custom_parsers.decimal_str_as_int_str
+                    $args:
+                      dec_str: OFFENDER_BOOK_ID
+                incarceration_sentences:
+                  - StateIncarcerationSentence:
+                      # Other fields on the StateIncarcerationSentence entity are
+                      # hydrated in the other ingest views that also bring in
+                      # StateIncarcerationSentence information. Those
+                      # StateIncarcerationSentences are then merged with these ones
+                      # via entity matching.
+                      external_id:
+                        $concat:
+                          $values:
+                            - $custom:
+                                $function: us_nd_custom_parsers.decimal_str_as_int_str
+                                $args:
+                                  dec_str: OFFENDER_BOOK_ID
+                            - SENTENCE_SEQ
+                      max_length_days:
+                        $custom:
+                          $function: us_nd_custom_parsers.max_length_days_from_ymd
+                          $args:
+                            years: YEARS
+                            months: MONTHS
+                            days: DAYS
