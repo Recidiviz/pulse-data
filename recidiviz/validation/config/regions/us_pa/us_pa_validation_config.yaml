@@ -68,12 +68,12 @@ max_allowed_error_overrides:
     override_reason: Needs investigation.
 num_allowed_rows_overrides:
   - validation_name: incarceration_admission_after_open_period
-    hard_num_allowed_rows_override: 700
+    hard_num_allowed_rows_override: 800
     override_reason: There is a small amount of disagreement between the two data
       sources we pull data from to hydrate incarceration periods - CCIS tables and DOC
       tables. This value was 12 as of 3/5/2021 and we expect that it may slowly grow
       over time as new data is added. TODO(#9734) - need to investigate increase due to
-      CCC ingestt.
+      CCC ingest.
   - validation_name: overlapping_incarceration_periods
     hard_num_allowed_rows_override: 101000
     override_reason: There is a small amount of disagreement between the two data
@@ -96,3 +96,6 @@ num_allowed_rows_overrides:
     hard_num_allowed_rows_override: 1
     override_reason: There is one ingested supervision period that has empty
       date fields, evidenced at the ingest view layer as well.
+  - validation_name: supervision_termination_reason_no_date
+    hard_num_allowed_rows_override: 1
+    override_reason: TODO(#9735) - needs investigation
