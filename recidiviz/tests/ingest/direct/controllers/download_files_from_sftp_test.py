@@ -288,10 +288,10 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
 
         files_with_timestamps = controller.get_paths_to_download()
         expected = [
-            ("testToday/file1.txt", TODAY.astimezone(pytz.UTC)),
-            ("testToday/subdir1/file1.txt", TODAY.astimezone(pytz.UTC)),
-            ("testToday/already_processed.csv", TODAY.astimezone(pytz.UTC)),
-            ("testToday/discovered.csv", TODAY.astimezone(pytz.UTC)),
+            ("./testToday/file1.txt", TODAY.astimezone(pytz.UTC)),
+            ("./testToday/subdir1/file1.txt", TODAY.astimezone(pytz.UTC)),
+            ("./testToday/already_processed.csv", TODAY.astimezone(pytz.UTC)),
+            ("./testToday/discovered.csv", TODAY.astimezone(pytz.UTC)),
         ]
         self.assertCountEqual(files_with_timestamps, expected)
 
@@ -534,6 +534,6 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
         result = controller.do_fetch()
         self.assertCountEqual(
             result.skipped,
-            ["testToday/already_processed.csv", "testToday/discovered.csv"],
+            ["./testToday/already_processed.csv", "./testToday/discovered.csv"],
         )
         self.assertEqual(len(mock_fs.files), len(result.successes))

@@ -283,3 +283,6 @@ class FakeGCSFileSystem(GCSFileSystem):
 
         with open(self.real_absolute_path_for_path(path), "r", encoding=encoding) as f:
             yield f
+
+    def rename_blob(self, path: GcsfsFilePath, new_path: GcsfsFilePath) -> None:
+        return None
