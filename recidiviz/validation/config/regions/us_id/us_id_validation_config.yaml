@@ -68,7 +68,7 @@ num_allowed_rows_overrides:
     hard_num_allowed_rows_override: 10
     override_reason: TODO(#4058) - Needs investigation.
   - validation_name: overlapping_incarceration_periods
-    hard_num_allowed_rows_override: 87
+    hard_num_allowed_rows_override: 120
     override_reason: TODO(#4618) - Needs investigation.
   - validation_name: overlapping_supervision_periods
     hard_num_allowed_rows_override: 400
@@ -85,3 +85,7 @@ num_allowed_rows_overrides:
   - validation_name: case_triage_etl_freshness
     hard_num_allowed_rows_override: 1
     override_reason: Needs investigation.
+  - validation_name: incarceration_release_prior_to_admission
+    hard_num_allowed_rows_override: 20
+    override_reason: TODO(#5803) - Needs investigation. Likely related to shifting IP
+      external ids / not handling object deletion properly.

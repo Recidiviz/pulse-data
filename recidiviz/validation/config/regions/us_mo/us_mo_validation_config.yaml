@@ -20,7 +20,7 @@ max_allowed_error_overrides:
     override_reason: Needs investigation.
 num_allowed_rows_overrides:
   - validation_name: overlapping_incarceration_periods
-    hard_num_allowed_rows_override: 300
+    hard_num_allowed_rows_override: 350
     override_reason: In MO we rely on a table where they build incarceration period spans for us; some older rows have issues with overlap.
   - validation_name: overlapping_supervision_periods
     hard_num_allowed_rows_override: 1800
