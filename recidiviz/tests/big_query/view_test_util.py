@@ -641,6 +641,15 @@ class BaseViewTest(unittest.TestCase):
         # Replace BigQuery case insensitive flag which does not exist in PG
         query = _replace_iter(query, r"\(\?i\)", "")
 
+        # Remove the optional, additional `r` in REGEXP_REPLACE.
+        # Append the flag `g` when doing REGEXP_REPLACE, otherwise
+        # only the first match will be replaced.
+        query = _replace_iter(
+            query,
+            r"REGEXP_REPLACE\((?P<value>.+), r?\'(?P<regex>.+)\', \'(?P<replacement>.*)\'\)",
+            "REGEXP_REPLACE({value}, '{regex}', '{replacement}', 'g')",
+        )
+
         # The REGEXP_CONTAINS function does not exist in postgres, so we replace with
         # 'REGEXP_MATCH(text, pattern) IS NOT NULL', which has the same behavior.
         query = _replace_iter(
@@ -688,7 +697,7 @@ class BaseViewTest(unittest.TestCase):
         # Date/time parsing functions are different in Postgres
         query = _replace_iter(
             query,
-            r"(SAFE\.)?PARSE_TIMESTAMP\((?P<fmt>.+?), (?P<col>.+?)\)",
+            r"(SAFE\.)?PARSE_TIMESTAMP\((?P<fmt>.+?), (?P<col>.+?\)?)\)",
             "TO_TIMESTAMP({col}, {fmt})",
             flags=re.IGNORECASE,
         )
@@ -737,15 +746,6 @@ class BaseViewTest(unittest.TestCase):
             flags=re.IGNORECASE,
         )
 
-        # Remove the optional, additional `r` in REGEXP_REPLACE.
-        # Append the flag `g` when doing REGEXP_REPLACE, otherwise
-        # only the first match will be replaced.
-        query = _replace_iter(
-            query,
-            r"REGEXP_REPLACE\((?P<value>.+), r?\'(?P<regex>.+)\', \'(?P<replacement>.*)\'\)",
-            "REGEXP_REPLACE({value}, '{regex}', '{replacement}', 'g')",
-        )
-
         # Allow trailing commas in SELECT.
         query = _replace_iter(query, r",(?P<whitespace>\s+)FROM", "{whitespace}FROM")
         return query
@@ -755,6 +755,9 @@ class BaseViewTest(unittest.TestCase):
         "%%Y": "YYYY",
         "%%d": "DD",
         "%%r": "HH:MI:SS AM",
+        "%%H": "HH24",
+        "%%M": "MI",
+        "%%S": "SS",
     }
 
     def _rewrite_timestamp_formats(self, query: str) -> str:
