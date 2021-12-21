@@ -4,8 +4,6 @@ key_mappings:
 child_key_mappings:
   docno: state_person_external_id.state_person_external_id_id
 
-  incrno: state_sentence_group.state_sentence_group_id
-
   cnty_sdesc: state_incarceration_sentence.county_code
   lifer: state_incarceration_sentence.is_life
   sent_beg_dtd: state_incarceration_sentence.start_date
@@ -57,6 +55,7 @@ keys_to_ignore:
   - enhanced            # Unused - Whether or not the sentence is enhanced. TODO(#3513): Consider adding to schema.
   - govn_sent           # Unused - Whether this is the governing sentence or not.
   - interstate_mitt     # Unused - Y/N flag to indicate if this is an interstate mittimus
+  - incrno              # Unused - Incarceration number
   - jail_cred           # Unused - TODO(#3506): Get more info from ID on this. Is this earned time?
   - jud_cd              # Unused - Judge code.
   - law_cd              # Unused - Law code. TODO(#3506): Get more info from ID on this.
