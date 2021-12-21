@@ -49,9 +49,9 @@ VIEW_QUERY_TEMPLATE = """
             unit.Name_Tx AS housing_unit,
             Cis_314_Transfer_Id AS transfer_id,
             -- TODO(#9968) Update timestamp format when we receive SFTP transfer
-            EXTRACT(DATE FROM PARSE_TIMESTAMP('%m/%d/%Y %r', Effct_Date)) AS effective_date,
-            EXTRACT(DATE FROM PARSE_TIMESTAMP('%m/%d/%Y %r', End_Date)) AS end_date,
-            EXTRACT(DATE FROM PARSE_TIMESTAMP('%m/%d/%Y %r', Ineffct_Date)) AS ineffective_date
+            EXTRACT(DATE FROM PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE(Effct_Date, '\\.\\d+', ''))) AS effective_date,
+            EXTRACT(DATE FROM PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE(End_Date, '\\.\\d+', ''))) AS end_date,
+            EXTRACT(DATE FROM PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE(Ineffct_Date, '\\.\\d+', ''))) AS ineffective_date
         FROM {CIS_125_CURRENT_STATUS_HIST}
         
         LEFT JOIN {CIS_1000_CURRENT_STATUS} status_code
@@ -92,7 +92,7 @@ VIEW_QUERY_TEMPLATE = """
                 status.E_Mvmt_Status_Desc AS movement_status,
                 direction.E_Mvmt_Direction_Desc AS movement_direction,
                 -- TODO(#9968) Update timestamp format when we receive SFTP transfer
-                EXTRACT(DATE FROM PARSE_TIMESTAMP('%m/%d/%Y %r', Movement_Date)) AS movement_date
+                EXTRACT(DATE FROM PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE(Movement_Date, '\\.\\d+', ''))) AS movement_date
             FROM {CIS_309_MOVEMENT}
             
             LEFT JOIN {CIS_3090_MOVEMENT_TYPE} type

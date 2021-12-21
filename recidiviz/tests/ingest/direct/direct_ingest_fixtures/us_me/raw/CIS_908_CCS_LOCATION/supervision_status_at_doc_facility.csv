@@ -1,107 +1,61 @@
 Ccs_Location_Id,Cis_9009_Region_Cd,Cis_9080_Ccs_Location_Type_Cd,Location_Name
-106,5,8,Wyoming
-134,5,8,California
-21,2,4,"Waterville, Adult"
-237,2,15,"Manchester, Juvenile"
-96,5,8,Missouri
-104,5,8,South Dakota
-131,5,8,Idaho
-228,5,8,US Virgin Islands
-39,2,15,"South Paris, Juvenile"
-211,5,13,Two Bridges Regional
-45,3,15,"Millinocket, Juvenile"
-59,3,15,"Dover-Foxcroft, Juvenile"
-52,2,15,"Rumford, Juvenile"
-75,5,8,Rhode Island
-11,1,4,"Biddeford, Adult"
-137,5,8,Alaska
-138,5,8,Hawaii
-63,5,8,Manitoba
-107,5,8,Colorado
-175,5,9,Waldo County Jail
-238,2,15,"Brunswick, Juvenile"
-193,5,15,Non-committed juvenile
-60,5,8,Prince Edward Island
-201,5,20,Compact
-78,5,8,Pennsylvania
-136,5,8,Iowa
-207,1,21,Treasurer of State - Industries
-215,3,21,OR MidCoast ReEntry Cntr (Waldo)
-27,3,4,"Caribou, Adult"
-166,5,9,Cumberland County Jail
-22,2,4,"Skowhegan, Adult"
-23,2,4,"Farmington, Adult"
-79,5,8,Delaware
-154,5,13,Waldo
-185,1,15,Group Home 1
-9,5,14,Locked
-140,5,13,Aroostook
-213,5,8,PuertoRico
-54,2,15,"Waterville, Juvenile"
-156,5,8,Nova Scotia
-53,3,15,"Houlton, Juvenile"
-148,5,13,Lincoln
-179,5,11,US Territory
-229,1,2,Mountain View Adult Center
-88,5,8,Mississippi
-133,5,8,Nevada
-19,2,4,"South Paris, Adult"
-3,3,2,Downeast Correctional Facility
-145,5,13,Hancock
-8,1,3,Long Creek Youth Center
-178,5,14,Deceased
-32,3,4,"Machias, Adult"
-57,3,15,"Machias, Juvenile"
-97,5,8,Arkansas
-135,5,8,Minnesota
-151,5,13,Piscataquis
-205,1,21,DHHS
-232,2,15,"Mexico, Juvenile"
+103,5,8,North Dakota
+28,3,4,"Houlton, Adult"
+233,2,4,"Mexico, Adult"
+25,3,4,"Bangor (Main Office), Adult"
+49,3,15,"Bar Harbor, Juvenile"
+165,5,9,Somerset County Jail
+105,5,8,Montana
+108,5,8,New Mexico
 130,5,8,Utah
 72,5,8,New Hampshire
-161,5,9,Lincoln County Jail
-152,5,13,Sagadahoc
-235,5,21,US District Court - Portland
-13,2,4,"Lewiston (Main Office), Adult"
-82,5,8,West Virginia
-94,5,8,Wisconsin
-177,5,9,York County Jail
-98,5,8,Louisiana
-183,5,8,District of Columbia
-192,5,19,Federal.
-196,2,13,Oxford County
-162,5,9,Knox County Jail
-219,1,15,"Saco, Juvenile"
-29,3,4,"Newport, Adult"
-58,3,15,"Lincoln, Juvenile"
-139,5,8,Washington
-231,3,2,Mountain View Correctional Facility
-144,5,13,Androscoggin
-71,5,8,Massachusetts
-16,2,4,"Wiscasset, Adult"
-167,5,9,Aroostook County Jail
-62,5,8,Ontario
-95,5,8,Illinois
-101,5,8,Kansas
-181,5,11,Puerto Rico
-91,5,8,Ohio
-99,5,8,Texas
-132,5,8,Oregon
-223,5,22,Any Minimum Facility
+48,2,15,"Farmington, Juvenile"
+83,5,8,North Carolina
+15,2,4,"West Bath, Adult"
+65,5,8,Alberta
+109,5,8,Arizona
+160,5,16,"Central Office, IT"
+195,2,19,Oxford County S O
+31,3,4,"Calais, Adult"
+4,1,2,Maine Correctional Center
 155,5,13,York (County)
 172,5,19,U.S. Marshal
 199,5,20,Governor's Report
 208,1,21,Treasurer of State - Med. Co-Pay
 217,5,9,Two Bridges Regional Jail
-10,1,4,Portland (Main Office)
-50,3,15,"Bangor (Main Office), Juvenile"
-38,2,15,"Lewiston (Main Office), Juvenile"
-142,5,13,Franklin
-64,5,8,Saskatchewan
-158,5,8,Quebec
-163,5,9,Kennebec County Jail
-168,5,9,Androscoggin County Jail
-61,5,8,Newfoundland
+133,5,8,Nevada
+19,2,4,"South Paris, Adult"
+3,3,2,Downeast Correctional Facility
+45,3,15,"Millinocket, Juvenile"
+59,3,15,"Dover-Foxcroft, Juvenile"
+14,2,4,"Bath, Adult"
+146,5,13,Kennebec
+36,1,15,"Biddeford, Juvenile"
+40,2,15,"Bath, Juvenile"
+70,5,8,Maine
+136,5,8,Iowa
+207,1,21,Treasurer of State - Industries
+215,3,21,OR MidCoast ReEntry Cntr (Waldo)
+27,3,4,"Caribou, Adult"
+209,1,21,Treasurer of State - Room&Board
+47,3,15,"Skowhegan, Juvenile"
+76,5,8,Connecticut
+216,1,4,"Naples, Adult"
+66,5,8,British Columbia
+26,3,4,"Ellsworth, Adult"
+177,5,9,York County Jail
+98,5,8,Louisiana
+107,5,8,Colorado
+175,5,9,Waldo County Jail
+238,2,15,"Brunswick, Juvenile"
+52,2,15,"Rumford, Juvenile"
+161,5,9,Lincoln County Jail
+162,5,9,Knox County Jail
+219,1,15,"Saco, Juvenile"
+29,3,4,"Newport, Adult"
+58,3,15,"Lincoln, Juvenile"
+5,3,2,Maine State Prison
+56,5,12,DHHS Representative
 12,1,4,"Springvale, Adult1"
 17,2,4,"Rockland (Region 2), Adult"
 197,5,4,Temp Society Out Adult
@@ -109,109 +63,155 @@ Ccs_Location_Id,Cis_9009_Region_Cd,Cis_9080_Ccs_Location_Type_Cd,Location_Name
 220,5,21,Treasurer of State - AP
 34,3,4,"Dover-Foxcroft, Adult"
 37,1,15,"Springvale, Juvenile"
-42,2,15,"Thomaston (Region 3), Juvenile"
-216,1,4,"Naples, Adult"
-66,5,8,British Columbia
-141,5,13,Cumberland
-159,5,1,"Central Office, Administration"
-203,5,1,Non-DOC Location
-51,3,15,"Ellsworth, Juvenile"
-80,5,8,Maryland
-81,5,8,Virginia
-227,5,22,Any Close Facility
-165,5,9,Somerset County Jail
-176,5,9,Washington County Jail
-182,5,11,Other Country
-2,3,2,Charleston Correctional Facility
-41,2,15,"Augusta, Juvenile"
-226,5,22,Any County Facility
 100,5,8,Oklahoma
 67,5,8,Yukon
 84,5,8,South Carolina
 93,5,8,Michigan
-190,1,7,Southern Maine Pre-Release
-198,5,15,Temp Society Out Juvenile
-92,5,8,Indiana
-14,2,4,"Bath, Adult"
-146,5,13,Kennebec
-36,1,15,"Biddeford, Juvenile"
-40,2,15,"Bath, Juvenile"
-70,5,8,Maine
-233,2,4,"Mexico, Adult"
-25,3,4,"Bangor (Main Office), Adult"
-49,3,15,"Bar Harbor, Juvenile"
-180,5,11,Federal
-73,5,8,New York
-15,2,4,"West Bath, Adult"
-65,5,8,Alberta
-1,2,2,Bolduc Correctional Facility
-30,3,4,"Belfast, Adult"
-68,5,8,North West Territories
-153,5,13,Somerset
-20,2,4,"Augusta (Main Office), Adult"
-212,4,16,Bangor Womens Center
-87,5,8,Alabama
-174,5,9,Sagadahoc County Jail
-5,3,2,Maine State Prison
-56,5,12,DHHS Representative
-26,3,4,"Ellsworth, Adult"
-102,5,8,Nebraska
-164,5,9,Hancock County Jail
-188,4,15,Group Home 4
-90,5,8,Kentucky
-200,5,20,Court
-202,5,12,Furlough Sponsor
-69,5,8,Nunavut
-143,5,13,Washington (County)
-225,5,22,Any Community Facility
-18,2,4,"Rumford, Adult"
-214,2,15,"Auburn (Main Office), Juvenile"
-6,3,7,Central Maine Pre-Release Center
-147,5,13,Knox
-171,5,9,Penobscot County Jail
-224,5,22,Any Medium Facility
-234,5,21,US District Court - Bangor
-46,3,15,"Presque Isle, Juvenile"
-74,5,8,Vermont
-191,3,15,"Calais, Juvenile"
-194,5,4,Non-committed adult
-105,5,8,Montana
-108,5,8,New Mexico
-170,5,9,Oxford County Jail
-221,2,15,"Rockland, Juvenile"
-77,5,8,New Jersey
-184,5,12,DOC Representative
-55,5,12,US Marshal
-89,5,8,Tennessee
+205,1,21,DHHS
+232,2,15,"Mexico, Juvenile"
 187,3,15,Group Home 3
 189,4,7,Bangor Pre-Release Center
 204,5,21,Treasurer of State
 206,1,21,Secretary of State
-48,2,15,"Farmington, Juvenile"
-83,5,8,North Carolina
-186,2,15,Group Home 2
-236,1,4,"Springvale, Adult"
-7,1,3,Mountain View Youth Center
-109,5,8,Arizona
-160,5,16,"Central Office, IT"
-195,2,19,Oxford County S O
-31,3,4,"Calais, Adult"
-4,1,2,Maine Correctional Center
-44,2,15,"Damariscotta, Juvenile"
-24,3,4,"Rockland (Region 3), Adult"
-86,5,8,Florida
-209,1,21,Treasurer of State - Room&Board
-47,3,15,"Skowhegan, Juvenile"
-76,5,8,Connecticut
+38,2,15,"Lewiston (Main Office), Juvenile"
+71,5,8,Massachusetts
+227,5,22,Any Close Facility
+154,5,13,Waldo
+185,1,15,Group Home 1
+9,5,14,Locked
+16,2,4,"Wiscasset, Adult"
+167,5,9,Aroostook County Jail
+62,5,8,Ontario
+95,5,8,Illinois
+145,5,13,Hancock
 150,5,13,Penobscot
 173,5,9,Piscataquis County Jail
 222,1,16,Southern Maine Women's ReEntry Center
 43,3,15,"Belfast, Juvenile"
-103,5,8,North Dakota
-28,3,4,"Houlton, Adult"
+106,5,8,Wyoming
+134,5,8,California
+21,2,4,"Waterville, Adult"
+237,2,15,"Manchester, Juvenile"
+1,2,2,Bolduc Correctional Facility
+184,5,12,DOC Representative
+200,5,20,Court
+202,5,12,Furlough Sponsor
+69,5,8,Nunavut
+190,1,7,Southern Maine Pre-Release
+198,5,15,Temp Society Out Juvenile
+92,5,8,Indiana
+8,1,3,Long Creek Youth Center
+174,5,9,Sagadahoc County Jail
+148,5,13,Lincoln
+179,5,11,US Territory
+229,1,2,Mountain View Adult Center
+88,5,8,Mississippi
+30,3,4,"Belfast, Adult"
+68,5,8,North West Territories
+153,5,13,Somerset
+20,2,4,"Augusta (Main Office), Adult"
+96,5,8,Missouri
+147,5,13,Knox
+171,5,9,Penobscot County Jail
+139,5,8,Washington
+231,3,2,Mountain View Correctional Facility
+10,1,4,Portland (Main Office)
+50,3,15,"Bangor (Main Office), Juvenile"
+135,5,8,Minnesota
+151,5,13,Piscataquis
+104,5,8,South Dakota
+131,5,8,Idaho
+228,5,8,US Virgin Islands
+39,2,15,"South Paris, Juvenile"
+132,5,8,Oregon
+223,5,22,Any Minimum Facility
+212,4,16,Bangor Womens Center
+87,5,8,Alabama
+163,5,9,Kennebec County Jail
+192,5,19,Federal.
+196,2,13,Oxford County
+170,5,9,Oxford County Jail
+221,2,15,"Rockland, Juvenile"
+77,5,8,New Jersey
+140,5,13,Aroostook
+213,5,8,PuertoRico
+54,2,15,"Waterville, Juvenile"
+101,5,8,Kansas
+181,5,11,Puerto Rico
+91,5,8,Ohio
+99,5,8,Texas
+152,5,13,Sagadahoc
+235,5,21,US District Court - Portland
+44,2,15,"Damariscotta, Juvenile"
+180,5,11,Federal
+73,5,8,New York
+193,5,15,Non-committed juvenile
+60,5,8,Prince Edward Island
+75,5,8,Rhode Island
+191,3,15,"Calais, Juvenile"
+194,5,4,Non-committed adult
+42,2,15,"Thomaston (Region 3), Juvenile"
+11,1,4,"Biddeford, Adult"
+137,5,8,Alaska
+138,5,8,Hawaii
+63,5,8,Manitoba
+55,5,12,US Marshal
+89,5,8,Tennessee
+168,5,9,Androscoggin County Jail
+61,5,8,Newfoundland
+13,2,4,"Lewiston (Main Office), Adult"
+82,5,8,West Virginia
+94,5,8,Wisconsin
+74,5,8,Vermont
+178,5,14,Deceased
+32,3,4,"Machias, Adult"
+57,3,15,"Machias, Juvenile"
+97,5,8,Arkansas
+158,5,8,Quebec
+226,5,22,Any County Facility
+156,5,8,Nova Scotia
+53,3,15,"Houlton, Juvenile"
+142,5,13,Franklin
+64,5,8,Saskatchewan
+176,5,9,Washington County Jail
+182,5,11,Other Country
+2,3,2,Charleston Correctional Facility
+41,2,15,"Augusta, Juvenile"
+201,5,20,Compact
+78,5,8,Pennsylvania
+183,5,8,District of Columbia
 157,5,8,New Brunswick
 218,5,9,Mid-Coast ReEntry (Waldo)
 230,3,4,"Presque Isle, Adult"
 33,3,4,"Lincoln, Adult"
 35,1,15,"South Portland (Main Office), Juvenile"
 85,5,8,Georgia
+144,5,13,Androscoggin
+102,5,8,Nebraska
+164,5,9,Hancock County Jail
+188,4,15,Group Home 4
+90,5,8,Kentucky
+166,5,9,Cumberland County Jail
+22,2,4,"Skowhegan, Adult"
+23,2,4,"Farmington, Adult"
+79,5,8,Delaware
+224,5,22,Any Medium Facility
+234,5,21,US District Court - Bangor
+46,3,15,"Presque Isle, Juvenile"
+24,3,4,"Rockland (Region 3), Adult"
+86,5,8,Florida
+141,5,13,Cumberland
+159,5,1,"Central Office, Administration"
+203,5,1,Non-DOC Location
+51,3,15,"Ellsworth, Juvenile"
+80,5,8,Maryland
+81,5,8,Virginia
+211,5,13,Two Bridges Regional
+186,2,15,Group Home 2
+236,1,4,"Springvale, Adult"
+7,1,3,Mountain View Youth Center
+18,2,4,"Rumford, Adult"
+214,2,15,"Auburn (Main Office), Juvenile"
+6,3,7,Central Maine Pre-Release Center
+143,5,13,Washington (County)
+225,5,22,Any Community Facility

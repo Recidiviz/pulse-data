@@ -1,11 +1,11 @@
 E_Movement_Type_Desc,Movement_Type_Cd
 Discharge,7
-Furlough,1
-Release,8
-Sentence/Disposition,2
 Transfer,3
-Community Transition,9
 Furlough Hospital,10
-Transport,5
 Escape,6
 Detention,4
+Sentence/Disposition,2
+Community Transition,9
+Release,8
+Furlough,1
+Transport,5

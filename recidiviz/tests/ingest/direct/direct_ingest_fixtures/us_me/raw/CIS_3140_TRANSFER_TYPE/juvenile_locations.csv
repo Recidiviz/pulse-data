@@ -1,14 +1,14 @@
 E_Trans_Type_Desc,Transfer_Type_Cd
-Society In,12
-DOC County Jail Return From,10
-DOC Interstate Compact Out,5
 Society Out,13
-DOC Interstate Active Detainer Return,6
-DOC Transfer,1
-DOC Interstate Active Detainer Out,7
 Non-DOC In,2
-DOC County Jail Out,11
-Non-DOC County Jail In,8
+DOC Interstate Active Detainer Return,6
 Non-DOC Out,4
+DOC Interstate Active Detainer Out,7
+Non-DOC County Jail In,8
+DOC County Jail Return From,10
 Non-DOC County Jail Out,9
+Society In,12
+DOC Interstate Compact Out,5
+DOC County Jail Out,11
 DOC Interstate Compact Return From/In,3
+DOC Transfer,1
