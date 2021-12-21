@@ -154,7 +154,6 @@ from recidiviz.ingest.models.ingest_info import (
     StateEarlyDischarge,
     StateIncarcerationPeriod,
     StateIncarcerationSentence,
-    StateSentenceGroup,
     StateSupervisionCaseTypeEntry,
     StateSupervisionContact,
     StateSupervisionPeriod,
@@ -1001,7 +1000,6 @@ class UsIdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         if not person_id:
             person_id = row.get("ofndr_num", "")
 
-        sentence_group_id = row.get("incrno", "")
         mittimus_id = row.get("mitt_srl", "")
         sentence_id = row.get("sent_no", "")
         court_case_id = row.get("caseno", "")
@@ -1011,9 +1009,6 @@ class UsIdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         early_discharge_sent_id = row.get("early_discharge_sent_id", "")
 
         for obj in extracted_objects:
-            if isinstance(obj, StateSentenceGroup):
-                obj.state_sentence_group_id = f"{person_id}-{sentence_group_id}"
-
             if isinstance(obj, StateIncarcerationSentence):
                 obj.state_incarceration_sentence_id = (
                     f"{person_id}-{mittimus_id}-{sentence_id}"

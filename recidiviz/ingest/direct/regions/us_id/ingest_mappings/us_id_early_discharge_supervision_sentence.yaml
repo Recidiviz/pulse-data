@@ -6,8 +6,6 @@ key_mappings:
 child_key_mappings:
   ofndr_num: state_person_external_id.state_person_external_id_id
 
-  incrno: state_sentence_group.state_sentence_group_id
-
   # TODO(#9387): We overwrite state_supervision_sentence_id in the controller, but this is here because otherwise
   #  the supervision_sentence isn't added to our extracted objects cache.
   sent_no: state_supervision_sentence.state_supervision_sentence_id
@@ -45,6 +43,7 @@ keys_to_ignore:
   - fine_curr_bal                     # Unused - current fine balance
   - fine_init_bal                     # Unused - initial fine balance
   - fine_last_pymnt_dt                # Unused - last date a fine payment was made
+  - incrno                            # Unused - Incarceration number
   - initial_lsir_id                   # Unused - test id of the person's initial LSIR assessment
   - juris_auth_sbmt_dt                # Unused - date that the request was sent to the jurisdiction authority
                                       #          TODO(#3506): Validate that this is correct
