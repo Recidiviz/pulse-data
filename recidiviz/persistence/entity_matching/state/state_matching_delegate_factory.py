@@ -41,9 +41,9 @@ from recidiviz.persistence.entity_matching.state.us_tn.us_tn_matching_delegate i
 
 
 class StateMatchingDelegateFactory:
-    @classmethod
+    @staticmethod
     def build(
-        cls, *, region_code: str, ingest_metadata: IngestMetadata
+        *, region_code: str, ingest_metadata: IngestMetadata
     ) -> BaseStateMatchingDelegate:
         if region_code.upper() == "US_ID":
             return UsIdMatchingDelegate(ingest_metadata)
