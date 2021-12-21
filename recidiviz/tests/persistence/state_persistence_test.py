@@ -23,7 +23,6 @@ from unittest import TestCase
 import pytest
 from mock import Mock, patch
 
-from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
 from recidiviz.persistence import persistence
 from recidiviz.persistence.database.database_entity import DatabaseEntity
@@ -35,11 +34,7 @@ from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.entity.state.entities import (
-    StatePerson,
-    StatePersonExternalId,
-    StateSentenceGroup,
-)
+from recidiviz.persistence.entity.state.entities import StatePersonExternalId
 from recidiviz.persistence.entity_matching.entity_matching_types import (
     EntityTree,
     IndividualMatchResult,
@@ -47,8 +42,8 @@ from recidiviz.persistence.entity_matching.entity_matching_types import (
 from recidiviz.persistence.entity_matching.state.state_entity_matcher import (
     StateEntityMatcher,
 )
-from recidiviz.persistence.entity_matching.state.state_matching_delegate_factory import (
-    StateMatchingDelegateFactory,
+from recidiviz.persistence.entity_matching.templates.us_xx.us_xx_matching_delegate import (
+    UsXxMatchingDelegate,
 )
 from recidiviz.persistence.errors import EntityMatchingError
 from recidiviz.persistence.ingest_info_converter.base_converter import (
@@ -65,10 +60,10 @@ from recidiviz.tools.postgres import local_postgres_helpers
 EXTERNAL_ID = "EXTERNAL_ID"
 EXTERNAL_ID_2 = "EXTERNAL_ID_2"
 FULL_NAME_1 = "TEST_FULL_NAME_1"
-STATE_CODE = "US_ND"
+STATE_CODE = "US_XX"
 COUNTY_CODE = "COUNTY"
 DEFAULT_METADATA = IngestMetadata(
-    region="us_nd",
+    region="us_xx",
     system_level=SystemLevel.STATE,
     ingest_time=datetime(year=1000, month=1, day=1),
     database_key=SQLAlchemyDatabaseKey.canonical_for_schema(
@@ -80,10 +75,10 @@ ID = 1
 ID_2 = 2
 ID_3 = 3
 ID_4 = 4
-SENTENCE_GROUP_ID = "SG1"
-SENTENCE_GROUP_ID_2 = "SG2"
-SENTENCE_GROUP_ID_3 = "SG3"
-SENTENCE_GROUP_ID_4 = "SG4"
+INCARCERATION_PERIOD_ID = "IP1"
+INCARCERATION_PERIOD_ID_2 = "IP2"
+INCARCERATION_PERIOD_ID_3 = "IP3"
+INCARCERATION_PERIOD_ID_4 = "IP4"
 
 STATE_ERROR_THRESHOLDS_WITH_FORTY_PERCENT_RATIOS = {
     SystemLevel.STATE: {
@@ -106,7 +101,7 @@ STATE_CODE_TO_ENTITY_MATCHING_THRESHOLD_OVERRIDE_FAKE_PROJECT: Dict[
 
 STATE_CODE_TO_ENTITY_MATCHING_THRESHOLD_FORTY_PERCENT = {
     FAKE_PROJECT_ID: {
-        "US_ND": 0.4,
+        STATE_CODE: 0.4,
     }
 }
 
@@ -114,13 +109,8 @@ STATE_CODE_TO_ENTITY_MATCHING_THRESHOLD_FORTY_PERCENT = {
 class _PatchedStateEntityMatcher(StateEntityMatcher):
     """Subclass of StateEntityMatcher which will throw entity matching errors for certain objects."""
 
-    def __init__(
-        self, region_code: str, erroring_class: Type, erroring_external_ids: List[str]
-    ):
-        state_matching_delegate = StateMatchingDelegateFactory.build(
-            region_code=region_code,
-            ingest_metadata=DEFAULT_METADATA,
-        )
+    def __init__(self, erroring_class: Type, erroring_external_ids: List[str]):
+        state_matching_delegate = UsXxMatchingDelegate(ingest_metadata=DEFAULT_METADATA)
         super().__init__(state_matching_delegate)
         self.erroring_external_ids = erroring_external_ids
         self.erroring_class = erroring_class
@@ -206,48 +196,53 @@ class TestStatePersistence(TestCase):
         STATE_ERROR_THRESHOLDS_WITH_FORTY_PERCENT_RATIOS,
     )
     @patch("recidiviz.persistence.entity_matching.entity_matching._get_matcher")
-    def test_state_threeSentenceGroups_dontPersistAboveThreshold(
+    def test_state_threeIncarcerationPeriods_dontPersistAboveThreshold(
         self, mock_get_matcher
     ):
         # Arrange
         mock_get_matcher.return_value = _PatchedStateEntityMatcher(
-            region_code=STATE_CODE,
-            erroring_class=schema.StateSentenceGroup,
-            erroring_external_ids=[SENTENCE_GROUP_ID, SENTENCE_GROUP_ID_4],
+            erroring_class=schema.StateIncarcerationPeriod,
+            erroring_external_ids=[INCARCERATION_PERIOD_ID, INCARCERATION_PERIOD_ID_4],
         )
 
         # Arrange
         person_1 = entities.StatePerson.new_with_defaults(
             state_code=STATE_CODE,
-            sentence_groups=[
-                entities.StateSentenceGroup.new_with_defaults(
+            external_ids=[
+                StatePersonExternalId.new_with_defaults(
+                    state_code=STATE_CODE, external_id=EXTERNAL_ID, id_type=ID_TYPE
+                )
+            ],
+            incarceration_periods=[
+                entities.StateIncarcerationPeriod.new_with_defaults(
                     state_code=STATE_CODE,
-                    external_id=SENTENCE_GROUP_ID,
+                    external_id=INCARCERATION_PERIOD_ID,
                     county_code=COUNTY_CODE,
-                    status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
                 ),
-                entities.StateSentenceGroup.new_with_defaults(
+                entities.StateIncarcerationPeriod.new_with_defaults(
                     state_code=STATE_CODE,
-                    external_id=SENTENCE_GROUP_ID_2,
+                    external_id=INCARCERATION_PERIOD_ID_2,
                     county_code=COUNTY_CODE,
-                    status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
                 ),
             ],
         )
         person_2 = entities.StatePerson.new_with_defaults(
             state_code=STATE_CODE,
-            sentence_groups=[
-                entities.StateSentenceGroup.new_with_defaults(
+            external_ids=[
+                StatePersonExternalId.new_with_defaults(
+                    state_code=STATE_CODE, external_id=EXTERNAL_ID_2, id_type=ID_TYPE
+                )
+            ],
+            incarceration_periods=[
+                entities.StateIncarcerationPeriod.new_with_defaults(
                     state_code=STATE_CODE,
-                    external_id=SENTENCE_GROUP_ID_3,
+                    external_id=INCARCERATION_PERIOD_ID_3,
                     county_code=COUNTY_CODE,
-                    status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
                 ),
-                entities.StateSentenceGroup(
+                entities.StateIncarcerationPeriod.new_with_defaults(
                     state_code=STATE_CODE,
-                    external_id=SENTENCE_GROUP_ID_4,
+                    external_id=INCARCERATION_PERIOD_ID_4,
                     county_code=COUNTY_CODE,
-                    status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
                 ),
             ],
         )
@@ -255,16 +250,14 @@ class TestStatePersistence(TestCase):
         db_person = schema.StatePerson(
             person_id=ID, full_name=FULL_NAME_1, state_code=STATE_CODE
         )
-        db_sentence_group = schema.StateSentenceGroup(
-            sentence_group_id=ID,
-            status=StateSentenceStatus.EXTERNAL_UNKNOWN.value,
-            external_id=SENTENCE_GROUP_ID,
+        db_incarceration_period = schema.StateIncarcerationPeriod(
+            incarceration_period_id=ID,
+            external_id=INCARCERATION_PERIOD_ID,
             state_code=STATE_CODE,
         )
-        db_sentence_group_2 = schema.StateSentenceGroup(
-            sentence_group_id=ID_2,
-            status=StateSentenceStatus.EXTERNAL_UNKNOWN.value,
-            external_id=SENTENCE_GROUP_ID_2,
+        db_incarceration_period_2 = schema.StateIncarcerationPeriod(
+            incarceration_period_id=ID_2,
+            external_id=INCARCERATION_PERIOD_ID_2,
             state_code=STATE_CODE,
         )
         db_external_id = schema.StatePersonExternalId(
@@ -273,16 +266,18 @@ class TestStatePersistence(TestCase):
             external_id=EXTERNAL_ID,
             id_type=ID_TYPE,
         )
-        db_person.sentence_groups = [db_sentence_group, db_sentence_group_2]
+        db_person.incarceration_periods = [
+            db_incarceration_period,
+            db_incarceration_period_2,
+        ]
         db_person.external_ids = [db_external_id]
 
         db_person_2 = schema.StatePerson(
             person_id=ID_2, full_name=FULL_NAME_1, state_code=STATE_CODE
         )
-        db_sentence_group_3 = schema.StateSentenceGroup(
-            sentence_group_id=ID_3,
-            status=StateSentenceStatus.EXTERNAL_UNKNOWN.value,
-            external_id=SENTENCE_GROUP_ID_3,
+        db_incarceration_period_3 = schema.StateIncarcerationPeriod(
+            incarceration_period_id=ID_3,
+            external_id=INCARCERATION_PERIOD_ID_3,
             state_code=STATE_CODE,
         )
         db_external_id_2 = schema.StatePersonExternalId(
@@ -292,7 +287,7 @@ class TestStatePersistence(TestCase):
             id_type=ID_TYPE,
         )
         db_person_2.external_ids = [db_external_id_2]
-        db_person_2.sentence_groups = [db_sentence_group_3]
+        db_person_2.incarceration_periods = [db_incarceration_period_3]
 
         # No updates
         expected_person = self.to_entity(db_person)
@@ -335,42 +330,55 @@ class TestStatePersistence(TestCase):
         STATE_CODE_TO_ENTITY_MATCHING_THRESHOLD_FORTY_PERCENT,
     )
     @patch("recidiviz.persistence.entity_matching.entity_matching._get_matcher")
-    def test_state_threeSentenceGroups_persistsTwoBelowThreshold(
+    def test_state_threeIncarcerationPeriods_persistsTwoBelowThreshold(
         self, mock_get_matcher
     ):
-        """Ensure that the number of errors is below the ND specific threshold"""
+        """Ensure that the number of errors is below the state-specific threshold"""
         mock_get_matcher.return_value = _PatchedStateEntityMatcher(
-            region_code=STATE_CODE,
-            erroring_class=schema.StateSentenceGroup,
-            erroring_external_ids=[SENTENCE_GROUP_ID],
+            erroring_class=schema.StateIncarcerationPeriod,
+            erroring_external_ids=[INCARCERATION_PERIOD_ID],
         )
 
         # Set the ENTITY_MATCHING_THRESHOLD to 0, such that we can verify that the forty percent threshold for
         # ENTITY_MATCHING_THRESHOLD is dictated by the state-specific override in
         # STATE_CODE_TO_ENTITY_MATCHING_THRESHOLD_FORTY_PERCENT.
-        STATE_ERROR_THRESHOLDS_WITH_FORTY_PERCENT_RATIOS[ENTITY_MATCHING_THRESHOLD] = 0
+        STATE_ERROR_THRESHOLDS_WITH_FORTY_PERCENT_RATIOS[SystemLevel.STATE][
+            ENTITY_MATCHING_THRESHOLD
+        ] = 0
 
         # Arrange
-        person = entities.StatePerson.new_with_defaults(
+        person_1 = entities.StatePerson.new_with_defaults(
             state_code=STATE_CODE,
-            sentence_groups=[
-                entities.StateSentenceGroup(
+            external_ids=[
+                StatePersonExternalId.new_with_defaults(
+                    state_code=STATE_CODE, external_id=EXTERNAL_ID, id_type=ID_TYPE
+                )
+            ],
+            incarceration_periods=[
+                entities.StateIncarcerationPeriod.new_with_defaults(
                     state_code=STATE_CODE,
-                    external_id=SENTENCE_GROUP_ID,
+                    external_id=INCARCERATION_PERIOD_ID,
                     county_code=COUNTY_CODE,
-                    status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
                 ),
-                entities.StateSentenceGroup(
+                entities.StateIncarcerationPeriod.new_with_defaults(
                     state_code=STATE_CODE,
-                    external_id=SENTENCE_GROUP_ID_2,
+                    external_id=INCARCERATION_PERIOD_ID_2,
                     county_code=COUNTY_CODE,
-                    status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
                 ),
-                entities.StateSentenceGroup(
+            ],
+        )
+        person_2 = entities.StatePerson.new_with_defaults(
+            state_code=STATE_CODE,
+            external_ids=[
+                StatePersonExternalId.new_with_defaults(
+                    state_code=STATE_CODE, external_id=EXTERNAL_ID_2, id_type=ID_TYPE
+                )
+            ],
+            incarceration_periods=[
+                entities.StateIncarcerationPeriod.new_with_defaults(
                     state_code=STATE_CODE,
-                    external_id=SENTENCE_GROUP_ID_3,
+                    external_id=INCARCERATION_PERIOD_ID_3,
                     county_code=COUNTY_CODE,
-                    status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
                 ),
             ],
         )
@@ -378,16 +386,14 @@ class TestStatePersistence(TestCase):
         db_person = schema.StatePerson(
             person_id=ID, full_name=FULL_NAME_1, state_code=STATE_CODE
         )
-        db_sentence_group = schema.StateSentenceGroup(
-            sentence_group_id=ID,
-            status=StateSentenceStatus.EXTERNAL_UNKNOWN.value,
-            external_id=SENTENCE_GROUP_ID,
+        db_incarceration_period = schema.StateIncarcerationPeriod(
+            incarceration_period_id=ID,
+            external_id=INCARCERATION_PERIOD_ID,
             state_code=STATE_CODE,
         )
-        db_sentence_group_2 = schema.StateSentenceGroup(
-            sentence_group_id=ID_2,
-            status=StateSentenceStatus.EXTERNAL_UNKNOWN.value,
-            external_id=SENTENCE_GROUP_ID_2,
+        db_incarceration_period_2 = schema.StateIncarcerationPeriod(
+            incarceration_period_id=ID_2,
+            external_id=INCARCERATION_PERIOD_ID_2,
             state_code=STATE_CODE,
         )
         db_external_id = schema.StatePersonExternalId(
@@ -396,16 +402,18 @@ class TestStatePersistence(TestCase):
             external_id=EXTERNAL_ID,
             id_type=ID_TYPE,
         )
-        db_person.sentence_groups = [db_sentence_group, db_sentence_group_2]
+        db_person.incarceration_periods = [
+            db_incarceration_period,
+            db_incarceration_period_2,
+        ]
         db_person.external_ids = [db_external_id]
 
         db_person_2 = schema.StatePerson(
             person_id=ID_2, full_name=FULL_NAME_1, state_code=STATE_CODE
         )
-        db_sentence_group_3 = schema.StateSentenceGroup(
-            sentence_group_id=ID_3,
-            status=StateSentenceStatus.EXTERNAL_UNKNOWN.value,
-            external_id=SENTENCE_GROUP_ID_3,
+        db_incarceration_period_3 = schema.StateIncarcerationPeriod(
+            incarceration_period_id=ID_3,
+            external_id=INCARCERATION_PERIOD_ID_3,
             state_code=STATE_CODE,
         )
         db_external_id_2 = schema.StatePersonExternalId(
@@ -415,70 +423,17 @@ class TestStatePersistence(TestCase):
             id_type=ID_TYPE,
         )
         db_person_2.external_ids = [db_external_id_2]
-        db_person_2.sentence_groups = [db_sentence_group_3]
+        db_person_2.incarceration_periods = [db_incarceration_period_3]
+
+        # No updates
+        expected_person = self.to_entity(db_person)
+        expected_person_2 = self.to_entity(db_person_2)
 
         with SessionFactory.using_database(self.database_key) as session:
             session.add(db_person)
             session.add(db_person_2)
 
-        expected_person = StatePerson.new_with_defaults(
-            person_id=ID,
-            full_name=FULL_NAME_1,
-            external_ids=[],
-            sentence_groups=[],
-            state_code=STATE_CODE,
-        )
-        expected_external_id = StatePersonExternalId.new_with_defaults(
-            person_external_id_id=ID,
-            state_code=STATE_CODE,
-            external_id=EXTERNAL_ID,
-            id_type=ID_TYPE,
-            person=expected_person,
-        )
-        # No county code because errors during match
-        expected_sentence_group = StateSentenceGroup.new_with_defaults(
-            sentence_group_id=ID,
-            status=StateSentenceStatus.EXTERNAL_UNKNOWN,
-            external_id=SENTENCE_GROUP_ID,
-            state_code=STATE_CODE,
-            person=expected_person,
-        )
-        expected_sentence_group_2 = StateSentenceGroup.new_with_defaults(
-            sentence_group_id=ID_2,
-            status=StateSentenceStatus.EXTERNAL_UNKNOWN,
-            external_id=SENTENCE_GROUP_ID_2,
-            state_code=STATE_CODE,
-            county_code=COUNTY_CODE,
-            person=expected_person,
-        )
-        expected_person.external_ids = [expected_external_id]
-        expected_person.sentence_groups = [
-            expected_sentence_group,
-            expected_sentence_group_2,
-        ]
-
-        expected_person_2 = StatePerson.new_with_defaults(
-            person_id=ID_2, full_name=FULL_NAME_1, state_code=STATE_CODE
-        )
-        expected_external_id_2 = StatePersonExternalId.new_with_defaults(
-            person_external_id_id=ID_2,
-            state_code=STATE_CODE,
-            external_id=EXTERNAL_ID_2,
-            id_type=ID_TYPE,
-            person=expected_person_2,
-        )
-        expected_sentence_group_3 = StateSentenceGroup.new_with_defaults(
-            sentence_group_id=ID_3,
-            status=StateSentenceStatus.EXTERNAL_UNKNOWN,
-            external_id=SENTENCE_GROUP_ID_3,
-            state_code=STATE_CODE,
-            county_code=COUNTY_CODE,
-            person=expected_person_2,
-        )
-        expected_person_2.sentence_groups = [expected_sentence_group_3]
-        expected_person_2.external_ids = [expected_external_id_2]
-
-        parsed_entities = [person]
+        parsed_entities = [person_1, person_2]
         # Act
         persistence.write_entities(
             conversion_result=EntityDeserializationResult(
@@ -497,6 +452,7 @@ class TestStatePersistence(TestCase):
             # Assert
             persons = dao.read_people(session)
 
+            self.maxDiff = None
             self.assertEqual(
                 [expected_person, expected_person_2],
                 converter.convert_schema_objects_to_entity(persons),

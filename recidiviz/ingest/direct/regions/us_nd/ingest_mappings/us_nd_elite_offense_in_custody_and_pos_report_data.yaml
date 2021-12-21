@@ -6,7 +6,6 @@ key_mappings:
 
 ancestor_keys:
   ROOT_OFFENDER_ID: state_person.state_person_id
-  OFFENDER_BOOK_ID: state_sentence_group.sentence_group_id
 
 child_key_mappings:
   OIC_SANCTION_CODE: state_incarceration_incident_outcome.outcome_type
@@ -48,3 +47,4 @@ keys_to_ignore:
   - EFFECTIVE_DATE                                  # Referenced manually in scraper to inform punishment_length_days
   - OMS_OWNER_V_OFFENDER_OIC_SANCTIONS_RESULT_SEQ   # Unused, same info as OMS_OWNER_V_OIC_HEARING_RESULTS_RESULT_SEQ
   - ALIAS_NAME_TYPE                                 # Provided by Aliases file
+  - OFFENDER_BOOK_ID                                # Unused - connected to person via ROOT_OFFENDER_ID

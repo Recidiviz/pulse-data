@@ -33,7 +33,7 @@ from recidiviz.tests.persistence.database.database_test_utils import (
     FakeLegacyStateAndJailsIngestMetadata,
 )
 
-METADATA = FakeLegacyStateAndJailsIngestMetadata.for_state("us_nd")
+METADATA = FakeLegacyStateAndJailsIngestMetadata.for_state("us_xx")
 
 
 class StateSentenceGroupConverterTest(unittest.TestCase):
@@ -64,7 +64,7 @@ class StateSentenceGroupConverterTest(unittest.TestCase):
             status_raw_text="SUSPENDED",
             external_id="GROUP_ID",
             date_imposed=date(year=2111, month=1, day=2),
-            state_code="US_ND",
+            state_code="US_XX",
             county_code="CO",
             min_length_days=200,
             max_length_days=600,

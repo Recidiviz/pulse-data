@@ -199,8 +199,6 @@ class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             str, AncestorChainOverridesCallable
         ] = {
             "elite_offenderchargestable": _state_charge_ancestor_chain_overrides,
-            "elite_offendersentences": _state_person_ancestor_chain_overrides,
-            "elite_orderstable": _state_person_ancestor_chain_overrides,
         }
 
     def get_file_tag_rank_list(self) -> List[str]:
@@ -874,16 +872,7 @@ def _state_charge_ancestor_chain_overrides(
     # charges and sentences, so the CHARGE_SEQ and SENTENCE_SEQ numbers can be used interchangeably.
     return {
         "state_incarceration_sentence": _generate_charge_id(row),
-        "state_person": _generate_person_book_id(row),
     }
-
-
-def _state_person_ancestor_chain_overrides(
-    _gating_context: IngestGatingContext, row: Dict[str, str]
-) -> Dict[str, str]:
-    """This is used for views that do not have StatePerson as an ancestor. Connects
-    entities to the person via the US_ND_ELITE_BOOKING id."""
-    return {"state_person": _generate_person_book_id(row)}
 
 
 def _parse_charge_classification(
