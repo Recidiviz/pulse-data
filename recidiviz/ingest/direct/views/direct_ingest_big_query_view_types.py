@@ -293,7 +293,7 @@ class DirectIngestRawDataTableLatestView(DirectIngestRawDataTableBigQueryView):
         project_id: str = None,
         region_code: str,
         raw_file_config: DirectIngestRawFileConfig,
-        dataset_overrides: Optional[Dict[str, str]],
+        dataset_overrides: Optional[Dict[str, str]] = None,
     ):
         view_id = f"{raw_file_config.file_tag}_latest"
         description = f"{raw_file_config.file_tag} latest view"
