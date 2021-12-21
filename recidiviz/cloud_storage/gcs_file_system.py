@@ -180,6 +180,10 @@ class GCSFileSystem:
         contents are read, verifies that the checksum is correct (or raises).
         """
 
+    @abc.abstractmethod
+    def rename_blob(self, path: GcsfsFilePath, new_path: GcsfsFilePath) -> None:
+        """Renames the blob on the GCS File System"""
+
 
 def retry_predicate(exception: Exception) -> Callable[[Exception], bool]:
     """"A function that will determine whether we should retry a given Google exception."""
@@ -415,3 +419,21 @@ class GCSFileSystemImpl(GCSFileSystem):
                 yield TextIOWrapper(buffer=verifiable_reader, encoding=encoding)
             finally:
                 verifiable_reader.verify_crc32c(blob.crc32c)
+
+    @retry.Retry(predicate=retry_predicate)
+    def rename_blob(self, path: GcsfsFilePath, new_path: GcsfsFilePath) -> None:
+        """Renames a blob."""
+        blob = self._get_blob(path)
+        bucket = self.storage_client.bucket(path.bucket_name)
+
+        try:
+            bucket.rename_blob(blob, new_path.abs_path())
+        except GCSBlobDoesNotExistError:
+            logging.info(
+                "Could not rename blob [%s], file does not exist on path [%s].",
+                blob.name,
+                path,
+            )
+            return
+
+        logging.info("Blob [%s] renamed to [%s]", blob.name, new_path.abs_path())
