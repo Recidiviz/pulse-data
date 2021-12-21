@@ -96,7 +96,6 @@ from recidiviz.ingest.models.ingest_info import (
     StatePersonEthnicity,
     StatePersonExternalId,
     StatePersonRace,
-    StateSentenceGroup,
     StateSupervisionCaseTypeEntry,
     StateSupervisionContact,
     StateSupervisionPeriod,
@@ -355,14 +354,6 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                             ],
                         ),
                     ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_sentence_group_id="1111-1",
-                        ),
-                        StateSentenceGroup(
-                            state_sentence_group_id="1111-2",
-                        ),
-                    ],
                 ),
                 StatePerson(
                     state_person_id="2222",
@@ -394,11 +385,6 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                                 )
                             ],
                         )
-                    ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_sentence_group_id="2222-1",
-                        ),
                     ],
                 ),
             ]
@@ -445,11 +431,6 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                             ],
                         )
                     ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_sentence_group_id="1111-2",
-                        ),
-                    ],
                 ),
                 StatePerson(
                     state_person_id="2222",
@@ -484,11 +465,6 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                             ],
                         )
                     ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_sentence_group_id="2222-1",
-                        ),
-                    ],
                 ),
                 StatePerson(
                     state_person_id="3333",
@@ -518,11 +494,6 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                                 )
                             ],
                         )
-                    ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_sentence_group_id="3333-1",
-                        ),
                     ],
                 ),
             ]
@@ -566,11 +537,6 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                             ],
                         )
                     ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_sentence_group_id="1111-2",
-                        ),
-                    ],
                 ),
             ]
         )
@@ -612,11 +578,6 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                             ],
                         )
                     ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_sentence_group_id="3333-1",
-                        ),
-                    ],
                 ),
             ]
         )
@@ -648,11 +609,6 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                             ],
                         )
                     ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_sentence_group_id="1111-2",
-                        ),
-                    ],
                 ),
             ]
         )
@@ -682,11 +638,6 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                                 ),
                             ],
                         )
-                    ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_sentence_group_id="3333-1",
-                        ),
                     ],
                 ),
             ]
@@ -1434,12 +1385,6 @@ class TestUsIdController(BaseDirectIngestControllerTests):
         # MITTIMUS_JUDGE_SENTENCE_OFFENSE_SENTPROB_INCARCERATION_SENTENCES
         ###################################################################
         # Arrange
-        sg_1111_1 = entities.StateSentenceGroup.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            external_id="1111-1",
-            person=person_1,
-        )
         is_1111_1 = entities.StateIncarcerationSentence.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id="1111-1-1",
@@ -1470,16 +1415,9 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             incarceration_sentences=[is_1111_1],
             person=is_1111_1.person,
         )
-        person_1.sentence_groups.append(sg_1111_1)
         person_1.incarceration_sentences.append(is_1111_1)
         is_1111_1.charges.append(c_1111_1)
 
-        sg_1111_2 = entities.StateSentenceGroup.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            external_id="1111-2",
-            person=person_1,
-        )
         is_1111_3 = entities.StateIncarcerationSentence.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id="1111-2-3",
@@ -1506,16 +1444,9 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             incarceration_sentences=[is_1111_3],
             person=is_1111_3.person,
         )
-        person_1.sentence_groups.append(sg_1111_2)
         person_1.incarceration_sentences.append(is_1111_3)
         is_1111_3.charges.append(c_1111_3)
 
-        sg_2222_1 = entities.StateSentenceGroup.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            external_id="2222-1",
-            person=person_2,
-        )
         is_2222_2 = entities.StateIncarcerationSentence.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id="2222-3-2",
@@ -1544,7 +1475,6 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             incarceration_sentences=[is_2222_2],
             person=is_2222_2.person,
         )
-        person_2.sentence_groups.append(sg_2222_1)
         person_2.incarceration_sentences.append(is_2222_2)
         is_2222_2.charges.append(c_2222_2)
 
@@ -1626,12 +1556,6 @@ class TestUsIdController(BaseDirectIngestControllerTests):
         person_2.supervision_sentences.append(ss_2222_1)
         ss_2222_1.charges.append(c_2222_1)
 
-        sg_3333_1 = entities.StateSentenceGroup.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            external_id="3333-1",
-            person=person_3,
-        )
         ss_3333_1 = entities.StateSupervisionSentence.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id="3333-3-1",
@@ -1658,7 +1582,6 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             supervision_sentences=[ss_3333_1],
             person=ss_3333_1.person,
         )
-        person_3.sentence_groups.append(sg_3333_1)
         person_3.supervision_sentences.append(ss_3333_1)
         ss_3333_1.charges.append(c_3333_1)
 
