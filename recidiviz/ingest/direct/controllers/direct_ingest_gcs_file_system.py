@@ -293,6 +293,9 @@ class DirectIngestGCSFileSystem(Generic[GCSFileSystemType], GCSFileSystem):
     def is_file(self, path: str) -> bool:
         return self.gcs_file_system.is_file(path)
 
+    def rename_blob(self, path: GcsfsFilePath, new_path: GcsfsFilePath) -> None:
+        return self.gcs_file_system.rename_blob(path, new_path)
+
     @contextmanager
     def open(
         self,
