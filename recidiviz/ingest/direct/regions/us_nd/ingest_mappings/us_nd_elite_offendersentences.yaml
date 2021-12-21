@@ -4,7 +4,7 @@ key_mappings:
   SENTENCE_EXPIRY_DATE: state_incarceration_sentence.projected_max_release_date
 
 ancestor_keys:
-  OFFENDER_BOOK_ID: state_sentence_group.state_sentence_group_id
+  OFFENDER_BOOK_ID: state_person.state_person_id
 
 # There is a primary key override in us_nd_controller for this file
 

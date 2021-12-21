@@ -10,7 +10,7 @@ child_key_mappings:
   ORDER_ID: state_court_case.state_court_case_id
 
 ancestor_keys:
-  OFFENDER_BOOK_ID: state_sentence_group.state_sentence_group_id
+  OFFENDER_BOOK_ID: state_person.state_person_id
 
 # There is a primary key override for state_charge in us_nd_controller for this file
 

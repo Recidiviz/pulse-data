@@ -7,7 +7,7 @@ key_mappings:
   ISSUING_AGY_LOC_ID: state_court_case.judicial_district_code
 
 ancestor_keys:
-  OFFENDER_BOOK_ID: state_sentence_group.state_sentence_group_id
+  OFFENDER_BOOK_ID: state_person.state_person_id
 
 child_key_mappings:
   JUDGE_NAME: state_agent.full_name

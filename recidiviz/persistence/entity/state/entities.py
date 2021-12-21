@@ -107,6 +107,7 @@ from recidiviz.persistence.entity.base_entity import (
 )
 from recidiviz.persistence.entity.state.entity_deprecation_utils import (  # pylint: disable=unused-import
     validate_deprecated_entity_field_for_states,
+    validate_deprecated_entity_for_states,
 )
 
 # **** Entity Types for convenience *****:
@@ -608,6 +609,12 @@ class StateSentenceGroup(ExternalIdEntity, BuildableAttr, DefaultableAttr):
 
     # Cross-entity relationships
     person: Optional["StatePerson"] = attr.ib(default=None)
+
+    def __attrs_post_init__(self) -> None:
+        validate_deprecated_entity_for_states(
+            entity=self,
+            deprecated_state_codes=["US_ND"],
+        )
 
 
 @attr.s(eq=False, kw_only=True)

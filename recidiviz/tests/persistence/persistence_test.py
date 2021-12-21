@@ -31,13 +31,13 @@ from mock import Mock, patch
 from opencensus.stats.measurement_map import MeasurementMap
 
 from recidiviz.common.constants.person_characteristics import Gender, Race
-from recidiviz.common.constants.state.external_id_types import US_MO_DOC, US_ND_ELITE
 from recidiviz.common.constants.state.state_assessment import StateAssessmentClass
 from recidiviz.common.constants.state.state_person_alias import StatePersonAliasType
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
+from recidiviz.common.constants.states import StateCode
 from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
 from recidiviz.persistence import persistence
 from recidiviz.persistence.database.schema.state import dao as state_dao
@@ -56,6 +56,9 @@ from recidiviz.persistence.entity.state.entities import (
     StateProgramAssignment,
     StateSentenceGroup,
 )
+from recidiviz.persistence.entity_matching.state.base_state_matching_delegate import (
+    BaseStateMatchingDelegate,
+)
 from recidiviz.persistence.ingest_info_converter.base_converter import (
     EntityDeserializationResult,
 )
@@ -66,7 +69,11 @@ DATETIME = datetime(DATE.year, DATE.month, DATE.day)
 DATE_2 = date(year=2020, day=1, month=2)
 DATETIME_2 = datetime(DATE_2.year, DATE_2.month, DATE_2.day)
 
+STATE_CODE = StateCode.US_XX.value
+STATE_CODE_2 = StateCode.US_WW.value
 FAKE_PROJECT_ID = "test-project"
+FAKE_ID_TYPE = "US_XX_ID_TYPE"
+FAKE_ID_TYPE_2 = "US_WW_ID_TYPE_2"
 STATE_CODE_TO_ENTITY_MATCHING_THRESHOLD_OVERRIDE_FAKE_PROJECT: Dict[
     str, Dict[str, float]
 ] = {
@@ -78,21 +85,23 @@ STATE_CODE_TO_ENTITY_MATCHING_THRESHOLD_OVERRIDE_FAKE_PROJECT: Dict[
 PERSON_1_FULL_NAME = '{"given_names": "JON", "surname": "HOPKINS"}'
 
 PERSON_STATE_1_ENTITY = StatePerson(
-    state_code="US_ND",
+    state_code=STATE_CODE,
     full_name=PERSON_1_FULL_NAME,
     birthdate=datetime(1979, 8, 15),
     gender=Gender.MALE,
     external_ids=[
         StatePersonExternalId(
-            state_code="US_ND", external_id="39768", id_type=US_ND_ELITE
+            state_code=STATE_CODE, external_id="39768", id_type=FAKE_ID_TYPE
         )
     ],
     races=[
-        StatePersonRace(state_code="US_ND", race=Race.WHITE, race_raw_text="CAUCASIAN")
+        StatePersonRace(
+            state_code=STATE_CODE, race=Race.WHITE, race_raw_text="CAUCASIAN"
+        )
     ],
     aliases=[
         StatePersonAlias(
-            state_code="US_ND",
+            state_code=STATE_CODE,
             full_name=PERSON_1_FULL_NAME,
             alias_type=StatePersonAliasType.GIVEN_NAME,
             alias_type_raw_text="GIVEN_NAME",
@@ -100,7 +109,7 @@ PERSON_STATE_1_ENTITY = StatePerson(
     ],
     sentence_groups=[
         StateSentenceGroup(
-            state_code="US_ND",
+            state_code=STATE_CODE,
             external_id="123",
             status=StateSentenceStatus.SERVING,
             status_raw_text="SERVING",
@@ -110,19 +119,21 @@ PERSON_STATE_1_ENTITY = StatePerson(
 
 PERSON_2_FULL_NAME = '{"given_names": "SOLANGE", "surname": "KNOWLES"}'
 PERSON_STATE_2_ENTITY = StatePerson(
-    state_code="US_MO",
+    state_code=STATE_CODE_2,
     full_name=PERSON_2_FULL_NAME,
     birthdate=datetime(1986, 6, 24),
     gender=Gender.FEMALE,
     external_ids=[
         StatePersonExternalId(
-            state_code="US_MO", external_id="52163", id_type=US_MO_DOC
+            state_code=STATE_CODE_2, external_id="52163", id_type=FAKE_ID_TYPE_2
         )
     ],
-    races=[StatePersonRace(state_code="US_MO", race=Race.BLACK, race_raw_text="BLACK")],
+    races=[
+        StatePersonRace(state_code=STATE_CODE_2, race=Race.BLACK, race_raw_text="BLACK")
+    ],
     aliases=[
         StatePersonAlias(
-            state_code="US_MO",
+            state_code=STATE_CODE_2,
             full_name=PERSON_2_FULL_NAME,
             alias_type=StatePersonAliasType.GIVEN_NAME,
             alias_type_raw_text="GIVEN_NAME",
@@ -130,7 +141,7 @@ PERSON_STATE_2_ENTITY = StatePerson(
     ],
     sentence_groups=[
         StateSentenceGroup(
-            state_code="US_MO",
+            state_code=STATE_CODE_2,
             external_id="123",
             status=StateSentenceStatus.SERVING,
             status_raw_text="SERVING",
@@ -138,7 +149,7 @@ PERSON_STATE_2_ENTITY = StatePerson(
     ],
 )
 INGEST_METADATA_STATE_1_INSERT = IngestMetadata(
-    region="US_ND",
+    region=STATE_CODE,
     ingest_time=DATETIME,
     system_level=SystemLevel.STATE,
     database_key=SQLAlchemyDatabaseKey.canonical_for_schema(
@@ -146,7 +157,7 @@ INGEST_METADATA_STATE_1_INSERT = IngestMetadata(
     ),
 )
 INGEST_METADATA_STATE_1_UPDATE = IngestMetadata(
-    region="US_ND",
+    region=STATE_CODE,
     ingest_time=DATETIME_2,
     system_level=SystemLevel.STATE,
     database_key=SQLAlchemyDatabaseKey.canonical_for_schema(
@@ -154,7 +165,7 @@ INGEST_METADATA_STATE_1_UPDATE = IngestMetadata(
     ),
 )
 INGEST_METADATA_STATE_2_INSERT = IngestMetadata(
-    region="US_MO",
+    region=STATE_CODE_2,
     ingest_time=DATETIME,
     system_level=SystemLevel.STATE,
     database_key=SQLAlchemyDatabaseKey.canonical_for_schema(
@@ -162,13 +173,19 @@ INGEST_METADATA_STATE_2_INSERT = IngestMetadata(
     ),
 )
 INGEST_METADATA_STATE_2_UPDATE = IngestMetadata(
-    region="US_MO",
+    region=STATE_CODE_2,
     ingest_time=DATETIME_2,
     system_level=SystemLevel.STATE,
     database_key=SQLAlchemyDatabaseKey.canonical_for_schema(
         schema_type=SchemaType.STATE
     ),
 )
+
+
+def mock_build_matching_delegate(
+    *, region_code: str, ingest_metadata: IngestMetadata
+) -> BaseStateMatchingDelegate:
+    return BaseStateMatchingDelegate(region_code, ingest_metadata)
 
 
 class MultipleStateTestMixin:
@@ -202,7 +219,9 @@ class MultipleStateTestMixin:
     def test_insertRootEntities_succeeds(self):
         # Arrange
         # Write initial placeholder person to database
-        placeholder_person = state_schema.StatePerson(person_id=0, state_code="US_ND")
+        placeholder_person = state_schema.StatePerson(
+            person_id=0, state_code=STATE_CODE
+        )
         with SessionFactory.using_database(self.database_key) as session:
             session.add(placeholder_person)
 
@@ -230,7 +249,7 @@ class MultipleStateTestMixin:
         # Write initial placeholder person to database
         with SessionFactory.using_database(self.database_key) as session:
             placeholder_person = state_schema.StatePerson(
-                person_id=0, state_code="US_ND"
+                person_id=0, state_code=STATE_CODE
             )
             session.add(placeholder_person)
 
@@ -247,7 +266,7 @@ class MultipleStateTestMixin:
         person_state_1 = deepcopy(PERSON_STATE_1_ENTITY)
         person_state_1.assessments.append(
             StateAssessment.new_with_defaults(
-                state_code="US_ND",
+                state_code=STATE_CODE,
                 assessment_class=StateAssessmentClass.RISK,
                 assessment_class_raw_text="RISK",
             )
@@ -256,7 +275,7 @@ class MultipleStateTestMixin:
         person_state_2 = deepcopy(PERSON_STATE_2_ENTITY)
         person_state_2.assessments.append(
             StateAssessment.new_with_defaults(
-                state_code="US_MO",
+                state_code=STATE_CODE_2,
                 assessment_class=StateAssessmentClass.RISK,
                 assessment_class_raw_text="RISK",
             )
@@ -282,9 +301,7 @@ class MultipleStateTestMixin:
         # Arrange
         # Write initial placeholder person to database
         with SessionFactory.using_database(self.database_key) as session:
-            placeholder_person = state_schema.StatePerson(
-                person_id=0, state_code="US_ND"
-            )
+            placeholder_person = state_schema.StatePerson(state_code=STATE_CODE)
             session.add(placeholder_person)
 
         # Write persons to be updated
@@ -300,7 +317,7 @@ class MultipleStateTestMixin:
         person_state_1 = deepcopy(PERSON_STATE_1_ENTITY)
         person_state_1.assessments.append(
             StateAssessment.new_with_defaults(
-                state_code="US_ND",
+                state_code=STATE_CODE,
                 assessment_class=StateAssessmentClass.RISK,
                 assessment_class_raw_text="RISK",
             )
@@ -309,7 +326,7 @@ class MultipleStateTestMixin:
         person_state_2 = deepcopy(PERSON_STATE_2_ENTITY)
         person_state_2.program_assignments.append(
             StateProgramAssignment.new_with_defaults(
-                state_code="US_MO",
+                state_code=STATE_CODE_2,
                 external_id="1234",
                 participation_status=StateProgramAssignmentParticipationStatus.PRESENT_WITHOUT_INFO,
             )
@@ -336,7 +353,7 @@ class MultipleStateTestMixin:
         # Write initial placeholder person to database
         with SessionFactory.using_database(self.database_key) as session:
             placeholder_person = state_schema.StatePerson(
-                person_id=0, state_code="US_ND"
+                person_id=0, state_code=STATE_CODE
             )
             session.add(placeholder_person)
 
@@ -380,7 +397,7 @@ class MultipleStateTestMixin:
         # Write initial placeholder person to database
         with SessionFactory.using_database(self.database_key) as session:
             placeholder_person = state_schema.StatePerson(
-                person_id=0, state_code="US_ND"
+                person_id=0, state_code=STATE_CODE
             )
             session.add(placeholder_person)
 
@@ -457,6 +474,13 @@ class TestPersistenceMultipleThreadsOverlapping(TestCase, MultipleStateTestMixin
         self.database_key = SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
         local_postgres_helpers.use_on_disk_postgresql_database(self.database_key)
 
+        self.matching_delegate_patcher = patch(
+            "recidiviz.persistence.entity_matching.state."
+            "state_matching_delegate_factory.StateMatchingDelegateFactory.build",
+            mock_build_matching_delegate,
+        )
+        self.mock_matching_delegate = self.matching_delegate_patcher.start()
+
     def tearDown(self) -> None:
         local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
         self.isolation_level_patcher.stop()
@@ -464,6 +488,7 @@ class TestPersistenceMultipleThreadsOverlapping(TestCase, MultipleStateTestMixin
         self.bq_client_patcher.stop()
         self.storage_client_patcher.stop()
         self.task_client_patcher.stop()
+        self.matching_delegate_patcher.stop()
 
     @classmethod
     def tearDownClass(cls) -> None:
@@ -641,6 +666,13 @@ class TestPersistenceMultipleThreadsInterleaved(TestCase, MultipleStateTestMixin
         self.database_key = SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
         local_postgres_helpers.use_on_disk_postgresql_database(self.database_key)
 
+        self.matching_delegate_patcher = patch(
+            "recidiviz.persistence.entity_matching.state."
+            "state_matching_delegate_factory.StateMatchingDelegateFactory.build",
+            mock_build_matching_delegate,
+        )
+        self.mock_matching_delegate = self.matching_delegate_patcher.start()
+
     def tearDown(self) -> None:
         local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
         self.isolation_level_patcher.stop()
@@ -648,6 +680,7 @@ class TestPersistenceMultipleThreadsInterleaved(TestCase, MultipleStateTestMixin
         self.bq_client_patcher.stop()
         self.storage_client_patcher.stop()
         self.task_client_patcher.stop()
+        self.matching_delegate_patcher.stop()
 
     @classmethod
     def tearDownClass(cls) -> None:
