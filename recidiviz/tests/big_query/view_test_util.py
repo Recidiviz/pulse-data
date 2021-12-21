@@ -19,7 +19,17 @@ import datetime
 import logging
 import re
 import unittest
-from typing import Dict, Iterable, Iterator, List, Optional, Sequence, Tuple, Type
+from typing import (
+    Dict,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    Type,
+    Union,
+)
 
 import attr
 import pandas as pd
@@ -216,6 +226,9 @@ class BaseViewTest(unittest.TestCase):
         cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
 
     def setUp(self) -> None:
+        self.data_types: Optional[Union[Type, Dict[str, Type]]] = {}
+        self.region_code: str
+        self.view_builder: DirectIngestPreProcessedIngestViewBuilder
         # Stores the list of mock tables that have been created as (dataset_id, table_id) tuples.
         self.mock_bq_to_postgres_tables: Dict[BigQueryAddress, str] = {}
 
@@ -271,11 +284,26 @@ class BaseViewTest(unittest.TestCase):
             get_region(region_code, is_direct_ingest=True), []
         ).get_view_builder_by_file_tag(ingest_view_file_tag)
 
-    def run_ingest_view_test(
+    def run_ingest_view_test(self, fixtures_files_name: str) -> None:
+        self.create_mock_raw_bq_tables_from_fixtures(
+            region_code=self.region_code,
+            ingest_view_builder=self.view_builder,
+            raw_fixtures_name=fixtures_files_name,
+        )
+
+        self.compare_results_to_expected_output(
+            region_code=self.region_code,
+            view_builder=self.view_builder,
+            expected_output_fixture_file_name=fixtures_files_name,
+            data_types=self.data_types,
+        )
+
+    def compare_results_to_expected_output(
         self,
         region_code: str,
         view_builder: DirectIngestPreProcessedIngestViewBuilder,
         expected_output_fixture_file_name: str,
+        data_types: Optional[Union[Type, Dict[str, Type]]] = None,
     ) -> None:
         """Reads in the expected output CSV file from the ingest view fixture path and asserts that the results
         from the raw data ingest view query are equal. Prints out the dataframes for both expected rows and results."""
@@ -297,6 +325,7 @@ class BaseViewTest(unittest.TestCase):
         results = self.query_raw_data_view_for_builder(
             view_builder,
             dimensions=expected_columns,
+            data_types=data_types,
         )
         expected = pd.DataFrame(expected_output, columns=expected_columns)
         expected = expected.set_index(expected_columns)
@@ -326,6 +355,7 @@ class BaseViewTest(unittest.TestCase):
             print(
                 f"Loading fixture data for raw file [{raw_file_config.file_tag}] from file path [{raw_fixture_path}]."
             )
+
             self.create_mock_raw_file(
                 region_code=region_code,
                 file_config=raw_file_config,
@@ -363,7 +393,6 @@ class BaseViewTest(unittest.TestCase):
         mock_schema = MockTableSchema.from_raw_file_config(
             file_config, include_documented_columns_only
         )
-
         raw_data_df = augment_raw_data_df_with_metadata_columns(
             raw_data_df=pd.DataFrame(mock_data, columns=mock_schema.data_types.keys()),
             file_id=0,
@@ -389,6 +418,7 @@ class BaseViewTest(unittest.TestCase):
         view_builder: DirectIngestPreProcessedIngestViewBuilder,
         dimensions: List[str],
         query_run_dt: datetime.datetime = DEFAULT_QUERY_RUN_DATETIME,
+        data_types: Optional[Union[Type, Dict[str, Type]]] = None,
     ) -> pd.DataFrame:
         view: BigQueryView = view_builder.build()
         view_query = view.expanded_view_query(
@@ -402,13 +432,16 @@ class BaseViewTest(unittest.TestCase):
         )
 
         return self.query_view(
-            view.table_for_query, view_query, data_types={}, dimensions=dimensions
+            view.table_for_query,
+            view_query,
+            data_types=data_types,
+            dimensions=dimensions,
         )
 
     def query_view_for_builder(
         self,
         view_builder: BigQueryViewBuilder,
-        data_types: Dict[str, Type],
+        data_types: Optional[Union[Type, Dict[str, Type]]],
         dimensions: List[str],
     ) -> pd.DataFrame:
         if isinstance(view_builder, DirectIngestPreProcessedIngestViewBuilder):
@@ -426,20 +459,22 @@ class BaseViewTest(unittest.TestCase):
         self,
         table_address: BigQueryAddress,
         view_query: str,
-        data_types: Dict[str, Type],
+        data_types: Optional[Union[Type, Dict[str, Type]]],
         dimensions: List[str],
     ) -> pd.DataFrame:
+        """Query the PG tables with the Postgres formatted query string and return the results as a DataFrame."""
         view_query = self._rewrite_sql(view_query)
         # TODO(#5533): Instead of using read_sql_query, we can use
         # `create_view` and `read_sql_table`. That can take a schema which will
         # solve some of the issues. As part of adding `dimensions` to builders
         # (below) we should likely just define a full output schema.
         results = pd.read_sql_query(view_query, con=self.postgres_engine)
-        results = results.astype(data_types)
-        # If data types are not provided, transform 'nan' values to empty strings. These occur
-        # when reading null values into a dataframe.
-        if not data_types:
+        # If data types are not provided or all columns will be strings, transform 'nan' values to empty strings.
+        # These occur when reading null values into a dataframe
+        if not data_types or data_types == str:
             results = results.fillna("")
+        if data_types:
+            results = results.astype(data_types)
         # TODO(#5533): If we add `dimensions` to all `BigQueryViewBuilder`, instead of just
         # `MetricBigQueryViewBuilder`, then we can reuse that here instead of forcing the caller to specify them
         # manually.
@@ -618,9 +653,20 @@ class BaseViewTest(unittest.TestCase):
         # the two, bigquery returns an int
         query = _replace_iter(
             query,
-            r"EXTRACT\((?P<clause>.+)\)(?P<end>[^:])",
+            r"EXTRACT\((?!DATE|DATETIME|TIME)(?P<clause>.+)\)(?P<end>[^:])",
             "EXTRACT({clause})::integer{end}",
         )
+
+        # EXTRACT DATE returns a DATE type in BQ, this strips out the EXTRACT(DATE FROM timestamp_col)
+        # and becomes timestamp_col::date
+        query = _replace_iter(
+            query,
+            r"EXTRACT\(DATE\sFROM\s(?P<clause>.+)\)(?P<end>.+)",
+            "{clause}::date{end}",
+        )
+
+        # Replace timestamp format strings like '%m/%d/%y' to match PG 'MM/DD/YYYY'
+        query = self._rewrite_timestamp_formats(query)
 
         # LAST_DAY doesn't exist in postgres, so replace with the logic to calculate it
         query = _replace_iter(
@@ -702,7 +748,28 @@ class BaseViewTest(unittest.TestCase):
 
         # Allow trailing commas in SELECT.
         query = _replace_iter(query, r",(?P<whitespace>\s+)FROM", "{whitespace}FROM")
+        return query
 
+    BQ_TIMESTAMP_FORMAT_TO_POSTGRES = {
+        "%%m": "MM",
+        "%%Y": "YYYY",
+        "%%d": "DD",
+        "%%r": "HH:MI:SS AM",
+    }
+
+    def _rewrite_timestamp_formats(self, query: str) -> str:
+        timestamp_format_pattern = re.compile(r"TIMESTAMP\((?P<timestamp_format>'%.+')")
+
+        for match in re.finditer(timestamp_format_pattern, query):
+            for item in match.groups():
+                new_format = item
+                for (
+                    bq_format,
+                    pg_format,
+                ) in self.BQ_TIMESTAMP_FORMAT_TO_POSTGRES.items():
+                    new_format = new_format.replace(bq_format, pg_format)
+
+                query = query.replace(item, new_format)
         return query
 
     def _rewrite_table_references(self, query: str) -> str:

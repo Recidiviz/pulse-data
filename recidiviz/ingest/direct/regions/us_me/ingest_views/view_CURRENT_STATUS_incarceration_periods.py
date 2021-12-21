@@ -37,7 +37,7 @@ VIEW_QUERY_TEMPLATE = """
         LEFT JOIN {CIS_3141_TRANSFER_REASON} reason
         ON Cis_3141_Transfer_Reason_Cd = reason.Transfer_Reason_Cd
 
-        WHERE Cancelled_Ind != "Y"
+        WHERE Cancelled_Ind != 'Y'
     ),
     all_statuses AS (
         SELECT
@@ -49,9 +49,9 @@ VIEW_QUERY_TEMPLATE = """
             unit.Name_Tx AS housing_unit,
             Cis_314_Transfer_Id AS transfer_id,
             -- TODO(#9968) Update timestamp format when we receive SFTP transfer
-            EXTRACT(DATE FROM PARSE_TIMESTAMP("%m/%d/%Y %r", Effct_Date)) AS effective_date,
-            EXTRACT(DATE FROM PARSE_TIMESTAMP("%m/%d/%Y %r", End_Date)) AS end_date,
-            EXTRACT(DATE FROM PARSE_TIMESTAMP("%m/%d/%Y %r", Ineffct_Date)) AS ineffective_date
+            EXTRACT(DATE FROM PARSE_TIMESTAMP('%m/%d/%Y %r', Effct_Date)) AS effective_date,
+            EXTRACT(DATE FROM PARSE_TIMESTAMP('%m/%d/%Y %r', End_Date)) AS end_date,
+            EXTRACT(DATE FROM PARSE_TIMESTAMP('%m/%d/%Y %r', Ineffct_Date)) AS ineffective_date
         FROM {CIS_125_CURRENT_STATUS_HIST}
         
         LEFT JOIN {CIS_1000_CURRENT_STATUS} status_code
@@ -92,7 +92,7 @@ VIEW_QUERY_TEMPLATE = """
                 status.E_Mvmt_Status_Desc AS movement_status,
                 direction.E_Mvmt_Direction_Desc AS movement_direction,
                 -- TODO(#9968) Update timestamp format when we receive SFTP transfer
-                EXTRACT(DATE FROM PARSE_TIMESTAMP("%m/%d/%Y %r", Movement_Date)) AS movement_date
+                EXTRACT(DATE FROM PARSE_TIMESTAMP('%m/%d/%Y %r', Movement_Date)) AS movement_date
             FROM {CIS_309_MOVEMENT}
             
             LEFT JOIN {CIS_3090_MOVEMENT_TYPE} type
@@ -104,8 +104,8 @@ VIEW_QUERY_TEMPLATE = """
             LEFT JOIN {CIS_3095_MVMT_DIRECTION} direction
             ON Cis_3095_Mvmt_Direction_Cd = direction.Mvmt_Direction_Cd
     
-            -- Filter to movements with status "Complete" and remove "Transport" movements
-            WHERE Cis_3093_Mvmt_Status_Cd = '3' AND Cis_3090_Movement_Type_Cd != "5"
+            -- Filter to movements with status 'Complete' and remove 'Transport' movements
+            WHERE Cis_3093_Mvmt_Status_Cd = '3' AND Cis_3090_Movement_Type_Cd != '5'
     ),
     ranked_movements AS (
         SELECT
@@ -115,8 +115,8 @@ VIEW_QUERY_TEMPLATE = """
             movement_status,
             movement_direction,
             movement_date,
-            -- Transfer movement types have 2 rows: one for movement "In" to Cis_908_Ccs_Location_2_Id and one
-            -- for movement "Out" of Cis_908_Ccs_Location_Id. This orders the rows so we only use the "In" direction.
+            -- Transfer movement types have 2 rows: one for movement 'In' to Cis_908_Ccs_Location_2_Id and one
+            -- for movement 'Out' of Cis_908_Ccs_Location_Id. This orders the rows so we only use the 'In' direction.
             ROW_NUMBER() OVER (PARTITION BY client_id, movement_date, movement_type, transfer_id ORDER BY movement_direction ASC) AS movement_dedup_rank
         FROM all_movements
     ),
@@ -141,9 +141,9 @@ VIEW_QUERY_TEMPLATE = """
         SELECT * FROM movements_with_next_and_prev 
           -- Select the first ranked Transfer movement
         WHERE (movement_dedup_rank = 1 AND movement_type = 'Transfer') 
-            -- Select the "In" movements for types Escape, Furlough, Furlough Hospital
+            -- Select the 'In' movements for types Escape, Furlough, Furlough Hospital
             OR (movement_type != 'Transfer' AND movement_direction = 'In')
-            -- Discharge and Release movement types only have "Out" directions
+            -- Discharge and Release movement types only have 'Out' directions
             OR (movement_type IN ('Discharge', 'Release'))
     ),
     movements_with_incarceration_statuses AS (
@@ -195,14 +195,14 @@ VIEW_QUERY_TEMPLATE = """
         -- County Jail status means the client was not sentenced to a DOC facility, but is being held at one
         -- for the county because of resourcing needs, primarily for mental health resources. 
         WHERE current_status IN (
-            "Incarcerated",
-            "Partial Revocation - incarcerated",
-            "Interstate Compact In",
-            "County Jail"
+            'Incarcerated',
+            'Partial Revocation - incarcerated',
+            'Interstate Compact In',
+            'County Jail'
         )
         -- Filter out periods at juvenile facilities
-        AND location_type NOT IN ("3","15")
-        AND jurisdiction_location_type NOT IN ("3", "15")
+        AND location_type NOT IN ('3','15')
+        AND jurisdiction_location_type NOT IN ('3', '15')
         AND movement_type NOT IN ('Discharge', 'Release')
     )
     SELECT
@@ -221,7 +221,7 @@ VIEW_QUERY_TEMPLATE = """
         next_movement_type,
         transfer_type,
         transfer_reason,
-        ROW_NUMBER() OVER (PARTITION BY client_id ORDER BY start_date ASC) AS incarceration_period_id
+        CAST(ROW_NUMBER() OVER (PARTITION BY client_id ORDER BY start_date ASC) AS STRING) AS incarceration_period_id
     FROM movements_with_incarceration_statuses
 """
 
