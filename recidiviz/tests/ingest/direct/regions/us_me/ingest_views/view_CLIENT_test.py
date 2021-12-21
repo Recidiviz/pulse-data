@@ -31,15 +31,6 @@ class ClientTest(BaseViewTest):
         self.view_builder = self.view_builder_for_tag(self.region_code, "CLIENT")
 
     def test_client_query_name_formatting(self) -> None:
-        fixtures_files_name = "name_formatting.csv"
-        self.create_mock_raw_bq_tables_from_fixtures(
-            region_code=self.region_code,
-            ingest_view_builder=self.view_builder,
-            raw_fixtures_name=fixtures_files_name,
-        )
-
         self.run_ingest_view_test(
-            region_code=self.region_code,
-            view_builder=self.view_builder,
-            expected_output_fixture_file_name=fixtures_files_name,
+            fixtures_files_name="name_formatting.csv",
         )

@@ -103,8 +103,7 @@ class OffenderMovementIncarcerationPeriodTest(BaseViewTest):
 
         # Act
         results = self.query_raw_data_view_for_builder(
-            self.view_builder,
-            dimensions=self.expected_result_columns,
+            self.view_builder, dimensions=self.expected_result_columns
         )
 
         # Assert

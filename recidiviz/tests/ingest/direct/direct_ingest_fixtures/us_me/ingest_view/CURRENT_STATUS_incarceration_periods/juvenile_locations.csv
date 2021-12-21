@@ -1,0 +1,1 @@
+incarceration_period_id,client_id,previous_status,current_status,next_status,current_status_location,location_type,next_location_type,jurisdiction_location_type,housing_unit,start_date,end_date,movement_type,next_movement_type,transfer_type,transfer_reason

@@ -1,0 +1,74 @@
+Cis_908_Ccs_Location_Id,Desc_Tx,Name_Tx,Unit_Id
+5,,Medium,11
+7,Juvenile Detention Unit E,E Unit JD,63
+6,,Seg,31
+4,,MPU,4
+231,,Unit 4,78
+5,,IMHU,46
+4,Southern Maine Women's ReEntry Center,SMWRC,44
+6,Fake Unit for County Jail Transfers,County,43
+7,Moderate/High-Female,E,19
+4,,Unit 3,3
+2,Fake Unit for County Jail Transfers,County,39
+6,Facility closed 4/11/2013,Unit I,5
+4,Fake Unit for Male County Jail Transfers,County,32
+229,Sexual Behavior Treatment Unit A,UNIT A SBT,57
+1,"Community Confinement - No limit, per classification.",ComConfine,13
+231,Assisted Living Unit B,Unit B ALU,71
+1,,Unit 2,15
+231,,CCF-Seg,65
+4,,Unit 2,2
+3,Faxe Unit for County Jail Transfers,County,41
+5,Structured Living Unit,SLU,74
+231,Substance Abuse Treatment Unit D,Unit D SA,73
+2,,Unit 3,47
+7,,THU,76
+8,Special Management Unit Males,SMU,26
+4,,Unit 1,1
+229,Fake Unit for County Jail Transfers,County,48
+1,Kennebec County Jail Contracted Beds,County,45
+229,Young Adult Offender Program Unit C,Unit C YAO,59
+231,,Unit 3,66
+5,,Close,8
+3,,Unit I,7
+231,,Unit 2,67
+2,Segregation -- Keep inactive unless needed,Unit II,30
+231,100 max.  -- Includes 5 extra Beds for Emergency purposes only,Unit 1,68
+231,,Unit C,72
+8,High/Moderate/Detention,Oak,24
+8,Moderate,Cedar,25
+229,,Unit A,49
+229,Assisted Living Unit F,ALU,61
+5,Temporary Holding for Intake area,Receiving,9
+7,Detention-High/Moderate,B,20
+1,,Unit 1,14
+4,Cumberland County Female Work Release Program,County,36
+1,,County,40
+231,Sexual Behavior Treatment Unit A,Unit A SBT,70
+8,Detention/Female SMU,Spruce,21
+7,Accessment and Orientation,A,16
+8,Assessment & Orientation,Elm,28
+5,Fake Unit for County Jail Transfers,County,33
+2,Womens Reentry Unit (Bangor WRC),Women Unit,35
+231,Fake Unit for County Jail Transfers,County,69
+7,Moderate Custody,D,18
+2,108 max.  -- Includes 5 extra Beds for Emergency purposes only,Unit I,6
+231,Administrative Status Unit,ASU,64
+8,Infirmary Rooms,Infirmary,22
+8,Moderate,Maple,23
+8,,STEPS,79
+7,Special Management Unit,F/SMU,29
+229,Sexual Behavior Treatment Unit B,UNIT B SBT,58
+5,Special Management Unit and Restrictive Housing,SMU,12
+7,High Custody,C,17
+2,,Unit 2,34
+2,Womens Reenty Unit at CCJ,Cumb Women,37
+229,Substance Abuse Treatment Unit D,UNIT D SA,60
+231,,Unit E,77
+229,,Unit C,51
+8,,Bearings,80
+3,,Unit 1,81
+8,Intake Rooms,Intake,38
+5,Infirmary Cells,Medical,10
+229,capacity 29 plus 3 SMU cells,Unit B SBT,50
+8,Moderate,Pine,27
