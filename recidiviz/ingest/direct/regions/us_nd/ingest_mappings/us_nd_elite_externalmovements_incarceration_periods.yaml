@@ -73,6 +73,9 @@ output:
                   - OUT
                   - PREA
                   - PROB
+                  # TODO(#10432): We don't know what facility "TABLET" is - ask ND how
+                  #  to properly map this.
+                  - TABLET
                   - TRC
                   - TRCC
                   - TRN
