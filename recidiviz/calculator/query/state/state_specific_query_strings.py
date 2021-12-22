@@ -36,6 +36,14 @@ VITALS_LEVEL_2_SUPERVISION_LOCATION_OPTIONS: str = (
 
 STATE_RACE_ETHNICITY_POPULATION_TABLE_NAME = "state_race_ethnicity_population_counts"
 
+# Select the raw table that ultimately powers a state's incarceration pathways calculations.
+# Note: there are a few limitations with this strategy. Most notably, this only picks one raw table per state. It does
+# not accommodate checking multiple tables that may potentially power incarceration periods in ingest.
+STATE_CODE_TO_PATHWAYS_LAST_UPDATED_DATE_SOURCE_TABLE: Dict[str, str] = {
+    StateCode.US_TN.value: "OffenderMovement",
+    StateCode.US_ID.value: "movement",
+}
+
 
 def state_supervision_specific_district_groupings(
     district_column: str, judicial_district_column: str
@@ -390,3 +398,24 @@ def spotlight_state_specific_facility() -> str:
         END
         AS facility
     """
+
+
+def get_pathways_incarceration_last_updated_date() -> str:
+    """Add state-specific last updated dates, based on the `update_datetime` of each state's pathways incarceration
+    specific table."""
+    last_item_index = len(STATE_CODE_TO_PATHWAYS_LAST_UPDATED_DATE_SOURCE_TABLE) - 1
+    query_string = ""
+    for index, (state_code, table_name) in enumerate(
+        STATE_CODE_TO_PATHWAYS_LAST_UPDATED_DATE_SOURCE_TABLE.items()
+    ):
+        query_string += f"""
+        SELECT
+            \'{state_code}\' as state_code,
+            date(max(update_datetime)) as last_updated
+        FROM `{{project_id}}.{state_code.lower()}_raw_data.{table_name}`
+         """
+        if index != last_item_index:
+            query_string += """
+        UNION ALL
+            """
+    return query_string
