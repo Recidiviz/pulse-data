@@ -19,7 +19,7 @@
 # pylint: disable=line-too-long
 
 
-from typing import Set
+from typing import List, Set
 
 
 def exclude_rows_with_missing_fields(required_columns: Set[str]) -> str:
@@ -160,3 +160,24 @@ def hack_us_id_supervising_officer_external_id(dataflow_metric_table: str) -> st
         WHERE IF(state_code != 'US_ID', supervising_officer_external_id, UPPER(ofndr_agnt.agnt_id)) IS NOT NULL
             AND supervision_level IS NOT NULL
     """
+
+
+def add_age_groups() -> str:
+    return """
+            CASE 
+                WHEN age < 25 THEN "<25"
+                WHEN age >= 25 and age <= 29 THEN "25-29"
+                WHEN age >= 30 and age <= 35 THEN "30-34"
+                WHEN age >= 35 and age <= 39 THEN "35-39"
+                WHEN age >= 40 and age <= 44 THEN "40-44"
+                WHEN age >= 45 and age <= 49 THEN "45-49"
+                WHEN age >= 50 and age <= 54 THEN "50-54"
+                WHEN age >= 55 and age <= 59 THEN "55-59"
+                WHEN age >= 60 THEN "60+"
+                WHEN age is null THEN NULL
+            end as age_group,
+    """
+
+
+def filter_to_enabled_states(state_code_column: str, enabled_states: List[str]) -> str:
+    return f"""WHERE {state_code_column} in ({', '.join(f"'{state}'" for state in enabled_states)})"""
