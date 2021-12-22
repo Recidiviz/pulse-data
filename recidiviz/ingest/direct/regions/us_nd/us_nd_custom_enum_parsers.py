@@ -72,6 +72,9 @@ POST_JULY_2017_CUSTODIAL_AUTHORITY_ENUM_MAP: Dict[
         "OUT",
         "PREA",
         "PROB",
+        # TODO(#10432): We don't know what facility "TABLET" is - ask ND how to
+        #   properly map this.
+        "TABLET",
         "TRC",
         "TRCC",
         "TRN",
@@ -114,6 +117,9 @@ POST_JULY_2017_PFI_ENUM_MAP: Dict[
         "OUT",
         "PREA",
         "PROB",
+        # TODO(#10432): We don't know what facility "TABLET" is - ask ND how to
+        #   properly map this.
+        "TABLET",
         "TRC",
         "TRCC",
         "TRN",
