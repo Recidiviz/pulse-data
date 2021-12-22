@@ -22,19 +22,21 @@ from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-VIEW_QUERY_TEMPLATE = """
+REGEX_TIMESTAMP_NANOS_FORMAT = r"\.\d+"
+
+VIEW_QUERY_TEMPLATE = f"""
     WITH transfers AS (
         SELECT
             Cis_100_Client_Id AS client_id,
             Transfer_Id AS transfer_id,
             type.E_Trans_Type_Desc AS transfer_type,
             reason.E_Transfer_Reason_Desc AS transfer_reason
-        FROM {CIS_314_TRANSFER}
+        FROM {{CIS_314_TRANSFER}}
         
-        LEFT JOIN {CIS_3140_TRANSFER_TYPE} type
+        LEFT JOIN {{CIS_3140_TRANSFER_TYPE}} type
         ON Cis_3140_Transfer_Type_Cd = type.Transfer_Type_Cd
         
-        LEFT JOIN {CIS_3141_TRANSFER_REASON} reason
+        LEFT JOIN {{CIS_3141_TRANSFER_REASON}} reason
         ON Cis_3141_Transfer_Reason_Cd = reason.Transfer_Reason_Cd
 
         WHERE Cancelled_Ind != 'Y'
@@ -49,21 +51,21 @@ VIEW_QUERY_TEMPLATE = """
             unit.Name_Tx AS housing_unit,
             Cis_314_Transfer_Id AS transfer_id,
             -- TODO(#9968) Update timestamp format when we receive SFTP transfer
-            EXTRACT(DATE FROM PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE(Effct_Date, '\\.\\d+', ''))) AS effective_date,
-            EXTRACT(DATE FROM PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE(End_Date, '\\.\\d+', ''))) AS end_date,
-            EXTRACT(DATE FROM PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE(Ineffct_Date, '\\.\\d+', ''))) AS ineffective_date
-        FROM {CIS_125_CURRENT_STATUS_HIST}
+            EXTRACT(DATE FROM PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE(Effct_Date, r'{REGEX_TIMESTAMP_NANOS_FORMAT}', ''))) AS effective_date,
+            EXTRACT(DATE FROM PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE(End_Date, r'{REGEX_TIMESTAMP_NANOS_FORMAT}', ''))) AS end_date,
+            EXTRACT(DATE FROM PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE(Ineffct_Date, r'{REGEX_TIMESTAMP_NANOS_FORMAT}', ''))) AS ineffective_date
+        FROM {{CIS_125_CURRENT_STATUS_HIST}}
         
-        LEFT JOIN {CIS_1000_CURRENT_STATUS} status_code
+        LEFT JOIN {{CIS_1000_CURRENT_STATUS}} status_code
         ON Cis_1000_Current_Status_Cd = status_code.Current_Status_Cd
         
-        LEFT JOIN {CIS_908_CCS_LOCATION} l
+        LEFT JOIN {{CIS_908_CCS_LOCATION}} l
         ON Cis_908_Ccs_Location_2_Id = l.Ccs_Location_Id
         
-        LEFT JOIN {CIS_908_CCS_LOCATION} juris_loc
+        LEFT JOIN {{CIS_908_CCS_LOCATION}} juris_loc
         on Cis_908_Ccs_Location_Id = juris_loc.Ccs_Location_Id
         
-        LEFT JOIN {CIS_912_UNIT} unit
+        LEFT JOIN {{CIS_912_UNIT}} unit
         ON Cis_912_Unit_Id = unit.Unit_Id
     ),
     statuses_with_next_and_prev AS (
@@ -92,16 +94,16 @@ VIEW_QUERY_TEMPLATE = """
                 status.E_Mvmt_Status_Desc AS movement_status,
                 direction.E_Mvmt_Direction_Desc AS movement_direction,
                 -- TODO(#9968) Update timestamp format when we receive SFTP transfer
-                EXTRACT(DATE FROM PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE(Movement_Date, '\\.\\d+', ''))) AS movement_date
-            FROM {CIS_309_MOVEMENT}
+                EXTRACT(DATE FROM PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE(Movement_Date, r'{REGEX_TIMESTAMP_NANOS_FORMAT}', ''))) AS movement_date
+            FROM {{CIS_309_MOVEMENT}}
             
-            LEFT JOIN {CIS_3090_MOVEMENT_TYPE} type
+            LEFT JOIN {{CIS_3090_MOVEMENT_TYPE}} type
             ON Cis_3090_Movement_Type_Cd = type.Movement_Type_Cd
             
-            LEFT JOIN {CIS_3093_MVMT_STATUS} status
+            LEFT JOIN {{CIS_3093_MVMT_STATUS}} status
             ON  Cis_3093_Mvmt_Status_Cd = status.Mvmt_Status_Cd
             
-            LEFT JOIN {CIS_3095_MVMT_DIRECTION} direction
+            LEFT JOIN {{CIS_3095_MVMT_DIRECTION}} direction
             ON Cis_3095_Mvmt_Direction_Cd = direction.Mvmt_Direction_Cd
     
             -- Filter to movements with status 'Complete' and remove 'Transport' movements
