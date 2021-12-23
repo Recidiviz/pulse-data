@@ -18,6 +18,7 @@
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.experiments.dataset_config import EXPERIMENTS_DATASET
 from recidiviz.calculator.query.state.dataset_config import (
+    PO_REPORT_DATASET,
     SESSIONS_DATASET,
     STATE_BASE_DATASET,
     STATIC_REFERENCE_TABLES_DATASET,
@@ -117,19 +118,25 @@ WITH last_day_of_data AS (
         `{project_id}.{static_reference_dataset}.case_triage_users`
 )
 
--- When officers first given access to monthly reports
-, monthly_report_access AS (
+-- When officers receive first monthly report
+, first_monthly_report AS (
     SELECT
-        "MONTHLY_REPORT_ACCESS" AS experiment_id,
+        "FIRST_MONTHLY_REPORT" AS experiment_id,
         state_code as state_code,
         officer_external_id AS subject_id,
         "officer_external_id" as id_type,
-        "RECEIVED_ACCESS" AS variant_id,
-        received_access AS variant_date,
+        "RECEIVED_EMAIL" AS variant_id,
+        DATE(events.event_datetime) AS variant_date,
         -- cluster_id = district code, if rolled out consistently at district level
         -- block_id = state_code once in more than one state
     FROM
-        `{project_id}.{static_reference_dataset}.case_triage_users`
+        `{project_id}.{po_report_dataset}.sendgrid_po_report_email_events_materialized` events
+    INNER JOIN
+        `{project_id}.{static_reference_dataset}.po_report_recipients` users
+    ON
+        events.email = users.email_address
+    WHERE
+        event = "delivered"
 )
 
 -- Covid-related CPP cohort in ND
@@ -226,7 +233,7 @@ WITH last_day_of_data AS (
     FROM case_triage_access
     UNION ALL
     SELECT *
-    FROM monthly_report_access
+    FROM first_monthly_report
     UNION ALL
     SELECT *
     FROM us_nd_community_placement_program
@@ -252,11 +259,12 @@ ASSIGNMENTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=ASSIGNMENTS_VIEW_NAME,
     view_query_template=ASSIGNMENTS_QUERY_TEMPLATE,
     description=ASSIGNMENTS_VIEW_DESCRIPTION,
-    us_id_raw_dataset=US_ID_RAW_DATASET,
-    us_pa_raw_dataset=US_PA_RAW_DATASET,
+    po_report_dataset=PO_REPORT_DATASET,
     sessions_dataset=SESSIONS_DATASET,
     state_base_dataset=STATE_BASE_DATASET,
     static_reference_dataset=STATIC_REFERENCE_TABLES_DATASET,
+    us_id_raw_dataset=US_ID_RAW_DATASET,
+    us_pa_raw_dataset=US_PA_RAW_DATASET,
     should_materialize=True,
     clustering_fields=["experiment_id"],
 )
