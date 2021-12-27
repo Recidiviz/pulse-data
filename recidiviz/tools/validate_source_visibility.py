@@ -208,6 +208,8 @@ def main() -> int:
     success = True
 
     for pipeline in PIPELINES:
+        if pipeline.__file__ is None:
+            raise ValueError(f"No file associated with {pipeline}.")
         success &= check_dependencies_for_entrypoint(
             pipeline.__file__,
             valid_module_prefixes=make_module_matcher(

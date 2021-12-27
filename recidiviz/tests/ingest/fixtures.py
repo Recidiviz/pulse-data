@@ -103,6 +103,9 @@ def as_filepath(filename: str, subdir: str = "fixtures") -> str:
 
     caller_filepath = module.__file__
 
+    if caller_filepath is None:
+        raise ValueError(f"No file associated with {module}.")
+
     return os.path.abspath(os.path.join(caller_filepath, "..", subdir, filename))
 
 

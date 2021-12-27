@@ -99,6 +99,8 @@ IS_SECONDARY_INSTANCE_PROPERTY_NAME = "is_secondary_instance"
 
 def ingest_view_manifest_dir(region: Region) -> str:
     """Returns the directory where all ingest view manifests for a given region live."""
+    if region.region_module.__file__ is None:
+        raise ValueError(f"No file associated with {region.region_module}.")
     return os.path.join(
         os.path.dirname(region.region_module.__file__),
         region.region_code.lower(),

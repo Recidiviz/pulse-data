@@ -81,7 +81,8 @@ class ShellCompartment(SparkCompartment):
             for policy in SparkPolicy.get_ts_policies(
                 self.policy_list, policy_time_steps[ts_idx]
             ):
-                ts_data = policy.policy_fn(ts_data)
+                # TODO(#10442): Fix this and remove the type ignore.
+                ts_data = policy.policy_fn(ts_data)  # type: ignore[func-returns-value]
 
             self.policy_data[policy_time_steps[ts_idx]] = ts_data
 

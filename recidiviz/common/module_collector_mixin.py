@@ -39,6 +39,8 @@ class ModuleCollectorMixin:
     def _get_submodule_names(
         base_module: ModuleType, submodule_name_prefix_filter: Optional[str]
     ) -> List[str]:
+        if base_module.__file__ is None:
+            raise ValueError(f"No file associated with {base_module}.")
         base_module_path = os.path.dirname(base_module.__file__)
         return [
             name
