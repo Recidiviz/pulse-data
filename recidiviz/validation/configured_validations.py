@@ -68,9 +68,6 @@ from recidiviz.validation.views.state.active_in_population_after_death_date impo
 from recidiviz.validation.views.state.active_program_participation_by_region_internal_consistency import (
     ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_INTERNAL_CONSISTENCY_VIEW_BUILDER,
 )
-from recidiviz.validation.views.state.sessions_validation.sessions_persons_in_incarceration_or_supervision import (
-    SESSIONS_IN_INCARCERATION_OR_SUPERVISION_VIEW_BUILDER,
-)
 from recidiviz.validation.views.state.case_termination_by_type_comparison import (
     CASE_TERMINATIONS_BY_TYPE_COMPARISON_VIEW_BUILDER,
 )
@@ -202,6 +199,9 @@ from recidiviz.validation.views.state.revocations_by_period_dashboard_comparison
 from recidiviz.validation.views.state.sentence_type_by_district_by_demographics_internal_consistency import (
     SENTENCE_TYPE_BY_DISTRICT_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.sessions_validation.sessions_persons_in_incarceration_or_supervision import (
+    SESSIONS_IN_INCARCERATION_OR_SUPERVISION_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.supervision_period_dates_existence import (
     SUPERVISION_PERIOD_DATES_EXISTENCE_VIEW_BUILDER,
 )
@@ -251,6 +251,8 @@ def _get_validation_region_module_paths() -> List[Tuple[str, str]]:
     )
     validation_region_module_paths = []
     for region_module in region_modules:
+        if region_module.__file__ is None:
+            raise ValueError(f"No file associated with {region_module}.")
         region_module_path = os.path.dirname(region_module.__file__)
         region_code = os.path.split(region_module_path)[-1].lower()
         validation_region_module_paths.append((region_code, region_module_path))
