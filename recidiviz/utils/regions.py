@@ -242,6 +242,8 @@ def get_region_manifest(region_code: str, region_module: ModuleType) -> Dict[str
     Returns:
         Region manifest as dictionary
     """
+    if region_module.__file__ is None:
+        raise ValueError(f"No file associated with {region_module}.")
     with open(
         os.path.join(
             os.path.dirname(region_module.__file__), region_code, MANIFEST_NAME
@@ -286,7 +288,10 @@ def _get_supported_region_codes_for_base_region_module(
     """Returns all regions that support the given module type, e.g. direct ingest versus scraper. Will optionally
     filter on the additional arguments."""
 
+    if base_region_module.__file__ is None:
+        raise ValueError(f"No file associated with {base_region_module}.")
     base_region_path = os.path.dirname(base_region_module.__file__)
+
     all_region_codes = {
         region_module.name for region_module in pkgutil.iter_modules([base_region_path])
     }

@@ -46,6 +46,8 @@ class DirectIngestPreProcessedIngestViewCollector(
         self.controller_tag_rank_list = controller_tag_rank_list
 
     def collect_view_builders(self) -> List[DirectIngestPreProcessedIngestViewBuilder]:
+        if self.region.region_module.__file__ is None:
+            raise ValueError(f"No file associated with {self.region.region_module}.")
         relative_dir = os.path.relpath(
             os.path.dirname(self.region.region_module.__file__),
             os.path.dirname(recidiviz.__file__),

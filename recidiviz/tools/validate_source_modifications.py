@@ -71,7 +71,7 @@ def _get_file_for_endpoint_rule(rule: Rule) -> Optional[str]:
     for the endpoint defined. This is done by crawling through all of our customized modules imported
     and finding the exact function that matches."""
     endpoint_parts = rule.endpoint.split(".")
-    endpoint_module = endpoint_parts[0]
+    endpoint_module_name = endpoint_parts[0]
     function_name = endpoint_parts[1] if len(endpoint_parts) > 1 else None
     recidiviz_modules = [
         module
@@ -79,12 +79,16 @@ def _get_file_for_endpoint_rule(rule: Rule) -> Optional[str]:
         if "recidiviz" in module and "tools" not in module and "tests" not in module
     ]
     file_for_endpoint: Optional[str] = None
-    for module in recidiviz_modules:
-        if endpoint_module in module or not file_for_endpoint:
-            for func, _ in getmembers(sys.modules[module], isfunction):
+    for module_name in recidiviz_modules:
+        module = sys.modules[module_name]
+        if module.__file__ is None:
+            raise ValueError(f"No file associated with {module}.")
+
+        if endpoint_module_name in module_name or not file_for_endpoint:
+            for func, _ in getmembers(module, isfunction):
                 if func == function_name:
-                    top_level_idx = sys.modules[module].__file__.find("recidiviz/")
-                    file_for_endpoint = sys.modules[module].__file__[top_level_idx:]
+                    top_level_idx = module.__file__.find("recidiviz/")
+                    file_for_endpoint = module.__file__[top_level_idx:]
                     break
     return file_for_endpoint
 

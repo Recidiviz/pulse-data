@@ -348,6 +348,8 @@ class DirectIngestRegionRawFileConfig:
         )
 
     def _region_ingest_dir(self) -> str:
+        if self.region_module.__file__ is None:
+            raise ValueError(f"No file associated with {self.region_module}.")
         return os.path.join(
             os.path.dirname(self.region_module.__file__), f"{self.region_code.lower()}"
         )
