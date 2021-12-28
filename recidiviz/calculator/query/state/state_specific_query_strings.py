@@ -40,7 +40,8 @@ STATE_RACE_ETHNICITY_POPULATION_TABLE_NAME = "state_race_ethnicity_population_co
 # Note: there are a few limitations with this strategy. Most notably, this only picks one raw table per state. It does
 # not accommodate checking multiple tables that may potentially power incarceration periods in ingest.
 STATE_CODE_TO_PATHWAYS_LAST_UPDATED_DATE_SOURCE_TABLE: Dict[str, str] = {
-    StateCode.US_TN.value: "OffenderMovement",
+    # TODO(#10453): Re-enable once we have some raw data
+    # StateCode.US_TN.value: "OffenderMovement",
     StateCode.US_ID.value: "movement",
 }
 
