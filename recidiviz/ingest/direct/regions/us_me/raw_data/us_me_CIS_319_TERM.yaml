@@ -30,7 +30,6 @@ columns:
     description: |-
       The earliest release date from incarceration with all earned/good time credits applied.
   - name : Intake_Date
-  - name : Locking_Tsp
   - name : Max_Cust_Rel_Date
     description: |-
       The max release date from incarceration.

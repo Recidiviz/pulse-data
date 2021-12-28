@@ -148,7 +148,6 @@ columns:
   - name : Hearing_Date
   - name : Keep_Separate_Tx
   - name : Location_Tx
-  - name : Locking_Tsp
   - name : Modified_By_Tx
   - name : Modified_On_Date
   - name : Notes_Tx

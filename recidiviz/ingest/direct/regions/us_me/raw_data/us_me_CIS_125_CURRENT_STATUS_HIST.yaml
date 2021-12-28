@@ -290,7 +290,6 @@ columns:
     description: |-
       The date that the status ends. If this date is 12/31/9999 then the status is still active and the End_Date shows
       the anticipated end date or in some cases the End_Date is NULL.
-  - name: Locking_Tsp
   - name: Modified_By_Tx
   - name: Modified_On_Date
   - name: Out_Pop_Count_Ind

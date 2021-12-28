@@ -11,7 +11,6 @@ columns:
   - name : E_Current_Status_Desc
     description : The plain text value associated with the Current_Status_Cd number.
   - name : Juvenile_Ind
-  - name : Locking_Tsp
   - name : Logical_Delete_Ind
   - name : Modified_By_Tx
   - name : Modified_On_Date

@@ -10,7 +10,6 @@ columns:
   - name : E_Mode_Desc
   - name : Juvenile_Ind
   - name : Juvenile_Medicaid_Ind
-  - name : Locking_Tsp
   - name : Logical_Delete_Ind
   - name : Modified_By_Tx
   - name : Modified_On_Date

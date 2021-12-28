@@ -7,7 +7,6 @@ columns:
   - name : Created_By_Tx
   - name : Created_On_Date
   - name : Juvenile_Ind
-  - name : Locking_Tsp
   - name : Logical_Delete_Ind
   - name : Modified_By_Tx
   - name : Modified_On_Date

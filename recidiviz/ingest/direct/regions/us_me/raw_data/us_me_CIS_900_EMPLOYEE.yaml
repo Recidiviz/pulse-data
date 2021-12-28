@@ -22,7 +22,6 @@ columns:
   - name : Hris_Number_Tx
   - name : Internal_Escape_Contact_Ind
   - name : Last_Name
-  - name : Locking_Tsp
   - name : Logical_Delete_Ind
   - name : Math_Test_Ind
   - name : Mental_Ind

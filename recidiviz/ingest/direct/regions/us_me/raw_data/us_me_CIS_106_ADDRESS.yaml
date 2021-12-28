@@ -23,7 +23,6 @@ columns:
   - name : Created_On_Date
   - name : End_Date
   - name : Interstate_Compact_No_Tx
-  - name : Locking_Tsp
   - name : Logical_Delete_Ind
   - name : Modified_By_Tx
   - name : Modified_On_Date
