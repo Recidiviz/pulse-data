@@ -12,7 +12,6 @@ columns:
   - name : First_Name
   - name : Ineffct_Date
   - name : Last_Name
-  - name : Locking_Tsp
   - name : Logical_Delete_Ind
   - name : Modified_By_Tx
   - name : Modified_On_Date

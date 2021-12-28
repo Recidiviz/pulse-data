@@ -11,7 +11,6 @@ columns:
   - name : E_Movement_Type_Desc
     description : |-
       The value for the Cis_3090_Movement_Type_Cd code. See CIS_309_MOVEMENT config for all possible values.
-  - name : Locking_Tsp
   - name : Logical_Delete_Ind
   - name : Modified_By_Tx
   - name : Modified_On_Date

@@ -17,7 +17,6 @@ columns:
   - name : Ineffct_Date
   - name : Juv_Dna_Ind
   - name : Juvenile_Ind
-  - name : Locking_Tsp
   - name : Logical_Delete_Ind
   - name : Mejis_Name_Indx_Cd
   - name : Mejis_Offns_Class_Tx

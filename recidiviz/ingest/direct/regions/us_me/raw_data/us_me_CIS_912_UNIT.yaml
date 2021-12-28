@@ -20,7 +20,6 @@ columns:
       This free text description field has additional information about the housing unit. Some descriptions include security level
       or facility purpose/type. Some descriptions are the full name of the Unit, whereas `Name_Tx` field is a shortened version of the
       name, for example the `Name_Tx` field will have "SMWRC" and the `Desc_Tx` might have "Southern Maine Women's ReEntry Center".
-  - name : Locking_Tsp
   - name : Logical_Delete_Ind
   - name : Modified_By_Tx
   - name : Modified_On_Date

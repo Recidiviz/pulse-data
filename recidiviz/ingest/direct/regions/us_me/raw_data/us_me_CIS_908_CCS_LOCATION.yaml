@@ -57,7 +57,6 @@ columns:
   - name : Location_Name
     description: |-
       The plain text name of the location
-  - name : Locking_Tsp
   - name : Logical_Delete_Ind
   - name : Lss_Export_Location
   - name : Lss_Export_Password

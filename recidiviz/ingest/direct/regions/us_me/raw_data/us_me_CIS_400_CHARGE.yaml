@@ -30,7 +30,6 @@ columns:
   - name : Drugs_Alc_Inv_Ind
   - name : Interstate_Comp_In_Ind
   - name : Juvenile_Ind
-  - name : Locking_Tsp
   - name : Modified_By_Tx
   - name : Modified_On_Date
   - name : Offense_Date

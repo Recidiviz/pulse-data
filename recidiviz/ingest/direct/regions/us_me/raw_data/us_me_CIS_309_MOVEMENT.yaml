@@ -82,7 +82,6 @@ columns:
   - name : Created_By_Tx
   - name : Created_On_Date
   - name : Estimated_Time
-  - name : Locking_Tsp
   - name : Modified_By_Tx
   - name : Modified_On_Date
   - name : Movement_Date

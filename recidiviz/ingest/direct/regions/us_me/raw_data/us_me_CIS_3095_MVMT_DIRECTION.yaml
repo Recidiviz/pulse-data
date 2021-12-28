@@ -10,7 +10,6 @@ columns:
   - name : E_Mvmt_Direction_Desc
     description: |-
       The value for the Cis_3095_Mvmt_Direction_Cd code. See CIS_309_MOVEMENT config for all possible values.
-  - name : Locking_Tsp
   - name : Logical_Delete_Ind
   - name : Modified_By_Tx
   - name : Modified_On_Date
