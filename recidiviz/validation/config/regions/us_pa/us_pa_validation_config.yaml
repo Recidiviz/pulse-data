@@ -75,7 +75,7 @@ num_allowed_rows_overrides:
       over time as new data is added. TODO(#9734) - need to investigate increase due to
       CCC ingest.
   - validation_name: overlapping_incarceration_periods
-    hard_num_allowed_rows_override: 101000
+    hard_num_allowed_rows_override: 150000
     override_reason: There is a small amount of disagreement between the two data
       sources we pull data from to hydrate incarceration periods - CCIS tables and DOC
       tables. This value was 133 as of 3/5/2021 and we expect that it may slowly grow
