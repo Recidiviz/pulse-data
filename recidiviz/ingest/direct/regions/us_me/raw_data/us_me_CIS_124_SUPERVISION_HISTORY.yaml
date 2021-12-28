@@ -104,7 +104,6 @@ columns:
       accurate than an assigned client's location in the transfers table.
   - name : Created_By_Tx
   - name : Created_On_Date
-  - name : Locking_Tsp
   - name : Modified_By_Tx
   - name : Modified_On_Date
   - name : Primary_Ind

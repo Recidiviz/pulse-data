@@ -24,7 +24,6 @@ columns:
   - name : Fax_Num
   - name : Legal_Add1_Tx
   - name : Legal_Add2_Tx
-  - name : Locking_Tsp
   - name : Logical_Delete_Ind
   - name : Mail_Add1_Tx
   - name : Mail_Add2_Tx

@@ -13,7 +13,6 @@ columns:
     description: The plain-text value associated with the Supervision_Type_Cd. For a full list of possible values see the config for CIS_124_SUPERVISION_HISTORY.
   - name : Juv_Comm_Ind
   - name : Juv_Insti_Ind
-  - name : Locking_Tsp
   - name : Logical_Delete_Ind
   - name : Modified_By_Tx
   - name : Modified_On_Date

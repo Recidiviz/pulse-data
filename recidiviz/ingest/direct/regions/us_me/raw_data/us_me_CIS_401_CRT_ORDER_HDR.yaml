@@ -150,7 +150,6 @@ columns:
   - name : Fine_Total_Amount_Num
   - name : Guardian_Tx
   - name : Life_Ind
-  - name : Locking_Tsp
   - name : Max_Cust_Rel_Date
   - name : Modified_By_Tx
   - name : Modified_On_Date

@@ -11,7 +11,6 @@ columns:
   - name : Justice_Cd
   - name : Justice_Db_Type_Tx
   - name : Juvenile_Ind
-  - name : Locking_Tsp
   - name : Logical_Delete_Ind
   - name : Modified_By_Tx
   - name : Modified_On_Date

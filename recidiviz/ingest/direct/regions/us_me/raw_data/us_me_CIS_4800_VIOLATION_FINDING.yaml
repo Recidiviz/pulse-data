@@ -8,7 +8,6 @@ columns:
   - name : Created_On_Date
   - name : Finding_Type_Cd
   - name : Juvenile_Ind
-  - name : Locking_Tsp
   - name : Logical_Delete_Ind
   - name : Modified_By_Tx
   - name : Modified_On_Date

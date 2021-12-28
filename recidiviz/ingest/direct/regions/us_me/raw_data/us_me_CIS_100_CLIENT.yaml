@@ -111,7 +111,6 @@ columns:
   - name : Literacy_Write_Ind
   - name : Lmtd_Engl_Spk_Ablty_Ind
   - name : Lock_Ind
-  - name : Locking_Tsp
   - name : Med_Marijuana_Program_Physician_Certificate_Ind
   - name : Medicaid_Elig_Ind
   - name : Medicare_Number_Tx
