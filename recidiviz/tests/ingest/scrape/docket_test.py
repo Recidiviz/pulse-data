@@ -32,12 +32,21 @@ REGIONS = ["us_ny", "us_va"]
 
 
 @pytest.mark.usefixtures("emulator")
+@pytest.mark.emulator
 class TestDocket:
     """Tests for the methods related to population of items in the docket."""
 
     def setup_method(self, _test_method: Callable) -> None:
         self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
         self.project_id_patcher.start().return_value = "test-project"
+        self.scrape_key_write = ScrapeKey(REGIONS[0], constants.ScrapeType.BACKGROUND)
+        self.scrape_key_read = ScrapeKey(REGIONS[1], constants.ScrapeType.BACKGROUND)
+        pubsub_helper.create_topic_and_subscription(
+            self.scrape_key_write, docket.PUBSUB_TYPE
+        )
+        pubsub_helper.create_topic_and_subscription(
+            self.scrape_key_read, docket.PUBSUB_TYPE
+        )
 
     def teardown_method(self, _test_method: Callable) -> None:
         for region in REGIONS:
@@ -47,16 +56,12 @@ class TestDocket:
         self.project_id_patcher.stop()
 
     def test_add_to_query_docket_background(self) -> None:
-        scrape_key = ScrapeKey(REGIONS[0], constants.ScrapeType.BACKGROUND)
-
-        pubsub_helper.create_topic_and_subscription(scrape_key, docket.PUBSUB_TYPE)
-
-        docket.add_to_query_docket(scrape_key, get_payload()[0]).result()
-        docket.add_to_query_docket(scrape_key, get_payload()[1]).result()
+        docket.add_to_query_docket(self.scrape_key_write, get_payload()[0]).result()
+        docket.add_to_query_docket(self.scrape_key_write, get_payload()[1]).result()
 
         items = [
-            docket.get_new_docket_item(scrape_key),
-            docket.get_new_docket_item(scrape_key),
+            docket.get_new_docket_item(self.scrape_key_write),
+            docket.get_new_docket_item(self.scrape_key_write),
         ]
         assert len(items) == 2
 
@@ -67,11 +72,9 @@ class TestDocket:
     @patch("recidiviz.utils.regions.get_region")
     def test_load_target_list_background_no_names_file(self, mock_region: Mock) -> None:
         mock_region.return_value.names_file = None
-        scrape_key = ScrapeKey(REGIONS[0], constants.ScrapeType.BACKGROUND)
+        docket.load_target_list(self.scrape_key_write)
 
-        docket.load_target_list(scrape_key)
-
-        item = docket.get_new_docket_item(scrape_key)
+        item = docket.get_new_docket_item(self.scrape_key_write)
         assert item is not None
         assert item.message.data.decode() == json.dumps("empty")
 
@@ -80,13 +83,12 @@ class TestDocket:
         mock_region.return_value.names_file = (
             "../recidiviz/tests/ingest/testdata/docket/names/last_only.csv"
         )
-        scrape_key = ScrapeKey(REGIONS[0], constants.ScrapeType.BACKGROUND)
 
-        docket.load_target_list(scrape_key)
+        docket.load_target_list(self.scrape_key_write)
 
         names = []
         for _ in range(12):
-            item = docket.get_new_docket_item(scrape_key)
+            item = docket.get_new_docket_item(self.scrape_key_write)
             assert item is not None
             name_serialized = item.message.data.decode()
             names.append(json.loads(name_serialized))
@@ -104,20 +106,18 @@ class TestDocket:
             ["MARTINEZ", ""],
             ["ANDERSON", ""],
         ]
-        assert not docket.get_new_docket_item(scrape_key)
+        assert not docket.get_new_docket_item(self.scrape_key_write)
 
     @patch("recidiviz.utils.regions.get_region")
     def test_load_target_list_last_names_with_query(self, mock_region: Mock) -> None:
         mock_region.return_value.names_file = (
             "../recidiviz/tests/ingest/testdata/docket/names/last_only.csv"
         )
-        scrape_key = ScrapeKey(REGIONS[0], constants.ScrapeType.BACKGROUND)
-
-        docket.load_target_list(scrape_key, surname="WILSON")
+        docket.load_target_list(self.scrape_key_write, surname="WILSON")
 
         names = []
         for _ in range(3):
-            item = docket.get_new_docket_item(scrape_key)
+            item = docket.get_new_docket_item(self.scrape_key_write)
             assert item is not None
             name_serialized = item.message.data.decode()
             names.append(json.loads(name_serialized))
@@ -126,7 +126,7 @@ class TestDocket:
             ["MARTINEZ", ""],
             ["ANDERSON", ""],
         ]
-        assert not docket.get_new_docket_item(scrape_key)
+        assert not docket.get_new_docket_item(self.scrape_key_write)
 
     @patch("recidiviz.utils.regions.get_region")
     def test_load_target_list_last_names_with_bad_query(
@@ -135,27 +135,24 @@ class TestDocket:
         mock_region.return_value.names_file = (
             "../recidiviz/tests/ingest/testdata/docket/names/last_only.csv"
         )
-        scrape_key = ScrapeKey(REGIONS[0], constants.ScrapeType.BACKGROUND)
+        docket.load_target_list(self.scrape_key_write, surname="GARBAGE")
 
-        docket.load_target_list(scrape_key, surname="GARBAGE")
-
-        item = docket.get_new_docket_item(scrape_key)
+        item = docket.get_new_docket_item(self.scrape_key_write)
         assert item is not None
         assert item.message.data.decode() == json.dumps(("GARBAGE", ""))
-        assert not docket.get_new_docket_item(scrape_key)
+        assert not docket.get_new_docket_item(self.scrape_key_write)
 
     @patch("recidiviz.utils.regions.get_region")
     def test_load_target_list_full_names(self, mock_region: Mock) -> None:
         mock_region.return_value.names_file = (
             "../recidiviz/tests/ingest/testdata/docket/names/last_and_first.csv"
         )
-        scrape_key = ScrapeKey(REGIONS[0], constants.ScrapeType.BACKGROUND)
 
-        docket.load_target_list(scrape_key)
+        docket.load_target_list(self.scrape_key_write)
 
         names = []
         for _ in range(8):
-            item = docket.get_new_docket_item(scrape_key)
+            item = docket.get_new_docket_item(self.scrape_key_write)
             assert item is not None
             name_serialized = item.message.data.decode()
             names.append(json.loads(name_serialized))
@@ -169,16 +166,14 @@ class TestDocket:
             ["Smith", "William"],
             ["Williams", "James"],
         ]
-        assert not docket.get_new_docket_item(scrape_key)
+        assert not docket.get_new_docket_item(self.scrape_key_write)
 
     def test_get_new_docket_item_no_matching_items(self) -> None:
-        write_key = ScrapeKey(REGIONS[0], constants.ScrapeType.BACKGROUND)
-        read_key = ScrapeKey(REGIONS[1], constants.ScrapeType.BACKGROUND)
+        docket.add_to_query_docket(self.scrape_key_write, get_payload()).result()
 
-        pubsub_helper.create_topic_and_subscription(write_key, docket.PUBSUB_TYPE)
-        docket.add_to_query_docket(write_key, get_payload()).result()
-
-        docket_item = docket.get_new_docket_item(read_key, return_immediately=True)
+        docket_item = docket.get_new_docket_item(
+            self.scrape_key_read, return_immediately=True
+        )
         assert not docket_item
 
     def test_get_new_docket_item_no_items_at_all(self) -> None:
@@ -189,34 +184,28 @@ class TestDocket:
         assert not docket_item
 
     def test_purge_query_docket(self) -> None:
-        scrape_key_purge = ScrapeKey(REGIONS[0], constants.ScrapeType.BACKGROUND)
-        scrape_key_read = ScrapeKey(REGIONS[1], constants.ScrapeType.BACKGROUND)
+        docket.add_to_query_docket(self.scrape_key_write, get_payload()).result()
+        docket.add_to_query_docket(self.scrape_key_read, get_payload()).result()
 
-        pubsub_helper.create_topic_and_subscription(
-            scrape_key_purge, docket.PUBSUB_TYPE
+        docket.purge_query_docket(self.scrape_key_write)
+        assert not docket.get_new_docket_item(
+            self.scrape_key_write, return_immediately=True
         )
-        pubsub_helper.create_topic_and_subscription(scrape_key_read, docket.PUBSUB_TYPE)
-        docket.add_to_query_docket(scrape_key_purge, get_payload()).result()
-        docket.add_to_query_docket(scrape_key_read, get_payload()).result()
-
-        docket.purge_query_docket(scrape_key_purge)
-        assert not docket.get_new_docket_item(scrape_key_purge, return_immediately=True)
-        assert docket.get_new_docket_item(scrape_key_read, return_immediately=True)
+        assert docket.get_new_docket_item(self.scrape_key_read, return_immediately=True)
 
     def test_purge_query_docket_nothing_matching(self) -> None:
-        scrape_key_purge = ScrapeKey(REGIONS[0], constants.ScrapeType.BACKGROUND)
-        scrape_key_add = ScrapeKey(REGIONS[1], constants.ScrapeType.BACKGROUND)
+        docket.add_to_query_docket(self.scrape_key_read, get_payload()).result()
 
-        pubsub_helper.create_topic_and_subscription(scrape_key_add, docket.PUBSUB_TYPE)
-        docket.add_to_query_docket(scrape_key_add, get_payload()).result()
-
-        docket.purge_query_docket(scrape_key_purge)
-        assert not docket.get_new_docket_item(scrape_key_purge, return_immediately=True)
+        docket.purge_query_docket(self.scrape_key_write)
+        assert not docket.get_new_docket_item(
+            self.scrape_key_write, return_immediately=True
+        )
 
     def test_purge_query_docket_already_empty(self) -> None:
-        scrape_key = ScrapeKey(REGIONS[0], constants.ScrapeType.BACKGROUND)
-        docket.purge_query_docket(scrape_key)
-        assert not docket.get_new_docket_item(scrape_key, return_immediately=True)
+        docket.purge_query_docket(self.scrape_key_write)
+        assert not docket.get_new_docket_item(
+            self.scrape_key_write, return_immediately=True
+        )
 
 
 def get_payload() -> List[Dict[str, str]]:
