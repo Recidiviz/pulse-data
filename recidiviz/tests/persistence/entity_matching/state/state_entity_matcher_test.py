@@ -1317,29 +1317,22 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
     def test_matchPersons_noPlaceholders_updatePersonAttributes(self) -> None:
         # Arrange 1 - Match
-        db_race = generate_race(
-            person_race_id=_ID, state_code=_STATE_CODE, race=Race.WHITE.value
-        )
+        db_race = generate_race(state_code=_STATE_CODE, race=Race.WHITE.value)
         entity_race = self.to_entity(db_race)
-        db_alias = generate_alias(
-            person_alias_id=_ID, state_code=_STATE_CODE, full_name=_FULL_NAME
-        )
+        db_alias = generate_alias(state_code=_STATE_CODE, full_name=_FULL_NAME)
         entity_alias = self.to_entity(db_alias)
         db_ethnicity = generate_ethnicity(
-            person_ethnicity_id=_ID,
             state_code=_STATE_CODE,
             ethnicity=Ethnicity.HISPANIC.value,
         )
         entity_ethnicity = self.to_entity(db_ethnicity)
         db_external_id = generate_external_id(
-            person_external_id_id=_ID,
             state_code=_STATE_CODE,
             external_id=_EXTERNAL_ID,
             id_type=_ID_TYPE,
         )
         entity_external_id = self.to_entity(db_external_id)
         db_person = generate_person(
-            person_id=_ID,
             full_name=_FULL_NAME,
             external_ids=[db_external_id],
             races=[db_race],
@@ -1389,12 +1382,9 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
     def test_matchPersons_noPlaceholders_partialTreeIngested(self) -> None:
         # Arrange 1 - Match
-        db_person = generate_person(
-            person_id=_ID, full_name=_FULL_NAME, state_code=_STATE_CODE
-        )
+        db_person = generate_person(full_name=_FULL_NAME, state_code=_STATE_CODE)
         db_court_case = generate_court_case(
             person=db_person,
-            court_case_id=_ID,
             external_id=_EXTERNAL_ID,
             state_code=_STATE_CODE,
             county_code="county_code",
@@ -1402,7 +1392,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         entity_court_case = self.to_entity(db_court_case)
         db_charge_1 = generate_charge(
             person=db_person,
-            charge_id=_ID,
             state_code=_STATE_CODE,
             external_id=_EXTERNAL_ID,
             description="charge_1",
@@ -1411,7 +1400,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         entity_charge_1 = self.to_entity(db_charge_1)
         db_charge_2 = generate_charge(
             person=db_person,
-            charge_id=_ID_2,
             state_code=_STATE_CODE,
             external_id=_EXTERNAL_ID_2,
             description="charge_2",
@@ -1421,7 +1409,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         entity_charge_2 = self.to_entity(db_charge_2)
         db_supervision_sentence = generate_supervision_sentence(
             person=db_person,
-            supervision_sentence_id=_ID,
             state_code=_STATE_CODE,
             external_id=_EXTERNAL_ID,
             county_code="county_code",
@@ -1430,7 +1417,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         entity_supervision_sentence = self.to_entity(db_supervision_sentence)
         db_incarceration_sentence = generate_incarceration_sentence(
             person=db_person,
-            incarceration_sentence_id=_ID,
             status=StateSentenceStatus.SERVING.value,
             external_id=_EXTERNAL_ID,
             state_code=_STATE_CODE,
@@ -1439,7 +1425,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         entity_incarceration_sentence = self.to_entity(db_incarceration_sentence)
         db_external_id = generate_external_id(
             person=db_person,
-            person_external_id_id=_ID,
             state_code=_STATE_CODE,
             external_id=_EXTERNAL_ID,
             id_type=_ID_TYPE,
@@ -1936,14 +1921,12 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
     def test_matchPersons_ingestedPersonWithNewExternalId(self) -> None:
         db_external_id = generate_external_id(
-            person_external_id_id=_ID,
             state_code=_STATE_CODE,
             external_id=_EXTERNAL_ID,
             id_type=_ID_TYPE,
         )
         entity_external_id = self.to_entity(db_external_id)
         db_person = generate_person(
-            person_id=_ID,
             full_name=_FULL_NAME,
             external_ids=[db_external_id],
             state_code=_STATE_CODE,
