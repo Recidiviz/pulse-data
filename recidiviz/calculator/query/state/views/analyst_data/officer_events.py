@@ -104,6 +104,23 @@ FROM `{project_id}.{po_report_dataset}.sendgrid_po_report_email_events_materiali
 INNER JOIN
     `{project_id}.{static_reference_dataset}.po_report_recipients` users
 ON events.email = users.email_address
+
+UNION ALL
+
+-- *unique* (one per email) po monthly report action taken (delivered, opened, clicked)
+SELECT
+    users.state_code,
+    users.officer_external_id,
+    "PO_MONTHLY_REPORT_ACTION_FIRST" AS event,
+    EXTRACT(DATETIME FROM events.event_datetime AT TIME ZONE 'US/Pacific') AS event_date,
+    event AS attribute_1, -- kind of action taken
+FROM `{project_id}.{po_report_dataset}.sendgrid_po_report_email_events_materialized` events
+INNER JOIN
+    `{project_id}.{static_reference_dataset}.po_report_recipients` users
+ON events.email = users.email_address
+WHERE TRUE QUALIFY
+    ROW_NUMBER() OVER (PARTITION BY message_id, email, attribute_1
+        ORDER BY events.event_datetime) = 1
 """
 
 OFFICER_EVENTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
