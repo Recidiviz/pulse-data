@@ -56,6 +56,7 @@ WITH last_day_of_data AS (
         "person_id" as id_type,
         compartment_level_1 AS variant_id,
         MIN(start_date) AS variant_date,
+        NULL AS block_id,
     FROM
         `{project_id}.{sessions_dataset}.compartment_sessions_materialized`
     GROUP BY 1, 2, 3, 4, 5
@@ -70,6 +71,7 @@ WITH last_day_of_data AS (
         "person_id" as id_type,
         COALESCE(dsg_asgnmt, "TREATED_INTERNAL_UNKNOWN") AS variant_id,
         DATE(prgrm_strt_dt) AS variant_date,
+        NULL AS block_id,
     FROM
         `{project_id}.{us_id_raw_dataset}.DoPro_Participant_latest` a
     INNER JOIN
@@ -91,6 +93,7 @@ WITH last_day_of_data AS (
         "person_id" as id_type,
         "REFERRED" AS variant_id,
         DATE(start_date) AS variant_date,
+        NULL AS block_id,
     FROM
         `{project_id}.us_id_raw_data_up_to_date_views.geo_cis_participants_latest` a
     INNER JOIN
@@ -103,6 +106,30 @@ WITH last_day_of_data AS (
         person_external_id NOT IN ("30054")
 )
 
+-- When clients begin supervision session preceding referral to GEO CIS, 
+-- or when clients begin supervision session satisfying conditions for a matched control
+,
+geo_cis_referral_matched AS (
+    SELECT
+        experiment_id,
+        a.state_code,
+        CAST(person_id AS STRING) AS subject_id,
+        "person_id" AS id_type,
+        variant_id,
+        DATE(variant_date) AS variant_date,
+        block_id,
+    FROM
+        `{project_id}.{static_reference_dataset}.geo_cis_referrals_matched` a
+    INNER JOIN 
+        `{project_id}.{state_base_dataset}.state_person_external_id` b
+    ON
+        a.person_external_id = b.external_id
+    WHERE
+        b.state_code = "US_ID" AND
+        -- Remove IDOC's test subject
+        person_external_id NOT IN ("30054") 
+)
+
 -- When officers first given access to Case Triage
 , case_triage_access AS (
     SELECT
@@ -112,8 +139,8 @@ WITH last_day_of_data AS (
         "officer_external_id" as id_type,
         "RECEIVED_ACCESS" AS variant_id,
         received_access AS variant_date,
+        NULL AS block_id, --state_code once in more than one state
         -- cluster_id = district code, if rolled out consistently at district level
-        -- block_id = state_code once in more than one state
     FROM
         `{project_id}.{static_reference_dataset}.case_triage_users`
 )
@@ -127,8 +154,8 @@ WITH last_day_of_data AS (
         "officer_external_id" as id_type,
         "RECEIVED_EMAIL" AS variant_id,
         DATE(events.event_datetime) AS variant_date,
+        NULL AS block_id, --state_code once in more than one state
         -- cluster_id = district code, if rolled out consistently at district level
-        -- block_id = state_code once in more than one state
     FROM
         `{project_id}.{po_report_dataset}.sendgrid_po_report_email_events_materialized` events
     INNER JOIN
@@ -148,6 +175,7 @@ WITH last_day_of_data AS (
         "person_id" AS id_type,
         "COMMUNITY_PLACEMENT_PROGRAM" AS variant_id,
         MIN(start_date) AS variant_date,
+        NULL AS block_id,
     FROM 
         `{project_id}.{sessions_dataset}.compartment_sessions_materialized` a
     WHERE
@@ -164,6 +192,7 @@ WITH last_day_of_data AS (
         "person_id" AS id_type,
         "TEMPORARY_REPRIEVE" AS variant_id,
         reprieve_date AS variant_date,
+        NULL AS block_id,
     FROM 
         `{project_id}.{static_reference_dataset}.us_pa_temporary_reprieves` a
     INNER JOIN
@@ -183,6 +212,7 @@ WITH last_day_of_data AS (
         "FURLOUGH" AS variant_id,
         -- Define first marked movement as treatment
         MIN(DATE(Status_Dt)) AS variant_date,
+        NULL AS block_id,
     FROM 
         `{project_id}.{us_pa_raw_dataset}.dbo_vwCCISAllMvmt_latest` a
     INNER JOIN (
@@ -214,6 +244,7 @@ WITH last_day_of_data AS (
         "state_code" as id_type,
         variant_id,
         CAST(variant_date AS DATETIME) AS variant_time,
+        NULL AS block_id,
     FROM
         `{project_id}.{static_reference_dataset}.experiment_state_assignments_materialized`
 )
@@ -228,6 +259,9 @@ WITH last_day_of_data AS (
     UNION ALL
     SELECT *
     FROM geo_cis_referral
+    UNION ALL
+    SELECT *
+    FROM geo_cis_referral_matched
     UNION ALL
     SELECT *
     FROM case_triage_access
