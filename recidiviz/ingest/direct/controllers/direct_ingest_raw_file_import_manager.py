@@ -183,6 +183,22 @@ class DirectIngestRawFileConfig:
         return [column for column in self.columns if column.description]
 
     @property
+    def available_datetime_cols(self) -> List[str]:
+        return [
+            column.name
+            for column in self.columns
+            if column.is_datetime and column.description
+        ]
+
+    @property
+    def available_non_datetime_cols(self) -> List[str]:
+        return [
+            column.name
+            for column in self.columns
+            if not column.is_datetime and column.description
+        ]
+
+    @property
     def non_datetime_cols(self) -> List[str]:
         return [column.name for column in self.columns if not column.is_datetime]
 
