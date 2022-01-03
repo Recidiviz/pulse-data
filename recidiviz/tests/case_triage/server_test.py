@@ -24,6 +24,7 @@ from urllib import parse
 
 import pytest
 from flask import Flask, Response, g, jsonify, session
+from freezegun import freeze_time
 from sqlalchemy.orm import Session
 
 from recidiviz.case_triage.api_routes import IMPERSONATED_EMAIL_KEY
@@ -238,6 +239,7 @@ class TestCaseTriageAPIRoutes(TestCase):
         with self.helpers.using_officer(self.officer_without_clients):
             self.assertEqual([], self.helpers.get_opportunities())
 
+    @freeze_time("2021-12-01")
     def test_get_opportunities(self) -> None:
 
         with self.helpers.using_officer(self.officer):
@@ -326,6 +328,7 @@ class TestCaseTriageAPIRoutes(TestCase):
                 0,
             )
 
+    @freeze_time("2021-12-01")
     def test_delete_opportunity_deferral(self) -> None:
         with self.helpers.using_officer(self.officer):
             # Submit API request
