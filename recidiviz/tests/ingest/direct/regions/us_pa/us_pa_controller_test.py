@@ -1255,22 +1255,6 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             ),
         ]
 
-        p1_sg = entities.StateSentenceGroup.new_with_defaults(
-            external_id="AB7413",
-            state_code=_STATE_CODE_UPPER,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            person=person_1,
-        )
-        p1_sg2 = entities.StateSentenceGroup.new_with_defaults(
-            external_id="BC8524",
-            state_code=_STATE_CODE_UPPER,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            person=person_1,
-        )
-
-        person_1.sentence_groups.append(p1_sg)
-        person_1.sentence_groups.append(p1_sg2)
-
         person_2.full_name = '{"given_names": "JEAN-PAUL", "middle_names": "", "name_suffix": "", "surname": "SARTRE"}'
         person_2.gender = Gender.MALE
         person_2.gender_raw_text = "MALE"
@@ -1292,14 +1276,6 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             ),
         ]
 
-        p2_sg = entities.StateSentenceGroup.new_with_defaults(
-            external_id="GF3374",
-            state_code=_STATE_CODE_UPPER,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            person=person_2,
-        )
-        person_2.sentence_groups.append(p2_sg)
-
         person_3.full_name = '{"given_names": "SOREN", "middle_names": "", "name_suffix": "JR", "surname": "KIERKEGAARD"}'
         person_3.gender = Gender.FEMALE
         person_3.gender_raw_text = "FEMALE"
@@ -1320,14 +1296,6 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                 state_code=_STATE_CODE_UPPER, race=Race.WHITE, race_raw_text="WHITE"
             ),
         ]
-
-        p3_sg = entities.StateSentenceGroup.new_with_defaults(
-            external_id="CJ1991",
-            state_code=_STATE_CODE_UPPER,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            person=person_3,
-        )
-        person_3.sentence_groups.append(p3_sg)
 
         person_4.full_name = '{"given_names": "JOHN", "middle_names": "", "name_suffix": "", "surname": "RAWLS"}'
         person_4.gender = Gender.MALE
@@ -1352,14 +1320,6 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             ),
         ]
 
-        p4_sg = entities.StateSentenceGroup.new_with_defaults(
-            external_id="JE1989",
-            state_code=_STATE_CODE_UPPER,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            person=person_4,
-        )
-        person_4.sentence_groups.append(p4_sg)
-
         person_9.full_name = '{"given_names": "IMMANUEL", "middle_names": "", "name_suffix": "", "surname": "KANT"}'
         person_9.gender = Gender.MALE
         person_9.gender_raw_text = "MALE"
@@ -1380,14 +1340,6 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                 state_code=_STATE_CODE_UPPER, race=Race.WHITE, race_raw_text="WHITE"
             ),
         ]
-
-        p9_sg = entities.StateSentenceGroup.new_with_defaults(
-            external_id="AB1234",
-            state_code=_STATE_CODE_UPPER,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            person=person_9,
-        )
-        person_9.sentence_groups.append(p9_sg)
 
         populate_person_backedges(expected_people)
 

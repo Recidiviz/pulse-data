@@ -57,7 +57,6 @@ from recidiviz.persistence.entity.state.entities import (
     StatePersonEthnicity,
     StatePersonExternalId,
     StatePersonRace,
-    StateSentenceGroup,
     StateSupervisionViolatedConditionEntry,
     StateSupervisionViolation,
     StateSupervisionViolationResponse,
@@ -243,13 +242,6 @@ class UsPaIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         state_code="US_PA", race=Race.WHITE, race_raw_text="WHITE"
                     )
                 ],
-                sentence_groups=[
-                    StateSentenceGroup(
-                        external_id="AB1234",
-                        state_code="US_PA",
-                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                    ),
-                ],
             ),
             StatePerson(
                 state_code="US_PA",
@@ -277,18 +269,6 @@ class UsPaIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         state_code="US_PA", race=Race.BLACK, race_raw_text="BLACK"
                     )
                 ],
-                sentence_groups=[
-                    StateSentenceGroup(
-                        external_id="AB7413",
-                        state_code="US_PA",
-                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                    ),
-                    StateSentenceGroup(
-                        external_id="BC8524",
-                        state_code="US_PA",
-                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                    ),
-                ],
             ),
             StatePerson(
                 state_code="US_PA",
@@ -314,13 +294,6 @@ class UsPaIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                 races=[
                     StatePersonRace(
                         state_code="US_PA", race=Race.BLACK, race_raw_text="BLACK"
-                    )
-                ],
-                sentence_groups=[
-                    StateSentenceGroup(
-                        external_id="GF3374",
-                        state_code="US_PA",
-                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
                     )
                 ],
             ),
@@ -350,13 +323,6 @@ class UsPaIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         state_code="US_PA", race=Race.WHITE, race_raw_text="WHITE"
                     )
                 ],
-                sentence_groups=[
-                    StateSentenceGroup(
-                        external_id="CJ1991",
-                        state_code="US_PA",
-                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                    )
-                ],
             ),
             StatePerson(
                 state_code="US_PA",
@@ -384,13 +350,6 @@ class UsPaIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         state_code="US_PA",
                         ethnicity=Ethnicity.HISPANIC,
                         ethnicity_raw_text="HISPANIC",
-                    )
-                ],
-                sentence_groups=[
-                    StateSentenceGroup(
-                        external_id="JE1989",
-                        state_code="US_PA",
-                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
                     )
                 ],
             ),
@@ -1229,13 +1188,6 @@ class UsPaIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         ],
                     )
                 ],
-                sentence_groups=[
-                    StateSentenceGroup(
-                        state_code="US_PA",
-                        external_id="AB1234",
-                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                    )
-                ],
             ),
             StatePerson(
                 state_code="US_PA",
@@ -1278,13 +1230,6 @@ class UsPaIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         ],
                     )
                 ],
-                sentence_groups=[
-                    StateSentenceGroup(
-                        state_code="US_PA",
-                        external_id="AB7413",
-                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                    )
-                ],
             ),
             StatePerson(
                 state_code="US_PA",
@@ -1323,13 +1268,6 @@ class UsPaIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                                 is_violent=False,
                             )
                         ],
-                    )
-                ],
-                sentence_groups=[
-                    StateSentenceGroup(
-                        external_id="GF3374",
-                        state_code="US_PA",
-                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
                     )
                 ],
             ),
@@ -1373,13 +1311,6 @@ class UsPaIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         ],
                     )
                 ],
-                sentence_groups=[
-                    StateSentenceGroup(
-                        external_id="CJ1991",
-                        state_code="US_PA",
-                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                    )
-                ],
             ),
             StatePerson(
                 state_code="US_PA",
@@ -1420,13 +1351,6 @@ class UsPaIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         ],
                     ),
                 ],
-                sentence_groups=[
-                    StateSentenceGroup(
-                        external_id="JE1989",
-                        state_code="US_PA",
-                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                    )
-                ],
             ),
             StatePerson(
                 state_code="US_PA",
@@ -1465,13 +1389,6 @@ class UsPaIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                                 is_violent=True,
                             )
                         ],
-                    ),
-                ],
-                sentence_groups=[
-                    StateSentenceGroup(
-                        external_id="JE1989",
-                        state_code="US_PA",
-                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
                     ),
                 ],
             ),

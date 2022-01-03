@@ -199,13 +199,6 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             "supervision_contacts": _generate_supervision_contact_primary_key,
         }
 
-        self.ancestor_chain_overrides_callback_by_file: Dict[
-            str, IngestAncestorChainOverridesCallable
-        ] = {
-            "sci_incarceration_period": _state_incarceration_period_ancestor_chain_overrides,
-            "ccis_incarceration_period": _state_incarceration_period_ancestor_chain_overrides,
-        }
-
     ENUM_OVERRIDES: Dict[Enum, List[str]] = {
         StateAssessmentType.CSSM: ["CSS-M"],
         StateAssessmentType.LSIR: ["LSI-R"],
@@ -547,9 +540,9 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         return self.primary_key_override_hook_by_file.get(file_tag, None)
 
     def get_ancestor_chain_overrides_callback_for_file(
-        self, file: str
+        self, _file_tag: str
     ) -> Optional[IngestAncestorChainOverridesCallable]:
-        return self.ancestor_chain_overrides_callback_by_file.get(file, None)
+        return None
 
     def get_row_pre_processors_for_file(
         self, _file_tag: str
@@ -711,9 +704,9 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
     ) -> None:
-        sentence_group_id = row["curr_inmate_num"]
+        inmate_id = row["curr_inmate_num"]
         sentence_number = row["type_number"]
-        sentence_id = f"{sentence_group_id}-{sentence_number}"
+        sentence_id = f"{inmate_id}-{sentence_number}"
 
         for obj in extracted_objects:
             if isinstance(obj, StateIncarcerationSentence):
@@ -945,33 +938,15 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
 def _generate_sci_incarceration_period_primary_key(
     _gating_context: IngestGatingContext, row: Dict[str, str]
 ) -> IngestFieldCoordinates:
-    sentence_group_id = row["inmate_number"]
+    inmate_id = row["inmate_number"]
     sequence_number = row["sequence_number"]
-    incarceration_period_id = f"{sentence_group_id}-{sequence_number}"
+    incarceration_period_id = f"{inmate_id}-{sequence_number}"
 
     return IngestFieldCoordinates(
         "state_incarceration_period",
         "state_incarceration_period_id",
         incarceration_period_id,
     )
-
-
-def _state_incarceration_period_ancestor_chain_overrides(
-    _gating_context: IngestGatingContext, row: Dict[str, str]
-) -> Dict[str, str]:
-    """This creates an incarceration sentence id for specifying the ancestor of an incarceration period.
-
-    Incarceration periods only have explicit links to sentence groups. However, we know that the vast majority of
-    sentence groups in PA have a single sentence with a type number of 01, and the rest have 2 sentences with type
-    numbers of 01 and 02. The fields for sentences 01 and 02 are highly similar and usually differ only as it
-    relates to charge information. Thus, tying each incarceration period to sentence 01 in a given group appears
-    to be safe.
-    """
-    sentence_group_id = row["inmate_number"]
-    assumed_type_number = "01"
-    incarceration_sentence_id = f"{sentence_group_id}-{assumed_type_number}"
-
-    return {"state_incarceration_sentence": incarceration_sentence_id}
 
 
 def _generate_supervision_period_primary_key(

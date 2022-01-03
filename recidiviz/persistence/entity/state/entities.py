@@ -613,7 +613,7 @@ class StateSentenceGroup(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     def __attrs_post_init__(self) -> None:
         validate_deprecated_entity_for_states(
             entity=self,
-            deprecated_state_codes=["US_ID", "US_MO", "US_ND"],
+            deprecated_state_codes=["US_ID", "US_MO", "US_ND", "US_PA"],
         )
 
 

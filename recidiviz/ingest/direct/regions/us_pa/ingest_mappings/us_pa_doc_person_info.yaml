@@ -18,6 +18,7 @@ input_columns:
   - inmate_numbers
 unused_columns:
   - recidiviz_primary_person_id # Internal Recidiviz person ID
+  - inmate_numbers # Already ingested in the `person_external_ids` ingest view.
   - Mid_Nm # TODO(#8895): temporarily unused -- see below
 output:
   StatePerson:
@@ -92,9 +93,3 @@ output:
                 Ethnicity.HISPANIC: HISPANIC
               # These are race values - ignore when mapping to ethnicity.
               $ignore: [ASIAN, BLACK, "AMERICAN INDIAN", OTHER, WHITE]
-    sentence_groups:
-      - $foreach:
-          $iterable: inmate_numbers
-          $result:
-            StateSentenceGroup:
-              external_id: $iter_item
