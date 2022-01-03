@@ -44,7 +44,6 @@ from recidiviz.ingest.models.ingest_info import (
     StatePerson,
     StatePersonEthnicity,
     StatePersonExternalId,
-    StateSentenceGroup,
     StateSupervisionSentence,
 )
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
@@ -208,9 +207,7 @@ def gen_map_ymd_counts_to_max_length_field_posthook(
     years_col_name: str,
     months_col_name: str,
     days_col_name: str,
-    ingest_type: Type[
-        Union[StateSentenceGroup, StateIncarcerationSentence, StateSupervisionSentence]
-    ],
+    ingest_type: Type[Union[StateIncarcerationSentence, StateSupervisionSentence]],
     test_for_fallback: Optional[Callable] = None,
     fallback_parser: Optional[Callable] = None,
 ) -> RowPosthookCallable:
@@ -290,7 +287,6 @@ def get_normalized_ymd_str_from_row(
 def gen_set_is_life_sentence_hook(
     sen_calc_type_col: str,
     is_life_val: str,
-    ingest_type: Type[Union[StateSentenceGroup, StateIncarcerationSentence]],
 ) -> RowPosthookCallable:
     def _set_is_life_sentence(
         _gating_context: IngestGatingContext,
@@ -300,13 +296,8 @@ def gen_set_is_life_sentence_hook(
     ) -> None:
         is_life_sentence = row[sen_calc_type_col] == is_life_val
 
-        if not is_life_sentence and ingest_type == StateSentenceGroup:
-            # Don't set is_life on the StateSentenceGroup rollup unless we
-            # have positive confirmation.
-            return
-
         for extracted_object in extracted_objects:
-            if isinstance(extracted_object, ingest_type):
+            if isinstance(extracted_object, StateIncarcerationSentence):
                 extracted_object.__setattr__("is_life", str(is_life_sentence))
 
     return _set_is_life_sentence

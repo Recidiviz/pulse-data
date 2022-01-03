@@ -43,7 +43,6 @@ from recidiviz.ingest.models.ingest_info_pb2 import (
     StateParoleDecision,
     StatePerson,
     StateProgramAssignment,
-    StateSentenceGroup,
     StateSupervisionContact,
     StateSupervisionPeriod,
     StateSupervisionSentence,
@@ -118,8 +117,6 @@ class TestIngestInfo(unittest.TestCase):
             "state_supervision_contacts",
             "supervising_officer_id",
             "supervising_officer",
-            "state_sentence_group_ids",
-            "state_sentence_groups",
             "state_supervision_sentence_ids",
             "state_supervision_sentences",
             "state_incarceration_sentence_ids",
@@ -196,10 +193,6 @@ class TestIngestInfo(unittest.TestCase):
         )
         _verify_fields(
             StateAssessment, ingest_info.StateAssessment(), assessment_fields_ignore
-        )
-        _verify_fields(
-            StateSentenceGroup,
-            ingest_info.StateSentenceGroup(),
         )
         _verify_fields(
             StateSupervisionSentence,

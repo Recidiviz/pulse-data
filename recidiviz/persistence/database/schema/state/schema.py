@@ -1141,9 +1141,6 @@ class StatePerson(StateBase, _StatePersonSharedColumns):
     supervision_contacts = relationship(
         "StateSupervisionContact", backref="person", lazy="selectin"
     )
-    sentence_groups = relationship(
-        "StateSentenceGroup", backref="person", lazy="selectin"
-    )
     supervising_officer = relationship("StateAgent", uselist=False, lazy="selectin")
 
 
@@ -1600,81 +1597,6 @@ class StateAssessmentHistory(
         comment=StrictStringFormatter().format(
             FOREIGN_KEY_COMMENT_TEMPLATE, object_name="state assessment"
         ),
-    )
-
-
-# StateSentenceGroup
-
-
-class _StateSentenceGroupSharedColumns(_ReferencesStatePersonSharedColumns):
-    """A mixin which defines all columns common to StateSentenceGroup and
-    StateSentenceGroupHistory"""
-
-    # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_: Any, **__: Any) -> "_StateSentenceGroupSharedColumns":
-        if cls is _StateSentenceGroupSharedColumns:
-            raise Exception(f"[{cls}] cannot be instantiated")
-        return super().__new__(cls)  # type: ignore
-
-    external_id = Column(String(255), index=True, comment="DEPRECATED. See #5411.")
-    status = Column(
-        state_sentence_status, nullable=False, comment="DEPRECATED. See #5411."
-    )
-    status_raw_text = Column(String(255), comment="DEPRECATED. See #5411.")
-    date_imposed = Column(Date, comment="DEPRECATED. See #5411.")
-    state_code = Column(
-        String(255), nullable=False, index=True, comment="DEPRECATED. See #5411."
-    )
-    county_code = Column(String(255), index=True, comment="DEPRECATED. See #5411.")
-    min_length_days = Column(Integer, comment="DEPRECATED. See #5411.")
-    max_length_days = Column(Integer, comment="DEPRECATED. See #5411.")
-    is_life = Column(Boolean, comment="DEPRECATED. See #5411.")
-
-
-class StateSentenceGroup(StateBase, _StateSentenceGroupSharedColumns):
-    """Represents a StateSentenceGroup in the SQL schema"""
-
-    __tablename__ = "state_sentence_group"
-    __table_args__ = (
-        UniqueConstraint(
-            "state_code",
-            "external_id",
-            name="sentence_group_external_ids_unique_within_state",
-            deferrable=True,
-            initially="DEFERRED",
-        ),
-        {"comment": "DEPRECATED. See #5411."},
-    )
-
-    sentence_group_id = Column(
-        Integer,
-        primary_key=True,
-        comment=StrictStringFormatter().format(
-            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="sentence group"
-        ),
-    )
-
-
-class StateSentenceGroupHistory(
-    StateBase, _StateSentenceGroupSharedColumns, HistoryTableSharedColumns
-):
-    """Represents the historical state of a StateSentenceGroup"""
-
-    __tablename__ = "state_sentence_group_history"
-    __table_args__ = {"comment": "DEPRECATED. See #5411."}
-
-    # This primary key should NOT be used. It only exists because SQLAlchemy
-    # requires every table to have a unique primary key.
-    sentence_group_history_id = Column(
-        Integer, primary_key=True, comment="DEPRECATED. See #5411."
-    )
-
-    sentence_group_id = Column(
-        Integer,
-        ForeignKey("state_sentence_group.sentence_group_id"),
-        nullable=False,
-        index=True,
-        comment="DEPRECATED. See #5411.",
     )
 
 

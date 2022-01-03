@@ -50,7 +50,6 @@ message IngestInfo {
     repeated StateAlias state_aliases = 12;
     repeated StatePersonExternalId state_person_external_ids = 13;
     repeated StateAssessment state_assessments = 14;
-    repeated StateSentenceGroup state_sentence_groups = 15;
     repeated StateSupervisionSentence state_supervision_sentences = 16;
     repeated StateIncarcerationSentence state_incarceration_sentences = 17;
     repeated StateCharge state_charges = 19;
@@ -196,7 +195,6 @@ message StatePerson {
     repeated string state_alias_ids = 14;
     repeated string state_person_external_ids_ids = 15;
     repeated string state_assessment_ids = 16;
-    repeated string state_sentence_group_ids = 17;
     repeated string state_supervision_sentence_ids = 26;
     repeated string state_incarceration_sentence_ids = 27;
     repeated string state_incarceration_period_ids = 24;
@@ -249,18 +247,6 @@ message StateAssessment {
     optional string assessment_metadata = 8;
 
     optional string conducting_agent_id = 9;
-}
-
-message StateSentenceGroup {
-    optional string state_sentence_group_id = 1;
-    optional string status = 2;
-    optional string date_imposed = 3;
-    optional string state_code = 4;
-    optional string county_code = 5;
-    optional string min_length = 6;
-    optional string max_length = 7;
-    optional string is_life = 8;
-
 }
 
 message StateSupervisionSentence {

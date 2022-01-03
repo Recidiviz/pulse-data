@@ -223,39 +223,6 @@ class TestDeserializeEntityFactories(unittest.TestCase):
 
         self.assertEqual(expected_result, result)
 
-    def test_deserialize_StateSentenceGroup(self) -> None:
-        result = deserialize_entity_factories.StateSentenceGroupFactory.deserialize(
-            status=StrictEnumParser(
-                "SUSPENDED",
-                StateSentenceStatus,
-                EnumOverrides.Builder()
-                .add("SUSPENDED", StateSentenceStatus.SUSPENDED)
-                .build(),
-            ),
-            status_raw_text="SUSPENDED",
-            external_id="GROUP_ID",
-            date_imposed="1/2/2111",
-            county_code="CO",
-            min_length_days="200",
-            max_length_days="600",
-            is_life="false",
-            state_code="us_xx",
-        )
-
-        # Assert
-        expected_result = entities.StateSentenceGroup(
-            status=StateSentenceStatus.SUSPENDED,
-            status_raw_text="SUSPENDED",
-            external_id="GROUP_ID",
-            date_imposed=date(year=2111, month=1, day=2),
-            state_code="US_XX",
-            county_code="CO",
-            min_length_days=200,
-            max_length_days=600,
-            is_life=False,
-        )
-        self.assertEqual(expected_result, result)
-
     def test_deserialize_StateParoleDecision(self) -> None:
         result = deserialize_entity_factories.StateParoleDecisionFactory.deserialize(
             external_id="PAROLE_DECISION_ID",

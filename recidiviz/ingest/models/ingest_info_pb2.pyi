@@ -41,7 +41,6 @@ class IngestInfo(google.protobuf.message.Message):
     STATE_ALIASES_FIELD_NUMBER: builtins.int
     STATE_PERSON_EXTERNAL_IDS_FIELD_NUMBER: builtins.int
     STATE_ASSESSMENTS_FIELD_NUMBER: builtins.int
-    STATE_SENTENCE_GROUPS_FIELD_NUMBER: builtins.int
     STATE_SUPERVISION_SENTENCES_FIELD_NUMBER: builtins.int
     STATE_INCARCERATION_SENTENCES_FIELD_NUMBER: builtins.int
     STATE_CHARGES_FIELD_NUMBER: builtins.int
@@ -149,12 +148,6 @@ class IngestInfo(google.protobuf.message.Message):
         self,
     ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
         global___StateAssessment
-    ]: ...
-    @property
-    def state_sentence_groups(
-        self,
-    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
-        global___StateSentenceGroup
     ]: ...
     @property
     def state_supervision_sentences(
@@ -297,9 +290,6 @@ class IngestInfo(google.protobuf.message.Message):
         state_assessments: typing.Optional[
             typing.Iterable[global___StateAssessment]
         ] = ...,
-        state_sentence_groups: typing.Optional[
-            typing.Iterable[global___StateSentenceGroup]
-        ] = ...,
         state_supervision_sentences: typing.Optional[
             typing.Iterable[global___StateSupervisionSentence]
         ] = ...,
@@ -405,8 +395,6 @@ class IngestInfo(google.protobuf.message.Message):
             b"state_person_races",
             "state_program_assignments",
             b"state_program_assignments",
-            "state_sentence_groups",
-            b"state_sentence_groups",
             "state_supervision_case_type_entries",
             b"state_supervision_case_type_entries",
             "state_supervision_contacts",
@@ -1162,7 +1150,6 @@ class StatePerson(google.protobuf.message.Message):
     STATE_ALIAS_IDS_FIELD_NUMBER: builtins.int
     STATE_PERSON_EXTERNAL_IDS_IDS_FIELD_NUMBER: builtins.int
     STATE_ASSESSMENT_IDS_FIELD_NUMBER: builtins.int
-    STATE_SENTENCE_GROUP_IDS_FIELD_NUMBER: builtins.int
     STATE_SUPERVISION_SENTENCE_IDS_FIELD_NUMBER: builtins.int
     STATE_INCARCERATION_SENTENCE_IDS_FIELD_NUMBER: builtins.int
     STATE_INCARCERATION_PERIOD_IDS_FIELD_NUMBER: builtins.int
@@ -1210,12 +1197,6 @@ class StatePerson(google.protobuf.message.Message):
     ]: ...
     @property
     def state_assessment_ids(
-        self,
-    ) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[
-        typing.Text
-    ]: ...
-    @property
-    def state_sentence_group_ids(
         self,
     ) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[
         typing.Text
@@ -1291,7 +1272,6 @@ class StatePerson(google.protobuf.message.Message):
             typing.Iterable[typing.Text]
         ] = ...,
         state_assessment_ids: typing.Optional[typing.Iterable[typing.Text]] = ...,
-        state_sentence_group_ids: typing.Optional[typing.Iterable[typing.Text]] = ...,
         state_supervision_sentence_ids: typing.Optional[
             typing.Iterable[typing.Text]
         ] = ...,
@@ -1393,8 +1373,6 @@ class StatePerson(google.protobuf.message.Message):
             b"state_person_race_ids",
             "state_program_assignment_ids",
             b"state_program_assignment_ids",
-            "state_sentence_group_ids",
-            b"state_sentence_group_ids",
             "state_supervision_contact_ids",
             b"state_supervision_contact_ids",
             "state_supervision_period_ids",
@@ -1688,81 +1666,6 @@ class StateAssessment(google.protobuf.message.Message):
     ) -> None: ...
 
 global___StateAssessment = StateAssessment
-
-class StateSentenceGroup(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
-    STATE_SENTENCE_GROUP_ID_FIELD_NUMBER: builtins.int
-    STATUS_FIELD_NUMBER: builtins.int
-    DATE_IMPOSED_FIELD_NUMBER: builtins.int
-    STATE_CODE_FIELD_NUMBER: builtins.int
-    COUNTY_CODE_FIELD_NUMBER: builtins.int
-    MIN_LENGTH_FIELD_NUMBER: builtins.int
-    MAX_LENGTH_FIELD_NUMBER: builtins.int
-    IS_LIFE_FIELD_NUMBER: builtins.int
-    state_sentence_group_id: typing.Text = ...
-    status: typing.Text = ...
-    date_imposed: typing.Text = ...
-    state_code: typing.Text = ...
-    county_code: typing.Text = ...
-    min_length: typing.Text = ...
-    max_length: typing.Text = ...
-    is_life: typing.Text = ...
-    def __init__(
-        self,
-        *,
-        state_sentence_group_id: typing.Optional[typing.Text] = ...,
-        status: typing.Optional[typing.Text] = ...,
-        date_imposed: typing.Optional[typing.Text] = ...,
-        state_code: typing.Optional[typing.Text] = ...,
-        county_code: typing.Optional[typing.Text] = ...,
-        min_length: typing.Optional[typing.Text] = ...,
-        max_length: typing.Optional[typing.Text] = ...,
-        is_life: typing.Optional[typing.Text] = ...,
-    ) -> None: ...
-    def HasField(
-        self,
-        field_name: typing_extensions.Literal[
-            "county_code",
-            b"county_code",
-            "date_imposed",
-            b"date_imposed",
-            "is_life",
-            b"is_life",
-            "max_length",
-            b"max_length",
-            "min_length",
-            b"min_length",
-            "state_code",
-            b"state_code",
-            "state_sentence_group_id",
-            b"state_sentence_group_id",
-            "status",
-            b"status",
-        ],
-    ) -> builtins.bool: ...
-    def ClearField(
-        self,
-        field_name: typing_extensions.Literal[
-            "county_code",
-            b"county_code",
-            "date_imposed",
-            b"date_imposed",
-            "is_life",
-            b"is_life",
-            "max_length",
-            b"max_length",
-            "min_length",
-            b"min_length",
-            "state_code",
-            b"state_code",
-            "state_sentence_group_id",
-            b"state_sentence_group_id",
-            "status",
-            b"status",
-        ],
-    ) -> None: ...
-
-global___StateSentenceGroup = StateSentenceGroup
 
 class StateSupervisionSentence(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...

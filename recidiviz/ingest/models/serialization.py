@@ -64,7 +64,6 @@ def convert_ingest_info_to_proto(
     state_alias_map: Dict[str, ingest_info.StateAlias] = {}
     state_assessment_map: Dict[str, ingest_info.StateAssessment] = {}
     state_program_assignment_map: Dict[str, ingest_info.StateProgramAssignment] = {}
-    state_sentence_group_map: Dict[str, ingest_info.StateSentenceGroup] = {}
     state_supervision_sentence_map: Dict[str, ingest_info.StateSupervisionSentence] = {}
     state_incarceration_sentence_map: Dict[
         str, ingest_info.StateIncarcerationSentence
@@ -544,17 +543,6 @@ def convert_ingest_info_to_proto(
                 )
                 proto_contact.contacted_agent_id = proto_contacted_agent.state_agent_id
 
-        for sentence_group in state_person.state_sentence_groups:
-            proto_sentence_group = _populate_proto(
-                "state_sentence_groups",
-                sentence_group,
-                "state_sentence_group_id",
-                state_sentence_group_map,
-            )
-            proto_state_person.state_sentence_group_ids.append(
-                proto_sentence_group.state_sentence_group_id
-            )
-
     return proto
 
 
@@ -626,12 +614,6 @@ def convert_proto_to_ingest_info(
             "state_program_assignment_id",
         )
         for program_assignment in proto.state_program_assignments
-    )
-    state_sentence_group_map: Dict[str, ingest_info.StateSentenceGroup] = dict(
-        _proto_to_py(
-            sentence_group, ingest_info.StateSentenceGroup, "state_sentence_group_id"
-        )
-        for sentence_group in proto.state_sentence_groups
     )
     state_supervision_sentence_map: Dict[
         str, ingest_info.StateSupervisionSentence
@@ -1043,11 +1025,6 @@ def convert_proto_to_ingest_info(
         state_person.state_supervision_contacts = [
             state_supervision_contact_map[proto_id]
             for proto_id in proto_state_person.state_supervision_contact_ids
-        ]
-
-        state_person.state_sentence_groups = [
-            state_sentence_group_map[proto_id]
-            for proto_id in proto_state_person.state_sentence_group_ids
         ]
 
         if proto_state_person.supervising_officer_id:

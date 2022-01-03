@@ -1434,7 +1434,6 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             gen_set_is_life_sentence_hook(
                 INCARCERATION_SENTENCE_MIN_RELEASE_TYPE,
                 "LIF",
-                StateIncarcerationSentence,
             ),
             self._replace_invalid_sentence_start_date,
             self._gen_clear_magical_date_value(

@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains the base class to handle state specific matching."""
-from typing import List, Optional, Type
+from typing import List, Optional
 
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.persistence.database.database_entity import DatabaseEntity
@@ -36,17 +36,9 @@ class BaseStateMatchingDelegate:
         self,
         region_code: str,
         ingest_metadata: IngestMetadata,
-        allowed_root_entity_classes_override: Optional[
-            List[Type[DatabaseEntity]]
-        ] = None,
     ) -> None:
         self.region_code = region_code.upper()
         self.ingest_metadata = ingest_metadata
-        self.allowed_root_entity_classes: List[Type[DatabaseEntity]] = (
-            [schema.StatePerson]
-            if not allowed_root_entity_classes_override
-            else allowed_root_entity_classes_override
-        )
         self.field_index = CoreEntityFieldIndex()
 
     def get_region_code(self) -> str:
@@ -63,7 +55,6 @@ class BaseStateMatchingDelegate:
             session,
             self.region_code,
             ingested_persons,
-            self.allowed_root_entity_classes,
             self.field_index,
         )
         return db_persons

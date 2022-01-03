@@ -324,9 +324,6 @@ class StatePerson(Entity, BuildableAttr, DefaultableAttr):
     supervision_contacts: List["StateSupervisionContact"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
-    sentence_groups: List["StateSentenceGroup"] = attr.ib(
-        factory=list, validator=attr_validators.is_list
-    )
     supervising_officer: Optional["StateAgent"] = attr.ib(default=None)
 
 
@@ -546,75 +543,6 @@ class StateAssessment(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     # entity to the persistence layer
     person: Optional["StatePerson"] = attr.ib(default=None)
     conducting_agent: Optional["StateAgent"] = attr.ib(default=None)
-
-
-@attr.s(eq=False, kw_only=True)
-class StateSentenceGroup(ExternalIdEntity, BuildableAttr, DefaultableAttr):
-    """Models a group of related sentences, which may be served consecutively or
-    concurrently."""
-
-    # State Code
-    state_code: str = attr.ib(validator=attr_validators.is_str)
-
-    #   - Where
-    # The county where this sentence was issued
-    county_code: Optional[str] = attr.ib(
-        default=None, validator=attr_validators.is_opt_str
-    )
-
-    # Status
-    # TODO(#1698): Look at Measures for Justice doc for methodology on how to calculate
-    #  an aggregate sentence status from multiple sentence statuses.
-    # This will be a composite of all the linked individual statuses
-    status: StateSentenceStatus = attr.ib(
-        default=None, validator=attr.validators.instance_of(StateSentenceStatus)
-    )
-    status_raw_text: Optional[str] = attr.ib(
-        default=None, validator=attr_validators.is_opt_str
-    )
-
-    # Type
-    # N/A
-
-    # Attributes
-    #   - When
-    date_imposed: Optional[datetime.date] = attr.ib(
-        default=None, validator=attr_validators.is_opt_date
-    )
-    # TODO(#1698): Consider including rollup projected completion dates?
-
-    #   - What
-
-    # Total length periods, either rolled up from individual sentences or directly
-    # reported from the ingested source data
-    min_length_days: Optional[int] = attr.ib(
-        default=None, validator=attr_validators.is_opt_int
-    )
-    max_length_days: Optional[int] = attr.ib(
-        default=None, validator=attr_validators.is_opt_int
-    )
-
-    is_life: Optional[bool] = attr.ib(
-        default=None, validator=attr_validators.is_opt_bool
-    )
-
-    #   - Who
-    # See |person| in entity relationships below.
-
-    # Primary key - Only optional when hydrated in the data converter, before we have
-    # written this entity to the persistence layer
-    sentence_group_id: Optional[int] = attr.ib(
-        default=None, validator=attr_validators.is_opt_int
-    )
-
-    # Cross-entity relationships
-    person: Optional["StatePerson"] = attr.ib(default=None)
-
-    def __attrs_post_init__(self) -> None:
-        validate_deprecated_entity_for_states(
-            entity=self,
-            deprecated_state_codes=["US_ID", "US_MO", "US_ND", "US_PA"],
-        )
 
 
 @attr.s(eq=False, kw_only=True)

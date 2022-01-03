@@ -35,7 +35,6 @@ PLURALS = {
     "state_assessment": "state_assessments",
     "state_program_assignment": "state_program_assignments",
     "state_person_external_id": "state_person_external_ids",
-    "state_sentence_group": "state_sentence_groups",
     "state_supervision_sentence": "state_supervision_sentences",
     "state_incarceration_sentence": "state_incarceration_sentences",
     "state_supervision_period": "state_supervision_periods",
@@ -573,7 +572,6 @@ class StatePerson(IngestObject):
         state_aliases=None,
         state_person_external_ids=None,
         state_assessments=None,
-        state_sentence_groups=None,
         state_supervision_sentences=None,
         state_incarceration_sentences=None,
         state_incarceration_periods=None,
@@ -607,9 +605,6 @@ class StatePerson(IngestObject):
             state_person_external_ids or []
         )
         self.state_assessments: List[StateAssessment] = state_assessments or []
-        self.state_sentence_groups: List[StateSentenceGroup] = (
-            state_sentence_groups or []
-        )
         self.state_supervision_sentences: List[StateSupervisionSentence] = (
             state_supervision_sentences or []
         )
@@ -663,11 +658,6 @@ class StatePerson(IngestObject):
         assessment = StateAssessment(**kwargs)
         self.state_assessments.append(assessment)
         return assessment
-
-    def create_state_sentence_group(self, **kwargs) -> "StateSentenceGroup":
-        sentence_group = StateSentenceGroup(**kwargs)
-        self.state_sentence_groups.append(sentence_group)
-        return sentence_group
 
     def create_state_supervision_sentence(self, **kwargs) -> "StateSupervisionSentence":
         supervision_sentence = StateSupervisionSentence(**kwargs)
@@ -869,23 +859,8 @@ class StatePerson(IngestObject):
             None,
         )
 
-    def get_state_sentence_group_by_id(
-        self, sentence_group_id
-    ) -> Optional["StateSentenceGroup"]:
-        return next(
-            (
-                sg
-                for sg in self.state_sentence_groups
-                if sg.state_sentence_group_id == sentence_group_id
-            ),
-            None,
-        )
-
     def prune(self) -> "StatePerson":
         """Prune all children from StatePerson."""
-        self.state_sentence_groups = [
-            sg.prune() for sg in self.state_sentence_groups if sg
-        ]
         self.state_supervision_sentences = [
             ss.prune() for ss in self.state_supervision_sentences if ss
         ]
@@ -925,8 +900,6 @@ class StatePerson(IngestObject):
         self.state_incarceration_incidents.sort()
         self.state_supervision_violations.sort()
         self.state_supervision_contacts.sort()
-
-        self.state_sentence_groups.sort()
 
         for supervision_sentence in self.state_supervision_sentences:
             supervision_sentence.sort()
@@ -1047,38 +1020,8 @@ class StateAssessment(IngestObject):
         return self
 
 
-class StateSentenceGroup(IngestObject):
-    """Class for information about a group of related sentences. Referenced from StatePerson."""
-
-    def __init__(
-        self,
-        state_sentence_group_id=None,
-        status=None,
-        date_imposed=None,
-        state_code=None,
-        county_code=None,
-        min_length=None,
-        max_length=None,
-        is_life=None,
-    ):
-        self.state_sentence_group_id: Optional[str] = state_sentence_group_id
-        self.status: Optional[str] = status
-        self.date_imposed: Optional[str] = date_imposed
-        self.state_code: Optional[str] = state_code
-        self.county_code: Optional[str] = county_code
-        self.min_length: Optional[str] = min_length
-        self.max_length: Optional[str] = max_length
-        self.is_life: Optional[str] = is_life
-
-    def __setattr__(self, name, value):
-        restricted_setattr(self, "state_incarceration_sentences", name, value)
-
-    def prune(self) -> "StateSentenceGroup":
-        return self
-
-
 class StateSupervisionSentence(IngestObject):
-    """Class for information about a sentence to supervision. Referenced from SentenceGroup."""
+    """Class for information about a sentence to supervision."""
 
     def __init__(
         self,
@@ -1156,7 +1099,7 @@ class StateSupervisionSentence(IngestObject):
 
 
 class StateIncarcerationSentence(IngestObject):
-    """Class for information about a sentence to incarceration. Referenced from SentenceGroup."""
+    """Class for information about a sentence to incarceration."""
 
     def __init__(
         self,

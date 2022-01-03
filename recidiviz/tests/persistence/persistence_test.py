@@ -49,12 +49,12 @@ from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDat
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state.entities import (
     StateAssessment,
+    StateIncarcerationSentence,
     StatePerson,
     StatePersonAlias,
     StatePersonExternalId,
     StatePersonRace,
     StateProgramAssignment,
-    StateSentenceGroup,
 )
 from recidiviz.persistence.entity_matching.state.base_state_matching_delegate import (
     BaseStateMatchingDelegate,
@@ -107,8 +107,8 @@ PERSON_STATE_1_ENTITY = StatePerson(
             alias_type_raw_text="GIVEN_NAME",
         )
     ],
-    sentence_groups=[
-        StateSentenceGroup(
+    incarceration_sentences=[
+        StateIncarcerationSentence(
             state_code=STATE_CODE,
             external_id="123",
             status=StateSentenceStatus.SERVING,
@@ -139,8 +139,8 @@ PERSON_STATE_2_ENTITY = StatePerson(
             alias_type_raw_text="GIVEN_NAME",
         )
     ],
-    sentence_groups=[
-        StateSentenceGroup(
+    incarceration_sentences=[
+        StateIncarcerationSentence(
             state_code=STATE_CODE_2,
             external_id="123",
             status=StateSentenceStatus.SERVING,
@@ -368,10 +368,10 @@ class MultipleStateTestMixin:
         # Act
         # Update existing sentence on both persons
         person_state_1 = deepcopy(PERSON_STATE_1_ENTITY)
-        person_state_1.sentence_groups[0].status = StateSentenceStatus.COMPLETED
+        person_state_1.incarceration_sentences[0].status = StateSentenceStatus.COMPLETED
 
         person_state_2 = deepcopy(PERSON_STATE_2_ENTITY)
-        person_state_2.sentence_groups[0].status = StateSentenceStatus.COMPLETED
+        person_state_2.incarceration_sentences[0].status = StateSentenceStatus.COMPLETED
 
         self.run_transactions([person_state_1], [person_state_2])
 
@@ -385,12 +385,12 @@ class MultipleStateTestMixin:
         assert len(result) == 3
         assert result[0].full_name is None
         assert result[1].full_name == '{"given_names": "JON", "surname": "HOPKINS"}'
-        assert len(result[1].sentence_groups) == 1
-        assert result[1].sentence_groups[0].status == "COMPLETED"
+        assert len(result[1].incarceration_sentences) == 1
+        assert result[1].incarceration_sentences[0].status == "COMPLETED"
         assert result[2].full_name == '{"given_names": "SOLANGE", "surname": "KNOWLES"}'
-        assert len(result[2].sentence_groups) == 1
+        assert len(result[2].incarceration_sentences) == 1
 
-        assert result[2].sentence_groups[0].status == "COMPLETED"
+        assert result[2].incarceration_sentences[0].status == "COMPLETED"
 
     def test_updateNonOverlappingTypes_succeeds(self):
         # Arrange
@@ -415,7 +415,7 @@ class MultipleStateTestMixin:
         person_state_1.races[0].race = Race.WHITE
 
         person_state_2 = deepcopy(PERSON_STATE_2_ENTITY)
-        person_state_2.sentence_groups[0].status = StateSentenceStatus.COMPLETED
+        person_state_2.incarceration_sentences[0].status = StateSentenceStatus.COMPLETED
 
         self.run_transactions([person_state_1], [person_state_2])
 
@@ -432,8 +432,8 @@ class MultipleStateTestMixin:
         assert len(result[1].races) == 1
         assert result[1].races[0].race == "WHITE"
         assert result[2].full_name == '{"given_names": "SOLANGE", "surname": "KNOWLES"}'
-        assert len(result[2].sentence_groups) == 1
-        assert result[2].sentence_groups[0].status == "COMPLETED"
+        assert len(result[2].incarceration_sentences) == 1
+        assert result[2].incarceration_sentences[0].status == "COMPLETED"
 
 
 @pytest.mark.uses_db
