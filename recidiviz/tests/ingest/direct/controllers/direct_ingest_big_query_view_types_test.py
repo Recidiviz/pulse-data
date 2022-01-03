@@ -162,6 +162,7 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
     def test_raw_up_to_date_view(self) -> None:
         view = DirectIngestRawDataTableUpToDateView(
             region_code="us_xx",
+            include_undocumented_columns=True,
             raw_file_config=DirectIngestRawFileConfig(
                 file_tag="table_name",
                 file_path="path/to/file.yaml",

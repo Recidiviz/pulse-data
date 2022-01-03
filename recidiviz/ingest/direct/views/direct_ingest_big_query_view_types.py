@@ -208,6 +208,7 @@ class DirectIngestRawDataTableBigQueryView(BigQueryView):
         view_query_template: str,
         raw_file_config: DirectIngestRawFileConfig,
         dataset_overrides: Optional[Dict[str, str]] = None,
+        include_undocumented_columns: bool = False,
     ):
         if not raw_file_config.primary_key_cols:
             raise ValueError(
@@ -222,7 +223,9 @@ class DirectIngestRawDataTableBigQueryView(BigQueryView):
         supplemental_order_by_clause = self._supplemental_order_by_clause_for_config(
             raw_file_config
         )
-        normalized_columns = self._normalized_columns_for_config(raw_file_config)
+        normalized_columns = self._normalized_columns_for_config(
+            raw_file_config, include_undocumented_columns
+        )
         super().__init__(
             project_id=project_id,
             dataset_id=view_dataset_id,
@@ -262,21 +265,27 @@ class DirectIngestRawDataTableBigQueryView(BigQueryView):
 
     @staticmethod
     def _normalized_columns_for_config(
-        raw_file_config: DirectIngestRawFileConfig,
+        raw_file_config: DirectIngestRawFileConfig, include_undocumented_columns: bool
     ) -> str:
         # Right now this only performs normalization for datetime columns, but in the future
         # this method can be expanded to normalize other values.
         if not raw_file_config.datetime_cols:
             return "*"
 
-        non_datetime_col_str = ", ".join(raw_file_config.non_datetime_cols)
+        non_datetime_col_str = ", ".join(raw_file_config.available_non_datetime_cols)
+        datetime_cols_to_format = (
+            raw_file_config.datetime_cols
+            if include_undocumented_columns
+            else raw_file_config.available_datetime_cols
+        )
+
         return f"{non_datetime_col_str}, update_datetime, " + (
             ", ".join(
                 [
                     StrictStringFormatter().format(
                         DATETIME_COL_NORMALIZATION_TEMPLATE, col_name=col_name
                     )
-                    for col_name in raw_file_config.datetime_cols
+                    for col_name in datetime_cols_to_format
                 ]
             )
         )
@@ -328,6 +337,7 @@ class DirectIngestRawDataTableUpToDateView(DirectIngestRawDataTableBigQueryView)
         project_id: str = None,
         region_code: str,
         raw_file_config: DirectIngestRawFileConfig,
+        include_undocumented_columns: bool = False,
     ):
         view_id = f"{raw_file_config.file_tag}_by_update_date"
         description = f"{raw_file_config.file_tag} parametrized view"
@@ -343,6 +353,7 @@ class DirectIngestRawDataTableUpToDateView(DirectIngestRawDataTableBigQueryView)
             description=description,
             view_query_template=view_query_template,
             raw_file_config=raw_file_config,
+            include_undocumented_columns=include_undocumented_columns,
         )
 
 
