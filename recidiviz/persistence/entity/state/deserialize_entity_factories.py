@@ -88,19 +88,6 @@ class StatePersonEthnicityFactory(EntityFactory):
         )
 
 
-class StateSentenceGroupFactory(EntityFactory):
-    @staticmethod
-    def deserialize(
-        **kwargs: Optional[Union[str, EnumParser]]
-    ) -> entities.StateSentenceGroup:
-        return entity_deserialize(
-            cls=entities.StateSentenceGroup,
-            converter_overrides={},
-            defaults={"status": StateSentenceStatus.PRESENT_WITHOUT_INFO},
-            **kwargs
-        )
-
-
 class StateAssessmentFactory(EntityFactory):
     @staticmethod
     def deserialize(

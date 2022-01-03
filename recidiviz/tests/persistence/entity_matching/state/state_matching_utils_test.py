@@ -250,23 +250,23 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
         )
 
     def test_mergeFlatFields_twoDbEntities(self) -> None:
-        to_entity = schema.StateSentenceGroup(
+        to_entity = schema.StateIncarcerationSentence(
             state_code=_STATE_CODE,
-            sentence_group_id=_ID,
+            incarceration_sentence_id=_ID,
             county_code="county_code",
             status=StateSentenceStatus.SERVING,
         )
-        from_entity = schema.StateSentenceGroup(
+        from_entity = schema.StateIncarcerationSentence(
             state_code=_STATE_CODE,
-            sentence_group_id=_ID_2,
+            incarceration_sentence_id=_ID_2,
             county_code="county_code-updated",
             max_length_days=10,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
         )
 
-        expected_entity = schema.StateSentenceGroup(
+        expected_entity = schema.StateIncarcerationSentence(
             state_code=_STATE_CODE,
-            sentence_group_id=_ID,
+            incarceration_sentence_id=_ID,
             county_code="county_code-updated",
             max_length_days=10,
             status=StateSentenceStatus.SERVING.value,
@@ -278,21 +278,21 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
         self.assert_schema_objects_equal(expected_entity, merged_entity)
 
     def test_mergeFlatFields(self) -> None:
-        ing_entity = schema.StateSentenceGroup(
+        ing_entity = schema.StateIncarcerationSentence(
             state_code=_STATE_CODE,
             county_code="county_code-updated",
             max_length_days=10,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
         )
-        db_entity = schema.StateSentenceGroup(
+        db_entity = schema.StateIncarcerationSentence(
             state_code=_STATE_CODE,
-            sentence_group_id=_ID,
+            incarceration_sentence_id=_ID,
             county_code="county_code",
             status=StateSentenceStatus.SERVING,
         )
-        expected_entity = schema.StateSentenceGroup(
+        expected_entity = schema.StateIncarcerationSentence(
             state_code=_STATE_CODE,
-            sentence_group_id=_ID,
+            incarceration_sentence_id=_ID,
             county_code="county_code-updated",
             max_length_days=10,
             status=StateSentenceStatus.SERVING.value,
@@ -403,19 +403,26 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
             get_root_entity_cls([placeholder_person], field_index=self.field_index)
 
     def test_getAllEntityTreesOfCls(self) -> None:
-        sentence_group = schema.StateSentenceGroup(sentence_group_id=_ID)
-        sentence_group_2 = schema.StateSentenceGroup(sentence_group_id=_ID_2)
+        incarceration_sentence = schema.StateIncarcerationSentence(
+            incarceration_sentence_id=_ID
+        )
+        incarceration_sentence_2 = schema.StateIncarcerationSentence(
+            incarceration_sentence_id=_ID_2
+        )
         person = schema.StatePerson(
-            person_id=_ID, sentence_groups=[sentence_group, sentence_group_2]
+            person_id=_ID,
+            incarceration_sentences=[incarceration_sentence, incarceration_sentence_2],
         )
 
         self.assertEqual(
             [
-                EntityTree(entity=sentence_group, ancestor_chain=[person]),
-                EntityTree(entity=sentence_group_2, ancestor_chain=[person]),
+                EntityTree(entity=incarceration_sentence, ancestor_chain=[person]),
+                EntityTree(entity=incarceration_sentence_2, ancestor_chain=[person]),
             ],
             get_all_entity_trees_of_cls(
-                [person], schema.StateSentenceGroup, field_index=self.field_index
+                [person],
+                schema.StateIncarcerationSentence,
+                field_index=self.field_index,
             ),
         )
         self.assertEqual(
@@ -483,17 +490,21 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
         )
 
     def test_getExternalIdsOfCls_emptyExternalId_raises(self) -> None:
-        sentence_group = schema.StateSentenceGroup(external_id=_EXTERNAL_ID)
-        sentence_group_2 = schema.StateSentenceGroup()
+        incarceration_sentence = schema.StateIncarcerationSentence(
+            external_id=_EXTERNAL_ID
+        )
+        incarceration_sentence_2 = schema.StateIncarcerationSentence()
         external_id = schema.StatePersonExternalId(external_id=_EXTERNAL_ID)
         person = schema.StatePerson(
             external_ids=[external_id],
-            sentence_groups=[sentence_group, sentence_group_2],
+            incarceration_sentences=[incarceration_sentence, incarceration_sentence_2],
         )
 
         with self.assertRaises(EntityMatchingError):
             get_external_ids_of_cls(
-                [person], schema.StateSentenceGroup, field_index=self.field_index
+                [person],
+                schema.StateIncarcerationSentence,
+                field_index=self.field_index,
             )
 
     def test_getExternalIdsOfCls_emptyPersonExternalId_raises(self) -> None:
@@ -626,11 +637,11 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
         self.assertFalse(is_placeholder(entity, field_index=self.field_index))
 
     def test_isPlaceholder_personWithExternalId(self) -> None:
-        sentence_group = schema.StateSentenceGroup(
+        incarceration_sentence = schema.StateIncarcerationSentence(
             state_code=_STATE_CODE, status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
         person = schema.StatePerson(
-            state_code=_STATE_CODE, sentence_groups=[sentence_group]
+            state_code=_STATE_CODE, incarceration_sentences=[incarceration_sentence]
         )
         self.assertTrue(is_placeholder(person, field_index=self.field_index))
         person.external_ids.append(
@@ -649,69 +660,6 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
         entity.incarceration_type_raw_text = "PRISON"
         self.assertFalse(is_placeholder(entity, field_index=self.field_index))
 
-    def test_readPersonsByRootEntityCls(self) -> None:
-        schema_person_with_root_entity = schema.StatePerson(
-            person_id=1, state_code=_STATE_CODE
-        )
-        schema_sentence_group = schema.StateSentenceGroup(
-            sentence_group_id=_ID,
-            external_id=_EXTERNAL_ID,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
-            state_code=_STATE_CODE,
-        )
-        schema_sentence_group_2 = schema.StateSentenceGroup(
-            sentence_group_id=_ID_2,
-            external_id=_EXTERNAL_ID_2,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
-            state_code=_STATE_CODE,
-        )
-        schema_person_with_root_entity.sentence_groups = [
-            schema_sentence_group,
-            schema_sentence_group_2,
-        ]
-        placeholder_schema_person = schema.StatePerson(
-            person_id=_ID_2, state_code=_STATE_CODE
-        )
-        schema_person_other_state = schema.StatePerson(
-            person_id=_ID_3, state_code=_STATE_CODE
-        )
-        schema_external_id_other_state = schema.StatePersonExternalId(
-            person_external_id_id=_ID_2,
-            external_id=_ID,
-            id_type=_ID_TYPE,
-            state_code=_STATE_CODE,
-        )
-        schema_person_other_state.external_ids = [schema_external_id_other_state]
-
-        with SessionFactory.using_database(
-            self.database_key, autocommit=False
-        ) as session:
-            session.add(schema_person_with_root_entity)
-            session.add(placeholder_schema_person)
-            session.add(schema_person_other_state)
-            session.commit()
-
-            ingested_sentence_group = schema.StateSentenceGroup(
-                state_code=_STATE_CODE, external_id=_EXTERNAL_ID
-            )
-            ingested_person = schema.StatePerson(
-                sentence_groups=[ingested_sentence_group]
-            )
-
-            expected_people = [
-                schema_person_with_root_entity,
-                placeholder_schema_person,
-            ]
-
-            people = read_persons_by_root_entity_cls(
-                session,
-                _STATE_CODE,
-                [ingested_person],
-                allowed_root_entity_classes=[schema.StateSentenceGroup],
-                field_index=self.field_index,
-            )
-            self.assert_schema_object_lists_equal(expected_people, people)
-
     def test_readPersons_unexpectedRoot_raises(self) -> None:
         ingested_supervision_sentence = schema.StateSupervisionSentence(
             external_id=_EXTERNAL_ID
@@ -726,49 +674,48 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
             ) as session:
                 read_persons_by_root_entity_cls(
                     session,
-                    "us_nd",
+                    _STATE_CODE.lower(),
                     [ingested_person],
-                    allowed_root_entity_classes=[schema.StateIncarcerationSentence],
                     field_index=self.field_index,
                 )
 
     def test_readDbEntitiesOfClsToMerge(self) -> None:
         person_1 = schema.StatePerson(person_id=1, state_code=_STATE_CODE)
-        sentence_group_1 = schema.StateSentenceGroup(
-            sentence_group_id=1,
+        incarceration_sentence_1 = schema.StateIncarcerationSentence(
+            incarceration_sentence_id=1,
             external_id=_EXTERNAL_ID,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
             state_code=_STATE_CODE,
             person=person_1,
         )
-        person_1.sentence_groups = [sentence_group_1]
+        person_1.incarceration_sentences = [incarceration_sentence_1]
 
         person_2 = schema.StatePerson(person_id=2, state_code=_STATE_CODE)
-        sentence_group_1_dup = schema.StateSentenceGroup(
-            sentence_group_id=2,
+        incarceration_sentence_1_dup = schema.StateIncarcerationSentence(
+            incarceration_sentence_id=2,
             external_id=_EXTERNAL_ID,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
             state_code=_STATE_CODE,
             person=person_2,
         )
-        sentence_group_2 = schema.StateSentenceGroup(
-            sentence_group_id=3,
+        incarceration_sentence_2 = schema.StateIncarcerationSentence(
+            incarceration_sentence_id=3,
             external_id=_EXTERNAL_ID_2,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
             state_code=_STATE_CODE,
             person=person_2,
         )
-        placeholder_sentence_group = schema.StateSentenceGroup(
-            sentence_group_id=4,
+        placeholder_incarceration_sentence = schema.StateIncarcerationSentence(
+            incarceration_sentence_id=4,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
             state_code=_STATE_CODE,
             person=person_2,
         )
 
-        person_2.sentence_groups = [
-            sentence_group_1_dup,
-            sentence_group_2,
-            placeholder_sentence_group,
+        person_2.incarceration_sentences = [
+            incarceration_sentence_1_dup,
+            incarceration_sentence_2,
+            placeholder_incarceration_sentence,
         ]
 
         with SessionFactory.using_database(
@@ -782,21 +729,21 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
             trees_to_merge = read_db_entity_trees_of_cls_to_merge(
                 session,
                 _STATE_CODE,
-                schema.StateSentenceGroup,
+                schema.StateIncarcerationSentence,
                 field_index=self.field_index,
             )
 
-            sentence_group_trees_to_merge = one(trees_to_merge)
-            self.assertEqual(len(sentence_group_trees_to_merge), 2)
+            incarceration_sentence_trees_to_merge = one(trees_to_merge)
+            self.assertEqual(len(incarceration_sentence_trees_to_merge), 2)
 
-            sentence_group_ids = set()
+            incarceration_sentence_ids = set()
 
-            for entity_tree in sentence_group_trees_to_merge:
+            for entity_tree in incarceration_sentence_trees_to_merge:
                 self.assertIsInstance(entity_tree, EntityTree)
                 entity = entity_tree.entity
-                if not isinstance(entity, schema.StateSentenceGroup):
-                    self.fail(f"Expected StateSentenceGroup. Found {entity}")
+                if not isinstance(entity, schema.StateIncarcerationSentence):
+                    self.fail(f"Expected StateIncarcerationSentence. Found {entity}")
                 self.assertEqual(entity.external_id, _EXTERNAL_ID)
-                sentence_group_ids.add(entity.sentence_group_id)
+                incarceration_sentence_ids.add(entity.incarceration_sentence_id)
 
-            self.assertEqual(sentence_group_ids, {1, 2})
+            self.assertEqual(incarceration_sentence_ids, {1, 2})

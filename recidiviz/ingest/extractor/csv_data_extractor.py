@@ -276,14 +276,14 @@ class CsvDataExtractor(Generic[HookContextType], DataExtractor):
         values for all classes in the ancestor chain of the object
         represented by this column.
 
-        For example, for a file with primary object state_sentence_group, the
+        For example, for a file with primary object state_incarceration_sentence, the
         ancestor chain would start as: {'state_person': 'my_person_id'}
 
         For a column corresponding to child of class
-        'state_incarceration_period', the ancestor chain might be updated to be:
+        'state_court_case', the ancestor chain might be updated to be:
         {'state_person': 'my_person_id',
-         'state_sentence_group': 'my_booking_id',
-         'state_incarceration_sentence': 'DUMMY_GENERATED_ID'}
+         'state_incarceration_sentence': 'my_booking_id',
+         'state_charge': 'DUMMY_GENERATED_ID'}
         """
         # Add primary object id to the ancestor chain for this child object
         column_ancestor_chain[

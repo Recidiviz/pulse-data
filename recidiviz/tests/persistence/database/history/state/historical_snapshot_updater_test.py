@@ -84,13 +84,13 @@ class TestStateHistoricalSnapshotUpdater(BaseHistoricalSnapshotUpdaterTest):
             self._commit_person(person, SystemLevel.STATE, ingest_time_2)
 
         # Check that StatePerson had a new history table row written, but not
-        # its child SentenceGroup.
+        # its child StateSupervisionSentence.
         with SessionFactory.using_database(
             self.database_key, autocommit=False
         ) as assert_session:
             person = one(assert_session.query(state_schema.StatePerson).all())
             sentence_group = one(
-                assert_session.query(state_schema.StateSentenceGroup).all()
+                assert_session.query(state_schema.StateSupervisionSentence).all()
             )
 
             self._assert_expected_snapshots_for_schema_object(

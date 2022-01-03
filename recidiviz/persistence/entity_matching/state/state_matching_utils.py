@@ -569,7 +569,6 @@ def read_persons_by_root_entity_cls(
     session: Session,
     region: str,
     ingested_people: List[schema.StatePerson],
-    allowed_root_entity_classes: Optional[List[Type[DatabaseEntity]]],
     field_index: CoreEntityFieldIndex,
 ) -> List[schema.StatePerson]:
     """Looks up all people necessary for entity matching based on the provided
@@ -579,13 +578,10 @@ def read_persons_by_root_entity_cls(
     unexpected root entity class is found.
     """
     root_entity_cls = get_root_entity_cls(ingested_people, field_index)
-    if (
-        allowed_root_entity_classes
-        and root_entity_cls not in allowed_root_entity_classes
-    ):
+    if root_entity_cls != schema.StatePerson:
         raise ValueError(
             f"For region [{region}] found unexpected root_entity_cls: [{root_entity_cls.__name__}]. "
-            f"Allowed classes: [{allowed_root_entity_classes}]"
+            f"Allowed classes: [schema.StatePerson]"
         )
     root_external_ids = get_external_ids_of_cls(
         ingested_people, root_entity_cls, field_index
@@ -598,15 +594,10 @@ def read_persons_by_root_entity_cls(
     persons_by_root_entity = dao.read_people_by_cls_external_ids(
         session, region, root_entity_cls, root_external_ids
     )
-    placeholder_persons = dao.read_placeholder_persons(session, region)
 
-    # When the |root_entity_cls| is not StatePerson, it is possible for both
-    # persons_by_root_entity and placeholder_persons to contain the same
-    # placeholder person(s). For this reason, we dedup people across both lists
-    # before returning.
     deduped_people = []
     seen_person_ids: Set[int] = set()
-    for person in persons_by_root_entity + placeholder_persons:
+    for person in persons_by_root_entity:
         if person.person_id not in seen_person_ids:
             deduped_people.append(person)
             seen_person_ids.add(person.person_id)

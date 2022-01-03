@@ -34,7 +34,6 @@ from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentClass,
     StateAssessmentType,
 )
-from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.schema_entity_converter.state.schema_entity_converter import (
     StateSchemaToEntityConverter,
@@ -114,18 +113,6 @@ class TestExtractDataForPipeline(unittest.TestCase):
 
         external_ids_data = [normalized_database_base_dict(schema_external_id)]
 
-        schema_sentence_group = schema.StateSentenceGroup(
-            status=StateSentenceStatus.SERVING,
-            date_imposed=date(2011, 3, 7),
-            state_code="US_XX",
-            min_length_days=199,
-            max_length_days=500,
-            sentence_group_id=213,
-            person_id=person_id,
-        )
-
-        sentence_group_data = [normalized_database_base_dict(schema_sentence_group)]
-
         schema_race_1 = schema.StatePersonRace(
             race=Race.WHITE, state_code="US_XX", person_id=person_id
         )
@@ -157,7 +144,6 @@ class TestExtractDataForPipeline(unittest.TestCase):
             schema.StatePersonEthnicity.__tablename__: ethnicities_data,
             schema.StatePersonAlias.__tablename__: alias_data,
             schema.StatePersonExternalId.__tablename__: external_ids_data,
-            schema.StateSentenceGroup.__tablename__: sentence_group_data,
             schema.StateAssessment.__tablename__: assessment_data,
             schema.StatePersonRace.__tablename__: races_data,
         }
@@ -169,14 +155,12 @@ class TestExtractDataForPipeline(unittest.TestCase):
         entity_ethnicity = entity_converter.convert(schema_ethnicity)
         entity_alias = entity_converter.convert(schema_alias)
         entity_external_id = entity_converter.convert(schema_external_id)
-        entity_sentence_group = entity_converter.convert(schema_sentence_group)
         entity_races = entity_converter.convert_all([schema_race_1, schema_race_2])
         entity_assessment = entity_converter.convert(schema_assessment)
 
         entity_person.ethnicities = [entity_ethnicity]
         entity_person.aliases = [entity_alias]
         entity_person.external_ids = [entity_external_id]
-        entity_person.sentence_groups = [entity_sentence_group]
         entity_person.races = entity_races
         entity_person.assessments = [entity_assessment]
 
@@ -199,7 +183,6 @@ class TestExtractDataForPipeline(unittest.TestCase):
                     entities.StatePersonEthnicity,
                     entities.StatePersonAlias,
                     entities.StatePersonExternalId,
-                    entities.StateSentenceGroup,
                     entities.StateAssessment,
                 ],
                 reference_dataset=dataset,
@@ -223,9 +206,6 @@ class TestExtractDataForPipeline(unittest.TestCase):
                                 entities.StatePersonAlias.__name__: [entity_alias],
                                 entities.StatePersonExternalId.__name__: [
                                     entity_external_id
-                                ],
-                                entities.StateSentenceGroup.__name__: [
-                                    entity_sentence_group
                                 ],
                                 entities.StateAssessment.__name__: [entity_assessment],
                             },
@@ -430,18 +410,6 @@ class TestExtractDataForPipeline(unittest.TestCase):
 
         external_ids_data = [normalized_database_base_dict(schema_external_id)]
 
-        schema_sentence_group = schema.StateSentenceGroup(
-            status=StateSentenceStatus.SERVING,
-            date_imposed=date(2011, 3, 7),
-            state_code="US_XX",
-            min_length_days=199,
-            max_length_days=500,
-            sentence_group_id=213,
-            person_id=person_id,
-        )
-
-        sentence_group_data = [normalized_database_base_dict(schema_sentence_group)]
-
         schema_race_1 = schema.StatePersonRace(
             race=Race.WHITE, state_code="US_XX", person_id=person_id
         )
@@ -472,7 +440,6 @@ class TestExtractDataForPipeline(unittest.TestCase):
             schema.StatePersonEthnicity.__tablename__: ethnicities_data,
             schema.StatePersonAlias.__tablename__: alias_data,
             schema.StatePersonExternalId.__tablename__: external_ids_data,
-            schema.StateSentenceGroup.__tablename__: sentence_group_data,
             schema.StateAssessment.__tablename__: assessment_data,
             schema.StatePersonRace.__tablename__: races_data,
         }
@@ -483,7 +450,6 @@ class TestExtractDataForPipeline(unittest.TestCase):
         entity_ethnicity = entity_converter.convert(schema_ethnicity)
         entity_alias = entity_converter.convert(schema_alias)
         entity_external_id = entity_converter.convert(schema_external_id)
-        entity_sentence_group = entity_converter.convert(schema_sentence_group)
         entity_races = entity_converter.convert_all([schema_race_1, schema_race_2])
         entity_assessment = entity_converter.convert(schema_assessment)
 
@@ -505,7 +471,6 @@ class TestExtractDataForPipeline(unittest.TestCase):
                     entities.StatePersonEthnicity,
                     entities.StatePersonAlias,
                     entities.StatePersonExternalId,
-                    entities.StateSentenceGroup,
                     entities.StateAssessment,
                 ],
                 reference_dataset=dataset,
@@ -528,9 +493,6 @@ class TestExtractDataForPipeline(unittest.TestCase):
                                 entities.StatePersonAlias.__name__: [entity_alias],
                                 entities.StatePersonExternalId.__name__: [
                                     entity_external_id
-                                ],
-                                entities.StateSentenceGroup.__name__: [
-                                    entity_sentence_group
                                 ],
                                 entities.StateAssessment.__name__: [entity_assessment],
                             },
@@ -705,18 +667,6 @@ class TestExtractDataForPipeline(unittest.TestCase):
 
         external_ids_data = [normalized_database_base_dict(schema_external_id)]
 
-        schema_sentence_group = schema.StateSentenceGroup(
-            status=StateSentenceStatus.SERVING,
-            date_imposed=date(2011, 3, 7),
-            state_code="US_XX",
-            min_length_days=199,
-            max_length_days=500,
-            sentence_group_id=213,
-            person_id=person_id,
-        )
-
-        sentence_group_data = [normalized_database_base_dict(schema_sentence_group)]
-
         schema_race_1 = schema.StatePersonRace(
             race=Race.WHITE, state_code="US_XX", person_id=person_id
         )
@@ -756,7 +706,6 @@ class TestExtractDataForPipeline(unittest.TestCase):
             schema.StatePersonEthnicity.__tablename__: ethnicities_data,
             schema.StatePersonAlias.__tablename__: alias_data,
             schema.StatePersonExternalId.__tablename__: external_ids_data,
-            schema.StateSentenceGroup.__tablename__: sentence_group_data,
             schema.StateAssessment.__tablename__: assessment_data,
             schema.StatePersonRace.__tablename__: races_data,
             PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME: person_to_county_of_residence_data,
@@ -769,14 +718,12 @@ class TestExtractDataForPipeline(unittest.TestCase):
         entity_ethnicity = entity_converter.convert(schema_ethnicity)
         entity_alias = entity_converter.convert(schema_alias)
         entity_external_id = entity_converter.convert(schema_external_id)
-        entity_sentence_group = entity_converter.convert(schema_sentence_group)
         entity_races = entity_converter.convert_all([schema_race_1, schema_race_2])
         entity_assessment = entity_converter.convert(schema_assessment)
 
         entity_person.ethnicities = [entity_ethnicity]
         entity_person.aliases = [entity_alias]
         entity_person.external_ids = [entity_external_id]
-        entity_person.sentence_groups = [entity_sentence_group]
         entity_person.races = entity_races
         entity_person.assessments = [entity_assessment]
 
@@ -799,7 +746,6 @@ class TestExtractDataForPipeline(unittest.TestCase):
                     entities.StatePersonEthnicity,
                     entities.StatePersonAlias,
                     entities.StatePersonExternalId,
-                    entities.StateSentenceGroup,
                     entities.StateAssessment,
                 ],
                 reference_dataset=dataset,
@@ -825,9 +771,6 @@ class TestExtractDataForPipeline(unittest.TestCase):
                                 entities.StatePersonAlias.__name__: [entity_alias],
                                 entities.StatePersonExternalId.__name__: [
                                     entity_external_id
-                                ],
-                                entities.StateSentenceGroup.__name__: [
-                                    entity_sentence_group
                                 ],
                                 entities.StateAssessment.__name__: [entity_assessment],
                                 PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME: person_to_county_of_residence_data,
@@ -1179,7 +1122,7 @@ class TestExtractAllEntitiesOfType(unittest.TestCase):
     def testExtractAllEntitiesOfType(self):
         person = remove_relationship_properties(
             database_test_utils.generate_test_person(
-                123, "US_XX", [], None, [], [], [], [], [], [], []
+                123, "US_XX", None, [], [], [], [], [], [], []
             )
         )
 
@@ -1224,7 +1167,7 @@ class TestExtractAllEntitiesOfType(unittest.TestCase):
     def testExtractAllEntitiesOfType_InvalidUnifyingIdField(self):
         person = remove_relationship_properties(
             database_test_utils.generate_test_person(
-                123, "US_XX", [], None, [], [], [], [], [], [], []
+                123, "US_XX", None, [], [], [], [], [], [], []
             )
         )
 

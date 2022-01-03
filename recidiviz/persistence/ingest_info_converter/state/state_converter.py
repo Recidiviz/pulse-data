@@ -28,7 +28,6 @@ from recidiviz.ingest.models.ingest_info_pb2 import (
     StateParoleDecision,
     StatePerson,
     StateProgramAssignment,
-    StateSentenceGroup,
     StateSupervisionContact,
     StateSupervisionPeriod,
     StateSupervisionSentence,
@@ -47,7 +46,6 @@ from recidiviz.persistence.entity.state.deserialize_entity_factories import (
     StateParoleDecisionFactory,
     StatePersonFactory,
     StateProgramAssignmentFactory,
-    StateSentenceGroupFactory,
     StateSupervisionContactFactory,
     StateSupervisionPeriodFactory,
     StateSupervisionSentenceFactory,
@@ -72,7 +70,6 @@ from recidiviz.persistence.ingest_info_converter.state.entity_helpers import (
     state_person_external_id,
     state_person_race,
     state_program_assignment,
-    state_sentence_group,
     state_supervision_case_type_entry,
     state_supervision_contact,
     state_supervision_period,
@@ -115,9 +112,6 @@ class StateConverter(BaseConverter[entities.StatePerson]):
             for pa in ingest_info.state_program_assignments
         }
         self.agents = {a.state_agent_id: a for a in ingest_info.state_agents}
-        self.sentence_groups = {
-            sg.state_sentence_group_id: sg for sg in ingest_info.state_sentence_groups
-        }
         self.supervision_sentences = {
             ss.state_supervision_sentence_id: ss
             for ss in ingest_info.state_supervision_sentences
@@ -295,12 +289,6 @@ class StateConverter(BaseConverter[entities.StatePerson]):
         ]
         state_person_builder.external_ids = converted_external_ids
 
-        converted_sentence_groups = [
-            self._convert_sentence_group(self.sentence_groups[sentence_group_id])
-            for sentence_group_id in ingest_person.state_sentence_group_ids
-        ]
-        state_person_builder.sentence_groups = converted_sentence_groups
-
         if ingest_person.supervising_officer_id:
             converted_supervising_officer = state_agent.convert(
                 self.agents[ingest_person.supervising_officer_id], self.metadata
@@ -308,19 +296,6 @@ class StateConverter(BaseConverter[entities.StatePerson]):
             state_person_builder.supervising_officer = converted_supervising_officer
 
         return state_person_builder.build(StatePersonFactory.deserialize)
-
-    def _convert_sentence_group(
-        self, ingest_sentence_group: StateSentenceGroup
-    ) -> entities.StateSentenceGroup:
-        """Converts an ingest_info proto StateSentenceGroup to a
-        persistence entity."""
-        sentence_group_builder = entities.StateSentenceGroup.builder()
-
-        state_sentence_group.copy_fields_to_builder(
-            sentence_group_builder, ingest_sentence_group, self.metadata
-        )
-
-        return sentence_group_builder.build(StateSentenceGroupFactory.deserialize)
 
     def _convert_supervision_sentence(
         self, ingest_supervision_sentence: StateSupervisionSentence

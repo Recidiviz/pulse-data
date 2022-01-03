@@ -443,19 +443,6 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
 
     incarceration_period.parole_decisions = [parole_decision]
 
-    sentence_group = entities.StateSentenceGroup.new_with_defaults(
-        external_id="BOOK_ID1234",
-        status=StateSentenceStatus.SERVING,
-        status_raw_text="SERVING",
-        date_imposed=datetime.date(year=2016, month=10, day=14),
-        state_code="US_XX",
-        county_code="US_XX_COUNTY",
-        min_length_days=90,
-        max_length_days=120,
-    )
-
-    person.sentence_groups = [sentence_group]
-
     person_supervising_officer = entities.StateAgent.new_with_defaults(
         state_code="US_XX",
         external_id="SUPERVISING_OFFICER_ID",
@@ -613,7 +600,6 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
             *person.races,
             *person.aliases,
             *person.ethnicities,
-            *person.sentence_groups,
             *person.assessments,
             *person.program_assignments,
             *person.incarceration_incidents,

@@ -38,7 +38,6 @@ class UsPaMatchingDelegate(BaseStateMatchingDelegate):
         super().__init__(
             StateCode.US_PA.value.lower(),
             ingest_metadata,
-            [schema.StatePerson, schema.StateSentenceGroup],
         )
 
     def get_non_external_id_match(

@@ -88,7 +88,6 @@ from recidiviz.tests.persistence.database.schema.state.schema_test_utils import 
     generate_parole_decision,
     generate_person,
     generate_race,
-    generate_sentence_group,
     generate_supervision_case_type_entry,
     generate_supervision_period,
     generate_supervision_sentence,
@@ -544,9 +543,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             state_code=_STATE_CODE,
         )
 
-        expected_person = attr.evolve(
-            person, person_id=_ID, external_ids=[], sentence_groups=[]
-        )
+        expected_person = attr.evolve(person, person_id=_ID, external_ids=[])
         expected_charge = attr.evolve(new_charge)
         expected_incarceration_sentence = attr.evolve(
             incarceration_sentence,
@@ -595,13 +592,13 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             id_type=_ID_TYPE,
         )
         entity_external_id_2 = self.to_entity(db_external_id_2)
-        db_sentence_group = generate_sentence_group(
-            sentence_group_id=_ID, external_id=_EXTERNAL_ID
+        db_incarceration_sentence = generate_incarceration_sentence(
+            person=db_person, external_id=_EXTERNAL_ID
         )
-        entity_sentence_group = self.to_entity(db_sentence_group)
+        entity_incarceration_sentence = self.to_entity(db_incarceration_sentence)
         db_person_2 = generate_person(
             person_id=_ID_2,
-            sentence_groups=[db_sentence_group],
+            incarceration_sentences=[db_incarceration_sentence],
             external_ids=[db_external_id_2],
             state_code=_STATE_CODE,
         )
@@ -612,21 +609,28 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         external_id = attr.evolve(entity_external_id, person_external_id_id=None)
         person = attr.evolve(entity_person, person_id=None, external_ids=[external_id])
 
-        sentence_group = attr.evolve(entity_sentence_group, sentence_group_id=None)
-        sentence_group_dup = attr.evolve(sentence_group, county_code=_COUNTY_CODE)
+        incarceration_sentence = attr.evolve(
+            entity_incarceration_sentence, incarceration_sentence_id=None
+        )
+        incarceration_sentence_dup = attr.evolve(
+            incarceration_sentence, county_code=_COUNTY_CODE
+        )
         external_id_2 = attr.evolve(entity_external_id_2, person_external_id_id=None)
         person_2 = attr.evolve(
             entity_person_2,
             person_id=None,
             external_ids=[external_id_2],
-            sentence_groups=[sentence_group, sentence_group_dup],
+            incarceration_sentences=[
+                incarceration_sentence,
+                incarceration_sentence_dup,
+            ],
         )
 
         # Act 1 - Match
         session = self._session()
         with self.assertRaisesRegex(
             EntityMatchingError,
-            r"Found multiple different ingested entities of type \[StateSentenceGroup\] "
+            r"Found multiple different ingested entities of type \[StateIncarcerationSentence\] "
             r"with conflicting information",
         ):
             _ = self._match(session, [person, person_2])
@@ -1062,10 +1066,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         people to merge have distinct DB children.
         """
         # Arrange 1 - Match
-        db_sentence_group = generate_sentence_group(
-            sentence_group_id=_ID, external_id=_EXTERNAL_ID
-        )
-        entity_sentence_group = self.to_entity(db_sentence_group)
         db_external_id = generate_external_id(
             person_external_id_id=_ID,
             state_code=_STATE_CODE,
@@ -1087,14 +1087,20 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             state_code=_STATE_CODE,
         )
         entity_person = self.to_entity(db_person)
+
         db_person_2 = generate_person(
             person_id=_ID_2,
             full_name=_FULL_NAME,
             external_ids=[db_external_id_2],
-            sentence_groups=[db_sentence_group],
             state_code=_STATE_CODE,
         )
+        db_incarceration_sentence = generate_incarceration_sentence(
+            person=db_person_2, external_id=_EXTERNAL_ID
+        )
+        db_person_2.incarceration_sentences = [db_incarceration_sentence]
+        entity_incarceration_sentence = self.to_entity(db_incarceration_sentence)
         entity_person_2 = self.to_entity(db_person_2)
+
         self._commit_to_db(db_person, db_person_2)
 
         race = StatePersonRace.new_with_defaults(
@@ -1129,12 +1135,12 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             races=[expected_race],
             ethnicities=[expected_ethnicity],
             aliases=[expected_alias],
-            sentence_groups=[entity_sentence_group],
+            incarceration_sentences=[entity_incarceration_sentence],
         )
         expected_placeholder_person = attr.evolve(
             entity_person_2,
             full_name=None,
-            sentence_groups=[],
+            incarceration_sentences=[],
             external_ids=[],
         )
 
@@ -2806,9 +2812,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
     def test_matchPersons_matchAfterManyIngestedPlaceholders(self) -> None:
         # Arrange 1 - Match
-        db_sentence_group = generate_sentence_group(
-            external_id=_EXTERNAL_ID, sentence_group_id=_ID
-        )
         db_external_id = generate_external_id(
             person_external_id_id=_ID,
             state_code=_STATE_CODE,
@@ -2818,10 +2821,13 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         entity_external_id = self.to_entity(db_external_id)
         db_person = generate_person(
             person_id=_ID,
-            sentence_groups=[db_sentence_group],
             external_ids=[db_external_id],
             state_code=_STATE_CODE,
         )
+        db_incarceration_sentence = generate_incarceration_sentence(
+            person=db_person, external_id=_EXTERNAL_ID, incarceration_sentence_id=_ID
+        )
+        db_person.incarceration_sentences = [db_incarceration_sentence]
         entity_person = self.to_entity(db_person)
 
         self._commit_to_db(db_person)

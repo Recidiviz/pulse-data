@@ -1158,9 +1158,6 @@ class IncarcerationPreProcessingManager:
         new_incarceration_periods: List[StateIncarcerationPeriod] = []
         open_transfer = False
 
-        # TODO(#1782): Check to see if back to back incarceration periods are related
-        #  to the same StateIncarcerationSentence or SentenceGroup to be sure we
-        #  aren't counting stacked sentences or related periods as recidivism.
         for incarceration_period in incarceration_periods:
             if open_transfer:
                 admission_reason = incarceration_period.admission_reason
