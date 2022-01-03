@@ -35,14 +35,14 @@ from recidiviz.persistence.entity.entity_utils import (
 )
 from recidiviz.persistence.entity.state.entities import (
     StateCharge,
+    StateIncarcerationSentence,
     StatePerson,
-    StateSentenceGroup,
     StateSupervisionSentence,
     StateSupervisionViolation,
 )
 from recidiviz.tests.persistence.database.schema.state.schema_test_utils import (
+    generate_incarceration_sentence,
     generate_person,
-    generate_sentence_group,
 )
 
 _ID = 1
@@ -174,23 +174,19 @@ class TestEntityUtils(TestCase):
     def test_schemaEdgeDirectionChecker_isHigherRanked_higherRank(self) -> None:
         direction_checker = SchemaEdgeDirectionChecker.state_direction_checker()
         self.assertTrue(
-            direction_checker.is_higher_ranked(StatePerson, StateSentenceGroup)
+            direction_checker.is_higher_ranked(StatePerson, StateIncarcerationSentence)
         )
         self.assertTrue(
-            direction_checker.is_higher_ranked(
-                StateSentenceGroup, StateSupervisionViolation
-            )
+            direction_checker.is_higher_ranked(StatePerson, StateSupervisionViolation)
         )
 
     def test_schemaEdgeDirectionChecker_isHigherRanked_lowerRank(self) -> None:
         direction_checker = SchemaEdgeDirectionChecker.state_direction_checker()
         self.assertFalse(
-            direction_checker.is_higher_ranked(StateSentenceGroup, StatePerson)
+            direction_checker.is_higher_ranked(StateSupervisionSentence, StatePerson)
         )
         self.assertFalse(
-            direction_checker.is_higher_ranked(
-                StateSupervisionViolation, StateSentenceGroup
-            )
+            direction_checker.is_higher_ranked(StateSupervisionViolation, StatePerson)
         )
 
     def test_schemaEdgeDirectionChecker_isHigherRanked_sameRank(self) -> None:
@@ -205,29 +201,37 @@ class TestEntityUtils(TestCase):
     def test_pruneDanglingPlaceholders_isDangling(self) -> None:
         # Arrange
         dangling_placeholder_person = generate_person()
-        dangling_placeholder_sg = generate_sentence_group()
+        dangling_placeholder_is = generate_incarceration_sentence(
+            person=dangling_placeholder_person
+        )
 
         # Act
         pruned_person = prune_dangling_placeholders_from_tree(
             dangling_placeholder_person, field_index=self.field_index
         )
-        pruned_sentence_group = prune_dangling_placeholders_from_tree(
-            dangling_placeholder_sg, field_index=self.field_index
+        pruned_incarceration_sentence = prune_dangling_placeholders_from_tree(
+            dangling_placeholder_is, field_index=self.field_index
         )
 
         # Assert
         self.assertIsNone(pruned_person)
-        self.assertIsNone(pruned_sentence_group)
+        self.assertIsNone(pruned_incarceration_sentence)
 
     def test_pruneDanglingPlaceholders_placeholderHasNonPlaceholderChildren(self):
         # Arrange
-        non_placeholder_sg = generate_sentence_group(external_id="external_id")
-        placeholder_person = generate_person(sentence_groups=[non_placeholder_sg])
-
-        expected_non_placeholder_sg = generate_sentence_group(external_id="external_id")
-        expected_placeholder_person = generate_person(
-            sentence_groups=[expected_non_placeholder_sg]
+        placeholder_person = generate_person()
+        non_placeholder_is = generate_incarceration_sentence(
+            person=placeholder_person, external_id="external_id"
         )
+        placeholder_person.incarceration_sentences = [non_placeholder_is]
+
+        expected_placeholder_person = generate_person()
+        expected_non_placeholder_is = generate_incarceration_sentence(
+            person=expected_placeholder_person, external_id="external_id"
+        )
+        expected_placeholder_person.incarceration_sentences = [
+            expected_non_placeholder_is
+        ]
 
         # Act
         pruned_tree = prune_dangling_placeholders_from_tree(
@@ -243,16 +247,23 @@ class TestEntityUtils(TestCase):
 
     def test_pruneDanglingPlaceholders_placeholderHasMixedChildren(self):
         # Arrange
-        non_placeholder_sg = generate_sentence_group(external_id="external_id")
-        placeholder_sg = generate_sentence_group()
-        placeholder_person = generate_person(
-            sentence_groups=[non_placeholder_sg, placeholder_sg]
+        placeholder_person = generate_person()
+        non_placeholder_is = generate_incarceration_sentence(
+            person=placeholder_person, external_id="external_id"
         )
+        placeholder_is = generate_incarceration_sentence(person=placeholder_person)
+        placeholder_person.incarceration_sentences = [
+            non_placeholder_is,
+            placeholder_is,
+        ]
 
-        expected_non_placeholder_sg = generate_sentence_group(external_id="external_id")
-        expected_placeholder_person = generate_person(
-            sentence_groups=[expected_non_placeholder_sg]
+        expected_placeholder_person = generate_person()
+        expected_non_placeholder_is = generate_incarceration_sentence(
+            person=expected_placeholder_person, external_id="external_id"
         )
+        expected_placeholder_person.incarceration_sentences = [
+            expected_non_placeholder_is
+        ]
 
         # Act
         pruned_tree = prune_dangling_placeholders_from_tree(

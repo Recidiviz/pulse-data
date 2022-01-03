@@ -242,24 +242,27 @@ class TestDao(TestCase):
 
             self.assertCountEqual(people, expected_people)
 
-    def test_readPeopleByRootExternalIds_SentenceGroupExternalId(self) -> None:
+    def test_readPeopleByRootExternalIds_IncarcerationSentenceExternalId(self) -> None:
         # Arrange
         person = schema.StatePerson(person_id=1, state_code=_STATE_CODE)
-        sentence_group = schema.StateSentenceGroup(
-            sentence_group_id=1,
+        incarceration_sentence = schema.StateIncarcerationSentence(
+            incarceration_sentence_id=1,
             external_id=_EXTERNAL_ID,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
             state_code=_STATE_CODE,
             person=person,
         )
-        sentence_group_2 = schema.StateSentenceGroup(
-            sentence_group_id=2,
+        incarceration_sentence_2 = schema.StateIncarcerationSentence(
+            incarceration_sentence_id=2,
             external_id=_EXTERNAL_ID2,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
             state_code=_STATE_CODE,
             person=person,
         )
-        person.sentence_groups = [sentence_group, sentence_group_2]
+        person.incarceration_sentences = [
+            incarceration_sentence,
+            incarceration_sentence_2,
+        ]
 
         with SessionFactory.using_database(
             self.database_key, autocommit=False
@@ -269,7 +272,7 @@ class TestDao(TestCase):
 
             # Act
             people = dao.read_people_by_cls_external_ids(
-                session, _STATE_CODE, schema.StateSentenceGroup, [_EXTERNAL_ID]
+                session, _STATE_CODE, schema.StateIncarcerationSentence, [_EXTERNAL_ID]
             )
 
             # Assert
@@ -563,41 +566,41 @@ class TestDao(TestCase):
 
     def test_readObjsWithExternalIdMatch(self) -> None:
         person_1 = schema.StatePerson(person_id=1, state_code=_STATE_CODE)
-        sentence_group_1 = schema.StateSentenceGroup(
-            sentence_group_id=1,
+        incarceration_sentence_1 = schema.StateIncarcerationSentence(
+            incarceration_sentence_id=1,
             external_id=_EXTERNAL_ID,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
             state_code=_STATE_CODE,
             person=person_1,
         )
-        person_1.sentence_groups = [sentence_group_1]
+        person_1.incarceration_sentences = [incarceration_sentence_1]
 
         person_2 = schema.StatePerson(person_id=2, state_code=_STATE_CODE)
-        sentence_group_1_dup = schema.StateSentenceGroup(
-            sentence_group_id=2,
+        incarceration_sentence_1_dup = schema.StateIncarcerationSentence(
+            incarceration_sentence_id=2,
             external_id=_EXTERNAL_ID,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
             state_code=_STATE_CODE,
             person=person_2,
         )
-        sentence_group_2 = schema.StateSentenceGroup(
-            sentence_group_id=3,
+        incarceration_sentence_2 = schema.StateIncarcerationSentence(
+            incarceration_sentence_id=3,
             external_id=_EXTERNAL_ID2,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
             state_code=_STATE_CODE,
             person=person_2,
         )
-        placeholder_sentence_group = schema.StateSentenceGroup(
-            sentence_group_id=4,
+        placeholder_incarceration_sentence = schema.StateIncarcerationSentence(
+            incarceration_sentence_id=4,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
             state_code=_STATE_CODE,
             person=person_2,
         )
 
-        person_2.sentence_groups = [
-            sentence_group_1_dup,
-            sentence_group_2,
-            placeholder_sentence_group,
+        person_2.incarceration_sentences = [
+            incarceration_sentence_1_dup,
+            incarceration_sentence_2,
+            placeholder_incarceration_sentence,
         ]
 
         with SessionFactory.using_database(
@@ -609,7 +612,7 @@ class TestDao(TestCase):
 
             # Act
             external_ids = dao.read_external_ids_of_cls_with_external_id_match(
-                session, _STATE_CODE, schema.StateSentenceGroup
+                session, _STATE_CODE, schema.StateIncarcerationSentence
             )
 
             # Assert

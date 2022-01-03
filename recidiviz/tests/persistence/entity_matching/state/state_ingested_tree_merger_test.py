@@ -39,7 +39,6 @@ from recidiviz.persistence.entity.state.entities import (
     StatePerson,
     StatePersonExternalId,
     StatePersonRace,
-    StateSentenceGroup,
 )
 from recidiviz.persistence.entity_matching.state.state_ingested_tree_merger import (
     StateIngestedTreeMerger,
@@ -63,14 +62,6 @@ def make_person_race(**kwargs: Any) -> StatePersonRace:
 def make_incarceration_incident(**kwargs: Any) -> StateIncarcerationIncident:
     return StateIncarcerationIncident.new_with_defaults(
         state_code=_STATE_CODE, **kwargs
-    )
-
-
-def make_sentence_group(**kwargs: Any) -> StateSentenceGroup:
-    return StateSentenceGroup.new_with_defaults(
-        state_code=_STATE_CODE,
-        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-        **kwargs,
     )
 
 

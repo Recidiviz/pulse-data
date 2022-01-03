@@ -38,10 +38,7 @@ from recidiviz.common.constants.state.state_incarceration_incident import (
     StateIncarcerationIncidentOutcomeType,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.common.str_field_utils import (
-    parse_days_from_duration_pieces,
-    safe_parse_days_from_duration_str,
-)
+from recidiviz.common.str_field_utils import parse_days_from_duration_pieces
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
 )
@@ -88,12 +85,10 @@ from recidiviz.ingest.models.ingest_info import (
     StateCourtCase,
     StateIncarcerationIncident,
     StateIncarcerationIncidentOutcome,
-    StateIncarcerationSentence,
     StatePerson,
     StatePersonEthnicity,
     StatePersonExternalId,
     StateProgramAssignment,
-    StateSentenceGroup,
     StateSupervisionCaseTypeEntry,
     StateSupervisionContact,
 )
@@ -126,14 +121,8 @@ class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             "elite_offenders": [copy_name_to_alias],
             "elite_offenderidentifier": [self._normalize_external_id_type],
             "elite_offenderbookingstable": [self._add_person_external_id],
-            "elite_offendersentenceaggs": [
-                gen_set_is_life_sentence_hook("MAX_TERM", "LIFE", StateSentenceGroup),
-                self._set_sentence_group_length_max_length,
-            ],
             "elite_offendersentences": [
-                gen_set_is_life_sentence_hook(
-                    "SENTENCE_CALC_TYPE", "LIFE", StateIncarcerationSentence
-                )
+                gen_set_is_life_sentence_hook("SENTENCE_CALC_TYPE", "LIFE")
             ],
             "elite_offenderchargestable": [
                 self._parse_elite_charge_classification,
@@ -415,37 +404,6 @@ class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
                 else:
                     updated_person_races.append(person_race)
             person.state_person_races = updated_person_races
-
-    @classmethod
-    def _set_sentence_group_length_max_length(
-        cls,
-        _gating_context: IngestGatingContext,
-        row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        """ Parses the sentence group max length from the MAX_TERM field."""
-
-        max_term = row["MAX_TERM"]
-
-        # Means Prison sentence, which is redundant. It is only ever used in a small number of erroneous cases long ago
-        # that had no data on max sentence length available.
-        is_redundant_pri = max_term == "PRI"
-
-        # Indicates a life sentence.
-        is_life_sentence = max_term == "LIFE"
-
-        for extracted_object in extracted_objects:
-            if isinstance(extracted_object, StateSentenceGroup):
-                if not (is_life_sentence or is_redundant_pri):
-                    max_duration_str = max_term.strip()
-                    if max_duration_str:
-                        max_length_days = safe_parse_days_from_duration_str(
-                            duration_str=max_duration_str,
-                            start_dt_str=extracted_object.date_imposed,
-                        )
-                        if max_length_days is not None:
-                            extracted_object.max_length = str(max_length_days)
 
     @staticmethod
     def _normalize_external_id_type(
@@ -807,9 +765,9 @@ def _generate_sentence_primary_key(
 
 
 def _generate_sentence_id(row: Dict[str, str]) -> str:
-    sentence_group_id = row["OFFENDER_BOOK_ID"]
+    booking_id = row["OFFENDER_BOOK_ID"]
     sentence_seq = row["SENTENCE_SEQ"]
-    sentence_id = "-".join([sentence_group_id, sentence_seq])
+    sentence_id = "-".join([booking_id, sentence_seq])
     return sentence_id
 
 
@@ -831,10 +789,10 @@ def _generate_incident_id(row: Dict[str, str]) -> str:
 
 
 def _generate_period_id(row: Dict[str, str]) -> str:
-    sentence_group_id = row["OFFENDER_BOOK_ID"]
+    booking_id = row["OFFENDER_BOOK_ID"]
     movement_seq = row["MOVEMENT_SEQ"]
 
-    return "-".join([sentence_group_id, movement_seq])
+    return "-".join([booking_id, movement_seq])
 
 
 def _recover_movement_sequence(period_id: str) -> str:
@@ -855,10 +813,10 @@ def _generate_charge_primary_key(
 
 
 def _generate_charge_id(row: Dict[str, str]) -> str:
-    sentence_group_id = row["OFFENDER_BOOK_ID"]
+    booking_id = row["OFFENDER_BOOK_ID"]
     charge_seq = row["CHARGE_SEQ"]
 
-    return "-".join([sentence_group_id, charge_seq])
+    return "-".join([booking_id, charge_seq])
 
 
 def _generate_person_book_id(row: Dict[str, str]) -> str:

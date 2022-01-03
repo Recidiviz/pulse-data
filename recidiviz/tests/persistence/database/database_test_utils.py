@@ -317,18 +317,6 @@ def generate_test_early_discharge(person_id) -> state_schema.StateEarlyDischarge
     return instance
 
 
-def generate_test_sentence_group(
-    person_id,
-) -> state_schema.StateSentenceGroup:
-    instance = state_schema.StateSentenceGroup(
-        sentence_group_id=567,
-        status=StateSentenceStatus.SUSPENDED.value,
-        state_code="US_XX",
-        person_id=person_id,
-    )
-    return instance
-
-
 def generate_test_assessment_agent() -> state_schema.StateAgent:
     instance = state_schema.StateAgent(
         agent_id=1010,
@@ -343,7 +331,6 @@ def generate_test_assessment_agent() -> state_schema.StateAgent:
 def generate_test_person(
     person_id: int,
     state_code: str,
-    sentence_groups: List[state_schema.StateSentenceGroup],
     agent: Optional[state_schema.StateAgent],
     incarceration_incidents: List[state_schema.StateIncarcerationIncident],
     supervision_violations: List[state_schema.StateSupervisionViolation],
@@ -394,7 +381,6 @@ def generate_test_person(
                 person_id=person_id,
             )
         ],
-        sentence_groups=sentence_groups,
         incarceration_incidents=incarceration_incidents,
         supervision_violations=supervision_violations,
         supervision_contacts=supervision_contacts,
@@ -476,10 +462,6 @@ def generate_schema_state_person_obj_tree() -> state_schema.StatePerson:
         [test_charge_1, test_charge_2],
     )
 
-    test_sentence_group = generate_test_sentence_group(
-        test_person_id,
-    )
-
     test_agent = generate_test_assessment_agent()
 
     test_state_code = "US_XX"
@@ -505,7 +487,6 @@ def generate_schema_state_person_obj_tree() -> state_schema.StatePerson:
     test_person = generate_test_person(
         test_person_id,
         test_state_code,
-        [test_sentence_group],
         test_agent,
         [test_incarceration_incident],
         [test_supervision_violation],
@@ -515,7 +496,5 @@ def generate_schema_state_person_obj_tree() -> state_schema.StatePerson:
         [test_incarceration_period],
         [test_supervision_period],
     )
-
-    test_sentence_group.person = test_person
 
     return test_person

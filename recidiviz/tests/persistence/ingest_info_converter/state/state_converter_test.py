@@ -69,7 +69,6 @@ from recidiviz.persistence.entity.state.entities import (
     StatePersonExternalId,
     StatePersonRace,
     StateProgramAssignment,
-    StateSentenceGroup,
     StateSupervisionCaseTypeEntry,
     StateSupervisionContact,
     StateSupervisionPeriod,
@@ -174,7 +173,6 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             state_incarceration_incident_ids=["INCIDENT_ID"],
             state_supervision_violation_ids=["VIOLATION_ID"],
             state_supervision_contact_ids=["SUPERVISION_CONTACT_ID"],
-            state_sentence_group_ids=["GROUP_ID1", "GROUP_ID2"],
             state_supervision_sentence_ids=[
                 "SUPERVISION_SENTENCE_ID1",
                 "SUPERVISION_SENTENCE_ID2",
@@ -228,12 +226,6 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             program_location_id="PROGRAM_LOCATION_ID",
             discharge_reason="COMPLETED",
             referring_agent_id="AGENT_ID4",
-        )
-        ingest_info.state_sentence_groups.add(
-            state_sentence_group_id="GROUP_ID1",
-        )
-        ingest_info.state_sentence_groups.add(
-            state_sentence_group_id="GROUP_ID2",
         )
         ingest_info.state_supervision_sentences.add(
             state_supervision_sentence_id="SUPERVISION_SENTENCE_ID1",
@@ -676,18 +668,6 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                         state_code="US_XX",
                         supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                         supervision_type_raw_text="PAROLE",
-                    ),
-                ],
-                sentence_groups=[
-                    StateSentenceGroup.new_with_defaults(
-                        external_id="GROUP_ID1",
-                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                        state_code="US_XX",
-                    ),
-                    StateSentenceGroup.new_with_defaults(
-                        external_id="GROUP_ID2",
-                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                        state_code="US_XX",
                     ),
                 ],
             )

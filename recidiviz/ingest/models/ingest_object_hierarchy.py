@@ -81,7 +81,6 @@ _HIERARCHY_MAP: Dict[
         "state_supervision_violation_response",
     ),
     "state_supervision_contact": ("state_person",),
-    "state_sentence_group": ("state_person",),
     "state_program_assignment": ("state_person",),
     "state_early_discharge": (
         "state_person",

@@ -48,15 +48,6 @@ def generate_external_id(**kwargs) -> schema.StatePersonExternalId:
     return schema.StatePersonExternalId(**args)
 
 
-def generate_sentence_group(**kwargs) -> schema.StateSentenceGroup:
-    args = {
-        "status": StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
-        "state_code": _STATE_CODE,
-    }
-    args.update(kwargs)
-    return schema.StateSentenceGroup(**args)
-
-
 def generate_race(**kwargs) -> schema.StatePersonRace:
     args = {
         "state_code": _STATE_CODE,
