@@ -69,7 +69,6 @@ from recidiviz.ingest.models.ingest_info import (
     StatePersonEthnicity,
     StatePersonExternalId,
     StatePersonRace,
-    StateSentenceGroup,
     StateSupervisionCaseTypeEntry,
     StateSupervisionPeriod,
     StateSupervisionSentence,
@@ -140,9 +139,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
                             alias_type="GIVEN_NAME",
                         )
                     ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(state_sentence_group_id="110035-19890901")
-                    ],
                 ),
                 StatePerson(
                     state_person_id="310261",
@@ -166,9 +162,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
                             alias_type="GIVEN_NAME",
                         )
                     ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(state_sentence_group_id="310261-19890821")
-                    ],
                 ),
                 StatePerson(
                     state_person_id="710448",
@@ -188,9 +181,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
                             alias_type="GIVEN_NAME",
                         )
                     ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(state_sentence_group_id="710448-19890901")
-                    ],
                 ),
                 StatePerson(
                     state_person_id="910324",
@@ -206,9 +196,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
                     state_person_ethnicities=[StatePersonEthnicity(ethnicity="N")],
                     state_aliases=[
                         StateAlias(given_names="KAONASHI", alias_type="GIVEN_NAME")
-                    ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(state_sentence_group_id="910324-19890825")
                     ],
                 ),
             ]
@@ -264,60 +251,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
         )
 
         self.run_legacy_parse_file_test(expected, "oras_assessments_weekly")
-
-    def test_populate_data_tak040_offender_identification(self) -> None:
-        expected = IngestInfo(
-            state_people=[
-                StatePerson(
-                    state_person_id="110035",
-                    state_person_external_ids=[
-                        StatePersonExternalId(
-                            state_person_external_id_id="110035", id_type=US_MO_DOC
-                        ),
-                    ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(state_sentence_group_id="110035-19890901"),
-                        StateSentenceGroup(state_sentence_group_id="110035-20010414"),
-                    ],
-                ),
-                StatePerson(
-                    state_person_id="310261",
-                    state_person_external_ids=[
-                        StatePersonExternalId(
-                            state_person_external_id_id="310261", id_type=US_MO_DOC
-                        ),
-                    ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(state_sentence_group_id="310261-19890821")
-                    ],
-                ),
-                StatePerson(
-                    state_person_id="710448",
-                    state_person_external_ids=[
-                        StatePersonExternalId(
-                            state_person_external_id_id="710448", id_type=US_MO_DOC
-                        ),
-                    ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(state_sentence_group_id="710448-19890901"),
-                        StateSentenceGroup(state_sentence_group_id="710448-20010414"),
-                    ],
-                ),
-                StatePerson(
-                    state_person_id="910324",
-                    state_person_external_ids=[
-                        StatePersonExternalId(
-                            state_person_external_id_id="910324", id_type=US_MO_DOC
-                        ),
-                    ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(state_sentence_group_id="910324-19890825")
-                    ],
-                ),
-            ]
-        )
-
-        self.run_legacy_parse_file_test(expected, "tak040_offender_cycles")
 
     def test_populate_data_tak022_tak023_offender_sentence_institutional(self) -> None:
         expected = IngestInfo(
@@ -1517,12 +1450,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
         # TAK001 OFFENDER IDENTIFICATION
         ######################################
         # Arrange
-        sg_110035_19890901 = entities.StateSentenceGroup.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            external_id="110035-19890901",
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-        )
-
         person_110035 = entities.StatePerson.new_with_defaults(
             full_name='{"given_names": "FRANK", "name_suffix": "JR", '
             '"surname": "ABAGNALE"}',
@@ -1560,14 +1487,8 @@ class TestUsMoController(BaseDirectIngestControllerTests):
                     ethnicity_raw_text="H",
                 )
             ],
-            sentence_groups=[sg_110035_19890901],
         )
 
-        sg_310261_19890821 = entities.StateSentenceGroup.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            external_id="310261-19890821",
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-        )
         person_310261 = entities.StatePerson.new_with_defaults(
             full_name='{"given_names": "MARTHA", "middle_names": "HELEN", '
             '"surname": "STEWART"}',
@@ -1605,9 +1526,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
                     ethnicity_raw_text="U",
                 )
             ],
-            sentence_groups=[
-                sg_310261_19890821,
-            ],
         )
         person_710448 = entities.StatePerson.new_with_defaults(
             full_name='{"given_names": "JULES", "surname": "WINNIFIELD"}',
@@ -1635,20 +1553,8 @@ class TestUsMoController(BaseDirectIngestControllerTests):
                     race_raw_text="B",
                 ),
             ],
-            sentence_groups=[
-                entities.StateSentenceGroup.new_with_defaults(
-                    state_code=_STATE_CODE_UPPER,
-                    external_id="710448-19890901",
-                    status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                )
-            ],
         )
 
-        sg_910324_19890825 = entities.StateSentenceGroup.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            external_id="910324-19890825",
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-        )
         person_910324 = entities.StatePerson.new_with_defaults(
             full_name='{"given_names": "KAONASHI"}',
             gender=Gender.EXTERNAL_UNKNOWN,
@@ -1683,9 +1589,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
                     ethnicity=Ethnicity.NOT_HISPANIC,
                     ethnicity_raw_text="N",
                 )
-            ],
-            sentence_groups=[
-                sg_910324_19890825,
             ],
         )
 
@@ -1746,35 +1649,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
         # SQL Preprocessing View
         # Act
         self._run_ingest_job_for_filename("oras_assessments_weekly.csv")
-
-        # Assert
-        self.assert_expected_db_people(expected_people)
-
-        ######################################
-        # TAK040 OFFENDER CYCLES
-        ######################################
-        # Arrange
-        sg_110035_19890901.person = person_110035
-
-        sg_110035_20010414 = entities.StateSentenceGroup.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            external_id="110035-20010414",
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            person=person_110035,
-        )
-        person_110035.sentence_groups.append(sg_110035_20010414)
-
-        sg_710448_20010414 = entities.StateSentenceGroup.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            external_id="710448-20010414",
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            person=person_710448,
-        )
-        person_710448.sentence_groups.append(sg_710448_20010414)
-
-        # SQL Preprocessing View
-        # Act
-        self._run_ingest_job_for_filename("tak040_offender_cycles.csv")
 
         # Assert
         self.assert_expected_db_people(expected_people)
@@ -1857,8 +1731,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             person=person_110035,
         )
         sis_110035_20010414_1.charges = [charge_110035_20010414]
-
-        sg_310261_19890821.person = person_310261
 
         sis_310261_19890821_3 = entities.StateIncarcerationSentence.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -2005,8 +1877,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
         person_710448.incarceration_sentences.append(sis_710448_20010414_1)
         person_710448.incarceration_sentences.append(sis_710448_20010414_2)
         person_710448.incarceration_sentences.append(sis_710448_20010414_3)
-
-        sg_910324_19890825.person = person_910324
 
         sis_910324_19890825_1 = entities.StateIncarcerationSentence.new_with_defaults(
             state_code=_STATE_CODE_UPPER,

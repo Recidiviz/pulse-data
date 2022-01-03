@@ -144,7 +144,6 @@ from recidiviz.ingest.models.ingest_info import (
     StateCharge,
     StateIncarcerationPeriod,
     StateIncarcerationSentence,
-    StateSentenceGroup,
     StateSupervisionCaseTypeEntry,
     StateSupervisionPeriod,
     StateSupervisionSentence,
@@ -165,7 +164,6 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
 
     PRIMARY_COL_PREFIXES_BY_FILE_TAG = {
         "tak001_offender_identification": "EK",
-        "tak040_offender_cycles": "DQ",
         "tak022_tak023_tak025_tak026_offender_sentence_institution": "BS",
         "tak022_tak024_tak025_tak026_offender_sentence_supervision": "BS",
         "tak158_tak023_tak026_incarceration_period_from_incarceration_sentence": "BT",
@@ -466,11 +464,6 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             # When first parsed, the info object just has a single
             # external id - the DOC id.
             gen_label_single_external_id_hook(US_MO_DOC),
-            self.normalize_sentence_group_ids,
-        ]
-        tak040_offender_cycles_row_processors: List[Callable] = [
-            gen_label_single_external_id_hook(US_MO_DOC),
-            self.normalize_sentence_group_ids,
         ]
 
         tak291_tak292_tak024_citations_row_processors: List[Callable] = [
@@ -509,7 +502,6 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         self.row_post_processors_by_file: Dict[str, List[IngestRowPosthookCallable]] = {
             # SQL Preprocessing View
             "tak001_offender_identification": tak001_offender_identification_row_processors,
-            "tak040_offender_cycles": tak040_offender_cycles_row_processors,
             "tak022_tak023_tak025_tak026_offender_sentence_institution": self.get_tak022_tak023_tak025_tak026_offender_sentence_institution_row_processors(),
             "tak022_tak024_tak025_tak026_offender_sentence_supervision": self.get_tak022_tak023_tak025_tak026_offender_sentence_supervision_row_processors(),
             "tak158_tak023_tak026_incarceration_period_from_incarceration_sentence": incarceration_period_row_posthooks,
@@ -537,11 +529,8 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             str, IngestAncestorChainOverridesCallable
         ] = {
             # SQL Preprocessing View
-            "tak022_tak023_tak025_tak026_offender_sentence_institution": self._sentence_group_ancestor_chain_override,
-            "tak022_tak024_tak025_tak026_offender_sentence_supervision": self._sentence_group_ancestor_chain_override,
             "tak158_tak023_tak026_incarceration_period_from_incarceration_sentence": self._incarceration_sentence_ancestor_chain_override,
             "tak158_tak024_tak026_incarceration_period_from_supervision_sentence": self._supervision_sentence_ancestor_chain_override,
-            "tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods": self._sentence_group_ancestor_chain_override,
             "tak028_tak042_tak076_tak024_violation_reports": self._supervision_violation_report_ancestor_chain_override,
             "tak291_tak292_tak024_citations": self._supervision_violation_citation_ancestor_chain_override,
         }
@@ -551,7 +540,6 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             # SQL Preprocessing View
             "tak001_offender_identification",
             "oras_assessments_weekly",
-            "tak040_offender_cycles",
             "tak022_tak023_tak025_tak026_offender_sentence_institution",
             "tak022_tak024_tak025_tak026_offender_sentence_supervision",
             "tak158_tak023_tak026_incarceration_period_from_incarceration_sentence",
@@ -1108,23 +1096,14 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         return None
 
     @classmethod
-    def _sentence_group_ancestor_chain_override(
-        cls, gating_context: IngestGatingContext, row: Dict[str, str]
-    ) -> Dict[str, str]:
-        coords = cls._generate_sentence_group_id_coords(gating_context, row)
-        return {coords.class_name: coords.field_value}
-
-    @classmethod
     def _incarceration_sentence_ancestor_chain_override(
         cls, gating_context: IngestGatingContext, row: Dict[str, str]
     ) -> Dict[str, str]:
-        group_coords = cls._generate_sentence_group_id_coords(gating_context, row)
         sentence_coords = cls._generate_incarceration_sentence_id_coords(
             gating_context, row
         )
 
         return {
-            group_coords.class_name: group_coords.field_value,
             sentence_coords.class_name: sentence_coords.field_value,
         }
 
@@ -1132,13 +1111,11 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
     def _supervision_sentence_ancestor_chain_override(
         cls, gating_context: IngestGatingContext, row: Dict[str, str]
     ) -> Dict[str, str]:
-        group_coords = cls._generate_sentence_group_id_coords(gating_context, row)
         sentence_coords = cls._generate_supervision_sentence_id_coords(
             gating_context, row
         )
 
         return {
-            group_coords.class_name: group_coords.field_value,
             sentence_coords.class_name: sentence_coords.field_value,
         }
 
@@ -1146,7 +1123,6 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
     def _supervision_violation_report_ancestor_chain_override(
         cls, gating_context: IngestGatingContext, row: Dict[str, str]
     ) -> Dict[str, str]:
-        group_coords = cls._generate_sentence_group_id_coords(gating_context, row)
         if row.get(f"{TAK076_PREFIX}_{FIELD_KEY_SEQ}", "0") == "0":
             sentence_coords = cls._generate_incarceration_sentence_id_coords(
                 gating_context, row, TAK076_PREFIX
@@ -1156,7 +1132,6 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
                 gating_context, row, TAK076_PREFIX
             )
         return {
-            group_coords.class_name: group_coords.field_value,
             sentence_coords.class_name: sentence_coords.field_value,
         }
 
@@ -1164,7 +1139,6 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
     def _supervision_violation_citation_ancestor_chain_override(
         cls, gating_context: IngestGatingContext, row: Dict[str, str]
     ) -> Dict[str, str]:
-        group_coords = cls._generate_sentence_group_id_coords(gating_context, row)
         if row.get(f"{TAK291_PREFIX}_{FIELD_KEY_SEQ}", "0") == "0":
             sentence_coords = cls._generate_incarceration_sentence_id_coords(
                 gating_context, row, TAK291_PREFIX
@@ -1174,24 +1148,8 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
                 gating_context, row, TAK291_PREFIX
             )
         return {
-            group_coords.class_name: group_coords.field_value,
             sentence_coords.class_name: sentence_coords.field_value,
         }
-
-    @classmethod
-    def normalize_sentence_group_ids(
-        cls,
-        gating_context: IngestGatingContext,
-        row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        col_prefix = cls.primary_col_prefix_for_file_tag(gating_context.file_tag)
-        for obj in extracted_objects:
-            if isinstance(obj, StateSentenceGroup):
-                obj.state_sentence_group_id = cls._generate_sentence_group_id(
-                    col_prefix, row
-                )
 
     @classmethod
     def _generate_assessment_id_coords(
@@ -1204,17 +1162,6 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             "state_assessment",
             "state_assessment_id",
             f"{doc_id}-{person_assessment_id}",
-        )
-
-    @classmethod
-    def _generate_sentence_group_id_coords(
-        cls, gating_context: IngestGatingContext, row: Dict[str, str]
-    ) -> IngestFieldCoordinates:
-        col_prefix = cls.primary_col_prefix_for_file_tag(gating_context.file_tag)
-        return IngestFieldCoordinates(
-            "state_sentence_group",
-            "state_sentence_group_id",
-            cls._generate_sentence_group_id(col_prefix, row),
         )
 
     @classmethod
@@ -1253,12 +1200,12 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
     ) -> IngestFieldCoordinates:
         col_prefix = cls.primary_col_prefix_for_file_tag(gating_context.file_tag)
 
-        sentence_group_id = cls._generate_sentence_group_id(col_prefix, row)
+        doc_cycle_id = cls._generate_doc_cycle_id(col_prefix, row)
 
         field_assignment_seq = row["FIELD_ASSIGNMENT_SEQ_NUM"]
         start_status_seq_num = row["START_STATUS_SEQ_NUM"]
         supervision_period_id = (
-            f"{sentence_group_id}-{field_assignment_seq}-{start_status_seq_num}"
+            f"{doc_cycle_id}-{field_assignment_seq}-{start_status_seq_num}"
         )
 
         return IngestFieldCoordinates(
@@ -1273,7 +1220,7 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
     ) -> IngestFieldCoordinates:
         col_prefix = cls.primary_col_prefix_for_file_tag(gating_context.file_tag)
 
-        sentence_group_id = cls._generate_sentence_group_id(col_prefix, row)
+        doc_cycle_id = cls._generate_doc_cycle_id(col_prefix, row)
 
         # TODO(#2728): The SQN is potentially not a stable ID if status
         #  information gets backdated and the SQN numbers generated in the
@@ -1281,7 +1228,7 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         subcycle_seq_num = row[f"{cls.PERIOD_SEQUENCE_PRIMARY_COL_PREFIX}_SQN"]
         start_status_seq_num = row["START_STATUS_SEQ_NUM"]
         incarceration_period_id = (
-            f"{sentence_group_id}-{subcycle_seq_num}-{start_status_seq_num}"
+            f"{doc_cycle_id}-{subcycle_seq_num}-{start_status_seq_num}"
         )
 
         return IngestFieldCoordinates(
@@ -1315,7 +1262,7 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         )
 
     @classmethod
-    def _generate_sentence_group_id(cls, col_prefix: str, row: Dict[str, str]) -> str:
+    def _generate_doc_cycle_id(cls, col_prefix: str, row: Dict[str, str]) -> str:
 
         if col_prefix:
             doc_id = row[f"{col_prefix}_{DOC_ID}"]
@@ -1327,9 +1274,9 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
 
     @classmethod
     def _generate_sentence_id(cls, col_prefix: str, row: Dict[str, str]) -> str:
-        sentence_group_id = cls._generate_sentence_group_id(col_prefix, row)
+        doc_cycle_id = cls._generate_doc_cycle_id(col_prefix, row)
         sen_seq_num = row[f"{col_prefix}_{SENTENCE_KEY_SEQ}"]
-        return f"{sentence_group_id}-{sen_seq_num}"
+        return f"{doc_cycle_id}-{sen_seq_num}"
 
     @classmethod
     def _generate_supervision_violation_id_with_report_prefix(
@@ -1361,14 +1308,14 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         violation_key_seq: str,
     ) -> str:
         violation_seq_num = row[f"{col_prefix}_{violation_key_seq}"]
-        group_id = cls._generate_sentence_group_id(xref_prefix, row)
+        group_id = cls._generate_doc_cycle_id(xref_prefix, row)
         return f"{group_id}-{violation_id_prefix}{violation_seq_num}"
 
     @classmethod
     def _generate_supervision_violation_id(
         cls, col_prefix: str, row: Dict[str, str], violation_id_prefix: str
     ) -> str:
-        group_id = cls._generate_sentence_group_id(TAK076_PREFIX, row)
+        group_id = cls._generate_doc_cycle_id(TAK076_PREFIX, row)
         sentence_seq_id = row[f"{TAK076_PREFIX}_{SENTENCE_KEY_SEQ}"]
         violation_seq_num = row[f"{col_prefix}_{VIOLATION_KEY_SEQ}"]
         return f"{group_id}-{violation_id_prefix}{violation_seq_num}-{sentence_seq_id}"
