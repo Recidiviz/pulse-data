@@ -1,0 +1,4 @@
+move_srl,docno,incrno,move_dtd,move_typ,fac_cd,lu_cd,loc_cd,move_pod,move_tier,move_cell,move_bunk,cnty_cd
+10000001,11111,1,2020-01-01 13:01:00,I,II,09,001,00,A,1,B,
+10000003,11111,1,2020-01-14 01:01:00,P,D0,DP,002,,,,,
+10000002,11111,1,2020-01-14 13:00:00,H,HS,HS,908,,,,,

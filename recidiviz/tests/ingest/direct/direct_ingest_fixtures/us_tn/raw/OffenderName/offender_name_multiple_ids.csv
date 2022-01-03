@@ -1,0 +1,3 @@
+OffenderID,SequenceNumber,FirstName,MiddleName,LastName,Suffix,NameType,OffenderStatus,ActualSiteID,Race,Sex,BirthDate,SocialSecurityNumber,STGNicknameFLag,LastUpdateUserID,LastUpdateDate
+"12345678","1","FIRST","MIDDLE","LAST",,"O",,"ABC","W","M","1998-12-04 00:00:00",,,"ABCDE","2020-10-15 09:20:05.212820"
+"12345678","10","FIRST2","MIDDLE2","LAST2",,"O","XYZ","ABC","W","M","1998-12-04 00:00:00",,,"ABCDE","2020-10-15 09:20:05.212820"

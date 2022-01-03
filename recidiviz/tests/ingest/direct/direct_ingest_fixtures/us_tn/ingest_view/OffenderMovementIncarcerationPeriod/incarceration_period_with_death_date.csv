@@ -1,0 +1,3 @@
+offenderid,startdatetime,enddatetime,site,sitetype,startmovementtype,startmovementreason,endmovementtype,endmovementreason,incarcerationperiodsequencenumber
+"12345678","2020-12-30 03:30:00.000000","2021-05-15 10:30:00.000000","024","JA","CTFA","NEWAD","FAFA","INCIB",1
+"12345678","2021-05-15 10:30:00.000000","2021-06-01 10:30:00","088","JA","FAFA","INCIB","","",2

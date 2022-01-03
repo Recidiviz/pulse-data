@@ -1,0 +1,5 @@
+mov_cnt_num,mov_seq_num,mov_chg_num,mov_cur_inmt_num,mov_sig_date,mov_sig_time,mov_user_id,mov_del_year,mov_del_month,mov_del_day,last_chg_num_used,mov_move_code,mov_move_date,mov_move_time,mov_move_to_loc,parole_stat_cd,mov_sent_stat_cd,mov_rec_del_flag,mov_sent_group,mov_move_to_location_type,mov_move_from_location,mov_move_from_location_type,mov_permanent_institution,mov_to_institution
+12345678,00005,000,AB1234,,,,,,,,TRN,20200215,0700,140,NA,AS,N,,C,120,C,MUN,
+12345678,00004,000,AB1234,,,,,,,,TRN,20200201,0800,120,NA,AS,N,,C,120,C,FRA,
+12345678,00003,000,AB1234,,,,,,,,TRN,20200115,0800,120,NA,AS,N,,C,QUE,I,FRA,
+12345678,00002,000,AB1234,,,,,,,,TRN,20200101,0600,QUE,NA,AS,N,00,I,BUS,B,BEN,QUE

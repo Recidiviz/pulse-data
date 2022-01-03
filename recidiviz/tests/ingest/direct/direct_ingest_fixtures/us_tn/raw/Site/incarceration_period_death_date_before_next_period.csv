@@ -1,0 +1,3 @@
+SiteID,SiteName,SiteType,Status,StatusDate,AddressLine1,AddressLine2,AddressCity,AddressState,AddressZip,PhoneNumber,SecurityLevel,Region,Division,District,Agency,NCICAgencyID,InChargeStaffID,SexTypesAllowed,ContactPerson,LastUpdateUserID,LastUpdateDate
+"088","VAN BUREN COUNTY JAIL","JA","A",,,,,,,,,"V",,,"TDOC",,,"B",,,
+"024","FAYETTE COUNTY JAIL","JA","A",,,,,,,,,"R",,,"TDOC",,,"B",,,

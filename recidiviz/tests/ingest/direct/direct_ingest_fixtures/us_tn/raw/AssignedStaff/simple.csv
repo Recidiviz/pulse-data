@@ -1,0 +1,2 @@
+StaffID,OffenderID,AssignmentType,StartDate,EndDate,CaseType,AssignmentBeginReason,AssignmentEndReason,AssignmentDueDate,Site,LastUpdateUserID,LastUpdateDate
+"ABCDEF01","12345678","PRO","2020-10-12","2021-01-04","PPO","RENEO",'" "RNO  " "',,'"P94F "','"ABCDEF01 "',"2021-01-04 08:49:43.983368"

@@ -1,0 +1,2 @@
+docno,incrno,start_date,end_date,prev_fac_typ,prev_fac_cd,prev_loc_ldesc,fac_cd,fac_typ,fac_ldesc,loc_cd,loc_ldesc,lu_cd,lu_ldesc,move_srl,statuses,wrkld_cat_title,empl_cd,empl_sdesc,empl_ldesc,empl_title,next_fac_typ,next_fac_cd,next_loc_ldesc
+11111,1,2020-01-01,9999-12-31,,,,1,,,,,,,10000001,,,,,,,,,

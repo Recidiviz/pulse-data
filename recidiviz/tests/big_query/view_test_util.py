@@ -32,6 +32,7 @@ from typing import (
 )
 
 import attr
+import numpy as np
 import pandas as pd
 import pytest
 import sqlalchemy
@@ -99,11 +100,9 @@ class MockTableSchema:
         return cls(data_types)
 
     @classmethod
-    # TODO(#10301) Remove `include_documented_columns_only` once all raw data fixtures only reference the latest columns.
     def from_raw_file_config(
         cls,
         config: DirectIngestRawFileConfig,
-        include_documented_columns_only: bool = False,
     ) -> "MockTableSchema":
         return cls(
             {
@@ -111,9 +110,7 @@ class MockTableSchema:
                 # column (and table) names. We lowercase all the column names so that
                 # a query like "SELECT MyCol FROM table;" finds the column "mycol".
                 column.name.lower(): sqltypes.String
-                for column in config.columns
-                if (include_documented_columns_only and column.description)
-                or not include_documented_columns_only
+                for column in config.available_columns
             }
         )
 
@@ -360,7 +357,6 @@ class BaseViewTest(unittest.TestCase):
                 region_code=region_code,
                 file_config=raw_file_config,
                 mock_data=csv.get_rows_as_tuples(raw_fixture_path),
-                include_documented_columns_only=True,
             )
 
     def create_mock_bq_table(
@@ -373,6 +369,7 @@ class BaseViewTest(unittest.TestCase):
         postgres_table_name = self.register_bq_address(
             address=BigQueryAddress(dataset_id=dataset_id, table_id=table_id)
         )
+
         mock_data.to_sql(
             name=postgres_table_name,
             con=self.postgres_engine,
@@ -385,20 +382,16 @@ class BaseViewTest(unittest.TestCase):
         region_code: str,
         file_config: DirectIngestRawFileConfig,
         mock_data: Iterable[Tuple[Optional[str], ...]],
-        # TODO(#10301) Remove `include_documented_columns_only` once all raw data fixtures only reference the latest
-        #  columns.
-        include_documented_columns_only: bool = False,
         update_datetime: datetime.datetime = DEFAULT_FILE_UPDATE_DATETIME,
     ) -> None:
-        mock_schema = MockTableSchema.from_raw_file_config(
-            file_config, include_documented_columns_only
-        )
+        mock_schema = MockTableSchema.from_raw_file_config(file_config)
         raw_data_df = augment_raw_data_df_with_metadata_columns(
             raw_data_df=pd.DataFrame(mock_data, columns=mock_schema.data_types.keys()),
             file_id=0,
             utc_upload_datetime=update_datetime,
         )
-
+        # Adds empty strings as NULL to the PG test database
+        raw_data_df.replace("", np.nan, inplace=True)
         # For the raw data tables we make the table name `us_xx_file_tag`. It would be
         # closer to the actual produced query to make it something like
         # `us_xx_raw_data_file_tag`, but that more easily gets us closer to the 63

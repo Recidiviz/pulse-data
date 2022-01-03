@@ -1,0 +1,2 @@
+move_srl,docno,incrno,move_dtd,move_typ,fac_cd,lu_cd,loc_cd,move_pod,move_tier,move_cell,move_bunk,cnty_cd
+"10000001","11111","1","2020-01-01 8:00:00","I","1","","001","00","1","1","A",""

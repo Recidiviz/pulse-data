@@ -15,29 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests the PA external ids query functionality"""
-import datetime
-from typing import Any, List
-
-import pandas as pd
 from mock import Mock, patch
-from more_itertools import one
-from pandas.testing import assert_frame_equal
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.controllers.direct_ingest_view_collector import (
-    DirectIngestPreProcessedIngestViewCollector,
-)
-from recidiviz.ingest.direct.query_utils import get_region_raw_file_config
 from recidiviz.tests.big_query.view_test_util import BaseViewTest
-from recidiviz.tests.ingest.direct.regions.us_pa.ingest_views.test_util import (
-    ParoleCountIds,
-    RecidivizReferenceLinkingIds,
-    TblSearchInmateInfoIds,
-    create_id_tables,
-)
-from recidiviz.utils.regions import get_region
-
-STATE_CODE = StateCode.US_PA.value
 
 
 @patch("recidiviz.utils.metadata.project_id", Mock(return_value="t"))
@@ -46,419 +27,80 @@ class ViewPersonExternalIdsTest(BaseViewTest):
 
     def setUp(self) -> None:
         super().setUp()
-        view_builders = DirectIngestPreProcessedIngestViewCollector(
-            get_region(STATE_CODE, is_direct_ingest=True), []
-        ).collect_view_builders()
-        self.view_builder = one(
-            view for view in view_builders if view.file_tag == "person_external_ids"
+        self.region_code = StateCode.US_PA.value
+        self.view_builder = self.view_builder_for_tag(
+            self.region_code, "person_external_ids"
         )
-
-        self.expected_result_columns = [
-            "recidiviz_primary_person_id",
-            "control_numbers",
-            "inmate_numbers",
-            "parole_numbers",
-        ]
-
-    def run_test(
-        self,
-        dbo_parole_count_ids: List[ParoleCountIds],
-        dbo_tbl_search_inmate_info_ids: List[TblSearchInmateInfoIds],
-        recidiviz_reference_linking_ids: List[RecidivizReferenceLinkingIds],
-        expected_output: List[List[Any]],
-    ) -> None:
-        """Runs a test that executes the person_external_ids query given the provided
-        input rows.
-        """
-        run_time = datetime.datetime.now()
-        file_upload_time = run_time - datetime.timedelta(days=1)
-
-        # Arrange
-        raw_file_configs = get_region_raw_file_config(STATE_CODE).raw_file_configs
-
-        create_id_tables(
-            self,
-            dbo_parole_count_ids,
-            dbo_tbl_search_inmate_info_ids,
-            recidiviz_reference_linking_ids,
-            raw_file_configs,
-            file_upload_time,
-        )
-
-        # Act
-        results = self.query_raw_data_view_for_builder(
-            self.view_builder,
-            dimensions=self.expected_result_columns,
-            query_run_dt=run_time,
-        )
-
-        # Assert
-        expected = pd.DataFrame(expected_output, columns=self.expected_result_columns)
-        expected = expected.set_index(self.expected_result_columns)
-        print(expected)
-        print(results)
-        assert_frame_equal(expected, results)
 
     def test_view_person_external_ids_parses(self) -> None:
-        self.run_test(
-            dbo_parole_count_ids=[],
-            dbo_tbl_search_inmate_info_ids=[],
-            recidiviz_reference_linking_ids=[],
-            expected_output=[],
-        )
+        self.run_ingest_view_test(fixtures_files_name="person_external_ids_parses.csv")
 
     def test_view_person_external_ids_simple(self) -> None:
-        self.run_test(
-            dbo_parole_count_ids=[
-                ParoleCountIds(ParoleNumber="0420X", ParoleInstNumber="AB1234")
-            ],
-            dbo_tbl_search_inmate_info_ids=[
-                TblSearchInmateInfoIds(
-                    inmate_number="AB1234", control_number="12345678"
-                )
-            ],
-            recidiviz_reference_linking_ids=[],
-            expected_output=[
-                [
-                    "RECIDIVIZ_PRIMARY_CONTROL_NUMBER_12345678",
-                    "12345678",  # control_numbers
-                    "AB1234",  # inmate_numbers
-                    "0420X",  # pa
-                    # role_numbers
-                ]
-            ],
-        )
+        self.run_ingest_view_test(fixtures_files_name="person_external_ids_simple.csv")
 
     def test_view_person_external_ids_multiple_inmate(self) -> None:
-        self.run_test(
-            dbo_parole_count_ids=[
-                ParoleCountIds(ParoleNumber="0420X", ParoleInstNumber="AB1234")
-            ],
-            dbo_tbl_search_inmate_info_ids=[
-                TblSearchInmateInfoIds(
-                    inmate_number="AB1234", control_number="12345678"
-                ),
-                TblSearchInmateInfoIds(
-                    inmate_number="CD4567", control_number="12345678"
-                ),
-            ],
-            recidiviz_reference_linking_ids=[],
-            expected_output=[
-                [
-                    "RECIDIVIZ_PRIMARY_CONTROL_NUMBER_12345678",
-                    "12345678",  # control_numbers
-                    "AB1234,CD4567",  # inmate_numbers
-                    "0420X",  # parole_numbers
-                ]
-            ],
+        self.run_ingest_view_test(
+            fixtures_files_name="person_external_ids_multiple_inmate.csv"
         )
 
     def test_view_person_external_ids_missing_parole(self) -> None:
-        self.run_test(
-            dbo_parole_count_ids=[],
-            dbo_tbl_search_inmate_info_ids=[
-                TblSearchInmateInfoIds(
-                    inmate_number="AB1234", control_number="12345678"
-                ),
-            ],
-            recidiviz_reference_linking_ids=[],
-            expected_output=[
-                [
-                    "RECIDIVIZ_PRIMARY_CONTROL_NUMBER_12345678",
-                    "12345678",  # control_numbers
-                    "AB1234",  # inmate_numbers
-                    "",  # parole_numbers
-                ]
-            ],
+        self.run_ingest_view_test(
+            fixtures_files_name="person_external_ids_missing_parole.csv"
         )
 
     def test_view_person_external_ids_missing_control(self) -> None:
-        self.run_test(
-            dbo_parole_count_ids=[
-                ParoleCountIds(ParoleNumber="0420X", ParoleInstNumber="AB1234"),
-            ],
-            dbo_tbl_search_inmate_info_ids=[],
-            recidiviz_reference_linking_ids=[],
-            expected_output=[
-                [
-                    "RECIDIVIZ_PRIMARY_PAROLE_NUMBER_0420X",
-                    "",  # control_numbers
-                    "AB1234",  # inmate_numbers
-                    "0420X",  # parole_numbers
-                ]
-            ],
+        self.run_ingest_view_test(
+            fixtures_files_name="person_external_ids_missing_control.csv"
         )
 
     def test_view_person_external_ids_null_inmate_numbers(self) -> None:
-        self.run_test(
-            dbo_parole_count_ids=[
-                ParoleCountIds(ParoleNumber="0420X", ParoleInstNumber="")
-            ],
-            dbo_tbl_search_inmate_info_ids=[
-                TblSearchInmateInfoIds(inmate_number="", control_number="12345678")
-            ],
-            recidiviz_reference_linking_ids=[],
-            expected_output=[
-                [
-                    "RECIDIVIZ_PRIMARY_CONTROL_NUMBER_12345678",
-                    "12345678",  # control_numbers
-                    "",  # inmate_numbers
-                    "",  # parole_numbers
-                ],
-                [
-                    "RECIDIVIZ_PRIMARY_PAROLE_NUMBER_0420X",
-                    "",  # control_numbers
-                    "",  # inmate_numbers
-                    "0420X",  # parole_numbers
-                ],
-            ],
+        self.run_ingest_view_test(
+            fixtures_files_name="person_external_ids_null_inmate_numbers.csv"
         )
 
     def test_view_person_external_ids_clean_bad_inmate_numbers(self) -> None:
-        self.run_test(
-            dbo_parole_count_ids=[
-                ParoleCountIds(ParoleNumber="0420X", ParoleInstNumber=""),
-                ParoleCountIds(ParoleNumber="0420X", ParoleInstNumber="AB1234"),
-                ParoleCountIds(ParoleNumber="0420X", ParoleInstNumber="FG7899"),
-                ParoleCountIds(ParoleNumber="0420X", ParoleInstNumber="XBADX"),
-                ParoleCountIds(ParoleNumber="3141Y", ParoleInstNumber="CD4567"),
-                ParoleCountIds(ParoleNumber="3141Y", ParoleInstNumber="YBADY"),
-                ParoleCountIds(ParoleNumber="2171K", ParoleInstNumber="JBADJ"),
-            ],
-            dbo_tbl_search_inmate_info_ids=[],
-            recidiviz_reference_linking_ids=[],
-            expected_output=[
-                [
-                    "RECIDIVIZ_PRIMARY_PAROLE_NUMBER_0420X",
-                    "",  # control_numbers
-                    "AB1234,FG7899",  # inmate_numbers
-                    "0420X",  # parole_numbers
-                ],
-                [
-                    "RECIDIVIZ_PRIMARY_PAROLE_NUMBER_2171K",
-                    "",  # control_numbers
-                    "",  # inmate_numbers
-                    "2171K",  # parole_numbers
-                ],
-                [
-                    "RECIDIVIZ_PRIMARY_PAROLE_NUMBER_3141Y",
-                    "",  # control_numbers
-                    "CD4567",  # inmate_numbers
-                    "3141Y",  # parole_numbers
-                ],
-            ],
+        self.run_ingest_view_test(
+            fixtures_files_name="person_external_ids_clean_bad_inmate_numbers.csv"
         )
 
     def test_view_person_external_ids_complex(self) -> None:
-        self.run_test(
-            dbo_parole_count_ids=[
-                ParoleCountIds(ParoleNumber="0420X", ParoleInstNumber="AB1234"),
-                ParoleCountIds(ParoleNumber="0420X", ParoleInstNumber="CD4567"),
-            ],
-            dbo_tbl_search_inmate_info_ids=[
-                TblSearchInmateInfoIds(
-                    inmate_number="AB1234", control_number="12345678"
-                ),
-                TblSearchInmateInfoIds(
-                    inmate_number="CD4567", control_number="12345678"
-                ),
-                TblSearchInmateInfoIds(
-                    inmate_number="FG6789", control_number="12345678"
-                ),
-            ],
-            recidiviz_reference_linking_ids=[],
-            expected_output=[
-                [
-                    "RECIDIVIZ_PRIMARY_CONTROL_NUMBER_12345678",
-                    "12345678",  # control_numbers
-                    "AB1234,CD4567,FG6789",  # inmate_numbers
-                    "0420X",  # parole_numbers
-                ]
-            ],
-        )
+        self.run_ingest_view_test(fixtures_files_name="person_external_ids_complex.csv")
 
     def test_view_person_external_ids_complex2(self) -> None:
-        self.run_test(
-            dbo_parole_count_ids=[
-                ParoleCountIds(ParoleNumber="1111P", ParoleInstNumber="II1111"),
-                ParoleCountIds(ParoleNumber="2222P", ParoleInstNumber="II2222"),
-                ParoleCountIds(ParoleNumber="2222P", ParoleInstNumber="II3333"),
-                ParoleCountIds(ParoleNumber="3333P", ParoleInstNumber="II3333"),
-            ],
-            dbo_tbl_search_inmate_info_ids=[
-                TblSearchInmateInfoIds(
-                    inmate_number="II1111", control_number="10000000"
-                ),
-                TblSearchInmateInfoIds(
-                    inmate_number="II2222", control_number="10000000"
-                ),
-                TblSearchInmateInfoIds(
-                    inmate_number="II3333", control_number="20000000"
-                ),
-                TblSearchInmateInfoIds(
-                    inmate_number="II4444", control_number="20000000"
-                ),
-            ],
-            recidiviz_reference_linking_ids=[],
-            expected_output=[
-                [
-                    "RECIDIVIZ_PRIMARY_CONTROL_NUMBER_10000000",
-                    "10000000,20000000",  # control_numbers
-                    "II1111,II2222,II3333,II4444",  # inmate_numbers
-                    "1111P,2222P,3333P",  # parole_numbers
-                ]
-            ],
+        self.run_ingest_view_test(
+            fixtures_files_name="person_external_ids_complex2.csv"
         )
 
     def test_view_person_external_ids_join_on_parole(self) -> None:
-        self.run_test(
-            dbo_parole_count_ids=[
-                ParoleCountIds(ParoleNumber="0420X", ParoleInstNumber="AB1234"),
-                ParoleCountIds(ParoleNumber="0420X", ParoleInstNumber="CC4567"),
-            ],
-            dbo_tbl_search_inmate_info_ids=[
-                TblSearchInmateInfoIds(
-                    inmate_number="AB1234", control_number="12345678"
-                ),
-            ],
-            recidiviz_reference_linking_ids=[],
-            expected_output=[
-                [
-                    "RECIDIVIZ_PRIMARY_CONTROL_NUMBER_12345678",
-                    "12345678",  # control_numbers
-                    "AB1234,CC4567",  # inmate_numbers
-                    "0420X",  # parole_numbers
-                ]
-            ],
+        self.run_ingest_view_test(
+            fixtures_files_name="person_external_ids_join_on_parole.csv"
         )
 
     def test_view_person_external_ids_join_on_parole_2(self) -> None:
-        self.run_test(
-            dbo_parole_count_ids=[
-                ParoleCountIds(ParoleNumber="1234R", ParoleInstNumber=""),
-                ParoleCountIds(ParoleNumber="444GS", ParoleInstNumber="KS0000"),
-                ParoleCountIds(ParoleNumber="444GS", ParoleInstNumber=""),
-            ],
-            dbo_tbl_search_inmate_info_ids=[
-                TblSearchInmateInfoIds(inmate_number="KS0000", control_number="280123"),
-            ],
-            recidiviz_reference_linking_ids=[],
-            expected_output=[
-                [
-                    "RECIDIVIZ_PRIMARY_CONTROL_NUMBER_280123",
-                    "280123",  # control_numbers
-                    "KS0000",  # inmate_numbers
-                    "444GS",  # parole_numbers
-                ],
-                [
-                    "RECIDIVIZ_PRIMARY_PAROLE_NUMBER_1234R",
-                    "",  # control_numbers
-                    "",  # inmate_numbers
-                    "1234R",  # parole_numbers
-                ],
-            ],
+        self.run_ingest_view_test(
+            fixtures_files_name="person_external_ids_join_on_parole_2.csv"
         )
 
     def test_view_person_external_ids_join_on_parole_mismatch_casing(self) -> None:
-        self.run_test(
-            dbo_parole_count_ids=[
-                ParoleCountIds(ParoleNumber="0420x", ParoleInstNumber="AB1234"),
-                ParoleCountIds(ParoleNumber="0420X", ParoleInstNumber="CC4567"),
-            ],
-            dbo_tbl_search_inmate_info_ids=[
-                TblSearchInmateInfoIds(
-                    inmate_number="Ab1234", control_number="12345678"
-                ),
-            ],
-            recidiviz_reference_linking_ids=[],
-            expected_output=[
-                [
-                    "RECIDIVIZ_PRIMARY_CONTROL_NUMBER_12345678",
-                    "12345678",  # control_numbers
-                    "AB1234,CC4567",  # inmate_numbers
-                    "0420X",  # parole_numbers
-                ]
-            ],
+        self.run_ingest_view_test(
+            fixtures_files_name="person_external_ids_join_on_parole_mismatch_casing.csv"
         )
 
     def test_view_person_external_ids_multiple_control_linked_via_parole(
         self,
     ) -> None:
-        self.run_test(
-            dbo_parole_count_ids=[
-                ParoleCountIds(ParoleNumber="7890S", ParoleInstNumber="BB9876"),
-                ParoleCountIds(ParoleNumber="7890S", ParoleInstNumber="BT7654"),
-                ParoleCountIds(ParoleNumber="7890S", ParoleInstNumber="Z0000"),
-            ],
-            dbo_tbl_search_inmate_info_ids=[
-                TblSearchInmateInfoIds(inmate_number="BT7654", control_number="090909"),
-                TblSearchInmateInfoIds(inmate_number="BB9876", control_number="080808"),
-            ],
-            recidiviz_reference_linking_ids=[],
-            expected_output=[
-                [
-                    "RECIDIVIZ_PRIMARY_CONTROL_NUMBER_080808",
-                    "080808,090909",  # control_numbers
-                    "BB9876,BT7654",  # inmate_numbers
-                    "7890S",  # parole_numbers
-                ]
-            ],
+        self.run_ingest_view_test(
+            fixtures_files_name="person_external_ids_multiple_control_linked_via_parole.csv"
         )
 
     def test_view_person_external_ids_link_via_pseudo_id(self) -> None:
-        self.run_test(
-            dbo_parole_count_ids=[],
-            dbo_tbl_search_inmate_info_ids=[
-                TblSearchInmateInfoIds(inmate_number="OA3333", control_number="080808"),
-                TblSearchInmateInfoIds(inmate_number="OD6666", control_number="121212"),
-            ],
-            recidiviz_reference_linking_ids=[
-                RecidivizReferenceLinkingIds(
-                    pseudo_linking_id="74ebaf23-ed14-4d76-8d29-c86140e5ac40",
-                    control_number="080808",
-                ),
-                RecidivizReferenceLinkingIds(
-                    pseudo_linking_id="74ebaf23-ed14-4d76-8d29-c86140e5ac40",
-                    control_number="121212",
-                ),
-            ],
-            expected_output=[
-                [
-                    "RECIDIVIZ_PRIMARY_CONTROL_NUMBER_080808",
-                    "080808,121212",  # control_numbers
-                    "OA3333,OD6666",  # inmate_numbers
-                    "",  # parole_numbers
-                ]
-            ],
+        self.run_ingest_view_test(
+            fixtures_files_name="person_external_ids_link_via_pseudo_id.csv"
         )
 
     def test_view_person_external_ids_link_via_pseudo_id_one_parole_link(
         self,
     ) -> None:
-        self.run_test(
-            dbo_parole_count_ids=[
-                ParoleCountIds(ParoleNumber="0420X", ParoleInstNumber="OD6666"),
-            ],
-            dbo_tbl_search_inmate_info_ids=[
-                TblSearchInmateInfoIds(inmate_number="OA3333", control_number="080808"),
-                TblSearchInmateInfoIds(inmate_number="OD6666", control_number="121212"),
-            ],
-            recidiviz_reference_linking_ids=[
-                RecidivizReferenceLinkingIds(
-                    pseudo_linking_id="74ebaf23-ed14-4d76-8d29-c86140e5ac40",
-                    control_number="080808",
-                ),
-                RecidivizReferenceLinkingIds(
-                    pseudo_linking_id="74ebaf23-ed14-4d76-8d29-c86140e5ac40",
-                    control_number="121212",
-                ),
-            ],
-            expected_output=[
-                [
-                    "RECIDIVIZ_PRIMARY_CONTROL_NUMBER_080808",
-                    "080808,121212",  # control_numbers
-                    "OA3333,OD6666",  # inmate_numbers
-                    "0420X",  # parole_numbers
-                ]
-            ],
+        self.run_ingest_view_test(
+            fixtures_files_name="person_external_ids_link_via_pseudo_id_one_parole_link.csv"
         )

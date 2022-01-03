@@ -20,8 +20,6 @@ from unittest.mock import Mock, patch
 from recidiviz.common.constants.states import StateCode
 from recidiviz.tests.big_query.view_test_util import BaseViewTest
 
-STATE_CODE = StateCode.US_ME.value
-
 
 @patch("recidiviz.utils.metadata.project_id", Mock(return_value="t"))
 class CurrentStatusIncarcerationPeriodTest(BaseViewTest):

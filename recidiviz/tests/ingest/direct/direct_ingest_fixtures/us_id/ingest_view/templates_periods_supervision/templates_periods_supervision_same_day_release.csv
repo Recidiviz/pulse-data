@@ -1,0 +1,4 @@
+docno,incrno,start_date,end_date,prev_fac_typ,prev_fac_cd,prev_loc_ldesc,fac_cd,fac_typ,fac_ldesc,loc_cd,loc_ldesc,lu_cd,lu_ldesc,move_srl,statuses,wrkld_cat_title,empl_cd,empl_sdesc,empl_ldesc,empl_title,next_fac_typ,next_fac_cd,next_loc_ldesc
+11111,1,2020-01-01,2020-01-14,,,,II,I,Incarceration Center,,,,,10000001,,,,,,,P,D0,
+11111,1,2020-01-14,2020-01-14,I,II,,D0,P,District 0,,,,,10000003,,,,,,,H,HS,
+11111,1,2020-01-14,9999-12-31,P,D0,,HS,H,HISTORY,,,,,10000002,,,,,,,,,

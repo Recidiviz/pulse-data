@@ -1,0 +1,2 @@
+OffenderID,SequenceNumber,FirstName,MiddleName,LastName,Suffix,NameType,OffenderStatus,ActualSiteID,Race,Sex,BirthDate,SocialSecurityNumber,STGNicknameFLag,LastUpdateUserID,LastUpdateDate
+"12345678","0","FIRST","MIDDLE","LAST","","O","INAC","","W","M","1998-12-04 00:00:00","","","AB12345","2019-08-02 08:49:21.161200"

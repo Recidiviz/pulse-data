@@ -1,0 +1,2 @@
+offenderid,supervisiontype,startdate,enddate,admissionreason,terminationreason,supervisionofficer,assignmenttype,site,supervisionperiodsequencenumber
+"12345678","PPO","2020-10-12","2021-01-04","RENEO","RNO","ABCDEF01","PRO","P94F",1
