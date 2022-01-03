@@ -33,9 +33,6 @@ output:
       - StatePersonExternalId:
           external_id: curr_inmate_num
           id_type: $literal("US_PA_INMATE")
-    sentence_groups:
-      - StateSentenceGroup:
-          external_id: curr_inmate_num
     incarceration_sentences:
       - StateIncarcerationSentence:
           external_id:
