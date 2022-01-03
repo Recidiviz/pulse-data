@@ -1,6 +1,10 @@
 file_tag: LBAKRDTA_TAK040
 file_description: |-
   Offender Cycles. Column prefix: DQ.
+
+  MODOC has the concept of "offender cycles" which represent entirely new "cycles" through the MODOC justice system, i.e. new sentences to incarceration or supervision from liberty. New cycles are not created when a person, for example, is sent back to prison because their supervision was revoked.  The `LBAKRDTA.TAK040` table contains a list of all "offender cycles" The primary identifier for these cycles is referenced from many ingest views that capture data downstream of the cycle and is pervasive through MODOC tables. That identifier, `DQ_CYC`, is not globally unique. Rather, it is unique within the context of a `DQ_DOC`, like a cycle "sequence number" for a given person (in reality, it's the YYYYMMDD date of the cycle start). So the globally unique cycle id is really the concatenation of the DOC person id and the cycle id. Thus when downstream ingest views reference the cycle id, they also reference the DOC id in order to concatenate them together into a global id for entity matching.
+
+  The `LBAKRDTA.TAK040` table also acts as a "roll-up" table within the MODOC data warehouse, aggregating together bits of data from a variety of tables that contain sentencing information elsewhere. Since we ingest the information we need directly from those lower-level tables, we do not ingest this data directly (as of 2022-01-03).
 primary_key_cols:
   - DQ_DOC
   - DQ_CYC

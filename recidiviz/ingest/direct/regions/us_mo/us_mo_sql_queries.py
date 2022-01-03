@@ -143,17 +143,6 @@ TAK001_OFFENDER_IDENTIFICATION_QUERY = f"""
     ORDER BY EK$DOC DESC;
     """
 
-TAK040_OFFENDER_CYCLES = f"""
-    -- tak040_offender_cycles
-
-    SELECT *
-    FROM LBAKRDTA.TAK040
-    WHERE
-        MAX(COALESCE(DQ$DLU, 0),
-            COALESCE(DQ$DCR, 0)) >= {lower_bound_update_date}
-    ORDER BY DQ$DOC;
-    """
-
 TAK022_TAK023_TAK025_TAK026_OFFENDER_SENTENCE_INSTITUTION = f"""
     -- tak022_tak023_tak025_tak026_offender_sentence_institution
 
@@ -1710,7 +1699,6 @@ def get_query_name_to_query_list() -> List[Tuple[str, str]]:
         # ~~~ END REFERENCE TABLE QUERIES ~~~ #
         ("tak001_offender_identification", TAK001_OFFENDER_IDENTIFICATION_QUERY),
         ("oras_assessments_weekly", ORAS_ASSESSMENTS_WEEKLY),
-        ("tak040_offender_cycles", TAK040_OFFENDER_CYCLES),
         (
             "tak022_tak023_tak025_tak026_offender_sentence_institution",
             TAK022_TAK023_TAK025_TAK026_OFFENDER_SENTENCE_INSTITUTION,
