@@ -62,23 +62,18 @@ def dataset_overrides_for_deployed_view_datasets(
         all_view_builders.append(builder)
 
     dataset_overrides = dataset_overrides_for_view_builders(
-        view_dataset_override_prefix, all_view_builders
+        view_dataset_override_prefix,
+        all_view_builders,
+        dataflow_dataset_override=dataflow_dataset_override,
     )
-
-    if dataflow_dataset_override:
-        logging.info(
-            "Overriding [%s] dataset with [%s].",
-            DATAFLOW_METRICS_DATASET,
-            dataflow_dataset_override,
-        )
-
-        dataset_overrides[DATAFLOW_METRICS_DATASET] = dataflow_dataset_override
 
     return dataset_overrides
 
 
 def dataset_overrides_for_view_builders(
-    view_dataset_override_prefix: str, view_builders: Sequence[BigQueryViewBuilder]
+    view_dataset_override_prefix: str,
+    view_builders: Sequence[BigQueryViewBuilder],
+    dataflow_dataset_override: Optional[str] = None,
 ) -> Dict[str, str]:
     """Returns a dictionary mapping dataset_ids to the dataset name they should be
     replaced with for the given list of view_builders. The map contains mappings for the
@@ -86,6 +81,9 @@ def dataset_overrides_for_view_builders(
     (if different).
 
     Overridden datasets all take the form of "<override prefix>_<original dataset_id>".
+
+    If a |dataflow_dataset_override| is provided, will also override the
+    DATAFLOW_METRICS_DATASET with the provided value.
     """
     dataset_overrides: Dict[str, str] = {}
     for builder in view_builders:
@@ -97,6 +95,15 @@ def dataset_overrides_for_view_builders(
             _add_override(
                 dataset_overrides, view_dataset_override_prefix, materialized_dataset_id
             )
+
+    if dataflow_dataset_override:
+        logging.info(
+            "Overriding [%s] dataset with [%s].",
+            DATAFLOW_METRICS_DATASET,
+            dataflow_dataset_override,
+        )
+
+        dataset_overrides[DATAFLOW_METRICS_DATASET] = dataflow_dataset_override
 
     return dataset_overrides
 
