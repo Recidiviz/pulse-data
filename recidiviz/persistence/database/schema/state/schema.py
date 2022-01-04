@@ -218,13 +218,11 @@ state_incarceration_type = Enum(
 state_court_case_status = Enum(
     enum_strings.external_unknown,
     enum_strings.present_without_info,
-    # TODO(#1697): Add values here
     name="state_court_case_status",
 )
 
 state_court_type = Enum(
     enum_strings.present_without_info,
-    # TODO(#1697): Add values here,
     name="state_court_type",
 )
 

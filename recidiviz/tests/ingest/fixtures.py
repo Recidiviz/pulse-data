@@ -88,7 +88,6 @@ def as_dict(region_directory: str, filename: str) -> Dict[str, Any]:
     return json.loads(contents)
 
 
-# TODO(#647): Refactor this to be usable outside the `ingest` module
 def as_filepath(filename: str, subdir: str = "fixtures") -> str:
     """Returns the filepath for the fixture file.
 
