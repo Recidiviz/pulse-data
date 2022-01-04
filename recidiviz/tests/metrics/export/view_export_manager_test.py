@@ -43,6 +43,7 @@ from recidiviz.tests.ingest import fixtures
 from recidiviz.tests.ingest.scrape.scraper_cloud_task_manager_test import (
     CLOUD_TASK_MANAGER_PACKAGE_NAME,
 )
+from recidiviz.utils.environment import GCPEnvironment
 from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
 from recidiviz.view_registry.deployed_views import deployed_view_builders
 from recidiviz.view_registry.namespaces import BigQueryViewNamespace
@@ -181,7 +182,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
     ) -> None:
         """Tests get_configs_for_export_name function to ensure that export names correctly match"""
 
-        mock_environment.return_value = "production"
+        mock_environment.return_value = GCPEnvironment.PRODUCTION.value
         export_configs_for_filter = view_export_manager.get_configs_for_export_name(
             export_name=self.mock_export_name,
             state_code=self.mock_state_code,
@@ -233,7 +234,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
     ) -> None:
         """Tests get_configs_for_export_name function to ensure that export names correctly match"""
 
-        mock_environment.return_value = "production"
+        mock_environment.return_value = GCPEnvironment.PRODUCTION.value
         export_configs_for_filter = view_export_manager.get_configs_for_export_name(
             export_name=self.mock_export_name, project_id=self.mock_project_id
         )
@@ -558,6 +559,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
                 query_string="export_job_name=EXPORT&state_code=US_XX",
             )
             self.assertEqual(HTTPStatus.OK, response.status_code)
+            mock_export_view_data_to_cloud_storage.assert_called()
 
             response = self.client.get(
                 self.metric_view_data_export_url,
@@ -565,6 +567,35 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
                 query_string="export_job_name=export&state_code=us_xx",
             )
             self.assertEqual(HTTPStatus.OK, response.status_code)
+            mock_export_view_data_to_cloud_storage.assert_called()
+
+    @mock.patch("recidiviz.utils.environment.get_gcp_environment")
+    @mock.patch(
+        "recidiviz.metrics.export.view_export_manager.export_view_data_to_cloud_storage"
+    )
+    def test_metric_view_data_export_not_launched_in_env(
+        self,
+        mock_export_view_data_to_cloud_storage: Mock,
+        mock_get_gcp_environment: Mock,
+    ) -> None:
+        with self.app.test_request_context():
+            mock_export_view_data_to_cloud_storage.return_value = None
+            mock_get_gcp_environment.return_value = GCPEnvironment.PRODUCTION.value
+            response = self.client.get(
+                self.metric_view_data_export_url,
+                headers=self.headers,
+                query_string="export_job_name=EXPORT&state_code=US_WW",
+            )
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+            mock_export_view_data_to_cloud_storage.assert_not_called()
+
+            response = self.client.get(
+                self.metric_view_data_export_url,
+                headers=self.headers,
+                query_string="export_job_name=export&state_code=us_ww",
+            )
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+            mock_export_view_data_to_cloud_storage.assert_not_called()
 
     @mock.patch(
         "recidiviz.metrics.export.view_export_manager.export_view_data_to_cloud_storage"
