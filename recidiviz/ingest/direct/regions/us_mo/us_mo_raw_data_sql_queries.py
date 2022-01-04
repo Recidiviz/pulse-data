@@ -19,10 +19,9 @@
 of Corrections data that we export to BQ for pre-processing.
 """
 
-from typing import List, Tuple, Optional
+from typing import List, Optional, Tuple
 
 from recidiviz.ingest.direct.query_utils import output_sql_queries
-
 
 # Y?YYddd e.g. January 1, 2016 --> 116001; November 2, 1982 --> 82306;
 julian_format_lower_bound_update_date = 0
@@ -171,7 +170,7 @@ LBAKRDTA_TAK142 = f"""
 LBAKRDTA_TAK158 = """
     SELECT *
     FROM
-        LBAKRDTA.TAK158
+        LBAKRDTA.TAK158;
     """
 
 LBAKRDTA_TAK291 = f"""
