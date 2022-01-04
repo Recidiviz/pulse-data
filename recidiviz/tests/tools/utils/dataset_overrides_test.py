@@ -80,6 +80,42 @@ class TestDatasetOverrides(unittest.TestCase):
 
         self.assertEqual(expected_overrides, overrides)
 
+    def test_dataset_overrides_for_view_builders_with_dataflow_override(self) -> None:
+        view_builders = [
+            SimpleBigQueryViewBuilder(
+                dataset_id="dataset_1",
+                view_id="my_fake_view",
+                description="my_fake_view description",
+                view_query_template="SELECT NULL LIMIT 0",
+                should_materialize=True,
+            ),
+            SimpleBigQueryViewBuilder(
+                dataset_id="dataset_2",
+                view_id="my_fake_view_2",
+                description="my_fake_view_2 description",
+                view_query_template="SELECT NULL LIMIT 0",
+                should_materialize=True,
+                materialized_address_override=BigQueryAddress(
+                    dataset_id="materialized_dataset", table_id="table_materialized"
+                ),
+            ),
+        ]
+
+        prefix = "my_prefix"
+        dataflow_dataset_override = "test_dataflow_metrics"
+        overrides = dataset_overrides_for_view_builders(
+            prefix, view_builders, dataflow_dataset_override=dataflow_dataset_override
+        )
+
+        expected_overrides = {
+            "dataset_1": "my_prefix_dataset_1",
+            "dataset_2": "my_prefix_dataset_2",
+            "materialized_dataset": "my_prefix_materialized_dataset",
+            DATAFLOW_METRICS_DATASET: dataflow_dataset_override,
+        }
+
+        self.assertEqual(expected_overrides, overrides)
+
     def test_dataset_overrides_for_deployed_view_datasets(self) -> None:
         prefix = "my_prefix"
         overrides = dataset_overrides_for_deployed_view_datasets(

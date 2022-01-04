@@ -208,6 +208,7 @@ def load_views_to_sandbox(
     sandbox_dataset_overrides = dataset_overrides_for_view_builders(
         view_dataset_override_prefix=sandbox_dataset_prefix,
         view_builders=builders_to_update,
+        dataflow_dataset_override=dataflow_dataset_override,
     )
 
     if refresh_materialized_tables_only:
