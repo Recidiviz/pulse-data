@@ -151,9 +151,9 @@ US_ID_EARLY_DISCHARGE_REQUESTS_QUERY_TEMPLATE = """
                 WHEN decision_status_raw = 'PENDING' THEN
                     CASE
                         -- Flag probation requests after x months
-                        WHEN supervision_type = 'PROBATION' AND DATE_DIFF(CURRENT_DATE(), create_date, MONTH) >= CAST({probation_ed_months} AS INT64) THEN 1
+                        WHEN supervision_type = 'PROBATION' AND DATE_DIFF(CURRENT_DATE('US/Eastern'), create_date, MONTH) >= CAST({probation_ed_months} AS INT64) THEN 1
                         -- Flag parole requests after x months
-                        WHEN supervision_type = 'PAROLE' AND DATE_DIFF(CURRENT_DATE(), create_date, MONTH) >= CAST({parole_ed_months} AS INT64)THEN 1
+                        WHEN supervision_type = 'PAROLE' AND DATE_DIFF(CURRENT_DATE('US/Eastern'), create_date, MONTH) >= CAST({parole_ed_months} AS INT64)THEN 1
                         ELSE 0
                     END
                 ELSE 0

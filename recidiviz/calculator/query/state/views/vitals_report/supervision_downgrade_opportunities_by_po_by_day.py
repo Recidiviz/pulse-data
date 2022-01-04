@@ -52,7 +52,7 @@ SUPERVISION_DOWNGRADE_OPPORTUNITIES_BY_PO_BY_DAY_QUERY_TEMPLATE = """
             COUNT (DISTINCT(person_id)) as total_downgrade_opportunities,
         FROM `{project_id}.{reference_views_dataset}.supervision_mismatches_by_day_materialized`
         -- 210 is 6 months (180 days) for the 6 month time series chart + 30 days for monthly average on the first day
-        WHERE date_of_supervision > DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL 210 DAY)
+        WHERE date_of_supervision > DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 210 DAY)
         GROUP BY 1, 2, 3, 4, 5
     )
     SELECT

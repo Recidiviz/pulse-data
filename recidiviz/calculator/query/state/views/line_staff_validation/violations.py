@@ -37,7 +37,7 @@ SELECT state_code,
  revocation_report_date
  FROM `{project_id}.po_report_views.report_data_by_person_by_month_materialized`
 WHERE DATE(year, month, 1) = DATE_SUB(
-    DATE(EXTRACT(YEAR FROM CURRENT_DATE()), EXTRACT(MONTH FROM CURRENT_DATE()), 1),
+    DATE(EXTRACT(YEAR FROM CURRENT_DATE('US/Eastern')), EXTRACT(MONTH FROM CURRENT_DATE('US/Eastern')), 1),
     INTERVAL 1 MONTH
 );
 """

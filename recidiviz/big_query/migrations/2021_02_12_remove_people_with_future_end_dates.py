@@ -32,8 +32,7 @@ from typing import List, Tuple
 
 from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
 from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET
-
-from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION
+from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool
 
@@ -64,11 +63,11 @@ def main(dry_run: bool) -> None:
     bq_client = BigQueryClientImpl()
 
     incarceration_table = "incarceration_population_metrics"
-    incarceration_filter = "WHERE date_of_stay > CURRENT_DATE()"
+    incarceration_filter = "WHERE date_of_stay > CURRENT_DATE('US/Eastern')"
     delete_from_table(dry_run, bq_client, incarceration_table, incarceration_filter)
 
     supervision_table = "supervision_population_metrics"
-    supervision_filter = "WHERE date_of_supervision > CURRENT_DATE()"
+    supervision_filter = "WHERE date_of_supervision > CURRENT_DATE('US/Eastern')"
     delete_from_table(dry_run, bq_client, supervision_table, supervision_filter)
 
 

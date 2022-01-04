@@ -51,7 +51,7 @@ INCARCERATION_POPULATION_BY_MONTH_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = """
         AND {state_specific_facility_exclusion}
         AND {facility_type_filter}
         -- 20 years worth of monthly population metrics --
-        AND date_of_stay >= DATE_SUB(DATE_TRUNC(CURRENT_DATE('US/Pacific'), MONTH), INTERVAL 239 MONTH)
+        AND date_of_stay >= DATE_SUB(DATE_TRUNC(CURRENT_DATE('US/Eastern'), MONTH), INTERVAL 239 MONTH)
     )
     
     SELECT

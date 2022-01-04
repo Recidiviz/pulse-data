@@ -70,7 +70,7 @@ SELECT
     a.id_type,
     a.variant_date,
     a.metric AS metric,
-    COALESCE(b.event_date, CURRENT_DATE()) AS date,
+    COALESCE(b.event_date, CURRENT_DATE('US/Eastern')) AS date,
     IF(b.event_date IS NOT NULL, 1, 0) AS value,
 FROM
     participants_metrics_menu a
@@ -79,7 +79,7 @@ LEFT JOIN
 ON
     a.state_code = b.state_code
     AND CAST(a.subject_id AS INT64) = b.person_id
-    AND b.event_date BETWEEN a.variant_date AND CURRENT_DATE()  -- swap for experiment end date
+    AND b.event_date BETWEEN a.variant_date AND CURRENT_DATE('US/Eastern')  -- swap for experiment end date
     AND a.metric = CONCAT(b.event, "_FIRST")
 WHERE
     a.metric LIKE ("%_FIRST")
@@ -105,7 +105,7 @@ SELECT DISTINCT
     a.metric,
     DATE_ADD(a.variant_date, INTERVAL 1 YEAR) AS date,
     -- Null metric if full year hasn't yet passed
-    IF(DATE_ADD(a.variant_date, INTERVAL 1 YEAR) < CURRENT_DATE(),
+    IF(DATE_ADD(a.variant_date, INTERVAL 1 YEAR) < CURRENT_DATE('US/Eastern'),
         COUNTIF(b.event_date IS NOT NULL), NULL) AS value,
 FROM
     participants_metrics_menu a
@@ -135,7 +135,7 @@ SELECT
     a.metric AS metric,
     DATE_ADD(a.variant_date, INTERVAL 1 YEAR) AS date,
     -- Null metric if full year hasn't yet passed
-    IF(DATE_ADD(a.variant_date, INTERVAL 1 YEAR) < CURRENT_DATE(),
+    IF(DATE_ADD(a.variant_date, INTERVAL 1 YEAR) < CURRENT_DATE('US/Eastern'),
         IF(DATE_ADD(a.variant_date, INTERVAL 1 YEAR) >= b.event_date, 
             DATE_DIFF(b.event_date, a.variant_date, DAY),
             365

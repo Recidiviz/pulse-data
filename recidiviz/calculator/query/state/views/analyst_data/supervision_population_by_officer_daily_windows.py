@@ -39,7 +39,7 @@ SUPERVISION_POPULATION_BY_OFFICER_DAILY_WINDOWS_QUERY_TEMPLATE = """
             EXTRACT(YEAR from date_of_supervision) year, 
             EXTRACT(MONTH from date_of_supervision) month,
             rolling_window_days
-        FROM UNNEST(GENERATE_DATE_ARRAY(DATE_SUB(CURRENT_DATE(), INTERVAL 3 YEAR), CURRENT_DATE(), INTERVAL 1 DAY)) date_of_supervision,
+        FROM UNNEST(GENERATE_DATE_ARRAY(DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 3 YEAR), CURRENT_DATE('US/Eastern'), INTERVAL 1 DAY)) date_of_supervision,
             {rolling_window_days_dimension}
     )
     SELECT officers.state_code, pop.year, pop.month, pop.date_of_supervision as date, 
@@ -50,10 +50,10 @@ SUPERVISION_POPULATION_BY_OFFICER_DAILY_WINDOWS_QUERY_TEMPLATE = """
         COUNT(DISTINCT IF(sessions.compartment_level_2 = 'PAROLE', sessions.person_id, NULL)) parole_population,
     FROM population_date_array pop
     JOIN `{project_id}.{sessions_dataset}.supervision_officer_sessions_materialized` officers
-        ON pop.date_of_supervision BETWEEN officers.start_date AND COALESCE(DATE_ADD(officers.end_date, INTERVAL rolling_window_days DAY), CURRENT_DATE())
+        ON pop.date_of_supervision BETWEEN officers.start_date AND COALESCE(DATE_ADD(officers.end_date, INTERVAL rolling_window_days DAY), CURRENT_DATE('US/Eastern'))
     JOIN `{project_id}.{sessions_dataset}.compartment_sessions_materialized` sessions
         ON officers.person_id = sessions.person_id
-        AND pop.date_of_supervision BETWEEN sessions.start_date AND COALESCE(DATE_ADD(sessions.end_date, INTERVAL rolling_window_days DAY), CURRENT_DATE())
+        AND pop.date_of_supervision BETWEEN sessions.start_date AND COALESCE(DATE_ADD(sessions.end_date, INTERVAL rolling_window_days DAY), CURRENT_DATE('US/Eastern'))
     GROUP BY state_code, pop.year, pop.month, pop.date_of_supervision, supervising_officer_external_id, rolling_window_days
     """
 

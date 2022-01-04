@@ -35,6 +35,6 @@ def supervision_transition_template(outflow_compartments: List[str]) -> str:
         AND compartment_level_1 = 'SUPERVISION'
         AND compartment_level_2 IN ('PAROLE', 'PROBATION', 'INFORMAL_PROBATION', 'BENCH_WARRANT', 'DUAL', 'ABSCONSION')
         AND outflow_to_level_1 IN ('{"', '".join(outflow_compartments)}')
-        AND end_date >= DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL 64 MONTH)
+        AND end_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 64 MONTH)
         -- (5 years X 12 months) + (3 for 90-day avg) + (1 to capture to beginning of first month) = 64 months
     """

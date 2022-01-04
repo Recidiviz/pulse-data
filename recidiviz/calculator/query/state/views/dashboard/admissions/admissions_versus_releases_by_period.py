@@ -77,7 +77,7 @@ ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_QUERY_TEMPLATE = """
       {metric_period_dimension}
       WHERE 
          -- Get population count for first day of the period
-        date_of_stay = DATE_SUB(DATE_TRUNC(CURRENT_DATE('US/Pacific'), MONTH), INTERVAL metric_period_months - 1 MONTH)
+        date_of_stay = DATE_SUB(DATE_TRUNC(CURRENT_DATE('US/Eastern'), MONTH), INTERVAL metric_period_months - 1 MONTH)
       GROUP BY state_code, district, metric_period_months
     ) inc_pop
     USING (state_code, district, metric_period_months)

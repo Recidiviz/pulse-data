@@ -74,13 +74,13 @@ US_ID_PPO_METRICS_EARLY_DISCHARGE_TERMINATIONS_QUERY_TEMPLATE = """
         state_code,
         /* Convert month label from first of month to last of month. If month is not yet complete, use current date \
         instead of the last of the month to indicate last date of available data */
-        LEAST(CURRENT_DATE(), LAST_DAY(termination_month, MONTH)) AS termination_month,
+        LEAST(CURRENT_DATE('US/Eastern'), LAST_DAY(termination_month, MONTH)) AS termination_month,
         supervision_type, 
         SUM(termination_via_early_discharge) as early_discharges,
         COUNT(*) as all_terminations,
         SUM(termination_via_early_discharge)/COUNT(*) as prop_terminations_via_early_discharge
     FROM successful_terminations_per_month
-    WHERE termination_month >= DATE_SUB(CURRENT_DATE(), INTERVAL 3 YEAR)
+    WHERE termination_month >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 3 YEAR)
     GROUP BY 1, 2, 3
     ORDER BY 1, 2, 3
     """

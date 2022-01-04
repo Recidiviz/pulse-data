@@ -258,7 +258,7 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = """
     LEFT JOIN goals
         USING (state_code, officer_external_id, year, month)
     -- Only include output for the month before the current month
-    WHERE DATE(year, month, 1) = DATE_SUB(DATE(EXTRACT(YEAR FROM CURRENT_DATE()), EXTRACT(MONTH FROM CURRENT_DATE()), 1), INTERVAL 1 MONTH)
+    WHERE DATE(year, month, 1) = DATE_SUB(DATE(EXTRACT(YEAR FROM CURRENT_DATE('US/Eastern')), EXTRACT(MONTH FROM CURRENT_DATE('US/Eastern')), 1), INTERVAL 1 MONTH)
     """
 
 PO_MONTHLY_REPORT_DATA_VIEW_BUILDER = MetricBigQueryViewBuilder(

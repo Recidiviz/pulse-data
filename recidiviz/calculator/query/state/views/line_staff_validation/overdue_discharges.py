@@ -35,7 +35,7 @@ SELECT
     projected_discharges.state_code,
     projected_discharges.person_external_id,
     projected_discharges.projected_end_date,
-    projected_discharges.projected_end_date <= CURRENT_DATE() AS is_overdue
+    projected_discharges.projected_end_date <= CURRENT_DATE('US/Eastern') AS is_overdue
 FROM `{project_id}.{analyst_dataset}.projected_discharges_materialized` projected_discharges
 ORDER BY person_external_id, projected_end_date;
 """

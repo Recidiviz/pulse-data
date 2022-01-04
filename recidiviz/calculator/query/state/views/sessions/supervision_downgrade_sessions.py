@@ -123,10 +123,10 @@ SUPERVISION_DOWNGRADE_SESSIONS_QUERY_TEMPLATE = f"""
         FROM `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_supervision_case_compliance_metrics_materialized` compliance_metrics
         LEFT JOIN `{{project_id}}.{{sessions_dataset}}.assessment_score_sessions_materialized` assessment_score_sessions
             ON compliance_metrics.person_id = assessment_score_sessions.person_id
-            AND compliance_metrics.date_of_supervision BETWEEN assessment_score_sessions.assessment_date AND IFNULL(assessment_score_sessions.score_end_date, CURRENT_DATE())
+            AND compliance_metrics.date_of_supervision BETWEEN assessment_score_sessions.assessment_date AND IFNULL(assessment_score_sessions.score_end_date, CURRENT_DATE('US/Eastern'))
         LEFT JOIN `{{project_id}}.{{sessions_dataset}}.supervision_tool_access_sessions_materialized` supervision_tool_access_sessions
             ON compliance_metrics.person_id = supervision_tool_access_sessions.person_id 
-            AND date_of_supervision BETWEEN supervision_tool_access_sessions.start_date AND IFNULL(supervision_tool_access_sessions.end_date, CURRENT_DATE())
+            AND date_of_supervision BETWEEN supervision_tool_access_sessions.start_date AND IFNULL(supervision_tool_access_sessions.end_date, CURRENT_DATE('US/Eastern'))
         LEFT JOIN day_zero_reports
             ON compliance_metrics.person_id = day_zero_reports.person_id
             AND date_of_supervision = day_zero_reports.report_date

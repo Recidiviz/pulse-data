@@ -84,7 +84,7 @@ CASE_TERMINATIONS_BY_TYPE_BY_MONTH_QUERY_TEMPLATE = f"""
       FROM case_terminations
     )
     WHERE supervision_type IN ('ALL', 'PROBATION', 'PAROLE')
-      AND year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL 3 YEAR))
+      AND year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 3 YEAR))
     GROUP BY state_code, year, month, supervision_type, district
     ORDER BY state_code, year, month, supervision_type, district
     """

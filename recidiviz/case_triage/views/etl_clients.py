@@ -107,7 +107,7 @@ latest_employment AS (
             `{project_id}.{case_triage_dataset}.employment_periods_materialized` employment_periods
         WHERE
           NOT is_unemployed
-          AND (recorded_end_date IS NULL OR recorded_end_date > CURRENT_DATE())
+          AND (recorded_end_date IS NULL OR recorded_end_date > CURRENT_DATE('US/Eastern'))
     ) employments
     WHERE row_num = 1
 ),

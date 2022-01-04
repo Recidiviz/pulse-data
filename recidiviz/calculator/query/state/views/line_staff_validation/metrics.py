@@ -45,7 +45,7 @@ WITH revocations AS (
         supervising_officer_external_id,
     FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_commitment_from_supervision_metrics_included_in_state_population_materialized`
     WHERE
-        admission_date >= DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL 90 DAY)
+        admission_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 90 DAY)
         AND most_severe_violation_type IN ('TECHNICAL', 'FELONY', 'MISDEMEANOR', 'MUNICIPAL', 'LAW')
 ), absconsions AS (
     SELECT
@@ -69,7 +69,7 @@ WITH revocations AS (
         )
         AND compartment_level_1 = 'SUPERVISION'
         AND end_reason = 'ABSCONSION'
-        AND end_date >= DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL 90 DAY)
+        AND end_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 90 DAY)
 ), all_events AS (
     SELECT * FROM revocations
     UNION ALL
