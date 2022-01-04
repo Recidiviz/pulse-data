@@ -162,16 +162,17 @@ def metric_view_data_export() -> Tuple[str, HTTPStatus]:
 
     product_configs = ProductConfigs.from_file(path=PRODUCTS_CONFIG_PATH)
     try:
-        _ = product_configs.get_export_config(
+        export_launched = product_configs.is_export_launched_in_env(
             export_job_name=export_job_name, state_code=state_code
         )
     except BadProductExportSpecificationError as e:
         logging.exception(e)
         return str(e), HTTPStatus.BAD_REQUEST
 
-    export_view_data_to_cloud_storage(
-        export_job_name=export_job_name, state_code=state_code
-    )
+    if export_launched:
+        export_view_data_to_cloud_storage(
+            export_job_name=export_job_name, state_code=state_code
+        )
 
     return "", HTTPStatus.OK
 

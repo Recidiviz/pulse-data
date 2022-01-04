@@ -80,6 +80,16 @@ class BadProductExportSpecificationError(ValueError):
     pass
 
 
+def in_configured_export_environment(configured_environment: str) -> bool:
+    """Returns whether or not the configured_environment matches the current
+    environment. If we are in prod, then the configured_environment must be
+    production. Everything is configured if we are in staging."""
+    return (
+        not environment.in_gcp_production()
+        or configured_environment == environment.get_gcp_environment()
+    )
+
+
 @attr.s
 class ProductStateConfig:
     """Stores a product's status information for a given state"""
@@ -90,17 +100,14 @@ class ProductStateConfig:
     environment: str = attr.ib(validator=attr_validators.is_non_empty_str)
 
     def is_state_launched_in_env(self) -> bool:
-        """Returns true if product can be launched in the given state in the current
-         environment
+        """Returns true if the product can be launched in the given state in the current
+         environment.
 
         If we are in prod, the product config must be explicitly set to specify
         this product can be launched in prod. All exports can be triggered to run in
         staging.
         """
-        return (
-            not environment.in_gcp_production()
-            or self.environment == environment.get_gcp_environment()
-        )
+        return in_configured_export_environment(self.environment)
 
 
 @attr.s
@@ -187,9 +194,77 @@ class ProductConfigs:
             if export["export_job_name"] == filter_uppercase
         ]
 
+    def is_export_launched_in_env(
+        self, export_job_name: str, state_code: Optional[str] = None
+    ) -> bool:
+        """Returns whether the export corresponding to the given export_job_name and,
+        if provided, state_code has been launched in the current environment.
+        """
+        product = self._relevant_product_config_for_export_params(
+            export_job_name, state_code
+        )
+
+        if product.is_state_agnostic:
+            export_env = product.environment
+
+            if not export_env:
+                raise ValueError(
+                    "State-agnostic products must have a set environment."
+                    f" Found: {product}."
+                )
+        else:
+            if not product.states:
+                raise ValueError(
+                    f"State-specific products must have set states  Found: {product}."
+                )
+
+            if not state_code:
+                raise BadProductExportSpecificationError(
+                    f"Missing required state_code parameter for export_job_name {export_job_name.upper()}",
+                )
+
+            relevant_states = [
+                state
+                for state in product.states
+                if state.state_code == state_code.upper()
+            ]
+            if not relevant_states:
+                raise BadProductExportSpecificationError(
+                    f"State_code: {state_code} not configured for"
+                    f" export_job_name: {export_job_name.upper()}.",
+                )
+
+            if len(relevant_states) != 1:
+                raise BadProductExportSpecificationError(
+                    f"State_code {state_code} represented more than once in product "
+                    f"configuration: {product}."
+                )
+
+            export_env = relevant_states[0].environment
+
+        if not in_configured_export_environment(export_env):
+            # The export is not configured in the current environment
+            return False
+
+        return True
+
     def get_export_config(
         self, export_job_name: str, state_code: Optional[str] = None
     ) -> ProductExportConfig:
+        try:
+            _ = self._relevant_product_config_for_export_params(
+                export_job_name, state_code
+            )
+        except BadProductExportSpecificationError as e:
+            raise e
+
+        return ProductExportConfig(
+            export_job_name=export_job_name, state_code=state_code
+        )
+
+    def _relevant_product_config_for_export_params(
+        self, export_job_name: str, state_code: Optional[str] = None
+    ) -> ProductConfig:
         relevant_product_exports = [
             product
             for product in self.products
@@ -203,9 +278,7 @@ class ProductConfigs:
             raise BadProductExportSpecificationError(
                 f"Missing required state_code parameter for export_job_name {export_job_name.upper()}",
             )
-        return ProductExportConfig(
-            export_job_name=export_job_name, state_code=state_code
-        )
+        return relevant_product_exports[0]
 
     def get_all_export_configs(self) -> List["ProductExportConfig"]:
         exports = []

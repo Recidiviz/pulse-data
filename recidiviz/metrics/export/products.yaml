@@ -90,9 +90,9 @@ products:
       - VITALS
     states:
       - state_code: US_ID
-        environment: staging
+        environment: production
       - state_code: US_ND
-        environment: staging
+        environment: production
   - name: Vitals Report
     description: Vitals provides a snapshot of agency performance on a set of key operational metrics, which can be drilled down by geographic region and officer. This helps community supervision leadership and supervisors proactively identify resource constraints as well as opportunities for improvement in both compliance and policy.
     exports: []
