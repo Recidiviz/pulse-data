@@ -78,7 +78,6 @@ class ParsingError(Exception):
 class BaseScraper(Scraper):
     """Generic class for scrapers."""
 
-    # TODO(#1055): Remove this when batch reader is complete.
     BATCH_WRITES = True
 
     def __init__(self, region_name):

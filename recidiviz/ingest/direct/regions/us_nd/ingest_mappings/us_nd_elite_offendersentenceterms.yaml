@@ -13,13 +13,12 @@ input_columns:
   - TERM_SEQ
   - SENTENCE_TERM_CODE
 unused_columns:
-  - START_DATE            # TODO(#1759) Should this live on a Sentence?
-  - END_DATE              # TODO(#1759) Should this live on a Sentence?
+  - START_DATE # No apparent use for these at the moment
+  - END_DATE # No apparent use for these at the moment
   - TERM_SEQ
-  - CREATE_DATETIME       # No apparent use for these at the moment
-  - MODIFY_DATETIME       # No apparent use for these at the moment
+  - CREATE_DATETIME # No apparent use for these at the moment
+  - MODIFY_DATETIME # No apparent use for these at the moment
 output:
-
   StatePerson:
     external_ids:
       - StatePersonExternalId:

@@ -42,7 +42,6 @@ def parse(filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
         fl_county_table, fl_county_table.county_name, us.states.FL
     )
 
-    # TODO(#689): Also set the facility_fips
     fl_facility_table = _parse_facility_table(filename)
     names = fl_facility_table.facility_name.apply(_pretend_facility_is_county)
     fl_facility_table = fips.add_column_to_df(fl_facility_table, names, us.states.FL)

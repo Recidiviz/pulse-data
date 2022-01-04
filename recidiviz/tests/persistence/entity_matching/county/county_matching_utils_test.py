@@ -374,7 +374,6 @@ class TestCountyMatchingUtils(TestCase):
         )
 
     def test_sentence_match(self):
-        # TODO(#350): expand tests after more robust equality function
         self.assertTrue(
             county_matching_utils.is_sentence_match(
                 db_entity=entities.Sentence.new_with_defaults(
