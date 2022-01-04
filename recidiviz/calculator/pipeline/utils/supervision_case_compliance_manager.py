@@ -449,9 +449,9 @@ class StateSupervisionCaseComplianceManager:
         if not contact_dates:
             # No contacts. First contact required is within NEW_SUPERVISION_CONTACT_DEADLINE_DAYS.
             return (
-                np.busday_offset(
-                    self.start_of_supervision,
-                    new_supervision_contact_deadline_days,
+                np.busday_offset(  # type: ignore[call-overload]
+                    dates=self.start_of_supervision,
+                    offsets=new_supervision_contact_deadline_days,
                     roll="forward",
                 ).astype(date)
                 if use_business_days
