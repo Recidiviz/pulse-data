@@ -36,7 +36,7 @@ US_ID_PPO_METRICS_EARLY_DISCHARGE_REQUESTS_QUERY_TEMPLATE = """
       state_code,
       /* Convert month label from first of month to last of month. If month is not yet complete, use current date 
       instead of the last of the month to indicate last date of available data */
-      LEAST(CURRENT_DATE(), LAST_DAY(request_month, MONTH)) as request_month,
+      LEAST(CURRENT_DATE('US/Eastern'), LAST_DAY(request_month, MONTH)) as request_month,
       IF(supervision_type = 'DUAL', 'PAROLE', supervision_type) as supervision_type,
       COUNT(DISTINCT ed_requested_person) as ed_request_count,
 
@@ -65,7 +65,7 @@ US_ID_PPO_METRICS_EARLY_DISCHARGE_REQUESTS_QUERY_TEMPLATE = """
       WHERE decision_status != 'INVALID'
     )
 
-    WHERE request_month >= DATE_SUB(CURRENT_DATE(), INTERVAL 3 YEAR)
+    WHERE request_month >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 3 YEAR)
     GROUP BY 1, 2, 3
     ORDER BY 1, 2, 3
     """

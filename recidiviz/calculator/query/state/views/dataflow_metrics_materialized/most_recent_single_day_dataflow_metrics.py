@@ -48,7 +48,7 @@ MOST_RECENT_SINGLE_DAY_JOBS_TEMPLATE: str = """
             *,
             ROW_NUMBER() OVER (PARTITION BY state_code ORDER BY {metric_date_column} DESC, job_id DESC) AS recency_rank
       FROM all_job_ids
-      WHERE {metric_date_column} <= CURRENT_DATE('US/Pacific')
+      WHERE {metric_date_column} <= CURRENT_DATE('US/Eastern')
     )
     SELECT *
     FROM `{project_id}.{materialized_metrics_dataset}.most_recent_{metric_table_view_name}_materialized`

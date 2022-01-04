@@ -49,7 +49,7 @@ REINCARCERATION_RATE_BY_STAY_LENGTH_QUERY_TEMPLATE = """
                                 ORDER BY release_date ASC, did_recidivate DESC) as release_order
         FROM `{project_id}.{materialized_metrics_dataset}.most_recent_recidivism_rate_metrics_materialized`
         WHERE follow_up_period = 1
-          AND release_cohort = EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 2 YEAR))
+          AND release_cohort = EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 2 YEAR))
     )
 
     SELECT

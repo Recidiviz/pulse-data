@@ -54,22 +54,22 @@ CLIENT_ELIGIBILITY_CRITERIA_QUERY_TEMPLATE = """
         supervising_officer_external_id,
         case_type,
         supervision_type,
-        DATE_DIFF(CURRENT_DATE(), supervision_start_date, DAY) days_served,
+        DATE_DIFF(CURRENT_DATE('US/Eastern'), supervision_start_date, DAY) days_served,
         CASE
-          WHEN projected_end_date > supervision_start_date THEN DATE_DIFF(CURRENT_DATE(), supervision_start_date, DAY)/DATE_DIFF(projected_end_date, supervision_start_date, DAY)
+          WHEN projected_end_date > supervision_start_date THEN DATE_DIFF(CURRENT_DATE('US/Eastern'), supervision_start_date, DAY)/DATE_DIFF(projected_end_date, supervision_start_date, DAY)
       END
         prop_sentence_served,
         COUNTIF(ed.decision != 'REQUEST_DENIED') OVER(PARTITION BY p.person_id) num_open_earned_discharge_requests,
         clients.supervision_level,
-        DATE_DIFF(CURRENT_DATE(), levels.start_date, DAY) days_at_current_supervision_level,
-        DATE_DIFF(CURRENT_DATE(), MAX(positive_urine_analysis_date) OVER(PARTITION BY p.person_id), DAY) days_since_last_positive_urine_analysis_date,
-        COUNTIF(positive_urine_analysis_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 1 YEAR)) OVER(PARTITION BY p.person_id) positive_urine_analysis_results_past_year_count,
+        DATE_DIFF(CURRENT_DATE('US/Eastern'), levels.start_date, DAY) days_at_current_supervision_level,
+        DATE_DIFF(CURRENT_DATE('US/Eastern'), MAX(positive_urine_analysis_date) OVER(PARTITION BY p.person_id), DAY) days_since_last_positive_urine_analysis_date,
+        COUNTIF(positive_urine_analysis_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 1 YEAR)) OVER(PARTITION BY p.person_id) positive_urine_analysis_results_past_year_count,
         is_employed,
         last_verified_date AS last_verified_employment_date,
         /* Using the earliest listed start date for any employment period in the employment session to calculate days employed.*/
-        CASE WHEN is_employed THEN DATE_DIFF(CURRENT_DATE(), employment.earliest_employment_period_start_date, DAY) ELSE 0 END days_employed,
+        CASE WHEN is_employed THEN DATE_DIFF(CURRENT_DATE('US/Eastern'), employment.earliest_employment_period_start_date, DAY) ELSE 0 END days_employed,
         /* Using the earliest start date within a given supervision session to calculate days employed while on supervision.*/
-        CASE WHEN is_employed THEN DATE_DIFF(CURRENT_DATE(), employment.employment_status_start_date, DAY) ELSE 0 END days_employed_in_session,
+        CASE WHEN is_employed THEN DATE_DIFF(CURRENT_DATE('US/Eastern'), employment.employment_status_start_date, DAY) ELSE 0 END days_employed_in_session,
         COUNT(DISTINCT IF (contact_reason = 'EMERGENCY_CONTACT' OR contacts.location IN ('JAIL', 'LAW_ENFORCEMENT_AGENCY'), contact_date, NULL)) OVER(PARTITION BY p.person_id) critical_contacts_count,
         ROW_NUMBER() OVER(PARTITION BY p.person_id) rn
         # TODO(#7303): Incorporate data about treatment enrollment or requirements as an additional elgibility criteria

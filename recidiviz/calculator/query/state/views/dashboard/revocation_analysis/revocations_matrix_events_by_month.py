@@ -49,7 +49,7 @@ REVOCATIONS_MATRIX_EVENTS_BY_MONTH_QUERY_TEMPLATE = """
             level_2_supervision_location,
         FROM `{project_id}.{reference_views_dataset}.event_based_commitments_from_supervision_for_matrix_materialized`
         -- We want MoM commitments from supervision for the last 36 months
-        WHERE admission_date >= DATE_SUB(DATE_TRUNC(CURRENT_DATE('US/Pacific'), MONTH), INTERVAL 35 MONTH)
+        WHERE admission_date >= DATE_SUB(DATE_TRUNC(CURRENT_DATE('US/Eastern'), MONTH), INTERVAL 35 MONTH)
             -- Filter out any rows that don't have a specified violation_type
             AND {state_specific_supervision_type_inclusion_filter}
             

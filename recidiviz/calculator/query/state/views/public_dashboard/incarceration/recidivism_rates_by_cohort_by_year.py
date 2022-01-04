@@ -48,9 +48,9 @@ RECIDIVISM_RATES_BY_COHORT_BY_YEAR_VIEW_QUERY_TEMPLATE = """
           ORDER BY release_date ASC, did_recidivate DESC) as release_order
         FROM `{project_id}.{materialized_metrics_dataset}.most_recent_recidivism_rate_metrics_materialized`
       -- For 10 years of release cohorts that have at least 1 full year of follow-up -- 
-      WHERE release_cohort >= EXTRACT(YEAR FROM CURRENT_DATE()) - 11
+      WHERE release_cohort >= EXTRACT(YEAR FROM CURRENT_DATE('US/Eastern')) - 11
       -- Only include follow-up periods that have completed --
-      AND (release_cohort + follow_up_period < EXTRACT(YEAR FROM CURRENT_DATE()))
+      AND (release_cohort + follow_up_period < EXTRACT(YEAR FROM CURRENT_DATE('US/Eastern')))
       -- Exclude 'US_PA' recidivism, we use the numbers provided directly by the state
       -- as they include rearrests, per their definition of recidivism.
       AND state_code != 'US_PA'

@@ -38,13 +38,13 @@ US_ID_PPO_METRICS_SUPERVISION_LEVEL_QUERY_TEMPLATE = """
         SELECT state_code, person_id, supervision_type, supervision_level, date_of_supervision
         FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_metrics_materialized`
         WHERE (
-          date_of_supervision = CURRENT_DATE('US/Pacific') OR
+          date_of_supervision = CURRENT_DATE('US/Eastern') OR
           date_of_supervision = LAST_DAY(date_of_supervision, MONTH)
         )
       )
 
       WHERE state_code = 'US_ID'
-        AND date_of_supervision >= DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL 3 YEAR)
+        AND date_of_supervision >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 3 YEAR)
 
       GROUP BY 1,2,3
       ORDER BY 1,2,3

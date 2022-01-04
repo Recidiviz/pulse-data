@@ -63,7 +63,7 @@ SUPERVISION_COMPLIANCE_BY_PERSON_BY_MONTH_QUERY_TEMPLATE = """
     LEFT JOIN monthly_assessment_and_face_to_face_counts USING (state_code, year, month, person_id)
       WHERE supervising_officer_external_id IS NOT NULL
         AND date_of_evaluation = LAST_DAY(DATE(year, month, 1), MONTH)
-        AND year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL 3 YEAR))
+        AND year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 3 YEAR))
     )
     SELECT 
       state_code, year, month, person_id, 

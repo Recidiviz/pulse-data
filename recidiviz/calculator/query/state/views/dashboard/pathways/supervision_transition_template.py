@@ -74,6 +74,6 @@ def supervision_transition_template(status: str, transition_type: str) -> str:
     SELECT *, {transition_type} as person_count,
     FROM averaged_{transition_type}
     WHERE DATE(year, month, 1) BETWEEN
-      DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL 60 MONTH) AND CURRENT_DATE('US/Pacific')
+      DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 60 MONTH) AND CURRENT_DATE('US/Eastern')
     ORDER BY state_code, year, month, gender, supervision_type
     """

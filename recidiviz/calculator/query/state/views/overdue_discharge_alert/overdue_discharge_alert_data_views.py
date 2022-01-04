@@ -61,20 +61,20 @@ WITH base_recipients AS (
     GROUP BY state_code, district, email_address, external_id
 )
 SELECT
-    EXTRACT(YEAR FROM CURRENT_DATE()) AS review_year,
-    EXTRACT(MONTH FROM CURRENT_DATE()) AS review_month,
+    EXTRACT(YEAR FROM CURRENT_DATE('US/Eastern')) AS review_year,
+    EXTRACT(MONTH FROM CURRENT_DATE('US/Eastern')) AS review_month,
     overdue_discharge_alert_recipients.state_code,
     overdue_discharge_alert_recipients.district,
     overdue_discharge_alert_recipients.email_address,
     overdue_discharge_alert_recipients.officer_given_name,
     ARRAY_AGG(
-        IF(projected_end_date <= CURRENT_DATE(), {discharge_struct}, NULL)
+        IF(projected_end_date <= CURRENT_DATE('US/Eastern'), {discharge_struct}, NULL)
         IGNORE NULLS
         ORDER BY projected_discharges.projected_end_date ASC
     ) AS overdue_discharges,
 
     ARRAY_AGG(
-        IF(projected_end_date > CURRENT_DATE(), {discharge_struct}, NULL)
+        IF(projected_end_date > CURRENT_DATE('US/Eastern'), {discharge_struct}, NULL)
         IGNORE NULLS
         ORDER BY projected_discharges.projected_end_date ASC
     ) AS upcoming_discharges,
@@ -87,7 +87,7 @@ LEFT OUTER JOIN `{project_id}.{reference_views_dataset}.overdue_discharge_alert_
     AND overdue_discharge_alert_exclusions.person_external_id = projected_discharges.person_external_id
 WHERE
     overdue_discharge_alert_exclusions.state_code IS NULL
-    AND projected_end_date <= DATE_ADD(CURRENT_DATE(), INTERVAL 60 DAY)
+    AND projected_end_date <= DATE_ADD(CURRENT_DATE('US/Eastern'), INTERVAL 60 DAY)
 GROUP BY
     overdue_discharge_alert_recipients.state_code,
     overdue_discharge_alert_recipients.district,

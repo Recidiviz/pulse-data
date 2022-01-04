@@ -90,7 +90,7 @@ SESSION_INCARCERATION_ADMISSIONS_TO_DATAFLOW_DISAGGREGATED_QUERY_TEMPLATE = """
         *,
         GREATEST(session_transition_inferred_reason, event_in_both) AS session_transition_hydrated
     FROM joined_cte
-    WHERE EXTRACT(YEAR FROM date) > EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 20 YEAR))
+    WHERE EXTRACT(YEAR FROM date) > EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 20 YEAR))
     ORDER BY state_code, date
     """
 

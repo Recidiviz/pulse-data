@@ -50,7 +50,7 @@ WITH dates AS (
          ORDER BY next_recommended_assessment_date DESC NULLS FIRST, next_recommended_face_to_face_date DESC NULLS FIRST) as inclusion_order
     FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_case_compliance_metrics_materialized`
     WHERE supervising_officer_external_id IS NOT NULL
-        AND date_of_evaluation = DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)
+        AND date_of_evaluation = DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 1 DAY)
 )
 SELECT DISTINCT
         dates.state_code, 
@@ -64,9 +64,9 @@ SELECT DISTINCT
         dates.next_recommended_assessment_date,
         dates.next_recommended_face_to_face_date,
         dates.next_recommended_home_visit_date,
-        IF(dates.next_recommended_assessment_date < CURRENT_DATE(), TRUE, FALSE) AS overdue_for_assessment,
-        IF(dates.next_recommended_face_to_face_date < CURRENT_DATE(), TRUE, FALSE) AS overdue_for_face_to_face,
-        IF(dates.next_recommended_home_visit_date < CURRENT_DATE(), TRUE, FALSE) AS overdue_for_home_visit,
+        IF(dates.next_recommended_assessment_date < CURRENT_DATE('US/Eastern'), TRUE, FALSE) AS overdue_for_assessment,
+        IF(dates.next_recommended_face_to_face_date < CURRENT_DATE('US/Eastern'), TRUE, FALSE) AS overdue_for_face_to_face,
+        IF(dates.next_recommended_home_visit_date < CURRENT_DATE('US/Eastern'), TRUE, FALSE) AS overdue_for_home_visit,
         FROM dates
         JOIN `{project_id}.state.state_assessment` state_assessment
         ON dates.most_recent_assessment_date = state_assessment.assessment_date

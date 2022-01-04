@@ -58,7 +58,7 @@ def generate_time_series_query(
     FROM `{{project_id}}.{{vitals_report_dataset}}.{table_name}`
     WHERE (supervising_officer_external_id = 'ALL' OR district_id = 'ALL')
       AND district_id <> "UNKNOWN"
-      AND date_of_supervision >= DATE_SUB(CURRENT_DATE(), INTERVAL 210 DAY) -- Need to go an additional 30 days back for the avg
+      AND date_of_supervision >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 210 DAY) -- Need to go an additional 30 days back for the avg
       AND {make_enabled_states_filter_for_vital(metric_field)}
     """
 
@@ -120,15 +120,15 @@ VITALS_TIME_SERIES_TEMPLATE = f"""
   SELECT
    *
   FROM (
-    SELECT * FROM timely_discharge WHERE date >= DATE_SUB(CURRENT_DATE(), INTERVAL 180 DAY)
+    SELECT * FROM timely_discharge WHERE date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 180 DAY)
     UNION ALL
-    SELECT * FROM timely_risk_assessment WHERE date >= DATE_SUB(CURRENT_DATE(), INTERVAL 180 DAY)
+    SELECT * FROM timely_risk_assessment WHERE date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 180 DAY)
     UNION ALL
-    SELECT * FROM timely_contact WHERE date >= DATE_SUB(CURRENT_DATE(), INTERVAL 180 DAY)
+    SELECT * FROM timely_contact WHERE date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 180 DAY)
     UNION ALL
-    SELECT * FROM timely_downgrade WHERE date >= DATE_SUB(CURRENT_DATE(), INTERVAL 180 DAY)
+    SELECT * FROM timely_downgrade WHERE date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 180 DAY)
     UNION ALL
-    SELECT * FROM summary WHERE date >= DATE_SUB(CURRENT_DATE(), INTERVAL 180 DAY)
+    SELECT * FROM summary WHERE date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 180 DAY)
   )
   WHERE value != 0
     OR metric = "CONTACT"

@@ -72,12 +72,12 @@ US_ID_PPO_METRICS_EARLY_DISCHARGE_REDUCTION_QUERY_TEMPLATE = """
         state_code, 
         /* Convert month label from first of month to last of month. If month is not yet complete, use current date \
         instead of the last of the month to indicate last date of available data */
-        LEAST(CURRENT_DATE(), LAST_DAY(termination_month, MONTH)) AS termination_month,
+        LEAST(CURRENT_DATE('US/Eastern'), LAST_DAY(termination_month, MONTH)) AS termination_month,
         supervision_type, 
         median_prop_sentence_left, 
         n,
     FROM sentence_remaining
-    WHERE termination_month >= DATE_SUB(CURRENT_DATE(), INTERVAL 3 YEAR)
+    WHERE termination_month >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 3 YEAR)
         AND rn = 1
     ORDER BY 1, 2, 3
     """

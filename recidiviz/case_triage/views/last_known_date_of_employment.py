@@ -30,9 +30,9 @@ SELECT
   state_code,
   person_external_id,
   IF(
-    MAX(COALESCE(recorded_end_date, CURRENT_DATE())) > CURRENT_DATE(),
-    CURRENT_DATE(),
-    MAX(COALESCE(recorded_end_date, CURRENT_DATE()))
+    MAX(COALESCE(recorded_end_date, CURRENT_DATE('US/Eastern'))) > CURRENT_DATE('US/Eastern'),
+    CURRENT_DATE('US/Eastern'),
+    MAX(COALESCE(recorded_end_date, CURRENT_DATE('US/Eastern')))
   ) AS last_known_date_of_employment
 FROM
   `{project_id}.{case_triage_dataset}.employment_periods_materialized`

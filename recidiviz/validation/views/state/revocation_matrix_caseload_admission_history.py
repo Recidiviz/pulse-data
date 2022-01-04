@@ -36,7 +36,7 @@ REVOCATION_MATRIX_CASELOAD_ADMISSION_HISTORY_QUERY_TEMPLATE = """
     WITH admission_counts AS (
         SELECT state_code, person_id, COUNT(*) AS total_admissions
         FROM `{project_id}.{reference_dataset}.event_based_commitments_from_supervision_for_matrix_materialized`
-        WHERE admission_date >= DATE_SUB(DATE_TRUNC(CURRENT_DATE('US/Pacific'), MONTH), INTERVAL 35 MONTH)
+        WHERE admission_date >= DATE_SUB(DATE_TRUNC(CURRENT_DATE('US/Eastern'), MONTH), INTERVAL 35 MONTH)
         GROUP BY state_code, person_id
     ),
     caseload_counts AS (

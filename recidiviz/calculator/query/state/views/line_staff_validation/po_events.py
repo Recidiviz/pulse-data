@@ -47,7 +47,7 @@ WITH synthetic_events AS (
 source_table AS (
     SELECT *
     FROM `{project_id}.{po_report_dataset}.report_data_by_officer_by_month_materialized` po_monthly_report_data
-    WHERE DATE(year, month, 1) >= DATE_SUB(DATE_TRUNC(CURRENT_DATE(), MONTH), INTERVAL 3 MONTH)
+    WHERE DATE(year, month, 1) >= DATE_SUB(DATE_TRUNC(CURRENT_DATE('US/Eastern'), MONTH), INTERVAL 3 MONTH)
 ),
 unordered_po_events AS (
     SELECT
@@ -133,7 +133,7 @@ SELECT
         all_events.client_full_name
 FROM all_events
 JOIN `{project_id}.{case_triage_dataset}.etl_officers_materialized` etl_officers ON etl_officers.external_id = all_events.officer_external_id
-WHERE event_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 90 DAY) 
+WHERE event_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 90 DAY) 
 ORDER BY all_events.event_date
 """
 

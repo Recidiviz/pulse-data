@@ -8,7 +8,7 @@ with prison_to_supervision_policy_duration as (
     --   count(*) as total_population
     from `recidiviz-staging.analyst_data_scratch_space.pa_geriatric_parole_base_query`
     where (age_at_elig_date > 55 or (age_at_elig_date*12 + min_expected_los_after_eligibility > 55*12))
-    and minimum_elig_date < DATE_ADD(current_date(), interval 10 year)
+    and minimum_elig_date < DATE_ADD(CURRENT_DATE('US/Eastern'), interval 10 year)
     and sentence_completion_date is null
     -- group by 1,2,3
     -- order by 4 desc
@@ -30,7 +30,7 @@ with prison_to_supervision_policy_duration as (
     from prison_to_supervision_policy_duration
     where min_expected_los_adj is not null
     -- where (age_at_elig_date > 55 or (age_at_elig_date*12 + min_expected_los_after_eligibility > 55*12))
-    -- and minimum_elig_date < DATE_ADD(current_date(), interval 10 year)
+    -- and minimum_elig_date < DATE_ADD(CURRENT_DATE('US/Eastern'), interval 10 year)
     -- and sentence_completion_date is null
     group by 1,2,3
     order by 4 desc

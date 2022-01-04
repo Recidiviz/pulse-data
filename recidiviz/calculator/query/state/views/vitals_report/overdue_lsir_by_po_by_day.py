@@ -51,7 +51,7 @@ WITH overdue_lsir AS (
     UNNEST ([compliance.level_1_supervision_location_external_id, 'ALL']) AS level_1_supervision_location_external_id,
     UNNEST ([compliance.level_2_supervision_location_external_id, 'ALL']) AS level_2_supervision_location_external_id,
     UNNEST ([supervising_officer_external_id, 'ALL']) AS supervising_officer_external_id
-    WHERE date_of_supervision > DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL 210 DAY)
+    WHERE date_of_supervision > DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 210 DAY)
         -- 210 is 6 months (180 days) for the 6 month time series chart + 30 days for monthly average on the first day
         AND level_2_supervision_location_external_id IS NOT NULL
         -- Remove duplicate entries created when unnesting a state that does not have L2 locations

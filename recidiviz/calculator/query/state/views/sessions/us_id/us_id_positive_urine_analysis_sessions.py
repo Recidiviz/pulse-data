@@ -66,7 +66,7 @@ US_ID_POSITIVE_URINE_ANALYSIS_SESSIONS_QUERY_TEMPLATE = """
         deduped_urine_analysis_data 
     )
     WHERE is_positive_result
-      AND urine_analysis_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 20 YEAR)
+      AND urine_analysis_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 20 YEAR)
 
 """
 

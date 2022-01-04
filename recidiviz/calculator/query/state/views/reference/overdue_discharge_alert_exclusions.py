@@ -61,7 +61,7 @@ case_notes AS (
             new_investigation
         )) AS case_notes_flag
     FROM `{project_id}.analyst_data_scratch_space.us_id_case_notes_flag_24`
-    WHERE SAFE_CAST(create_dt AS date) >= DATE_SUB(CURRENT_DATE(), INTERVAL 1 YEAR)
+    WHERE SAFE_CAST(create_dt AS date) >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 1 YEAR)
     GROUP BY 1, 2
 ),
 cis_ftrd AS (
@@ -74,7 +74,7 @@ cis_ftrd AS (
     FROM `{project_id}.analyst_data_scratch_space.us_id_cis_ftrd_20211130`
 )
 SELECT
-    CURRENT_DATE() AS date_of_exclusion,
+    CURRENT_DATE('US/Eastern') AS date_of_exclusion,
     state_code,
     person_external_id,
     CASE

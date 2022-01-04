@@ -38,12 +38,12 @@ SUPERVISION_OFFICER_CASELOAD_HEALTH_METRICS_QUERY_TEMPLATE = """
             supervision_date,
             officers.state_code,
             officers.start_date,
-            COALESCE(officers.end_date, CURRENT_DATE()) AS end_date,
+            COALESCE(officers.end_date, CURRENT_DATE('US/Eastern')) AS end_date,
             officers.person_id,
             supervising_officer_external_id,
             MIN(officers.start_date) OVER (PARTITION BY officers.state_code, supervising_officer_external_id) as officer_tenure_start_date
         FROM `{project_id}.{sessions_dataset}.supervision_officer_sessions_materialized` officers,
-          UNNEST(GENERATE_DATE_ARRAY(DATE_SUB(CURRENT_DATE(), INTERVAL 5 YEAR), CURRENT_DATE(), INTERVAL 1 MONTH)) supervision_date 
+          UNNEST(GENERATE_DATE_ARRAY(DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 5 YEAR), CURRENT_DATE('US/Eastern'), INTERVAL 1 MONTH)) supervision_date 
         WHERE supervision_date BETWEEN officers.start_date AND COALESCE(officers.end_date, '9999-01-01')
     ),
     client_cumulative_counts AS (
@@ -71,11 +71,11 @@ SUPERVISION_OFFICER_CASELOAD_HEALTH_METRICS_QUERY_TEMPLATE = """
         SELECT officers.state_code, supervision_date, supervising_officer_external_id, 
             COUNT(revocation_date) as lifetime_revocation_count,
         FROM `{project_id}.{sessions_dataset}.supervision_officer_sessions_materialized` officers,
-            UNNEST(GENERATE_DATE_ARRAY(DATE_SUB(CURRENT_DATE(), INTERVAL 5 YEAR), CURRENT_DATE(), INTERVAL 1 MONTH)) supervision_date 
+            UNNEST(GENERATE_DATE_ARRAY(DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 5 YEAR), CURRENT_DATE('US/Eastern'), INTERVAL 1 MONTH)) supervision_date 
         LEFT JOIN `{project_id}.{sessions_dataset}.revocation_sessions_materialized` revocations
             ON officers.state_code = revocations.state_code
             AND officers.person_id = revocations.person_id
-            AND DATE_SUB(revocations.revocation_date, INTERVAL 1 DAY) BETWEEN officers.start_date AND LEAST(COALESCE(officers.end_date, CURRENT_DATE()), supervision_date)
+            AND DATE_SUB(revocations.revocation_date, INTERVAL 1 DAY) BETWEEN officers.start_date AND LEAST(COALESCE(officers.end_date, CURRENT_DATE('US/Eastern')), supervision_date)
         WHERE officers.start_date <= supervision_date
         GROUP BY 1,2,3
     ),
@@ -84,12 +84,12 @@ SUPERVISION_OFFICER_CASELOAD_HEALTH_METRICS_QUERY_TEMPLATE = """
         SELECT officers.state_code, supervision_date, supervising_officer_external_id, 
             COUNT(sessions.end_date) as lifetime_release_count,
         FROM `{project_id}.{sessions_dataset}.supervision_officer_sessions_materialized` officers,
-            UNNEST(GENERATE_DATE_ARRAY(DATE_SUB(CURRENT_DATE(), INTERVAL 5 YEAR), CURRENT_DATE(), INTERVAL 1 MONTH)) supervision_date 
+            UNNEST(GENERATE_DATE_ARRAY(DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 5 YEAR), CURRENT_DATE('US/Eastern'), INTERVAL 1 MONTH)) supervision_date 
         LEFT JOIN `{project_id}.{sessions_dataset}.compartment_sessions_materialized` sessions
             ON officers.state_code = sessions.state_code
             AND officers.person_id = sessions.person_id
             AND outflow_to_level_1 = 'RELEASE'
-            AND sessions.end_date BETWEEN officers.start_date AND LEAST(COALESCE(officers.end_date, CURRENT_DATE()), supervision_date)
+            AND sessions.end_date BETWEEN officers.start_date AND LEAST(COALESCE(officers.end_date, CURRENT_DATE('US/Eastern')), supervision_date)
         WHERE officers.start_date <= supervision_date
         GROUP BY 1,2,3
     ),
@@ -112,11 +112,11 @@ SUPERVISION_OFFICER_CASELOAD_HEALTH_METRICS_QUERY_TEMPLATE = """
         LEFT JOIN `{project_id}.{sessions_dataset}.dataflow_sessions_materialized` dataflow
             ON officers.state_code = dataflow.state_code
             AND officers.person_id = dataflow.person_id
-            AND supervision_date BETWEEN dataflow.start_date AND COALESCE(dataflow.end_date, CURRENT_DATE()) 
+            AND supervision_date BETWEEN dataflow.start_date AND COALESCE(dataflow.end_date, CURRENT_DATE('US/Eastern')) 
         LEFT JOIN `{project_id}.{sessions_dataset}.assessment_score_sessions_materialized` assessment
             ON officers.state_code = assessment.state_code
             AND officers.person_id = assessment.person_id
-            AND supervision_date BETWEEN assessment.assessment_date AND COALESCE(assessment.score_end_date, CURRENT_DATE())
+            AND supervision_date BETWEEN assessment.assessment_date AND COALESCE(assessment.score_end_date, CURRENT_DATE('US/Eastern'))
         LEFT JOIN `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_case_compliance_metrics_materialized` risk_compliance
             ON officers.state_code = risk_compliance.state_code
             AND officers.person_id = risk_compliance.person_id

@@ -51,7 +51,7 @@ CASE_TRIAGE_EVENTS_QUERY_TEMPLATE = """
     baseline AS (
         --match main events on page with POs
         SELECT recipients.state_code
-              , EXTRACT(DATE FROM tracks.timestamp AT TIME ZONE 'US/Pacific') AS date
+              , EXTRACT(DATE FROM tracks.timestamp AT TIME ZONE 'US/Eastern') AS date
               , district.district
               , recipients.officer_external_id
               , tracks.user_id AS segment_id
@@ -69,16 +69,16 @@ CASE_TRIAGE_EVENTS_QUERY_TEMPLATE = """
             AND EXTRACT(YEAR FROM tracks.timestamp) = district.year
         LEFT JOIN `{project_id}.{case_triage_segment_dataset}.pages` page
             ON tracks.user_id = page.user_id
-            AND EXTRACT(DATE FROM tracks.timestamp AT TIME ZONE 'US/Pacific') = EXTRACT(DATE FROM page.timestamp AT TIME ZONE 'US/Pacific')
+            AND EXTRACT(DATE FROM tracks.timestamp AT TIME ZONE 'US/Eastern') = EXTRACT(DATE FROM page.timestamp AT TIME ZONE 'US/Eastern')
         LEFT JOIN `{project_id}.{case_triage_segment_dataset}.frontend_person_selected` selected
             ON tracks.user_id = selected.user_id
-            AND EXTRACT(DATE FROM tracks.timestamp AT TIME ZONE 'US/Pacific') = EXTRACT(DATE FROM selected.timestamp AT TIME ZONE 'US/Pacific')
+            AND EXTRACT(DATE FROM tracks.timestamp AT TIME ZONE 'US/Eastern') = EXTRACT(DATE FROM selected.timestamp AT TIME ZONE 'US/Eastern')
         LEFT JOIN `{project_id}.{case_triage_segment_dataset}.frontend_scrolled_to_bottom` scrolled
             ON page.user_id = scrolled.user_id
-            AND EXTRACT(DATE FROM tracks.timestamp AT TIME ZONE 'US/Pacific') = EXTRACT(DATE FROM scrolled.timestamp AT TIME ZONE 'US/Pacific')
+            AND EXTRACT(DATE FROM tracks.timestamp AT TIME ZONE 'US/Eastern') = EXTRACT(DATE FROM scrolled.timestamp AT TIME ZONE 'US/Eastern')
         LEFT JOIN updates_per_officer_day updated
             ON tracks.user_id = updated.segment_id
-            AND EXTRACT(DATE FROM tracks.timestamp AT TIME ZONE 'US/Pacific') = updated.feedback_date
+            AND EXTRACT(DATE FROM tracks.timestamp AT TIME ZONE 'US/Eastern') = updated.feedback_date
 
         GROUP BY state_code, date, district, officer_external_id, segment_id
     ),
@@ -139,7 +139,7 @@ CASE_TRIAGE_EVENTS_QUERY_TEMPLATE = """
         SELECT DISTINCT
            metrics.state_code
            , selected.person_external_id
-           , EXTRACT(DATE FROM selected.timestamp AT TIME ZONE 'US/Pacific') as date
+           , EXTRACT(DATE FROM selected.timestamp AT TIME ZONE 'US/Eastern') as date
            , metrics.compartment_level_2 AS supervision_type
            , COALESCE(metrics.correctional_level, 'INTERNAL_UNKNOWN') AS supervision_level
         FROM `{project_id}.{case_triage_segment_dataset}.frontend_person_selected` selected
@@ -151,14 +151,14 @@ CASE_TRIAGE_EVENTS_QUERY_TEMPLATE = """
         LEFT JOIN `{project_id}.{sessions_dataset}.dataflow_sessions_materialized` metrics
             ON client.state_code = metrics.state_code
             AND client.person_id = metrics.person_id
-            AND EXTRACT(DATE FROM selected.timestamp AT TIME ZONE 'US/Pacific')
-                BETWEEN metrics.start_date AND COALESCE(metrics.end_date, CURRENT_DATE())
+            AND EXTRACT(DATE FROM selected.timestamp AT TIME ZONE 'US/Eastern')
+                BETWEEN metrics.start_date AND COALESCE(metrics.end_date, CURRENT_DATE('US/Eastern'))
     ),
 
     --match the timing of click events of a PO with whether a person was employed
     selected_employment AS (
         SELECT selected.person_external_id
-             , EXTRACT(DATE FROM selected.timestamp AT TIME ZONE 'US/Pacific') AS date
+             , EXTRACT(DATE FROM selected.timestamp AT TIME ZONE 'US/Eastern') AS date
              , selected.user_id AS segment_id
              , employ.recorded_start_date
              , employ.recorded_end AS recorded_end_date
@@ -168,21 +168,21 @@ CASE_TRIAGE_EVENTS_QUERY_TEMPLATE = """
         FROM `{project_id}.{case_triage_segment_dataset}.frontend_person_selected` selected
         LEFT JOIN employ
             ON employ.person_external_id = selected.person_external_id
-            AND employ.recorded_start_date <= EXTRACT(DATE FROM selected.timestamp AT TIME ZONE 'US/Pacific')
-            AND COALESCE(employ.recorded_end, CURRENT_DATE()) >= EXTRACT(DATE FROM selected.timestamp AT TIME ZONE 'US/Pacific')
+            AND employ.recorded_start_date <= EXTRACT(DATE FROM selected.timestamp AT TIME ZONE 'US/Eastern')
+            AND COALESCE(employ.recorded_end, CURRENT_DATE('US/Eastern')) >= EXTRACT(DATE FROM selected.timestamp AT TIME ZONE 'US/Eastern')
         LEFT JOIN correct_levels_select
             ON selected.person_external_id = correct_levels_select.person_external_id
-            AND correct_levels_select.date = EXTRACT(DATE FROM selected.timestamp AT TIME ZONE 'US/Pacific')
+            AND correct_levels_select.date = EXTRACT(DATE FROM selected.timestamp AT TIME ZONE 'US/Eastern')
     ),
 
     client_narrow_select AS (
         SELECT selected.person_external_id
              , date
              , selected.segment_id
-             , CASE WHEN (DATE_DIFF(CURRENT_DATE(), CAST(client.most_recent_face_to_face_date AS DATE), DAY) > 30)
+             , CASE WHEN (DATE_DIFF(CURRENT_DATE('US/Eastern'), CAST(client.most_recent_face_to_face_date AS DATE), DAY) > 30)
                THEN 1 ELSE 0 END AS months_last_face_to_face
-             , CASE WHEN (DATE_DIFF(CURRENT_DATE(), CAST(client.most_recent_face_to_face_date AS DATE), DAY) < 30
-               AND DATE_DIFF(CURRENT_DATE(), CAST(client.most_recent_face_to_face_date AS DATE), DAY) > 0)
+             , CASE WHEN (DATE_DIFF(CURRENT_DATE('US/Eastern'), CAST(client.most_recent_face_to_face_date AS DATE), DAY) < 30
+               AND DATE_DIFF(CURRENT_DATE('US/Eastern'), CAST(client.most_recent_face_to_face_date AS DATE), DAY) > 0)
                THEN 1 ELSE 0 END AS weeks_last_face_to_face
              , client.assessment_score
              , selected.recorded_start_date
@@ -227,21 +227,21 @@ CASE_TRIAGE_EVENTS_QUERY_TEMPLATE = """
         LEFT JOIN `{project_id}.{sessions_dataset}.dataflow_sessions_materialized` metrics
             ON updated.state_code = metrics.state_code
             AND updated.person_id = metrics.person_id
-            AND updated.feedback_date BETWEEN metrics.start_date AND COALESCE(metrics.end_date, CURRENT_DATE())
+            AND updated.feedback_date BETWEEN metrics.start_date AND COALESCE(metrics.end_date, CURRENT_DATE('US/Eastern'))
         LEFT JOIN employ
             ON employ.state_code = updated.state_code
             AND employ.person_external_id = updated.person_external_id
             AND updated.feedback_date BETWEEN employ.recorded_start_date
-                AND COALESCE(employ.recorded_end, CURRENT_DATE())
+                AND COALESCE(employ.recorded_end, CURRENT_DATE('US/Eastern'))
     ),
 
     client_narrow_update AS (
         SELECT updated.person_external_id
              , updated.date
              , updated.segment_id
-             , CASE WHEN (DATE_DIFF(CURRENT_DATE(), CAST(client.most_recent_face_to_face_date AS DATE), DAY) > 30) THEN 1 ELSE 0 END AS months_last_face_to_face
-             , CASE WHEN (DATE_DIFF(CURRENT_DATE(), CAST(client.most_recent_face_to_face_date AS DATE), DAY) < 30
-               AND DATE_DIFF(CURRENT_DATE(), CAST(client.most_recent_face_to_face_date AS DATE), DAY) > 0)  THEN 1 ELSE 0 END AS weeks_last_face_to_face
+             , CASE WHEN (DATE_DIFF(CURRENT_DATE('US/Eastern'), CAST(client.most_recent_face_to_face_date AS DATE), DAY) > 30) THEN 1 ELSE 0 END AS months_last_face_to_face
+             , CASE WHEN (DATE_DIFF(CURRENT_DATE('US/Eastern'), CAST(client.most_recent_face_to_face_date AS DATE), DAY) < 30
+               AND DATE_DIFF(CURRENT_DATE('US/Eastern'), CAST(client.most_recent_face_to_face_date AS DATE), DAY) > 0)  THEN 1 ELSE 0 END AS weeks_last_face_to_face
              , client.assessment_score
              , updated.recorded_start_date
              , updated.supervision_level
