@@ -190,9 +190,6 @@ from recidiviz.validation.views.state.revocation_matrix_comparison_by_month impo
 from recidiviz.validation.views.state.revocation_matrix_comparison_revocation_cell_vs_caseload import (
     REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_VIEW_BUILDER,
 )
-from recidiviz.validation.views.state.revocation_matrix_comparison_revocation_cell_vs_month import (
-    REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_MONTH_VIEW_BUILDER,
-)
 from recidiviz.validation.views.state.revocation_matrix_comparison_revocations_by_officer import (
     REVOCATION_MATRIX_COMPARISON_REVOCATIONS_BY_OFFICER_VIEW_BUILDER,
 )
@@ -334,9 +331,6 @@ VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = (
         RECIDIVISM_RELEASE_COHORT_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER,
         RECIDIVISM_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_BUILDER,
         REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_VIEW_BUILDER,
-        # TODO(#1124) Remove revocation_matrix_comparison_revocation_cell_vs_month
-        #  validation once FE no longer use revocations_matrix_by_month
-        REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_MONTH_VIEW_BUILDER,
         REVOCATION_MATRIX_COMPARISON_REVOCATIONS_BY_OFFICER_VIEW_BUILDER,
         REVOCATION_MATRIX_COMPARISON_SUPERVISION_POPULATION_VIEW_BUILDER,
         REVOCATION_MATRIX_DISTRIBUTION_BY_GENDER_COMPARISON_VIEW_BUILDER,

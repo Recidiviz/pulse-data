@@ -19,9 +19,6 @@
 from typing import List
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
-from recidiviz.calculator.query.state.views.dashboard.revocation_analysis.revocations_matrix_by_month import (
-    REVOCATIONS_MATRIX_BY_MONTH_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.dashboard.revocation_analysis.revocations_matrix_cells import (
     REVOCATIONS_MATRIX_CELLS_VIEW_BUILDER,
 )
@@ -64,8 +61,6 @@ from recidiviz.calculator.query.state.views.reference.supervision_location_ids_t
 
 REVOCATION_ANALYSIS_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     REVOCATIONS_MATRIX_EVENTS_BY_MONTH_VIEW_BUILDER,
-    # TODO(#1124) Remove revocations_matrix_by_month once FE is no longer using it
-    REVOCATIONS_MATRIX_BY_MONTH_VIEW_BUILDER,
     REVOCATIONS_MATRIX_CELLS_VIEW_BUILDER,
     REVOCATIONS_MATRIX_DISTRIBUTION_BY_DISTRICT_VIEW_BUILDER,
     REVOCATIONS_MATRIX_DISTRIBUTION_BY_GENDER_VIEW_BUILDER,

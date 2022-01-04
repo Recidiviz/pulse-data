@@ -8,9 +8,6 @@ exclusions:
       TODO(#4059) ID has many small (<10) facilities and any small errors result in the validation
       threshold being exceeded. We're also already checking facility accuracy over the whole population with
       incarceration_population_person_level_external_comparison_matching_people validation.
-  - validation_name: revocation_matrix_comparison_revocation_cell_vs_month
-    exclusion_type: DOES_NOT_APPLY
-    exclusion_reason: Revocation matrix not used for ID
   - validation_name: revocation_matrix_comparison_by_month
     exclusion_type: DOES_NOT_APPLY
     exclusion_reason: Revocation matrix not used for ID
