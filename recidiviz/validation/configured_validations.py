@@ -178,9 +178,6 @@ from recidiviz.validation.views.state.revocation_matrix_comparison_by_month impo
 from recidiviz.validation.views.state.revocation_matrix_comparison_revocation_cell_vs_caseload import (
     REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_VIEW_BUILDER,
 )
-from recidiviz.validation.views.state.revocation_matrix_comparison_revocation_cell_vs_month import (
-    REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_MONTH_VIEW_BUILDER,
-)
 from recidiviz.validation.views.state.revocation_matrix_comparison_revocations_by_officer import (
     REVOCATION_MATRIX_COMPARISON_REVOCATIONS_BY_OFFICER_VIEW_BUILDER,
 )
@@ -427,11 +424,6 @@ def get_all_validations() -> List[DataValidationCheck]:
         SamenessDataValidationCheck(
             view_builder=REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_VIEW_BUILDER,
             comparison_columns=["cell_sum", "caseload_sum", "caseload_num_rows"],
-            validation_category=ValidationCategory.CONSISTENCY,
-        ),
-        SamenessDataValidationCheck(
-            view_builder=REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_MONTH_VIEW_BUILDER,
-            comparison_columns=["cell_sum", "month_sum"],
             validation_category=ValidationCategory.CONSISTENCY,
         ),
         SamenessDataValidationCheck(
