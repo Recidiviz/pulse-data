@@ -17,6 +17,7 @@
 """Tests the classes in the metric_export_config file."""
 import unittest
 from unittest import mock
+from unittest.mock import Mock
 
 from google.cloud import bigquery
 
@@ -35,6 +36,7 @@ from recidiviz.metrics.export.export_config import (
 )
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.tests.ingest import fixtures
+from recidiviz.utils.environment import GCPEnvironment
 from recidiviz.utils.string import StrictStringFormatter
 from recidiviz.view_registry.namespaces import BigQueryViewNamespace
 
@@ -182,6 +184,36 @@ class TestProductConfigs(unittest.TestCase):
             product_configs.get_export_config(
                 export_job_name="EXPORT",
             )
+
+    @mock.patch("recidiviz.utils.environment.get_gcp_environment")
+    def test_is_export_launched_in_env_is_launched(
+        self,
+        mock_get_gcp_environment: Mock,
+    ) -> None:
+        mock_get_gcp_environment.return_value = GCPEnvironment.PRODUCTION.value
+        product_configs = ProductConfigs.from_file(
+            path=fixtures.as_filepath("fixture_products.yaml")
+        )
+        export_config = product_configs.is_export_launched_in_env(
+            export_job_name="EXPORT",
+            state_code="US_XX",
+        )
+        self.assertTrue(export_config)
+
+    @mock.patch("recidiviz.utils.environment.get_gcp_environment")
+    def test_is_export_launched_in_env_not_launched(
+        self,
+        mock_get_gcp_environment: Mock,
+    ) -> None:
+        mock_get_gcp_environment.return_value = GCPEnvironment.PRODUCTION.value
+        product_configs = ProductConfigs.from_file(
+            path=fixtures.as_filepath("fixture_products.yaml")
+        )
+        export_config = product_configs.is_export_launched_in_env(
+            export_job_name="EXPORT",
+            state_code="US_WW",
+        )
+        self.assertFalse(export_config)
 
 
 class TestExportViewCollectionConfig(unittest.TestCase):
