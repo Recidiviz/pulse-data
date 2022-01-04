@@ -18,9 +18,9 @@
 Historical data to be ingested for a particular state x policy combination
 file name should be `historical_data_{state_code}_{primary_compartment}.py`
     where state_code is of form NJ and primary compartment is the tag of the main compartment relevant to the policy
-TODO(#99999): match naming convention for file name
+DATA PRE-PROCESSING TASK: match naming convention for file name
 
-TODO(#99999): fill this out
+DATA PRE-PROCESSING TASK: fill this out
 STATE: MS
 POLICY: Changing parole eligibility requirements
 VERSION: V1
@@ -32,8 +32,9 @@ TIME_STEP: year
 ADDITIONAL NOTES:
 """
 
-# TODO(#99999): add whatever modules you need
+# DATA PRE-PROCESSING TASK: add whatever modules you need
 import pandas as pd
+
 from recidiviz.calculator.modeling.population_projection.utils.spark_bq_utils import (
     upload_spark_model_inputs,
 )
@@ -42,10 +43,10 @@ from recidiviz.calculator.modeling.population_projection.utils.spark_bq_utils im
 
 
 # RAW DATA
-# TODO(#99999): write in all raw data below
+# DATA PRE-PROCESSING TASK: write in all raw data below
 
 
-# TODO(#99999): add one column to transitions_data & outflows_data per disaggregation axis.
+# DATA PRE-PROCESSING TASK: add one column to transitions_data & outflows_data per disaggregation axis.
 #  If none exist, add place-holder axis
 transitions_data = pd.read_csv(
     "recidiviz/calculator/modeling/population_projection/state/MS/SB_2123_Parole_Eligibility/ms_transitions.csv"
@@ -58,11 +59,11 @@ total_population_data = pd.read_csv(
 )
 
 # TRANSITIONS TABLE
-# TODO(#99999): populate transitions_data from raw data
+# DATA PRE-PROCESSING TASK: populate transitions_data from raw data
 transitions_data.compartment_duration *= 12
 
 # OUTFLOWS TABLE
-# TODO(#99999): populate outflows_data from raw data
+# DATA PRE-PROCESSING TASK: populate outflows_data from raw data
 final_outflows = pd.DataFrame()
 for year in outflows_data.time_step.unique():
     year_outflows = outflows_data[outflows_data.time_step == year]
@@ -74,7 +75,7 @@ for year in outflows_data.time_step.unique():
 outflows_data = final_outflows
 
 # TOTAL POPULATION TABLE
-# TODO(#99999): populate total_population_data from raw data
+# DATA PRE-PROCESSING TASK: populate total_population_data from raw data
 final_pops = pd.DataFrame()
 for year in total_population_data.time_step.unique():
     year_pops = total_population_data[total_population_data.time_step == year]
@@ -85,7 +86,7 @@ for year in total_population_data.time_step.unique():
 total_population_data = final_pops
 
 # STORE DATA
-# TODO(#99999): fill in `state` and `primary_compartment`
+# DATA PRE-PROCESSING TASK: fill in `state` and `primary_compartment`
 upload_spark_model_inputs(
     "recidiviz-staging",
     "MS_SB_2123",
