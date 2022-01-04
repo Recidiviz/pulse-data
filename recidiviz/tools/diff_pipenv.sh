@@ -6,14 +6,21 @@
 BASH_SOURCE_DIR=$(dirname "$BASH_SOURCE")
 source ${BASH_SOURCE_DIR}/script_base.sh
 
-# The expected command transforms the packages in the lock file into a requirements format, with the following
-# transformations:
+# To get the expected packages, we perform the following transformations on the packages
+# from the lock file:
 # - Remove the ';' and any markers that follow it
 # - Remove any extras from the package name, e.g. '[gcp]'
 # - Remove any lines starting with a comment ('#') or the pypi line ('-')
 # - Remove any blank lines
-# - Sort, in case the above affected the sort order
-expected=$(pipenv lock -r --dev | cut -d';' -f1 | sed 's/\[.*\]//' | sed '/^[-#]/d' | sed '/^$/d' | sort) || exit_on_fail
+# - Remove pip / setuptools, since they'll always be installed but aren't always in the Pipfile.lock
+# - Sort, in case the above transformations affected the sort order
+expected=$(pipenv lock -r --dev \
+    | cut -d';' -f1 \
+    | sed 's/\[.*\]//' \
+    | sed '/^[-#]/d' \
+    | sed '/^$/d' \
+    | sed '/^(pip|setuptools)==.*/d' \
+    | sort) || exit_on_fail
 # The installed command gets all installed packages in a requirements format, with the following transformations
 # - Replace any underscores with dashes
 #   - Note: setuptools replaces any non-alphanumeric/. with a dash but so far we have only seen issues with underscore and
@@ -21,7 +28,7 @@ expected=$(pipenv lock -r --dev | cut -d';' -f1 | sed 's/\[.*\]//' | sed '/^[-#]
 #     https://github.com/pypa/setuptools/blob/main/pkg_resources/__init__.py#L1314)
 # - Make everything lower case
 # - Sort, in case the above affected the sort order
-installed=$(pipenv run pip freeze --all | tr _ - | tr A-Z a-z | sort) || exit_on_fail
+installed=$(pipenv run pip freeze | tr _ - | tr A-Z a-z | sort) || exit_on_fail
 
 # Diff returns 1 if there are differences and >1 if an error occurred. We only want to fail here if there was an actual
 # error.
