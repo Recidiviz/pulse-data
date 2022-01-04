@@ -81,7 +81,6 @@ state_charge_classification_type_misdemeanor = "MISDEMEANOR"
 state_charge_classification_type_other = "OTHER"
 
 # state_court_case.py
-# TODO(#1697): Add enum strings here
 
 # state_incarceration.py
 state_incarceration_type_county_jail = "COUNTY_JAIL"

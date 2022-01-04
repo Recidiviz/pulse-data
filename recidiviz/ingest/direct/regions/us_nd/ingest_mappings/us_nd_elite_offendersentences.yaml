@@ -12,8 +12,8 @@ keys_to_ignore:
   - SENTENCE_STATUS         # Not useful: has the same value for nearly all rows
   - COMMENT_TEXT            # No apparent use for these at the moment
   - EFFECTIVE_DATE          # No longer in use by source
-  - EIGHTYFIVE_PERCENT_DATE # TODO(#1759) Should this live on a Sentence?
-  - GOOD_TIME               # TODO(#1759) Should this live on a Sentence?
+  - EIGHTYFIVE_PERCENT_DATE # Unused
+  - GOOD_TIME               # Unused
   - SENTENCE_CALC_TYPE      # Handled manually within us_nd_scraper
   - CHARGE_SEQ              # Handled manually within us_nd_scraper
   - CONSEC_TO_SENTENCE_SEQ  # Handled manually within us_nd_scraper

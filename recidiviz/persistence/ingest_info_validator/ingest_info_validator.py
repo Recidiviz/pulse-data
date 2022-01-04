@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Validates that ingest_info protos conform to the schema requirements."""
-from typing import Iterable, Dict, Set, Any
+from typing import Any, Dict, Iterable, Set
 
 import iteration_utilities
 
@@ -30,7 +30,6 @@ class ValidationError(Exception):
     """Raised when encountering an error with ingest_info validation."""
 
     def __init__(self, errors: Dict[str, Dict[str, Set]]):
-        # TODO(#1261): Return errors to caller instead of printing in exception
         super().__init__(errors)
         self.errors = errors
 

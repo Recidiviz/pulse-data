@@ -82,7 +82,7 @@ class ValidationConfigTest(unittest.TestCase):
                 validation_name="existence_view",
                 hard_num_allowed_rows_override=10,
                 soft_num_allowed_rows_override=10,
-                override_reason="These should not exist. TODO(#0001) - fix it.",
+                override_reason="These should not exist. TODO(#0000) - fix it.",
             )
         }
         expected_config = ValidationRegionConfig(
