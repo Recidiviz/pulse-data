@@ -25,9 +25,8 @@ import us
 from more_itertools.more import one
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
+from recidiviz.common import fips, str_field_utils
 from recidiviz.common.constants.aggregate import enum_canonical_strings as enum_strings
-from recidiviz.common import str_field_utils
-from recidiviz.common import fips
 from recidiviz.ingest.aggregate import aggregate_ingest_utils
 from recidiviz.ingest.aggregate.errors import AggregateDateParsingError
 from recidiviz.persistence.database.schema.aggregate.schema import KyFacilityAggregate
@@ -109,7 +108,7 @@ def _parse_table(filename: str) -> pd.DataFrame:
 
     # Each block of county data starts with a filled in 'Total Jail Beds'
     start_of_county_indices = np.where(whole_df["Total Jail Beds"].notnull())[0]
-    dfs_split_by_county = _split_df(whole_df, start_of_county_indices)
+    dfs_split_by_county = _split_df(whole_df, start_of_county_indices)  # type: ignore[assignment, arg-type]
 
     dfs_grouped_by_gender = []
     for df in dfs_split_by_county:
