@@ -38,7 +38,7 @@ EVENT_BASED_METRICS_BY_SUPERVISION_OFFICER_QUERY_TEMPLATE = """
     (
         SELECT date, EXTRACT(YEAR FROM date) as year, EXTRACT(MONTH FROM date) as month,
         FROM
-        UNNEST(GENERATE_DATE_ARRAY(DATE_SUB(CURRENT_DATE(), INTERVAL 2 YEAR), CURRENT_DATE(), INTERVAL 1 DAY)) AS date
+        UNNEST(GENERATE_DATE_ARRAY(DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 2 YEAR), CURRENT_DATE('US/Eastern'), INTERVAL 1 DAY)) AS date
     ),
     completions AS
     (
@@ -81,7 +81,7 @@ EVENT_BASED_METRICS_BY_SUPERVISION_OFFICER_QUERY_TEMPLATE = """
         LEFT JOIN `{project_id}.{sessions_dataset}.supervision_officer_sessions_materialized` officers
         ON levels.state_code = officers.state_code
         AND levels.person_id = officers.person_id
-        AND levels.start_date BETWEEN officers.start_date AND COALESCE(officers.end_date, CURRENT_DATE())
+        AND levels.start_date BETWEEN officers.start_date AND COALESCE(officers.end_date, CURRENT_DATE('US/Eastern'))
         WHERE levels.supervision_downgrade > 0
     ),
     violations AS
@@ -97,7 +97,7 @@ EVENT_BASED_METRICS_BY_SUPERVISION_OFFICER_QUERY_TEMPLATE = """
         LEFT JOIN `{project_id}.{sessions_dataset}.supervision_officer_sessions_materialized` officers
         ON violations.state_code = officers.state_code
         AND violations.person_id = officers.person_id
-        AND violations.response_date BETWEEN officers.start_date AND COALESCE(officers.end_date, CURRENT_DATE())
+        AND violations.response_date BETWEEN officers.start_date AND COALESCE(officers.end_date, CURRENT_DATE('US/Eastern'))
     ),
     revocations AS
     (
@@ -121,7 +121,7 @@ EVENT_BASED_METRICS_BY_SUPERVISION_OFFICER_QUERY_TEMPLATE = """
     /* Combines all metrics into a single view for each day in the last 2 years. Null count metrics replaced with zero. */
       (
         SELECT population.state_code, date, population.supervising_officer_external_id, district as primary_district, rolling_window_days,
-          DATE_DIFF(date, CURRENT_DATE(), DAY) AS absolute_date,
+          DATE_DIFF(date, CURRENT_DATE('US/Eastern'), DAY) AS absolute_date,
           COUNT(completions.person_id) AS num_successful_completions,
           COUNT(earned_discharge_requests.person_id) AS num_earned_discharge_requests,
           COUNT(supervision_downgrades.supervision_downgrade_date) AS num_supervision_downgrades,
@@ -158,7 +158,7 @@ EVENT_BASED_METRICS_BY_SUPERVISION_OFFICER_QUERY_TEMPLATE = """
           ON population.state_code = revocations.state_code
           AND population.supervising_officer_external_id = revocations.supervising_officer_external_id
           AND population.date = revocations.revocation_date
-        WHERE date >= DATE_SUB(CURRENT_DATE(), INTERVAL 2 YEAR)
+        WHERE date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 2 YEAR)
         GROUP BY population.state_code, date, population.supervising_officer_external_id, district, rolling_window_days, supervision_population
       )
     /* Calculates raw metrics and population adjusted counts across rolling windows for all metrics */
@@ -188,7 +188,7 @@ EVENT_BASED_METRICS_BY_SUPERVISION_OFFICER_QUERY_TEMPLATE = """
       USING (state_code, supervising_officer_external_id, primary_district, rolling_window_days)
     WHERE m1.date
       BETWEEN m2.date AND DATE_ADD(m2.date, INTERVAL m1.rolling_window_days - 1 DAY)
-    AND m1.date >= DATE_ADD(DATE_SUB(CURRENT_DATE(), INTERVAL 2 YEAR), INTERVAL m1.rolling_window_days DAY)
+    AND m1.date >= DATE_ADD(DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 2 YEAR), INTERVAL m1.rolling_window_days DAY)
     GROUP BY m1.state_code, m1.date, m1.supervising_officer_external_id, m1.primary_district, m1.rolling_window_days, m1.supervision_population
     """
 

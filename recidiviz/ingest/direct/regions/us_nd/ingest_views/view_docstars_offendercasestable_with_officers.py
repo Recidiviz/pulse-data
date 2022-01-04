@@ -39,7 +39,7 @@ ranked_term_dates AS (
     TERM_DATE,
     ROW_NUMBER() OVER (
       PARTITION BY SID
-      ORDER BY IFNULL(PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', TERM_DATE), CURRENT_DATE()) DESC
+      ORDER BY IFNULL(PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', TERM_DATE), CURRENT_DATE('US/Eastern')) DESC
     ) AS rn
   FROM {docstars_offendercasestable}
 ),

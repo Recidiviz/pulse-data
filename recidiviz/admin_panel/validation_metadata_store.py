@@ -155,7 +155,7 @@ def validation_history_results_query(
 {results_query(project_id, validation_result_address)}
 AND validation_name = "{validation_name}"
 AND region_code = "{region_code}"
-AND run_datetime >= DATETIME_SUB(current_date(), INTERVAL {days_to_include} DAY)
+AND run_datetime >= DATETIME_SUB(CURRENT_DATE('US/Eastern'), INTERVAL {days_to_include} DAY)
 ORDER BY run_datetime desc 
 """
 

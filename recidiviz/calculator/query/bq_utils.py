@@ -64,18 +64,18 @@ def unnest_rolling_window_days() -> str:
 
 
 def metric_period_condition(month_offset: int = 1) -> str:
-    return f"""DATE(year, month, 1) >= DATE_SUB(DATE_TRUNC(CURRENT_DATE('US/Pacific'), MONTH),
+    return f"""DATE(year, month, 1) >= DATE_SUB(DATE_TRUNC(CURRENT_DATE('US/Eastern'), MONTH),
                                                 INTERVAL metric_period_months - {month_offset} MONTH)"""
 
 
 def thirty_six_month_filter() -> str:
     """Returns a query string for filtering to the last 36 months, including the current month."""
-    return """DATE(year, month, 1) >= DATE_SUB(DATE_TRUNC(CURRENT_DATE('US/Pacific'), MONTH), INTERVAL 35 MONTH)"""
+    return """DATE(year, month, 1) >= DATE_SUB(DATE_TRUNC(CURRENT_DATE('US/Eastern'), MONTH), INTERVAL 35 MONTH)"""
 
 
 def current_month_condition() -> str:
-    return """year = EXTRACT(YEAR FROM CURRENT_DATE('US/Pacific'))
-        AND month = EXTRACT(MONTH FROM CURRENT_DATE('US/Pacific'))"""
+    return """year = EXTRACT(YEAR FROM CURRENT_DATE('US/Eastern'))
+        AND month = EXTRACT(MONTH FROM CURRENT_DATE('US/Eastern'))"""
 
 
 def age_bucket_grouping(

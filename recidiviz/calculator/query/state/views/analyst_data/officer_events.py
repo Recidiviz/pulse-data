@@ -52,7 +52,7 @@ SELECT
     users.state_code,
     users.officer_external_id,
     "CASE_TRIAGE_ACTION" AS event,
-    EXTRACT(DATETIME FROM tracks.timestamp AT TIME ZONE 'US/Pacific') AS event_date,
+    EXTRACT(DATETIME FROM tracks.timestamp AT TIME ZONE 'US/Eastern') AS event_date,
     event AS attribute_1,  -- kind of action taken
 FROM (
     -- dedup tracks
@@ -75,7 +75,7 @@ SELECT
     users.state_code,
     users.officer_external_id,
     "CASE_TRIAGE_PAGE" AS event,
-    EXTRACT(DATETIME FROM pages.timestamp AT TIME ZONE 'US/Pacific') AS event_date,
+    EXTRACT(DATETIME FROM pages.timestamp AT TIME ZONE 'US/Eastern') AS event_date,
     path as attribute_1,  -- which page the user saw
 FROM (
     -- dedup pages
@@ -98,7 +98,7 @@ SELECT
     users.state_code,
     users.officer_external_id,
     "PO_MONTHLY_REPORT_ACTION" AS event,
-    EXTRACT(DATETIME FROM events.event_datetime AT TIME ZONE 'US/Pacific') AS event_date,
+    EXTRACT(DATETIME FROM events.event_datetime AT TIME ZONE 'US/Eastern') AS event_date,
     event AS attribute_1, -- kind of action taken
 FROM `{project_id}.{po_report_dataset}.sendgrid_po_report_email_events_materialized` events
 INNER JOIN
@@ -112,7 +112,7 @@ SELECT
     users.state_code,
     users.officer_external_id,
     "PO_MONTHLY_REPORT_ACTION_FIRST" AS event,
-    EXTRACT(DATETIME FROM events.event_datetime AT TIME ZONE 'US/Pacific') AS event_date,
+    EXTRACT(DATETIME FROM events.event_datetime AT TIME ZONE 'US/Eastern') AS event_date,
     event AS attribute_1, -- kind of action taken
 FROM `{project_id}.{po_report_dataset}.sendgrid_po_report_email_events_materialized` events
 INNER JOIN

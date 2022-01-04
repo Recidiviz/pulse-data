@@ -105,7 +105,7 @@ SUPERVISION_POPULATION_BY_PO_BY_DAY_QUERY_TEMPLATE = f"""
             USING (state_code, supervising_officer_external_id),
         UNNEST ([officers.supervising_district_external_id, 'ALL']) AS supervising_district_external_id,
         UNNEST ([officers.supervising_officer_external_id, 'ALL']) AS supervising_officer_external_id
-        WHERE date_of_supervision > DATE_SUB(CURRENT_DATE(), INTERVAL 217 DAY) -- 217 = 210 days back for avgs + 7-day buffer for late data
+        WHERE date_of_supervision > DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 217 DAY) -- 217 = 210 days back for avgs + 7-day buffer for late data
             AND state_code in {enabled_states}
             AND {state_specific_entity_filter()}
         GROUP BY state_code, date_of_supervision, supervising_district_external_id, supervising_officer_external_id, district_id, district_name

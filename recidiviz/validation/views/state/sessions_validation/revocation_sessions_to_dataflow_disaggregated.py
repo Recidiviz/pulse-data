@@ -68,7 +68,7 @@ REVOCATION_SESSIONS_TO_DATAFLOW_DISAGGREGATED_QUERY_TEMPLATE = """
     FROM dataflow_revocations d
     FULL OUTER JOIN session_revocations s
         USING(person_id, state_code, revocation_date)
-    WHERE EXTRACT(YEAR FROM revocation_date) > EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 20 YEAR))
+    WHERE EXTRACT(YEAR FROM revocation_date) > EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 20 YEAR))
     ORDER BY 1,2,3
     """
 

@@ -30,7 +30,7 @@ US_ID_EMPLOYMENT_SESSIONS_QUERY_TEMPLATE = """
       date_array AS (
       SELECT
         *
-      FROM UNNEST(GENERATE_DATE_ARRAY(DATE_SUB(CURRENT_DATE(), INTERVAL 10 YEAR), CURRENT_DATE())) supervision_date ),
+      FROM UNNEST(GENERATE_DATE_ARRAY(DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 10 YEAR), CURRENT_DATE('US/Eastern'))) supervision_date ),
       employment_clean AS (
       /* Gathers raw data on employment and employers */
       SELECT
@@ -78,9 +78,9 @@ US_ID_EMPLOYMENT_SESSIONS_QUERY_TEMPLATE = """
         wage,
       FROM date_array d
       JOIN `{project_id}.{sessions_dataset}.supervision_super_sessions_materialized` s
-      ON d.supervision_date BETWEEN s.start_date AND COALESCE(s.end_date, CURRENT_DATE())
+      ON d.supervision_date BETWEEN s.start_date AND COALESCE(s.end_date, CURRENT_DATE('US/Eastern'))
       LEFT JOIN employment_clean e
-      ON d.supervision_date BETWEEN e.employment_start_date AND COALESCE(e.employment_end_date, CURRENT_DATE())
+      ON d.supervision_date BETWEEN e.employment_start_date AND COALESCE(e.employment_end_date, CURRENT_DATE('US/Eastern'))
         AND s.person_id = e.person_id
         AND s.state_code = e.state_code
       ),
@@ -140,7 +140,7 @@ US_ID_EMPLOYMENT_SESSIONS_QUERY_TEMPLATE = """
             MAX(last_verified_date) OVER(PARTITION BY person_id, is_employed, supervision_super_session_id, group_continuous_dates_with_status) AS last_verified_date,
             MIN(employment_start_date) OVER(PARTITION BY person_id, is_employed, supervision_super_session_id, group_continuous_dates_with_status) AS earliest_employment_period_start_date,
             MIN(supervision_date) OVER(PARTITION BY person_id, is_employed, supervision_super_session_id, group_continuous_dates_with_status) AS employment_status_start_date,
-            NULLIF(MAX(supervision_date) OVER(PARTITION BY person_id, is_employed, supervision_super_session_id, group_continuous_dates_with_status), CURRENT_DATE()) AS employment_status_end_date,
+            NULLIF(MAX(supervision_date) OVER(PARTITION BY person_id, is_employed, supervision_super_session_id, group_continuous_dates_with_status), CURRENT_DATE('US/Eastern')) AS employment_status_end_date,
         FROM dedup_employment_daily
     ),
     employment_sessions_with_attributes AS (
@@ -152,7 +152,7 @@ US_ID_EMPLOYMENT_SESSIONS_QUERY_TEMPLATE = """
             ON s.person_id = a.person_id 
             AND (
                 a.employment_start_date BETWEEN s.employment_status_start_date AND COALESCE(s.employment_status_end_date, '9999-01-01')
-                OR COALESCE(a.employment_end_date, CURRENT_DATE()) BETWEEN s.employment_status_start_date AND COALESCE(s.employment_status_end_date, '9999-01-01')
+                OR COALESCE(a.employment_end_date, CURRENT_DATE('US/Eastern')) BETWEEN s.employment_status_start_date AND COALESCE(s.employment_status_end_date, '9999-01-01')
             )
             AND COALESCE(employer_name, job_title) IS NOT NULL
     )

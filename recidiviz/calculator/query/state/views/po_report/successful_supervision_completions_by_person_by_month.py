@@ -55,7 +55,7 @@ SUCCESSFUL_SUPERVISION_COMPLETIONS_BY_PERSON_BY_MONTH_QUERY_TEMPLATE = """
       FROM supervision_periods
       WHERE termination_date IS NOT NULL
          AND termination_reason IN ('COMMUTED', 'DISMISSED', 'DISCHARGE', 'EXPIRATION', 'PARDONED')
-         AND EXTRACT(YEAR FROM termination_date) >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 3 YEAR))
+         AND EXTRACT(YEAR FROM termination_date) >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 3 YEAR))
     ),
     overlapping_open_period AS (
       -- Find the supervision periods that should not be counted as completions because of another overlapping period
@@ -68,7 +68,7 @@ SUCCESSFUL_SUPERVISION_COMPLETIONS_BY_PERSON_BY_MONTH_QUERY_TEMPLATE = """
         -- Find any overlapping supervision period (started on or before the termination date,
         -- ended after the termination date)
         AND p2.start_date <= p1.termination_date
-        AND p1.termination_date < COALESCE(p2.termination_date, CURRENT_DATE())
+        AND p1.termination_date < COALESCE(p2.termination_date, CURRENT_DATE('US/Eastern'))
         -- Count the period as an overlapping open period if it wasn't discharged in the same month
         AND (p2.termination_reason NOT IN ('DISCHARGE', 'EXPIRATION')
             OR DATE_TRUNC(p2.termination_date, MONTH) != DATE_TRUNC(p1.termination_date, MONTH))

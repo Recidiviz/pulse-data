@@ -38,8 +38,8 @@ WITH new_to_caseload AS (
         COUNT(DISTINCT person_id) AS new_to_caseload_count
     FROM `{project_id}.{sessions_dataset}.supervision_officer_sessions_materialized` supervision_officer_sessions_materialized
     WHERE 
-        start_date BETWEEN DATE_SUB(DATE_TRUNC(CURRENT_DATE(), MONTH), INTERVAL 3 MONTH)
-                AND DATE_TRUNC(CURRENT_DATE(), MONTH)
+        start_date BETWEEN DATE_SUB(DATE_TRUNC(CURRENT_DATE('US/Eastern'), MONTH), INTERVAL 3 MONTH)
+                AND DATE_TRUNC(CURRENT_DATE('US/Eastern'), MONTH)
     GROUP BY 1, 2
 )
 SELECT
@@ -57,7 +57,7 @@ SELECT
  FROM `{project_id}.{po_report_dataset}.report_data_by_officer_by_month_materialized` po_monthly_report_data
  JOIN new_to_caseload USING (state_code, officer_external_id)
  JOIN `{project_id}.{case_triage_dataset}.etl_officers_materialized` etl_officers ON etl_officers.external_id = po_monthly_report_data.officer_external_id
- WHERE DATE(year, month, 1) >= DATE_SUB(DATE_TRUNC(CURRENT_DATE(), MONTH), INTERVAL 3 MONTH)
+ WHERE DATE(year, month, 1) >= DATE_SUB(DATE_TRUNC(CURRENT_DATE('US/Eastern'), MONTH), INTERVAL 3 MONTH)
  GROUP BY 1, 2, 3
 """
 
