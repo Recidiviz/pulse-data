@@ -292,9 +292,7 @@ class ExportViewCollectionConfig:
 
         intermediate_table_name = "{export_view_name}_table"
         if destination_override:
-            output_directory = StrictStringFormatter().format(
-                destination_override, project_id=project_id
-            )
+            output_directory = destination_override
         else:
             output_directory = StrictStringFormatter().format(
                 self.output_directory_uri_template, project_id=project_id
