@@ -25,12 +25,13 @@ import re
 import sys
 from collections import defaultdict
 from functools import lru_cache
-from typing import Dict, List
+from typing import Dict, List, Set
 from unittest import mock
 
 from flask import Flask
 from werkzeug.routing import Rule
 
+from recidiviz.common.file_system import delete_files, get_all_files_recursive
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tools.docs.summary_file_generator import update_summary_file
 from recidiviz.tools.docs.utils import DOCS_ROOT_PATH
@@ -201,19 +202,31 @@ def generate_documentation_for_new_endpoints(
     and for any new endpoints, add their documentation to the appropriate markdown location.
     Returns whether or not new endpoint documentation was added.
     """
-    added = False
+    existing_endpoint_docs: Set[str] = get_all_files_recursive(ENDPOINT_DOCS_DIRECTORY)
+    new_endpoint_docs: Set[str] = {ENDPOINT_CATALOG_SPECIFICATION}
+
+    anything_modified = False
     for rule in app_rules():
         markdown_path = generator.generate_markdown_path_for_endpoint(
             docs_directory=ENDPOINT_DOCS_DIRECTORY, endpoint=rule.rule
         )
+        new_endpoint_docs.add(markdown_path)
+
         if not os.path.exists(markdown_path):
-            added = True
+            anything_modified |= True
             generator.generate_documentation_for_endpoint(
                 docs_directory=ENDPOINT_DOCS_DIRECTORY,
                 specification_template_path=ENDPOINT_CATALOG_SPECIFICATION,
                 rule=rule,
             )
-    return added
+
+    # Delete any deprecated endpoint files
+    deprecated_files = existing_endpoint_docs.difference(new_endpoint_docs)
+    if deprecated_files:
+        delete_files(deprecated_files, delete_empty_dirs=True)
+        anything_modified |= True
+
+    return anything_modified
 
 
 def _create_ingest_catalog_summary_for_endpoints(
