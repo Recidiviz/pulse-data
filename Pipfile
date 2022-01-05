@@ -126,7 +126,6 @@ deepdiff = "*"
 "mmh3" = "*"
 aenum = "*"
 yq = "*"
-oauth2client = "*" #TODO(#2922): Remove deprecated oauth2client dependency
 google-cloud-storage = "<2.0.0"
 progress="*"
 google-cloud-secret-manager = "<2.0.0"

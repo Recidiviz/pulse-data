@@ -44,7 +44,7 @@ REQUIRED_PACKAGES = [
     "html5lib",
     "lxml",
     "more-itertools",
-    "oauth2client",
+    "google-auth",
     "opencensus",
     "opencensus-correlation",
     "opencensus-ext-stackdriver",
