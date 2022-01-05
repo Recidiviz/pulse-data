@@ -30,6 +30,7 @@ import ruamel.yaml
 from more_itertools import one
 from pytablewriter import MarkdownTableWriter
 
+from recidiviz.common.file_system import get_all_files_recursive
 from recidiviz.ingest.direct.ingest_mappings import yaml_schema
 from recidiviz.tools.docs.summary_file_generator import (
     SUMMARY_PATH,
@@ -638,11 +639,11 @@ def generate_documentation() -> int:
     summary_lines = ["## Ingest mapping schema\n\n"]
     for version in versions:
         schema_version_dir = os.path.join(ALL_SCHEMAS_PATH, version)
-        all_schema_files = {}
-        for directory, _directories, files in os.walk(schema_version_dir):
-            for f in files:
-                schema_file_path = os.path.join(directory, f)
-                all_schema_files[schema_file_path] = SingleSchemaFile(schema_file_path)
+        all_schema_file_paths = get_all_files_recursive(schema_version_dir)
+        all_schema_files = {
+            schema_file_path: SingleSchemaFile(schema_file_path)
+            for schema_file_path in all_schema_file_paths
+        }
 
         for schema_file in all_schema_files.values():
             generator = SingleSchemaFileDocsGenerator(schema_file, all_schema_files)

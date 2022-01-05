@@ -65,6 +65,7 @@ from recidiviz.calculator.query.state.views.dataflow_metrics_materialized.most_r
 from recidiviz.common import attr_validators
 from recidiviz.common.attr_utils import get_enum_cls
 from recidiviz.common.constants.states import StateCode
+from recidiviz.common.file_system import delete_files, get_all_files_recursive
 from recidiviz.metrics.export.export_config import (
     PRODUCTS_CONFIG_PATH,
     VIEW_COLLECTION_EXPORT_INDEX,
@@ -117,7 +118,6 @@ This view may not be deployed to all environments yet.<br/>
 {child_tree}
 """
 
-# TODO(#7563): Include more thorough documentation for each metric.
 METRIC_DOCS_TEMPLATE = """##{metric_name}
 {description}
 
@@ -699,25 +699,36 @@ class CalculationDocumentationGenerator:
         """Generates markdown files if necessary for the docs/calculation/products
         directories"""
         anything_modified = False
+
+        products_dir_path = os.path.join(self.root_calc_docs_dir, "products")
+
+        existing_product_files: Set[str] = get_all_files_recursive(products_dir_path)
+        new_product_files: Set[str] = set()
+
         for product in self.products:
             # Generate documentation for each product
             documentation = self._get_product_information(product)
 
             # Write documentation to markdown files
             product_name_for_path = self._normalize_string_for_path(product.name)
-            product_dir_path = os.path.join(
-                self.root_calc_docs_dir, "products", product_name_for_path
-            )
+            product_dir_path = os.path.join(products_dir_path, product_name_for_path)
             os.makedirs(product_dir_path, exist_ok=True)
-
-            product_markdown_path = os.path.join(
-                product_dir_path,
-                f"{product_name_for_path}_summary.md",
-            )
+            product_filename = f"{product_name_for_path}_summary.md"
+            product_markdown_path = os.path.join(product_dir_path, product_filename)
 
             anything_modified |= persist_file_contents(
                 documentation, product_markdown_path
             )
+
+            # Keep track of new product files
+            new_product_files.add(product_markdown_path)
+
+        # Delete any deprecated product files
+        deprecated_files = existing_product_files.difference(new_product_files)
+        if deprecated_files:
+            delete_files(deprecated_files, delete_empty_dirs=True)
+            anything_modified |= True
+
         return anything_modified
 
     @staticmethod
@@ -808,6 +819,9 @@ class CalculationDocumentationGenerator:
         states_dir_path = os.path.join(self.root_calc_docs_dir, "states")
         os.makedirs(states_dir_path, exist_ok=True)
 
+        existing_state_files: Set[str] = get_all_files_recursive(states_dir_path)
+        new_state_files: Set[str] = set()
+
         for state_code in self._get_dataflow_pipeline_enabled_states():
             state_name = str(state_code.get_state())
 
@@ -815,13 +829,25 @@ class CalculationDocumentationGenerator:
             documentation = self._get_state_information(state_code, state_name)
 
             # Write to markdown files
+            state_file_name = f"{self._normalize_string_for_path(state_name)}.md"
             states_markdown_path = os.path.join(
                 states_dir_path,
-                f"{self._normalize_string_for_path(state_name)}.md",
+                state_file_name,
             )
+
             anything_modified |= persist_file_contents(
                 documentation, states_markdown_path
             )
+
+            # Keep track of new state files
+            new_state_files.add(states_markdown_path)
+
+        # Delete any deprecated state files
+        deprecated_files = existing_state_files.difference(new_state_files)
+        if deprecated_files:
+            delete_files(deprecated_files, delete_empty_dirs=True)
+            anything_modified |= True
+
         return anything_modified
 
     def _dependency_tree_formatter_for_gitbook(
@@ -980,6 +1006,9 @@ class CalculationDocumentationGenerator:
         views_dir_path = os.path.join(self.root_calc_docs_dir, "views")
         os.makedirs(views_dir_path, exist_ok=True)
 
+        existing_view_files: Set[str] = get_all_files_recursive(views_dir_path)
+        new_view_files: Set[str] = set()
+
         for view_key in self.all_views_to_document:
             # Generate documentation
             documentation = self._get_view_information(view_key)
@@ -990,14 +1019,25 @@ class CalculationDocumentationGenerator:
                 view_key.dataset_id,
             )
             os.makedirs(dataset_dir, exist_ok=True)
-
+            view_file_name = f"{view_key.table_id}.md"
             view_markdown_path = os.path.join(
                 dataset_dir,
-                f"{view_key.table_id}.md",
+                view_file_name,
             )
+
             anything_modified |= persist_file_contents(
                 documentation, view_markdown_path
             )
+
+            # Keep track of new view files
+            new_view_files.add(view_markdown_path)
+
+        # Delete deprecated view files
+        deprecated_files = existing_view_files.difference(new_view_files)
+        if deprecated_files:
+            delete_files(deprecated_files, delete_empty_dirs=True)
+            anything_modified |= True
+
         return anything_modified
 
     def _get_metric_information(self, metric: Type[RecidivizMetric]) -> str:
@@ -1111,11 +1151,12 @@ class CalculationDocumentationGenerator:
         metrics_dir_path = os.path.join(self.root_calc_docs_dir, "metrics")
         os.makedirs(metrics_dir_path, exist_ok=True)
 
+        existing_metric_files: Set[str] = get_all_files_recursive(metrics_dir_path)
+        new_metric_files: Set[str] = set()
+
         for generic_type, class_list in sorted(self.metrics_by_generic_types.items()):
-            generic_type_dir = os.path.join(
-                metrics_dir_path,
-                generic_type.lower(),
-            )
+            metric_dir_name = generic_type.lower()
+            generic_type_dir = os.path.join(metrics_dir_path, metric_dir_name)
             os.makedirs(generic_type_dir, exist_ok=True)
 
             for metric in class_list:
@@ -1123,13 +1164,24 @@ class CalculationDocumentationGenerator:
                 documentation = self._get_metric_information(metric)
 
                 # Write to markdown files
+                metric_file_name = f"{DATAFLOW_METRICS_TO_TABLES[metric]}.md"
                 metric_markdown_path = os.path.join(
                     generic_type_dir,
-                    f"{DATAFLOW_METRICS_TO_TABLES[metric]}.md",
+                    metric_file_name,
                 )
+
                 anything_modified |= persist_file_contents(
                     documentation, metric_markdown_path
                 )
+
+                # Keep track of new metric files
+                new_metric_files.add(metric_markdown_path)
+
+        # Delete deprecated metric files
+        deprecated_files = existing_metric_files.difference(new_metric_files)
+        if deprecated_files:
+            delete_files(deprecated_files, delete_empty_dirs=True)
+            anything_modified |= True
 
         return anything_modified
 
