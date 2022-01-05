@@ -19,7 +19,8 @@ expected=$(pipenv lock -r --dev \
     | sed 's/\[.*\]//' \
     | sed '/^[-#]/d' \
     | sed '/^$/d' \
-    | sed '/^(pip|setuptools)==.*/d' \
+    | sed '/^pip/d' \
+    | sed '/^setuptools/d' \
     | sort) || exit_on_fail
 # The installed command gets all installed packages in a requirements format, with the following transformations
 # - Replace any underscores with dashes
