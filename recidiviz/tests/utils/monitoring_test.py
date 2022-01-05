@@ -16,21 +16,24 @@
 # =============================================================================
 """Tests for utils/monitoring.py"""
 import threading
+from typing import Dict, Generator, List
 
 import pytest
 from mock import patch
+from mock.mock import MagicMock
+from opencensus.stats.measurement_map import MeasurementMap
 
 from recidiviz.utils import monitoring
 
 
 # pylint: disable=redefined-outer-name
 @pytest.fixture
-def mock_mmap():
+def mock_mmap() -> Generator[MeasurementMap, None, None]:
     with patch("recidiviz.utils.monitoring.stats") as mock:
         yield mock.return_value.stats_recorder.new_measurement_map.return_value
 
 
-def test_measurements(mock_mmap):
+def test_measurements(mock_mmap: MagicMock) -> None:
     tags = {"alice": "foo"}
     with monitoring.measurements(tags) as mmap:
         tags["bob"] = "bar"
@@ -39,7 +42,7 @@ def test_measurements(mock_mmap):
     assert_recorded_tags(mock_mmap, [{"alice": "foo", "bob": "bar"}])
 
 
-def test_measurements_with_exception(mock_mmap):
+def test_measurements_with_exception(mock_mmap: MagicMock) -> None:
     with pytest.raises(Exception):
         tags = {"alice": "foo"}
         with monitoring.measurements(tags) as mmap:
@@ -50,9 +53,9 @@ def test_measurements_with_exception(mock_mmap):
     assert_recorded_tags(mock_mmap, [{"alice": "foo", "bob": "bar"}])
 
 
-def test_measurements_with_region_decorator(mock_mmap):
+def test_measurements_with_region_decorator(mock_mmap: MagicMock) -> None:
     @monitoring.with_region_tag
-    def inner(_region_code):
+    def inner(_region_code: str) -> None:
         tags = {"alice": "foo"}
         with monitoring.measurements(tags) as mmap:
             tags["bob"] = "bar"
@@ -69,7 +72,7 @@ def test_tags_multiple_threads() -> None:
     results = {}
 
     @monitoring.with_region_tag
-    def inner(region_code: str):
+    def inner(region_code: str) -> None:
         results[region_code] = monitoring.context_tags()
 
     threads = [
@@ -89,7 +92,7 @@ def test_tags_multiple_threads() -> None:
     }
 
 
-def test_measurements_with_push_tags(mock_mmap) -> None:
+def test_measurements_with_push_tags(mock_mmap: MagicMock) -> None:
     tags = {"alice": "foo"}
 
     # inside of pushed tag
@@ -112,7 +115,7 @@ def test_measurements_with_push_tags(mock_mmap) -> None:
     )
 
 
-def test_measurements_with_push_tags_and_exception(mock_mmap) -> None:
+def test_measurements_with_push_tags_and_exception(mock_mmap: MagicMock) -> None:
     tags = {"alice": "foo"}
 
     # inside of pushed tag
@@ -137,7 +140,9 @@ def test_measurements_with_push_tags_and_exception(mock_mmap) -> None:
     )
 
 
-def assert_recorded_tags(mock_mmap, expected_tag_calls) -> None:
+def assert_recorded_tags(
+    mock_mmap: MagicMock, expected_tag_calls: List[Dict[str, str]]
+) -> None:
     calls = mock_mmap.record.call_args_list
     assert len(calls) == len(expected_tag_calls)
     for call, expected_tags in zip(calls, expected_tag_calls):
