@@ -49,6 +49,10 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_person_alias import StatePersonAliasType
+from recidiviz.common.constants.state.state_program_assignment import (
+    StateProgramAssignmentDischargeReason,
+    StateProgramAssignmentParticipationStatus,
+)
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactLocation,
@@ -2405,6 +2409,84 @@ class TestUsIdController(BaseDirectIngestControllerTests):
         # Assert
         self.assert_expected_db_people(expected_people)
 
+        #################################################################
+        # treatment_agnt_case_updt
+        #################################################################
+        # Arrange
+        pa_1_1 = entities.StateProgramAssignment.new_with_defaults(
+            external_id="1111-150",
+            state_code=_STATE_CODE_UPPER,
+            referring_agent=po_1,
+            participation_status=StateProgramAssignmentParticipationStatus.IN_PROGRESS,
+            participation_status_raw_text="TREATMENT",
+            discharge_reason=StateProgramAssignmentDischargeReason.EXTERNAL_UNKNOWN,
+            discharge_reason_raw_text="TREATMENT",
+            referral_date=datetime.date(2020, 3, 1),
+            start_date=datetime.date(2020, 3, 1),
+            person=person_1,
+        )
+
+        pa_1_2 = entities.StateProgramAssignment.new_with_defaults(
+            external_id="1111-162",
+            state_code=_STATE_CODE_UPPER,
+            referring_agent=po_1,
+            participation_status=StateProgramAssignmentParticipationStatus.DISCHARGED,
+            participation_status_raw_text="TREATMENT COMPLETION",
+            discharge_reason=StateProgramAssignmentDischargeReason.COMPLETED,
+            discharge_reason_raw_text="TREATMENT COMPLETION",
+            discharge_date=datetime.date(2020, 4, 1),
+            person=person_1,
+        )
+        person_1.program_assignments = [pa_1_1, pa_1_2]
+
+        pa_3_1 = entities.StateProgramAssignment.new_with_defaults(
+            external_id="3333-170",
+            state_code=_STATE_CODE_UPPER,
+            referring_agent=po_3,
+            participation_status=StateProgramAssignmentParticipationStatus.IN_PROGRESS,
+            participation_status_raw_text="TX",
+            discharge_reason=StateProgramAssignmentDischargeReason.EXTERNAL_UNKNOWN,
+            discharge_reason_raw_text="TX",
+            referral_date=datetime.date(2020, 6, 1),
+            start_date=datetime.date(2020, 6, 1),
+            person=person_3,
+        )
+        pa_3_2 = entities.StateProgramAssignment.new_with_defaults(
+            external_id="3333-180",
+            state_code=_STATE_CODE_UPPER,
+            referring_agent=po_3,
+            participation_status=StateProgramAssignmentParticipationStatus.EXTERNAL_UNKNOWN,
+            participation_status_raw_text="COMPLETE OTHER",
+            discharge_reason=StateProgramAssignmentDischargeReason.EXTERNAL_UNKNOWN,
+            discharge_reason_raw_text="COMPLETE OTHER",
+            referral_date=None,
+            start_date=None,
+            person=person_3,
+        )
+
+        person_3.program_assignments = [pa_3_1, pa_3_2]
+
+        pa_4_1 = entities.StateProgramAssignment.new_with_defaults(
+            external_id="4444-175",
+            state_code=_STATE_CODE_UPPER,
+            referring_agent=po_4,
+            participation_status=StateProgramAssignmentParticipationStatus.IN_PROGRESS,
+            participation_status_raw_text="SO TREATMENT",
+            discharge_reason=StateProgramAssignmentDischargeReason.EXTERNAL_UNKNOWN,
+            discharge_reason_raw_text="SO TREATMENT",
+            referral_date=datetime.date(2021, 11, 17),
+            start_date=datetime.date(2021, 11, 17),
+            person=person_4,
+        )
+
+        person_4.program_assignments = [pa_4_1]
+
+        # Act
+        self._run_ingest_job_for_filename("treatment_agnt_case_updt.csv")
+
+        # Assert
+        self.assert_expected_db_people(expected_people)
+
         ######################################
         # FULL RERUN FOR IDEMPOTENCE
         ######################################
@@ -2414,7 +2496,8 @@ class TestUsIdController(BaseDirectIngestControllerTests):
         # TODO(#2492): Until we implement proper cleanup of dangling placeholders, reruns of certain files will create
         #  new dangling placeholders with each rerun.
         self.assert_expected_db_people(
-            expected_people, ignore_dangling_placeholders=True
+            expected_people,
+            ignore_dangling_placeholders=True,
         )
 
     def test_splitting_violation_response_row_happy_path(self) -> None:

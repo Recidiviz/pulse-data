@@ -633,6 +633,7 @@ class UsIdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             "early_discharge_incarceration_sentence_deleted_rows",
             "early_discharge_supervision_sentence_deleted_rows",
             "sprvsn_cntc_v2",
+            "treatment_agnt_case_updt",
         ]
         return shared_file_tags
 
