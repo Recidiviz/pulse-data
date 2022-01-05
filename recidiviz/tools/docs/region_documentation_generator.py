@@ -32,6 +32,7 @@ from typing import List, Optional, Sequence, Set
 
 import recidiviz
 from recidiviz.common.constants.states import StateCode
+from recidiviz.common.file_system import delete_files, get_all_files_recursive
 from recidiviz.ingest.direct import regions as regions_module
 from recidiviz.ingest.direct.direct_ingest_documentation_generator import (
     STATE_RAW_DATA_FILE_HEADER_PATH,
@@ -54,20 +55,35 @@ def generate_raw_data_documentation_for_region(region_code: str) -> bool:
     Returns True if files were modified, False otherwise.
     """
     documentation_generator = DirectIngestDocumentationGenerator()
+    markdown_dir_path = os.path.join(INGEST_CATALOG_ROOT, region_code.lower())
+
     docs_per_file = documentation_generator.generate_raw_file_docs_for_region(
         region_code.lower()
     )
-    markdown_dir_path = os.path.join(INGEST_CATALOG_ROOT, region_code.lower())
-    os.makedirs(os.path.join(markdown_dir_path, "raw_data"), exist_ok=True)
+
+    raw_data_dir = os.path.join(markdown_dir_path, "raw_data")
+    existing_raw_data_docs_for_region: Set[str] = get_all_files_recursive(raw_data_dir)
+    os.makedirs(raw_data_dir, exist_ok=True)
+
+    new_docs_for_region: Set[str] = set()
 
     anything_modified = False
-    for file_path, file_contents in docs_per_file.items():
-        if file_path == STATE_RAW_DATA_FILE_HEADER_PATH:
-            markdown_file_path = os.path.join(markdown_dir_path, file_path)
+    for file_name, file_contents in docs_per_file.items():
+        if file_name == STATE_RAW_DATA_FILE_HEADER_PATH:
+            markdown_file_path = os.path.join(markdown_dir_path, file_name)
         else:
-            markdown_file_path = os.path.join(markdown_dir_path, "raw_data", file_path)
+            markdown_file_path = os.path.join(raw_data_dir, file_name)
 
         anything_modified |= persist_file_contents(file_contents, markdown_file_path)
+
+        # Keep track of new docs
+        new_docs_for_region.add(markdown_file_path)
+
+    # Delete any deprecated files
+    deprecated_files = existing_raw_data_docs_for_region.difference(new_docs_for_region)
+    if deprecated_files:
+        delete_files(deprecated_files, delete_empty_dirs=True)
+        anything_modified |= True
 
     return anything_modified
 
