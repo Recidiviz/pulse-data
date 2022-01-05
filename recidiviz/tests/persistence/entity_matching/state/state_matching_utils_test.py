@@ -38,7 +38,6 @@ from recidiviz.persistence.entity_matching.state.state_matching_utils import (
     get_total_entities_of_cls,
     nonnull_fields_entity_match,
     read_db_entity_trees_of_cls_to_merge,
-    read_persons,
     remove_child_from_entity,
 )
 from recidiviz.persistence.errors import EntityMatchingError
@@ -580,20 +579,6 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
                 field_index=self.field_index,
             )
         )
-
-    def test_readPersons_default(self) -> None:
-        schema_person = schema.StatePerson(person_id=1, state_code=_STATE_CODE)
-        schema_person_2 = schema.StatePerson(person_id=2, state_code=_STATE_CODE)
-        with SessionFactory.using_database(
-            self.database_key, autocommit=False
-        ) as session:
-            session.add(schema_person)
-            session.add(schema_person_2)
-            session.commit()
-
-            expected_people = [schema_person, schema_person_2]
-            people = read_persons(session, _STATE_CODE, [])
-            self.assert_schema_object_lists_equal(expected_people, people)
 
     def test_isPlaceholder(self) -> None:
         entity = schema.StateIncarcerationSentence(

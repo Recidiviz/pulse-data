@@ -72,6 +72,7 @@ from recidiviz.persistence.entity_matching.state.state_matching_utils import (
     get_total_entities_of_cls,
     is_match,
     is_multiple_id_entity,
+    read_potential_match_db_persons,
     remove_child_from_entity,
 )
 from recidiviz.persistence.errors import (
@@ -353,8 +354,11 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         )
 
         check_all_objs_have_type(ingested_db_persons, schema.StatePerson)
-        db_persons = self.state_matching_delegate.read_potential_match_db_persons(
-            session=session, ingested_persons=ingested_db_persons
+        db_persons = read_potential_match_db_persons(
+            session=session,
+            ingested_persons=ingested_db_persons,
+            region_code=self.state_matching_delegate.get_region_code(),
+            field_index=self.field_index,
         )
 
         if self.log_entity_counts:

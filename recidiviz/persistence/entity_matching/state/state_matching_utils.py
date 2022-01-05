@@ -474,20 +474,6 @@ def db_id_or_object_id(entity: DatabaseEntity) -> int:
     return entity.get_id() if entity.get_id() else id(entity)
 
 
-def read_persons(
-    session: Session, region: str, ingested_people: List[schema.StatePerson]
-) -> List[schema.StatePerson]:
-    """Looks up all people necessary for entity matching based on the provided
-    |region| and |ingested_people|.
-    """
-    check_all_objs_have_type(ingested_people, schema.StatePerson)
-
-    # TODO(#1868): more specific query
-    db_people = dao.read_people(session)
-    logging.info("Read [%d] people from DB in region [%s]", len(db_people), region)
-    return db_people
-
-
 def read_db_entity_trees_of_cls_to_merge(
     session: Session,
     state_code: str,
@@ -521,6 +507,37 @@ def read_db_entity_trees_of_cls_to_merge(
             external_ids_map[tree.entity.external_id].append(tree)
 
     return [tree_list for _, tree_list in external_ids_map.items()]
+
+
+def read_potential_match_db_persons(
+    session: Session,
+    region_code: str,
+    ingested_persons: List[schema.StatePerson],
+    field_index: CoreEntityFieldIndex,
+) -> List[schema.StatePerson]:
+    """Reads and returns all persons from the DB that are needed for entity matching,
+    given the |ingested_persons|.
+    """
+    root_external_ids = get_external_ids_of_cls(
+        ingested_persons, schema.StatePerson, field_index
+    )
+    logging.info(
+        "[Entity Matching] Reading entities of class schema.StatePerson using [%s] "
+        "external ids",
+        len(root_external_ids),
+    )
+    persons_by_root_entity = dao.read_people_by_cls_external_ids(
+        session, region_code, schema.StatePerson, root_external_ids
+    )
+
+    deduped_people = []
+    seen_person_ids: Set[int] = set()
+    for person in persons_by_root_entity:
+        if person.person_id not in seen_person_ids:
+            deduped_people.append(person)
+            seen_person_ids.add(person.person_id)
+
+    return deduped_people
 
 
 def get_or_create_placeholder_child(
