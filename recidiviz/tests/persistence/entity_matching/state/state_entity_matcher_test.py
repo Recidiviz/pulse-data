@@ -21,6 +21,7 @@ from typing import Any, List, Tuple
 
 import attr
 from mock import patch
+from more_itertools import one
 
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.person_characteristics import Ethnicity, Gender, Race
@@ -2227,182 +2228,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         self.assert_no_errors(matched_entities)
         self.assertEqual(2, matched_entities.total_root_entities)
 
-    def test_matchPersons_dbMatchesMultipleIngestedPlaceholders_success(self) -> None:
-        db_person = generate_person(
-            person_id=_ID, full_name=_FULL_NAME, state_code=_STATE_CODE
-        )
-        db_supervision_sentence = generate_supervision_sentence(
-            person=db_person,
-            supervision_sentence_id=_ID,
-            status=StateSentenceStatus.SERVING.value,
-            external_id=_EXTERNAL_ID,
-            state_code=_STATE_CODE,
-            min_length_days=0,
-        )
-        entity_supervision_sentence = self.to_entity(db_supervision_sentence)
-        db_supervision_sentence_another = generate_supervision_sentence(
-            person=db_person,
-            supervision_sentence_id=_ID_2,
-            status=StateSentenceStatus.SERVING.value,
-            external_id=_EXTERNAL_ID_2,
-            state_code=_STATE_CODE,
-            min_length_days=10,
-        )
-        entity_supervision_sentence_another = self.to_entity(
-            db_supervision_sentence_another
-        )
-        db_external_id = generate_external_id(
-            person_external_id_id=_ID, state_code=_STATE_CODE, external_id=_EXTERNAL_ID
-        )
-        entity_external_id = self.to_entity(db_external_id)
-        db_person.external_ids = [db_external_id]
-        db_person.supervision_sentences = [
-            db_supervision_sentence,
-            db_supervision_sentence_another,
-        ]
-        entity_person = self.to_entity(db_person)
-
-        self._commit_to_db(db_person)
-
-        supervision_sentence_updated = attr.evolve(
-            entity_supervision_sentence,
-            supervision_sentence_id=None,
-            min_length_days=1,
-        )
-        placeholder_person = StatePerson.new_with_defaults(
-            state_code=_STATE_CODE,
-            supervision_sentences=[supervision_sentence_updated],
-        )
-
-        supervision_sentence_another_updated = attr.evolve(
-            entity_supervision_sentence_another,
-            supervision_sentence_id=None,
-            min_length_days=11,
-        )
-        placeholder_person_another = StatePerson.new_with_defaults(
-            state_code=_STATE_CODE,
-            supervision_sentences=[supervision_sentence_another_updated],
-        )
-
-        expected_supervision_sentence = attr.evolve(
-            supervision_sentence_updated, supervision_sentence_id=_ID
-        )
-        expected_supervision_sentence_another = attr.evolve(
-            supervision_sentence_another_updated, supervision_sentence_id=_ID_2
-        )
-
-        expected_external_id = attr.evolve(entity_external_id)
-        expected_person = attr.evolve(
-            entity_person,
-            external_ids=[expected_external_id],
-            supervision_sentences=[
-                expected_supervision_sentence,
-                expected_supervision_sentence_another,
-            ],
-        )
-
-        # Act 1 - Match
-        session = self._session()
-        matched_entities = self._match(
-            session, ingested_people=[placeholder_person, placeholder_person_another]
-        )
-
-        # Assert 1 - Match
-        self.assert_people_match_pre_and_post_commit(
-            [expected_person],
-            matched_entities.people,
-            session,
-        )
-        self.assert_no_errors(matched_entities)
-        self.assertEqual(2, matched_entities.total_root_entities)
-
-    def test_matchPersons_multipleIngestedPersonsMatchToPlaceholderDb(self) -> None:
-        db_person = generate_person(
-            person_id=_ID, full_name=_FULL_NAME, state_code=_STATE_CODE
-        )
-        db_supervision_sentence = generate_supervision_sentence(
-            person=db_person,
-            supervision_sentence_id=_ID,
-            status=StateSentenceStatus.SERVING.value,
-            external_id=_EXTERNAL_ID,
-            state_code=_STATE_CODE,
-            min_length_days=0,
-        )
-        entity_supervision_sentence = self.to_entity(db_supervision_sentence)
-        db_supervision_sentence_another = generate_supervision_sentence(
-            person=db_person,
-            supervision_sentence_id=_ID_2,
-            status=StateSentenceStatus.SERVING.value,
-            external_id=_EXTERNAL_ID_2,
-            state_code=_STATE_CODE,
-            min_length_days=10,
-        )
-        entity_supervision_sentence_another = self.to_entity(
-            db_supervision_sentence_another
-        )
-        db_external_id = generate_external_id(
-            person_external_id_id=_ID, state_code=_STATE_CODE, external_id=_EXTERNAL_ID
-        )
-        entity_external_id = self.to_entity(db_external_id)
-        db_person.external_ids = [db_external_id]
-        db_person.supervision_sentences = [
-            db_supervision_sentence,
-            db_supervision_sentence_another,
-        ]
-        entity_person = self.to_entity(db_person)
-
-        self._commit_to_db(db_person)
-
-        supervision_sentence_updated = attr.evolve(
-            entity_supervision_sentence,
-            supervision_sentence_id=None,
-            min_length_days=1,
-        )
-        placeholder_person = StatePerson.new_with_defaults(
-            state_code=_STATE_CODE,
-            supervision_sentences=[supervision_sentence_updated],
-        )
-
-        supervision_sentence_another_updated = attr.evolve(
-            entity_supervision_sentence_another,
-            supervision_sentence_id=None,
-            min_length_days=11,
-        )
-        placeholder_person_another = StatePerson.new_with_defaults(
-            supervision_sentences=[supervision_sentence_another_updated],
-            state_code=_STATE_CODE,
-        )
-
-        expected_supervision_sentence = attr.evolve(
-            supervision_sentence_updated, supervision_sentence_id=_ID
-        )
-        expected_supervision_sentence_another = attr.evolve(
-            supervision_sentence_another_updated, supervision_sentence_id=_ID_2
-        )
-        expected_external_id = attr.evolve(entity_external_id)
-        expected_person = attr.evolve(
-            entity_person,
-            external_ids=[expected_external_id],
-            supervision_sentences=[
-                expected_supervision_sentence,
-                expected_supervision_sentence_another,
-            ],
-        )
-
-        # Act 1 - Match
-        session = self._session()
-        matched_entities = self._match(
-            session,
-            ingested_people=[placeholder_person, placeholder_person_another],
-        )
-
-        # Assert 1 - Match
-        self.assert_people_match_pre_and_post_commit(
-            [expected_person], matched_entities.people, session
-        )
-        self.assert_no_errors(matched_entities)
-        self.assertEqual(2, matched_entities.total_root_entities)
-
     def test_matchPersons_ingestedPlaceholderSplits(self) -> None:
         db_person = generate_person(
             person_id=_ID, full_name=_FULL_NAME, state_code=_STATE_CODE
@@ -2489,12 +2314,19 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
     def test_matchPersons_multipleHolesInIngestedGraph(self) -> None:
         # Arrange 1 - Match
         db_person = generate_person(full_name=_FULL_NAME, state_code=_STATE_CODE)
+        db_court_case = generate_court_case(
+            person=db_person,
+            external_id=_EXTERNAL_ID,
+            state_code=_STATE_CODE,
+            county_code="county_code",
+        )
+        entity_court_case = self.to_entity(db_court_case)
         db_charge = generate_charge(
             person=db_person,
             status=ChargeStatus.PRESENT_WITHOUT_INFO.value,
             external_id=_EXTERNAL_ID,
             state_code=_STATE_CODE,
-            county_code="X",
+            court_case=db_court_case,
         )
         entity_charge = self.to_entity(db_charge)
         db_supervision_sentence = generate_supervision_sentence(
@@ -2511,21 +2343,27 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         self._commit_to_db(db_person)
 
-        charge_updated = attr.evolve(
-            entity_charge,
-            is_violent=True,
+        court_case_updated = attr.evolve(
+            entity_court_case, county_code="county_code_updated"
+        )
+        placeholder_charge = StateCharge.new_with_defaults(
+            status=ChargeStatus.PRESENT_WITHOUT_INFO,
+            state_code=_STATE_CODE,
+            court_case=court_case_updated,
         )
         placeholder_supervision_sentence = StateSupervisionSentence.new_with_defaults(
             state_code=_STATE_CODE,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            charges=[charge_updated],
+            charges=[placeholder_charge],
         )
-        placeholder_person = StatePerson.new_with_defaults(
+        person = StatePerson.new_with_defaults(
             state_code=_STATE_CODE,
+            external_ids=[attr.evolve(entity_external_id)],
             supervision_sentences=[placeholder_supervision_sentence],
         )
 
-        expected_charge = attr.evolve(charge_updated, charge_id=_ID)
+        expected_court_case = attr.evolve(court_case_updated)
+        expected_charge = attr.evolve(entity_charge, court_case=expected_court_case)
         expected_supervision_sentence = attr.evolve(
             entity_supervision_sentence,
             charges=[expected_charge],
@@ -2539,7 +2377,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         # Act 1 - Match
         session = self._session()
-        matched_entities = self._match(session, ingested_people=[placeholder_person])
+        matched_entities = self._match(session, ingested_people=[person])
 
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
@@ -2622,96 +2460,24 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         self.assert_no_errors(matched_entities)
         self.assertEqual(1, matched_entities.total_root_entities)
 
-    def test_matchPersons_holesInBothGraphs_ingestedPersonPlaceholder(self) -> None:
-        db_person = generate_person(full_name=_FULL_NAME, state_code=_STATE_CODE)
-        db_charge = generate_charge(
-            person=db_person,
-            external_id=_EXTERNAL_ID,
-            state_code=_STATE_CODE,
-        )
-        entity_charge = self.to_entity(db_charge)
-        db_charge_another = generate_charge(
-            person=db_person,
-            external_id=_EXTERNAL_ID_2,
-            state_code=_STATE_CODE,
-        )
-        entity_charge_another = self.to_entity(db_charge_another)
-        db_placeholder_sentence = generate_supervision_sentence(
-            person=db_person,
-            charges=[
-                db_charge,
-                db_charge_another,
-            ],
-        )
-        entity_placeholder_sentence = self.to_entity(db_placeholder_sentence)
-
-        db_external_id = generate_external_id(
-            state_code=_STATE_CODE, external_id=_EXTERNAL_ID
-        )
-        entity_external_id = self.to_entity(db_external_id)
-        db_person.external_ids = [db_external_id]
-        db_person.supervision_sentences = [db_placeholder_sentence]
-        entity_person = self.to_entity(db_person)
-
-        self._commit_to_db(db_person)
-
-        charge_updated = attr.evolve(
-            entity_charge,
-            county_code="X",
-        )
-        charge_another_updated = attr.evolve(
-            entity_charge_another,
-            county_code="Y",
-        )
+    def test_matchPersons_ingestedPersonPlaceholder_throws(self) -> None:
         sentence_new = StateSupervisionSentence.new_with_defaults(
             external_id=_EXTERNAL_ID,
             state_code=_STATE_CODE,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            charges=[charge_updated],
-        )
-        sentence_new_another = StateSupervisionSentence.new_with_defaults(
-            external_id=_EXTERNAL_ID_2,
-            state_code=_STATE_CODE,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            charges=[charge_another_updated],
         )
 
         placeholder_person = StatePerson.new_with_defaults(
-            supervision_sentences=[sentence_new, sentence_new_another],
+            supervision_sentences=[sentence_new],
             state_code=_STATE_CODE,
         )
 
-        expected_charge = attr.evolve(charge_updated)
-        expected_charge_another = attr.evolve(charge_another_updated)
-        expected_sentence = attr.evolve(sentence_new, charges=[expected_charge])
-        expected_sentence_another = attr.evolve(
-            sentence_new_another,
-            charges=[expected_charge_another],
-        )
-        expected_sentence_placeholder = attr.evolve(
-            entity_placeholder_sentence, charges=[]
-        )
-        expected_external_id = attr.evolve(entity_external_id)
-        expected_person = attr.evolve(
-            entity_person,
-            external_ids=[expected_external_id],
-            supervision_sentences=[
-                expected_sentence,
-                expected_sentence_another,
-                expected_sentence_placeholder,
-            ],
-        )
-
-        # Act 1 - Match
         session = self._session()
-        matched_entities = self._match(session, ingested_people=[placeholder_person])
-
-        # Assert 1 - Match
-        self.assert_people_match_pre_and_post_commit(
-            [expected_person], matched_entities.people, session
-        )
-        self.assert_no_errors(matched_entities)
-        self.assertEqual(2, matched_entities.total_root_entities)
+        with self.assertRaisesRegex(
+            ValueError,
+            "Ingested StatePerson objects must have one or more assigned external ids.",
+        ):
+            _ = self._match(session, ingested_people=[placeholder_person])
 
     def test_matchPersons_holesInBothGraphs_dbPersonPlaceholder(self) -> None:
         db_placeholder_person = generate_person(state_code=_STATE_CODE)
@@ -2937,7 +2703,11 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             charges=[charge_merged],
         )
+        external_id = StatePersonExternalId.new_with_defaults(
+            external_id=_EXTERNAL_ID, state_code=_STATE_CODE, id_type=_ID_TYPE
+        )
         person = StatePerson.new_with_defaults(
+            external_ids=[external_id],
             incarceration_sentences=[sentence, sentence_2, sentence_3],
             state_code=_STATE_CODE,
         )
@@ -2946,8 +2716,10 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         expected_sentence = attr.evolve(sentence, charges=[expected_charge])
         expected_sentence_2 = attr.evolve(sentence_2, charges=[expected_charge])
         expected_sentence_3 = attr.evolve(sentence_3, charges=[expected_charge])
+        expected_external_id = attr.evolve(external_id)
         expected_person = attr.evolve(
             person,
+            external_ids=[expected_external_id],
             incarceration_sentences=[
                 expected_sentence,
                 expected_sentence_2,
@@ -3012,7 +2784,11 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             charges=[charge_2],
         )
+        external_id = StatePersonExternalId.new_with_defaults(
+            external_id=_EXTERNAL_ID, state_code=_STATE_CODE, id_type=_ID_TYPE
+        )
         person = StatePerson.new_with_defaults(
+            external_ids=[external_id],
             incarceration_sentences=[sentence, sentence_2, sentence_3],
             state_code=_STATE_CODE,
         )
@@ -3023,8 +2799,10 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         expected_sentence = attr.evolve(sentence, charges=[expected_charge])
         expected_sentence_2 = attr.evolve(sentence_2, charges=[expected_charge])
         expected_sentence_3 = attr.evolve(sentence_3, charges=[expected_charge_2])
+        expected_external_id = attr.evolve(external_id)
         expected_person = attr.evolve(
             person,
+            external_ids=[expected_external_id],
             incarceration_sentences=[
                 expected_sentence,
                 expected_sentence_2,
@@ -3086,8 +2864,13 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             charges=[charge],
         )
+        external_id = StatePersonExternalId.new_with_defaults(
+            external_id=_EXTERNAL_ID, state_code=_STATE_CODE, id_type=_ID_TYPE
+        )
         person = StatePerson.new_with_defaults(
-            incarceration_sentences=[sentence, sentence_2], state_code=_STATE_CODE
+            external_ids=[external_id],
+            incarceration_sentences=[sentence, sentence_2],
+            state_code=_STATE_CODE,
         )
 
         # `different_court_case` was not successfully merged. An error is logged
@@ -3097,9 +2880,10 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         expected_charge = attr.evolve(charge, court_case=expected_court_case)
         expected_sentence = attr.evolve(sentence, charges=[expected_charge])
         expected_sentence_2 = attr.evolve(sentence_2, charges=[expected_charge])
-
+        expected_external_id = attr.evolve(external_id)
         expected_person = attr.evolve(
             person,
+            external_ids=[expected_external_id],
             incarceration_sentences=[expected_sentence, expected_sentence_2],
         )
 
@@ -3158,6 +2942,13 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         person = StatePerson.new_with_defaults(
             state_code=_STATE_CODE,
+            external_ids=[
+                StatePersonExternalId.new_with_defaults(
+                    state_code=_STATE_CODE,
+                    external_id=_EXTERNAL_ID,
+                    id_type=_ID_TYPE,
+                )
+            ],
             incarceration_sentences=[
                 StateIncarcerationSentence.new_with_defaults(
                     state_code=_STATE_CODE,
@@ -3240,6 +3031,13 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         person = StatePerson.new_with_defaults(
             state_code=_STATE_CODE,
+            external_ids=[
+                StatePersonExternalId.new_with_defaults(
+                    state_code=_STATE_CODE,
+                    external_id=_EXTERNAL_ID,
+                    id_type=_ID_TYPE,
+                )
+            ],
             incarceration_sentences=[
                 StateIncarcerationSentence.new_with_defaults(
                     state_code=_STATE_CODE,
@@ -3306,7 +3104,11 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             charges=[charge_merged],
         )
+        external_id = StatePersonExternalId.new_with_defaults(
+            external_id=_EXTERNAL_ID, state_code=_STATE_CODE, id_type=_ID_TYPE
+        )
         person = StatePerson.new_with_defaults(
+            external_ids=[external_id],
             incarceration_sentences=[sentence, sentence_2, sentence_3],
             state_code=_STATE_CODE,
         )
@@ -3315,7 +3117,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             state_code=_STATE_CODE,
             external_ids=[
                 StatePersonExternalId.new_with_defaults(
-                    state_code=_STATE_CODE, external_id=_EXTERNAL_ID, id_type=_ID_TYPE
+                    state_code=_STATE_CODE, external_id=_EXTERNAL_ID_2, id_type=_ID_TYPE
                 )
             ],
         )
@@ -3324,8 +3126,10 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         expected_sentence = attr.evolve(sentence, charges=[expected_charge])
         expected_sentence_2 = attr.evolve(sentence_2, charges=[expected_charge])
         expected_sentence_3 = attr.evolve(sentence_3, charges=[expected_charge])
+        expected_external_id = attr.evolve(external_id)
         expected_person = attr.evolve(
             person,
+            external_ids=[expected_external_id],
             incarceration_sentences=[
                 expected_sentence,
                 expected_sentence_2,
@@ -3348,7 +3152,11 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         matched_entities = self._match(session, input_people)
 
         # Assert 1 - Match
-        found_person = matched_entities.people[0]
+        found_person = one(
+            p
+            for p in matched_entities.people
+            if p.external_ids[0].external_id == _EXTERNAL_ID
+        )
         found_charge = found_person.incarceration_sentences[0].charges[0]
         found_charge_2 = found_person.incarceration_sentences[1].charges[0]
         found_charge_3 = found_person.incarceration_sentences[2].charges[0]
@@ -3439,139 +3247,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             [expected_person],
             matched_entities.people,
             session,
-        )
-
-    def test_parentChildLinkAtRootDiscoveredAfterBothWritten(self) -> None:
-        # Arrange 1 - Match
-        db_placeholder_person = generate_person(person_id=_ID, state_code=_STATE_CODE)
-        db_sentence = generate_supervision_sentence(
-            person=db_placeholder_person,
-            status=StateSentenceStatus.EXTERNAL_UNKNOWN.value,
-            external_id=_EXTERNAL_ID,
-            state_code=_STATE_CODE,
-        )
-        entity_sentence = self.to_entity(db_sentence)
-        db_placeholder_person.supervision_sentences = [db_sentence]
-        entity_placeholder_person = self.to_entity(db_placeholder_person)
-
-        db_external_id = generate_external_id(
-            state_code=_STATE_CODE,
-            external_id=_EXTERNAL_ID,
-            id_type=_ID_TYPE,
-        )
-        entity_external_id = self.to_entity(db_external_id)
-        db_person = generate_person(
-            person_id=_ID_2, external_ids=[db_external_id], state_code=_STATE_CODE
-        )
-        entity_person = self.to_entity(db_person)
-
-        self._commit_to_db(db_placeholder_person, db_person)
-
-        external_id = attr.evolve(entity_external_id)
-        sentence = attr.evolve(entity_sentence, max_length_days=129)
-        person = attr.evolve(
-            entity_person,
-            full_name=_FULL_NAME,
-            external_ids=[external_id],
-            supervision_sentences=[sentence],
-            state_code=_STATE_CODE,
-        )
-
-        expected_sentence = attr.evolve(sentence)
-        expected_person = attr.evolve(
-            person,
-            person_id=entity_person.person_id,
-            state_code=entity_person.state_code,
-            supervision_sentences=[expected_sentence],
-        )
-        expected_placeholder_person = self.to_entity(
-            generate_person(
-                person_id=entity_placeholder_person.person_id,
-                state_code=entity_placeholder_person.state_code,
-            ),
-        )
-        expected_placeholder_sentence = self.to_entity(
-            generate_supervision_sentence(
-                person=db_placeholder_person,
-                state_code=_STATE_CODE,
-            )
-        )
-        expected_placeholder_person.supervision_sentences = [
-            expected_placeholder_sentence
-        ]
-
-        # Act 1 - Match
-        session = self._session()
-        matched_entities = self._match(session, [person])
-
-        # Assert 1 - Match
-        self.assert_people_match_pre_and_post_commit(
-            [expected_person, expected_placeholder_person],
-            matched_entities.people,
-            session,
-        )
-
-    def test_parentChildLinkInSubtreeDiscoveredAfterBothWritten(self) -> None:
-        # Arrange 1 - Match
-        db_person = generate_person(state_code=_STATE_CODE)
-        db_external_id = generate_external_id(
-            state_code=_STATE_CODE, external_id=_EXTERNAL_ID, id_type=_ID_TYPE
-        )
-        db_sentence = generate_incarceration_sentence(
-            person=db_person,
-            status=StateSentenceStatus.EXTERNAL_UNKNOWN.value,
-            external_id=_EXTERNAL_ID,
-            state_code=_STATE_CODE,
-        )
-        entity_sentence = self.to_entity(db_sentence)
-        db_charge = generate_charge(
-            person=db_person,
-            external_id=_EXTERNAL_ID,
-            state_code=_STATE_CODE,
-            status=ChargeStatus.PRESENT_WITHOUT_INFO.value,
-        )
-        entity_charge = self.to_entity(db_charge)
-        db_placeholder_sentence = generate_incarceration_sentence(
-            person=db_person, charges=[db_charge]
-        )
-        db_person.external_ids = [db_external_id]
-        db_person.incarceration_sentences = [db_sentence, db_placeholder_sentence]
-        entity_person = self.to_entity(db_person)
-
-        self._commit_to_db(db_person)
-
-        charge = attr.evolve(entity_charge, county_code="Y")
-        sentence = attr.evolve(
-            entity_sentence,
-            date_imposed=datetime.date(1999, 1, 19),
-            charges=[charge],
-        )
-        placeholder_person = StatePerson.new_with_defaults(
-            state_code=_STATE_CODE, incarceration_sentences=[sentence]
-        )
-
-        expected_charge = attr.evolve(charge)
-        expected_sentence = attr.evolve(sentence, charges=[expected_charge])
-        expected_placeholder_sentence = StateIncarcerationSentence.new_with_defaults(
-            state_code=_STATE_CODE,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            charges=[expected_charge],
-        )
-        expected_person = attr.evolve(
-            entity_person,
-            incarceration_sentences=[
-                expected_sentence,
-                expected_placeholder_sentence,
-            ],
-        )
-
-        # Act 1 - Match
-        session = self._session()
-        matched_entities = self._match(session, [placeholder_person])
-
-        # Assert 1 - Match
-        self.assert_people_match_pre_and_post_commit(
-            [expected_person], matched_entities.people, session
         )
 
     def test_databaseCleanup_dontMergeMultiParentEntities(self) -> None:

@@ -35,12 +35,10 @@ from recidiviz.persistence.entity_matching.state.state_matching_utils import (
     generate_child_entity_trees,
     get_all_entity_trees_of_cls,
     get_external_ids_of_cls,
-    get_root_entity_cls,
     get_total_entities_of_cls,
     nonnull_fields_entity_match,
     read_db_entity_trees_of_cls_to_merge,
     read_persons,
-    read_persons_by_root_entity_cls,
     remove_child_from_entity,
 )
 from recidiviz.persistence.errors import EntityMatchingError
@@ -374,34 +372,6 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
         )
         self.assertEqual(sentence.charges, [charge])
 
-    def test_getRootEntity(self) -> None:
-        # Arrange
-        violation_response = schema.StateSupervisionViolationResponse(
-            external_id=_EXTERNAL_ID
-        )
-        placeholder_violation = schema.StateSupervisionViolation(
-            supervision_violation_responses=[violation_response]
-        )
-        person = schema.StatePerson(supervision_violations=[placeholder_violation])
-
-        # Act
-        root_entity_cls = get_root_entity_cls([person], field_index=self.field_index)
-
-        # Assert
-        self.assertEqual(schema.StateSupervisionViolationResponse, root_entity_cls)
-
-    def test_getRootEntity_emptyList_raises(self) -> None:
-        with self.assertRaises(EntityMatchingError):
-            get_root_entity_cls([], field_index=self.field_index)
-
-    def test_getRootEntity_allPlaceholders_raises(self) -> None:
-        placeholder_incarceration_period = schema.StateIncarcerationPeriod()
-        placeholder_person = schema.StatePerson(
-            incarceration_periods=[placeholder_incarceration_period]
-        )
-        with self.assertRaises(EntityMatchingError):
-            get_root_entity_cls([placeholder_person], field_index=self.field_index)
-
     def test_getAllEntityTreesOfCls(self) -> None:
         incarceration_sentence = schema.StateIncarcerationSentence(
             incarceration_sentence_id=_ID
@@ -659,25 +629,6 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
 
         entity.incarceration_type_raw_text = "PRISON"
         self.assertFalse(is_placeholder(entity, field_index=self.field_index))
-
-    def test_readPersons_unexpectedRoot_raises(self) -> None:
-        ingested_supervision_sentence = schema.StateSupervisionSentence(
-            external_id=_EXTERNAL_ID
-        )
-        ingested_person = schema.StatePerson(
-            supervision_sentences=[ingested_supervision_sentence]
-        )
-
-        with self.assertRaises(ValueError):
-            with SessionFactory.using_database(
-                self.database_key, autocommit=False
-            ) as session:
-                read_persons_by_root_entity_cls(
-                    session,
-                    _STATE_CODE.lower(),
-                    [ingested_person],
-                    field_index=self.field_index,
-                )
 
     def test_readDbEntitiesOfClsToMerge(self) -> None:
         person_1 = schema.StatePerson(person_id=1, state_code=_STATE_CODE)

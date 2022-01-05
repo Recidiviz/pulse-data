@@ -467,48 +467,6 @@ def _get_all_entity_trees_of_cls_helper(
             )
 
 
-def get_root_entity_cls(
-    ingested_persons: List[schema.StatePerson], field_index: CoreEntityFieldIndex
-) -> Type[DatabaseEntity]:
-    """
-    Attempts to find the highest entity class within the |ingested_persons| for
-    which objects are not placeholders. Returns the class if found, otherwise
-    raises.
-
-    Note: This should only be used with persons ingested from a region directly
-    (and not with persons post entity matching), as this function uses DFS to
-    find the root entity cls. This therefore assumes that a) the passed in
-    StatePersons are trees and not DAGs (one parent per entity) and b) that the
-    structure of the passed in graph is symmetrical.
-    """
-    check_all_objs_have_type(ingested_persons, schema.StatePerson)
-
-    root_cls = None
-    if ingested_persons:
-        root_cls = _get_root_entity_helper(ingested_persons[0], field_index)
-    if root_cls is None:
-        raise EntityMatchingError(
-            "Could not find root class for ingested persons", "state_person"
-        )
-    return root_cls
-
-
-def _get_root_entity_helper(
-    entity: DatabaseEntity, field_index: CoreEntityFieldIndex
-) -> Optional[Type[DatabaseEntity]]:
-    if not is_placeholder(entity, field_index):
-        return entity.__class__
-
-    for field_name in field_index.get_fields_with_non_empty_values(
-        entity, EntityFieldType.FORWARD_EDGE
-    ):
-        field = entity.get_field_as_list(field_name)[0]
-        result = _get_root_entity_helper(field, field_index)
-        if result is not None:
-            return result
-    return None
-
-
 def db_id_or_object_id(entity: DatabaseEntity) -> int:
     """If present, returns the primary key field from the provided |entity|,
     otherwise provides the object id.
@@ -563,46 +521,6 @@ def read_db_entity_trees_of_cls_to_merge(
             external_ids_map[tree.entity.external_id].append(tree)
 
     return [tree_list for _, tree_list in external_ids_map.items()]
-
-
-def read_persons_by_root_entity_cls(
-    session: Session,
-    region: str,
-    ingested_people: List[schema.StatePerson],
-    field_index: CoreEntityFieldIndex,
-) -> List[schema.StatePerson]:
-    """Looks up all people necessary for entity matching based on the provided
-    |region| and |ingested_people|.
-
-    If |allowed_root_entity_classes| is provided, throw an error if any
-    unexpected root entity class is found.
-    """
-    root_entity_cls = get_root_entity_cls(ingested_people, field_index)
-    if root_entity_cls != schema.StatePerson:
-        raise ValueError(
-            f"For region [{region}] found unexpected root_entity_cls: [{root_entity_cls.__name__}]. "
-            f"Allowed classes: [schema.StatePerson]"
-        )
-    root_external_ids = get_external_ids_of_cls(
-        ingested_people, root_entity_cls, field_index
-    )
-    logging.info(
-        "[Entity Matching] Reading [%s] external ids of class [%s]",
-        len(root_external_ids),
-        root_entity_cls.__name__,
-    )
-    persons_by_root_entity = dao.read_people_by_cls_external_ids(
-        session, region, root_entity_cls, root_external_ids
-    )
-
-    deduped_people = []
-    seen_person_ids: Set[int] = set()
-    for person in persons_by_root_entity:
-        if person.person_id not in seen_person_ids:
-            deduped_people.append(person)
-            seen_person_ids.add(person.person_id)
-
-    return deduped_people
 
 
 def get_or_create_placeholder_child(

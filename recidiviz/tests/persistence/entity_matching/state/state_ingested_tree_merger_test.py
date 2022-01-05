@@ -586,8 +586,11 @@ class TestBucketIngestedPersons(unittest.TestCase):
                 ],
             ),
         ]
-        buckets = StateIngestedTreeMerger.bucket_ingested_persons(ingested_persons)
-        self.assertCountEqual(buckets, [[ingested_persons[0]], [ingested_persons[1]]])
+        with self.assertRaisesRegex(
+            ValueError,
+            "Ingested StatePerson objects must have one or more assigned external ids.",
+        ):
+            _ = StateIngestedTreeMerger.bucket_ingested_persons(ingested_persons)
 
     def test_bucket_two_placeholder_people(self) -> None:
         ingested_persons = [
@@ -602,8 +605,11 @@ class TestBucketIngestedPersons(unittest.TestCase):
                 ],
             ),
         ]
-        buckets = StateIngestedTreeMerger.bucket_ingested_persons(ingested_persons)
-        self.assertCountEqual(buckets, [[ingested_persons[0]], [ingested_persons[1]]])
+        with self.assertRaisesRegex(
+            ValueError,
+            "Ingested StatePerson objects must have one or more assigned external ids.",
+        ):
+            _ = StateIngestedTreeMerger.bucket_ingested_persons(ingested_persons)
 
     def test_two_buckets(self) -> None:
         ingested_persons = [

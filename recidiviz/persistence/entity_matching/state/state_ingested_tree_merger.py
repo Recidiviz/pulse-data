@@ -78,9 +78,9 @@ class StateIngestedTreeMerger:
         for person in ingested_persons:
             external_id_keys = cls._person_external_id_keys(person)
             if len(external_id_keys) == 0:
-                # We don't merge placeholder people
-                result_buckets.append([person])
-                continue
+                raise ValueError(
+                    "Ingested StatePerson objects must have one or more assigned external ids."
+                )
 
             # Find all the people who should be related to this person based on their
             # external_ids and merge them into one bucket.

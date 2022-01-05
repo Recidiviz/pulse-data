@@ -15,17 +15,16 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains the base class to handle state specific matching."""
-from typing import List, Optional
+import logging
+from typing import List, Optional, Set
 
 from recidiviz.common.ingest_metadata import IngestMetadata
-from recidiviz.persistence.database.database_entity import DatabaseEntity
-from recidiviz.persistence.database.schema.state import schema
+from recidiviz.persistence.database.schema.state import dao, schema
 from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity_matching.entity_matching_types import EntityTree
 from recidiviz.persistence.entity_matching.state.state_matching_utils import (
-    default_merge_flat_fields,
-    read_persons_by_root_entity_cls,
+    get_external_ids_of_cls,
 )
 
 
@@ -48,37 +47,29 @@ class BaseStateMatchingDelegate:
     def read_potential_match_db_persons(
         self, session: Session, ingested_persons: List[schema.StatePerson]
     ) -> List[schema.StatePerson]:
-        """Reads and returns all persons from the DB that are needed for entity matching in this state, given the
-        |ingested_persons|.
+        """Reads and returns all persons from the DB that are needed for entity matching
+        in this state, given the |ingested_persons|.
         """
-        db_persons = read_persons_by_root_entity_cls(
-            session,
-            self.region_code,
-            ingested_persons,
-            self.field_index,
+        root_external_ids = get_external_ids_of_cls(
+            ingested_persons, schema.StatePerson, self.field_index
         )
-        return db_persons
-
-    def merge_flat_fields(
-        self, from_entity: DatabaseEntity, to_entity: DatabaseEntity
-    ) -> DatabaseEntity:
-        """Merges appropriate non-relationship fields on the |new_entity| onto the |old_entity|. Returns the newly
-        merged entity.
-
-        This can be overridden by child classes to specify an state-specific merge method for the provided |_cls|.
-        If a callable is returned, it must have the keyword inputs of `new_entity` and `old_entity`.
-
-        """
-        return default_merge_flat_fields(
-            new_entity=from_entity, old_entity=to_entity, field_index=self.field_index
+        logging.info(
+            "[Entity Matching] Reading entities of class schema.StatePerson using [%s] "
+            "external ids",
+            len(root_external_ids),
+        )
+        persons_by_root_entity = dao.read_people_by_cls_external_ids(
+            session, self.region_code, schema.StatePerson, root_external_ids
         )
 
-    def perform_match_preprocessing(
-        self, ingested_persons: List[schema.StatePerson]
-    ) -> None:
-        """This can be overridden by child classes to perform state-specific preprocessing on the |ingested_persons|
-        that will occur immediately before the |ingested_persons| are matched with their database counterparts.
-        """
+        deduped_people = []
+        seen_person_ids: Set[int] = set()
+        for person in persons_by_root_entity:
+            if person.person_id not in seen_person_ids:
+                deduped_people.append(person)
+                seen_person_ids.add(person.person_id)
+
+        return deduped_people
 
     def perform_match_postprocessing(
         self, matched_persons: List[schema.StatePerson]
