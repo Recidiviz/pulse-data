@@ -15,17 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains the base class to handle state specific matching."""
-import logging
-from typing import List, Optional, Set
+from typing import List, Optional
 
 from recidiviz.common.ingest_metadata import IngestMetadata
-from recidiviz.persistence.database.schema.state import dao, schema
-from recidiviz.persistence.database.session import Session
+from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity_matching.entity_matching_types import EntityTree
-from recidiviz.persistence.entity_matching.state.state_matching_utils import (
-    get_external_ids_of_cls,
-)
 
 
 class BaseStateMatchingDelegate:
@@ -43,33 +38,6 @@ class BaseStateMatchingDelegate:
     def get_region_code(self) -> str:
         """Returns the region code for this object."""
         return self.region_code
-
-    def read_potential_match_db_persons(
-        self, session: Session, ingested_persons: List[schema.StatePerson]
-    ) -> List[schema.StatePerson]:
-        """Reads and returns all persons from the DB that are needed for entity matching
-        in this state, given the |ingested_persons|.
-        """
-        root_external_ids = get_external_ids_of_cls(
-            ingested_persons, schema.StatePerson, self.field_index
-        )
-        logging.info(
-            "[Entity Matching] Reading entities of class schema.StatePerson using [%s] "
-            "external ids",
-            len(root_external_ids),
-        )
-        persons_by_root_entity = dao.read_people_by_cls_external_ids(
-            session, self.region_code, schema.StatePerson, root_external_ids
-        )
-
-        deduped_people = []
-        seen_person_ids: Set[int] = set()
-        for person in persons_by_root_entity:
-            if person.person_id not in seen_person_ids:
-                deduped_people.append(person)
-                seen_person_ids.add(person.person_id)
-
-        return deduped_people
 
     def perform_match_postprocessing(
         self, matched_persons: List[schema.StatePerson]
