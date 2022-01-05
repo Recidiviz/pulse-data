@@ -18,17 +18,16 @@
 
 import os
 import unittest
-
 from unittest import mock
 from unittest.mock import patch
 
 import pandas as pd
 
-
 from recidiviz.calculator.modeling import population_projection
 from recidiviz.calculator.modeling.population_projection.super_simulation.super_simulation_factory import (
     SuperSimulationFactory,
 )
+from recidiviz.common.file_system import get_all_files_recursive
 
 root_dir_path = os.path.join(os.path.dirname(population_projection.__file__), "state")
 
@@ -45,15 +44,14 @@ class TestModelInputs(unittest.TestCase):
         mock.MagicMock(return_value=pd.DataFrame(columns=["compartment"])),
     )
     def test_existing_model_inputs(self) -> None:
-        for dir_path, _, files in os.walk(root_dir_path):
-            for file in files:
-                if not file.endswith("yaml") and not file.endswith("yml"):
-                    continue
-                file_path = os.path.join(dir_path, file)
-                try:
-                    _ = SuperSimulationFactory.build_super_simulation(file_path)
-                except Exception as e:
-                    e.args = (
-                        f"Invalid configuration at {file}. " + e.args[0],
-                    ) + e.args[1:]
-                    raise
+        all_file_paths = get_all_files_recursive(root_dir_path)
+        for file_path in all_file_paths:
+            if not file_path.endswith("yaml") and not file_path.endswith("yml"):
+                continue
+            try:
+                _ = SuperSimulationFactory.build_super_simulation(file_path)
+            except Exception as e:
+                e.args = (
+                    f"Invalid configuration at {file_path}. " + e.args[0],
+                ) + e.args[1:]
+                raise
