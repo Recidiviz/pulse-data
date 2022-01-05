@@ -21,7 +21,7 @@ ingested entities.
 import datetime
 import logging
 from collections import defaultdict
-from typing import Dict, List, Optional, Set, Tuple, Type, cast
+from typing import Dict, List, Optional, Set, Tuple, Type
 
 from more_itertools import one
 
@@ -38,7 +38,6 @@ from recidiviz.persistence.entity.entity_utils import (
     get_all_db_objs_from_tree,
     get_all_db_objs_from_trees,
     is_placeholder,
-    is_standalone_class,
     is_standalone_entity,
     log_entity_count,
 )
@@ -65,15 +64,14 @@ from recidiviz.persistence.entity_matching.state.state_matching_utils import (
     add_child_to_entity,
     convert_to_placeholder,
     db_id_or_object_id,
+    default_merge_flat_fields,
     generate_child_entity_trees,
     get_all_entity_trees_of_cls,
     get_external_ids_from_entity,
     get_multiparent_classes,
-    get_root_entity_cls,
     get_total_entities_of_cls,
     is_match,
     is_multiple_id_entity,
-    read_db_entity_trees_of_cls_to_merge,
     remove_child_from_entity,
 )
 from recidiviz.persistence.errors import (
@@ -117,16 +115,9 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         self.ingest_obj_id_to_person_id: Dict[int, int] = defaultdict()
         self.person_id_to_ingest_objs: Dict[int, Set[DatabaseEntity]] = defaultdict(set)
 
-        # The first class found in our ingested object graph for which we have
-        # information (i.e. non-placeholder). We make the assumption that all
-        # ingested object graphs have the same root entity class and that this
-        # root entity class can be matched via external_id. Defaults to
-        # schema.StatePerson
-        self.root_entity_cls: Type[DatabaseEntity] = schema.StatePerson
-
-        # Cache of DB objects of type self.root_entity_cls (above) keyed by
+        # Cache of DB objects of type schema.StatePerson (above) keyed by
         # their external ids.
-        self.root_entity_cache: Dict[str, List[EntityTree]] = defaultdict(list)
+        self.db_person_cache: Dict[str, List[EntityTree]] = defaultdict(list)
 
         # Set of class types in the ingested objects that are not placeholders
         self.non_placeholder_ingest_types: Set[Type[DatabaseEntity]] = set()
@@ -162,17 +153,17 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
             )
         return self.session
 
-    def set_root_entity_cache(self, db_persons: List[schema.StatePerson]) -> None:
+    def set_db_person_cache(self, db_persons: List[schema.StatePerson]) -> None:
         if not db_persons:
             return
 
         trees = get_all_entity_trees_of_cls(
-            db_persons, self.root_entity_cls, self.field_index
+            db_persons, schema.StatePerson, self.field_index
         )
         for tree in trees:
             external_ids = get_external_ids_from_entity(tree.entity)
             for external_id in external_ids:
-                self.root_entity_cache[external_id].append(tree)
+                self.db_person_cache[external_id].append(tree)
 
     def _is_placeholder(self, entity: DatabaseEntity) -> bool:
         """Entity matching-specific wrapper around is_placeholder() that checks that
@@ -354,9 +345,6 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
             ingested_db_persons
         )
         self.set_ingest_objs_for_persons(ingested_db_persons)
-        self.root_entity_cls = get_root_entity_cls(
-            ingested_db_persons, self.field_index
-        )
 
         logging.info(
             "[Entity matching] Starting reading and converting persons "
@@ -379,7 +367,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
             self.state_matching_delegate.get_region_code(),
         )
 
-        self.set_root_entity_cache(db_persons)
+        self.set_db_person_cache(db_persons)
 
         logging.info(
             "[Entity matching] Completed DB read at time [%s].",
@@ -397,13 +385,6 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
 
         logging.info("[Entity matching] Session flush")
         session.flush()
-
-        logging.info("[Entity matching] Database clean up")
-        # TODO(#2578): Database cleanup errors should be surfaced properly in
-        # their own error count.
-        matched_entities_builder.database_cleanup_error_count = (
-            self._perform_database_cleanup(matched_entities_builder.people)
-        )
 
         # Assert that all entities have been flushed before returning from
         # entity matching
@@ -453,11 +434,8 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         After post processing, we guarantee that all backedges are properly
         set on entities within the |ingested_persons| trees.
         """
-        logging.info(
-            "[Entity matching] Pre-processing: Merge duplicate ingested people"
-        )
+        logging.info("[Entity matching] Pre-processing: Populate person backedges")
         self._populate_person_backedges(ingested_persons)
-        self.state_matching_delegate.perform_match_preprocessing(ingested_persons)
         return ingested_persons
 
     def _perform_match_postprocessing(
@@ -481,188 +459,6 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         self._populate_person_backedges(new_people)
         self._populate_person_backedges(db_persons)
 
-    def _perform_database_cleanup(
-        self, matched_persons: List[schema.StatePerson]
-    ) -> int:
-        """Home to all cleanup functions that require that database ids exist
-        on all entities, including newly created ones. Returns the number of
-        errors encountered while performing clean up.
-
-        NOTE: This method expects that all updated entities have been flushed
-        in the session.
-        """
-        check_not_dirty(self.get_session())
-        error_count = 0
-
-        logging.info("[Entity matching] Merge new parent-child links")
-        error_count += self._merge_new_parent_child_links(matched_persons)
-
-        return error_count
-
-    def _merge_new_parent_child_links(
-        self, matched_persons: List[schema.StatePerson]
-    ) -> int:
-        """Due to the way in which entity matching limits scope on potential
-        matches, we can accidentally create multiple entities with the same
-        external_id. This method queries from the DB and attempts to find
-        all newly created entities of this type (if any exist), and then merges
-        those duplicate entities.
-
-        All affected persons are added to matched_persons, if not already
-        present.
-
-        #TODO(#2578): Currently this method does not handle merging of duplicate
-        entities of multi_parent classes or multi_id classess aside from
-        StatePerson. It also always merges the duplicate entity itself, and does
-        not perform merging of any parent chains, which could be useful when
-        both entities have distinct non-placeholder ancestor chains. We have yet
-        to have use for this extra functionality.
-        """
-        region_code = self.state_matching_delegate.get_region_code()
-        session = self.get_session()
-        error_count = 0
-        seen_persons_ids: Set[int] = set()
-        for person in matched_persons:
-            seen_persons_ids.add(person.person_id)
-
-        classes_to_merge = []
-        for cls in self.non_placeholder_ingest_types:
-            if self._can_merge_child_cls(cls):
-                classes_to_merge.append(cls)
-
-        for cls in classes_to_merge:
-            tree_groups = read_db_entity_trees_of_cls_to_merge(
-                session, region_code, cls, self.field_index
-            )
-
-            for tree_group in tree_groups:
-                merged_tree = tree_group[0]
-                for next_tree in tree_group[1:]:
-
-                    # Add all persons affected to the list of matched persons
-                    merged_tree_person = cast(
-                        schema.StatePerson, merged_tree.get_earliest_ancestor()
-                    )
-                    next_tree_person = cast(
-                        schema.StatePerson, next_tree.get_earliest_ancestor()
-                    )
-                    if merged_tree_person.person_id not in seen_persons_ids:
-                        seen_persons_ids.add(merged_tree_person.person_id)
-                        matched_persons.append(merged_tree_person)
-                    if next_tree_person.person_id not in seen_persons_ids:
-                        seen_persons_ids.add(next_tree_person.person_id)
-                        matched_persons.append(next_tree_person)
-
-                    # Merge duplicate entities
-                    (
-                        merge_from_tree,
-                        merge_onto_tree,
-                    ) = self._order_merge_from_and_onto_trees(merged_tree, next_tree)
-
-                    if not self._check_parent_chains_match(
-                        merge_onto_tree, merge_from_tree
-                    ):
-                        error_count += 1
-                        continue
-                    logging.info(
-                        "Discovered new parent child link with entity type "
-                        "[%s]. Merging entity with id [%s] onto entity "
-                        "with id [%s]",
-                        cls.__name__,
-                        merge_from_tree.entity.get_id(),
-                        merge_onto_tree.entity.get_id(),
-                    )
-                    match_result = self._match_entity_trees(
-                        ingested_entity_trees=[merge_from_tree],
-                        db_entity_trees=[merge_onto_tree],
-                        root_entity_cls=cls,
-                    )
-                    error_count += match_result.error_count
-                    merged_tree = merge_onto_tree
-
-            # Manually flush changes before next query.
-            session.flush()
-        return error_count
-
-    def _can_merge_child_cls(self, cls):
-        if not hasattr(cls, "external_id"):
-            return False
-        if is_standalone_class(cls):
-            return False
-
-        # TODO(#2578): Add functionality to merge multi_id and multi_parent
-        # classes in this case.
-        if cls == schema.StatePersonExternalId:
-            return False
-        if cls in get_multiparent_classes():
-            return False
-        return True
-
-    def _order_merge_from_and_onto_trees(
-        self, a: EntityTree, b: EntityTree
-    ) -> Tuple[EntityTree, EntityTree]:
-        """Looks at the passed in trees |a| and |b| and returns a tuple of the
-        two ordered so that the first element is the tree to merge from and the
-        second is the tree to merge onto.
-        """
-        a_ancestor_tree = a.generate_parent_tree()
-        if self._is_placeholder(a_ancestor_tree.entity):
-            return a, b
-        return b, a
-
-    def _check_parent_chains_match(self, a: EntityTree, b: EntityTree) -> bool:
-        """Returns True if the parent chains of the provided entity trees |a|
-        and |b| match. Otherwise returns false.
-        """
-        entity_cls_name = a.entity.get_entity_name()
-        # TODO(#2578): Support merging when entities have multiple ancestor
-        # ancestor chains.
-        if len(a.ancestor_chain) != len(b.ancestor_chain):
-            logging.error(
-                "Ancestor chains are different lengths for entities of type "
-                "[%s].\nEntity a id: [%s]\nEntity b id: [%s]",
-                entity_cls_name,
-                a.entity.get_id(),
-                b.entity.get_id(),
-            )
-            return False
-
-        if not a.ancestor_chain:
-            return True
-
-        a_ancestor_tree = a
-        b_ancestor_tree = b
-        while a_ancestor_tree.ancestor_chain:
-            a_ancestor_tree = a_ancestor_tree.generate_parent_tree()
-            b_ancestor_tree = b_ancestor_tree.generate_parent_tree()
-            # ignore placeholders in the chain.
-            if self._is_placeholder(a_ancestor_tree.entity) or self._is_placeholder(
-                b_ancestor_tree.entity
-            ):
-                pass
-            elif not is_match(a_ancestor_tree, b_ancestor_tree, self.field_index):
-                logging.error(
-                    "Ancestor chains do not match for entities to merge of type"
-                    " [%s] with ids [%s] and [%s].",
-                    entity_cls_name,
-                    a.entity.get_id(),
-                    b.entity.get_id(),
-                )
-                return False
-        return True
-
-    def _get_unique_entities(self, d: Dict[str, EntityTree]):
-        """Returns all unique entities found in the provided dict |d|."""
-        seen_map: Set[int] = set()
-        to_return: List[DatabaseEntity] = []
-
-        for entity_tree in d.values():
-            entity_id = id(entity_tree.entity)
-            if entity_id not in seen_map:
-                seen_map.add(entity_id)
-                to_return.append(entity_tree.entity)
-        return to_return
-
     def _match_persons(
         self,
         *,
@@ -685,14 +481,13 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
             for ingested_person in ingested_persons
         ]
 
-        root_entity_cls = get_root_entity_cls(ingested_persons, self.field_index)
         total_root_entities = get_total_entities_of_cls(
-            ingested_persons, root_entity_cls, self.field_index
+            ingested_persons, schema.StatePerson, self.field_index
         )
         persons_match_results = self._match_entity_trees(
             ingested_entity_trees=ingested_person_trees,
             db_entity_trees=db_person_trees,
-            root_entity_cls=root_entity_cls,
+            root_entity_cls=schema.StatePerson,
         )
 
         updated_persons: List[schema.StatePerson] = []
@@ -1204,9 +999,12 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
                 self.check_no_ingest_objs(updated_children)
                 db_entity.set_field(child_field_name, one(updated_children))
 
-        merged_entity = self.state_matching_delegate.merge_flat_fields(
-            from_entity=ingested_entity, to_entity=db_entity
+        merged_entity = default_merge_flat_fields(
+            new_entity=ingested_entity,
+            old_entity=db_entity,
+            field_index=self.field_index,
         )
+
         merged_entity_tree = EntityTree(
             entity=merged_entity, ancestor_chain=db_match_tree.ancestor_chain
         )
@@ -1303,7 +1101,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         cached_match_ids: Set[int] = set()
 
         for external_id in external_ids:
-            cached_trees = self.root_entity_cache[external_id]
+            cached_trees = self.db_person_cache[external_id]
             for cached_tree in cached_trees:
                 if cached_tree.entity.get_id() not in cached_match_ids:
                     cached_match_ids.add(cached_tree.entity.get_id())
@@ -1318,7 +1116,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         returned.
         """
         db_match_candidates = db_entity_trees
-        if isinstance(ingested_entity_tree.entity, self.root_entity_cls):
+        if isinstance(ingested_entity_tree.entity, schema.StatePerson):
             db_match_candidates = self.get_cached_matches(ingested_entity_tree.entity)
 
         # Entities that can have multiple external IDs need special casing to
