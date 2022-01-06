@@ -15,8 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for state_matching_utils.py"""
-from more_itertools import one
-
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
@@ -25,19 +23,16 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.persistence.database.schema.state import schema
-from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.entity.entity_utils import is_placeholder
 from recidiviz.persistence.entity_matching.entity_matching_types import EntityTree
 from recidiviz.persistence.entity_matching.state.state_matching_utils import (
     _is_match,
     add_child_to_entity,
-    default_merge_flat_fields,
     generate_child_entity_trees,
     get_all_entity_trees_of_cls,
-    get_external_ids_of_cls,
-    get_total_entities_of_cls,
+    get_all_person_external_ids,
+    merge_flat_fields,
     nonnull_fields_entity_match,
-    read_db_entity_trees_of_cls_to_merge,
     remove_child_from_entity,
 )
 from recidiviz.persistence.errors import EntityMatchingError
@@ -269,7 +264,7 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
             status=StateSentenceStatus.SERVING.value,
         )
 
-        merged_entity = default_merge_flat_fields(
+        merged_entity = merge_flat_fields(
             new_entity=from_entity, old_entity=to_entity, field_index=self.field_index
         )
         self.assert_schema_objects_equal(expected_entity, merged_entity)
@@ -295,7 +290,7 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
             status=StateSentenceStatus.SERVING.value,
         )
 
-        merged_entity = default_merge_flat_fields(
+        merged_entity = merge_flat_fields(
             new_entity=ing_entity, old_entity=db_entity, field_index=self.field_index
         )
         self.assert_schema_objects_equal(expected_entity, merged_entity)
@@ -401,33 +396,7 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
             ),
         )
 
-    def test_getTotalEntitiesOfCls(self) -> None:
-        supervision_sentence = schema.StateSupervisionSentence()
-        supervision_sentence_2 = schema.StateSupervisionSentence()
-        supervision_sentence_3 = schema.StateSupervisionSentence()
-
-        person = schema.StatePerson(
-            supervision_sentences=[
-                supervision_sentence,
-                supervision_sentence_2,
-                supervision_sentence_3,
-            ]
-        )
-
-        self.assertEqual(
-            3,
-            get_total_entities_of_cls(
-                [person], schema.StateSupervisionSentence, field_index=self.field_index
-            ),
-        )
-        self.assertEqual(
-            1,
-            get_total_entities_of_cls(
-                [person], schema.StatePerson, field_index=self.field_index
-            ),
-        )
-
-    def test_getExternalIdsOfCls(self) -> None:
+    def test_getAllPersonExternalIds(self) -> None:
         supervision_sentence = schema.StateSupervisionSentence(external_id=_EXTERNAL_ID)
         supervision_sentence_2 = schema.StateSupervisionSentence(
             external_id=_EXTERNAL_ID_2
@@ -445,43 +414,24 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
             ],
         )
 
-        self.assertCountEqual(
-            [_EXTERNAL_ID, _EXTERNAL_ID_2, _EXTERNAL_ID_3],
-            get_external_ids_of_cls(
-                [person], schema.StateSupervisionSentence, field_index=self.field_index
-            ),
-        )
-        self.assertCountEqual(
-            [_EXTERNAL_ID],
-            get_external_ids_of_cls(
-                [person], schema.StatePerson, field_index=self.field_index
-            ),
-        )
+        self.assertCountEqual([_EXTERNAL_ID], get_all_person_external_ids([person]))
 
-    def test_getExternalIdsOfCls_emptyExternalId_raises(self) -> None:
+    def test_getAllPersonExternalIds_emptyExternalId_raises(self) -> None:
         incarceration_sentence = schema.StateIncarcerationSentence(
             external_id=_EXTERNAL_ID
         )
-        incarceration_sentence_2 = schema.StateIncarcerationSentence()
-        external_id = schema.StatePersonExternalId(external_id=_EXTERNAL_ID)
         person = schema.StatePerson(
-            external_ids=[external_id],
-            incarceration_sentences=[incarceration_sentence, incarceration_sentence_2],
+            external_ids=[],
+            incarceration_sentences=[incarceration_sentence],
         )
 
         with self.assertRaises(EntityMatchingError):
-            get_external_ids_of_cls(
-                [person],
-                schema.StateIncarcerationSentence,
-                field_index=self.field_index,
-            )
+            get_all_person_external_ids([person])
 
-    def test_getExternalIdsOfCls_emptyPersonExternalId_raises(self) -> None:
+    def test_getAllPersonExternalIds_emptyPersonExternalId_raises(self) -> None:
         person = schema.StatePerson()
         with self.assertRaises(EntityMatchingError):
-            get_external_ids_of_cls(
-                [person], schema.StatePerson, field_index=self.field_index
-            )
+            get_all_person_external_ids([person])
 
     def test_completeEnumSet_admittedForCommitmentFromSupervision(self) -> None:
         period = schema.StateIncarcerationPeriod()
@@ -614,72 +564,3 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
 
         entity.incarceration_type_raw_text = "PRISON"
         self.assertFalse(is_placeholder(entity, field_index=self.field_index))
-
-    def test_readDbEntitiesOfClsToMerge(self) -> None:
-        person_1 = schema.StatePerson(person_id=1, state_code=_STATE_CODE)
-        incarceration_sentence_1 = schema.StateIncarcerationSentence(
-            incarceration_sentence_id=1,
-            external_id=_EXTERNAL_ID,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
-            state_code=_STATE_CODE,
-            person=person_1,
-        )
-        person_1.incarceration_sentences = [incarceration_sentence_1]
-
-        person_2 = schema.StatePerson(person_id=2, state_code=_STATE_CODE)
-        incarceration_sentence_1_dup = schema.StateIncarcerationSentence(
-            incarceration_sentence_id=2,
-            external_id=_EXTERNAL_ID,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
-            state_code=_STATE_CODE,
-            person=person_2,
-        )
-        incarceration_sentence_2 = schema.StateIncarcerationSentence(
-            incarceration_sentence_id=3,
-            external_id=_EXTERNAL_ID_2,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
-            state_code=_STATE_CODE,
-            person=person_2,
-        )
-        placeholder_incarceration_sentence = schema.StateIncarcerationSentence(
-            incarceration_sentence_id=4,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
-            state_code=_STATE_CODE,
-            person=person_2,
-        )
-
-        person_2.incarceration_sentences = [
-            incarceration_sentence_1_dup,
-            incarceration_sentence_2,
-            placeholder_incarceration_sentence,
-        ]
-
-        with SessionFactory.using_database(
-            self.database_key, autocommit=False
-        ) as session:
-            session.add(person_1)
-            session.add(person_2)
-            session.flush()
-
-            # Act
-            trees_to_merge = read_db_entity_trees_of_cls_to_merge(
-                session,
-                _STATE_CODE,
-                schema.StateIncarcerationSentence,
-                field_index=self.field_index,
-            )
-
-            incarceration_sentence_trees_to_merge = one(trees_to_merge)
-            self.assertEqual(len(incarceration_sentence_trees_to_merge), 2)
-
-            incarceration_sentence_ids = set()
-
-            for entity_tree in incarceration_sentence_trees_to_merge:
-                self.assertIsInstance(entity_tree, EntityTree)
-                entity = entity_tree.entity
-                if not isinstance(entity, schema.StateIncarcerationSentence):
-                    self.fail(f"Expected StateIncarcerationSentence. Found {entity}")
-                self.assertEqual(entity.external_id, _EXTERNAL_ID)
-                incarceration_sentence_ids.add(entity.incarceration_sentence_id)
-
-            self.assertEqual(incarceration_sentence_ids, {1, 2})
