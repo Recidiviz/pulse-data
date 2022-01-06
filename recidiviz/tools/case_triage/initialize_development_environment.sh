@@ -15,6 +15,10 @@ run_cmd mkdir -p local/gcs/case-triage-data/ local/gsm/
 AUTH0_CONFIGURATION=$(echo $(gcloud secrets versions access latest --secret=case_triage_auth0 --project recidiviz-staging))
 write_to_file "$AUTH0_CONFIGURATION" local/gsm/case_triage_auth0
 
+# Load staging INTERCOM_APP_KEY. Uses subshell to remove additional output from gcloud util
+INTERCOM_APP_KEY=$(echo $(gcloud secrets versions access latest --secret=case_triage_intercom_app_key --project recidiviz-staging))
+write_to_file "$INTERCOM_APP_KEY" local/gsm/case_triage_intercom_app_key
+
 write_to_file $(python -c 'import uuid; print(uuid.uuid4().hex)') local/gsm/case_triage_secret_key
 
 # References hostname specified in `services.case_triage_backend.links` from `docker-compose.yml`

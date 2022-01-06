@@ -15,6 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """A UserContext for all of the operations for Case Triage"""
+import hashlib
+import hmac
 from base64 import b64encode
 from datetime import datetime
 from enum import Enum
@@ -35,6 +37,7 @@ from recidiviz.case_triage.demo_helpers import (
     fake_officer_id_for_demo_user,
     fake_person_id_for_demo_user,
 )
+from recidiviz.case_triage.util import get_local_secret
 from recidiviz.persistence.database.schema.case_triage.schema import (
     ETLClient,
     ETLOfficer,
@@ -174,3 +177,17 @@ class UserContext:
 
         # or if the user registered after the onboarding launch date
         return registration_date >= ONBOARDING_LAUNCH_DATE
+
+    @property
+    def intercom_user_hash(self) -> Optional[str]:
+        if self.should_see_demo:
+            return None
+
+        key = get_local_secret("case_triage_intercom_app_key")
+        if not key or not self.segment_user_id:
+            return None
+
+        user_hash = hmac.new(
+            bytes(key, "utf-8"), bytes(self.segment_user_id, "utf-8"), hashlib.sha256
+        ).hexdigest()
+        return user_hash

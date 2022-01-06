@@ -218,6 +218,7 @@ def create_api_blueprint(
             {
                 "csrf": generate_csrf(current_app.secret_key),
                 "segmentUserId": g.user_context.segment_user_id,
+                "intercomUserHash": g.user_context.intercom_user_hash,
                 "knownExperiments": {
                     k: v for k, v in g.user_context.known_experiments.items() if v
                 },
