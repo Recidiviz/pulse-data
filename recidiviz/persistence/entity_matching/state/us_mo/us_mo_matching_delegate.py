@@ -36,7 +36,9 @@ class UsMoMatchingDelegate(BaseStateMatchingDelegate):
     def __init__(self, ingest_metadata: IngestMetadata):
         super().__init__(StateCode.US_MO.value.lower(), ingest_metadata)
 
-    def perform_match_postprocessing(self, matched_persons: List[schema.StatePerson]):
+    def perform_match_postprocessing(
+        self, matched_persons: List[schema.StatePerson]
+    ) -> None:
         logging.info(
             "[Entity matching] Set current / last supervising officer from supervision periods."
         )

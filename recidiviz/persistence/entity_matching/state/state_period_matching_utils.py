@@ -29,7 +29,7 @@ from recidiviz.persistence.entity_matching.state.state_matching_utils import (
 
 def add_supervising_officer_to_open_supervision_periods(
     persons: List[schema.StatePerson], field_index: CoreEntityFieldIndex
-):
+) -> None:
     """For each person in the provided |persons|, adds the supervising_officer from the person entity onto all open
     StateSupervisionPeriods.
     """
@@ -37,9 +37,11 @@ def add_supervising_officer_to_open_supervision_periods(
         if not person.supervising_officer:
             continue
 
-        supervision_periods = get_all_entities_of_cls(
+        supervision_periods: List[
+            schema.StateSupervisionPeriod
+        ] = get_all_entities_of_cls(
             [person], schema.StateSupervisionPeriod, field_index=field_index
-        )
+        )  # type: ignore
         for supervision_period in supervision_periods:
             # Skip placeholders
             if is_placeholder(supervision_period, field_index):
