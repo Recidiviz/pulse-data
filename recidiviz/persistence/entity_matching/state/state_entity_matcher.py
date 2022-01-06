@@ -64,14 +64,12 @@ from recidiviz.persistence.entity_matching.state.state_matching_utils import (
     add_child_to_entity,
     convert_to_placeholder,
     db_id_or_object_id,
-    default_merge_flat_fields,
     generate_child_entity_trees,
-    get_all_entity_trees_of_cls,
-    get_external_ids_from_entity,
     get_multiparent_classes,
-    get_total_entities_of_cls,
+    get_person_external_ids,
     is_match,
     is_multiple_id_entity,
+    merge_flat_fields,
     read_potential_match_db_persons,
     remove_child_from_entity,
 )
@@ -158,11 +156,9 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         if not db_persons:
             return
 
-        trees = get_all_entity_trees_of_cls(
-            db_persons, schema.StatePerson, self.field_index
-        )
-        for tree in trees:
-            external_ids = get_external_ids_from_entity(tree.entity)
+        for db_person in db_persons:
+            external_ids = get_person_external_ids(db_person)
+            tree = EntityTree(entity=db_person, ancestor_chain=[])
             for external_id in external_ids:
                 self.db_person_cache[external_id].append(tree)
 
@@ -358,7 +354,6 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
             session=session,
             ingested_persons=ingested_db_persons,
             region_code=self.state_matching_delegate.get_region_code(),
-            field_index=self.field_index,
         )
 
         if self.log_entity_counts:
@@ -485,9 +480,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
             for ingested_person in ingested_persons
         ]
 
-        total_root_entities = get_total_entities_of_cls(
-            ingested_persons, schema.StatePerson, self.field_index
-        )
+        total_root_entities = len(ingested_persons)
         persons_match_results = self._match_entity_trees(
             ingested_entity_trees=ingested_person_trees,
             db_entity_trees=db_person_trees,
@@ -1003,7 +996,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
                 self.check_no_ingest_objs(updated_children)
                 db_entity.set_field(child_field_name, one(updated_children))
 
-        merged_entity = default_merge_flat_fields(
+        merged_entity = merge_flat_fields(
             new_entity=ingested_entity,
             old_entity=db_entity,
             field_index=self.field_index,
@@ -1099,8 +1092,8 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
 
         raise MatchedMultipleIngestedEntitiesError(db_entity_match, ingested_matches)
 
-    def get_cached_matches(self, entity: DatabaseEntity) -> List[EntityTree]:
-        external_ids = get_external_ids_from_entity(entity)
+    def get_cached_matches(self, db_person: schema.StatePerson) -> List[EntityTree]:
+        external_ids = get_person_external_ids(db_person)
         cached_matches = []
         cached_match_ids: Set[int] = set()
 
