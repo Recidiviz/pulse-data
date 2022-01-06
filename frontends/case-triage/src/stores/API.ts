@@ -44,6 +44,7 @@ export interface FullName {
 interface BootstrapResponse {
   csrf: string;
   segmentUserId: string;
+  intercomUserHash: string;
   knownExperiments: FeatureVariants;
   dashboardURL: string;
   officerFullName: FullName;
@@ -141,6 +142,7 @@ class API {
           ({
             csrf,
             segmentUserId,
+            intercomUserHash,
             knownExperiments: featureVariants,
             dashboardURL,
             officerFullName,
@@ -151,7 +153,7 @@ class API {
             shouldSeeOnboarding,
           }) => {
             this.csrfToken = csrf;
-            identify(segmentUserId);
+            identify(segmentUserId, intercomUserHash);
             this.dashboardURL = dashboardURL;
             this.userStore.setFeatureVariants(featureVariants);
             this.userStore.setCaseTriageAccess(canAccessCaseTriage);
