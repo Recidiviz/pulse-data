@@ -24,9 +24,8 @@ import tabula
 import us
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
+from recidiviz.common import fips, str_field_utils
 from recidiviz.common.constants.aggregate import enum_canonical_strings as enum_strings
-from recidiviz.common import str_field_utils
-from recidiviz.common import fips
 from recidiviz.ingest.aggregate import aggregate_ingest_utils
 from recidiviz.ingest.aggregate.errors import AggregateDateParsingError
 from recidiviz.persistence.database.schema.aggregate.schema import TxCountyAggregate
@@ -134,7 +133,7 @@ def _parse_table(filename: str, report_date: datetime.date) -> pd.DataFrame:
     return result
 
 
-def _get_column_names(report_date):
+def _get_column_names(report_date: datetime.date) -> OrderedDict:
     """Returns the correct column names based on the report date."""
     columns_to_schema = OrderedDict(
         [

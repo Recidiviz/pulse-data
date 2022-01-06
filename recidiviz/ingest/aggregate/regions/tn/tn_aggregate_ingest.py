@@ -23,6 +23,7 @@ import numpy as np
 import pandas as pd
 import tabula
 import us
+from pandas.core.frame import DataFrame
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
 from recidiviz.common import fips, str_field_utils
@@ -320,7 +321,7 @@ def _pretend_facility_is_county(facility_name: str) -> str:
     return facility_name
 
 
-def _grab_one_smashed_col(smashed, col_ind):
+def _grab_one_smashed_col(smashed: DataFrame, col_ind: int) -> pd.Series:
     if pd.isnull(smashed) or len(smashed.split()) <= col_ind:
         return np.nan
     return smashed.split()[col_ind]
