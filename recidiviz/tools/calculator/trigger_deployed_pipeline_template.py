@@ -31,8 +31,8 @@ import logging
 import sys
 from typing import Any, Dict, List, Tuple
 
-import google
 from googleapiclient.discovery import build
+from oauth2client.client import GoogleCredentials
 
 from recidiviz.calculator.dataflow_config import PRODUCTION_TEMPLATES_PATH
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
@@ -67,7 +67,7 @@ def _trigger_dataflow_job_from_template(
 ) -> Dict[str, Any]:
     """Trigger the Dataflow job at the given template location and execute it
     with the given `job_name`."""
-    credentials, _ = google.auth.default()
+    credentials = GoogleCredentials.get_application_default()
     service = build("dataflow", "v1b3", credentials=credentials)
 
     body = {
