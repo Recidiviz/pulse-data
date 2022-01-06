@@ -38,14 +38,13 @@ SELECT
     supervising_officer_external_id,
     IFNULL(level_1_supervision_location_external_id, 'UNKNOWN') as level_1_supervision_location_external_id,
     IFNULL(level_2_supervision_location_external_id, 'UNKNOWN') as level_2_supervision_location_external_id,
+    recommended_supervision_downgrade_level
 FROM `{project_id}.{reference_views_dataset}.supervision_case_compliance_metrics_materialized` compliance,
 UNNEST ([compliance.level_1_supervision_location_external_id, 'ALL']) AS level_1_supervision_location_external_id,
 UNNEST ([compliance.level_2_supervision_location_external_id, 'ALL']) AS level_2_supervision_location_external_id,
 UNNEST ([supervising_officer_external_id, 'ALL']) AS supervising_officer_external_id
 -- Remove duplicate entries created when unnesting a state that does not have L2 locations
-WHERE 
-    recommended_supervision_downgrade_level IS NOT NULL
-    AND level_2_supervision_location_external_id IS NOT NULL
+WHERE level_2_supervision_location_external_id IS NOT NULL
 """
 
 SUPERVISION_MISMATCHES_BY_DAY_VIEW_BUILDER = SimpleBigQueryViewBuilder(
