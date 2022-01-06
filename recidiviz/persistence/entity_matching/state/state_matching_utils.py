@@ -16,16 +16,13 @@
 # ============================================================================
 """State specific utils for entity matching. Utils in this file are generic to any DatabaseEntity."""
 import logging
-from collections import defaultdict
-from typing import Dict, List, Optional, Sequence, Set, Type, cast
+from typing import List, Optional, Sequence, Set, Type, cast
 
 from recidiviz.common.common_utils import check_all_objs_have_type
 from recidiviz.common.constants import enum_canonical_strings
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_court_case import StateCourtType
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
-from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.state import dao, schema
 from recidiviz.persistence.database.schema_utils import (
@@ -323,7 +320,7 @@ def convert_to_placeholder(entity: DatabaseEntity, field_index: CoreEntityFieldI
 
 
 # TODO(#2244): Create general approach for required fields/default values
-def default_merge_flat_fields(
+def merge_flat_fields(
     *,
     new_entity: DatabaseEntity,
     old_entity: DatabaseEntity,
@@ -345,20 +342,8 @@ def default_merge_flat_fields(
     return old_entity
 
 
-def get_total_entities_of_cls(
-    persons: List[schema.StatePerson], cls: Type, field_index: CoreEntityFieldIndex
-) -> int:
-    """Counts the total number of unique objects of type |cls| in the entity
-    graphs passed in by |persons|.
-    """
-    check_all_objs_have_type(persons, schema.StatePerson)
-    return len(get_all_entities_of_cls(persons, cls, field_index))
-
-
-def get_external_ids_of_cls(
+def get_all_person_external_ids(
     persons: List[schema.StatePerson],
-    cls: Type[DatabaseEntity],
-    field_index: CoreEntityFieldIndex,
 ) -> Set[str]:
     """Returns the external ids of all entities of type |cls| found in the
     provided |persons| trees.
@@ -366,27 +351,22 @@ def get_external_ids_of_cls(
     check_all_objs_have_type(persons, schema.StatePerson)
 
     ids: Set[str] = set()
-    entities = get_all_entities_of_cls(persons, cls, field_index)
-    for entity in entities:
-        external_ids = get_external_ids_from_entity(entity)
-        if not external_ids:
-            raise EntityMatchingError(
-                f"Expected external_ids to be non-empty for entity [{entity}] with class [{cls.__name__}]",
-                entity.get_class_id_name(),
-            )
+    for person in persons:
+        external_ids = get_person_external_ids(person)
         ids.update(external_ids)
     return ids
 
 
-def get_external_ids_from_entity(entity: DatabaseEntity):
+def get_person_external_ids(db_person: schema.StatePerson) -> List[str]:
     external_ids = []
-    if isinstance(entity, schema.StatePerson):
-        for external_id in entity.external_ids:
-            if external_id:
-                external_ids.append(external_id.external_id)
-    else:
-        if entity.get_external_id():
-            external_ids.append(entity.get_external_id())
+    if not db_person.external_ids:
+        raise EntityMatchingError(
+            f"Expected external_ids to be non-empty for [{db_person}]",
+            db_person.get_class_id_name(),
+        )
+    for external_id in db_person.external_ids:
+        external_ids.append(external_id.external_id)
+
     return external_ids
 
 
@@ -394,7 +374,6 @@ def get_multiparent_classes() -> List[Type[DatabaseEntity]]:
     cls_list: List[Type[DatabaseEntity]] = [
         schema.StateCharge,
         schema.StateCourtCase,
-        schema.StateSupervisionPeriod,
         schema.StateAgent,
     ]
     direction_checker = SchemaEdgeDirectionChecker.state_direction_checker()
@@ -474,53 +453,15 @@ def db_id_or_object_id(entity: DatabaseEntity) -> int:
     return entity.get_id() if entity.get_id() else id(entity)
 
 
-def read_db_entity_trees_of_cls_to_merge(
-    session: Session,
-    state_code: str,
-    schema_cls: Type[StateBase],
-    field_index: CoreEntityFieldIndex,
-) -> List[List[EntityTree]]:
-    """
-    Returns a list of lists of EntityTree where each inner list is a group
-    of EntityTrees with entities of class |schema_cls| that need to be merged
-    because their entities have the same external_id.
-
-    Will assert if schema_cls does not have a person_id or external_id field.
-    """
-    if not StateCode.is_valid(state_code):
-        raise ValueError(f"Invalid state code: [{state_code}]")
-
-    external_ids = dao.read_external_ids_of_cls_with_external_id_match(
-        session, state_code, schema_cls
-    )
-    people = dao.read_people_by_cls_external_ids(
-        session, state_code, schema_cls, external_ids
-    )
-    all_cls_trees = get_all_entity_trees_of_cls(people, schema_cls, field_index)
-
-    external_ids_map: Dict[str, List[EntityTree]] = defaultdict(list)
-    for tree in all_cls_trees:
-        if not isinstance(tree.entity, schema_cls):
-            raise ValueError(f"Unexpected entity type [{type(tree.entity)}]")
-
-        if tree.entity.external_id in external_ids:
-            external_ids_map[tree.entity.external_id].append(tree)
-
-    return [tree_list for _, tree_list in external_ids_map.items()]
-
-
 def read_potential_match_db_persons(
     session: Session,
     region_code: str,
     ingested_persons: List[schema.StatePerson],
-    field_index: CoreEntityFieldIndex,
 ) -> List[schema.StatePerson]:
     """Reads and returns all persons from the DB that are needed for entity matching,
     given the |ingested_persons|.
     """
-    root_external_ids = get_external_ids_of_cls(
-        ingested_persons, schema.StatePerson, field_index
-    )
+    root_external_ids = get_all_person_external_ids(ingested_persons)
     logging.info(
         "[Entity Matching] Reading entities of class schema.StatePerson using [%s] "
         "external ids",
@@ -538,39 +479,3 @@ def read_potential_match_db_persons(
             seen_person_ids.add(person.person_id)
 
     return deduped_people
-
-
-def get_or_create_placeholder_child(
-    parent_entity: DatabaseEntity,
-    field_index: CoreEntityFieldIndex,
-    child_field_name: str,
-    child_class: Type[DatabaseEntity],
-    **child_kwargs,
-):
-    """Checks all the entities in the |parent_entity|'s field |child_field_name|. If there is a placeholder entity,
-    returns that. Otherwise creates a new placeholder entity of type |child_class| on the parent's |child_field_name|
-    using |child_kw_args|.
-    """
-    children = parent_entity.get_field_as_list(child_field_name)
-    placeholder_children = [c for c in children if is_placeholder(c, field_index)]
-
-    if placeholder_children:
-        return placeholder_children[0]
-
-    logging.info(
-        "No placeholder children on entity with id [%s] of type [%s] exist on field [%s]. Have to create one.",
-        parent_entity.get_external_id(),
-        parent_entity.get_entity_name(),
-        child_field_name,
-    )
-    new_child = child_class(**child_kwargs)
-    if not is_placeholder(new_child, field_index):
-        raise EntityMatchingError(
-            f"Child created with kwargs is not a placeholder [{child_kwargs}]. Parent entity: [{parent_entity}]. Child "
-            f"field name: [{child_field_name}]. Child class: [{child_class}].",
-            parent_entity.get_entity_name(),
-        )
-
-    children.append(new_child)
-    parent_entity.set_field_from_list(child_field_name, children)
-    return new_child
