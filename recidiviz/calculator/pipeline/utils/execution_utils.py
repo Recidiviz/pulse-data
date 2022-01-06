@@ -21,9 +21,9 @@ import logging
 from collections import defaultdict
 from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
 
-import google
 from googleapiclient.discovery import build
 from more_itertools import one
+from oauth2client.client import GoogleCredentials
 
 from recidiviz.common.date import year_and_month_for_today
 from recidiviz.persistence.entity.state.entities import StatePerson
@@ -70,7 +70,7 @@ def get_job_id(pipeline_options: Dict[str, str]) -> str:
 
             service_name = "dataflow"
             dataflow_api_version = "v1b3"
-            credentials, _ = google.auth.default()
+            credentials = GoogleCredentials.get_application_default()
 
             dataflow = build(
                 serviceName=service_name,
@@ -128,7 +128,7 @@ def get_dataflow_job_with_id(
     """Returns information about the Dataflow job with the given `job_id`."""
     service_name = "dataflow"
     dataflow_api_version = "v1b3"
-    credentials, _ = google.auth.default()
+    credentials = GoogleCredentials.get_application_default()
 
     dataflow = build(
         serviceName=service_name, version=dataflow_api_version, credentials=credentials
