@@ -138,7 +138,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         self.field_index = CoreEntityFieldIndex()
         self.tree_merger = StateIngestedTreeMerger(self.field_index)
 
-    def set_session(self, session: Session):
+    def set_session(self, session: Session) -> None:
         if self.session:
             raise ValueError(
                 "Attempting to set self.session, " "but self.session is already set"
@@ -279,7 +279,9 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
                     f"{self.describe_db_entity(next(iter(ingest_objs)))}"
                 )
 
-    def generate_ingest_objs_by_person_id(self, found_objs: Set[DatabaseEntity]):
+    def generate_ingest_objs_by_person_id(
+        self, found_objs: Set[DatabaseEntity]
+    ) -> Dict[int, Set[DatabaseEntity]]:
         person_id_to_ingest_objs: Dict[int, Set[DatabaseEntity]] = defaultdict(set)
         for obj in found_objs:
             person_id = self.ingest_obj_id_to_person_id[id(obj)]
@@ -306,7 +308,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
 
         return intersection
 
-    def describe_db_entity(self, entity) -> str:
+    def describe_db_entity(self, entity: DatabaseEntity) -> str:
         external_id = (
             entity.get_external_id() if hasattr(entity, "external_id") else "N/A"
         )
@@ -319,7 +321,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
     def run_match(
         self,
         session: Session,
-        _,  # region_code, instead taken from state_matching_delegate
+        _: str,  # region_code, instead taken from state_matching_delegate
         ingested_people: List[entities.StatePerson],
     ) -> MatchedEntities:
         """Attempts to match all persons from |ingested_persons| with
@@ -530,7 +532,9 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         matched_entities_builder.total_root_entities = total_root_entities
         return matched_entities_builder
 
-    def _populate_person_backedges(self, updated_persons: List[schema.StatePerson]):
+    def _populate_person_backedges(
+        self, updated_persons: List[schema.StatePerson]
+    ) -> None:
         for person in updated_persons:
             children = get_all_db_objs_from_tree(person, self.field_index)
             self.check_no_ingest_objs(list(children))
@@ -603,7 +607,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
             individual_match_results, unmatched_db_entities, error_count
         )
 
-    def _convert_to_placeholder_or_expunge(self, entity: DatabaseEntity):
+    def _convert_to_placeholder_or_expunge(self, entity: DatabaseEntity) -> None:
         """
         Depending on whether or not the provided |entity| has already been
         committed to the db, this function either converts the |entity| into a
@@ -661,7 +665,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         ingested_placeholder_tree: EntityTree,
         db_entity_trees: List[EntityTree],
         matched_entities_by_db_ids: Dict[int, List[DatabaseEntity]],
-        root_entity_cls,
+        root_entity_cls: Type[DatabaseEntity],
     ) -> IndividualMatchResult:
         """Attempts to match the provided |ingested_placeholder_tree| to
         entities in the provided |db_entity_trees| based off any child matches.
@@ -682,7 +686,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         placeholder_children: List[DatabaseEntity] = []
         updated_entity_trees: List[EntityTree] = []
 
-        def resolve_child_placeholder_match_result():
+        def resolve_child_placeholder_match_result() -> None:
             """Resolves any child matches by removing the child from the
             ingested placeholder entity and adding the child onto the
             corresponding DB entity.
@@ -797,7 +801,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         self,
         ingested_unmatched_entity_tree: EntityTree,
         db_entity_trees: List[EntityTree],
-        root_entity_cls,
+        root_entity_cls: Type[DatabaseEntity],
     ) -> IndividualMatchResult:
         """
         Attempts to match the provided |ingested_unmatched_entity_tree| to any
@@ -828,7 +832,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         child_match_result = None
         child_field_name = None
 
-        def resolve_child_match_result():
+        def resolve_child_match_result() -> None:
             """Resolves any child matches by moving matched children off of
             their DB placeholder parent and onto the ingested, unmatched entity.
             """
@@ -917,7 +921,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         ingested_entity_tree: EntityTree,
         db_match_tree: EntityTree,
         matched_entities_by_db_ids: Dict[int, List[DatabaseEntity]],
-        root_entity_cls,
+        root_entity_cls: Type[DatabaseEntity],
     ) -> IndividualMatchResult:
         """Given an |ingested_entity_tree| and it's matched |db_match_tree|,
         this method merges any updated information from teh ingested entity
@@ -944,7 +948,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         child_match_result = None
         child_field_name = None
 
-        def resolve_child_match_result():
+        def resolve_child_match_result() -> None:
             """Keeps track of all matched and unmatched children."""
             if not child_match_result:
                 raise EntityMatchingError(
@@ -1023,7 +1027,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         self,
         ingested_entity_tree: EntityTree,
         db_entity_trees: List[EntityTree],
-        root_entity_cls,
+        root_entity_cls: Type[DatabaseEntity],
     ) -> List[Tuple[str, MatchResults]]:
         """Attempts to match all children of the |ingested_entity_tree| to
         children of the |db_entity_trees|. Matching for each child is

@@ -232,7 +232,7 @@ def generate_child_entity_trees(
     return child_trees
 
 
-def is_multiple_id_entity(entity: DatabaseEntity):
+def is_multiple_id_entity(entity: DatabaseEntity) -> bool:
     """Returns True if the given entity can have multiple external ids."""
     return entity.__class__ in get_multiple_id_classes()
 
@@ -256,7 +256,7 @@ def get_multiple_id_classes() -> List[Type[DatabaseEntity]]:
 
 def remove_child_from_entity(
     *, entity: DatabaseEntity, child_field_name: str, child_to_remove: DatabaseEntity
-):
+) -> None:
     """If present, removes the |child_to_remove| from the |child_field_name|
     field on the |entity|.
     """
@@ -274,7 +274,7 @@ def remove_child_from_entity(
 
 def add_child_to_entity(
     *, entity: DatabaseEntity, child_field_name: str, child_to_add: DatabaseEntity
-):
+) -> None:
     """Adds the |child_to_add| to the |child_field_name| field on the
     |entity|.
     """
@@ -296,7 +296,9 @@ def add_child_to_entity(
 
 
 # TODO(#2244): Create general approach for required fields/default values
-def convert_to_placeholder(entity: DatabaseEntity, field_index: CoreEntityFieldIndex):
+def convert_to_placeholder(
+    entity: DatabaseEntity, field_index: CoreEntityFieldIndex
+) -> None:
     for field_name in field_index.get_fields_with_non_empty_values(
         entity, EntityFieldType.FLAT_FIELD
     ):
@@ -385,7 +387,7 @@ def get_all_entities_of_cls(
     sources: Sequence[DatabaseEntity],
     cls: Type[DatabaseEntity],
     field_index: CoreEntityFieldIndex,
-):
+) -> List[DatabaseEntity]:
     """Returns all entities found in the provided |sources| of type |cls|."""
     seen_entities: List[DatabaseEntity] = []
     for tree in get_all_entity_trees_of_cls(sources, cls, field_index):
@@ -418,7 +420,7 @@ def _get_all_entity_trees_of_cls_helper(
     seen_trees: List[EntityTree],
     direction_checker: SchemaEdgeDirectionChecker,
     field_index: CoreEntityFieldIndex,
-):
+) -> None:
     """
     Finds all objects in the provided |tree| graph which have the type |cls|. When an object of type |cls| is found,
     updates the provided |seen_ids| and |seen_trees| with the object's id and EntityTree respectively.

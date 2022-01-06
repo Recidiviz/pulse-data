@@ -27,7 +27,7 @@ from recidiviz.persistence.entity.entity_utils import (
 
 def set_current_supervising_officer_from_supervision_periods(
     matched_persons: List[schema.StatePerson], field_index: CoreEntityFieldIndex
-):
+) -> None:
     """For every matched person, update the supervising_officer field to pull in the
     supervising_officer from the latest supervision period (sorted by termination date).
     """
