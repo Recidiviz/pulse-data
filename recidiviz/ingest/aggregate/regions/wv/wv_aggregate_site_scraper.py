@@ -16,7 +16,7 @@
 # =============================================================================
 """Returns the csv urls for West Virginia state jail data collection."""
 import ssl
-from typing import Set
+from typing import Any, Set
 
 import requests
 from lxml import html
@@ -31,7 +31,9 @@ STATE_AGGREGATE_URL = (
 class TLSAdapter(HTTPAdapter):
     """Lower the security level for dhhr.wv.gov"""
 
-    def init_poolmanager(self, connections, maxsize, block=False, **pool_kwargs):
+    def init_poolmanager(
+        self, connections: int, maxsize: int, block: bool = False, **pool_kwargs: Any
+    ) -> None:
         ctx = ssl.create_default_context()
         ctx.set_ciphers("DEFAULT@SECLEVEL=1")
         self.poolmanager = poolmanager.PoolManager(

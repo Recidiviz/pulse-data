@@ -159,7 +159,7 @@ def _parse_report_date(report_date: str) -> datetime.date:
     return aggregate_ingest_utils.on_last_day_of_month(parsed_date)
 
 
-def _pretend_facility_is_county(facility_name: str):
+def _pretend_facility_is_county(facility_name: str) -> str:
     """Format facility_name like a county_name to match each to a fips."""
     return facility_name.split(" ")[0] + " " + facility_name.split(" ")[1]
 

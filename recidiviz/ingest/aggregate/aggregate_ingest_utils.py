@@ -123,7 +123,7 @@ def cast_columns_to_int(
     return df
 
 
-def _validate_column_names(df: pd.DataFrame, column_names: Iterable[str]):
+def _validate_column_names(df: pd.DataFrame, column_names: Iterable[str]) -> None:
     """Verify that all column_names exist as columns in |df|."""
     for column_name in column_names:
         if column_name not in df.columns:

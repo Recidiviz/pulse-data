@@ -54,7 +54,7 @@ def _parse_table(filename: str) -> pd.DataFrame:
     county_names = data.County
     data = fips.add_column_to_df(data, county_names, us.states.CO)  # type: ignore
 
-    def label_date(row):
+    def label_date(row: pd.Series) -> str:
         """Impute date_collected based on collection quarter"""
         md = {1: "1/1", 2: "4/1", 3: "7/1", 4: "10/1"}[row["Qtr"]]
         return f"{md}/{row['QtrYear']}"
@@ -65,10 +65,10 @@ def _parse_table(filename: str) -> pd.DataFrame:
         datecounty=data["date_collected"].dt.strftime("%Y-%m-%d") + data["County"]
     )
 
-    def move_column_inplace(df, col, pos):
+    def move_column_inplace(df: pd.DataFrame, col: str, pos: int) -> None:
         """Move newly created columns to the front of the dataset"""
-        col = df.pop(col)
-        df.insert(pos, col.name, col)
+        col = df.pop(col)  # type: ignore
+        df.insert(pos, col.name, col)  # type: ignore
 
     move_column_inplace(data, "date_collected", 0)
     move_column_inplace(data, "fips", 0)

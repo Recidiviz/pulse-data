@@ -255,7 +255,7 @@ def parse_date(filename: str) -> datetime.date:
     raise AggregateDateParsingError("Could not extract date")
 
 
-def _pretend_facility_is_county(facility_name: str):
+def _pretend_facility_is_county(facility_name: str) -> str:
     """Format facility_name like a county_name to match each to a fips."""
     if facility_name == "Three Forks (Lee)":
         return "lee county"
