@@ -22,10 +22,16 @@ const sessionId = uuidv4();
 
 export const identify = (
   userId: string,
+  userHash: string,
   metadata?: Record<string, unknown>
 ): void => {
   const fullMetadata = metadata || {};
   fullMetadata.sessionId = sessionId;
+  fullMetadata.integrations = {
+    Intercom: {
+      user_hash: userHash,
+    },
+  };
 
   if (process.env.NODE_ENV !== "development") {
     window.analytics.identify(userId, fullMetadata);
