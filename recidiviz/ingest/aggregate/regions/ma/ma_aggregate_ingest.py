@@ -76,7 +76,7 @@ def _parse_table(filename: str) -> pd.DataFrame:
     :return: parsed Massachusetts df
     """
 
-    def label_subset_of_counties(column):
+    def label_subset_of_counties(column: pd.Series) -> None:
         for i, v in enumerate(column):
             if i == len(column) - 1:
                 break
@@ -85,7 +85,7 @@ def _parse_table(filename: str) -> pd.DataFrame:
             if v.endswith("TYPE") and not pd.isna(column[i + 1]):
                 column[i] = column[i][:-5] + " " + column[i + 1] + " TYPE"
 
-    def create_level_col(df):
+    def create_level_col(df: pd.DataFrame) -> pd.DataFrame:
         """Create LEVEL column with HOC or Jail"""
         levels = {
             "HOUSE OF STATE": "HOC",

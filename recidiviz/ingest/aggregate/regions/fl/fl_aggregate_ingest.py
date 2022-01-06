@@ -176,7 +176,7 @@ def _to_int(int_str: str) -> Optional[int]:
         return None
 
 
-def _pretend_facility_is_county(facility_name: str):
+def _pretend_facility_is_county(facility_name: str) -> str:
     """Format facility_name like a county_name to match each to a fips."""
     words_before_county_name = ["County", "Conte", "CSO", "Central"]
     for delimiter in words_before_county_name:

@@ -16,9 +16,9 @@
 # =============================================================================
 
 """Scrapes the California aggregate site and finds pdfs to download."""
-import re
 import datetime
-from typing import Dict, List, Tuple
+import re
+from typing import Any, Dict, List, Tuple
 
 import requests
 
@@ -32,11 +32,13 @@ PDF_URL = "https://app.bscc.ca.gov/joq//jps/query.asp?action=q"
 DATE_RANGE_ANCHOR = "Data is available from"
 
 
-def _get_landing_data():
+def _get_landing_data() -> Dict[str, str]:
     return {"DataType": "Facility", "ReportingRange": "2002", "Continue": "Continue"}
 
 
-def _get_pdf_data(year, month_from, month_to, reporting_range):
+def _get_pdf_data(
+    year: int, month_from: int, month_to: int, reporting_range: int
+) -> Dict[str, Any]:
     # This is the post data we need to return a pdf with all counties in
     # California set.  The IDs are presumably ids used internally on the site
     # and they were acquired by checking the post data on the California

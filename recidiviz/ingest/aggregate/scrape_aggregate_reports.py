@@ -20,7 +20,7 @@
 import logging
 from datetime import date
 from http import HTTPStatus
-from typing import Dict, Optional
+from typing import Dict, Optional, Tuple
 from urllib.parse import urlparse
 
 import requests
@@ -77,7 +77,7 @@ def build_path(bucket_template: str, state: str, pdf_name: str) -> GcsfsFilePath
 
 @scrape_aggregate_reports_blueprint.route("/scrape_state")
 @requires_gae_auth
-def scrape_aggregate_reports():
+def scrape_aggregate_reports() -> Tuple[str, HTTPStatus]:
     """Calls state aggregates"""
 
     # Please add new states in alphabetical order
@@ -95,6 +95,11 @@ def scrape_aggregate_reports():
         "west_virginia": wv_aggregate_site_scraper.get_urls_to_download,
     }
     state = get_str_param_value("state", request.args)
+    if not state:
+        return (
+            f"Error with arguments state: {state} given, but not valid",
+            HTTPStatus.INTERNAL_SERVER_ERROR,
+        )
     # We want to always download the pdf if it is NY because they always have
     # the same name.
     always_download = state == "new_york"
@@ -116,19 +121,24 @@ def scrape_aggregate_reports():
             # the name since california sends post requests with the same url.
             pdf_name = state
             if is_ca:
+                if not post_data["year"]:
+                    return (
+                        "Error with parsing year from post_data for CA",
+                        HTTPStatus.INTERNAL_SERVER_ERROR,
+                    )
                 pdf_name += str(post_data["year"])
         elif is_co:
             pdf_name = date.today().strftime("colorado-%m-%Y")
         else:
-            pdf_name = urlparse(url).path.replace("/", "_").lower()
+            pdf_name = urlparse(url).path.replace("/", "_").lower()  # type: ignore
         historical_path = build_path(HISTORICAL_BUCKET, state, pdf_name)
         file_to_upload = _get_file_to_upload(
             historical_path,
             fs,
-            url,
+            url,  # type: ignore
             pdf_name,
             always_download,
-            post_data,
+            post_data,  # type: ignore
             verify_ssl,
             adapter=adapter,
         )

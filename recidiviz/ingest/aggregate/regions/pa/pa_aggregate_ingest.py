@@ -21,6 +21,7 @@ from typing import Dict
 import pandas as pd
 import us
 from numpy import NaN
+from pandas.core.frame import DataFrame
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
 from recidiviz.common import fips
@@ -100,7 +101,7 @@ def _parse_tab_1(filename: str) -> pd.DataFrame:
     return df.reset_index(drop=True)
 
 
-def _report_date_tab_1(filename):
+def _report_date_tab_1(filename: str) -> datetime.date:
     df = pd.read_excel(filename, sheet_name=0, header=None, engine="openpyxl")
 
     # The first cell contains the date
@@ -109,7 +110,7 @@ def _report_date_tab_1(filename):
     return datetime.date(year=year, month=1, day=1)
 
 
-def _parse_tab_2(filename: str):
+def _parse_tab_2(filename: str) -> DataFrame:
     df = pd.read_excel(filename, sheet_name=1, header=1, engine="openpyxl")
 
     # Drop Totals footer
@@ -136,7 +137,7 @@ def _parse_tab_2(filename: str):
     return df
 
 
-def _to_numeric(column):
+def _to_numeric(column: pd.Series) -> float:
     # Skip columns that shouldn't be numeric
     if column.name == "facility_name":
         return column

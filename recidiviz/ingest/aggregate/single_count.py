@@ -19,6 +19,7 @@
 
 import logging
 from http import HTTPStatus
+from typing import Tuple
 
 from flask import Blueprint, request
 
@@ -36,7 +37,7 @@ class StoreSingleCountError(Exception):
 
 @store_single_count_blueprint.route("/single_count")
 @requires_gae_auth
-def store_single_count_endpoint():
+def store_single_count_endpoint() -> Tuple[str, HTTPStatus]:
     """Endpoint to store a single count"""
 
     jid = get_str_param_value("jid", request.args)
@@ -45,6 +46,11 @@ def store_single_count_endpoint():
     race = get_str_param_value("race", request.args)
     count = get_str_param_value("count", request.args)
     date = get_str_param_value("date", request.args)
+    if not jid or not count:
+        return (
+            f"Failed to retrieve proper parameters jid and count: {jid}, {count}",
+            HTTPStatus.INTERNAL_SERVER_ERROR,
+        )
     sc = SingleCount(
         count=count,
         ethnicity=ethnicity,
