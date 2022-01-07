@@ -180,11 +180,9 @@ class UserContext:
 
     @property
     def intercom_user_hash(self) -> Optional[str]:
-        if self.should_see_demo:
-            return None
-
         key = get_local_secret("case_triage_intercom_app_key")
-        if not key or not self.segment_user_id:
+
+        if not self.segment_user_id or not key:
             return None
 
         user_hash = hmac.new(
