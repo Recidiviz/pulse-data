@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2021 Recidiviz, Inc.
+# Copyright (C) 2022 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -56,6 +56,7 @@ class UsMoSupervisionDelegate(StateSpecificSupervisionDelegate):
         """In US_MO, because supervision periods may not necessarily have persisted
         supervision period ids, we do a date-range based mapping back to original
         ingested periods."""
+        most_recent_agent_association = None
         for agent_dict in supervision_period_to_agent_associations.values():
             start_date: Optional[date] = agent_dict["agent_start_date"]
             end_date: Optional[date] = agent_dict["agent_end_date"]
@@ -67,9 +68,17 @@ class UsMoSupervisionDelegate(StateSpecificSupervisionDelegate):
                 supervision_period.duration,
                 DateRange.from_maybe_open_range(start_date, end_date),
             ).overlapping_range:
-                return agent_dict["agent_external_id"]
+                if most_recent_agent_association is None or (
+                    start_date > most_recent_agent_association["agent_start_date"]
+                ):
+                    most_recent_agent_association = agent_dict
+                continue
 
-        return None
+        return (
+            most_recent_agent_association["agent_external_id"]
+            if most_recent_agent_association
+            else None
+        )
 
     def assessment_types_to_include_for_class(
         self, assessment_class: StateAssessmentClass
