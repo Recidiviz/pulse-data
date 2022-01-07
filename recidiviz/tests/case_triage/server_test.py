@@ -75,6 +75,10 @@ class TestCaseTriageAPIRoutes(TestCase):
 
     def setUp(self) -> None:
         self.test_app = Flask(__name__)
+        self.metadata_patcher = mock.patch("recidiviz.utils.metadata.project_id")
+        self.mock_project_id_fn = self.metadata_patcher.start()
+        self.mock_project_id_fn.return_value = "test-project"
+
         self.helpers = CaseTriageTestHelpers.from_test(self, self.test_app)
         self.test_client = self.helpers.test_client
         self.mock_segment_client = self.helpers.mock_segment_client
