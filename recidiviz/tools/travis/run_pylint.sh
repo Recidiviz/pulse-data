@@ -90,4 +90,24 @@ else
     echo "All TODOs match format"
 fi
 
+# TODO(#10252): Once we have a linter setup for SQL, see if it can perform this check for us.
+# CURRENT_DATE format check
+echo "Checking CURRENT_DATE format"
+# This set of commands does the following:
+# - List all files with updates that are not deletions
+# - Skips 'run_pylint.sh' as it is allowed to have 'CURRENT_DATE' that doesn't match the format
+# - Runs grep for each updated file, getting all lines containing 'CURRENT_DATE()' (and including the line number in the output via -n)
+invalid_lines=$(${changed_files_cmd} \
+    | grep --invert-match -e 'run_pylint\.sh' \
+    | xargs grep -n -e 'CURRENT_DATE\(\)')
+
+if [[ -n ${invalid_lines} ]]
+then
+    echo "CURRENT_DATE must include a timezone"
+    echo "${invalid_lines}" | indent_output
+    exit_code=$((exit_code + 1))
+else
+    echo "All CURRENT_DATE functions match format"
+fi
+
 exit $exit_code
