@@ -39,8 +39,8 @@ keys_to_ignore:
 - BS_ACL  # TODO(#2604) - What is this? - not in TAK table index
 - BS_CCI  # Unused - Sentence Concurrent/Consecutive Ind
 - BS_CRQ  # Unused - Sentence Concurrent/Consecutive Xref
-- BS_CRC  # TODO(#2305) - Court Circuit
-- BS_CRD  # TODO(#2305) - Court Division
+- BS_CRC  # Unused - Court Circuit
+- BS_CRD  # Unused - Court Division
 - BS_PLE  # TODO(#2607) - Sentence Plea - Add a plea_type enum on the state_charge
 - BS_AR   # TODO(#2331) - Sentence Arrest Date
 - BS_UID  # Unused - User ID

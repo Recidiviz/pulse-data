@@ -57,7 +57,7 @@ output:
                                   - GCON
                                   - GARR
                                   - SAVE  # Placement in SAVE
-                                  # TODO(#3312): Ask what this new sanction code value means.
+                                  # TODO(#10502): Ask what this new sanction code value means.
                                   - SPB3  # Unknown, new as of 2021-05-10
                                   - ARRT  # Arrest
                                   - H03

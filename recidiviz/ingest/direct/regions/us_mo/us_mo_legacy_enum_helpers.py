@@ -476,8 +476,8 @@ SUPERVISION_PERIOD_TERMINATION_REASON_TO_STR_MAPPINGS: Dict[
     ],
     StateSupervisionPeriodTerminationReason.EXTERNAL_UNKNOWN: [],
     StateSupervisionPeriodTerminationReason.REVOCATION: [
-        # TODO(#2666): Consider reclassifying some of these as a status that
-        #  indicates that it's a return but not a revocation
+        # TODO(#10498): Consider reclassifying some of these as a status that indicates
+        # that it's a return but not a revocation
         "45O0ZZZ",  # Board Holdover     'MUST VERIFY'
         "45O0010",  # Emergency Board RF Housing
         "45O0050",  # Board Holdover

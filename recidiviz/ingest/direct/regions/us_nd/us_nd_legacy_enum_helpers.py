@@ -133,7 +133,6 @@ def supervision_contact_location_mapper(
 
 
 IGNORES: Dict[Type[Enum], List[str]] = {
-    # TODO(#2305): What are the appropriate court case statuses?
     StateCourtCaseStatus: ["A", "STEP"],
     # TODO(#10152): Delete the StateIncarcerationPeriodAdmissionReason mappings
     #  once the dependency on this logic has been removed from US_ND Dataflow

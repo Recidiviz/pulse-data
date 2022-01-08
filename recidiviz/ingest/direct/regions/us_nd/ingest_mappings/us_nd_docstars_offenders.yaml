@@ -36,7 +36,7 @@ keys_to_ignore:
   - ZIP2                  # Not storing multiple addresses in our schema
   - MAILING_ADDRESS2      # Not storing multiple addresses in our schema
   - PHYSICAL_ADDRESS2     # Not storing multiple addresses in our schema
-  - SITEID                # TODO(#2232): Ingest this and use site id to track site of supervision
+  - SITEID                # Unused, we pull this from the officer instead
   - ABSDATE               # No longer in use within source
   - ABSCONDER
   - GOODTIMEDATE
@@ -67,6 +67,6 @@ keys_to_ignore:
   - LAST_HOME_VISIT
   - LAST_FACE_TO_FACE
   - COUNTY_RESIDENCE      # TODO(#2227) Either append to address string or create dedicated field on state_person
-  - COMPLETION_IND                    # TODO(#2276): Review this col - should we be using it?
-  - EARLY_TERMINATION_DATE            # TODO(#2276): Review this col - should we be using it?
-  - EARLY_TERMINATION_ACKNOWLEDGED    # TODO(#2276): Review this col - should we be using it?
+  - COMPLETION_IND
+  - EARLY_TERMINATION_DATE
+  - EARLY_TERMINATION_ACKNOWLEDGED
