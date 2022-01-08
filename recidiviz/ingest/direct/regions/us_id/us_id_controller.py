@@ -354,11 +354,8 @@ class UsIdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             "Technical (enter details below)",  # From violation report 210
             "Technical",  # From violation report 204
         ],
-        # TODO(#3510): Go through values with ID to ensure we have the correct mappings
         StateSupervisionViolationResponseDecision.CONTINUANCE: [
             "Reinstatement",  # Parole/probation recommendation from violation report 210
-            # TODO(#3510): Is there a better enum for this (recommendation that max release date is used instead of
-            # min)?
             "Recommended Full Term Release Date",  # Parole recommendation from violation report 204
         ],
         StateSupervisionViolationResponseDecision.SPECIALIZED_COURT: [
@@ -367,7 +364,6 @@ class UsIdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             "Referral to Problem Solving Court",  # Probation recommendation from violation report 204
         ],
         StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION: [
-            # TODO(#3510): Are these 'Diversion' recs shock incarceration or treatment in prison?
             "Diversion - Jail",  # Parole recommendation from violation report 210
             "Diversion - CRC",  # Parole recommendation from violation report 210
             "Diversion - Prison",  # Parole recommendation from violation report 210
@@ -376,7 +372,6 @@ class UsIdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         StateSupervisionViolationResponseDecision.TREATMENT_IN_PRISON: [
             "Rider",  # Probation recommendation from violation report 210
             "Rider Recommendation",  # Probation recommendation from violation report 204
-            # TODO(#3510): is this shock incarceration or treatment in prison?
             "PVC - Parole Violator Program",  # Parole recommendation from violation report 204
         ],
         StateSupervisionViolationResponseDecision.REVOCATION: [
@@ -451,10 +446,10 @@ class UsIdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             "ICE DETAINER",
         ],
         StateSupervisionLevel.INTERNAL_UNKNOWN: [
-            "DOSAGE",  # TODO(#3692): Figure out what this means
-            "DOSAGE ELIGIBLE",  # TODO(#3692): Figure out what this means
-            "D7 DUI COURT",  # TODO(#6128): Figure out what this means
-            "EXPANDED CRC",  # TODO(#8480): Figure out what this means
+            "DOSAGE",  # TODO(#3749): Remap to separate enum
+            "DOSAGE ELIGIBLE",
+            "D7 DUI COURT",
+            "EXPANDED CRC",
             "ADMINISTRATIVE",  # Used for a non-standardized set of situations.
             "GOLD SEAL PENDING",  # Pending supervision termination (after parole board has approved termination)
             # No longer under IDOC authority
@@ -468,7 +463,6 @@ class UsIdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             "SEX OFFENSE",
             "TRANSITION",
         ],
-        # TODO(#3692): Validate that we have the correct mappings for new values of LOW, MODERATE, HIGH
         StateSupervisionLevel.MINIMUM: [
             "LOW",
             "LEVEL 1",  # Historical value for minimum
@@ -506,7 +500,6 @@ class UsIdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             "SO TO GENERAL LEVEL4",  # Historical value - Previously sex offense caseload, now on maximum general
             # caseload
         ],
-        # TODO(#3692): Ask ID if there are new values to show whether someone is in a diversion court?
         StateSupervisionLevel.DIVERSION: [
             # All are historical values below
             "DRUG COURT",

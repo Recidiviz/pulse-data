@@ -108,7 +108,6 @@ def read_placeholder_persons(
     return _normalize_record_trees(schema_persons)
 
 
-# TODO(#1907): Rename to read_persons.
 def read_people(
     session: Session, full_name: str = None, birthdate: datetime.date = None
 ) -> List[schema.StatePerson]:

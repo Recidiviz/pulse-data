@@ -113,9 +113,6 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
         Returns:
             A list of ProgramEvents for the person.
         """
-        # TODO(#2855): Bring in supervision and incarceration sentences to infer the
-        #  supervision type on supervision periods that don't have a set supervision
-        #  type
         program_events: List[ProgramEvent] = []
 
         if not program_assignments:

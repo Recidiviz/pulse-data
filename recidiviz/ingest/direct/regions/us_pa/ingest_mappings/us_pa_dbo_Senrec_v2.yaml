@@ -45,7 +45,7 @@ output:
               $raw_text: sent_status_code
               $mappings:
                 StateSentenceStatus.COMPLETED:
-                  # TODO(#3312): Confirm the COMPLETED codes below. Some may be intermediate and not appropriately mapped as
+                  # TODO(#10502): Confirm the COMPLETED codes below. Some may be intermediate and not appropriately mapped as
                   # final.
                   - B  # Bailed
                   - CS  # Change other Sentence
@@ -79,7 +79,7 @@ output:
                   - EC  # Escape CSC
                   - EI  # Escape Institution
                   - F  # Furloughed
-                  # TODO(#3312): What does it mean when someone else is in custody elsewhere? Does this mean they are no
+                  # TODO(#10502): What does it mean when someone else is in custody elsewhere? Does this mean they are no
                   # longer the responsibility of the PA DOC? Should they also stop being counted towards population counts?
                   # What does it mean when this code is used with a county code?
                   - IC  # In Custody Elsewhere
