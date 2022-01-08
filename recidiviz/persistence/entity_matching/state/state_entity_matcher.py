@@ -596,7 +596,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         for db_entity_tree in db_entity_trees:
             db_entity = db_entity_tree.entity
             db_id = db_id_or_object_id(db_entity)
-            if db_id not in matched_entities_by_db_id.keys():
+            if db_id not in matched_entities_by_db_id:
                 unmatched_db_entities.append(db_entity)
 
         for entity in self.entities_to_convert_to_placeholder_or_expunge:
@@ -1318,7 +1318,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
                 if not external_id:
                     continue
 
-                if external_id in multiparent_map.keys():
+                if external_id in multiparent_map:
                     entities_with_parents = multiparent_map[external_id]
                     found_entity = False
 

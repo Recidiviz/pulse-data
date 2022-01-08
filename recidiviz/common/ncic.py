@@ -53,8 +53,6 @@ _NCIC: Dict[str, NcicCode] = {}
 
 
 def _get_NCIC() -> Dict[str, NcicCode]:
-    global _NCIC
-
     if not _NCIC:
         with open(_NCIC_FILEPATH, "r", encoding="utf-8") as file:
             reader = csv.DictReader(file)

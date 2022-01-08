@@ -45,8 +45,6 @@ def use_in_memory_sqlite_database(database_key: SQLAlchemyDatabaseKey) -> None:
     """
 
     def connection_creator() -> sqlite3.Connection:
-        global _in_memory_sqlite_connection_thread_ids
-
         thread_id = threading.get_ident()
         if thread_id in _in_memory_sqlite_connection_thread_ids:
             raise ValueError(
@@ -74,6 +72,5 @@ def use_in_memory_sqlite_database(database_key: SQLAlchemyDatabaseKey) -> None:
 @environment.test_only
 def teardown_in_memory_sqlite_databases() -> None:
     """Cleans up state after a test started with use_in_memory_sqlite_database() is complete."""
-    global _in_memory_sqlite_connection_thread_ids
     _in_memory_sqlite_connection_thread_ids.clear()
     SQLAlchemyEngineManager.teardown_engines()

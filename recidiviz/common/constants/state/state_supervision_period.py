@@ -67,7 +67,7 @@ class StateSupervisionPeriodSupervisionType(EntityEnum, metaclass=EntityEnumMeta
     PROBATION = state_enum_strings.state_supervision_period_supervision_type_probation
 
     @staticmethod
-    def _get_default_map() -> Dict[str, StateSupervisionPeriodSupervisionType]:
+    def _get_default_map() -> Dict[str, "StateSupervisionPeriodSupervisionType"]:
         return _STATE_SUPERVISION_PERIOD_SUPERVISION_TYPE_MAP
 
 

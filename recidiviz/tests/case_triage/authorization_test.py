@@ -43,7 +43,7 @@ def _test_get_local_file(file_path: GcsfsFilePath) -> str:
     local_path = os.path.join(
         os.path.realpath(os.path.dirname(os.path.realpath(__file__))), "auth_fixtures"
     )
-    return Path(os.path.join(local_path, file_path.abs_path())).read_text()
+    return Path(os.path.join(local_path, file_path.abs_path())).read_text("utf-8")
 
 
 class TestAuthorizationStore(TestCase):

@@ -33,10 +33,11 @@ class UsNdIncarcerationDelegate(StateSpecificIncarcerationDelegate):
         authority of the state prison are included in the state population.
         """
         return (
-            incarceration_period.custodial_authority
-            == StateCustodialAuthority.STATE_PRISON
             # TODO(#3723): Stop including OOS periods once we have handled the fact
             #  that the releases to this facility are classified as transferred.
-            or incarceration_period.custodial_authority
-            == StateCustodialAuthority.OTHER_STATE
+            incarceration_period.custodial_authority
+            in (
+                StateCustodialAuthority.STATE_PRISON,
+                StateCustodialAuthority.OTHER_STATE,
+            )
         )

@@ -22,7 +22,7 @@ from astroid import nodes
 
 from .checkers.base_checker import BaseChecker
 
-class Message:
+class MessageTest:
     def __init__(
         self,
         msg_id: str,
@@ -37,6 +37,6 @@ class CheckerTestCase:
     checker: BaseChecker
     def setup_method(self) -> None: ...
     @contextmanager
-    def assertAddsMessages(self, *messages: Message) -> Iterator[None]: ...
+    def assertAddsMessages(self, *messages: MessageTest) -> Iterator[None]: ...
     @contextmanager
     def assertNoMessages(self) -> Iterator[None]: ...
