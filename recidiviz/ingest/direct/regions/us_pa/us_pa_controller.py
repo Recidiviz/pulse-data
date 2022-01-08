@@ -781,7 +781,7 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         for obj in extracted_objects:
             if isinstance(obj, StateIncarcerationPeriod):
                 if gating_context.file_tag in ("sci_incarceration_period",):
-                    # TODO(#3312): Figure out how to fill out the incarceration_type COUNTY_JAIL/STATE/FEDERAL based on
+                    # TODO(#10502): Figure out how to fill out the incarceration_type COUNTY_JAIL/STATE/FEDERAL based on
                     #  IC sentence status + location codes? Ask PA about this!
                     obj.incarceration_type = "SCI"
                 elif gating_context.file_tag == "ccis_incarceration_period":

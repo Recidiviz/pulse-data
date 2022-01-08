@@ -467,7 +467,8 @@ class TestPersistenceMultipleThreadsOverlapping(TestCase, MultipleStateTestMixin
         self.isolation_level_patcher = patch.object(
             SQLAlchemyDatabaseKey,
             "isolation_level",
-            # TODO(#3622): Set to 'SERIALIZABLE'
+            # Note: This test fails if switched to 'SERIALIZABLE'. We aren't sure why
+            # Postgres thinks the two transactions have conflicting locks.
             "REPEATABLE READ",
         )
         self.isolation_level_patcher.start()
@@ -659,7 +660,8 @@ class TestPersistenceMultipleThreadsInterleaved(TestCase, MultipleStateTestMixin
         self.isolation_level_patcher = patch.object(
             SQLAlchemyDatabaseKey,
             "isolation_level",
-            # TODO(#3622): Set to 'SERIALIZABLE'
+            # Note: This test fails if switched to 'SERIALIZABLE'. We aren't sure why
+            # Postgres thinks the two transactions have conflicting locks.
             "REPEATABLE READ",
         )
         self.isolation_level_patcher.start()

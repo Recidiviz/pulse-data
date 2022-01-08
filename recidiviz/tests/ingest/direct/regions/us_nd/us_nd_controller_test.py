@@ -1524,7 +1524,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
 
         self.run_legacy_parse_file_test(expected, "docstars_contacts_v2")
 
-    # TODO(#2157): Move into integration specific file
     def test_run_full_ingest_all_files_specific_order(self) -> None:
         ######################################
         # ELITE OFFENDER IDENTIFIERS
@@ -1648,8 +1647,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
         # ELITE ALIASES
         ######################################
         # Arrange
-        # TODO(#2158): Why do we fill out full_name and keep the distinct
-        # parts (in comparison to Person).
         person_1_ethnicity = entities.StatePersonEthnicity.new_with_defaults(
             state_code=_STATE_CODE,
             ethnicity=Ethnicity.HISPANIC,
@@ -1725,7 +1722,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
         # ELITE SENTENCE AGGS
         ######################################
         # Arrange
-        # TODO(#2155): Should these have an external_id?
         incarceration_sentence_1 = (
             entities.StateIncarcerationSentence.new_with_defaults(
                 state_code=_STATE_CODE,
@@ -2252,7 +2248,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
         # ELITE ORDERS
         ######################################
         # Arrange
-        # TODO(#2158): Parse full_name in the same way we do for person
+        # TODO(#10497): Parse full_name in the same way we do for person
         # TODO(#2111): Remove duplicates once we have external_ids.
         agent_judy = entities.StateAgent.new_with_defaults(
             agent_type=StateAgentType.JUDGE,

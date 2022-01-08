@@ -32,7 +32,6 @@ REPORT_DATA_BY_OFFICER_BY_MONTH_DATA_DESCRIPTION = """
  from supervision, and keeping cases in compliance with state standards.
  """
 
-# TODO(#3514): handle officers with caseloads across multiple districts
 # TODO(#5034): Make deterministic and reduce complexity to be covered by metric output comparison script
 REPORT_DATA_BY_OFFICER_BY_MONTH_DATA_QUERY_TEMPLATE = """
     /*{description}*/

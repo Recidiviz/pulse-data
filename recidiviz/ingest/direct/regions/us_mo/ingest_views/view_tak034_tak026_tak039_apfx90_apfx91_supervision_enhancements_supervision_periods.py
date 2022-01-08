@@ -16,14 +16,14 @@
 # =============================================================================
 """Query containing incarceration period from supervision information."""
 
+from recidiviz.ingest.direct.regions.us_mo.ingest_views.us_mo_view_query_fragments import (
+    ALL_OFFICERS_FRAGMENT,
+)
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
     DirectIngestPreProcessedIngestViewBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
-from recidiviz.ingest.direct.regions.us_mo.ingest_views.us_mo_view_query_fragments import (
-    ALL_OFFICERS_FRAGMENT,
-)
 
 OFFICER_ROLE_SPANS_FRAGMENT = f"""
     {ALL_OFFICERS_FRAGMENT},
@@ -73,8 +73,6 @@ OFFICER_ROLE_SPANS_FRAGMENT = f"""
     )
     """
 
-# TODO(#3736): Incremental updates from this query will be supported automatically when we transition MO to SQL
-#  pre-processing.
 VIEW_QUERY_TEMPLATE = f"""
 WITH field_assignments_ce AS (
         SELECT

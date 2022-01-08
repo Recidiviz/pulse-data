@@ -21,9 +21,9 @@ columns:
       Whether or not the person has since been released from this period of supervision.
     known_values:
       - value: N
-        description: TODO(#3312) - Get confirmation from PA about meaning
+        description: TODO(#10502) - Get confirmation from PA about meaning
       - value: Y
-        description: TODO(#3312) - Get confirmation from PA about meaning
+        description: TODO(#10502) - Get confirmation from PA about meaning
   - name: InstitutionNumber
     description: |-
       ID of the institution under whose authority the assessment was administered.

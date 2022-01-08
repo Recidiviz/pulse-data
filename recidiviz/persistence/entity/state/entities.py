@@ -177,7 +177,6 @@ class StatePersonAlias(Entity, BuildableAttr, DefaultableAttr):
     alias_type_raw_text: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_str
     )
-    # TODO(#1905): Remove defaults for string fields
     full_name: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_str
     )
