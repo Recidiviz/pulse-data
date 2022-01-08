@@ -44,7 +44,7 @@ def get_local_secret(secret_name: str) -> Optional[str]:
     """
     if in_development():
         try:
-            text = Path(os.path.join(local_path, "gsm", secret_name)).read_text()
+            text = Path(os.path.join(local_path, "gsm", secret_name)).read_text("utf-8")
             return text.strip()
         except OSError:
             logging.error("Couldn't locate secret %s", secret_name)
@@ -61,7 +61,9 @@ def get_local_file(file_path: GcsfsFilePath) -> str:
     """
 
     if in_development():
-        return Path(os.path.join(local_path, "gcs", file_path.abs_path())).read_text()
+        return Path(os.path.join(local_path, "gcs", file_path.abs_path())).read_text(
+            "utf-8"
+        )
 
     gcs_fs = GcsfsFactory.build()
     return gcs_fs.download_as_string(file_path)

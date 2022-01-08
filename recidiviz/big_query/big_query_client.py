@@ -50,7 +50,6 @@ _clients_by_project_id_by_region: Dict[str, Dict[str, bigquery.Client]] = defaul
 
 
 def client(project_id: str, region: str) -> bigquery.Client:
-    global _clients_by_project_id_by_region
     if (
         project_id not in _clients_by_project_id_by_region
         or region not in _clients_by_project_id_by_region[project_id]

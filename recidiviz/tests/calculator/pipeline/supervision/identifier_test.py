@@ -7881,9 +7881,7 @@ class TestConvertEventsToDual(unittest.TestCase):
     def test_convert_events_to_dual_metric_type_coverage(self) -> None:
         """Asserts all SupervisionMetricTypes are handled in the function."""
         for metric_type in SupervisionMetricType:
-            self.assertTrue(
-                metric_type in self.identifier.EVENT_TYPES_FOR_METRIC.keys()
-            )
+            self.assertTrue(metric_type in self.identifier.EVENT_TYPES_FOR_METRIC)
 
 
 def expected_population_events(

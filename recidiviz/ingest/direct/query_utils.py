@@ -64,7 +64,6 @@ _RAW_TABLE_CONFIGS_BY_STATE = {}
 
 def get_region_raw_file_config(region_code: str) -> DirectIngestRegionRawFileConfig:
     region_code_lower = region_code.lower()
-    global _RAW_TABLE_CONFIGS_BY_STATE
     if region_code_lower not in _RAW_TABLE_CONFIGS_BY_STATE:
         _RAW_TABLE_CONFIGS_BY_STATE[
             region_code_lower

@@ -1416,14 +1416,14 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         ):
             return False, None
 
-        if previous_supervision_level not in supervision_level_to_number.keys():
+        if previous_supervision_level not in supervision_level_to_number:
             raise ValueError(
                 f"Previous supervision level ({previous_supervision_level}) was not listed as a supervision "
                 f"level that is out of scope for downgrades and was not found in the list of levels that can "
                 f"be compared for downgrades. Please add it to one of the two."
             )
 
-        if current_supervision_level not in supervision_level_to_number.keys():
+        if current_supervision_level not in supervision_level_to_number:
             raise ValueError(
                 f"Current supervision level ({current_supervision_level}) was not listed as a supervision "
                 f"level that is out of scope for downgrades and was not found in the list of levels that can "

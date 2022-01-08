@@ -1389,7 +1389,7 @@ class BigQueryClientImplTest(unittest.TestCase):
                 self.result_str = result_str
                 self.is_cancelled = False
 
-            def done(self, retry: Retry = DEFAULT_RETRY) -> bool:
+            def done(self, _: Retry = DEFAULT_RETRY) -> bool:
                 if (
                     self.start_time + datetime.timedelta(seconds=self.wait_time_sec)
                     > datetime.datetime.now()

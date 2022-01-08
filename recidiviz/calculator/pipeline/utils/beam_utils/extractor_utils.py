@@ -266,10 +266,7 @@ class ExtractDataForPipeline(beam.PTransform):
             related_entity_class = relationship_property.property_entity_class
             related_entity_class_name = related_entity_class.__name__
 
-            if (
-                related_entity_class == self._unifying_class
-                or root_entity_class == self._unifying_class
-            ):
+            if self._unifying_class in (related_entity_class, root_entity_class):
                 # All entities will be grouped with the unifying class that they are
                 # related to, so there's no need to query for these relationships
                 continue
@@ -644,6 +641,7 @@ class _ConnectHydratedRelatedEntities(beam.DoFn):
             ],
         ]
     ]:
+        """Runs the process for getting fully connected hydrated entities."""
         fully_connected_hydrated_entities: Dict[EntityClassName, List[Entity]] = {}
 
         unifying_id, element_data = element

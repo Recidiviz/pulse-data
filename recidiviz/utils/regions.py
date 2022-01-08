@@ -207,8 +207,6 @@ def get_region(
     is_direct_ingest: bool = False,
     region_module_override: Optional[ModuleType] = None,
 ) -> Region:
-    global REGIONS
-
     if region_module_override:
         region_module = region_module_override
     elif is_direct_ingest:
