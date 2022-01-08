@@ -157,7 +157,7 @@ class TestBQSchemaForMetricTable(unittest.TestCase):
 
         for metric_type in IncarcerationMetricType:
             # Assert that all IncarcerationMetricTypes are covered
-            assert metric_type in incarceration_metrics_for_type.keys()
+            assert metric_type in incarceration_metrics_for_type
 
             # If there's no error, then all attribute types are handled
             _ = incarceration_metrics_for_type.get(
@@ -172,7 +172,7 @@ class TestBQSchemaForMetricTable(unittest.TestCase):
 
         for metric_type in ProgramMetricType:
             # Assert that all ProgramMetricTypes are covered
-            assert metric_type in program_metrics_for_type.keys()
+            assert metric_type in program_metrics_for_type
 
             # If there's no error, then all attribute types are handled
             _ = program_metrics_for_type.get(metric_type).bq_schema_for_metric_table()
@@ -185,7 +185,7 @@ class TestBQSchemaForMetricTable(unittest.TestCase):
 
         for metric_type in ReincarcerationRecidivismMetricType:
             # Assert that all ReincarcerationRecidivismMetricTypes are covered
-            assert metric_type in recidivism_metrics_for_type.keys()
+            assert metric_type in recidivism_metrics_for_type
 
             # If there's no error, then all attribute types are handled
             _ = recidivism_metrics_for_type.get(
@@ -205,7 +205,7 @@ class TestBQSchemaForMetricTable(unittest.TestCase):
 
         for metric_type in SupervisionMetricType:
             # Assert that all SupervisionMetricTypes are covered
-            assert metric_type in supervision_metrics_for_type.keys()
+            assert metric_type in supervision_metrics_for_type
 
             # If there's no error, then all attribute types are handled
             _ = supervision_metrics_for_type.get(

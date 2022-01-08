@@ -147,7 +147,7 @@ def in_test() -> bool:
     if not hasattr(recidiviz, "called_from_test"):
         # If it is not set, we may have been called from unittest. Check if unittest has been imported, if it has then
         # we assume we are running from a unittest
-        setattr(recidiviz, "called_from_test", "unittest" in sys.modules.keys())
+        setattr(recidiviz, "called_from_test", "unittest" in sys.modules)
     return getattr(recidiviz, "called_from_test")
 
 

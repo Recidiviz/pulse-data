@@ -43,7 +43,7 @@ class RecidivizCheckerTest(unittest.TestCase):
         str_node = cast(nodes.Const, func_node.expr)
 
         with self.case_wrapper.assertAddsMessages(
-            testutils.Message(
+            testutils.MessageTest(
                 msg_id="strict-string-format",
                 node=str_node,
             ),
@@ -57,7 +57,7 @@ class RecidivizCheckerTest(unittest.TestCase):
         str_node = cast(nodes.Attribute, op_node.left)
 
         with self.case_wrapper.assertAddsMessages(
-            testutils.Message(
+            testutils.MessageTest(
                 msg_id="strict-string-format",
                 node=str_node,
             ),

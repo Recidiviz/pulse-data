@@ -206,7 +206,7 @@ class HtmlDataExtractor(DataExtractor):
                 continue
 
             # Only convert elements that are not already table cells.
-            if match.tag == "td" or match.tag == "th":
+            if match.tag in ("td", "th"):
                 continue
             # Ensure no individual words in |content| was split when matching.
             if text:

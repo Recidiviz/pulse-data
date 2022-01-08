@@ -43,7 +43,7 @@ enum_errors_view = view.View(
 monitoring.register_views([enum_errors_view])
 
 
-class EntityEnumMeta(EnumMeta):
+class EntityEnumMeta(EnumMeta, type):
     """Metaclass for mappable enums."""
 
     # pylint doesn't understand |cls| as |self|:
