@@ -145,6 +145,7 @@ from recidiviz.ingest.direct.state_shared_row_posthooks import (
     gen_label_single_external_id_hook,
     gen_rationalize_race_and_ethnicity,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.models.ingest_info import (
     IngestObject,
     StateAgent,
@@ -164,6 +165,7 @@ from recidiviz.ingest.models.ingest_info import (
     StateSupervisionViolationTypeEntry,
 )
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
+from recidiviz.utils.environment import in_gcp_staging
 from recidiviz.utils.params import str_to_bool
 
 
@@ -178,7 +180,13 @@ class UsIdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
 
     def __init__(self, ingest_bucket_path: GcsfsBucketPath):
         super().__init__(ingest_bucket_path)
-        self.enum_overrides = self.generate_enum_overrides()
+        # TODO(#9687): Adjust back when reingest to sprvsn_cntc_v3 is complete.
+        self.enum_overrides = (
+            self.generate_enum_overrides_v2()
+            if self.ingest_instance == DirectIngestInstance.SECONDARY
+            or in_gcp_staging()
+            else self.generate_enum_overrides()
+        )
         early_discharge_deleted_rows_processors = [
             gen_label_single_external_id_hook(US_ID_DOC),
             self._set_generated_ids,
@@ -261,6 +269,7 @@ class UsIdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             ],
             "early_discharge_incarceration_sentence_deleted_rows": early_discharge_deleted_rows_processors,
             "early_discharge_supervision_sentence_deleted_rows": early_discharge_deleted_rows_processors,
+            # TODO(#9687) Deprecate v2 when all new supervision contacts are ingested
             "sprvsn_cntc_v2": [
                 gen_label_single_external_id_hook(US_ID_DOC),
                 self._add_supervision_contact_fields,
@@ -279,10 +288,10 @@ class UsIdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             "movement_facility_location_offstat_supervision_periods": [],
             "ofndr_tst_tst_qstn_rspns_violation_reports": [],
             "ofndr_tst_tst_qstn_rspns_violation_reports_old": [],
-            "sprvsn_cntc_v2": [],
+            "sprvsn_cntc_v2": [],  # TODO(#9687) Deprecate v2 when all new supervision contacts are ingested
         }
 
-    ENUM_OVERRIDES: Dict[Enum, List[str]] = {
+    shared_enum_overrides: Dict[Enum, List[str]] = {
         Race.ASIAN: ["A"],
         Race.BLACK: ["B"],
         Race.AMERICAN_INDIAN_ALASKAN_NATIVE: ["I"],
@@ -538,6 +547,9 @@ class UsIdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         StateSupervisionCaseType.FAMILY_COURT: [
             "FAMILY COURT",
         ],
+    }
+    # TODO(#9687) Remove when sprvsn_cntc is migrated to ingest mappings v2
+    contact_overrides: Dict[Enum, List[str]] = {
         StateSupervisionContactLocation.ALTERNATIVE_WORK_SITE: ["ALTERNATE WORK SITE"],
         StateSupervisionContactLocation.SUPERVISION_OFFICE: [
             "OFFICE",
@@ -598,6 +610,10 @@ class UsIdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             "VIRTUAL",
         ],
     }
+    ENUM_OVERRIDES: Dict[Enum, List[str]] = {
+        **shared_enum_overrides,
+        **contact_overrides,
+    }
     ENUM_IGNORES: Dict[Type[Enum], List[str]] = {}
     ENUM_MAPPER_FUNCTIONS: Dict[Type[Enum], EnumMapperFn] = {
         StateIncarcerationPeriodAdmissionReason: incarceration_admission_reason_mapper,
@@ -628,6 +644,11 @@ class UsIdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             "sprvsn_cntc_v2",
             "treatment_agnt_case_updt",
         ]
+        # TODO(#9687): Update to sprvsn_cntc_v3 once reingest is complete
+        if self.ingest_instance == DirectIngestInstance.SECONDARY or in_gcp_staging():
+            shared_file_tags[
+                shared_file_tags.index("sprvsn_cntc_v2")
+            ] = "sprvsn_cntc_v3"
         return shared_file_tags
 
     @classmethod
@@ -640,6 +661,18 @@ class UsIdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             cls.ENUM_IGNORES,
             cls.ENUM_MAPPER_FUNCTIONS,
             cls.ENUM_IGNORE_PREDICATES,
+        )
+
+    # TODO(#9687): Return back to generate_enum_overrides once reingest is complete
+    def generate_enum_overrides_v2(self) -> EnumOverrides:
+        """Provides Idaho-specific overrides for enum mappings."""
+        base_overrides = get_standard_enum_overrides()
+        return update_overrides_from_maps(
+            base_overrides,
+            self.shared_enum_overrides,
+            self.ENUM_IGNORES,
+            self.ENUM_MAPPER_FUNCTIONS,
+            self.ENUM_IGNORE_PREDICATES,
         )
 
     def get_enum_overrides(self) -> EnumOverrides:
@@ -1306,6 +1339,7 @@ class UsIdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
                 )
                 create_if_not_exists(agent_to_create, obj, "supervising_officer")
 
+    # TODO(#9687) Deprecate when all new supervision contacts are ingested
     @staticmethod
     def _add_supervision_contact_fields(
         _gating_context: IngestGatingContext,

@@ -1,0 +1,179 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+- sprvsn_cntc_id
+- ofndr_num
+- emplymt_vrfy_flg
+- cntc_loc_desc
+- cntc_rslt_desc
+- cntc_typ_desc
+- cntc_title_desc
+- cntc_dt
+- name
+- usr_id
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: ofndr_num
+          id_type: $literal("US_ID_DOC")
+    supervision_contacts:
+      - StateSupervisionContact:
+          contacted_agent:
+            StateAgent:
+              external_id: usr_id
+              full_name:
+                $json_dict:
+                  full_name: name
+              agent_type: $literal_enum(StateAgentType.SUPERVISION_OFFICER)
+          external_id: sprvsn_cntc_id
+          verified_employment: 
+            $equal:
+              - emplymt_vrfy_flg
+              - $literal("Y")
+          contact_date: cntc_dt
+          contact_method:
+            $enum_mapping:
+              $raw_text:
+                $concat:
+                  $values:
+                    - cntc_loc_desc
+                    - cntc_typ_desc
+                  $separator: "##"
+                  $include_nulls: true
+              $custom_parser: us_id_custom_enum_parsers.contact_method_from_contact_fields
+          location:
+            $enum_mapping:
+              $raw_text: cntc_loc_desc
+              $mappings:
+                StateSupervisionContactLocation.ALTERNATIVE_WORK_SITE:
+                  - "ALTERNATE WORK SITE"
+                StateSupervisionContactLocation.SUPERVISION_OFFICE:
+                  - "OFFICE"
+                  - "INTERSTATE OFFICE"
+                StateSupervisionContactLocation.RESIDENCE:
+                  - "RESIDENCE"
+                  - "OTHER RESIDENCE"
+                StateSupervisionContactLocation.COURT:
+                  - "COURT"
+                  - "DRUG COURT"
+                StateSupervisionContactLocation.TREATMENT_PROVIDER:
+                  - "TREATMENT PROVIDER"
+                StateSupervisionContactLocation.JAIL:
+                  - "JAIL"
+                StateSupervisionContactLocation.FIELD:
+                  - "FIELD"
+                StateSupervisionContactLocation.PLACE_OF_EMPLOYMENT:
+                  - "EMPLOYER"
+                StateSupervisionContactLocation.LAW_ENFORCEMENT_AGENCY:
+                  - "LAW ENFORCEMENT AGENCY"
+                StateSupervisionContactLocation.PAROLE_COMMISSION:
+                  - "PAROLE COMMISSION"
+                StateSupervisionContactLocation.INTERNAL_UNKNOWN:
+                  - "COMPACT STATE"
+                  - "WBOR"
+                  - "OTHER"
+                  - "COMMUNITY SERVICE SITE"
+                  - "FAMILY"
+                  - "ASSOCIATE"
+                  - "CRIME SCENE"
+                  - "CONVERSION"
+              $ignore:
+                - "TELEPHONE"
+                - "FAX"
+                - "EMAIL"
+                - "MAIL"
+          contact_type:
+            $enum_mapping:
+              $raw_text: cntc_typ_desc
+              $mappings:
+                StateSupervisionContactType.DIRECT:
+                  - "VIRTUAL"
+                  - "FACE TO FACE"
+                  - "TELEPHONE"
+                  - "WRITTEN CORRESPONDENCE"
+                  - "NEGATIVE CONTACT"
+                  - "LAW ENFORCEMENT"
+                  - "APP SMART PHONE"
+                  - "PAROLE COMMISSION"
+                  - "MAIL"
+                StateSupervisionContactType.COLLATERAL:
+                  - "COLLATERAL"
+                  - "MENTAL HEALTH COLLATERAL"
+                StateSupervisionContactType.INTERNAL_UNKNOWN:
+                  - "SUSPECT"
+                  - "RETURNED MAIL (LSU)"
+                  - "IC FEE"
+                  - "SUD FUNDING DENIED FISCAL"
+                  - "IC ADDENDUM"
+                  - "IC ADDENDUM RESPONSE"
+                  - "WBOR System"
+                  - "SUD FUNDING APPROVED"
+                  - "FOLLOW UP (LSU)"
+                  - "TREATMENT FUND DENY FY"
+                  - "TRANSITION FUND DENY FY"
+                  - "IC RPT OF VIOLATION"
+                  - "MENTAL HEALTH EVAL"
+                  - "MONTHLY REPORT"
+                  - "IC NOTICE OF ARRIVAL"
+                  - "TREATMENT FUND"
+                  - "TREATMENT FUND DENY"
+                  - "WRITTEN COURT"
+                  - "VICTIM"
+                  - "IC REPORTING INSTRUCTIONS"
+                  - "IRM-NEW FELONY,FIREARM,ABSCOND"
+                  - "IC CASE CLOSURE	U"
+                  - "INTERSTATE"
+                  - "PROSECUTOR (LSU)"
+                  - "TRANSITION FUND APPROVED"
+                  - "RECORDS CHECK"
+                  - "IC RESPONSE TO ROV"
+                  - "TRANSITION FUND"
+                  - "REENTRY SERVICES"
+                  - "IC NOTICE OF DEPARTU"
+                  - "IC WRITTEN CORRESPND"
+                  - "IC REPLY TO TRANSFER"
+                  - "SUD FUNDING DENIED CLINICAL"
+                  - "IC COMPACT ACTION RQ"
+                  - "TRANSITION FUND DENY"
+                  - "MENTOR"
+                  - "ATTORNEY (LSU)"
+                  - "IC TRANSFER REQUEST"
+                  - "TREATMENT FUND APPROVED"
+                  - "IC PROGRESS REPORT"
+                  - "CARE COORDINATION"
+                  - "REENTRY GRANT"
+                  - "PROGRAMMING"
+                  - "COURT OFFICIAL (LSU)"
+          contact_reason:
+            $enum_mapping:
+              $raw_text: cntc_title_desc
+              $mappings:
+                StateSupervisionContactReason.INITIAL_CONTACT:
+                  - "72 HOUR INITIAL"
+                StateSupervisionContactReason.EMERGENCY_CONTACT:
+                  - "CRITICAL"
+                StateSupervisionContactReason.GENERAL_CONTACT:
+                  - "GENERAL"
+                StateSupervisionContactReason.INTERNAL_UNKNOWN:
+                  - "CONVERSION"
+                  - "GENERAL REINFORCEMENT"
+                  - "GENERAL DISAPPROVAL"
+          status:
+            $enum_mapping:
+              $raw_text: cntc_rslt_desc
+              $mappings:
+                StateSupervisionContactStatus.COMPLETED:
+                  - "SUCCESSFUL"
+                  - "PROGRESS REVIEW"
+                  - "FACE TO FACE"
+                  - "ARREST"
+                StateSupervisionContactStatus.ATTEMPTED:
+                  - "ATTEMPTED"
+                  - "INQUIRY"
+                  - "FAILED TO REPORT"
+          resulted_in_arrest:
+            $equal:
+              - cntc_rslt_desc
+              - $literal("ARREST")
