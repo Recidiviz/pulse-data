@@ -140,8 +140,9 @@ SEX_CRIME_TYPES = (
     NON_VIOLENT_SEX_OFFENSE,
 )
 
+# TODO(#9687) Deprecate when all new supervision contacts are ingested
 CONTACT_RESULT_ARREST = "ARREST"
-
+# TODO(#9687) Deprecate when all new supervision contacts are ingested
 CONTACT_LOCATIONS_TO_BECOME_METHODS = ("TELEPHONE", "FAX", "EMAIL", "MAIL")
 
 # Recidiviz generated date used by Supervision/Incarceration periods query

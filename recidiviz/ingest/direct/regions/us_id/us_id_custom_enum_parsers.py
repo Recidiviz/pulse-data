@@ -29,6 +29,9 @@ from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentDischargeReason,
     StateProgramAssignmentParticipationStatus,
 )
+from recidiviz.common.constants.state.state_supervision_contact import (
+    StateSupervisionContactMethod,
+)
 from recidiviz.common.text_analysis import (
     TextAnalyzer,
     TextEntity,
@@ -78,3 +81,21 @@ def discharge_reason_from_agnt_note_title(
 def _match_note_title(agnt_note_title: str) -> Set[TextEntity]:
     """Returns the entities that the agnt_note_title matches to."""
     return TEXT_ANALYZER.extract_entities(agnt_note_title)
+
+
+# Custom Enum Parsers needed for us_id_sprvsn_cntc_v2
+def contact_method_from_contact_fields(raw_text: str) -> StateSupervisionContactMethod:
+    location_text, type_text = raw_text.split("##")
+    if location_text == "TELEPHONE":
+        return StateSupervisionContactMethod.TELEPHONE
+    if location_text in ("MAIL", "EMAIL", "FAX"):
+        return StateSupervisionContactMethod.WRITTEN_MESSAGE
+    if type_text == "VIRTUAL":
+        return StateSupervisionContactMethod.VIRTUAL
+    if type_text == "WRITTEN CORRESPONDENCE":
+        return StateSupervisionContactMethod.WRITTEN_MESSAGE
+    if location_text != "NONE":
+        return StateSupervisionContactMethod.IN_PERSON
+    if type_text == "NEGATIVE CONTACT":
+        return StateSupervisionContactMethod.IN_PERSON
+    return StateSupervisionContactMethod.INTERNAL_UNKNOWN
