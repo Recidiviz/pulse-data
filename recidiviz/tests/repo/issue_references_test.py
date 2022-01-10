@@ -37,7 +37,7 @@ class IssueReferencesTest(unittest.TestCase):
         self.maxDiff = None
         mock_todo_lines.return_value = [
             "foo.py:10:# TODO(#123): Get something",
-            "bar.yaml:20:  - key: value  # TODO(Recidiviz/pulse-data#456): Remap for frontend",
+            "bar.yaml:20:  - key: value  # TODO(Recidiviz/pulse-dashboard#456): Remap for frontend",
             "baz.py:30:# TODO(https://issues.apache.org/jira/browse/BEAM-12641): Upgrade once fixed by Apache",
             "dir/qux.py:40:  # TODO(Recidiviz/pulse-data#123): Get something else now",
         ]
@@ -59,11 +59,11 @@ class IssueReferencesTest(unittest.TestCase):
                         line_text="  # TODO(Recidiviz/pulse-data#123): Get something else now",
                     ),
                 ],
-                GithubIssue(repo="Recidiviz/pulse-data", number=456): [
+                GithubIssue(repo="Recidiviz/pulse-dashboard", number=456): [
                     CodeReference(
                         filepath="bar.yaml",
                         line_number=20,
-                        line_text="  - key: value  # TODO(Recidiviz/pulse-data#456): Remap for frontend",
+                        line_text="  - key: value  # TODO(Recidiviz/pulse-dashboard#456): Remap for frontend",
                     ),
                 ],
             },
@@ -83,11 +83,11 @@ class IssueReferencesTest(unittest.TestCase):
                     line_text="  # TODO(Recidiviz/pulse-data#123): Get something else now",
                 ),
             ],
-            GithubIssue(repo="Recidiviz/pulse-data", number=456): [
+            GithubIssue(repo="Recidiviz/pulse-dashboard", number=456): [
                 CodeReference(
                     filepath="bar.yaml",
                     line_number=20,
-                    line_text="  - key: value  # TODO(Recidiviz/pulse-data#456): Remap for frontend",
+                    line_text="  - key: value  # TODO(Recidiviz/pulse-dashboard#456): Remap for frontend",
                 ),
             ],
         }
@@ -96,7 +96,7 @@ class IssueReferencesTest(unittest.TestCase):
 
         self.assertEqual(
             markdown,
-            """* Recidiviz/pulse-data#456
+            """* Recidiviz/pulse-dashboard#456
   * bar.yaml:20
 * Recidiviz/pulse-data#123
   * dir/qux.py:40
