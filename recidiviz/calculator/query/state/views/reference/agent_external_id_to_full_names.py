@@ -37,7 +37,10 @@ AGENT_EXTERNAL_ID_TO_FULL_NAMES_QUERY_TEMPLATE = """
     )
     
     SELECT
-        *
+        *,
+        -- TODO(#8674): Remove the agent_external_id_with_full_name once the Lantern FE 
+        -- is no longer relying on this value
+        CONCAT(external_id, IFNULL(CONCAT(': ', NULLIF(TRIM(full_name), '')), '')) as agent_external_id_with_full_name
     FROM unique_agents
 """
 

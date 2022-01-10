@@ -46,9 +46,11 @@ SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_QUERY_TEMPLATE = """
             metric.state_code,
             {age_bucket},
             -- We drop commas in agent names since we use commas as the delimiters in the export
-            REPLACE(IFNULL(agent.external_id, 'EXTERNAL_UNKNOWN'), ',', '') AS officer,
+            -- TODO(#8674): Use agent_external_id instead of agent_external_id_with_full_name
+            -- once the FE is using the officer_full_name field for names
+            REPLACE(IFNULL(agent.agent_external_id_with_full_name, 'EXTERNAL_UNKNOWN'), ',', '') AS officer,
             REPLACE(COALESCE(agent.full_name, 'UNKNOWN'), ',', '') AS officer_full_name,
-        FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_termination_metrics_materialized` metric
+            FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_termination_metrics_materialized` metric
         LEFT JOIN `{project_id}.{reference_views_dataset}.agent_external_id_to_full_name` agent
         ON metric.state_code = agent.state_code AND metric.supervising_officer_external_id = agent.external_id 
     ), terminations_matrix AS (
