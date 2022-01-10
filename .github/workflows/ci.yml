@@ -54,6 +54,8 @@ jobs:
         run: pipenv run ./recidiviz/tools/travis/run_pylint.sh
       - name: Black
         run: pipenv run black . --check
+      - name: Bandit
+        run: pipenv run bandit --ini .bandit -r -b bandit/bandit-baseline.json -x tests
       - name: Validate source visibility
         run: pipenv run python -m recidiviz.tools.validate_source_visibility
       - name: Yarn caching

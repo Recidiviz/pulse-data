@@ -69,13 +69,14 @@ exit_code=$((exit_code + $?))
 echo "Checking for TODO format"
 # This set of commands does the following:
 # - List all files with updates that are not deletions
-# - Skips `find*todos.py/yml`, `issue_references.py`, `run_pylint.sh`, `.pylintrc` as they can have 'TODO' that doesn't match the format
+# - Skips `find*todos.py/yml`, `issue_references.py`, `bandit-baseline.json`, `run_pylint.sh`, `.pylintrc` as they can have 'TODO' that doesn't match the format
 # - Runs grep for each updated file, getting all lines containing 'TODO' (and including the line number in the output via -n)
 # - Filters to only the lines that don't contain 'TODO' with the correct format
 invalid_lines=$(${changed_files_cmd} \
     | grep --invert-match -e 'find-\(closed\|linked\)-todos.yml' \
     | grep --invert-match -e 'find_todos.py' \
     | grep --invert-match -e 'issue_references.py' \
+    | grep --invert-match -e 'bandit-baseline.json' \
     | grep --invert-match -e 'run_pylint\.sh' \
     | grep --invert-match -e '\.pylintrc' \
     | xargs grep -n -e 'TODO' \
@@ -95,10 +96,11 @@ fi
 echo "Checking CURRENT_DATE format"
 # This set of commands does the following:
 # - List all files with updates that are not deletions
-# - Skips 'run_pylint.sh' as it is allowed to have 'CURRENT_DATE' that doesn't match the format
+# - Skips 'run_pylint.sh', `bandit-baseline.json` as it is allowed to have 'CURRENT_DATE' that doesn't match the format
 # - Runs grep for each updated file, getting all lines containing 'CURRENT_DATE()' (and including the line number in the output via -n)
 invalid_lines=$(${changed_files_cmd} \
     | grep --invert-match -e 'run_pylint\.sh' \
+    | grep --invert-match -e 'bandit-baseline.json' \
     | xargs grep -n -e 'CURRENT_DATE\(\)')
 
 if [[ -n ${invalid_lines} ]]
