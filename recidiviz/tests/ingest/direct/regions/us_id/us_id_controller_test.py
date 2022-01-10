@@ -101,7 +101,6 @@ from recidiviz.ingest.models.ingest_info import (
     StatePersonExternalId,
     StatePersonRace,
     StateSupervisionCaseTypeEntry,
-    StateSupervisionContact,
     StateSupervisionPeriod,
     StateSupervisionSentence,
     StateSupervisionViolation,
@@ -1083,122 +1082,6 @@ class TestUsIdController(BaseDirectIngestControllerTests):
         self.run_legacy_parse_file_test(
             expected, "ofndr_tst_tst_qstn_rspns_violation_reports_old"
         )
-
-    def test_populate_data_sprvsn_cntc(self) -> None:
-        expected = IngestInfo(
-            state_people=[
-                StatePerson(
-                    state_person_id="1111",
-                    state_person_external_ids=[
-                        StatePersonExternalId(
-                            state_person_external_id_id="1111", id_type=US_ID_DOC
-                        )
-                    ],
-                    state_supervision_contacts=[
-                        StateSupervisionContact(
-                            state_supervision_contact_id="1",
-                            verified_employment="Y",
-                            resulted_in_arrest="False",
-                            status="SUCCESSFUL",
-                            contact_type="FACE TO FACE",
-                            contact_method="TELEPHONE",
-                            contact_reason="GENERAL",
-                            contact_date="2018-02-01 00:00:00",
-                            contacted_agent=StateAgent(
-                                state_agent_id="po1",
-                                full_name="NAME1",
-                                agent_type="SUPERVISION_OFFICER",
-                            ),
-                        ),
-                        StateSupervisionContact(
-                            state_supervision_contact_id="2",
-                            verified_employment="N",
-                            resulted_in_arrest="True",
-                            location="RESIDENCE",
-                            status="ARREST",
-                            contact_type="FACE TO FACE",
-                            contact_method="IN_PERSON",
-                            contact_reason="CRITICAL",
-                            contact_date="2020-02-01 00:00:00",
-                            contacted_agent=StateAgent(
-                                state_agent_id="po1",
-                                full_name="NAME1",
-                                agent_type="SUPERVISION_OFFICER",
-                            ),
-                        ),
-                    ],
-                ),
-                StatePerson(
-                    state_person_id="3333",
-                    state_person_external_ids=[
-                        StatePersonExternalId(
-                            state_person_external_id_id="3333", id_type=US_ID_DOC
-                        )
-                    ],
-                    state_supervision_contacts=[
-                        StateSupervisionContact(
-                            state_supervision_contact_id="3",
-                            verified_employment="Y",
-                            location="ALTERNATE WORK SITE",
-                            status="ATTEMPTED",
-                            resulted_in_arrest="False",
-                            contact_type="FACE TO FACE",
-                            contact_method="IN_PERSON",
-                            contact_reason="72 HOUR INITIAL",
-                            contact_date="2016-01-01 00:00:00",
-                            contacted_agent=StateAgent(
-                                state_agent_id="po3",
-                                full_name="NAME3",
-                                agent_type="SUPERVISION_OFFICER",
-                            ),
-                        ),
-                        StateSupervisionContact(
-                            state_supervision_contact_id="5",
-                            verified_employment="Y",
-                            location="EMPLOYER",
-                            status="SUCCESSFUL",
-                            resulted_in_arrest="False",
-                            contact_type="COLLATERAL",
-                            contact_method="IN_PERSON",
-                            contact_reason="GENERAL",
-                            contact_date="2016-01-08 00:00:00",
-                            contacted_agent=StateAgent(
-                                state_agent_id="po3",
-                                full_name="NAME3",
-                                agent_type="SUPERVISION_OFFICER",
-                            ),
-                        ),
-                    ],
-                ),
-                StatePerson(
-                    state_person_id="4444",
-                    state_person_external_ids=[
-                        StatePersonExternalId(
-                            state_person_external_id_id="4444", id_type=US_ID_DOC
-                        )
-                    ],
-                    state_supervision_contacts=[
-                        StateSupervisionContact(
-                            state_supervision_contact_id="4",
-                            verified_employment="Y",
-                            location="RESIDENCE",
-                            status="ATTEMPTED",
-                            resulted_in_arrest="False",
-                            contact_type="DIRECT",
-                            contact_method="VIRTUAL",
-                            contact_reason="72 HOUR INITIAL",
-                            contact_date="2017-01-01 00:00:00",
-                            contacted_agent=StateAgent(
-                                state_agent_id="po4",
-                                full_name="NAME4",
-                                agent_type="SUPERVISION_OFFICER",
-                            ),
-                        ),
-                    ],
-                ),
-            ]
-        )
-        self.run_legacy_parse_file_test(expected, "sprvsn_cntc_v2")
 
     def test_run_full_ingest_all_files_specific_order(self) -> None:
 
@@ -2285,7 +2168,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
         self.assert_expected_db_people(expected_people)
 
         #################################################################
-        # sprvsn_cntc_v2
+        # sprvsn_cntc_v3
         #################################################################
         # Arrange
         sc_1111_1 = entities.StateSupervisionContact.new_with_defaults(
@@ -2293,12 +2176,13 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             external_id="1",
             verified_employment=True,
             resulted_in_arrest=False,
+            location_raw_text="TELEPHONE",
             status=StateSupervisionContactStatus.COMPLETED,
             status_raw_text="SUCCESSFUL",
             contact_type=StateSupervisionContactType.DIRECT,
             contact_type_raw_text="FACE TO FACE",
             contact_method=StateSupervisionContactMethod.TELEPHONE,
-            contact_method_raw_text="TELEPHONE",
+            contact_method_raw_text="TELEPHONE##FACE TO FACE",
             contact_reason=StateSupervisionContactReason.GENERAL_CONTACT,
             contact_reason_raw_text="GENERAL",
             contact_date=datetime.date(year=2018, month=2, day=1),
@@ -2317,7 +2201,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             contact_type=StateSupervisionContactType.DIRECT,
             contact_type_raw_text="FACE TO FACE",
             contact_method=StateSupervisionContactMethod.IN_PERSON,
-            contact_method_raw_text="IN_PERSON",
+            contact_method_raw_text="RESIDENCE##FACE TO FACE",
             contact_reason=StateSupervisionContactReason.EMERGENCY_CONTACT,
             contact_reason_raw_text="CRITICAL",
             contact_date=datetime.date(year=2020, month=2, day=1),
@@ -2332,7 +2216,6 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             state_code=_STATE_CODE_UPPER,
             full_name='{"full_name": "NAME3"}',
             agent_type=StateAgentType.SUPERVISION_OFFICER,
-            agent_type_raw_text="SUPERVISION_OFFICER",
         )
         sc_3333_1 = entities.StateSupervisionContact.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -2346,7 +2229,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             contact_type=StateSupervisionContactType.DIRECT,
             contact_type_raw_text="FACE TO FACE",
             contact_method=StateSupervisionContactMethod.IN_PERSON,
-            contact_method_raw_text="IN_PERSON",
+            contact_method_raw_text="ALTERNATE WORK SITE##FACE TO FACE",
             contact_reason=StateSupervisionContactReason.INITIAL_CONTACT,
             contact_reason_raw_text="72 HOUR INITIAL",
             contact_date=datetime.date(year=2016, month=1, day=1),
@@ -2365,7 +2248,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             contact_type=StateSupervisionContactType.COLLATERAL,
             contact_type_raw_text="COLLATERAL",
             contact_method=StateSupervisionContactMethod.IN_PERSON,
-            contact_method_raw_text="IN_PERSON",
+            contact_method_raw_text="EMPLOYER##COLLATERAL",
             contact_reason=StateSupervisionContactReason.GENERAL_CONTACT,
             contact_reason_raw_text="GENERAL",
             contact_date=datetime.date(year=2016, month=1, day=8),
@@ -2380,7 +2263,6 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             state_code=_STATE_CODE_UPPER,
             full_name='{"full_name": "NAME4"}',
             agent_type=StateAgentType.SUPERVISION_OFFICER,
-            agent_type_raw_text="SUPERVISION_OFFICER",
         )
         sc_4444_1 = entities.StateSupervisionContact.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -2392,9 +2274,9 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             status=StateSupervisionContactStatus.ATTEMPTED,
             status_raw_text="ATTEMPTED",
             contact_type=StateSupervisionContactType.DIRECT,
-            contact_type_raw_text="DIRECT",
+            contact_type_raw_text="VIRTUAL",
             contact_method=StateSupervisionContactMethod.VIRTUAL,
-            contact_method_raw_text="VIRTUAL",
+            contact_method_raw_text="RESIDENCE##VIRTUAL",
             contact_reason=StateSupervisionContactReason.INITIAL_CONTACT,
             contact_reason_raw_text="72 HOUR INITIAL",
             contact_date=datetime.date(year=2017, month=1, day=1),
@@ -2404,7 +2286,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
         person_4.supervision_contacts.append(sc_4444_1)
 
         # Act
-        self._run_ingest_job_for_filename("sprvsn_cntc_v2.csv")
+        self._run_ingest_job_for_filename("sprvsn_cntc_v3.csv")
 
         # Assert
         self.assert_expected_db_people(expected_people)
