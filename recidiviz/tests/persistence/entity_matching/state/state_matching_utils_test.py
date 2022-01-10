@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for state_matching_utils.py"""
+
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
@@ -22,12 +23,24 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     is_commitment_from_supervision,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
+from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.state import schema
-from recidiviz.persistence.entity.entity_utils import is_placeholder
+from recidiviz.persistence.database.schema_entity_converter.state.schema_entity_converter import (
+    StateSchemaToEntityConverter,
+)
+from recidiviz.persistence.database.schema_utils import (
+    get_non_history_state_database_entities,
+)
+from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.entity_utils import (
+    CoreEntityFieldIndex,
+    is_placeholder,
+)
 from recidiviz.persistence.entity_matching.entity_matching_types import EntityTree
 from recidiviz.persistence.entity_matching.state.state_matching_utils import (
     _is_match,
     add_child_to_entity,
+    can_atomically_merge_entity,
     generate_child_entity_trees,
     get_all_entity_trees_of_cls,
     get_all_person_external_ids,
@@ -36,6 +49,11 @@ from recidiviz.persistence.entity_matching.state.state_matching_utils import (
     remove_child_from_entity,
 )
 from recidiviz.persistence.errors import EntityMatchingError
+from recidiviz.tests.persistence.entity.entity_utils_test import (
+    HAS_MEANINGFUL_DATA_ENTITIES,
+    PLACEHOLDER_ENTITY_EXAMPLES,
+    REFERENCE_ENTITY_EXAMPLES,
+)
 from recidiviz.tests.persistence.entity_matching.state.base_state_entity_matcher_test_classes import (
     BaseStateMatchingUtilsTest,
 )
@@ -294,6 +312,42 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
             new_entity=ing_entity, old_entity=db_entity, field_index=self.field_index
         )
         self.assert_schema_objects_equal(expected_entity, merged_entity)
+
+    @staticmethod
+    def convert_to_entity(db_entity: DatabaseEntity) -> Entity:
+        return StateSchemaToEntityConverter().convert_all([db_entity])[0]
+
+    def test_mergeFlatFields_DoNotOverwriteWithPlaceholder(self) -> None:
+        field_index = CoreEntityFieldIndex()
+        for db_entity_cls in get_non_history_state_database_entities():
+            for old in HAS_MEANINGFUL_DATA_ENTITIES[db_entity_cls]:
+                for new in PLACEHOLDER_ENTITY_EXAMPLES[db_entity_cls]:
+                    if old.get_external_id() != new.get_external_id():
+                        continue
+                    # Expect unchanged
+                    expected = self.convert_to_entity(old)
+                    updated = merge_flat_fields(
+                        new_entity=new,
+                        old_entity=old,
+                        field_index=field_index,
+                    )
+                    self.assertEqual(expected, self.convert_to_entity(updated))
+
+    def test_mergeFlatFields_DoNotOverwriteWithReferenceItems(self) -> None:
+        field_index = CoreEntityFieldIndex()
+        for db_entity_cls in get_non_history_state_database_entities():
+            for old in HAS_MEANINGFUL_DATA_ENTITIES[db_entity_cls]:
+                for new in REFERENCE_ENTITY_EXAMPLES[db_entity_cls]:
+                    if old.get_external_id() != new.get_external_id():
+                        continue
+                    # Expect unchanged
+                    expected = self.convert_to_entity(old)
+                    updated = merge_flat_fields(
+                        new_entity=new,
+                        old_entity=old,
+                        field_index=field_index,
+                    )
+                    self.assertEqual(expected, self.convert_to_entity(updated))
 
     def test_generateChildEntitiesWithAncestorChain(self) -> None:
         charge = schema.StateCharge(state_code=_STATE_CODE, charge_id=_ID)
@@ -564,3 +618,22 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
 
         entity.incarceration_type_raw_text = "PRISON"
         self.assertFalse(is_placeholder(entity, field_index=self.field_index))
+
+    def test_isAtomicallyMergedEntity(self) -> None:
+        field_index = CoreEntityFieldIndex()
+        for db_entity_cls in get_non_history_state_database_entities():
+            for entity in PLACEHOLDER_ENTITY_EXAMPLES[db_entity_cls]:
+                self.assertFalse(can_atomically_merge_entity(entity, field_index))
+            for entity in REFERENCE_ENTITY_EXAMPLES[db_entity_cls]:
+                self.assertFalse(can_atomically_merge_entity(entity, field_index))
+            for entity in HAS_MEANINGFUL_DATA_ENTITIES[db_entity_cls]:
+
+                if db_entity_cls in {
+                    schema.StateAgent,
+                    schema.StateEarlyDischarge,
+                    schema.StateIncarcerationSentence,
+                    schema.StatePerson,
+                }:
+                    self.assertFalse(can_atomically_merge_entity(entity, field_index))
+                else:
+                    self.assertTrue(can_atomically_merge_entity(entity, field_index))

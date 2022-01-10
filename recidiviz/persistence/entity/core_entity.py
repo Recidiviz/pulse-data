@@ -126,35 +126,31 @@ class CoreEntity:
                     self.get_entity_name(),
                 )
 
-    def has_default_status(self) -> bool:
-        if hasattr(self, "status"):
-            status = self.get_field("status")
-            if not status:
-                return False
+    def is_default_enum(
+        self,
+        field_name: str,
+        default_str_value: str = enum_canonical_strings.present_without_info,
+    ) -> bool:
+        value = self.get_field(field_name)
+        raw_text_field_name = f"{field_name}_raw_text"
+        if not hasattr(self, raw_text_field_name):
+            # This is not an enum field
+            return False
+        raw_value = self.get_field(raw_text_field_name)
+        if raw_value:
+            # This is a mapped enum
+            return False
 
-            if isinstance(status, str):
-                status_str = status
-            elif isinstance(status, Enum):
-                status_str = status.value
-            else:
-                raise ValueError(f"Unexpected type [{type(status)}] for status.")
+        if isinstance(value, str):
+            enum_str = value
+        elif isinstance(value, Enum):
+            enum_str = value.value
+        else:
+            raise ValueError(
+                f"Unexpected type [{type(value)}] for enum field [{field_name}]: {value}."
+            )
 
-            return status_str == enum_canonical_strings.present_without_info
-        return False
-
-    def has_default_enum(self, field_name: str, field_value: Enum) -> bool:
-        if hasattr(self, field_name):
-            value = self.get_field(field_name)
-            raw_value = self.get_field(f"{field_name}_raw_text")
-
-            if not value or raw_value:
-                return False
-
-            if isinstance(value, str):
-                return value == field_value.value
-
-            return value == field_value
-        return False
+        return enum_str == default_str_value
 
     def limited_pii_repr(self) -> str:
         """String representation of a Core object that prints DB IDs and external ids

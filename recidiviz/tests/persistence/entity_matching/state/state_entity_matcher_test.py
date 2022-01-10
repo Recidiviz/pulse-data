@@ -3312,6 +3312,62 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         self.assert_no_errors(matched_entities)
         self.assertEqual(1, matched_entities.total_root_entities)
 
+    def test_matchPersons_atomicIpMerge(self) -> None:
+        # Arrange 1 - Match
+        db_external_id = generate_external_id(
+            state_code=_STATE_CODE, external_id=_EXTERNAL_ID
+        )
+        db_person = generate_person(
+            full_name=_FULL_NAME,
+            state_code=_STATE_CODE,
+            external_ids=[db_external_id],
+        )
+        db_incarceration_period = generate_incarceration_period(
+            db_person,
+            external_id=_EXTERNAL_ID,
+            state_code=_STATE_CODE,
+            facility="facility",
+            admission_date=datetime.date(2021, 4, 14),
+            release_date=datetime.date(2022, 1, 1),
+        )
+        db_person.incarceration_periods = [db_incarceration_period]
+
+        entity_external_id = self.to_entity(db_external_id)
+        entity_incarceration_period = self.to_entity(db_incarceration_period)
+        entity_person = self.to_entity(db_person)
+
+        self._commit_to_db(db_person)
+
+        incarceration_period = attr.evolve(
+            entity_incarceration_period,
+            admission_date=datetime.date(2021, 5, 15),
+            release_date=None,
+        )
+        external_id = attr.evolve(entity_external_id)
+        person = attr.evolve(
+            entity_person,
+            external_ids=[external_id],
+            incarceration_periods=[incarceration_period],
+        )
+        expected_incarceration_period = attr.evolve(incarceration_period)
+        expected_external_id = attr.evolve(external_id)
+        expected_person = attr.evolve(
+            person,
+            external_ids=[expected_external_id],
+            incarceration_periods=[expected_incarceration_period],
+        )
+
+        # Act 1 - Match
+        session = self._session()
+        matched_entities = self._match(session, ingested_people=[person])
+
+        # Assert 1 - Match
+        self.assert_no_errors(matched_entities)
+        self.assert_people_match_pre_and_post_commit(
+            [expected_person], matched_entities.people, session
+        )
+        self.assertEqual(1, matched_entities.total_root_entities)
+
     def test_get_non_placeholder_ingest_types_indices_to_search(self) -> None:
         for i in range(0, 2500 + 1):
             indices = (
