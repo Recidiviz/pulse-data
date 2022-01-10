@@ -1,17 +1,46 @@
 file_tag: cls_attend
 file_description: |-
-  Not in use
+  A record of attendance for class meetings
 primary_key_cols:
   - cls_attnd_id
 columns:
   - name: updt_dt
+    is_datetime: True
+    description: |-
+      Timestamp of when this record was last updated
   - name: updt_usr_id
+    description: |-
+      ID of user who last updated this record
   - name: cls_attnd_id
+    description: |-
+      Primary key for this record
   - name: cls_enroll_id
+    description: |-
+      ID of enrollment for this person/class record.
   - name: attend_excuse_cd
   - name: attnd_dt
+    is_datetime: True
+    description: |-
+      Date of attendance
   - name: attnd_tm
+    description: |-
+      Time of attendance
   - name: attnd_stat
+    description: |-
+      Status of attendance
+    known_values:
+      - value: P
+        description: Present
+      - value: A
+        description: Absent
+      - value: L
+        description: Late
+      - value: E
+        description: Excused absence
   - name: attnd_hrs
+    description: |-
+      Number of hours client attended class
   - name: excuse_by_usr_id
+    description: |-
+      ID of user who excused an absence
 ignore_quotes: True
