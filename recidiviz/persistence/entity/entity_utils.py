@@ -32,8 +32,6 @@ from recidiviz.common.attr_utils import (
     is_forward_ref,
     is_list,
 )
-from recidiviz.common.constants.state.state_agent import StateAgentType
-from recidiviz.common.constants.state.state_court_case import StateCourtType
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.ingest.aggregate.aggregate_ingest_utils import pairwise
 from recidiviz.persistence.database.database_entity import DatabaseEntity
@@ -506,6 +504,33 @@ def is_placeholder(entity: CoreEntity, field_index: CoreEntityFieldIndex) -> boo
         if any([entity.external_ids, entity.races, entity.aliases, entity.ethnicities]):
             return False
 
+    set_flat_fields = get_explicilty_set_flat_fields(entity, field_index)
+    return not bool(set_flat_fields)
+
+
+def is_reference_only_entity(
+    entity: CoreEntity, field_index: CoreEntityFieldIndex
+) -> bool:
+    """Returns true if this object does not contain any meaningful information
+    describing the entity, but instead only identifies the entity for reference
+    purposes. Concretely, this means the object has an external_id but no other set
+    fields (aside from default values).
+    """
+    set_flat_fields = get_explicilty_set_flat_fields(entity, field_index)
+    if isinstance(entity, (schema.StatePerson, entities.StatePerson)):
+        if set_flat_fields or any([entity.races, entity.aliases, entity.ethnicities]):
+            return False
+        return bool(entity.external_ids)
+    return set_flat_fields == {"external_id"}
+
+
+def get_explicilty_set_flat_fields(
+    entity: CoreEntity, field_index: CoreEntityFieldIndex
+) -> Set[str]:
+    """Returns the set of field names for fields on the entity that have been set with
+    non-default values. The "state_code" field is also excluded, as it is set with the
+    same value on every entity for a given ingest run.
+    """
     set_flat_fields = field_index.get_fields_with_non_empty_values(
         entity, EntityFieldType.FLAT_FIELD
     )
@@ -519,25 +544,21 @@ def is_placeholder(entity: CoreEntity, field_index: CoreEntityFieldIndex) -> boo
     if "state_code" in set_flat_fields:
         set_flat_fields.remove("state_code")
 
-    if "status" in set_flat_fields:
-        if entity.has_default_status():
-            set_flat_fields.remove("status")
+    default_enum_value_fields = {
+        field_name
+        for field_name in set_flat_fields
+        if entity.is_default_enum(field_name)
+    }
+
+    set_flat_fields -= default_enum_value_fields
 
     if "incarceration_type" in set_flat_fields:
-        if entity.has_default_enum(
-            "incarceration_type", StateIncarcerationType.STATE_PRISON
+        if entity.is_default_enum(
+            "incarceration_type", StateIncarcerationType.STATE_PRISON.value
         ):
             set_flat_fields.remove("incarceration_type")
 
-    if "court_type" in set_flat_fields:
-        if entity.has_default_enum("court_type", StateCourtType.PRESENT_WITHOUT_INFO):
-            set_flat_fields.remove("court_type")
-
-    if "agent_type" in set_flat_fields:
-        if entity.has_default_enum("agent_type", StateAgentType.PRESENT_WITHOUT_INFO):
-            set_flat_fields.remove("agent_type")
-
-    return not bool(set_flat_fields)
+    return set_flat_fields
 
 
 def _sort_based_on_flat_fields(

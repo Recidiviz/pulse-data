@@ -15,21 +15,48 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for entity_utils.py"""
+import datetime
+from typing import Dict, List, Type
 from unittest import TestCase
 
 import attr
 
 from recidiviz.common.constants.charge import ChargeStatus
+from recidiviz.common.constants.person_characteristics import Ethnicity, Gender, Race
+from recidiviz.common.constants.state.state_agent import StateAgentType
+from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateIncarcerationPeriodAdmissionReason,
+)
+from recidiviz.common.constants.state.state_program_assignment import (
+    StateProgramAssignmentParticipationStatus,
+)
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
+from recidiviz.common.constants.state.state_supervision_contact import (
+    StateSupervisionContactLocation,
+)
+from recidiviz.common.constants.state.state_supervision_violation import (
+    StateSupervisionViolationType,
+)
+from recidiviz.common.constants.state.state_supervision_violation_response import (
+    StateSupervisionViolationResponseDecision,
+)
+from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database import schema_utils
+from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.schema_entity_converter import (
     schema_entity_converter as converter,
+)
+from recidiviz.persistence.database.schema_utils import (
+    get_non_history_state_database_entities,
 )
 from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
     EntityFieldType,
     SchemaEdgeDirectionChecker,
+    is_placeholder,
+    is_reference_only_entity,
     is_standalone_class,
     prune_dangling_placeholders_from_tree,
 )
@@ -150,6 +177,536 @@ class TestCoreEntityFieldIndex(TestCase):
                 entity, EntityFieldType.ALL
             ),
         )
+
+
+PLACEHOLDER_ENTITY_EXAMPLES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] = {
+    schema.StateAgent: [schema.StateAgent(state_code=StateCode.US_XX.value)],
+    schema.StateAssessment: [schema.StateAssessment(state_code=StateCode.US_XX.value)],
+    schema.StateCharge: [
+        schema.StateCharge(
+            state_code=StateCode.US_XX.value,
+            status=ChargeStatus.PRESENT_WITHOUT_INFO.value,
+        )
+    ],
+    schema.StateCourtCase: [schema.StateCourtCase(state_code=StateCode.US_XX.value)],
+    schema.StateEarlyDischarge: [
+        schema.StateEarlyDischarge(state_code=StateCode.US_XX.value)
+    ],
+    schema.StateIncarcerationIncident: [
+        schema.StateIncarcerationIncident(state_code=StateCode.US_XX.value)
+    ],
+    schema.StateIncarcerationIncidentOutcome: [
+        schema.StateIncarcerationIncidentOutcome(state_code=StateCode.US_XX.value)
+    ],
+    schema.StateIncarcerationPeriod: [
+        schema.StateIncarcerationPeriod(state_code=StateCode.US_XX.value)
+    ],
+    schema.StateIncarcerationSentence: [
+        schema.StateIncarcerationSentence(
+            state_code=StateCode.US_XX.value,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
+        )
+    ],
+    schema.StateParoleDecision: [
+        schema.StateParoleDecision(state_code=StateCode.US_XX.value)
+    ],
+    schema.StatePerson: [
+        schema.StatePerson(state_code=StateCode.US_XX.value),
+        schema.StatePerson(
+            state_code=StateCode.US_XX.value,
+            assessments=[
+                schema.StateAssessment(
+                    state_code=StateCode.US_XX.value, external_id=_EXTERNAL_ID
+                )
+            ],
+        ),
+    ],
+    schema.StatePersonAlias: [
+        schema.StatePersonAlias(state_code=StateCode.US_XX.value)
+    ],
+    schema.StatePersonEthnicity: [
+        schema.StatePersonEthnicity(state_code=StateCode.US_XX.value)
+    ],
+    schema.StatePersonExternalId: [],
+    schema.StatePersonRace: [schema.StatePersonRace(state_code=StateCode.US_XX.value)],
+    schema.StateProgramAssignment: [
+        schema.StateProgramAssignment(
+            state_code=StateCode.US_XX.value,
+            participation_status=StateProgramAssignmentParticipationStatus.PRESENT_WITHOUT_INFO.value,
+        )
+    ],
+    schema.StateSupervisionCaseTypeEntry: [
+        schema.StateSupervisionCaseTypeEntry(state_code=StateCode.US_XX.value)
+    ],
+    schema.StateSupervisionContact: [
+        schema.StateSupervisionContact(state_code=StateCode.US_XX.value)
+    ],
+    schema.StateSupervisionPeriod: [
+        schema.StateSupervisionPeriod(state_code=StateCode.US_XX.value)
+    ],
+    schema.StateSupervisionSentence: [
+        schema.StateSupervisionSentence(
+            state_code=StateCode.US_XX.value,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
+        ),
+        schema.StateSupervisionSentence(
+            state_code=StateCode.US_XX.value,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
+            charges=[
+                schema.StateCharge(
+                    state_code=StateCode.US_XX.value,
+                    external_id=_EXTERNAL_ID,
+                    status=ChargeStatus.PRESENT_WITHOUT_INFO.value,
+                )
+            ],
+        ),
+    ],
+    schema.StateSupervisionViolatedConditionEntry: [
+        schema.StateSupervisionViolatedConditionEntry(state_code=StateCode.US_XX.value)
+    ],
+    schema.StateSupervisionViolation: [
+        schema.StateSupervisionViolation(state_code=StateCode.US_XX.value)
+    ],
+    schema.StateSupervisionViolationResponse: [
+        schema.StateSupervisionViolationResponse(state_code=StateCode.US_XX.value)
+    ],
+    schema.StateSupervisionViolationResponseDecisionEntry: [
+        schema.StateSupervisionViolationResponseDecisionEntry(
+            state_code=StateCode.US_XX.value
+        )
+    ],
+    schema.StateSupervisionViolationTypeEntry: [
+        schema.StateSupervisionViolationTypeEntry(state_code=StateCode.US_XX.value)
+    ],
+}
+
+REFERENCE_ENTITY_EXAMPLES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] = {
+    schema.StateAgent: [
+        schema.StateAgent(state_code=StateCode.US_XX.value, external_id=_EXTERNAL_ID)
+    ],
+    schema.StateAssessment: [
+        schema.StateAssessment(
+            state_code=StateCode.US_XX.value, external_id=_EXTERNAL_ID
+        )
+    ],
+    schema.StateCharge: [
+        schema.StateCharge(
+            state_code=StateCode.US_XX.value,
+            external_id=_EXTERNAL_ID,
+            status=ChargeStatus.PRESENT_WITHOUT_INFO.value,
+        )
+    ],
+    schema.StateCourtCase: [
+        schema.StateCourtCase(
+            state_code=StateCode.US_XX.value, external_id=_EXTERNAL_ID
+        )
+    ],
+    schema.StateEarlyDischarge: [
+        schema.StateEarlyDischarge(
+            state_code=StateCode.US_XX.value, external_id=_EXTERNAL_ID
+        )
+    ],
+    schema.StateIncarcerationIncident: [
+        schema.StateIncarcerationIncident(
+            state_code=StateCode.US_XX.value, external_id=_EXTERNAL_ID
+        )
+    ],
+    schema.StateIncarcerationIncidentOutcome: [
+        schema.StateIncarcerationIncidentOutcome(
+            state_code=StateCode.US_XX.value, external_id=_EXTERNAL_ID
+        )
+    ],
+    schema.StateIncarcerationPeriod: [
+        schema.StateIncarcerationPeriod(
+            state_code=StateCode.US_XX.value, external_id=_EXTERNAL_ID
+        )
+    ],
+    schema.StateIncarcerationSentence: [
+        schema.StateIncarcerationSentence(
+            state_code=StateCode.US_XX.value,
+            external_id=_EXTERNAL_ID,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
+        ),
+    ],
+    schema.StateParoleDecision: [
+        schema.StateParoleDecision(
+            state_code=StateCode.US_XX.value, external_id=_EXTERNAL_ID
+        )
+    ],
+    schema.StatePerson: [
+        schema.StatePerson(
+            state_code=StateCode.US_XX.value,
+            external_ids=[
+                schema.StatePersonExternalId(
+                    state_code=StateCode.US_XX.value,
+                    external_id=_EXTERNAL_ID,
+                    id_type=_ID_TYPE,
+                )
+            ],
+        ),
+        schema.StatePerson(
+            state_code=StateCode.US_XX.value,
+            assessments=[
+                schema.StateAssessment(
+                    state_code=StateCode.US_XX.value, external_id=_EXTERNAL_ID
+                )
+            ],
+            external_ids=[
+                schema.StatePersonExternalId(
+                    state_code=StateCode.US_XX.value,
+                    external_id=_EXTERNAL_ID,
+                    id_type=_ID_TYPE,
+                )
+            ],
+        ),
+    ],
+    schema.StatePersonAlias: [],
+    schema.StatePersonEthnicity: [],
+    schema.StatePersonExternalId: [],
+    schema.StatePersonRace: [],
+    schema.StateProgramAssignment: [
+        schema.StateProgramAssignment(
+            state_code=StateCode.US_XX.value,
+            external_id=_EXTERNAL_ID,
+            participation_status=StateProgramAssignmentParticipationStatus.PRESENT_WITHOUT_INFO.value,
+        )
+    ],
+    schema.StateSupervisionCaseTypeEntry: [
+        schema.StateSupervisionCaseTypeEntry(
+            state_code=StateCode.US_XX.value, external_id=_EXTERNAL_ID
+        )
+    ],
+    schema.StateSupervisionContact: [
+        schema.StateSupervisionContact(
+            state_code=StateCode.US_XX.value, external_id=_EXTERNAL_ID
+        )
+    ],
+    schema.StateSupervisionPeriod: [
+        schema.StateSupervisionPeriod(
+            state_code=StateCode.US_XX.value, external_id=_EXTERNAL_ID
+        )
+    ],
+    schema.StateSupervisionSentence: [
+        schema.StateSupervisionSentence(
+            state_code=StateCode.US_XX.value,
+            external_id=_EXTERNAL_ID,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
+        ),
+        schema.StateSupervisionSentence(
+            state_code=StateCode.US_XX.value,
+            external_id=_EXTERNAL_ID,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
+            charges=[
+                schema.StateCharge(
+                    state_code=StateCode.US_XX.value,
+                    external_id=_EXTERNAL_ID,
+                    status=ChargeStatus.PRESENT_WITHOUT_INFO.value,
+                )
+            ],
+        ),
+    ],
+    schema.StateSupervisionViolatedConditionEntry: [],
+    schema.StateSupervisionViolation: [
+        schema.StateSupervisionViolation(
+            state_code=StateCode.US_XX.value, external_id=_EXTERNAL_ID
+        )
+    ],
+    schema.StateSupervisionViolationResponse: [
+        schema.StateSupervisionViolationResponse(
+            state_code=StateCode.US_XX.value, external_id=_EXTERNAL_ID
+        )
+    ],
+    schema.StateSupervisionViolationResponseDecisionEntry: [],
+    schema.StateSupervisionViolationTypeEntry: [],
+}
+
+HAS_MEANINGFUL_DATA_ENTITIES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] = {
+    schema.StateAgent: [
+        schema.StateAgent(
+            state_code=StateCode.US_XX.value,
+            external_id=_EXTERNAL_ID,
+            agent_type=StateAgentType.SUPERVISION_OFFICER.value,
+        ),
+        # If meaningful/non-default data is filled out, we do not consider it to be a placeholder.
+        schema.StateAgent(
+            state_code=StateCode.US_XX.value,
+            agent_type=StateAgentType.SUPERVISION_OFFICER.value,
+        ),
+    ],
+    schema.StateAssessment: [
+        schema.StateAssessment(
+            state_code=StateCode.US_XX.value,
+            external_id=_EXTERNAL_ID,
+            assessment_date=datetime.date(2021, 1, 1),
+        ),
+        schema.StateAssessment(
+            state_code=StateCode.US_XX.value,
+            assessment_date=datetime.date(2021, 1, 1),
+        ),
+    ],
+    schema.StateCharge: [
+        schema.StateCharge(
+            state_code=StateCode.US_XX.value,
+            external_id=_EXTERNAL_ID,
+            status=ChargeStatus.PRESENT_WITHOUT_INFO.value,
+            statute="1234a",
+        ),
+        schema.StateCharge(
+            state_code=StateCode.US_XX.value,
+            status=ChargeStatus.PRESENT_WITHOUT_INFO.value,
+            statute="1234a",
+        ),
+    ],
+    schema.StateCourtCase: [
+        schema.StateCourtCase(
+            state_code=StateCode.US_XX.value,
+            external_id=_EXTERNAL_ID,
+            county_code="my county",
+        ),
+        schema.StateCourtCase(
+            state_code=StateCode.US_XX.value, county_code="my county"
+        ),
+    ],
+    schema.StateEarlyDischarge: [
+        schema.StateEarlyDischarge(
+            state_code=StateCode.US_XX.value,
+            external_id=_EXTERNAL_ID,
+            decision_date=datetime.date(2021, 1, 1),
+        ),
+        schema.StateEarlyDischarge(
+            state_code=StateCode.US_XX.value, decision_date=datetime.date(2021, 1, 1)
+        ),
+    ],
+    schema.StateIncarcerationIncident: [
+        schema.StateIncarcerationIncident(
+            state_code=StateCode.US_XX.value,
+            external_id=_EXTERNAL_ID,
+            incident_date=datetime.date(2021, 1, 1),
+        ),
+        schema.StateIncarcerationIncident(
+            state_code=StateCode.US_XX.value,
+            incident_date=datetime.date(2021, 1, 1),
+        ),
+    ],
+    schema.StateIncarcerationIncidentOutcome: [
+        schema.StateIncarcerationIncidentOutcome(
+            state_code=StateCode.US_XX.value,
+            external_id=_EXTERNAL_ID,
+            report_date=datetime.date(2021, 1, 1),
+        ),
+        schema.StateIncarcerationIncidentOutcome(
+            state_code=StateCode.US_XX.value,
+            report_date=datetime.date(2021, 1, 1),
+        ),
+    ],
+    schema.StateIncarcerationPeriod: [
+        schema.StateIncarcerationPeriod(
+            state_code=StateCode.US_XX.value,
+            external_id=_EXTERNAL_ID,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.EXTERNAL_UNKNOWN,
+        ),
+        schema.StateIncarcerationPeriod(
+            state_code=StateCode.US_XX.value,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.EXTERNAL_UNKNOWN,
+        ),
+    ],
+    schema.StateIncarcerationSentence: [
+        schema.StateIncarcerationSentence(
+            state_code=StateCode.US_XX.value,
+            external_id=_EXTERNAL_ID,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
+            date_imposed=datetime.date(2021, 1, 1),
+        ),
+        schema.StateIncarcerationSentence(
+            state_code=StateCode.US_XX.value,
+            external_id=_EXTERNAL_ID,
+            status=StateSentenceStatus.SERVING.value,
+        ),
+        schema.StateIncarcerationSentence(
+            state_code=StateCode.US_XX.value,
+            status=StateSentenceStatus.SERVING.value,
+        ),
+    ],
+    schema.StateParoleDecision: [
+        schema.StateParoleDecision(
+            state_code=StateCode.US_XX.value,
+            external_id=_EXTERNAL_ID,
+            decision_date=datetime.date(2021, 1, 1),
+        ),
+        schema.StateParoleDecision(
+            state_code=StateCode.US_XX.value,
+            decision_date=datetime.date(2021, 1, 1),
+        ),
+    ],
+    schema.StatePerson: [
+        schema.StatePerson(
+            state_code=StateCode.US_XX.value,
+            external_ids=[
+                schema.StatePersonExternalId(
+                    state_code=StateCode.US_XX.value,
+                    external_id=_EXTERNAL_ID,
+                    id_type=_ID_TYPE,
+                )
+            ],
+            races=[
+                schema.StatePersonRace(
+                    state_code=StateCode.US_XX.value, race=Race.WHITE, race_raw_text="W"
+                ),
+            ],
+        ),
+        schema.StatePerson(
+            state_code=StateCode.US_XX.value,
+            gender=Gender.MALE,
+            external_ids=[
+                schema.StatePersonExternalId(
+                    state_code=StateCode.US_XX.value,
+                    external_id=_EXTERNAL_ID,
+                    id_type=_ID_TYPE,
+                )
+            ],
+        ),
+        schema.StatePerson(
+            state_code=StateCode.US_XX.value,
+            gender=Gender.MALE,
+        ),
+    ],
+    schema.StatePersonAlias: [
+        schema.StatePersonAlias(state_code=StateCode.US_XX.value, full_name="Name"),
+    ],
+    schema.StatePersonEthnicity: [
+        schema.StatePersonEthnicity(
+            state_code=StateCode.US_XX.value,
+            ethnicity=Ethnicity.HISPANIC,
+            ethnicity_raw_text="H",
+        ),
+        schema.StatePersonEthnicity(
+            state_code=StateCode.US_XX.value, ethnicity=Ethnicity.NOT_HISPANIC
+        ),
+        schema.StatePersonEthnicity(
+            state_code=StateCode.US_XX.value, ethnicity_raw_text="X"
+        ),
+    ],
+    schema.StatePersonExternalId: [
+        schema.StatePersonExternalId(
+            state_code=StateCode.US_XX.value, external_id=_EXTERNAL_ID, id_type=_ID_TYPE
+        )
+    ],
+    schema.StatePersonRace: [
+        schema.StatePersonRace(
+            state_code=StateCode.US_XX.value, race=Race.WHITE, race_raw_text="W"
+        ),
+        schema.StatePersonRace(state_code=StateCode.US_XX.value, race=Race.WHITE),
+        schema.StatePersonRace(state_code=StateCode.US_XX.value, race_raw_text="X"),
+    ],
+    schema.StateProgramAssignment: [
+        schema.StateProgramAssignment(
+            state_code=StateCode.US_XX.value,
+            external_id=_EXTERNAL_ID,
+            participation_status=StateProgramAssignmentParticipationStatus.PRESENT_WITHOUT_INFO.value,
+            start_date=datetime.date(2021, 1, 1),
+        ),
+        schema.StateProgramAssignment(
+            state_code=StateCode.US_XX.value,
+            participation_status=StateProgramAssignmentParticipationStatus.PRESENT_WITHOUT_INFO.value,
+            start_date=datetime.date(2021, 1, 1),
+        ),
+    ],
+    schema.StateSupervisionCaseTypeEntry: [
+        schema.StateSupervisionCaseTypeEntry(
+            state_code=StateCode.US_XX.value,
+            external_id=_EXTERNAL_ID,
+            case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
+        ),
+        schema.StateSupervisionCaseTypeEntry(
+            state_code=StateCode.US_XX.value,
+            case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
+        ),
+    ],
+    schema.StateSupervisionContact: [
+        schema.StateSupervisionContact(
+            state_code=StateCode.US_XX.value,
+            external_id=_EXTERNAL_ID,
+            location=StateSupervisionContactLocation.SUPERVISION_OFFICE,
+        ),
+        schema.StateSupervisionContact(
+            state_code=StateCode.US_XX.value,
+            location=StateSupervisionContactLocation.SUPERVISION_OFFICE,
+        ),
+    ],
+    schema.StateSupervisionPeriod: [
+        schema.StateSupervisionPeriod(
+            state_code=StateCode.US_XX.value,
+            external_id=_EXTERNAL_ID,
+            start_date=datetime.date(2021, 1, 1),
+        ),
+        schema.StateSupervisionPeriod(
+            state_code=StateCode.US_XX.value, start_date=datetime.date(2021, 1, 1)
+        ),
+    ],
+    schema.StateSupervisionSentence: [
+        schema.StateSupervisionSentence(
+            state_code=StateCode.US_XX.value,
+            external_id=_EXTERNAL_ID,
+            status=StateSentenceStatus.SERVING.value,
+        ),
+        schema.StateSupervisionSentence(
+            state_code=StateCode.US_XX.value,
+            external_id=_EXTERNAL_ID,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
+            date_imposed=datetime.date(2021, 1, 1),
+            charges=[
+                schema.StateCharge(
+                    state_code=StateCode.US_XX.value,
+                    external_id=_EXTERNAL_ID,
+                    status=ChargeStatus.PRESENT_WITHOUT_INFO.value,
+                )
+            ],
+        ),
+        schema.StateSupervisionSentence(
+            state_code=StateCode.US_XX.value,
+            status=StateSentenceStatus.SERVING.value,
+        ),
+    ],
+    schema.StateSupervisionViolatedConditionEntry: [
+        schema.StateSupervisionViolatedConditionEntry(
+            state_code=StateCode.US_XX.value, condition="DRG"
+        )
+    ],
+    schema.StateSupervisionViolation: [
+        schema.StateSupervisionViolation(
+            state_code=StateCode.US_XX.value,
+            external_id=_EXTERNAL_ID,
+            violation_date=datetime.date(2021, 1, 1),
+        ),
+        schema.StateSupervisionViolation(
+            state_code=StateCode.US_XX.value,
+            violation_date=datetime.date(2021, 1, 1),
+        ),
+    ],
+    schema.StateSupervisionViolationResponse: [
+        schema.StateSupervisionViolationResponse(
+            state_code=StateCode.US_XX.value,
+            external_id=_EXTERNAL_ID,
+            response_date=datetime.date(2021, 1, 1),
+        ),
+        schema.StateSupervisionViolationResponse(
+            state_code=StateCode.US_XX.value,
+            response_date=datetime.date(2021, 1, 1),
+        ),
+    ],
+    schema.StateSupervisionViolationResponseDecisionEntry: [
+        schema.StateSupervisionViolationResponseDecisionEntry(
+            state_code=StateCode.US_XX.value,
+            decision=StateSupervisionViolationResponseDecision.PRIVILEGES_REVOKED,
+        )
+    ],
+    schema.StateSupervisionViolationTypeEntry: [
+        schema.StateSupervisionViolationTypeEntry(
+            state_code=StateCode.US_XX.value,
+            violation_type=StateSupervisionViolationType.FELONY,
+        )
+    ],
+}
 
 
 class TestEntityUtils(TestCase):
@@ -276,3 +833,61 @@ class TestEntityUtils(TestCase):
             attr.evolve(self.to_entity(pruned_tree)),
             attr.evolve(self.to_entity(expected_placeholder_person)),
         )
+
+    def test_is_placeholder(self) -> None:
+        field_index = CoreEntityFieldIndex()
+        for db_entity_cls in get_non_history_state_database_entities():
+            if db_entity_cls not in PLACEHOLDER_ENTITY_EXAMPLES:
+                self.fail(
+                    f"Expected to find [{db_entity_cls}] in PLACEHOLDER_ENTITY_EXAMPLES"
+                )
+            for entity in PLACEHOLDER_ENTITY_EXAMPLES[db_entity_cls]:
+                self.assertIsInstance(entity, db_entity_cls)
+                self.assertTrue(
+                    is_placeholder(entity, field_index),
+                    f"Found entity that should be a placeholder but does not [{entity}]",
+                )
+
+            if db_entity_cls not in REFERENCE_ENTITY_EXAMPLES:
+                self.fail(
+                    f"Expected to find [{db_entity_cls}] in REFERENCE_ENTITY_EXAMPLES"
+                )
+            for entity in REFERENCE_ENTITY_EXAMPLES[db_entity_cls]:
+                self.assertIsInstance(entity, db_entity_cls)
+                self.assertFalse(is_placeholder(entity, field_index))
+
+            if db_entity_cls not in HAS_MEANINGFUL_DATA_ENTITIES:
+                self.fail(
+                    f"Expected to find [{db_entity_cls}] in NON_REFERENCE_ENTITY_EXAMPLES"
+                )
+            for entity in HAS_MEANINGFUL_DATA_ENTITIES[db_entity_cls]:
+                self.assertIsInstance(entity, db_entity_cls)
+                self.assertFalse(is_placeholder(entity, field_index))
+
+    def test_is_reference_only_entity(self) -> None:
+        field_index = CoreEntityFieldIndex()
+        for db_entity_cls in get_non_history_state_database_entities():
+            if db_entity_cls not in PLACEHOLDER_ENTITY_EXAMPLES:
+                self.fail(
+                    f"Expected to find [{db_entity_cls}] in PLACEHOLDER_ENTITY_EXAMPLES"
+                )
+            for entity in PLACEHOLDER_ENTITY_EXAMPLES[db_entity_cls]:
+                self.assertIsInstance(entity, db_entity_cls)
+                self.assertFalse(is_reference_only_entity(entity, field_index))
+
+            if db_entity_cls not in REFERENCE_ENTITY_EXAMPLES:
+                self.fail(
+                    f"Expected to find [{db_entity_cls}] in REFERENCE_ENTITY_EXAMPLES"
+                )
+            for entity in REFERENCE_ENTITY_EXAMPLES[db_entity_cls]:
+                self.assertIsInstance(entity, db_entity_cls)
+                self.assertTrue(is_reference_only_entity(entity, field_index))
+
+            if db_entity_cls not in HAS_MEANINGFUL_DATA_ENTITIES:
+                self.fail(
+                    f"Expected to find [{db_entity_cls}] in NON_REFERENCE_ENTITY_EXAMPLES"
+                )
+
+            for entity in HAS_MEANINGFUL_DATA_ENTITIES[db_entity_cls]:
+                self.assertIsInstance(entity, db_entity_cls)
+                self.assertFalse(is_reference_only_entity(entity, field_index))

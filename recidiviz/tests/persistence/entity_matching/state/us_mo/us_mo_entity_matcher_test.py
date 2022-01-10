@@ -201,6 +201,7 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
         supervision_period_update = StateSupervisionPeriod.new_with_defaults(
             external_id=entity_supervision_period_open.external_id,
             state_code=_US_MO,
+            start_date=_DATE_2,
             termination_date=_DATE_3,
         )
 
