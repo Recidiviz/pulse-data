@@ -16,6 +16,7 @@
 # ============================================================================
 """State specific utils for entity matching. Utils in this file are generic to any DatabaseEntity."""
 import logging
+from enum import Enum
 from typing import List, Optional, Sequence, Set, Type, cast
 
 from recidiviz.common.common_utils import check_all_objs_have_type
@@ -29,6 +30,7 @@ from recidiviz.persistence.database.schema_utils import (
     get_non_history_state_database_entities,
 )
 from recidiviz.persistence.database.session import Session
+from recidiviz.persistence.entity.base_entity import EnumEntity
 from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
     EntityFieldType,
@@ -410,6 +412,16 @@ def merge_flat_fields(
         )
     else:
         fields = get_explicilty_set_flat_fields(new_entity, field_index)
+
+        # If an enum field is updated, always update the corresponding raw text field
+        # (and vice versa), even if one of the values is null.
+        new_fields = set()
+        for field_name in fields:
+            if isinstance(new_entity.get_field(field_name), Enum):
+                new_fields.add(f"{field_name}{EnumEntity.RAW_TEXT_FIELD_SUFFIX}")
+            if field_name.endswith(EnumEntity.RAW_TEXT_FIELD_SUFFIX):
+                new_fields.add(field_name[: -len(EnumEntity.RAW_TEXT_FIELD_SUFFIX)])
+        fields.update(new_fields)
 
     for child_field_name in fields:
         if child_field_name == old_entity.get_class_id_name():
