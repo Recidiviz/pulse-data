@@ -1,20 +1,44 @@
 file_tag: ofndr_cls_sctn
 file_description: |-
-  Not in use
+  This table matches persons in IDOC custody with classes they have enrolled in.
 primary_key_cols:
   - cls_enroll_id
   - cls_sctn_id
 columns:
   - name: ofndr_num
+    description: |-
+      ID of the person enrolled in the class.
   - name: updt_usr_id
+    description: |-
+      ID of the user who last updated this record
   - name: updt_dt
+    is_datetime: True
+    description: |-
+      Timestamp when this record was last updated
   - name: cls_enroll_id
+    description: |-
+      Part of primary key for this person/course enrollment
   - name: cls_sctn_id
+    description: |-
+      Part of primary key, ID for the class section
   - name: omp_exit_typ_cd
   - name: enroll_by_usr_id
+    description: |-
+      ID of the user who enrolled this client in the class
   - name: enroll_dt
+    is_datetime: True
+    description: |-
+      Date enrollment began
   - name: end_dt
+    is_datetime: True
+    description: |-
+      Date enrollment ended
   - name: rfrd_by_usr_id
+    description: |-
+      ID of user who referred this client to the course
   - name: rfrd_dt
+    is_datetime: True
+    description: |-
+      Date client was referred to this course
   - name: cmt
   - name: ofndr_refuse_flg
