@@ -15,8 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for state_matching_utils.py"""
+import datetime
 
 from recidiviz.common.constants.charge import ChargeStatus
+from recidiviz.common.constants.person_characteristics import Gender
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
@@ -348,6 +350,50 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
                         field_index=field_index,
                     )
                     self.assertEqual(expected, self.convert_to_entity(updated))
+
+    def test_mergeFlatFields_AtomicEnums(self) -> None:
+        ing_entity = schema.StatePerson(
+            state_code=_STATE_CODE,
+            gender=Gender.EXTERNAL_UNKNOWN,
+        )
+        db_entity = schema.StatePerson(
+            state_code=_STATE_CODE,
+            gender_raw_text="XXXX",
+            birthdate=datetime.date(1992, 1, 1),
+        )
+        expected_entity = schema.StatePerson(
+            state_code=_STATE_CODE,
+            gender=Gender.EXTERNAL_UNKNOWN,
+            # Old gender_raw_text is cleared
+            birthdate=datetime.date(1992, 1, 1),
+        )
+
+        merged_entity = merge_flat_fields(
+            new_entity=ing_entity, old_entity=db_entity, field_index=self.field_index
+        )
+        self.assert_schema_objects_equal(expected_entity, merged_entity)
+
+    def test_mergeFlatFields_AtomicEnums2(self) -> None:
+        ing_entity = schema.StatePerson(
+            state_code=_STATE_CODE,
+            gender_raw_text="XXXX",
+        )
+        db_entity = schema.StatePerson(
+            state_code=_STATE_CODE,
+            gender=Gender.EXTERNAL_UNKNOWN,
+            birthdate=datetime.date(1992, 1, 1),
+        )
+        expected_entity = schema.StatePerson(
+            state_code=_STATE_CODE,
+            # Old gender is cleared
+            gender_raw_text="XXXX",
+            birthdate=datetime.date(1992, 1, 1),
+        )
+
+        merged_entity = merge_flat_fields(
+            new_entity=ing_entity, old_entity=db_entity, field_index=self.field_index
+        )
+        self.assert_schema_objects_equal(expected_entity, merged_entity)
 
     def test_generateChildEntitiesWithAncestorChain(self) -> None:
         charge = schema.StateCharge(state_code=_STATE_CODE, charge_id=_ID)
