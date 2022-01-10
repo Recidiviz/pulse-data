@@ -1,14 +1,31 @@
 file_tag: cls
 file_description: |-
-  Not in use
+  List of aftercare courses provided by IDOC.
 primary_key_cols:
   - Cls_ID
 columns:
   - name: vld_flg
+    description: |-
+      Whether or not this class is currently offered
   - name: Cls_ID
+    description: |-
+      ID for this class
   - name: Cls_Title
+    description: |-
+      Title of this class
   - name: Cls_desc
+    description: |-
+      Description of this class
   - name: Est_tot_hrs
+    description: |-
+      Duration of class in hours
   - name: Prereq_flg
+    description: |-
+      Whether or not this class has prerequisites
   - name: updt_dt
+    is_datetime: True
+    description: |-
+      Update timestamp for this record
   - name: updt_usr_id
+    description: |-
+      User who last updated this record
