@@ -33,7 +33,9 @@ from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
     EntityFieldType,
     SchemaEdgeDirectionChecker,
+    get_explicilty_set_flat_fields,
     is_placeholder,
+    is_reference_only_entity,
 )
 from recidiviz.persistence.entity_matching.entity_matching_types import EntityTree
 from recidiviz.persistence.errors import EntityMatchingError
@@ -321,6 +323,77 @@ def convert_to_placeholder(
         entity.clear_field(field_name)
 
 
+def can_atomically_merge_entity(
+    new_entity: DatabaseEntity, field_index: CoreEntityFieldIndex
+) -> bool:
+    """If True, then when merging this entity onto an existing database entity, all the
+    values from this new entity should be taken wholesale, even if some of those values
+    are null.
+    """
+
+    # We often get data about a person from multiple sources - do not overwrite person
+    # information with new updates to the person.
+    if isinstance(new_entity, schema.StatePerson):
+        return False
+
+    # If this entity only contains external id information - do not merge atomically
+    # onto database.
+    if is_reference_only_entity(new_entity, field_index) or is_placeholder(
+        new_entity, field_index
+    ):
+        return False
+
+    # Enum-like objects with no external id should always be merged atomically.
+    if not hasattr(new_entity, "external_id"):
+        return True
+
+    # Entities were added to this list by default, with exemptions (below) selected
+    # explicitly where issues arose because we were writing to them from multiple
+    # sources.
+    if isinstance(
+        new_entity,
+        (
+            schema.StateAssessment,
+            schema.StateCharge,
+            schema.StateCourtCase,
+            schema.StateIncarcerationIncident,
+            schema.StateIncarcerationIncidentOutcome,
+            schema.StateIncarcerationPeriod,
+            schema.StateParoleDecision,
+            schema.StatePersonExternalId,
+            schema.StateProgramAssignment,
+            schema.StateSupervisionContact,
+            schema.StateSupervisionCaseTypeEntry,
+            schema.StateSupervisionPeriod,
+            schema.StateSupervisionSentence,
+            schema.StateSupervisionViolation,
+            schema.StateSupervisionViolationResponse,
+        ),
+    ):
+        return True
+
+    if isinstance(
+        new_entity,
+        (
+            schema.StateAgent,
+            # We update this entity from multiple views in ND
+            schema.StateIncarcerationSentence,
+            # We update this entity from four views in US_ID:
+            # early_discharge_supervision_sentence
+            # early_discharge_incarceration_sentence
+            # early_discharge_supervision_sentence_deleted_rows
+            # early_discharge_incarceration_sentence_deleted_rows
+            schema.StateEarlyDischarge,
+        ),
+    ):
+        return False
+
+    raise ValueError(
+        f"Cannot determine whether we can merge entity [{new_entity}] atomically "
+        f"onto the existing database match."
+    )
+
+
 # TODO(#2244): Create general approach for required fields/default values
 def merge_flat_fields(
     *,
@@ -328,15 +401,18 @@ def merge_flat_fields(
     old_entity: DatabaseEntity,
     field_index: CoreEntityFieldIndex,
 ) -> DatabaseEntity:
-    """Merges all set non-relationship fields on the |new_entity| onto the |old_entity|. Returns the newly merged
-    entity."""
-    for child_field_name in field_index.get_fields_with_non_empty_values(
-        new_entity, EntityFieldType.FLAT_FIELD
-    ):
+    """Merges all set non-relationship fields on the |new_entity| onto the |old_entity|.
+    Returns the newly merged entity."""
+
+    if can_atomically_merge_entity(new_entity, field_index):
+        fields = field_index.get_all_core_entity_fields(
+            new_entity, EntityFieldType.FLAT_FIELD
+        )
+    else:
+        fields = get_explicilty_set_flat_fields(new_entity, field_index)
+
+    for child_field_name in fields:
         if child_field_name == old_entity.get_class_id_name():
-            continue
-        # Do not overwrite with default status
-        if child_field_name == "status" and new_entity.has_default_status():
             continue
 
         old_entity.set_field(child_field_name, new_entity.get_field(child_field_name))

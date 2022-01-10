@@ -257,7 +257,7 @@ class TestCoreEntity(unittest.TestCase):
         with self.assertRaises(ValueError):
             db_entity.set_field_from_list("state_code", ["US_XX", "US_YY"])
 
-    def test_hasDefaultStatus(self) -> None:
+    def test_isDefaultEnum(self) -> None:
         entity = entities.StateCharge.new_with_defaults(
             state_code="US_XX", status=entities.ChargeStatus.PRESENT_WITHOUT_INFO
         )
@@ -265,15 +265,15 @@ class TestCoreEntity(unittest.TestCase):
         if not isinstance(db_entity, schema.StateCharge):
             self.fail(f"Unexpected type for db_entity: {[db_entity]}.")
 
-        self.assertTrue(entity.has_default_status())
+        self.assertTrue(entity.is_default_enum("status"))
         entity.status = entities.ChargeStatus.CONVICTED
-        self.assertFalse(entity.has_default_status())
+        self.assertFalse(entity.is_default_enum("status"))
 
-        self.assertTrue(db_entity.has_default_status())
+        self.assertTrue(db_entity.is_default_enum("status"))
         db_entity.status = entities.ChargeStatus.CONVICTED.value
-        self.assertFalse(db_entity.has_default_status())
+        self.assertFalse(db_entity.is_default_enum("status"))
 
-    def test_hasDefaultEnum(self) -> None:
+    def test_isDefaultEnum_incarceration_type(self) -> None:
         entity = entities.StateIncarcerationSentence.new_with_defaults(
             state_code="US_XX",
             incarceration_type=entities.StateIncarcerationType.STATE_PRISON,
@@ -284,43 +284,43 @@ class TestCoreEntity(unittest.TestCase):
             self.fail(f"Unexpected type for db_entity: {[db_entity]}.")
 
         self.assertTrue(
-            entity.has_default_enum(
-                "incarceration_type", entities.StateIncarcerationType.STATE_PRISON
+            entity.is_default_enum(
+                "incarceration_type", entities.StateIncarcerationType.STATE_PRISON.value
             )
         )
 
         entity.incarceration_type_raw_text = "PRISON"
         self.assertFalse(
-            entity.has_default_enum(
-                "incarceration_type", entities.StateIncarcerationType.STATE_PRISON
+            entity.is_default_enum(
+                "incarceration_type", entities.StateIncarcerationType.STATE_PRISON.value
             )
         )
 
         entity.incarceration_type = entities.StateIncarcerationType.COUNTY_JAIL
         entity.incarceration_type_raw_text = None
         self.assertFalse(
-            entity.has_default_enum(
-                "incarceration_type", entities.StateIncarcerationType.STATE_PRISON
+            entity.is_default_enum(
+                "incarceration_type", entities.StateIncarcerationType.STATE_PRISON.value
             )
         )
 
         self.assertTrue(
-            db_entity.has_default_enum(
-                "incarceration_type", entities.StateIncarcerationType.STATE_PRISON
+            db_entity.is_default_enum(
+                "incarceration_type", entities.StateIncarcerationType.STATE_PRISON.value
             )
         )
 
         db_entity.incarceration_type_raw_text = "PRISON"
         self.assertFalse(
-            db_entity.has_default_enum(
-                "incarceration_type", entities.StateIncarcerationType.STATE_PRISON
+            db_entity.is_default_enum(
+                "incarceration_type", entities.StateIncarcerationType.STATE_PRISON.value
             )
         )
 
         db_entity.incarceration_type = entities.StateIncarcerationType.COUNTY_JAIL.value
         db_entity.incarceration_type_raw_text = None
         self.assertFalse(
-            entity.has_default_enum(
-                "incarceration_type", entities.StateIncarcerationType.STATE_PRISON
+            entity.is_default_enum(
+                "incarceration_type", entities.StateIncarcerationType.STATE_PRISON.value
             )
         )
