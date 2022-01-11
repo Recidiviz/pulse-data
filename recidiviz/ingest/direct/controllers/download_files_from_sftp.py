@@ -67,6 +67,7 @@ class SftpAuth:
         username: str,
         password: str,
         client_private_key: Optional[paramiko.RSAKey],
+        port: Optional[int] = None,
     ):
         self.hostname = hostname
         self.hostkey_entry = hostkey_entry
@@ -75,6 +76,9 @@ class SftpAuth:
         # If we need a client key, this variable contains the private part of the private/public
         # key pair.
         self.client_private_key = client_private_key
+        # The default port for most SFTP servers is 22, but there may be cases where we
+        # may need to specify a port
+        self.port = 22 if port is None else port
 
     @classmethod
     def for_region(cls, region_code: str) -> "SftpAuth":
@@ -108,8 +112,12 @@ class SftpAuth:
             if not raw_client_private_key
             else paramiko.RSAKey.from_private_key(io.StringIO(raw_client_private_key))
         )
+        port_secret = secrets.get_secret(f"{prefix}_port")
+        port = None if not port_secret else int(port_secret)
 
-        return SftpAuth(host, hostkey_entry, username, password, client_private_key)
+        return SftpAuth(
+            host, hostkey_entry, username, password, client_private_key, port
+        )
 
 
 class DownloadFilesFromSftpController:
@@ -159,7 +167,7 @@ class DownloadFilesFromSftpController:
         """Creates a proper authentication to the SFTP server via SSH and then
         returns a client that allows for file system commands to be executed against
         the SFTP server."""
-        transport = Transport((self.auth.hostname, 22))
+        transport = Transport((self.auth.hostname, self.auth.port))
         transport.connect()
         if self.auth.client_private_key:
             try:
