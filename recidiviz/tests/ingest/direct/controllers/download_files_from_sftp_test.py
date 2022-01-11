@@ -167,6 +167,7 @@ class TestSftpAuth(unittest.TestCase):
             "us_xx_sftp_username": "username",
             "us_xx_sftp_password": "password",
             "us_xx_sftp_hostkey": "testhost.ftp ssh-rsa " + TEST_SSH_RSA_KEY,
+            "us_xx_sftp_port": "2223",
         }
         mock_secret.side_effect = test_secrets.get
         result = SftpAuth.for_region("us_xx")
@@ -178,6 +179,7 @@ class TestSftpAuth(unittest.TestCase):
             result.hostkey_entry.key,
             RSAKey(data=decodebytes(bytes(TEST_SSH_RSA_KEY, "utf-8"))),
         )
+        self.assertEqual(result.port, 2223)
 
     @patch("recidiviz.utils.secrets.get_secret")
     def test_initialization_empty_hostname_error(self, mock_secret: MagicMock) -> None:
@@ -219,6 +221,18 @@ class TestSftpAuth(unittest.TestCase):
         mock_secret.side_effect = test_secrets.get
         with self.assertRaises(ValueError):
             _ = SftpAuth.for_region("us_xx")
+
+    @patch("recidiviz.utils.secrets.get_secret")
+    def test_initialization_default_port_22(self, mock_secret: MagicMock) -> None:
+        test_secrets = {
+            "us_xx_sftp_host": "testhost.ftp",
+            "us_xx_sftp_username": "username",
+            "us_xx_sftp_password": "password",
+            "us_xx_sftp_hostkey": "testhost.ftp ssh-rsa " + TEST_SSH_RSA_KEY,
+        }
+        mock_secret.side_effect = test_secrets.get
+        result = SftpAuth.for_region("us_xx")
+        self.assertEqual(result.port, 22)
 
 
 @patch.object(
