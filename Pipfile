@@ -168,6 +168,8 @@ jsonschema = "*"
 proto-plus = "==1.19.6"
 nltk = "*"
 thefuzz = "*"
+ratelimit = "*"
+ratelimit-stubs = "*"
 
 [requires]
 python_version = "3.8"

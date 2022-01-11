@@ -82,7 +82,7 @@ class ShellCompartment(SparkCompartment):
                 self.policy_list, policy_time_steps[ts_idx]
             ):
                 # TODO(#10442): Fix this and remove the type ignore.
-                ts_data = policy.policy_fn(ts_data)  # type: ignore[func-returns-value]
+                ts_data = policy.policy_fn(ts_data)
 
             self.policy_data[policy_time_steps[ts_idx]] = ts_data
 

@@ -62,12 +62,14 @@ class TestAuthRoutes(unittest.TestCase):
             response = client.post("/auth/log_out")
 
             self.assertEqual(
-                response.headers["Set-Cookie"],
                 "session=; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Path=/",
+                response.headers["Set-Cookie"],
             )
 
             self.assertEqual(
                 "https://auth0.localhost/v2/logout?client_id=test_client_id&returnTo=http%3A%2F%2Flocalhost%3A3000",
                 response.headers["Location"],
             )
-            self.assertEqual(0, len(session.keys()))
+
+            with self.test_app.test_request_context():
+                self.assertEqual(0, len(session.keys()))

@@ -16,7 +16,9 @@
 # =============================================================================
 """Object representing a policy to be applied in a simulation"""
 
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable, Dict, List, Optional
+
+import pandas as pd
 
 
 class SparkPolicy:
@@ -25,7 +27,7 @@ class SparkPolicy:
     def __init__(
         self,
         # policy_fn takes a transition_table.TransitionTable as input.
-        policy_fn: Callable[[Any], None],
+        policy_fn: Callable[[Any], Optional[pd.DataFrame]],
         spark_compartment: str,
         sub_population: Dict[str, str],
         policy_ts: int,
