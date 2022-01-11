@@ -21,8 +21,11 @@ from typing import Dict, List, Optional, TypedDict
 from auth0.v3.authentication import GetToken
 from auth0.v3.management import Auth0
 from auth0.v3.management.rest import RestClientOptions
+from ratelimit import limits, sleep_and_retry
 
 from recidiviz.utils import secrets
+
+AUTH0_QPS_LIMIT = 2
 
 Auth0AppMetadata = TypedDict(
     "Auth0AppMetadata",
@@ -107,12 +110,17 @@ class Auth0Client:
             all_users.extend(response["users"])
         return all_users
 
+    @sleep_and_retry
+    @limits(calls=AUTH0_QPS_LIMIT, period=1)
     def update_user_app_metadata(
         self, user_id: str, app_metadata: Auth0AppMetadata
     ) -> None:
         """Updates a single Auth0 user's app_metadata field. Root-level properties are merged, and any nested properties
         are replaced. To delete an app_metadata property, send None as the value. To delete the app_metadata entirely,
-        send an empty dictionary."""
+        send an empty dictionary.
+
+        This function is limited to two calls per second. Any calls beyond that will cause the function to sleep until
+        it is safe to call again."""
         return self.client.users.update(id=user_id, body={"app_metadata": app_metadata})
 
     @staticmethod

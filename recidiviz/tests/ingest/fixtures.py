@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2019 Recidiviz, Inc.
+# Copyright (C) 2021 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -101,6 +101,7 @@ def as_filepath(filename: str, subdir: str = "fixtures") -> str:
         raise ValueError("Module is unexpectedly None")
 
     caller_filepath = module.__file__
+    assert caller_filepath is not None
 
     if caller_filepath is None:
         raise ValueError(f"No file associated with {module}.")
