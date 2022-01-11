@@ -148,7 +148,7 @@ class TestRedisSessionInterface(TestCase):
 
         self.assertIsNotNone(session_cookie)
         self.assertEqual(session_cookie["max-age"], "0")
-        self.assertEqual(session_cookie["expires"], "Thu, 01-Jan-1970 00:00:00 GMT")
+        self.assertEqual("Thu, 01-Jan-1970 00:00:00 GMT", session_cookie["expires"])
         self.assertEqual(session_cookie.value, "")
 
         # A new session is assigned on a subsequent request
