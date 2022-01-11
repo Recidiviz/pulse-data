@@ -28,6 +28,11 @@ columns:
   - name: Verdict
     description: |-
       The abbreviation of the verdict of an offender for a judgment order.
+    known_values:
+      - value: B
+        description: Bench
+      - value: J
+        description: Jury
   - name: ChargeOffense
     description: |-
       The code for the offense that an offender is originally charged.
@@ -45,33 +50,33 @@ columns:
       Class code assigned to a particular offense statute that is the conviction offense of an offender.
     known_values:
       - value: 1
-        description: "TODO(#7424): Update with definition."
+        description: First degree murder.
       - value: A
-        description: "TODO(#7424): Update with definition."
+        description: Most serious offense.
       - value: B
-        description: "TODO(#7424): Update with definition."
+        description: Second most serious offense.
       - value: C
-        description: "TODO(#7424): Update with definition."
+        description: Third most serious offense.
       - value: D
-        description: "TODO(#7424): Update with definition."
+        description: Fourth most serious offense.
       - value: E
-        description: "TODO(#7424): Update with definition."
+        description: Least serious offense.
   - name: IndictmentClass
     description: |-
       Felony class code for the offense that an offender is indicted.
     known_values:
       - value: 1
-        description: "TODO(#7424): Update with definition."
+        description: First degree murder.
       - value: A
-        description: "TODO(#7424): Update with definition."
+        description: Most serious offense.
       - value: B
-        description: "TODO(#7424): Update with definition."
+        description: Second most serious offense.
       - value: C
-        description: "TODO(#7424): Update with definition."
+        description: Third most serious offense.
       - value: D
-        description: "TODO(#7424): Update with definition."
+        description: Fourth most serious offense.
       - value: E
-        description: "TODO(#7424): Update with definition."
+        description: Least serious offense.
   - name: CrimeType
     description: |-
       Indicator to tell whether a sentence related to a judgment order is a felony or a misdemeanor.
