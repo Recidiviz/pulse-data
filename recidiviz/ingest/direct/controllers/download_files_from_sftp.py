@@ -167,7 +167,17 @@ class DownloadFilesFromSftpController:
         """Creates a proper authentication to the SFTP server via SSH and then
         returns a client that allows for file system commands to be executed against
         the SFTP server."""
-        transport = Transport((self.auth.hostname, self.auth.port))
+        transport = Transport(
+            (self.auth.hostname, self.auth.port),
+            # A recent change to Paramiko defined a preference order for algorithms that
+            # are used to decrypt host keys and private keys. For RSA keys, we have
+            # identified that these two algorithms take precedent over ssh-rsa, which is
+            # the algorithm preferred by state partners. Therefore, if there are other
+            # channel closed errors, we should consider adding algorithms to this list
+            # in order to force preference of the algorithms that our hostkey secrets
+            # contain by our state partners.
+            disabled_algorithms=dict(pubkeys=["rsa-sha2-512", "rsa-sha2-256"]),
+        )
         transport.connect()
         if self.auth.client_private_key:
             try:
