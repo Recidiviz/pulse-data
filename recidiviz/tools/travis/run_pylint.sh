@@ -101,7 +101,7 @@ echo "Checking CURRENT_DATE format"
 invalid_lines=$(${changed_files_cmd} \
     | grep --invert-match -e 'run_pylint\.sh' \
     | grep --invert-match -e 'bandit-baseline.json' \
-    | xargs grep -n -e 'CURRENT_DATE\(\)')
+    | xargs grep -n -e 'CURRENT_DATE()')
 
 if [[ -n ${invalid_lines} ]]
 then
