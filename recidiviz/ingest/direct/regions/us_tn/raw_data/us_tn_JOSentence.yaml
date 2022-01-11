@@ -134,15 +134,15 @@ columns:
       Indicator to tell if an offender was sentenced on the judgment order to a life or death sentence.
     known_values:
       - value: D
-        description: "TODO(#7424): Update with definition."
+        description: Death. The person will be executed. There will be no calculations of a potential release date.
       - value: H
-        description: "TODO(#7424): Update with definition."
+        description: Habitual. This is an old law and is a deprecated value. It is equivalent to life.
       - value: L
-        description: "TODO(#7424): Update with definition."
+        description: Life sentence. There be calculations of a potential release date because they might be released to parole.
       - value: M
-        description: "TODO(#7424): Update with definition."
+        description: Minimum of 25 years in prison before parole. This determines the person's release eligility date.
       - value: W
-        description: "TODO(#7424): Update with definition."
+        description: Life sentence without parole. There will be no calculations of a potential release date.
   - name: UnpaidCommunityServiceHours
     description: |-
       The number of hours of unpaid community service of an offender according to the judgment order.
