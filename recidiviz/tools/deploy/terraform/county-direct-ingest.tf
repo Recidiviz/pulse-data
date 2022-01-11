@@ -37,3 +37,16 @@ module "direct_ingest_queues" {
   region                    = var.app_engine_region
   max_dispatches_per_second = 100
 }
+
+module "direct-ingest-county-storage" {
+  source = "./modules/cloud-storage-bucket"
+
+  project_id    = var.project_id
+  location      = var.direct_ingest_region
+  storage_class = "REGIONAL"
+  name_suffix   = "direct-ingest-county-storage"
+
+  labels = {
+    recidiviz_service = "scrapers"
+  }
+}

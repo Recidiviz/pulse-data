@@ -45,6 +45,14 @@ module "direct-ingest-cloud-sql-exports" {
   name_suffix = "cloud-sql-exports"
 }
 
+module "dashboard-data" {
+  source = "./modules/cloud-storage-bucket"
+
+  project_id    = var.project_id
+  name_suffix   = "dashboard-data"
+  storage_class = "MULTI_REGIONAL"
+}
+
 module "dashboard-user-restrictions-bucket" {
   source = "./modules/cloud-storage-bucket"
 
@@ -67,6 +75,71 @@ module "case-triage-data" {
   uniform_bucket_level_access = false
 }
 
+module "covid-dashboard-data" {
+  source = "./modules/cloud-storage-bucket"
+
+  project_id                  = var.project_id
+  name_suffix                 = "covid-dashboard-data"
+  uniform_bucket_level_access = false
+}
+
+module "configs" {
+  source = "./modules/cloud-storage-bucket"
+
+  project_id                  = var.project_id
+  name_suffix                 = "configs"
+  uniform_bucket_level_access = false
+}
+
+module "dbexport" {
+  source = "./modules/cloud-storage-bucket"
+
+  project_id                  = var.project_id
+  name_suffix                 = "dbexport"
+  location                    = "us-east4"
+  storage_class               = "REGIONAL"
+  uniform_bucket_level_access = false
+
+  lifecycle_rules = [
+    {
+      action = {
+        type = "Delete"
+      }
+      condition = {
+        num_newer_versions = 2
+      }
+    }
+  ]
+}
+
+module "dataflow-templates" {
+  source = "./modules/cloud-storage-bucket"
+
+  project_id                  = var.project_id
+  name_suffix                 = "dataflow-templates"
+  storage_class               = "MULTI_REGIONAL"
+  uniform_bucket_level_access = false
+
+  lifecycle_rules = [
+    {
+      action = {
+        type = "Delete"
+      }
+      condition = {
+        num_newer_versions = 5
+      }
+    },
+    {
+      action = {
+        type = "Delete"
+      }
+      condition = {
+        age = 21
+      }
+    },
+  ]
+}
+
 # TODO(#6052): Refactor to use ../cloud-storage-bucket
 resource "google_storage_bucket" "dataflow-templates-scratch" {
   name                        = "${var.project_id}-dataflow-templates-scratch"
@@ -87,3 +160,4 @@ resource "google_storage_bucket" "dataflow-templates-scratch" {
     enabled = true
   }
 }
+
