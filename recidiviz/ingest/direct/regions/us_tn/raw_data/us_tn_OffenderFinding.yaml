@@ -5,14 +5,14 @@ primary_key_cols: []
 columns:
   - name: OffenderID
     description: |-
-      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+      This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: FindingDate
     is_datetime: True
     description: |-
-      The date findings about an offender are posted.
+      The date findings about a person  are posted.
   - name: FindingType
     description: |-
-      The type of finding about an offender as observed by the arresting officer or TDOC staff.
+      The type of finding about a person  as observed by the arresting officer or TDOC staff.
     known_values:
       - value: AL
         description: ASSAULT BY OFFENDER

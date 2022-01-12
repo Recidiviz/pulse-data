@@ -6,7 +6,7 @@ primary_key_cols:
 columns:
   - name: OffenderID
     description: |-
-      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+      This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: Weight
     description: |-
       The weight of an individual, measured in pounds.
@@ -40,7 +40,7 @@ columns:
       A unique identifier assigned to a driver's license by the state issuing the license.
   - name: ScarsMarksTattoos
     description: |-
-      The data reported on a criminal history report of distinguishing scars, marks, or tattoos that an offender might be identified by.
+      The data reported on a criminal history report of distinguishing scars, marks, or tattoos that a person  might be identified by.
   - name: Religion
     description: |-
       An abbreviation of the type of Religion practiced by an offender.
@@ -48,10 +48,10 @@ columns:
     known_values: []
   - name: BirthCounty
     description: |-
-      The county in which an offender was born.
+      The county in which a person  was born.
   - name: BirthState
     description: |-
-      The state in which an offender was born.
+      The state in which a person  was born.
   - name: NCICFingerprintID
     description: |-
       An alphanumeric identified assigned by NCIC which uniquely identifies an offender.
@@ -84,14 +84,14 @@ columns:
       The staff id of the individual who initially posted the death of an offender.
   - name: OBSCISID
     description: |-
-      This is the offender ID used on the OBSCIS system.
+      This is the person ID used on the OBSCIS system.
   - name: RestoreDate
     is_datetime: True
     description: |-
-      The date on which an offender and his related tables have been restored from tape.
+      The date on which a person  and his related tables have been restored from tape.
   - name: DeathSiteID
     description: |-
-      This identifies the organizational/location entity which reports an offender as dead.
+      This identifies the organizational/location entity which reports a person  as dead.
   - name: DeathCertificateFlag
     description: |-
       This flag signifies that a death certificate was obtained as proof of death.
@@ -106,16 +106,16 @@ columns:
       The code to represent a security threat group name.
   - name: OldSTGComments
     description: |-
-      Comment line for Offender STG (Security Threat Group) information.
+      Comment line for person STG (Security Threat Group) information.
   - name: CitizenshipCountry
     description: |-
-      The country in which an offender is a citizen.
+      The country in which a person  is a citizen.
   - name: BirthPlace
     description: |-
-      This element will contain an offender's place of birth (city) for an offender whose citizenship is other than the USA.
+      This element will contain an offender's place of birth (city) for a person  whose citizenship is other than the USA.
   - name: AlienID
     description: |-
-      An identifier which uniquely identifies an offender with respect to immigration authorities.
+      An identifier which uniquely identifies a person  with respect to immigration authorities.
   - name: FBINumber
     description: |-
       The FBI number for an offender's attributes. This field differs from TENBF013 by having a different length. This field replaces the old NBR-FBI field.

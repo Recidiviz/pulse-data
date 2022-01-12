@@ -10,10 +10,10 @@ primary_key_cols:
 columns:
   - name: OffenderID
     description: |-
-      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+      This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: ConvictionCounty
     description: |-
-      The county in which an offender is convicted.  This element is used in identifying a particular sentence.
+      The county in which a person  is convicted.  This element is used in identifying a particular sentence.
   - name: CaseYear
     description: |-
       The year assigned to a sentence for a particular county.  It will generally be the current year at assignment.
@@ -79,21 +79,21 @@ columns:
       An alphanumeric identifier assigned by the state of Tennesse which uniquely identifies an offender. 8 characters.
   - name: CountyOffenderID
     description: |-
-      The County Offender ID stored on the Judgment Order.
+      The County OffenderID stored on the Judgment Order.
   - name: PostedDate
     is_datetime: True
     description: |-
       This is the date that data is actually posted to the system.
   - name: VictimRelation
     description: |-
-      An abbreviation representing if an offender is related to a victim.
+      An abbreviation representing if a person  is related to a victim.
   - name: VictimAge
     description: |-
       The age of a victim.
   - name: ArrestedDate
     is_datetime: True
     description: |-
-      The date on which an offender is arrested for a particular crime.
+      The date on which a person  is arrested for a particular crime.
   - name: LastUpdateUserID
     description: |-
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.

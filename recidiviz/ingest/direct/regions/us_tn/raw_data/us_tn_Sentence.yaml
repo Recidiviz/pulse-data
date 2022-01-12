@@ -10,10 +10,10 @@ primary_key_cols:
 columns:
   - name: OffenderID
     description: |-
-      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+      This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: ConvictionCounty
     description: |-
-      The county in which an offender is convicted.  This element is used in identifying a particular sentence.
+      The county in which a person  is convicted.  This element is used in identifying a particular sentence.
   - name: CaseYear
     description: |-
       The year assigned to a sentence for a particular county. It will generally be the current year at assignment.
@@ -26,7 +26,7 @@ columns:
   - name: SentenceChangedDate
     is_datetime: True
     description: |-
-      The date that a sentence of an offender last changed.
+      The date that a sentence of a person  last changed.
   - name: SentenceStatus
     description: |-
       The sentence status indicates whether a sentence is currently be- ing served in incarceration, on parole, on probation in community corrections, on probation due to determinate release, or the sentence has ended.
@@ -58,23 +58,23 @@ columns:
   - name: SafetyValveDate
     is_datetime: True
     description: |-
-      The date an offender is eligible for release on parole based on the safety valve percentage.
+      The date a person  is eligible for release on parole based on the safety valve percentage.
   - name: ReleaseEligibilityDate
     is_datetime: True
     description: |-
-      The date an offender is eligible for release to parole for a sentence.
+      The date a person  is eligible for release to parole for a sentence.
   - name: EarliestPossibleReleaseDate
     is_datetime: True
     description: |-
-      This is the earliest possible release date that an offender may be paroled or released from custody.  Parole or release eligibility dates cannot be reduced by credits to be earlier than this date. This date is not in effect when safety-value law is in eff
+      This is the earliest possible release date that a person  may be paroled or released from custody.  Parole or release eligibility dates cannot be reduced by credits to be earlier than this date. This date is not in effect when safety-value law is in eff
   - name: MandatoryParoleDate
     is_datetime: True
     description: |-
-      The mandatory parole date of an offender for Indeterminate and Determinate sentences.
+      The mandatory parole date of a person  for Indeterminate and Determinate sentences.
   - name: RegularParoleDate
     is_datetime: True
     description: |-
-      The regular parole date for sentences of an offender on Indeterminate and Determinate sentences.
+      The regular parole date for sentences of a person  on Indeterminate and Determinate sentences.
   - name: ProbationaryParoleDate
     is_datetime: True
     description: |-
@@ -90,19 +90,19 @@ columns:
       The total of all PSRC program credits for a particular sentence of an offender.
   - name: TotalGEDCredits
     description: |-
-      The credit an offender receives for a sentence for obtaining his GED.
+      The credit a person  receives for a sentence for obtaining his GED.
   - name: TotalLiteraryCredits
     description: |-
-      The credit an offender receives for a sentence for completing a literary class in a local jail or workhouse.
+      The credit a person  receives for a sentence for completing a literary class in a local jail or workhouse.
   - name: TotalDrugAlcoholCredits
     description: |-
-      The credit an offender receives for a sentence for participating in a drug or alcohol rehabilitation program in a local jail or TENB workhouse.
+      The credit a person  receives for a sentence for participating in a drug or alcohol rehabilitation program in a local jail or TENB workhouse.
   - name: TotalEducationAttendanceCredits
     description: |-
-      The credit an offender receives for a sentence for attending an educational class. These credits are in addition to tradition TENB program credits.
+      The credit a person  receives for a sentence for attending an educational class. These credits are in addition to tradition TENB program credits.
   - name: TotalLostGoodConductCredits
     description: |-
-      The total net loss of good conduct credits an offender has earned for a particular sentence.
+      The total net loss of good conduct credits a person  has earned for a particular sentence.
   - name: TotalDeadTime
     description: |-
       The total of dead time for a sentence of an offender.
@@ -114,7 +114,7 @@ columns:
       The total of street time for a sentence of an offender.
   - name: RangePercent
     description: |-
-      The percentage, supplied by the court, which is used to determine the Release Eligibility Date (RED) of an offender. This percent is tied to the offender type for the particular sentence law.
+      The percentage, supplied by the court, which is used to determine the Release Eligibility Date (RED) of an offender. This percent is tied to the person type for the particular sentence law.
   - name: InactivePardonedFlag
     description: |-
       This is a flag indicating if an offender's sentence is inactive on account of a pardon.
@@ -181,7 +181,7 @@ columns:
       The total of dead time for a sentence converted from OBSCIS.
   - name: ConvertedLostGoodConductCredits
     description: |-
-      The total net loss of good conduct credits an offender has earned
+      The total net loss of good conduct credits a person  has earned
   - name: ConfinementFullExpirationDate
     is_datetime: True
     description: |-
@@ -245,10 +245,10 @@ columns:
       The count number of a sentence that another sentence is consecutive to.
   - name: AuthorizedLostGoodConductFlag
     description: |-
-      The loss of good conduct credits an offender has earned for a particular sentence that are being removed by an authority.
+      The loss of good conduct credits a person  has earned for a particular sentence that are being removed by an authority.
   - name: SafetyValveOverrideFlag
     description: |-
-      This flag indicates the offender currently is not receiving safety valve on sentences.
+      This flag indicates the person currently is not receiving safety valve on sentences.
   - name: TotalTreatmentCredits
     description: |-
       NOT FOUND IN SOURCE DOCUMENT

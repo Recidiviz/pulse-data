@@ -10,7 +10,7 @@ primary_key_cols:
 columns:
   - name: OffenderID
     description: |-
-      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+      This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: OrderDate
     is_datetime: True
     description: |-
@@ -21,7 +21,7 @@ columns:
   - name: EventDate
     is_datetime: True
     description: |-
-      The date of either the arrest or conviction of an offender for a particular offense.  This date is used as the key for the criminal history of an individual.
+      The date of either the arrest or conviction of a person  for a particular offense.  This date is used as the key for the criminal history of an individual.
   - name: SequenceNumber
     description: |-
       Uniquely identifies various DB2 tables.

@@ -1,13 +1,13 @@
 file_tag: InterestedPartyComment
 file_description: |-
-  This table contains one occurrence for each set of comments made by an interested party regarding an offender before his parole hearing.
+  This table contains one occurrence for each set of comments made by an interested party regarding a person  before his parole hearing.
 primary_key_cols:
   - OffenderID
   - PartyID
 columns:
   - name: OffenderID
     description: |-
-      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+      This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: PartyID
     description: |-
       The unique description given to a person who submits a parole comment, is subpoenaed to a hearing, or who wants to be listed as an interested party for an offender.

@@ -1,6 +1,6 @@
 file_tag: Site
 file_description: |-
-  This entity describes any organizational or physical unit to which an offender or staff person can be assigned. These types include adult institutions, agencies, parole, probation, or community serivice offices, local jails, or institution jails. Staff here represents the warden, office supervisor, etc.
+  This entity describes any organizational or physical unit to which a person  or staff person can be assigned. These types include adult institutions, agencies, parole, probation, or community serivice offices, local jails, or institution jails. Staff here represents the warden, office supervisor, etc.
 primary_key_cols:
   - SiteID
 columns:
@@ -12,7 +12,7 @@ columns:
       This is the name of a shorten site name.
   - name: SiteType
     description: |-
-      The type of site that an offender is assigned.
+      The type of site that a person  is assigned.
     known_values:
       - value: BC
         description: SAIU (BOOT CAMP)
@@ -44,7 +44,7 @@ columns:
         description: TDOC CENTRAL OFFICE
   - name: Status
     description: |-
-      The status of a site to which an offender is assigned.
+      The status of a site to which a person  is assigned.
     known_values:
       - value: A
         description: ACTIVE
@@ -53,7 +53,7 @@ columns:
   - name: StatusDate
     is_datetime: True
     description: |-
-      The date a an offender is assigned to a particular institution.
+      The date a a person  is assigned to a particular institution.
   - name: AddressLine1
     description: |-
       The first street address line.
@@ -89,7 +89,7 @@ columns:
       A unique geographical location governed by its own administrative unit.
   - name: Division
     description: |-
-      The division code relating to assignment of staff or offender persons.
+      The division code relating to assignment of staff or person persons.
   - name: District
     description: |-
       The district code relating to parole or probation office locations.

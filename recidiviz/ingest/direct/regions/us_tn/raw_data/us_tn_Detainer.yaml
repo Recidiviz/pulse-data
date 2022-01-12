@@ -8,7 +8,7 @@ primary_key_cols:
 columns:
   - name: OffenderID
     description: |-
-      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+      This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: DetainerType
     description: |-
       The type of detainer for an offender.  This will either be a regular detainer or a commitment detainer.
@@ -36,7 +36,7 @@ columns:
         description: PLACED
   - name: Jurisdiction
     description: |-
-      The code for the jurisdiction in which an offender is serving his sentence.
+      The code for the jurisdiction in which a person  is serving his sentence.
   - name: County
     description: |-
       The code name of a territorial division for local government within a state.
@@ -84,10 +84,10 @@ columns:
       This is the date that a detainer status is pending.
   - name: DetainerCommitmentDate
     description: |-
-      This is the date that the entity requesting an offender commits to taking the offender.
+      This is the date that the entity requesting a person  commits to taking the offender.
   - name: DetainerLiftDate
     description: |-
-      This is the date that a detainer for an offender is lifted.
+      This is the date that a detainer for a person  is lifted.
   - name: DetainerByStaffID
     description: |-
       This is a unique identifier assigned to a particular staff member. This includes all types of staff people including judges, guards, etc.
@@ -96,13 +96,13 @@ columns:
       A field that lists the County of a Jursidiction other than Tennessee.
   - name: DetainerFelonyFlag
     description: |-
-      Indicates whether an offender has any felony sentences.
+      Indicates whether a person  has any felony sentences.
   - name: DetainerMisdemeanorFlag
     description: |-
       The date information is entered into the system. This field is necessary to provide a processing audit trail.
   - name: ChargePendingFlag
     description: |-
-      This flag indicates that an offender for which a detainer is posted has charges pending.
+      This flag indicates that a person  for which a detainer is posted has charges pending.
   - name: LastModificationDate
     description: |-
       The date that an entity was last modified by a user through a TOMIS conversation.

@@ -6,7 +6,7 @@ primary_key_cols:
 columns:
   - name: ContactID
     description: |-
-      A unique identifier assigned to an offender contact person.
+      A unique identifier assigned to a person  contact person.
   - name: LastName
     description: |-
       The last name of a person.
@@ -29,7 +29,7 @@ columns:
         description: WHITE
   - name: Sex
     description: |-
-      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+      This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
     known_values:
       - value: F
         description: TODO(#7424) - Populate with definition.

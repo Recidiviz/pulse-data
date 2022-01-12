@@ -9,7 +9,7 @@ primary_key_cols:
 columns:
   - name: OffenderID
     description: |-
-      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+      This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: DetainerType
     description: |-
       The type of detainer for an offender.  This will either be a regular detainer or a commitment detainer.
@@ -26,7 +26,7 @@ columns:
       Identifies the forms used by ISC coordinators, institutions, and outside agencies to arrange for offenders to be tried on charges in an outside jurisdiction.
   - name: OffenderSignatureDate
     description: |-
-      The date on which an offender signs a document.
+      The date on which a person  signs a document.
   - name: ReceivedJurisdictionDate
     description: |-
       This is the date a foreign jurisdiction receives a detainer form.
@@ -35,7 +35,7 @@ columns:
       The date that a hearing is originally scheduled to take place. This item is used to uniquely identify a particular offender.
   - name: HearingDecision
     description: |-
-      The decision on a hearing held for an offender in the detainer process.
+      The decision on a hearing held for a person  in the detainer process.
   - name: FormMailDate
     description: |-
       This is the date that a detainer form is mailed.

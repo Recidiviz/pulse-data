@@ -14,10 +14,10 @@ primary_key_cols:
 columns:
   - name: OffenderID
     description: |-
-      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+      This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: Jurisdication
     description: |-
-      The code for the jurisdiction in which an offender is serving his sentence.
+      The code for the jurisdiction in which a person  is serving his sentence.
   - name: CaseYear
     description: |-
       The year assigned to a sentence for a particular county.  It will generally be the current year at assignment.

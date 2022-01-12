@@ -6,10 +6,10 @@ primary_key_cols:
 columns:
   - name: OffenderID
     description: |-
-      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+      This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: ConvictionCounty
     description: |-
-      The county in which an offender is convicted.  This element is used in identifying a particular sentence.
+      The county in which a person  is convicted.  This element is used in identifying a particular sentence.
   - name: CaseYear
     description: |-
       The year assigned to a sentence for a particular county.  It will generally be the current year at assignment.
@@ -22,10 +22,10 @@ columns:
   - name: CreditEligibleDate
     is_datetime: True
     description: |-
-      The date on which an offender is eligible for a type of credits for a sentence.
+      The date on which a person  is eligible for a type of credits for a sentence.
   - name: CreditLawID
     description: |-
-      The ID associated with a credit law used to determine the number of days an offender may have his sentence reduced. Each credit law may have differing standards of maximum credit days available depending on custody type and level, inst type, and years ser
+      The ID associated with a credit law used to determine the number of days a person  may have his sentence reduced. Each credit law may have differing standards of maximum credit days available depending on custody type and level, inst type, and years ser
   - name: CreditLawIDWaivedTo
     description: |-
       The credit law ID that is waived to by an inmate through the waiving procedure. The new credit law ID will be used for determining the maximum credit days available for an inmate.

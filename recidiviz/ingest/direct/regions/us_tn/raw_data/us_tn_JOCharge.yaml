@@ -9,10 +9,10 @@ primary_key_cols:
 columns:
   - name: OffenderID
     description: |-
-      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+      This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: ConvictionCounty
     description: |-
-      The county in which an offender commits the offense for a judgment order.
+      The county in which a person  commits the offense for a judgment order.
   - name: CaseYear
     description: |-
       The year assigned to a sentence for a particular county. It will generally be the current year at assignment.
@@ -27,7 +27,7 @@ columns:
       The offender's plea regarding an infraction related to a disciplinary or a sentence.
   - name: Verdict
     description: |-
-      The abbreviation of the verdict of an offender for a judgment order.
+      The abbreviation of the verdict of a person  for a judgment order.
     known_values:
       - value: B
         description: Bench
@@ -35,10 +35,10 @@ columns:
         description: Jury
   - name: ChargeOffense
     description: |-
-      The code for the offense that an offender is originally charged.
+      The code for the offense that a person  is originally charged.
   - name: OffenseCounty
     description: |-
-      The county in which an offender commits the offense for a judgment order.
+      The county in which a person  commits the offense for a judgment order.
   - name: AmendedChargeOffense
     description: |-
       The code for the amended charge of an offender.
@@ -63,7 +63,7 @@ columns:
         description: Least serious offense.
   - name: IndictmentClass
     description: |-
-      Felony class code for the offense that an offender is indicted.
+      Felony class code for the offense that a person  is indicted.
     known_values:
       - value: 1
         description: First degree murder.
@@ -113,7 +113,7 @@ columns:
         description: CLASS X
   - name: SentenceOffenderType
     description: |-
-      An abbreviation used for one of the types of offenders as desig- nated on the offender's judgement order.  Also the range percent used to calculate an offender's RED date will be tied to the offender type for a particular sentence law.
+      An abbreviation used for one of the types of offenders as desig- nated on the offender's judgement order.  Also the range percent used to calculate an offender's RED date will be tied to the person type for a particular sentence law.
     known_values:
       - value: 60
         description: "TODO(#7424): Update with definition."
@@ -145,10 +145,19 @@ columns:
         description: STANDARD
   - name: SentencedTo
     description: |-
-      An abbreviation indicating where an offender sentenced in Tennessee is to serve his time.
+      An abbreviation indicating where a person sentenced in Tennessee is to serve their time.
+    known_values:
+      - value: TD
+        description: TDOC (Tennessee Department of Corrections)
+      - value: CC
+        description: Community Corrections
+      - value: LJ
+        description: Local Jail
+      - value: WK
+        description: Regional Workhouse. According to [US Legal](https://tinyurl.com/ewjjzmch), a "Workhouse is the term used for a jail or penal institution for [people] who are convicted for short sentences." Please refer to [this TN site](https://www.ctas.tennessee.edu/reference/sentence-county-workhouse) for further context.
   - name: WorkRelease
     description: |-
-      Code to indicate that an offender's sentence or a portion of the sentence will be served on work release.
+      Code to indicate that a person's sentence or a portion of the sentence will be served on work release.
     known_values:
       - value: W
         description: "TODO(#7424): Update with definition."
@@ -157,7 +166,7 @@ columns:
       Code to indicate that an offender's sentence for a particular judgment order has been suspended to probation.
   - name: SplitConfinementBalanceType
     description: |-
-      The location that an offender is to serve the rest of a split confinement.
+      The location that a person  is to serve the rest of a split confinement.
     known_values:
       - value: CC
         description: COMMUNITY CORRECTION
@@ -181,7 +190,7 @@ columns:
         description: "TODO(#7424): Update with definition."
   - name: RepeatViolentOffenderFlag
     description: |-
-      Indicator that tells if an offender is a repeat violent offender.
+      Indicator that tells if a person  is a repeat violent offender.
     known_values:
       - value: N
         description: "TODO(#7424): Update with definition."
@@ -227,7 +236,7 @@ columns:
         description: "TODO(#7424): Update with definition."
   - name: AlternatePercentRange
     description: |-
-      The alternate percentage amount to be used when the court sentences a specific range percent instead of using the sentence offender type code to determine the range percent.
+      The alternate percentage amount to be used when the court sentences a specific range percent instead of using the sentence person type code to determine the range percent.
   - name: AggrevatedRapeFlag
     description: |-
       Indicates if a sentence is for a aggravated rape offense.

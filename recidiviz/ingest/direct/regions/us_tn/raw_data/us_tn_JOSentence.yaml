@@ -10,10 +10,10 @@ primary_key_cols:
 columns:
   - name: OffenderID
     description: |-
-      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+      This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: ConvictionCounty
     description: |-
-      The county in which an offender is convicted.  This element is used in identifying a particular sentence.
+      The county in which a person  is convicted.  This element is used in identifying a particular sentence.
   - name: CaseYear
     description: |-
       The year assigned to a sentence for a particular county. It will generally be the current year at assignment.
@@ -45,19 +45,19 @@ columns:
       The number of pretrial behavior credits calculated from the entries of pretrial jail credits.
   - name: CriminalInjuryCompensationAmount
     description: |-
-      The amount of money an offender is to pay for criminal injury compensation according to the judgment order.
+      The amount of money a person  is to pay for criminal injury compensation according to the judgment order.
   - name: SupervisionFeeAmount
     description: |-
-      The amount an offender is to pay to defer the cost of his supervision according to the judgment order.
+      The amount a person  is to pay to defer the cost of his supervision according to the judgment order.
   - name: ChildSupportAmount
     description: |-
-      The amount an offender is to pay for child support according to the judgment order.
+      The amount a person  is to pay for child support according to the judgment order.
   - name: CourtCostAmount
     description: |-
-      The amount an offender is to pay for court costs according to the judgment order.
+      The amount a person  is to pay for court costs according to the judgment order.
   - name: CourtFineAmount
     description: |-
-      The amount an offender is to pay for court fines according to the judgment order.
+      The amount a person  is to pay for court fines according to the judgment order.
   - name: RenderedInfamousFlag
     description: |-
       Indicates whether a defendant has been rendered infamous. This is captured on the judgment order.
@@ -131,7 +131,7 @@ columns:
       Text field for displaying the decode of the period of conflict codes.
   - name: LifeDeathHabitual
     description: |-
-      Indicator to tell if an offender was sentenced on the judgment order to a life or death sentence.
+      Indicator to tell if a person  was sentenced on the judgment order to a life or death sentence.
     known_values:
       - value: D
         description: Death. The person will be executed. There will be no calculations of a potential release date.
@@ -145,16 +145,16 @@ columns:
         description: Life sentence without parole. There will be no calculations of a potential release date.
   - name: UnpaidCommunityServiceHours
     description: |-
-      The number of hours of unpaid community service of an offender according to the judgment order.
+      The number of hours of unpaid community service of a person  according to the judgment order.
   - name: UnpaidCommunityServiceDays
     description: |-
-      The number of days of unpaid community service of an offender according to the judgment order.
+      The number of days of unpaid community service of a person  according to the judgment order.
   - name: UnpaidCommunityServiceWeeks
     description: |-
-      The number of weeks of unpaid community service of an offender according to the judgment order.
+      The number of weeks of unpaid community service of a person  according to the judgment order.
   - name: UnpaidCommunityServiceMonths
     description: |-
-      The number of months of unpaid community service of an offender according to the judgment order.
+      The number of months of unpaid community service of a person  according to the judgment order.
   - name: LifetimeSupervision
     description: |-
       This is the code to indicate whether a sentence is to be served as lifetime supervision after the regular portion of the sentence is expired.
@@ -176,7 +176,7 @@ columns:
         description: "TODO(#7424): Update with definition."
   - name: HIVSpecimenFlag
     description: |-
-      Indicates if a sentence indicates the offender needs to provide a specimen for a HIV test.
+      Indicates if a sentence indicates the person needs to provide a specimen for a HIV test.
     known_values:
       - value: N
         description: "TODO(#7424): Update with definition."
@@ -184,7 +184,7 @@ columns:
         description: "TODO(#7424): Update with definition."
   - name: SexOffenderTaxAmount
     description: |-
-      The amount an offender is to pay for sex offender tax according to the judgment order.
+      The amount a person  is to pay for sex person tax according to the judgment order.
   - name: MandatoryMinimumStartDate
     is_datetime: True
     description: |-

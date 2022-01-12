@@ -9,7 +9,7 @@ primary_key_cols:
 columns:
   - name: PlanType
     description: |-
-      The type of plan of supvn. that an offender has agreed to follow.
+      The type of plan of supvn. that a person  has agreed to follow.
   - name: SupervisionLevel
     description: |-
       An abbreviation for the level of supervision required to secure an offender.

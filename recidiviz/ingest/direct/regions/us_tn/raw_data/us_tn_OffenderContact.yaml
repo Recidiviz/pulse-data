@@ -7,10 +7,10 @@ primary_key_cols:
 columns:
   - name: OffenderID
     description: |-
-      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+      This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: ContactID
     description: |-
-      A unique identifier assigned to an offender contact person.
+      A unique identifier assigned to a person  contact person.
   - name: EffectiveFromDate
     is_datetime: True
     description: |-
