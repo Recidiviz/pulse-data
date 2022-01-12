@@ -24,9 +24,6 @@ import attr
 from recidiviz.calculator.pipeline.utils.incarceration_period_pre_processing_manager import (
     IncarcerationPreProcessingManager,
 )
-from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index import (
-    PreProcessedSupervisionPeriodIndex,
-)
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa import (
     us_pa_incarceration_period_pre_processing_delegate,
 )
@@ -61,6 +58,9 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionViolationResponse,
     StateSupervisionViolationResponseDecisionEntry,
 )
+from recidiviz.tests.calculator.pipeline.pre_processing_testing_utils import (
+    default_pre_processed_sp_index_for_tests,
+)
 
 STATE_CODE = "US_PA"
 
@@ -81,8 +81,8 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
     ) -> Tuple[List[StateIncarcerationPeriod], Dict[int, Optional[str]]]:
         """Helper function for testing the
         pre_processed_incarceration_periods_for_calculations function for US_PA."""
-        sp_index = PreProcessedSupervisionPeriodIndex(
-            supervision_periods=supervision_periods or [],
+        sp_index = default_pre_processed_sp_index_for_tests(
+            supervision_periods=supervision_periods
         )
 
         violation_responses = violation_responses or []

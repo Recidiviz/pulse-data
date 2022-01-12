@@ -22,9 +22,6 @@ from typing import List, Optional
 from dateutil.relativedelta import relativedelta
 from parameterized import parameterized
 
-from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
-    PreProcessedIncarcerationPeriodIndex,
-)
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_incarceration_delegate import (
     UsPaIncarcerationDelegate,
 )
@@ -72,6 +69,9 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionViolationResponse,
     StateSupervisionViolationResponseDecisionEntry,
 )
+from recidiviz.tests.calculator.pipeline.pre_processing_testing_utils import (
+    default_pre_processed_ip_index_for_tests,
+)
 
 
 class TestAssessmentsInComplianceMonth(unittest.TestCase):
@@ -79,10 +79,8 @@ class TestAssessmentsInComplianceMonth(unittest.TestCase):
 
     def setUp(self) -> None:
         self.person = StatePerson.new_with_defaults(state_code="US_PA")
-        self.empty_ip_index = PreProcessedIncarcerationPeriodIndex(
-            incarceration_periods=[],
-            ip_id_to_pfi_subtype={},
-            incarceration_delegate=UsPaIncarcerationDelegate(),
+        self.empty_ip_index = default_pre_processed_ip_index_for_tests(
+            incarceration_delegate=UsPaIncarcerationDelegate()
         )
 
     def test_completed_assessments_in_compliance_month(self) -> None:
@@ -159,10 +157,8 @@ class TestFaceToFaceContactsInComplianceMonth(unittest.TestCase):
 
     def setUp(self) -> None:
         self.person = StatePerson.new_with_defaults(state_code="US_XX")
-        self.empty_ip_index = PreProcessedIncarcerationPeriodIndex(
-            incarceration_periods=[],
-            ip_id_to_pfi_subtype={},
-            incarceration_delegate=UsPaIncarcerationDelegate(),
+        self.empty_ip_index = default_pre_processed_ip_index_for_tests(
+            incarceration_delegate=UsPaIncarcerationDelegate()
         )
 
     def test_face_to_face_contacts_in_compliance_month(self) -> None:
@@ -250,10 +246,8 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
 
     def setUp(self) -> None:
         self.person = StatePerson.new_with_defaults(state_code="US_PA")
-        self.empty_ip_index = PreProcessedIncarcerationPeriodIndex(
-            incarceration_periods=[],
-            ip_id_to_pfi_subtype={},
-            incarceration_delegate=UsPaIncarcerationDelegate(),
+        self.empty_ip_index = default_pre_processed_ip_index_for_tests(
+            incarceration_delegate=UsPaIncarcerationDelegate()
         )
 
     def test_next_recommended_face_to_face_date_start_of_supervision(self) -> None:
@@ -719,7 +713,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             supervision_contacts=[],
             violation_responses=[],
             incarceration_sentences=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+            incarceration_period_index=default_pre_processed_ip_index_for_tests(
                 incarceration_periods=[
                     StateIncarcerationPeriod.new_with_defaults(
                         incarceration_period_id=1,
@@ -728,9 +722,9 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
                         admission_date=date(2018, 4, 1),
                         release_date=date(2018, 4, 30),
                         admission_reason=StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
+                        specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
                     )
                 ],
-                ip_id_to_pfi_subtype={},
                 incarceration_delegate=UsPaIncarcerationDelegate(),
             ),
             supervision_delegate=UsPaSupervisionDelegate(),
@@ -769,7 +763,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             supervision_contacts=[],
             violation_responses=[],
             incarceration_sentences=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+            incarceration_period_index=default_pre_processed_ip_index_for_tests(
                 incarceration_periods=[
                     StateIncarcerationPeriod.new_with_defaults(
                         incarceration_period_id=1,
@@ -781,7 +775,6 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
                         admission_reason=StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
                     )
                 ],
-                ip_id_to_pfi_subtype={},
                 incarceration_delegate=UsPaIncarcerationDelegate(),
             ),
             supervision_delegate=UsPaSupervisionDelegate(),
@@ -884,10 +877,8 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
 
     def setUp(self) -> None:
         self.person = StatePerson.new_with_defaults(state_code="US_PA")
-        self.empty_ip_index = PreProcessedIncarcerationPeriodIndex(
-            incarceration_periods=[],
-            ip_id_to_pfi_subtype={},
-            incarceration_delegate=UsPaIncarcerationDelegate(),
+        self.empty_ip_index = default_pre_processed_ip_index_for_tests(
+            incarceration_delegate=UsPaIncarcerationDelegate()
         )
 
     @parameterized.expand(
@@ -1109,7 +1100,7 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
             supervision_contacts=[],
             violation_responses=[],
             incarceration_sentences=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+            incarceration_period_index=default_pre_processed_ip_index_for_tests(
                 incarceration_periods=[
                     StateIncarcerationPeriod.new_with_defaults(
                         incarceration_period_id=1,
@@ -1118,9 +1109,9 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
                         admission_date=date(2018, 4, 1),
                         release_date=date(2018, 4, 30),
                         admission_reason=StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
+                        specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
                     )
                 ],
-                ip_id_to_pfi_subtype={},
                 incarceration_delegate=UsPaIncarcerationDelegate(),
             ),
             supervision_delegate=UsPaSupervisionDelegate(),
@@ -1212,10 +1203,8 @@ class TestNextRecommendedTreatmentCollateralVisitDate(unittest.TestCase):
 
     def setUp(self) -> None:
         self.person = StatePerson.new_with_defaults(state_code="US_PA")
-        self.empty_ip_index = PreProcessedIncarcerationPeriodIndex(
-            incarceration_periods=[],
-            ip_id_to_pfi_subtype={},
-            incarceration_delegate=UsPaIncarcerationDelegate(),
+        self.empty_ip_index = default_pre_processed_ip_index_for_tests(
+            incarceration_delegate=UsPaIncarcerationDelegate()
         )
 
     def test_next_recommended_treatment_collateral_contact_date_contacts_not_required(
@@ -1441,7 +1430,7 @@ class TestNextRecommendedTreatmentCollateralVisitDate(unittest.TestCase):
             supervision_contacts=[],
             violation_responses=[],
             incarceration_sentences=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+            incarceration_period_index=default_pre_processed_ip_index_for_tests(
                 incarceration_periods=[
                     StateIncarcerationPeriod.new_with_defaults(
                         incarceration_period_id=1,
@@ -1450,9 +1439,9 @@ class TestNextRecommendedTreatmentCollateralVisitDate(unittest.TestCase):
                         admission_date=date(2018, 4, 1),
                         release_date=date(2018, 4, 30),
                         admission_reason=StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
+                        specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
                     )
                 ],
-                ip_id_to_pfi_subtype={},
                 incarceration_delegate=UsPaIncarcerationDelegate(),
             ),
             supervision_delegate=UsPaSupervisionDelegate(),
@@ -1489,7 +1478,7 @@ class TestNextRecommendedTreatmentCollateralVisitDate(unittest.TestCase):
             supervision_contacts=[],
             violation_responses=[],
             incarceration_sentences=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+            incarceration_period_index=default_pre_processed_ip_index_for_tests(
                 incarceration_periods=[
                     StateIncarcerationPeriod.new_with_defaults(
                         incarceration_period_id=1,
@@ -1501,7 +1490,6 @@ class TestNextRecommendedTreatmentCollateralVisitDate(unittest.TestCase):
                         admission_reason=StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
                     )
                 ],
-                ip_id_to_pfi_subtype={},
                 incarceration_delegate=UsPaIncarcerationDelegate(),
             ),
             supervision_delegate=UsPaSupervisionDelegate(),
@@ -1605,10 +1593,8 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
 
     def setUp(self) -> None:
         self.person = StatePerson.new_with_defaults(state_code="US_PA")
-        self.empty_ip_index = PreProcessedIncarcerationPeriodIndex(
-            incarceration_periods=[],
-            ip_id_to_pfi_subtype={},
-            incarceration_delegate=UsPaIncarcerationDelegate(),
+        self.empty_ip_index = default_pre_processed_ip_index_for_tests(
+            incarceration_delegate=UsPaIncarcerationDelegate()
         )
 
     def test_guidelines_applicable_for_case(self) -> None:
@@ -1719,10 +1705,8 @@ class TestNextRecommendedReassessment(unittest.TestCase):
 
     def setUp(self) -> None:
         self.person = StatePerson.new_with_defaults(state_code="US_XX")
-        self.empty_ip_index = PreProcessedIncarcerationPeriodIndex(
-            incarceration_periods=[],
-            ip_id_to_pfi_subtype={},
-            incarceration_delegate=UsPaIncarcerationDelegate(),
+        self.empty_ip_index = default_pre_processed_ip_index_for_tests(
+            incarceration_delegate=UsPaIncarcerationDelegate()
         )
 
     def test_next_recommended_reassessment(self) -> None:
@@ -2109,7 +2093,7 @@ class TestNextRecommendedReassessment(unittest.TestCase):
             supervision_contacts=[],
             violation_responses=[],
             incarceration_sentences=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+            incarceration_period_index=default_pre_processed_ip_index_for_tests(
                 incarceration_periods=[
                     StateIncarcerationPeriod.new_with_defaults(
                         incarceration_period_id=1,
@@ -2118,9 +2102,9 @@ class TestNextRecommendedReassessment(unittest.TestCase):
                         admission_date=date(2018, 4, 1),
                         release_date=date(2018, 4, 30),
                         admission_reason=StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
+                        specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
                     )
                 ],
-                ip_id_to_pfi_subtype={},
                 incarceration_delegate=UsPaIncarcerationDelegate(),
             ),
             supervision_delegate=UsPaSupervisionDelegate(),
@@ -2166,7 +2150,7 @@ class TestNextRecommendedReassessment(unittest.TestCase):
             supervision_contacts=[],
             violation_responses=[],
             incarceration_sentences=[],
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+            incarceration_period_index=default_pre_processed_ip_index_for_tests(
                 incarceration_periods=[
                     StateIncarcerationPeriod.new_with_defaults(
                         incarceration_period_id=1,
@@ -2178,7 +2162,6 @@ class TestNextRecommendedReassessment(unittest.TestCase):
                         admission_reason=StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
                     )
                 ],
-                ip_id_to_pfi_subtype={},
                 incarceration_delegate=UsPaIncarcerationDelegate(),
             ),
             supervision_delegate=UsPaSupervisionDelegate(),
@@ -2303,10 +2286,8 @@ class TestSupervisionDowngrades(unittest.TestCase):
     def setUp(self) -> None:
         self.start_of_supervision = date(2018, 3, 5)
         self.evaluation_date = date(2021, 1, 1)
-        self.empty_ip_index = PreProcessedIncarcerationPeriodIndex(
-            incarceration_periods=[],
-            ip_id_to_pfi_subtype={},
-            incarceration_delegate=UsPaIncarcerationDelegate(),
+        self.empty_ip_index = default_pre_processed_ip_index_for_tests(
+            incarceration_delegate=UsPaIncarcerationDelegate()
         )
 
     def _person_with_gender(self, gender: Gender) -> StatePerson:

@@ -40,9 +40,6 @@ from recidiviz.calculator.pipeline.utils.assessment_utils import (
 from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
     PreProcessedIncarcerationPeriodIndex,
 )
-from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index import (
-    PreProcessedSupervisionPeriodIndex,
-)
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_commitment_from_supervision_delegate import (
     StateSpecificCommitmentFromSupervisionDelegate,
 )
@@ -150,6 +147,10 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionViolationResponse,
     StateSupervisionViolationResponseDecisionEntry,
     StateSupervisionViolationTypeEntry,
+)
+from recidiviz.tests.calculator.pipeline.pre_processing_testing_utils import (
+    default_pre_processed_ip_index_for_tests,
+    default_pre_processed_sp_index_for_tests,
 )
 from recidiviz.tests.calculator.pipeline.utils.us_mo_fakes import (
     FakeUsMoIncarcerationSentence,
@@ -2180,14 +2181,8 @@ class TestFindIncarcerationStays(unittest.TestCase):
 
         incarceration_delegate = incarceration_delegate or UsXxIncarcerationDelegate()
 
-        incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
-            incarceration_periods=[incarceration_period],
-            ip_id_to_pfi_subtype=(
-                {incarceration_period.incarceration_period_id: None}
-                if incarceration_period.incarceration_period_id
-                else {}
-            ),
-            incarceration_delegate=incarceration_delegate,
+        incarceration_period_index = default_pre_processed_ip_index_for_tests(
+            incarceration_periods=[incarceration_period]
         )
 
         return self.identifier._find_incarceration_stays(
@@ -2547,16 +2542,8 @@ class TestFindIncarcerationStays(unittest.TestCase):
 
         ips = [incarceration_period_1, incarceration_period_2]
 
-        incarceration_delegate = UsXxIncarcerationDelegate()
-
-        incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
-            incarceration_periods=ips,
-            ip_id_to_pfi_subtype={
-                ip.incarceration_period_id: None
-                for ip in ips
-                if ip.incarceration_period_id
-            },
-            incarceration_delegate=incarceration_delegate,
+        incarceration_period_index = default_pre_processed_ip_index_for_tests(
+            incarceration_periods=ips
         )
 
         incarceration_delegate = UsXxIncarcerationDelegate()
@@ -2603,8 +2590,6 @@ class TestFindIncarcerationStays(unittest.TestCase):
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
-        incarceration_periods = [incarceration_period_1, incarceration_period_2]
-
         assert incarceration_period_1.incarceration_period_id is not None
         incarceration_period_judicial_district_association = {
             incarceration_period_1.incarceration_period_id: {
@@ -2615,23 +2600,15 @@ class TestFindIncarcerationStays(unittest.TestCase):
 
         incarceration_periods = [incarceration_period_1, incarceration_period_2]
 
-        incarceration_delegate = UsXxIncarcerationDelegate()
-
-        incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
-            incarceration_periods=incarceration_periods,
-            ip_id_to_pfi_subtype={
-                ip.incarceration_period_id: None
-                for ip in incarceration_periods
-                if ip.incarceration_period_id is not None
-            },
-            incarceration_delegate=incarceration_delegate,
+        incarceration_period_index = default_pre_processed_ip_index_for_tests(
+            incarceration_periods=incarceration_periods
         )
 
         incarceration_events = self.identifier._find_incarceration_stays(
             incarceration_period_2,
             incarceration_period_index,
             incarceration_period_judicial_district_association,
-            incarceration_delegate,
+            incarceration_period_index.incarceration_delegate,
             {},  # commitments from supervision
             _COUNTY_OF_RESIDENCE,
         )
@@ -2707,18 +2684,12 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
 
         incarceration_period_index = (
             incarceration_period_index
-            or PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[incarceration_period],
-                ip_id_to_pfi_subtype=(
-                    {incarceration_period.incarceration_period_id: None}
-                    if incarceration_period.incarceration_period_id
-                    else {}
-                ),
-                incarceration_delegate=incarceration_delegate,
+            or default_pre_processed_ip_index_for_tests(
+                incarceration_periods=[incarceration_period]
             )
         )
-        supervision_period_index = PreProcessedSupervisionPeriodIndex(
-            supervision_periods or []
+        supervision_period_index = default_pre_processed_sp_index_for_tests(
+            supervision_periods=supervision_periods
         )
         assessments = assessments or []
         sorted_violation_responses = (
@@ -3011,22 +2982,14 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
 
         incarceration_period_index = (
             incarceration_period_index
-            or PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[incarceration_period],
-                ip_id_to_pfi_subtype=(
-                    {incarceration_period.incarceration_period_id: None}
-                    if incarceration_period.incarceration_period_id
-                    else {}
-                ),
-                incarceration_delegate=incarceration_delegate,
+            or default_pre_processed_ip_index_for_tests(
+                incarceration_periods=[incarceration_period]
             )
         )
-        supervision_period_index = PreProcessedSupervisionPeriodIndex(
-            supervision_periods=(
-                [pre_commitment_supervision_period]
-                if pre_commitment_supervision_period
-                else []
-            )
+        supervision_period_index = default_pre_processed_sp_index_for_tests(
+            supervision_periods=[pre_commitment_supervision_period]
+            if pre_commitment_supervision_period
+            else []
         )
 
         return self.identifier._commitment_from_supervision_event_for_period(
@@ -3653,19 +3616,12 @@ class TestReleaseEventForPeriod(unittest.TestCase):
         """
 
         incarceration_delegate = incarceration_delegate or UsXxIncarcerationDelegate()
-        incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
+        incarceration_period_index = default_pre_processed_ip_index_for_tests(
             incarceration_periods=[incarceration_period],
-            ip_id_to_pfi_subtype=(
-                {incarceration_period.incarceration_period_id: None}
-                if incarceration_period.incarceration_period_id
-                else {}
-            ),
-            incarceration_delegate=incarceration_delegate,
+            transfers_are_collapsed=True,
         )
 
-        supervision_period_index = PreProcessedSupervisionPeriodIndex(
-            supervision_periods=[]
-        )
+        supervision_period_index = default_pre_processed_sp_index_for_tests()
 
         incarceration_delegate = incarceration_delegate or UsXxIncarcerationDelegate()
         supervision_delegate = supervision_delegate or UsXxSupervisionDelegate()
@@ -3727,6 +3683,7 @@ class TestReleaseEventForPeriod(unittest.TestCase):
             facility="PRISON3",
             admission_date=date(2013, 11, 20),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             release_date=date(2019, 12, 4),
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
@@ -3800,17 +3757,12 @@ class TestReleaseEventForPeriod(unittest.TestCase):
         incarceration_delegate = UsIdIncarcerationDelegate()
         supervision_delegate = UsIdSupervisionDelegate()
 
-        incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
+        incarceration_period_index = default_pre_processed_ip_index_for_tests(
             incarceration_periods=[incarceration_period],
-            ip_id_to_pfi_subtype=(
-                {incarceration_period.incarceration_period_id: None}
-                if incarceration_period.incarceration_period_id
-                else {}
-            ),
-            incarceration_delegate=UsIdIncarcerationDelegate(),
+            transfers_are_collapsed=True,
         )
 
-        supervision_period_index = PreProcessedSupervisionPeriodIndex(
+        supervision_period_index = default_pre_processed_sp_index_for_tests(
             supervision_periods=[supervision_period]
         )
 
@@ -3854,6 +3806,7 @@ class TestReleaseEventForPeriod(unittest.TestCase):
             facility="PRISON3",
             admission_date=date(2013, 11, 20),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             release_date=date(2019, 12, 4),
             release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
         )
@@ -3866,17 +3819,12 @@ class TestReleaseEventForPeriod(unittest.TestCase):
         incarceration_delegate = UsMoIncarcerationDelegate()
         supervision_delegate = UsMoSupervisionDelegate()
 
-        incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
+        incarceration_period_index = default_pre_processed_ip_index_for_tests(
             incarceration_periods=[incarceration_period],
-            ip_id_to_pfi_subtype=(
-                {incarceration_period.incarceration_period_id: None}
-                if incarceration_period.incarceration_period_id
-                else {}
-            ),
-            incarceration_delegate=UsMoIncarcerationDelegate(),
+            transfers_are_collapsed=True,
         )
 
-        supervision_period_index = PreProcessedSupervisionPeriodIndex(
+        supervision_period_index = default_pre_processed_sp_index_for_tests(
             supervision_periods=[supervision_period]
         )
 
@@ -3937,17 +3885,12 @@ class TestReleaseEventForPeriod(unittest.TestCase):
             start_date=date(2010, 12, 4),
         )
 
-        incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
+        incarceration_period_index = default_pre_processed_ip_index_for_tests(
             incarceration_periods=[incarceration_period],
-            ip_id_to_pfi_subtype=(
-                {incarceration_period.incarceration_period_id: None}
-                if incarceration_period.incarceration_period_id
-                else {}
-            ),
-            incarceration_delegate=UsNdIncarcerationDelegate(),
+            transfers_are_collapsed=True,
         )
 
-        supervision_period_index = PreProcessedSupervisionPeriodIndex(
+        supervision_period_index = default_pre_processed_sp_index_for_tests(
             supervision_periods=[supervision_period]
         )
 

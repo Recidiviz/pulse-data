@@ -347,6 +347,7 @@ class IncarcerationPreProcessingManager:
                     config
                 ] = PreProcessedIncarcerationPeriodIndex(
                     incarceration_periods=self._incarceration_periods,
+                    transfers_are_collapsed=collapse_transfers,
                     ip_id_to_pfi_subtype={},
                     incarceration_delegate=self.incarceration_delegate,
                 )
@@ -435,12 +436,13 @@ class IncarcerationPreProcessingManager:
                     )
 
                 # Validate IPs
-                self._validate_ip_invariants(mid_processing_periods)
+                self.validate_ip_invariants(mid_processing_periods)
 
                 self._pre_processed_incarceration_period_index_for_calculations[
                     config
                 ] = PreProcessedIncarcerationPeriodIndex(
                     incarceration_periods=mid_processing_periods,
+                    transfers_are_collapsed=collapse_transfers,
                     ip_id_to_pfi_subtype=ip_id_to_pfi_subtype,
                     incarceration_delegate=self.incarceration_delegate,
                 )
@@ -1109,7 +1111,7 @@ class IncarcerationPreProcessingManager:
         return updated_ips
 
     @staticmethod
-    def _validate_ip_invariants(incarceration_periods: List[StateIncarcerationPeriod]):
+    def validate_ip_invariants(incarceration_periods: List[StateIncarcerationPeriod]):
         """Validates that no IPs violate standards that we can expect to be
         met for all periods in all states at the end of IP pre-processing."""
         for ip in incarceration_periods:

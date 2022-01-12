@@ -27,17 +27,11 @@ from recidiviz.calculator.pipeline.utils.commitment_from_supervision_utils impor
 from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
     PreProcessedIncarcerationPeriodIndex,
 )
-from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index import (
-    PreProcessedSupervisionPeriodIndex,
-)
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_delegate import (
     StateSpecificSupervisionDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_commitment_from_supervision_utils import (
     UsXxCommitmentFromSupervisionDelegate,
-)
-from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_incarceration_delegate import (
-    UsXxIncarcerationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_supervision_delegate import (
     UsXxSupervisionDelegate,
@@ -85,6 +79,10 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionPeriod,
     StateSupervisionViolationResponse,
 )
+from recidiviz.tests.calculator.pipeline.pre_processing_testing_utils import (
+    default_pre_processed_ip_index_for_tests,
+    default_pre_processed_sp_index_for_tests,
+)
 
 _DEFAULT_SUPERVISION_PERIOD_ID = 999
 
@@ -122,19 +120,13 @@ class TestGetCommitmentDetails(unittest.TestCase):
         )
         incarceration_period_index = (
             incarceration_period_index
-            or PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods=[incarceration_period],
-                ip_id_to_pfi_subtype=(
-                    {incarceration_period.incarceration_period_id: None}
-                    if incarceration_period.incarceration_period_id
-                    else {}
-                ),
-                incarceration_delegate=UsXxIncarcerationDelegate(),
+            or default_pre_processed_ip_index_for_tests(
+                incarceration_periods=[incarceration_period]
             )
         )
 
-        supervision_period_index = PreProcessedSupervisionPeriodIndex(
-            supervision_periods=(supervision_periods or [])
+        supervision_period_index = default_pre_processed_sp_index_for_tests(
+            supervision_periods=supervision_periods
         )
 
         return commitment_from_supervision_utils.get_commitment_from_supervision_details(
@@ -303,7 +295,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
         )
 
         assert incarceration_period.incarceration_period_id is not None
-        ip_index = PreProcessedIncarcerationPeriodIndex(
+        ip_index = default_pre_processed_ip_index_for_tests(
             incarceration_periods=[incarceration_period],
             ip_id_to_pfi_subtype={
                 incarceration_period.incarceration_period_id: SHOCK_INCARCERATION_PVC

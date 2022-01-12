@@ -44,6 +44,12 @@ class PreProcessedIncarcerationPeriodIndex:
 
     incarceration_periods: List[StateIncarcerationPeriod] = attr.ib()
 
+    # TODO(#10534): Use this to assert that consecutive periods of parole board holds
+    #  have been collapsed
+    # Whether or not transfers between periods were collapsed during the IP
+    # pre-processing that prepared these periods for calculations
+    transfers_are_collapsed: bool = attr.ib()
+
     # The delegate for state-specific configurations related to incarceration
     incarceration_delegate: StateSpecificIncarcerationDelegate = attr.ib()
 
