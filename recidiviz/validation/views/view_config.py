@@ -118,14 +118,26 @@ from recidiviz.validation.views.state.incarceration_releases_by_type_by_period_i
 from recidiviz.validation.views.state.invalid_admission_reason_and_pfi import (
     INVALID_ADMISSION_REASON_AND_PFI_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.invalid_admission_reasons_for_commitments_from_supervision import (
+    INVALID_ADMISSION_REASONS_FOR_COMMITMENTS_FROM_SUPERVISION_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.invalid_admission_reasons_for_temporary_custody import (
     INVALID_ADMISSION_REASONS_FOR_TEMPORARY_CUSTODY_VIEW_BUILDER,
 )
 from recidiviz.validation.views.state.invalid_admitted_from_supervision_admission_reason import (
     INVALID_ADMITTED_FROM_SUPERVISION_ADMISSION_REASON_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.invalid_null_pfi_in_metrics import (
+    INVALID_NULL_PFI_IN_METRICS_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.invalid_null_spfi_in_metrics import (
+    INVALID_NULL_SPFI_IN_METRICS_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.invalid_pfi_for_temporary_custody_admissions import (
     INVALID_PFI_FOR_TEMPORARY_CUSTODY_ADMISSIONS_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.invalid_release_reasons_for_temporary_custody import (
+    INVALID_RELEASE_REASONS_FOR_TEMPORARY_CUSTODY_VIEW_BUILDER,
 )
 from recidiviz.validation.views.state.overlapping_incarceration_periods import (
     OVERLAPPING_INCARCERATION_PERIODS_VIEW_BUILDER,
@@ -318,9 +330,15 @@ VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = (
         INCARCERATION_RELEASE_REASON_NO_RELEASE_DATE_VIEW_BUILDER,
         INCARCERATION_RELEASES_BY_TYPE_BY_PERIOD_INTERNAL_CONSISTENCY_VIEW_BUILDER,
         INVALID_ADMISSION_REASON_AND_PFI_VIEW_BUILDER,
+        INVALID_ADMISSION_REASONS_FOR_COMMITMENTS_FROM_SUPERVISION_VIEW_BUILDER,
         INVALID_ADMISSION_REASONS_FOR_TEMPORARY_CUSTODY_VIEW_BUILDER,
         INVALID_ADMITTED_FROM_SUPERVISION_ADMISSION_REASON_VIEW_BUILDER,
+        INVALID_NULL_PFI_IN_METRICS_VIEW_BUILDER,
+        # TODO(#3275): Delete this view once all specialized_purpose_for_incarceration
+        #  metric fields have been re-named to purpose_for_incarceration
+        INVALID_NULL_SPFI_IN_METRICS_VIEW_BUILDER,
         INVALID_PFI_FOR_TEMPORARY_CUSTODY_ADMISSIONS_VIEW_BUILDER,
+        INVALID_RELEASE_REASONS_FOR_TEMPORARY_CUSTODY_VIEW_BUILDER,
         PO_REPORT_AVGS_PER_DISTRICT_STATE_VIEW_BUILDER,
         OVERLAPPING_INCARCERATION_PERIODS_VIEW_BUILDER,
         OVERLAPPING_SUPERVISION_PERIODS_VIEW_BUILDER,

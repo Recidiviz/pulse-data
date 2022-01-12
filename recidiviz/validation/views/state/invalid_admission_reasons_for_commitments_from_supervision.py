@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2021 Recidiviz, Inc.
+# Copyright (C) 2022 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,21 +14,22 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""A view revealing when admission metrics have an admission_reason other than
-TEMPORARY_CUSTODY for periods of temporary custody (either PAROLE_BOARD_HOLD or
-TEMPORARY_CUSTODY specialized_purpose_for_incarceration values).
+"""A view revealing when commitment from supervision admission metrics have an
+invalid admission_reason.
 
-Existence of any rows indicates a bug in IP pre-processing logic.
+Existence of any rows indicates a bug in the incarceration identifier logic that
+classifies admissions as commitments from supervision.
 """
+from typing import List
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.pipeline.incarceration.metrics import (
-    IncarcerationAdmissionMetric,
+    IncarcerationCommitmentFromSupervisionMetric,
 )
 from recidiviz.calculator.query.state import dataset_config as state_dataset_config
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
-    StateSpecializedPurposeForIncarceration,
+    is_commitment_from_supervision,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -37,40 +38,48 @@ from recidiviz.validation.views.utils.dataflow_metric_validation_utils import (
     validation_query_for_metric,
 )
 
-INVALID_ADMISSION_REASONS_FOR_TEMPORARY_CUSTODY_VIEW_NAME = (
-    "invalid_admission_reasons_for_temporary_custody"
+INVALID_ADMISSION_REASONS_FOR_COMMITMENTS_FROM_SUPERVISION_VIEW_NAME = (
+    "invalid_admission_reasons_for_commitments_from_supervision"
 )
 
-INVALID_ADMISSION_REASONS_FOR_TEMPORARY_CUSTODY_DESCRIPTION = """ Incarceration admission metrics with invalid admission reasons for periods of
-    temporary custody."""
+INVALID_ADMISSION_REASONS_FOR_COMMITMENTS_FROM_SUPERVISION_DESCRIPTION = """
+Incarceration commitment from supervision admission metrics with invalid admission 
+reasons."""
 
-INVALID_ROWS_FILTER_CLAUSE = f"""WHERE specialized_purpose_for_incarceration IN
-('{StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD.value}', 
-'{StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY.value}')
-AND admission_reason != 
-'{StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY.value}'
-"""
 
-INVALID_ADMISSION_REASONS_FOR_TEMPORARY_CUSTODY_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+def _valid_admission_reasons_for_commitments_from_supervision() -> str:
+    # All commitment from supervision admissions should have one of the following
+    # admission reasons
+    valid_admission_reason_values: List[str] = [
+        f"'{admission_reason.value}'"
+        for admission_reason in StateIncarcerationPeriodAdmissionReason
+        if is_commitment_from_supervision(
+            admission_reason, allow_ingest_only_enum_values=True
+        )
+    ]
+
+    return ", ".join(valid_admission_reason_values)
+
+
+INVALID_ADMISSION_REASONS_FOR_COMMITMENTS_FROM_SUPERVISION_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.VIEWS_DATASET,
-    view_id=INVALID_ADMISSION_REASONS_FOR_TEMPORARY_CUSTODY_VIEW_NAME,
+    view_id=INVALID_ADMISSION_REASONS_FOR_COMMITMENTS_FROM_SUPERVISION_VIEW_NAME,
     view_query_template=validation_query_for_metric(
-        metric=IncarcerationAdmissionMetric,
+        metric=IncarcerationCommitmentFromSupervisionMetric,
         additional_columns_to_select=[
             "person_id",
             "metric_type",
             "admission_reason",
-            "specialized_purpose_for_incarceration",
             "admission_date",
             "job_id",
         ],
-        invalid_rows_filter_clause=INVALID_ROWS_FILTER_CLAUSE,
-        validation_description=INVALID_ADMISSION_REASONS_FOR_TEMPORARY_CUSTODY_DESCRIPTION,
+        invalid_rows_filter_clause=f"WHERE admission_reason not in ({_valid_admission_reasons_for_commitments_from_supervision()})",
+        validation_description=INVALID_ADMISSION_REASONS_FOR_COMMITMENTS_FROM_SUPERVISION_DESCRIPTION,
     ),
-    description=INVALID_ADMISSION_REASONS_FOR_TEMPORARY_CUSTODY_DESCRIPTION,
+    description=INVALID_ADMISSION_REASONS_FOR_COMMITMENTS_FROM_SUPERVISION_DESCRIPTION,
     materialized_metrics_dataset=state_dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
 )
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        INVALID_ADMISSION_REASONS_FOR_TEMPORARY_CUSTODY_VIEW_BUILDER.build_and_print()
+        INVALID_ADMISSION_REASONS_FOR_COMMITMENTS_FROM_SUPERVISION_VIEW_BUILDER.build_and_print()
