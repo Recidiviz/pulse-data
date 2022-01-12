@@ -72,6 +72,12 @@ incremental_pipelines:
     calculation_month_count: 36
     metric_types: VIOLATION
     region: us-west3
+  - pipeline: program
+    job_name: us-id-program-calculations-36
+    state_code: US_ID
+    calculation_month_count: 36
+    metric_types: PROGRAM_PARTICIPATION PROGRAM_REFERRAL
+    region: us-west1
 
   # Daily US_PA calculations
   - pipeline: supervision
@@ -193,3 +199,9 @@ historical_pipelines:
     metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_POPULATION INCARCERATION_RELEASE
     calculation_month_count: 240
     region: us-central1
+  - pipeline: program
+    job_name: us-id-historical-program-calculations-60
+    state_code: US_ID
+    calculation_month_count: 240
+    metric_types: PROGRAM_PARTICIPATION PROGRAM_REFERRAL
+    region: us-east1
