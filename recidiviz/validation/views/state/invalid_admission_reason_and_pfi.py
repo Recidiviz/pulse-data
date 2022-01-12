@@ -21,35 +21,63 @@ Existence of any rows indicates a bug in IP pre-processing logic.
 
 # pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.pipeline.incarceration.metrics import (
+    IncarcerationAdmissionMetric,
+)
 from recidiviz.calculator.query.state import dataset_config as state_dataset_config
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateIncarcerationPeriodAdmissionReason,
+    StateSpecializedPurposeForIncarceration,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
+from recidiviz.validation.views.utils.dataflow_metric_validation_utils import (
+    validation_query_for_metric,
+)
 
 INVALID_ADMISSION_REASON_AND_PFI_VIEW_NAME = "invalid_admission_reason_and_pfi"
 
 INVALID_ADMISSION_REASON_AND_PFI_DESCRIPTION = """Incarceration admission metrics with invalid combinations of admission_reason and specialized_purpose_for_incarceration."""
 
-INVALID_ADMISSION_REASON_AND_PFI_QUERY_TEMPLATE = """
-    /*{description}*/
-    SELECT state_code AS region_code,
-    * EXCEPT (state_code)
-    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_admission_metrics_included_in_state_population_materialized`
+INVALID_ROWS_FILTER_CLAUSE = f"""WHERE (admission_reason =
+'{StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY.value}'
     -- Any REVOCATION admission_reason should have a purpose of GENERAL
-    WHERE (admission_reason = 'REVOCATION'
-        AND specialized_purpose_for_incarceration NOT IN ('GENERAL'))
+        AND specialized_purpose_for_incarceration NOT IN (
+            '{StateSpecializedPurposeForIncarceration.GENERAL.value}'
+        ))
     -- Any NEW_ADMISSION should have a purpose of GENERAL, TREATMENT_IN_PRISON, INTERNAL_UNKNOWN, or SHOCK_INCARCERATION
-    OR (admission_reason = 'NEW_ADMISSION'
-        AND specialized_purpose_for_incarceration NOT IN ('GENERAL', 'TREATMENT_IN_PRISON', 'INTERNAL_UNKNOWN', 'SHOCK_INCARCERATION'))
+    OR (admission_reason = '{StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION.value}'
+        AND specialized_purpose_for_incarceration NOT IN (
+              '{StateSpecializedPurposeForIncarceration.GENERAL.value}',
+              '{StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON.value}',
+              '{StateSpecializedPurposeForIncarceration.INTERNAL_UNKNOWN.value}',
+              '{StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION.value}'
+          ))
     -- ANY SANCTION_ADMISSION should have a purpose of TREATMENT_IN_PRISON or SHOCK_INCARCERATION
-    OR (admission_reason = 'SANCTION_ADMISSION'
-        AND specialized_purpose_for_incarceration NOT IN ('TREATMENT_IN_PRISON', 'SHOCK_INCARCERATION'))
+    OR (admission_reason = '{StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION.value}'
+        AND specialized_purpose_for_incarceration NOT IN (
+              '{StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON.value}',
+              '{StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION.value}'
+         ))
 """
 
 INVALID_ADMISSION_REASON_AND_PFI_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.VIEWS_DATASET,
     view_id=INVALID_ADMISSION_REASON_AND_PFI_VIEW_NAME,
-    view_query_template=INVALID_ADMISSION_REASON_AND_PFI_QUERY_TEMPLATE,
+    view_query_template=validation_query_for_metric(
+        metric=IncarcerationAdmissionMetric,
+        additional_columns_to_select=[
+            "person_id",
+            "metric_type",
+            "admission_reason",
+            "specialized_purpose_for_incarceration",
+            "admission_date",
+            "job_id",
+        ],
+        invalid_rows_filter_clause=INVALID_ROWS_FILTER_CLAUSE,
+        validation_description=INVALID_ADMISSION_REASON_AND_PFI_DESCRIPTION,
+    ),
     description=INVALID_ADMISSION_REASON_AND_PFI_DESCRIPTION,
     materialized_metrics_dataset=state_dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
 )
