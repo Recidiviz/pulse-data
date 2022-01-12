@@ -27,9 +27,13 @@ from recidiviz.calculator.pipeline.utils.period_utils import (
 from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index import (
     PreProcessedSupervisionPeriodIndex,
 )
+from recidiviz.calculator.pipeline.utils.program_assignment_pre_processing_manager import (
+    ProgramAssignmentPreProcessingManager,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
     get_state_specific_incarceration_delegate,
     get_state_specific_incarceration_period_pre_processing_delegate,
+    get_state_specific_program_assignment_pre_processing_delegate,
     get_state_specific_supervision_period_pre_processing_delegate,
     get_state_specific_violation_response_preprocessing_delegate,
 )
@@ -43,6 +47,7 @@ from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
     StateIncarcerationSentence,
+    StateProgramAssignment,
     StateSupervisionPeriod,
     StateSupervisionSentence,
     StateSupervisionViolationResponse,
@@ -178,4 +183,19 @@ def pre_processed_violation_responses_for_calculations(
     )
     return (
         violation_response_manager.pre_processed_violation_responses_for_calculations()
+    )
+
+
+def pre_processed_program_assignments_for_calculations(
+    state_code: str, program_assignments: List[StateProgramAssignment]
+) -> List[StateProgramAssignment]:
+    """Instantiates the program assignment manager and its appropriate delegate. Then
+    returns pre-processed program assignments."""
+
+    delegate = get_state_specific_program_assignment_pre_processing_delegate(state_code)
+    program_assignment_manager = ProgramAssignmentPreProcessingManager(
+        program_assignments, delegate
+    )
+    return (
+        program_assignment_manager.pre_processed_program_assignments_for_calculations()
     )
