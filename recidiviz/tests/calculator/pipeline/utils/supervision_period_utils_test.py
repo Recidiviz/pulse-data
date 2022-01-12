@@ -25,9 +25,6 @@ import attr
 from dateutil.relativedelta import relativedelta
 
 from recidiviz.calculator.pipeline.supervision.events import SupervisionPopulationEvent
-from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index import (
-    PreProcessedSupervisionPeriodIndex,
-)
 from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_supervision_delegate import (
     UsXxSupervisionDelegate,
 )
@@ -61,6 +58,9 @@ from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
     StateSupervisionCaseTypeEntry,
     StateSupervisionPeriod,
+)
+from recidiviz.tests.calculator.pipeline.pre_processing_testing_utils import (
+    default_pre_processed_sp_index_for_tests,
 )
 
 
@@ -455,7 +455,7 @@ class TestGetPostIncarcerationSupervisionType(unittest.TestCase):
             termination_date=date(2020, 4, 1),
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
-        self.supervision_period_index = PreProcessedSupervisionPeriodIndex(
+        self.supervision_period_index = default_pre_processed_sp_index_for_tests(
             supervision_periods=[self.supervision_period]
         )
         self.supervision_delegate = UsXxSupervisionDelegate()
@@ -491,7 +491,7 @@ class TestGetPostIncarcerationSupervisionType(unittest.TestCase):
         self.assertIsNone(
             get_post_incarceration_supervision_type(
                 self.incarceration_period,
-                PreProcessedSupervisionPeriodIndex(
+                default_pre_processed_sp_index_for_tests(
                     supervision_periods=[supervision_period_far_out]
                 ),
                 self.supervision_delegate,
@@ -510,7 +510,7 @@ class TestGetPostIncarcerationSupervisionType(unittest.TestCase):
             StateSupervisionPeriodSupervisionType.PAROLE,
             get_post_incarceration_supervision_type(
                 self.incarceration_period,
-                PreProcessedSupervisionPeriodIndex(
+                default_pre_processed_sp_index_for_tests(
                     supervision_periods=[
                         self.supervision_period,
                         second_supervision_period,
@@ -537,7 +537,7 @@ class TestGetPostIncarcerationSupervisionType(unittest.TestCase):
             StateSupervisionPeriodSupervisionType.COMMUNITY_CONFINEMENT,
             get_post_incarceration_supervision_type(
                 self.incarceration_period,
-                PreProcessedSupervisionPeriodIndex(
+                default_pre_processed_sp_index_for_tests(
                     supervision_periods=[
                         self.supervision_period,
                         second_supervision_period,
@@ -559,7 +559,7 @@ class TestGetPostIncarcerationSupervisionType(unittest.TestCase):
             StateSupervisionPeriodSupervisionType.PROBATION,
             get_post_incarceration_supervision_type(
                 self.incarceration_period,
-                PreProcessedSupervisionPeriodIndex(
+                default_pre_processed_sp_index_for_tests(
                     supervision_periods=[
                         self.supervision_period,
                         second_supervision_period,

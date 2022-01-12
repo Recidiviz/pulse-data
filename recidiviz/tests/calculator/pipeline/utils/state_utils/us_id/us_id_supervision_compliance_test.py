@@ -22,9 +22,6 @@ from typing import List, Optional
 from dateutil.relativedelta import relativedelta
 from parameterized import parameterized
 
-from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
-    PreProcessedIncarcerationPeriodIndex,
-)
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_incarceration_delegate import (
     UsIdIncarcerationDelegate,
 )
@@ -64,6 +61,9 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionContact,
     StateSupervisionPeriod,
 )
+from recidiviz.tests.calculator.pipeline.pre_processing_testing_utils import (
+    default_pre_processed_ip_index_for_tests,
+)
 
 HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE = (
     SUPERVISION_CONTACT_FREQUENCY_REQUIREMENTS[StateSupervisionCaseType.GENERAL][
@@ -98,10 +98,8 @@ class TestAssessmentsInComplianceMonth(unittest.TestCase):
 
     def setUp(self) -> None:
         self.person = StatePerson.new_with_defaults(state_code="US_ID")
-        self.empty_ip_index = PreProcessedIncarcerationPeriodIndex(
-            incarceration_periods=[],
-            ip_id_to_pfi_subtype={},
-            incarceration_delegate=UsIdIncarcerationDelegate(),
+        self.empty_ip_index = default_pre_processed_ip_index_for_tests(
+            incarceration_delegate=UsIdIncarcerationDelegate()
         )
 
     def test_completed_assessments_in_compliance_month(self) -> None:
@@ -179,10 +177,8 @@ class TestFaceToFaceContactsInComplianceMonth(unittest.TestCase):
 
     def setUp(self) -> None:
         self.person = StatePerson.new_with_defaults(state_code="US_ID")
-        self.empty_ip_index = PreProcessedIncarcerationPeriodIndex(
-            incarceration_periods=[],
-            ip_id_to_pfi_subtype={},
-            incarceration_delegate=UsIdIncarcerationDelegate(),
+        self.empty_ip_index = default_pre_processed_ip_index_for_tests(
+            incarceration_delegate=UsIdIncarcerationDelegate()
         )
 
     def test_face_to_face_contacts_in_compliance_month(self) -> None:
@@ -275,10 +271,8 @@ class TestNextRecommendedContactDate(unittest.TestCase):
 
     def setUp(self) -> None:
         self.person = StatePerson.new_with_defaults(state_code="US_ID")
-        self.empty_ip_index = PreProcessedIncarcerationPeriodIndex(
-            incarceration_periods=[],
-            ip_id_to_pfi_subtype={},
-            incarceration_delegate=UsIdIncarcerationDelegate(),
+        self.empty_ip_index = default_pre_processed_ip_index_for_tests(
+            incarceration_delegate=UsIdIncarcerationDelegate()
         )
 
     def test_next_recommended_face_to_face_date_start_of_supervision_general_case(
@@ -1389,10 +1383,8 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
 
     def setUp(self) -> None:
         self.person = StatePerson.new_with_defaults(state_code="US_ID")
-        self.empty_ip_index = PreProcessedIncarcerationPeriodIndex(
-            incarceration_periods=[],
-            ip_id_to_pfi_subtype={},
-            incarceration_delegate=UsIdIncarcerationDelegate(),
+        self.empty_ip_index = default_pre_processed_ip_index_for_tests(
+            incarceration_delegate=UsIdIncarcerationDelegate()
         )
 
     def test_guidelines_applicable_for_case_general(self) -> None:
@@ -1731,10 +1723,8 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
 
     def setUp(self) -> None:
         self.person = StatePerson.new_with_defaults(state_code="US_ID")
-        self.empty_ip_index = PreProcessedIncarcerationPeriodIndex(
-            incarceration_periods=[],
-            ip_id_to_pfi_subtype={},
-            incarceration_delegate=UsIdIncarcerationDelegate(),
+        self.empty_ip_index = default_pre_processed_ip_index_for_tests(
+            incarceration_delegate=UsIdIncarcerationDelegate()
         )
 
     def test_next_recommended_reassessment_general_minimum(self) -> None:
@@ -1953,10 +1943,8 @@ class TestSupervisionDowngrades(unittest.TestCase):
 
     def setUp(self) -> None:
         self.start_of_supervision = date(2018, 3, 5)
-        self.empty_ip_index = PreProcessedIncarcerationPeriodIndex(
-            incarceration_periods=[],
-            ip_id_to_pfi_subtype={},
-            incarceration_delegate=UsIdIncarcerationDelegate(),
+        self.empty_ip_index = default_pre_processed_ip_index_for_tests(
+            incarceration_delegate=UsIdIncarcerationDelegate()
         )
 
     def _person_with_gender(self, gender: Gender) -> StatePerson:

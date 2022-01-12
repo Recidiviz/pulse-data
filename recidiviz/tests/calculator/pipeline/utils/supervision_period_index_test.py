@@ -19,18 +19,15 @@
 import unittest
 from datetime import date
 
-from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index import (
-    PreProcessedSupervisionPeriodIndex,
-)
-from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
-    standard_date_sort_for_supervision_periods,
-)
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
+from recidiviz.tests.calculator.pipeline.pre_processing_testing_utils import (
+    default_pre_processed_sp_index_for_tests,
+)
 
 
 class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
@@ -55,10 +52,9 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
 
         supervision_periods = [supervision_period_2, supervision_period_1]
 
-        supervision_period_index = PreProcessedSupervisionPeriodIndex(
-            supervision_periods=standard_date_sort_for_supervision_periods(
-                supervision_periods
-            )
+        supervision_period_index = default_pre_processed_sp_index_for_tests(
+            supervision_periods=supervision_periods,
+            sort_periods=True,
         )
 
         expected_output = {
@@ -115,10 +111,9 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             supervision_period_1,
         ]
 
-        supervision_period_index = PreProcessedSupervisionPeriodIndex(
-            supervision_periods=standard_date_sort_for_supervision_periods(
-                supervision_periods
-            )
+        supervision_period_index = default_pre_processed_sp_index_for_tests(
+            supervision_periods=supervision_periods,
+            sort_periods=True,
         )
 
         expected_output = {
@@ -177,10 +172,9 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             supervision_period_1,
         ]
 
-        supervision_period_index = PreProcessedSupervisionPeriodIndex(
-            supervision_periods=standard_date_sort_for_supervision_periods(
-                supervision_periods
-            )
+        supervision_period_index = default_pre_processed_sp_index_for_tests(
+            supervision_periods=supervision_periods,
+            sort_periods=True,
         )
 
         expected_output = {
@@ -215,10 +209,9 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
 
         supervision_periods = [supervision_period_2, supervision_period_1]
 
-        supervision_period_index = PreProcessedSupervisionPeriodIndex(
-            supervision_periods=standard_date_sort_for_supervision_periods(
-                supervision_periods
-            )
+        supervision_period_index = default_pre_processed_sp_index_for_tests(
+            supervision_periods=supervision_periods,
+            sort_periods=True,
         )
 
         expected_output = {
@@ -271,10 +264,9 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             supervision_period_1,
         ]
 
-        supervision_period_index = PreProcessedSupervisionPeriodIndex(
-            supervision_periods=standard_date_sort_for_supervision_periods(
-                supervision_periods
-            )
+        supervision_period_index = default_pre_processed_sp_index_for_tests(
+            supervision_periods=supervision_periods,
+            sort_periods=True,
         )
 
         expected_output = {
@@ -328,10 +320,9 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             supervision_period_1,
         ]
 
-        supervision_period_index = PreProcessedSupervisionPeriodIndex(
-            supervision_periods=standard_date_sort_for_supervision_periods(
-                supervision_periods
-            )
+        supervision_period_index = default_pre_processed_sp_index_for_tests(
+            supervision_periods=supervision_periods,
+            sort_periods=True,
         )
 
         expected_output = {
@@ -383,10 +374,9 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             supervision_period_1,
         ]
 
-        supervision_period_index = PreProcessedSupervisionPeriodIndex(
-            supervision_periods=standard_date_sort_for_supervision_periods(
-                supervision_periods
-            )
+        supervision_period_index = default_pre_processed_sp_index_for_tests(
+            supervision_periods=supervision_periods,
+            sort_periods=True,
         )
 
         expected_output = {
@@ -440,10 +430,9 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             supervision_period_1,
         ]
 
-        supervision_period_index = PreProcessedSupervisionPeriodIndex(
-            supervision_periods=standard_date_sort_for_supervision_periods(
-                supervision_periods
-            )
+        supervision_period_index = default_pre_processed_sp_index_for_tests(
+            supervision_periods=supervision_periods,
+            sort_periods=True,
         )
 
         expected_output = {
@@ -480,10 +469,9 @@ class TestSupervisionPeriodsByTerminationMonth(unittest.TestCase):
 
         supervision_periods = [supervision_period_2, supervision_period_1]
 
-        supervision_period_index = PreProcessedSupervisionPeriodIndex(
-            supervision_periods=standard_date_sort_for_supervision_periods(
-                supervision_periods
-            )
+        supervision_period_index = default_pre_processed_sp_index_for_tests(
+            supervision_periods=supervision_periods,
+            sort_periods=True,
         )
 
         expected_output = {2000: {10: [supervision_period_1, supervision_period_2]}}
@@ -512,10 +500,9 @@ class TestSupervisionPeriodsByTerminationMonth(unittest.TestCase):
 
         supervision_periods = [supervision_period_2, supervision_period_1]
 
-        supervision_period_index = PreProcessedSupervisionPeriodIndex(
-            supervision_periods=standard_date_sort_for_supervision_periods(
-                supervision_periods
-            )
+        supervision_period_index = default_pre_processed_sp_index_for_tests(
+            supervision_periods=supervision_periods,
+            sort_periods=True,
         )
 
         expected_output = {
@@ -546,10 +533,9 @@ class TestSupervisionPeriodsByTerminationMonth(unittest.TestCase):
 
         supervision_periods = [supervision_period_2, supervision_period_1]
 
-        supervision_period_index = PreProcessedSupervisionPeriodIndex(
-            supervision_periods=standard_date_sort_for_supervision_periods(
-                supervision_periods
-            )
+        supervision_period_index = default_pre_processed_sp_index_for_tests(
+            supervision_periods=supervision_periods,
+            sort_periods=True,
         )
 
         expected_output = {
@@ -584,10 +570,9 @@ class TestGetMostRecentPreviousSupervisionPeriod(unittest.TestCase):
 
         supervision_periods = [supervision_period_1, supervision_period_2]
 
-        supervision_period_index = PreProcessedSupervisionPeriodIndex(
-            supervision_periods=standard_date_sort_for_supervision_periods(
-                supervision_periods
-            )
+        supervision_period_index = default_pre_processed_sp_index_for_tests(
+            supervision_periods=supervision_periods,
+            sort_periods=True,
         )
 
         self.assertEqual(
@@ -615,10 +600,9 @@ class TestGetMostRecentPreviousSupervisionPeriod(unittest.TestCase):
 
         supervision_periods = [supervision_period_1, supervision_period_2]
 
-        supervision_period_index = PreProcessedSupervisionPeriodIndex(
-            supervision_periods=standard_date_sort_for_supervision_periods(
-                supervision_periods
-            )
+        supervision_period_index = default_pre_processed_sp_index_for_tests(
+            supervision_periods=supervision_periods,
+            sort_periods=True,
         )
 
         self.assertIsNone(
@@ -638,10 +622,9 @@ class TestGetMostRecentPreviousSupervisionPeriod(unittest.TestCase):
 
         supervision_periods = [supervision_period]
 
-        supervision_period_index = PreProcessedSupervisionPeriodIndex(
-            supervision_periods=standard_date_sort_for_supervision_periods(
-                supervision_periods
-            )
+        supervision_period_index = default_pre_processed_sp_index_for_tests(
+            supervision_periods=supervision_periods,
+            sort_periods=True,
         )
 
         self.assertIsNone(

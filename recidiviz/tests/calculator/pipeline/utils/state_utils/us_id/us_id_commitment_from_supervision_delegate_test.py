@@ -22,12 +22,6 @@ from typing import List, Optional
 from recidiviz.calculator.pipeline.utils.commitment_from_supervision_utils import (
     _get_commitment_from_supervision_supervision_period,
 )
-from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
-    PreProcessedIncarcerationPeriodIndex,
-)
-from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index import (
-    PreProcessedSupervisionPeriodIndex,
-)
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_commitment_from_supervision_delegate import (
     UsIdCommitmentFromSupervisionDelegate,
 )
@@ -36,6 +30,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_incarceration_d
 )
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
+    StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
@@ -43,6 +38,10 @@ from recidiviz.common.constants.state.state_supervision_period import (
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
     StateSupervisionPeriod,
+)
+from recidiviz.tests.calculator.pipeline.pre_processing_testing_utils import (
+    default_pre_processed_ip_index_for_tests,
+    default_pre_processed_sp_index_for_tests,
 )
 
 
@@ -60,6 +59,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
             state_code="US_ID",
             incarceration_period_id=111,
             admission_date=admission_date,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             admission_reason=admission_reason,
         )
 
@@ -68,16 +68,11 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         return _get_commitment_from_supervision_supervision_period(
             incarceration_period=ip,
             commitment_from_supervision_delegate=UsIdCommitmentFromSupervisionDelegate(),
-            supervision_period_index=PreProcessedSupervisionPeriodIndex(
-                supervision_periods
+            supervision_period_index=default_pre_processed_sp_index_for_tests(
+                supervision_periods=supervision_periods
             ),
-            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+            incarceration_period_index=default_pre_processed_ip_index_for_tests(
                 incarceration_periods=incarceration_periods,
-                ip_id_to_pfi_subtype={
-                    ip.incarceration_period_id: None
-                    for ip in incarceration_periods
-                    if ip.incarceration_period_id
-                },
                 incarceration_delegate=UsIdIncarcerationDelegate(),
             ),
         )

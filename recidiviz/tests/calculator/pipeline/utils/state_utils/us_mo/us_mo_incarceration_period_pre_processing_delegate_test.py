@@ -25,9 +25,6 @@ import attr
 from recidiviz.calculator.pipeline.utils.incarceration_period_pre_processing_manager import (
     IncarcerationPreProcessingManager,
 )
-from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index import (
-    PreProcessedSupervisionPeriodIndex,
-)
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_incarceration_delegate import (
     UsMoIncarcerationDelegate,
 )
@@ -44,6 +41,9 @@ from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
     StateSupervisionViolationResponse,
+)
+from recidiviz.tests.calculator.pipeline.pre_processing_testing_utils import (
+    default_pre_processed_sp_index_for_tests,
 )
 
 
@@ -63,9 +63,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
         # IP pre-processing for US_MO does not rely on violation responses or
         # supervision periods
         violation_responses: Optional[List[StateSupervisionViolationResponse]] = []
-        sp_index = PreProcessedSupervisionPeriodIndex(
-            supervision_periods=[],
-        )
+        sp_index = default_pre_processed_sp_index_for_tests()
 
         ip_pre_processing_manager = IncarcerationPreProcessingManager(
             incarceration_periods=incarceration_periods,

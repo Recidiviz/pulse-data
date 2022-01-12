@@ -3619,7 +3619,7 @@ class TestStatusChangeEdges(unittest.TestCase):
 
 
 class TestValidateIpInvariants(unittest.TestCase):
-    """Tests the _validate_ip_invariants function."""
+    """Tests the validate_ip_invariants function."""
 
     def setUp(self) -> None:
         self.valid_ip = StateIncarcerationPeriod.new_with_defaults(
@@ -3635,13 +3635,13 @@ class TestValidateIpInvariants(unittest.TestCase):
 
     def test_validate_ip_invariants_valid(self):
         # Assert no error
-        IncarcerationPreProcessingManager._validate_ip_invariants([self.valid_ip])
+        IncarcerationPreProcessingManager.validate_ip_invariants([self.valid_ip])
 
     def test_validate_ip_invariants_missing_admission_reason(self):
         invalid_ip_missing = attr.evolve(self.valid_ip, admission_reason=None)
 
         with self.assertRaises(ValueError):
-            IncarcerationPreProcessingManager._validate_ip_invariants(
+            IncarcerationPreProcessingManager.validate_ip_invariants(
                 [invalid_ip_missing]
             )
 
@@ -3649,7 +3649,7 @@ class TestValidateIpInvariants(unittest.TestCase):
         invalid_ip_missing = attr.evolve(self.valid_ip, admission_date=None)
 
         with self.assertRaises(ValueError):
-            IncarcerationPreProcessingManager._validate_ip_invariants(
+            IncarcerationPreProcessingManager.validate_ip_invariants(
                 [invalid_ip_missing]
             )
 
@@ -3659,7 +3659,7 @@ class TestValidateIpInvariants(unittest.TestCase):
         )
 
         with self.assertRaises(ValueError):
-            IncarcerationPreProcessingManager._validate_ip_invariants(
+            IncarcerationPreProcessingManager.validate_ip_invariants(
                 [invalid_ip_missing]
             )
 
@@ -3670,6 +3670,6 @@ class TestValidateIpInvariants(unittest.TestCase):
         )
 
         with self.assertRaises(ValueError):
-            IncarcerationPreProcessingManager._validate_ip_invariants(
+            IncarcerationPreProcessingManager.validate_ip_invariants(
                 [invalid_ip_missing]
             )

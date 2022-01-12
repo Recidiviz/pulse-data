@@ -18,16 +18,10 @@
 
 import unittest
 from datetime import date, timedelta
-from typing import Dict, List, Optional
+from typing import List
 
 from freezegun import freeze_time
 
-from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
-    PreProcessedIncarcerationPeriodIndex,
-)
-from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_incarceration_delegate import (
-    UsXxIncarcerationDelegate,
-)
 from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
@@ -41,27 +35,14 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodReleaseReason as ReleaseReason,
 )
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateSpecializedPurposeForIncarceration,
+)
 from recidiviz.common.date import DateRange, date_or_tomorrow
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
-
-
-def _get_incarceration_period_index(
-    incarceration_periods: List[StateIncarcerationPeriod],
-    ip_id_to_pfi_subtype: Optional[Dict[int, Optional[str]]] = None,
-) -> PreProcessedIncarcerationPeriodIndex:
-    """Helper function for instantiating an PreProcessedIncarcerationPeriodIndex."""
-    return PreProcessedIncarcerationPeriodIndex(
-        incarceration_periods=incarceration_periods,
-        ip_id_to_pfi_subtype=(
-            ip_id_to_pfi_subtype
-            or {
-                ip.incarceration_period_id: None
-                for ip in incarceration_periods
-                if ip.incarceration_period_id
-            }
-        ),
-        incarceration_delegate=UsXxIncarcerationDelegate(),
-    )
+from recidiviz.tests.calculator.pipeline.pre_processing_testing_utils import (
+    default_pre_processed_ip_index_for_tests,
+)
 
 
 class TestIndexIncarcerationPeriodsByAdmissionMonth(unittest.TestCase):
@@ -76,10 +57,11 @@ class TestIndexIncarcerationPeriodsByAdmissionMonth(unittest.TestCase):
             state_code="US_XX",
             admission_date=date(2018, 6, 8),
             admission_reason=AdmissionReason.NEW_ADMISSION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             release_date=date(2018, 12, 21),
         )
 
-        incarceration_period_index = _get_incarceration_period_index(
+        incarceration_period_index = default_pre_processed_ip_index_for_tests(
             [incarceration_period]
         )
 
@@ -98,6 +80,7 @@ class TestIndexIncarcerationPeriodsByAdmissionMonth(unittest.TestCase):
             state_code="US_XX",
             admission_date=date(2018, 6, 8),
             admission_reason=AdmissionReason.NEW_ADMISSION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             release_date=date(2018, 12, 21),
         )
 
@@ -107,9 +90,10 @@ class TestIndexIncarcerationPeriodsByAdmissionMonth(unittest.TestCase):
             state_code="US_XX",
             admission_date=date(2019, 3, 2),
             admission_reason=AdmissionReason.NEW_ADMISSION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
-        incarceration_period_index = _get_incarceration_period_index(
+        incarceration_period_index = default_pre_processed_ip_index_for_tests(
             [first_incarceration_period, second_incarceration_period]
         )
 
@@ -133,6 +117,7 @@ class TestIndexIncarcerationPeriodsByAdmissionMonth(unittest.TestCase):
             state_code="US_XX",
             admission_date=date(2018, 6, 1),
             admission_reason=AdmissionReason.NEW_ADMISSION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             release_date=date(2018, 6, 1),
             release_reason=ReleaseReason.TRANSFER,
         )
@@ -143,9 +128,10 @@ class TestIndexIncarcerationPeriodsByAdmissionMonth(unittest.TestCase):
             state_code="US_XX",
             admission_date=date(2018, 6, 1),
             admission_reason=AdmissionReason.TRANSFER,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
-        incarceration_period_index = _get_incarceration_period_index(
+        incarceration_period_index = default_pre_processed_ip_index_for_tests(
             [first_incarceration_period, second_incarceration_period]
         )
 
@@ -162,7 +148,7 @@ class TestIndexIncarcerationPeriodsByAdmissionMonth(unittest.TestCase):
     def test_index_incarceration_periods_by_admission_date_none(self):
         """Tests the index_incarceration_periods_by_admission_date function
         when there are no incarceration periods."""
-        incarceration_period_index = _get_incarceration_period_index([])
+        incarceration_period_index = default_pre_processed_ip_index_for_tests()
 
         self.assertEqual(
             incarceration_period_index.incarceration_periods_by_admission_date, {}
@@ -180,11 +166,12 @@ class TestMonthsExcludedFromSupervisionPopulation(unittest.TestCase):
             state_code="US_XX",
             admission_date=date(2018, 6, 8),
             admission_reason=AdmissionReason.NEW_ADMISSION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             release_date=date(2018, 12, 21),
             custodial_authority=StateCustodialAuthority.STATE_PRISON,
         )
 
-        incarceration_period_index = _get_incarceration_period_index(
+        incarceration_period_index = default_pre_processed_ip_index_for_tests(
             [incarceration_period]
         )
 
@@ -202,11 +189,12 @@ class TestMonthsExcludedFromSupervisionPopulation(unittest.TestCase):
             state_code="US_XX",
             admission_date=date(2018, 8, 1),
             admission_reason=AdmissionReason.NEW_ADMISSION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             release_date=date(2018, 12, 21),
             custodial_authority=StateCustodialAuthority.STATE_PRISON,
         )
 
-        incarceration_period_index = _get_incarceration_period_index(
+        incarceration_period_index = default_pre_processed_ip_index_for_tests(
             [incarceration_period]
         )
 
@@ -224,11 +212,12 @@ class TestMonthsExcludedFromSupervisionPopulation(unittest.TestCase):
             state_code="US_XX",
             admission_date=date(2018, 8, 15),
             admission_reason=AdmissionReason.NEW_ADMISSION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             release_date=date(2018, 10, 31),
             custodial_authority=StateCustodialAuthority.STATE_PRISON,
         )
 
-        incarceration_period_index = _get_incarceration_period_index(
+        incarceration_period_index = default_pre_processed_ip_index_for_tests(
             [incarceration_period]
         )
 
@@ -249,11 +238,12 @@ class TestMonthsExcludedFromSupervisionPopulation(unittest.TestCase):
             state_code="US_XX",
             admission_date=date(2013, 3, 1),
             admission_reason=AdmissionReason.NEW_ADMISSION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             release_date=date(2013, 3, 30),
             custodial_authority=StateCustodialAuthority.STATE_PRISON,
         )
 
-        incarceration_period_index = _get_incarceration_period_index(
+        incarceration_period_index = default_pre_processed_ip_index_for_tests(
             [incarceration_period]
         )
 
@@ -272,11 +262,12 @@ class TestMonthsExcludedFromSupervisionPopulation(unittest.TestCase):
             state_code="US_XX",
             admission_date=date(1996, 2, 1),
             admission_reason=AdmissionReason.NEW_ADMISSION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             release_date=date(1996, 2, 28),
             custodial_authority=StateCustodialAuthority.STATE_PRISON,
         )
 
-        incarceration_period_index = _get_incarceration_period_index(
+        incarceration_period_index = default_pre_processed_ip_index_for_tests(
             [incarceration_period]
         )
 
@@ -292,11 +283,12 @@ class TestMonthsExcludedFromSupervisionPopulation(unittest.TestCase):
             state_code="US_XX",
             admission_date=date(2005, 3, 1),
             admission_reason=AdmissionReason.NEW_ADMISSION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             release_date=date(2005, 3, 15),
             custodial_authority=StateCustodialAuthority.STATE_PRISON,
         )
 
-        incarceration_period_index = _get_incarceration_period_index(
+        incarceration_period_index = default_pre_processed_ip_index_for_tests(
             [incarceration_period]
         )
 
@@ -311,11 +303,12 @@ class TestMonthsExcludedFromSupervisionPopulation(unittest.TestCase):
             state_code="US_XX",
             admission_date=date(2005, 3, 15),
             admission_reason=AdmissionReason.TRANSFER,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             release_date=date(2005, 4, 2),
             custodial_authority=StateCustodialAuthority.STATE_PRISON,
         )
 
-        incarceration_period_index = _get_incarceration_period_index(
+        incarceration_period_index = default_pre_processed_ip_index_for_tests(
             [incarceration_period, incarceration_period_2]
         )
 
@@ -333,11 +326,12 @@ class TestMonthsExcludedFromSupervisionPopulation(unittest.TestCase):
             state_code="US_XX",
             admission_date=date(2005, 3, 1),
             admission_reason=AdmissionReason.NEW_ADMISSION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             release_date=date(2005, 3, 15),
             custodial_authority=StateCustodialAuthority.STATE_PRISON,
         )
 
-        incarceration_period_index = _get_incarceration_period_index(
+        incarceration_period_index = default_pre_processed_ip_index_for_tests(
             [incarceration_period]
         )
 
@@ -352,11 +346,12 @@ class TestMonthsExcludedFromSupervisionPopulation(unittest.TestCase):
             state_code="US_XX",
             admission_date=date(2005, 3, 15),
             admission_reason=AdmissionReason.TRANSFER,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             release_date=date(2005, 3, 20),
             custodial_authority=StateCustodialAuthority.STATE_PRISON,
         )
 
-        incarceration_period_index = _get_incarceration_period_index(
+        incarceration_period_index = default_pre_processed_ip_index_for_tests(
             [incarceration_period, incarceration_period_2]
         )
 
@@ -370,7 +365,7 @@ class TestIndexMonthToOverlappingIPsNotUnderSupervisionAuthority(unittest.TestCa
     """Tests the month_to_overlapping_ips_not_under_supervision_authority initialization function."""
 
     def test_no_periods(self):
-        index = _get_incarceration_period_index([])
+        index = default_pre_processed_ip_index_for_tests()
         self.assertEqual(
             index.month_to_overlapping_ips_not_under_supervision_authority, {}
         )
@@ -382,12 +377,13 @@ class TestIndexMonthToOverlappingIPsNotUnderSupervisionAuthority(unittest.TestCa
             state_code="US_XX",
             admission_date=date(2007, 12, 2),
             admission_reason=AdmissionReason.NEW_ADMISSION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             release_date=date(2008, 3, 28),
             release_reason=ReleaseReason.SENTENCE_SERVED,
             custodial_authority=StateCustodialAuthority.STATE_PRISON,
         )
 
-        index = _get_incarceration_period_index([incarceration_period])
+        index = default_pre_processed_ip_index_for_tests([incarceration_period])
 
         expected = {
             2007: {12: [incarceration_period]},
@@ -409,12 +405,13 @@ class TestIndexMonthToOverlappingIPsNotUnderSupervisionAuthority(unittest.TestCa
             state_code="US_XX",
             admission_date=date(2007, 12, 1),
             admission_reason=AdmissionReason.NEW_ADMISSION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             release_date=date(2008, 2, 1),
             release_reason=ReleaseReason.SENTENCE_SERVED,
             custodial_authority=StateCustodialAuthority.STATE_PRISON,
         )
 
-        index = _get_incarceration_period_index([incarceration_period])
+        index = default_pre_processed_ip_index_for_tests([incarceration_period])
 
         expected = {
             2007: {12: [incarceration_period]},
@@ -433,10 +430,11 @@ class TestIndexMonthToOverlappingIPsNotUnderSupervisionAuthority(unittest.TestCa
             state_code="US_XX",
             admission_date=date(2007, 12, 1),
             admission_reason=AdmissionReason.NEW_ADMISSION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             custodial_authority=StateCustodialAuthority.STATE_PRISON,
         )
 
-        index = _get_incarceration_period_index([incarceration_period])
+        index = default_pre_processed_ip_index_for_tests([incarceration_period])
 
         expected = {
             2007: {12: [incarceration_period]},
@@ -459,6 +457,7 @@ class TestIndexMonthToOverlappingIPsNotUnderSupervisionAuthority(unittest.TestCa
             state_code="US_XX",
             admission_date=date(2007, 12, 1),
             admission_reason=AdmissionReason.NEW_ADMISSION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             release_date=date(2008, 2, 2),
             release_reason=ReleaseReason.SENTENCE_SERVED,
             custodial_authority=StateCustodialAuthority.STATE_PRISON,
@@ -470,12 +469,13 @@ class TestIndexMonthToOverlappingIPsNotUnderSupervisionAuthority(unittest.TestCa
             state_code="US_XX",
             admission_date=date(2008, 2, 4),
             admission_reason=AdmissionReason.NEW_ADMISSION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             release_date=date(2008, 4, 5),
             release_reason=ReleaseReason.SENTENCE_SERVED,
             custodial_authority=StateCustodialAuthority.STATE_PRISON,
         )
 
-        index = _get_incarceration_period_index(
+        index = default_pre_processed_ip_index_for_tests(
             [incarceration_period, incarceration_period_2]
         )
 
@@ -500,12 +500,13 @@ class TestIndexMonthToOverlappingIPsNotUnderSupervisionAuthority(unittest.TestCa
             state_code="US_XX",
             admission_date=date(2008, 2, 4),
             admission_reason=AdmissionReason.NEW_ADMISSION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             release_date=date(2008, 2, 5),
             release_reason=ReleaseReason.SENTENCE_SERVED,
             custodial_authority=StateCustodialAuthority.STATE_PRISON,
         )
 
-        index = _get_incarceration_period_index([incarceration_period])
+        index = default_pre_processed_ip_index_for_tests([incarceration_period])
 
         expected = {
             2008: {
@@ -524,6 +525,7 @@ class TestIndexMonthToOverlappingIPsNotUnderSupervisionAuthority(unittest.TestCa
             state_code="US_XX",
             admission_date=date(2007, 12, 1),
             admission_reason=AdmissionReason.NEW_ADMISSION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             release_date=date(2008, 2, 2),
             release_reason=ReleaseReason.SENTENCE_SERVED,
             custodial_authority=StateCustodialAuthority.STATE_PRISON,
@@ -536,12 +538,13 @@ class TestIndexMonthToOverlappingIPsNotUnderSupervisionAuthority(unittest.TestCa
             state_code="US_XX",
             admission_date=date(2008, 2, 4),
             admission_reason=AdmissionReason.NEW_ADMISSION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             release_date=date(2008, 4, 5),
             release_reason=ReleaseReason.SENTENCE_SERVED,
             custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
         )
 
-        index = _get_incarceration_period_index(
+        index = default_pre_processed_ip_index_for_tests(
             [incarceration_period, incarceration_period_2]
         )
 
@@ -565,56 +568,53 @@ class TesIsExcludedFromSupervisionPopulationForRange(unittest.TestCase):
             state_code="US_XX",
             admission_date=date(2007, 2, 5),
             admission_reason=AdmissionReason.NEW_ADMISSION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             release_date=date(2007, 2, 8),
             release_reason=ReleaseReason.TRANSFER,
         )
 
-        incarceration_period_partial_month_2 = (
-            StateIncarcerationPeriod.new_with_defaults(
-                incarceration_period_id=222,
-                external_id="ip2",
-                state_code="US_XX",
-                admission_date=date(2007, 2, 8),
-                admission_reason=AdmissionReason.TRANSFER,
-                release_date=date(2007, 2, 15),
-                release_reason=ReleaseReason.TRANSFER,
-            )
+        incarceration_period_partial_month_2 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id="ip2",
+            state_code="US_XX",
+            admission_date=date(2007, 2, 8),
+            admission_reason=AdmissionReason.TRANSFER,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            release_date=date(2007, 2, 15),
+            release_reason=ReleaseReason.TRANSFER,
         )
 
-        incarceration_period_partial_month_3 = (
-            StateIncarcerationPeriod.new_with_defaults(
-                incarceration_period_id=333,
-                external_id="ip3",
-                state_code="US_XX",
-                admission_date=date(2007, 2, 15),
-                admission_reason=AdmissionReason.TRANSFER,
-                release_date=date(2007, 2, 20),
-                release_reason=ReleaseReason.SENTENCE_SERVED,
-            )
+        incarceration_period_partial_month_3 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=333,
+            external_id="ip3",
+            state_code="US_XX",
+            admission_date=date(2007, 2, 15),
+            admission_reason=AdmissionReason.TRANSFER,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            release_date=date(2007, 2, 20),
+            release_reason=ReleaseReason.SENTENCE_SERVED,
         )
 
-        incarceration_period_mulitple_months = (
-            StateIncarcerationPeriod.new_with_defaults(
-                incarceration_period_id=444,
-                external_id="ip4",
-                state_code="US_XX",
-                admission_date=date(2008, 1, 2),
-                admission_reason=AdmissionReason.NEW_ADMISSION,
-                release_date=date(2008, 5, 28),
-                release_reason=ReleaseReason.SENTENCE_SERVED,
-            )
+        incarceration_period_mulitple_months = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=444,
+            external_id="ip4",
+            state_code="US_XX",
+            admission_date=date(2008, 1, 2),
+            admission_reason=AdmissionReason.NEW_ADMISSION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            release_date=date(2008, 5, 28),
+            release_reason=ReleaseReason.SENTENCE_SERVED,
         )
 
-        incarceration_period_mulitple_months_2 = (
-            StateIncarcerationPeriod.new_with_defaults(
-                incarceration_period_id=555,
-                external_id="ip5",
-                state_code="US_XX",
-                admission_date=date(2008, 5, 28),
-                admission_reason=AdmissionReason.NEW_ADMISSION,
-                release_date=date(2008, 7, 15),
-                release_reason=ReleaseReason.SENTENCE_SERVED,
-            )
+        incarceration_period_mulitple_months_2 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=555,
+            external_id="ip5",
+            state_code="US_XX",
+            admission_date=date(2008, 5, 28),
+            admission_reason=AdmissionReason.NEW_ADMISSION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            release_date=date(2008, 7, 15),
+            release_reason=ReleaseReason.SENTENCE_SERVED,
         )
 
         incarceration_period_unterminated = StateIncarcerationPeriod.new_with_defaults(
@@ -623,19 +623,19 @@ class TesIsExcludedFromSupervisionPopulationForRange(unittest.TestCase):
             state_code="US_XX",
             admission_date=date(2008, 7, 15),
             admission_reason=AdmissionReason.NEW_ADMISSION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
-        incarceration_period_multiple_months_supervision_custodial_authority = (
-            StateIncarcerationPeriod.new_with_defaults(
-                incarceration_period_id=444,
-                external_id="ip4",
-                state_code="US_XX",
-                admission_date=date(2008, 7, 15),
-                admission_reason=AdmissionReason.NEW_ADMISSION,
-                release_date=date(2008, 9, 13),
-                release_reason=ReleaseReason.SENTENCE_SERVED,
-                custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
-            )
+        incarceration_period_multiple_months_supervision_custodial_authority = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=444,
+            external_id="ip4",
+            state_code="US_XX",
+            admission_date=date(2008, 7, 15),
+            admission_reason=AdmissionReason.NEW_ADMISSION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            release_date=date(2008, 9, 13),
+            release_reason=ReleaseReason.SENTENCE_SERVED,
+            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
         )
 
         self.single_period_multiple_months_list = [incarceration_period_mulitple_months]
@@ -689,7 +689,7 @@ class TesIsExcludedFromSupervisionPopulationForRange(unittest.TestCase):
             days=range_end_num_days_from_periods_end
         )
 
-        index = _get_incarceration_period_index(incarceration_periods)
+        index = default_pre_processed_ip_index_for_tests(incarceration_periods)
 
         time_range = DateRange(
             lower_bound_inclusive_date=lower_bound_inclusive,
@@ -706,7 +706,7 @@ class TesIsExcludedFromSupervisionPopulationForRange(unittest.TestCase):
 
     def test_no_periods(self):
 
-        index = _get_incarceration_period_index([])
+        index = default_pre_processed_ip_index_for_tests()
         self.assertFalse(
             index.is_excluded_from_supervision_population_for_range(
                 DateRange(
@@ -1051,6 +1051,7 @@ class TestIncarcerationPeriodsThatExcludePersonFromSupervisionPopulation(
             state_code="US_XX",
             admission_date=date(2007, 12, 1),
             admission_reason=AdmissionReason.NEW_ADMISSION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             release_date=date(2008, 2, 2),
             release_reason=ReleaseReason.SENTENCE_SERVED,
             custodial_authority=StateCustodialAuthority.STATE_PRISON,
@@ -1063,12 +1064,13 @@ class TestIncarcerationPeriodsThatExcludePersonFromSupervisionPopulation(
             state_code="US_XX",
             admission_date=date(2008, 2, 4),
             admission_reason=AdmissionReason.NEW_ADMISSION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             release_date=date(2008, 4, 5),
             release_reason=ReleaseReason.SENTENCE_SERVED,
             custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
         )
 
-        index = _get_incarceration_period_index(
+        index = default_pre_processed_ip_index_for_tests(
             [incarceration_period, incarceration_period_2]
         )
 
@@ -1086,6 +1088,7 @@ class TestIncarcerationPeriodsThatExcludePersonFromSupervisionPopulation(
             state_code="US_XX",
             admission_date=date(2007, 12, 1),
             admission_reason=AdmissionReason.NEW_ADMISSION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             release_date=date(2008, 2, 2),
             release_reason=ReleaseReason.SENTENCE_SERVED,
         )
@@ -1095,7 +1098,7 @@ class TestIncarcerationPeriodsThatExcludePersonFromSupervisionPopulation(
         for custodial_authority in all_custodial_authority_values:
             incarceration_period.custodial_authority = custodial_authority
 
-            index = _get_incarceration_period_index([incarceration_period])
+            index = default_pre_processed_ip_index_for_tests([incarceration_period])
 
             expected_periods = (
                 [incarceration_period]
@@ -1123,6 +1126,7 @@ class TestOriginalAdmissionReasonsByPeriodID(unittest.TestCase):
             admission_date=date(2000, 1, 1),
             release_date=date(2000, 10, 3),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
@@ -1132,11 +1136,12 @@ class TestOriginalAdmissionReasonsByPeriodID(unittest.TestCase):
             admission_date=date(2000, 10, 3),
             release_date=date(2000, 10, 11),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
         incarceration_periods = [incarceration_period_1, incarceration_period_2]
 
-        index = _get_incarceration_period_index(incarceration_periods)
+        index = default_pre_processed_ip_index_for_tests(incarceration_periods)
 
         original_admission_reasons_by_period_id = (
             index.original_admission_reasons_by_period_id
@@ -1162,6 +1167,7 @@ class TestOriginalAdmissionReasonsByPeriodID(unittest.TestCase):
             admission_date=date(2000, 1, 1),
             release_date=date(2000, 10, 3),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
@@ -1171,6 +1177,7 @@ class TestOriginalAdmissionReasonsByPeriodID(unittest.TestCase):
             admission_date=date(2000, 10, 3),
             release_date=date(2000, 10, 11),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
@@ -1180,6 +1187,7 @@ class TestOriginalAdmissionReasonsByPeriodID(unittest.TestCase):
             admission_date=date(2020, 5, 1),
             release_date=date(2020, 10, 3),
             admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
@@ -1189,6 +1197,7 @@ class TestOriginalAdmissionReasonsByPeriodID(unittest.TestCase):
             admission_date=date(2020, 10, 3),
             release_date=date(2020, 10, 11),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
@@ -1199,7 +1208,7 @@ class TestOriginalAdmissionReasonsByPeriodID(unittest.TestCase):
             incarceration_period_4,
         ]
 
-        index = _get_incarceration_period_index(incarceration_periods)
+        index = default_pre_processed_ip_index_for_tests(incarceration_periods)
 
         original_admission_reasons_by_period_id = (
             index.original_admission_reasons_by_period_id
@@ -1232,6 +1241,7 @@ class TestOriginalAdmissionReasonsByPeriodID(unittest.TestCase):
             admission_date=date(2000, 1, 1),
             release_date=date(2000, 10, 3),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
@@ -1241,6 +1251,7 @@ class TestOriginalAdmissionReasonsByPeriodID(unittest.TestCase):
             admission_date=date(2000, 10, 3),
             release_date=date(2000, 10, 11),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
@@ -1250,6 +1261,7 @@ class TestOriginalAdmissionReasonsByPeriodID(unittest.TestCase):
             admission_date=date(2000, 10, 12),
             release_date=date(2001, 1, 3),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
@@ -1259,6 +1271,7 @@ class TestOriginalAdmissionReasonsByPeriodID(unittest.TestCase):
             admission_date=date(2001, 1, 4),
             release_date=date(2001, 10, 11),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
@@ -1269,7 +1282,7 @@ class TestOriginalAdmissionReasonsByPeriodID(unittest.TestCase):
             incarceration_period_4,
         ]
 
-        index = _get_incarceration_period_index(incarceration_periods)
+        index = default_pre_processed_ip_index_for_tests(incarceration_periods)
 
         original_admission_reasons_by_period_id = (
             index.original_admission_reasons_by_period_id
@@ -1298,6 +1311,7 @@ class TestOriginalAdmissionReasonsByPeriodID(unittest.TestCase):
             admission_date=date(2000, 1, 1),
             release_date=date(2000, 10, 3),
             admission_reason=StateIncarcerationPeriodAdmissionReason.ADMITTED_IN_ERROR,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
         incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
@@ -1306,11 +1320,12 @@ class TestOriginalAdmissionReasonsByPeriodID(unittest.TestCase):
             admission_date=date(2000, 10, 3),
             release_date=date(2000, 10, 11),
             admission_reason=StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
         incarceration_periods = [incarceration_period_1, incarceration_period_2]
 
-        index = _get_incarceration_period_index(incarceration_periods)
+        index = default_pre_processed_ip_index_for_tests(incarceration_periods)
 
         original_admission_reasons_by_period_id = (
             index.original_admission_reasons_by_period_id
@@ -1338,6 +1353,7 @@ class TestOriginalAdmissionReasonsByPeriodID(unittest.TestCase):
             admission_date=date(2000, 1, 1),
             release_date=date(2000, 10, 3),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             # Because this is an official release, the next period should be mapped to its own admission reason
             release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
         )
@@ -1348,11 +1364,12 @@ class TestOriginalAdmissionReasonsByPeriodID(unittest.TestCase):
             admission_date=date(2015, 10, 3),
             release_date=date(2015, 10, 11),
             admission_reason=StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
         incarceration_periods = [incarceration_period_1, incarceration_period_2]
 
-        index = _get_incarceration_period_index(incarceration_periods)
+        index = default_pre_processed_ip_index_for_tests(incarceration_periods)
 
         original_admission_reasons_by_period_id = (
             index.original_admission_reasons_by_period_id
@@ -1382,6 +1399,7 @@ class TestOriginalAdmissionReasonsByPeriodID(unittest.TestCase):
             admission_date=date(2000, 1, 1),
             release_date=date(2000, 10, 3),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             release_reason=StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN,
         )
 
@@ -1391,11 +1409,12 @@ class TestOriginalAdmissionReasonsByPeriodID(unittest.TestCase):
             admission_date=date(2015, 10, 3),
             release_date=date(2015, 10, 11),
             admission_reason=StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
         incarceration_periods = [incarceration_period_1, incarceration_period_2]
 
-        index = _get_incarceration_period_index(incarceration_periods)
+        index = default_pre_processed_ip_index_for_tests(incarceration_periods)
 
         original_admission_reasons_by_period_id = (
             index.original_admission_reasons_by_period_id
@@ -1429,6 +1448,7 @@ class TestPrecedingIncarcerationPeriod(unittest.TestCase):
             admission_date=date(2000, 1, 1),
             release_date=date(2000, 10, 3),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             release_reason=StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN,
         )
 
@@ -1438,10 +1458,11 @@ class TestPrecedingIncarcerationPeriod(unittest.TestCase):
             admission_date=date(2015, 10, 3),
             release_date=date(2015, 10, 11),
             admission_reason=StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
         incarceration_periods = [incarceration_period_1, incarceration_period_2]
-        index = _get_incarceration_period_index(incarceration_periods)
+        index = default_pre_processed_ip_index_for_tests(incarceration_periods)
 
         preceding_period = index.preceding_incarceration_period_in_index(
             incarceration_period_1
@@ -1457,6 +1478,7 @@ class TestPrecedingIncarcerationPeriod(unittest.TestCase):
             admission_date=date(2000, 1, 1),
             release_date=date(2000, 10, 3),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             release_reason=StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN,
         )
 
@@ -1466,10 +1488,11 @@ class TestPrecedingIncarcerationPeriod(unittest.TestCase):
             admission_date=date(2015, 10, 3),
             release_date=date(2015, 10, 11),
             admission_reason=StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
         incarceration_periods = [incarceration_period_1, incarceration_period_2]
-        index = _get_incarceration_period_index(incarceration_periods)
+        index = default_pre_processed_ip_index_for_tests(incarceration_periods)
 
         preceding_period = index.preceding_incarceration_period_in_index(
             incarceration_period_2
@@ -1485,6 +1508,7 @@ class TestPrecedingIncarcerationPeriod(unittest.TestCase):
             admission_date=date(2000, 1, 1),
             release_date=date(2000, 10, 3),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             release_reason=StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN,
         )
 
@@ -1494,6 +1518,7 @@ class TestPrecedingIncarcerationPeriod(unittest.TestCase):
             admission_date=date(2015, 10, 3),
             release_date=date(2015, 10, 11),
             admission_reason=StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
         incarceration_period_3 = StateIncarcerationPeriod.new_with_defaults(
@@ -1502,6 +1527,7 @@ class TestPrecedingIncarcerationPeriod(unittest.TestCase):
             admission_date=date(2019, 4, 8),
             release_date=date(2020, 10, 31),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             release_reason=StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN,
         )
 
@@ -1510,7 +1536,7 @@ class TestPrecedingIncarcerationPeriod(unittest.TestCase):
             incarceration_period_2,
             incarceration_period_3,
         ]
-        index = _get_incarceration_period_index(incarceration_periods)
+        index = default_pre_processed_ip_index_for_tests(incarceration_periods)
 
         preceding_period = index.preceding_incarceration_period_in_index(
             incarceration_period_3
@@ -1526,6 +1552,7 @@ class TestPrecedingIncarcerationPeriod(unittest.TestCase):
             admission_date=date(2000, 1, 1),
             release_date=date(2000, 10, 3),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             release_reason=StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN,
         )
 
@@ -1535,6 +1562,7 @@ class TestPrecedingIncarcerationPeriod(unittest.TestCase):
             admission_date=date(2015, 10, 3),
             release_date=date(2015, 10, 11),
             admission_reason=StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
         incarceration_period_3 = StateIncarcerationPeriod.new_with_defaults(
@@ -1543,6 +1571,7 @@ class TestPrecedingIncarcerationPeriod(unittest.TestCase):
             admission_date=date(2019, 4, 8),
             release_date=date(2020, 10, 31),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             release_reason=StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN,
         )
 
@@ -1550,7 +1579,7 @@ class TestPrecedingIncarcerationPeriod(unittest.TestCase):
             incarceration_period_1,
             incarceration_period_2,
         ]
-        index = _get_incarceration_period_index(incarceration_periods)
+        index = default_pre_processed_ip_index_for_tests(incarceration_periods)
 
         with self.assertRaises(KeyError):
             index.preceding_incarceration_period_in_index(incarceration_period_3)
