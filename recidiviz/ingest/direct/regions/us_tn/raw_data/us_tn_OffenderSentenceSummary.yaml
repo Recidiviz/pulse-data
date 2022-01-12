@@ -6,7 +6,7 @@ primary_key_cols:
 columns:
   - name: OffenderID
     description: |-
-      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+      This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: SentenceEffectiveDate
     is_datetime: True
     description: |-
@@ -14,7 +14,7 @@ columns:
   - name: EarliestPossibleDate
     is_datetime: True
     description: |-
-      This is the earliest possible release date that an offender may be paroled or released from custody.  Parole or release eligibility dates cannot be reduced by credits to be earlier than this date. This date is not in effect when safety-value law is in eff
+      This is the earliest possible release date that a person  may be paroled or released from custody.  Parole or release eligibility dates cannot be reduced by credits to be earlier than this date. This date is not in effect when safety-value law is in eff
   - name: ExpirationDate
     is_datetime: True
     description: |-
@@ -22,7 +22,7 @@ columns:
   - name: MandatoryParoleDate
     is_datetime: True
     description: |-
-      The mandatory parole date of an offender for Indeterminate and Determinate sentences.
+      The mandatory parole date of a person  for Indeterminate and Determinate sentences.
   - name: FullExpirationDate
     is_datetime: True
     description: |-
@@ -30,11 +30,11 @@ columns:
   - name: RegularParoleDate
     is_datetime: True
     description: |-
-      The regular parole date for sentences of an offender on Indeterminate and Determinate sentences.
+      The regular parole date for sentences of a person  on Indeterminate and Determinate sentences.
   - name: ReleaseEligibilityDate
     is_datetime: True
     description: |-
-      The date an offender is eligible for release to parole for a sentence.
+      The date a person  is eligible for release to parole for a sentence.
   - name: ProbationaryParoleDate
     is_datetime: True
     description: |-
@@ -42,7 +42,7 @@ columns:
   - name: SafetyValveDate
     is_datetime: True
     description: |-
-      The date an offender is eligible for release on parole based on the safety valve percentage.
+      The date a person  is eligible for release on parole based on the safety valve percentage.
   - name: ExecutionDate
     is_datetime: True
     description: |-
@@ -79,7 +79,7 @@ columns:
       The minimum number of days for an offender's sentence.
   - name: OutToCourtFlag
     description: |-
-      Indicator for an offender that tells whether the offender is out to court.
+      Indicator for a person  that tells whether the person is out to court.
     known_values:
       - value: N
         description: "TODO(#7424): Update with definition."

@@ -8,7 +8,7 @@ primary_key_cols:
 columns:
   - name: OffenderID
     description: |-
-      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+      This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: OrderDate
     is_datetime: True
     description: |-
@@ -46,7 +46,7 @@ columns:
       The dollar amount of bond set for an offender.
   - name: BondCondition
     description: |-
-      A code value defining a reason for the conditions of Bond for a offender awaiting sentencing.
+      A code value defining a reason for the conditions of Bond for a person awaiting sentencing.
     known_values:
       - value: N
         description: NO BOND DUE TO OFFENSE
@@ -73,7 +73,7 @@ columns:
       The unique identifier assigned to a judge.
   - name: CountName
     description: |-
-      The name of the court that found an offender guilty.
+      The name of the court that found a person  guilty.
   - name: DistrictAttorneyID
     description: |-
       The identifier of a district attorney's name posted to either a judgment order or PSI.
@@ -99,7 +99,7 @@ columns:
       The code name of a territorial division for local government within a state.
   - name: WeaponFlag
     description: |-
-      Indicator to tell whether an offender used weapons in committing his offense.
+      Indicator to tell whether a person  used weapons in committing his offense.
     known_values:
       - value: N
         description: "TODO(#7424): Update with definition."

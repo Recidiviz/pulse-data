@@ -35,7 +35,7 @@ columns:
         description: RETURN TO CELL
   - name: OffenderID
     description: |-
-      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+      This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: ReportFrom
     description: |-
       The time at which an inmate's scheduled appointment starts.
@@ -44,7 +44,7 @@ columns:
       Uniquely identifies various DB2 tables.
   - name: ReportLocation
     description: |-
-      An exact location where the offender is to report.
+      An exact location where the person is to report.
   - name: LastUpdateUserID
     description: |-
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.

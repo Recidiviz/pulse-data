@@ -7,7 +7,7 @@ primary_key_cols:
 columns:
   - name: OffenderID
     description: |-
-      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+      This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: SequenceNumber
     description: |-
       This is a number used to distinguish the sequence of name codes accessed on a Soundex table.
@@ -39,7 +39,7 @@ columns:
     known_values: []
   - name: ActualSiteID
     description: |-
-      This identifies an organizational/location entity where an offender is currently located.
+      This identifies an organizational/location entity where a person  is currently located.
   - name: Race
     description: |-
       The NCIC race code.
@@ -59,7 +59,7 @@ columns:
       Social Security Number of an individual.
   - name: STGNicknameFlag
     description: |-
-      This flag indicates STG (Security Threat Group) nicknames exist or the offender uses names other than their real name.
+      This flag indicates STG (Security Threat Group) nicknames exist or the person uses names other than their real name.
   - name: LastUpdateUserID
     description: |-
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.

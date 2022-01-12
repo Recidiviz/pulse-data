@@ -53,7 +53,7 @@ columns:
         description: "TODO(#7424): Update with definition."
   - name: DrugOffensesFlag
     description: |-
-      Indicates an offense is a drug related offense for which an offender may serve the sentence in boot camp when the sentence length is greater than six years. Tied to offender status.
+      Indicates an offense is a drug related offense for which a person  may serve the sentence in boot camp when the sentence length is greater than six years. Tied to person status.
     known_values:
       - value: N
         description: "TODO(#7424): Update with definition."

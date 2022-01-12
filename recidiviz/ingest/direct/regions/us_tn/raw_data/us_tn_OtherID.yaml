@@ -1,19 +1,19 @@
 file_tag: OtherID
 file_description: |-
-  This entity stores a record for each offender identification number no longer used by the Department of Correction to track the offender.  This identification number may be an OBSCIS ID or a TOMIS ID that has been deleted because the offender hadanother TOMIS ID.
+  This entity stores a record for each person identification number no longer used by the Department of Correction to track the offender.  This identification number may be an OBSCIS ID or a TOMIS ID that has been deleted because the person hadanother TOMIS ID.
 primary_key_cols:
   - OffenderID
   - OtherID
 columns:
   - name: OffenderID
     description: |-
-      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+      This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: OtherID
     description: |-
-      This is an identifier assigned to a particular offender in the TOMIS system, it is either a deleted duplicate TOMIS ID or an OBSCIS ID.
+      This is an identifier assigned to a particular person in the TOMIS system, it is either a deleted duplicate TOMIS ID or an OBSCIS ID.
   - name: AbbreviatedName
     description: |-
-      The name of an offender. This is the offender last name first name, and middle initial strung together, Shortened to fit in 30 spaces.
+      The name of an offender. This is the person last name first name, and middle initial strung together, Shortened to fit in 30 spaces.
   - name: Race
     description: |-
       The NCIC race code.
@@ -31,7 +31,7 @@ columns:
   - name: OffenderDeletionDate
     is_datetime: True
     description: |-
-      The date an offender is deleted.
+      The date a person  is deleted.
   - name: StaffID
     description: |-
       This is a unique identifier assigned to a particular staff member. This includes all types of staff people including judges, guards, etc.

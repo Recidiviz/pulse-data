@@ -7,7 +7,7 @@ primary_key_cols:
 columns:
   - name: OffenderID
     description: |-
-      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+      This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: PostedDate
     is_datetime: True
     description: |-
@@ -17,7 +17,7 @@ columns:
       A description of an inmate's disability or condition which would limit his ability to perform certain tasks or skills.
   - name: SAIUVolunteerFlag
     description: |-
-      Indicates whether or not the offender has volunteered to participate in the SAIU program (boot camp).
+      Indicates whether or not the person has volunteered to participate in the SAIU program (boot camp).
     known_values:
       - value: N
         description: "TODO(#7424): Update with definition."
@@ -25,7 +25,7 @@ columns:
         description: "TODO(#7424): Update with definition."
   - name: RecommendedByJudgeFlag
     description: |-
-      Indicates whether or not a sentencing judge recommends the offender to SAIU.
+      Indicates whether or not a sentencing judge recommends the person to SAIU.
     known_values:
       - value: N
         description: "TODO(#7424): Update with definition."
@@ -33,7 +33,7 @@ columns:
         description: "TODO(#7424): Update with definition."
   - name: EligibleFlag
     description: |-
-      Indicates whether or not an offender is considered eligible for 7IU after the screening.
+      Indicates whether or not a person  is considered eligible for 7IU after the screening.
     known_values:
       - value: N
         description: "TODO(#7424): Update with definition."

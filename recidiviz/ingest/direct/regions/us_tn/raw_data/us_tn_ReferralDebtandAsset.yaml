@@ -9,7 +9,7 @@ primary_key_cols:
 columns:
   - name: OffenderID
     description: |-
-      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+      This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: OrderDate
     is_datetime: True
     description: |-
@@ -25,7 +25,7 @@ columns:
       Text associated with either debtor name or asset description for a particular PSI.
   - name: DebitAmount
     description: |-
-      The amount of debt owed to a single debtor by an offender as posted in the offender's PSI.
+      The amount of debt owed to a single debtor by a person  as posted in the offender's PSI.
   - name: PostedByStaffID
     description: |-
       The staff id of the individual who initially posted information for an offender.

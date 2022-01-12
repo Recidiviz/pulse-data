@@ -10,10 +10,10 @@ primary_key_cols:
 columns:
   - name: OffenderID
     description: |-
-      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+      This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: Jurisdiction
     description: |-
-      The code for the jurisdiction in which an offender is serving his sentence.
+      The code for the jurisdiction in which a person  is serving his sentence.
   - name: CaseYear
     description: |-
       The year assigned to a sentence for a particular county.  It will generally be the current year at assignment.
@@ -25,7 +25,7 @@ columns:
       A unique sequential number assigned to a particular count of a judgment order. This number is used in identifying a particular sentence of an offender.
   - name: ForeignJurisdication
     description: |-
-      The identifier given to an offender by another jurisdiction.
+      The identifier given to a person  by another jurisdiction.
   - name: IndictmentNumber
     description: |-
       A unique identifier number assigned to an indictment for a particular judgment order.
@@ -51,7 +51,7 @@ columns:
       A unique identifier number assigned to a warrant for a particular judgment order.
   - name: Sentence
     description: |-
-      Text field used for description of the sentence an offender received for a particular offense.
+      Text field used for description of the sentence a person  received for a particular offense.
   - name: SentenceImposedDate
     is_datetime: True
     description: |-
@@ -74,7 +74,7 @@ columns:
   - name: ReleaseEligibilityDate
     is_datetime: True
     description: |-
-      The date an offender is eligible for release to parole for a sentence.
+      The date a person  is eligible for release to parole for a sentence.
   - name: ExpirationDate
     is_datetime: True
     description: |-
@@ -82,16 +82,16 @@ columns:
   - name: ActualReleaseDAte
     is_datetime: True
     description: |-
-      The date that an offender is actually released from an institution or supervision.
+      The date that a person  is actually released from an institution or supervision.
   - name: ISCCreditDays
     description: |-
-      The total number of credit days that an offender has received on an ISC sentence. These are awarded by the ISC jurisdiction.
+      The total number of credit days that a person  has received on an ISC sentence. These are awarded by the ISC jurisdiction.
   - name: ISCCreditDeadTime
     description: |-
-      The total amount of dead time that an offender has received on an 7C sentence.
+      The total amount of dead time that a person  has received on an 7C sentence.
   - name: ISCPretrialCredit
     description: |-
-      The total number of pretrial credit days that an offender has received for an ISC sentence.
+      The total number of pretrial credit days that a person  has received for an ISC sentence.
   - name: LastUpdateUserID
     description: |-
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
