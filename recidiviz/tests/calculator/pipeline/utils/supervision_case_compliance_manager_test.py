@@ -25,12 +25,6 @@ from mock import MagicMock, patch
 from recidiviz.calculator.pipeline.supervision.supervision_case_compliance import (
     SupervisionCaseCompliance,
 )
-from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
-    PreProcessedIncarcerationPeriodIndex,
-)
-from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_incarceration_delegate import (
-    UsXxIncarcerationDelegate,
-)
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_compliance import (
     NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS,
     SEX_OFFENSE_LSIR_MINIMUM_SCORE,
@@ -73,6 +67,9 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionContact,
     StateSupervisionPeriod,
 )
+from recidiviz.tests.calculator.pipeline.pre_processing_testing_utils import (
+    default_pre_processed_ip_index_for_tests,
+)
 
 
 class TestCaseCompliance(unittest.TestCase):
@@ -80,11 +77,7 @@ class TestCaseCompliance(unittest.TestCase):
 
     def setUp(self) -> None:
         self.person = StatePerson.new_with_defaults(state_code="US_XX")
-        self.empty_ip_index = PreProcessedIncarcerationPeriodIndex(
-            incarceration_periods=[],
-            ip_id_to_pfi_subtype={},
-            incarceration_delegate=UsXxIncarcerationDelegate(),
-        )
+        self.empty_ip_index = default_pre_processed_ip_index_for_tests()
 
     @patch.object(UsNdSupervisionCaseCompliance, "_guidelines_applicable_for_case")
     def test_us_nd_guidelines_not_applicable_provided(
@@ -1200,11 +1193,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
 
     def setUp(self) -> None:
         self.person = StatePerson.new_with_defaults(state_code="US_XX")
-        self.empty_ip_index = PreProcessedIncarcerationPeriodIndex(
-            incarceration_periods=[],
-            ip_id_to_pfi_subtype={},
-            incarceration_delegate=UsXxIncarcerationDelegate(),
-        )
+        self.empty_ip_index = default_pre_processed_ip_index_for_tests()
 
     def test_us_id_next_recommended_assessment_date(self) -> None:
         supervision_period = StateSupervisionPeriod.new_with_defaults(
