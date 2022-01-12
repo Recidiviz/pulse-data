@@ -39,6 +39,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_incar
 from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_incarceration_period_pre_processing_delegate import (
     UsXxIncarcerationPreProcessingDelegate,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_program_assignment_pre_processing_delegate import (
+    UsXxProgramAssignmentPreProcessingDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_supervision_delegate import (
     UsXxSupervisionDelegate,
 )
@@ -105,6 +108,15 @@ class TestFindProgramEvents(unittest.TestCase):
         )
         self.mock_supervision_delegate = self.supervision_delegate_patcher.start()
         self.mock_supervision_delegate.return_value = UsXxSupervisionDelegate()
+        self.pre_processing_program_assignment_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils.get_state_specific_program_assignment_pre_processing_delegate"
+        )
+        self.mock_program_assignment_pre_processing_delegate = (
+            self.pre_processing_program_assignment_delegate_patcher.start()
+        )
+        self.mock_program_assignment_pre_processing_delegate.return_value = (
+            UsXxProgramAssignmentPreProcessingDelegate()
+        )
         self.identifier = identifier.ProgramIdentifier()
 
     def tearDown(self) -> None:
@@ -115,6 +127,7 @@ class TestFindProgramEvents(unittest.TestCase):
         self.supervision_pre_processing_delegate_patcher.stop()
         self.supervision_delegate_patcher.stop()
         self.pre_processing_incarceration_delegate_patcher.stop()
+        self.pre_processing_program_assignment_delegate_patcher.stop()
 
     @freeze_time("2020-01-02")
     def test_find_program_events(self) -> None:

@@ -24,6 +24,9 @@ from recidiviz.calculator.pipeline.utils.incarceration_period_pre_processing_man
 from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
     PreProcessedIncarcerationPeriodIndex,
 )
+from recidiviz.calculator.pipeline.utils.program_assignment_pre_processing_manager import (
+    StateSpecificProgramAssignmentPreProcessingDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_commitment_from_supervision_delegate import (
     StateSpecificCommitmentFromSupervisionDelegate,
 )
@@ -44,6 +47,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_incarceration_d
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_incarceration_period_pre_processing_delegate import (
     UsIdIncarcerationPreProcessingDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_program_assignment_pre_processing_delegate import (
+    UsIdProgramAssignmentPreProcessingDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_compliance import (
     UsIdSupervisionCaseCompliance,
@@ -69,6 +75,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_incarceration_d
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_incarceration_period_pre_processing_delegate import (
     UsMoIncarcerationPreProcessingDelegate,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_program_assignment_pre_processing_delegate import (
+    UsMoProgramAssignmentPreProcessingDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_supervision_delegate import (
     UsMoSupervisionDelegate,
 )
@@ -89,6 +98,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_incarceration_d
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_incarceration_period_pre_processing_delegate import (
     UsNdIncarcerationPreProcessingDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_program_assignment_pre_processing_delegate import (
+    UsNdProgramAssignmentPreProcessingDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_compliance import (
     UsNdSupervisionCaseCompliance,
@@ -114,6 +126,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_incarceration_d
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_incarceration_period_pre_processing_delegate import (
     UsPaIncarcerationPreProcessingDelegate,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_program_assignment_pre_processing_delegate import (
+    UsPaProgramAssignmentPreProcessingDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_supervision_compliance import (
     UsPaSupervisionCaseCompliance,
 )
@@ -137,6 +152,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_tn.us_tn_incarceration_d
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_tn.us_tn_incarceration_period_pre_processing_delegate import (
     UsTnIncarcerationPreProcessingDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_tn.us_tn_program_assignment_pre_processing_delegate import (
+    UsTnProgramAssignmentPreProcessingDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_tn.us_tn_supervision_delegate import (
     UsTnSupervisionDelegate,
@@ -265,6 +283,24 @@ def get_state_specific_supervision_period_pre_processing_delegate(
     if state_code == StateCode.US_TN.value:
         return UsTnSupervisionPreProcessingDelegate()
 
+    raise ValueError(f"Unexpected state code [{state_code}]")
+
+
+def get_state_specific_program_assignment_pre_processing_delegate(
+    state_code: str,
+) -> StateSpecificProgramAssignmentPreProcessingDelegate:
+    """Returns the type of ProgramAssignmentPreProcessingDelegate that should be used for
+    pre-processing StateProgramAssignment entities from a given |state_code|."""
+    if state_code == StateCode.US_ID.value:
+        return UsIdProgramAssignmentPreProcessingDelegate()
+    if state_code == StateCode.US_MO.value:
+        return UsMoProgramAssignmentPreProcessingDelegate()
+    if state_code == StateCode.US_ND.value:
+        return UsNdProgramAssignmentPreProcessingDelegate()
+    if state_code == StateCode.US_PA.value:
+        return UsPaProgramAssignmentPreProcessingDelegate()
+    if state_code == StateCode.US_TN.value:
+        return UsTnProgramAssignmentPreProcessingDelegate()
     raise ValueError(f"Unexpected state code [{state_code}]")
 
 

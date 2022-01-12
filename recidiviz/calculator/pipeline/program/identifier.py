@@ -32,6 +32,7 @@ from recidiviz.calculator.pipeline.program.events import (
 )
 from recidiviz.calculator.pipeline.utils import assessment_utils
 from recidiviz.calculator.pipeline.utils.entity_pre_processing_utils import (
+    pre_processed_program_assignments_for_calculations,
     pre_processing_managers_for_calculations,
 )
 from recidiviz.calculator.pipeline.utils.execution_utils import (
@@ -119,6 +120,9 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
             return program_events
 
         state_code = get_single_state_code(program_assignments)
+        program_assignments = pre_processed_program_assignments_for_calculations(
+            state_code, program_assignments
+        )
 
         supervision_period_to_agent_associations = list_of_dicts_to_dict_with_keys(
             supervision_period_to_agent_association,
