@@ -13,6 +13,10 @@ source ${BASH_SOURCE_DIR}/../deploy_helpers.sh
 
 read -p "Project ID: " PROJECT_ID
 
+# Terraform determines certain resources by looking at the directory structure,
+# so give our shell the ability to open plenty of file descriptors.
+ulimit -n 1024 || exit_on_fail
+
 reconfigure_terraform_backend $PROJECT_ID
 
 DOCKER_TAG=$(terraform -chdir=${BASH_SOURCE_DIR}/terraform output -raw docker_image_tag)
