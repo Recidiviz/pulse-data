@@ -128,14 +128,26 @@ from recidiviz.validation.views.state.incarceration_releases_by_type_by_period_i
 from recidiviz.validation.views.state.invalid_admission_reason_and_pfi import (
     INVALID_ADMISSION_REASON_AND_PFI_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.invalid_admission_reasons_for_commitments_from_supervision import (
+    INVALID_ADMISSION_REASONS_FOR_COMMITMENTS_FROM_SUPERVISION_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.invalid_admission_reasons_for_temporary_custody import (
     INVALID_ADMISSION_REASONS_FOR_TEMPORARY_CUSTODY_VIEW_BUILDER,
 )
 from recidiviz.validation.views.state.invalid_admitted_from_supervision_admission_reason import (
     INVALID_ADMITTED_FROM_SUPERVISION_ADMISSION_REASON_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.invalid_null_pfi_in_metrics import (
+    INVALID_NULL_PFI_IN_METRICS_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.invalid_null_spfi_in_metrics import (
+    INVALID_NULL_SPFI_IN_METRICS_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.invalid_pfi_for_temporary_custody_admissions import (
     INVALID_PFI_FOR_TEMPORARY_CUSTODY_ADMISSIONS_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.invalid_release_reasons_for_temporary_custody import (
+    INVALID_RELEASE_REASONS_FOR_TEMPORARY_CUSTODY_VIEW_BUILDER,
 )
 from recidiviz.validation.views.state.overlapping_incarceration_periods import (
     OVERLAPPING_INCARCERATION_PERIODS_VIEW_BUILDER,
@@ -346,6 +358,10 @@ def get_all_validations() -> List[DataValidationCheck]:
             validation_category=ValidationCategory.INVARIANT,
         ),
         ExistenceDataValidationCheck(
+            view_builder=INVALID_ADMISSION_REASONS_FOR_COMMITMENTS_FROM_SUPERVISION_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
             view_builder=INVALID_ADMISSION_REASONS_FOR_TEMPORARY_CUSTODY_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
         ),
@@ -354,7 +370,21 @@ def get_all_validations() -> List[DataValidationCheck]:
             validation_category=ValidationCategory.INVARIANT,
         ),
         ExistenceDataValidationCheck(
+            view_builder=INVALID_NULL_PFI_IN_METRICS_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        # TODO(#3275): Delete this view once all specialized_purpose_for_incarceration
+        #  metric fields have been re-named to purpose_for_incarceration
+        ExistenceDataValidationCheck(
+            view_builder=INVALID_NULL_SPFI_IN_METRICS_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
             view_builder=INVALID_PFI_FOR_TEMPORARY_CUSTODY_ADMISSIONS_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=INVALID_RELEASE_REASONS_FOR_TEMPORARY_CUSTODY_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
         ),
         ExistenceDataValidationCheck(

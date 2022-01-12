@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2021 Recidiviz, Inc.
+# Copyright (C) 2022 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,16 +14,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""A view revealing when metrics have an admission_reason value of
-ADMITTED_FROM_SUPERVISION. This is an ingest-only enum and should not be observed in
-any metrics.
+"""A view revealing when metrics have a null purpose_for_incarceration value,
+which should never happen.
 
 Existence of any rows indicates a bug in IP pre-processing logic.
 """
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config as state_dataset_config
 from recidiviz.common.constants.state.state_incarceration_period import (
-    StateIncarcerationPeriodAdmissionReason,
+    StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -32,31 +31,27 @@ from recidiviz.validation.views.utils.dataflow_metric_validation_utils import (
     validation_query_for_metric_views_with_invalid_enums,
 )
 
-INVALID_ADMITTED_FROM_SUPERVISION_ADMISSION_REASON_VIEW_NAME = (
-    "invalid_admitted_from_supervision_admission_reason"
+INVALID_NULL_PFI_IN_METRICS_VIEW_NAME = "invalid_null_pfi_in_metrics"
+
+INVALID_NULL_PFI_IN_METRICS_DESCRIPTION = (
+    """Metrics with invalid null values for purpose_for_incarceration."""
 )
 
-INVALID_ADMITTED_FROM_SUPERVISION_ADMISSION_REASON_DESCRIPTION = """Metrics with
-invalid, ingest-only admission_reason values of ADMITTED_FROM_SUPERVISION."""
 
-INVALID_ROWS_FILTER_CLAUSE = f"""WHERE admission_reason =
-'{StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION.value}'"""
-
-
-INVALID_ADMITTED_FROM_SUPERVISION_ADMISSION_REASON_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+INVALID_NULL_PFI_IN_METRICS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.VIEWS_DATASET,
-    view_id=INVALID_ADMITTED_FROM_SUPERVISION_ADMISSION_REASON_VIEW_NAME,
+    view_id=INVALID_NULL_PFI_IN_METRICS_VIEW_NAME,
     view_query_template=validation_query_for_metric_views_with_invalid_enums(
-        enum_field_name="admission_reason",
-        enum_field_type=StateIncarcerationPeriodAdmissionReason,
+        enum_field_name="purpose_for_incarceration",
+        enum_field_type=StateSpecializedPurposeForIncarceration,
         additional_columns_to_select=["person_id", "metric_type", "job_id"],
-        invalid_rows_filter_clause=INVALID_ROWS_FILTER_CLAUSE,
-        validation_description=INVALID_ADMITTED_FROM_SUPERVISION_ADMISSION_REASON_DESCRIPTION,
+        invalid_rows_filter_clause="WHERE purpose_for_incarceration IS NULL",
+        validation_description=INVALID_NULL_PFI_IN_METRICS_DESCRIPTION,
     ),
-    description=INVALID_ADMITTED_FROM_SUPERVISION_ADMISSION_REASON_DESCRIPTION,
+    description=INVALID_NULL_PFI_IN_METRICS_DESCRIPTION,
     materialized_metrics_dataset=state_dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
 )
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        INVALID_ADMITTED_FROM_SUPERVISION_ADMISSION_REASON_VIEW_BUILDER.build_and_print()
+        INVALID_NULL_PFI_IN_METRICS_VIEW_BUILDER.build_and_print()

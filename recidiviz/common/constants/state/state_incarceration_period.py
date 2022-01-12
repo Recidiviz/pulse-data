@@ -363,6 +363,9 @@ def release_reason_overrides_released_from_temporary_custody(
         StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         StateIncarcerationPeriodReleaseReason.TRANSFER_TO_OTHER_JURISDICTION,
         StateIncarcerationPeriodReleaseReason.VACATED,
+        # If the release reason is already RELEASED_FROM_TEMPORARY_CUSTODY then
+        # there's no reason to override it
+        StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
     ]
 
     # If someone is being released from a period of TEMPORARY_CUSTODY or
@@ -374,7 +377,6 @@ def release_reason_overrides_released_from_temporary_custody(
         StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN,
         StateIncarcerationPeriodReleaseReason.RELEASED_IN_ERROR,
         StateIncarcerationPeriodReleaseReason.RELEASED_FROM_ERRONEOUS_ADMISSION,
-        StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
         StateIncarcerationPeriodReleaseReason.RELEASED_TO_SUPERVISION,
         StateIncarcerationPeriodReleaseReason.STATUS_CHANGE,
         StateIncarcerationPeriodReleaseReason.TRANSFER,
