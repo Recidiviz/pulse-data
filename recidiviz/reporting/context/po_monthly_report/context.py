@@ -30,7 +30,6 @@ import copy
 import json
 import sys
 from datetime import date
-from math import isnan
 from typing import Any, Dict, List, Literal, Optional
 
 from jinja2 import Template
@@ -136,6 +135,8 @@ class PoMonthlyReportContext(ReportContext):
             *self.metrics_delegate.total_metrics_for_display,
             *self.metrics_delegate.max_metrics_for_display,
             *self.metrics_delegate.zero_streak_metrics,
+            *self.metrics_delegate.caseload_fields,
+            *self.metrics_delegate.compliance_action_metrics,
         ]:
             recipient_data[int_key] = int(recipient_data[int_key])
 
@@ -248,18 +249,23 @@ class PoMonthlyReportContext(ReportContext):
         threshold = self.metrics_delegate.compliance_action_metric_goal_thresholds[
             metric
         ]
-        raw_compliance_pct = float(self.recipient_data[f"{metric}_percent"])
-        compliance_pct = None if isnan(raw_compliance_pct) else raw_compliance_pct
+        caseload_count = self.recipient_data["caseload_count"]
 
-        raw_goal_pct = float(self.recipient_data[f"overdue_{metric}_goal_percent"])
-        goal_pct = None if isnan(raw_goal_pct) else raw_goal_pct
+        overdue_client_list = self.recipient_data[f"{metric}_out_of_date_clients"]
+        overdue_count = len(overdue_client_list)
 
-        if compliance_pct is None or raw_goal_pct is None:
-            show_goal = False
-            goal_met = False
-        else:
-            show_goal = compliance_pct < threshold
-            goal_met = not show_goal
+        compliant_count = caseload_count - overdue_count
+
+        compliance_pct = 100 * compliant_count / caseload_count
+
+        goal_count = min(
+            overdue_count, self.metrics_delegate.max_compliance_goals[metric]
+        )
+
+        goal_pct = 100 * (compliant_count + goal_count) / caseload_count
+
+        show_goal = compliance_pct < threshold
+        goal_met = not show_goal
 
         upcoming_client_list = self.recipient_data[f"{metric}_upcoming_clients"]
         upcoming_clients = (
@@ -282,7 +288,6 @@ class PoMonthlyReportContext(ReportContext):
             else None
         )
 
-        overdue_client_list = self.recipient_data[f"{metric}_out_of_date_clients"]
         overdue_clients = (
             [
                 [
@@ -300,9 +305,9 @@ class PoMonthlyReportContext(ReportContext):
         )
 
         return {
-            "num_completed": int(self.recipient_data[metric]),
+            "num_completed": self.recipient_data[metric],
             "pct": compliance_pct,
-            "goal": int(self.recipient_data[f"overdue_{metric}_goal"]),
+            "goal": goal_count,
             "goal_pct": goal_pct,
             "goal_met": goal_met,
             "show_goal": show_goal,
@@ -878,13 +883,8 @@ if __name__ == "__main__":
                     },
                 ],
                 "assessments": "7",
-                "assessments_percent": 96,
-                "overdue_assessments_goal": "1",
-                "overdue_assessments_goal_percent": 100,
                 "facetoface": "94",
-                "facetoface_percent": 45.268932,
-                "overdue_facetoface_goal": "9",
-                "overdue_facetoface_goal_percent": 58.732651,
+                "caseload_count": "73",
                 "officer_external_id": 0,
                 "officer_given_name": "Clementine",
                 "review_month": 4,
