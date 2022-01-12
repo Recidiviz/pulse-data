@@ -23,8 +23,10 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
 )
 from recidiviz.reporting.context.po_monthly_report.constants import (
+    ASSESSMENTS,
     DISTRICT,
     EMAIL_ADDRESS,
+    FACE_TO_FACE,
     OFFICER_EXTERNAL_ID,
     OFFICER_GIVEN_NAME,
     REVIEW_MONTH,
@@ -97,21 +99,6 @@ class PoMonthlyReportMetricsDelegate(abc.ABC):
     @property
     def base_metrics_for_display(self) -> List[str]:
         return self.decarceral_actions_metrics + self.client_outcome_metrics
-
-    @property
-    def raw_and_percentage_compliance_metrics(self) -> List[str]:
-        return list(
-            itertools.chain(
-                *[
-                    [compliance_action_metric, f"{compliance_action_metric}_percent"]
-                    for compliance_action_metric in self.compliance_action_metrics
-                ],
-                *[
-                    [goal, f"{goal}_percent"]
-                    for goal in self.compliance_action_metric_goals
-                ],
-            )
-        )
 
     @property
     def zero_streak_metrics(self) -> List[str]:
@@ -203,6 +190,19 @@ class PoMonthlyReportMetricsDelegate(abc.ABC):
         )
 
     @property
+    def caseload_fields(self) -> List[str]:
+        """Denotes fields describing the officer's overall caseload."""
+        return ["caseload_count"]
+
+    @property
+    def max_compliance_goals(self) -> Dict[str, int]:
+        """Denotes highest value for monthly compliance goal."""
+        return {
+            ASSESSMENTS: 3,
+            FACE_TO_FACE: 9,
+        }
+
+    @property
     def float_metrics_to_round_to_int(self) -> List[str]:
         """Denotes which metrics need rounding."""
         return [
@@ -222,7 +222,8 @@ class PoMonthlyReportMetricsDelegate(abc.ABC):
             + self.total_metrics_for_display
             + self.last_month_metrics
             + self.client_fields
-            + self.raw_and_percentage_compliance_metrics
+            + self.compliance_action_metrics
+            + self.caseload_fields
             + REQUIRED_RECIPIENT_DATA_FIELDS
         )
 

@@ -641,138 +641,126 @@ class PoMonthlyReportContextTests(TestCase):
         }
         self.assertTrue(expected.items() < prepared.items())
 
-    def test_compliance_goals_enabled(self) -> None:
-        """Test that compliance goals are enabled if below baseline threshold"""
+    def test_compliance_goals_met(self) -> None:
+        """Test that compliance goals are disabled if above baseline threshold"""
+        # this is the default state of the fixture
         actual = self._get_prepared_data()
 
-        self.assertEqual(
-            actual["compliance_tasks"][ASSESSMENTS],
+        self.assertGreaterEqual(
+            actual["compliance_tasks"][ASSESSMENTS].items(),
             {
-                "pct": 73.3,
+                "pct": 100,
                 "num_completed": 15,
-                "goal": 3,
-                "goal_pct": 81.32456,
-                "show_goal": True,
-                "goal_met": False,
-                "metric_label": "assessment",
-                "metric": "assessments",
-                "overdue_clients": None,
-                "overdue_overflow_text": None,
-                "upcoming_clients": None,
-                "upcoming_overflow_text": None,
-            },
-        )
-
-        self.assertEqual(
-            actual["compliance_tasks"][FACE_TO_FACE],
-            {
-                "pct": 89.17543,
-                "num_completed": 77,
-                "goal": 9,
+                "goal": 0,
                 "goal_pct": 100,
-                "show_goal": True,
-                "goal_met": False,
-                "metric_label": "contact",
-                "metric": "facetoface",
-                "overdue_clients": None,
-                "overdue_overflow_text": None,
-                "upcoming_clients": None,
-                "upcoming_overflow_text": None,
-            },
-        )
-
-    def test_compliance_goals_disabled(self) -> None:
-        """Test that compliance goals are disabled if above baseline threshold"""
-        actual = self._get_prepared_data(
-            {
-                "assessments_percent": "95.0",
-                "overdue_assessments_goal_percent": "99.32",
-                "facetoface_percent": "90.0",
-            }
-        )
-
-        self.assertEqual(
-            actual["compliance_tasks"][ASSESSMENTS],
-            {
-                "pct": 95.0,
-                "num_completed": 15,
-                "goal": 3,
-                "goal_pct": 99.32,
                 "show_goal": False,
                 "goal_met": True,
                 "metric_label": "assessment",
                 "metric": "assessments",
-                "overdue_clients": None,
-                "upcoming_clients": None,
-                "overdue_overflow_text": None,
-                "upcoming_overflow_text": None,
-            },
+            }.items(),
         )
 
-        self.assertEqual(
-            actual["compliance_tasks"][FACE_TO_FACE],
+        self.assertGreaterEqual(
+            actual["compliance_tasks"][FACE_TO_FACE].items(),
             {
-                "pct": 90,
+                "pct": 100,
                 "num_completed": 77,
-                "goal": 9,
+                "goal": 0,
                 "goal_pct": 100,
                 "show_goal": False,
                 "goal_met": True,
                 "metric_label": "contact",
                 "metric": "facetoface",
-                "overdue_clients": None,
-                "upcoming_clients": None,
-                "overdue_overflow_text": None,
-                "upcoming_overflow_text": None,
-            },
+            }.items(),
         )
 
-    def test_compliance_goals_unavailable(self) -> None:
-        """Test that compliance goals are disabled if metrics are unavailable"""
+    def test_compliance_goals_not_met(self) -> None:
+        """Test that compliance goals are enabled if below baseline threshold"""
         actual = self._get_prepared_data(
             {
-                "assessments_percent": "NaN",
-                "facetoface_percent": "NaN",
-                # realistically these should always be NaN if the base percentages are
-                "overdue_assessments_goal_percent": "NaN",
-                "overdue_facetoface_goal_percent": "NaN",
+                # in practice these should be unique clients but this test should not actually care
+                "assessments_out_of_date_clients": [
+                    {
+                        "person_external_id": "987",
+                        "full_name": '{"surname": "KAHLO", "given_names": "FRIDA"}',
+                    }
+                ]
+                * 27,
+                "facetoface_out_of_date_clients": [
+                    {
+                        "person_external_id": "123",
+                        "full_name": '{"surname": "MIRO", "given_names": "JOAN"}',
+                        "recommended_date": "2020-06-12",
+                    },
+                ]
+                * 15,
             }
         )
 
-        self.assertEqual(
-            actual["compliance_tasks"][ASSESSMENTS],
+        self.assertGreaterEqual(
+            actual["compliance_tasks"][ASSESSMENTS].items(),
             {
-                "pct": None,
+                "pct": 77.5,
                 "num_completed": 15,
                 "goal": 3,
-                "goal_pct": None,
-                "show_goal": False,
+                "goal_pct": 80,
+                "show_goal": True,
                 "goal_met": False,
                 "metric_label": "assessment",
                 "metric": "assessments",
-                "overdue_clients": None,
-                "upcoming_clients": None,
-                "overdue_overflow_text": None,
-                "upcoming_overflow_text": None,
-            },
+            }.items(),
         )
 
-        self.assertEqual(
-            actual["compliance_tasks"][FACE_TO_FACE],
+        self.assertGreaterEqual(
+            actual["compliance_tasks"][FACE_TO_FACE].items(),
             {
-                "pct": None,
+                "pct": 87.5,
                 "num_completed": 77,
                 "goal": 9,
-                "goal_pct": None,
-                "show_goal": False,
+                "goal_pct": 95,
+                "show_goal": True,
                 "goal_met": False,
                 "metric_label": "contact",
                 "metric": "facetoface",
-                "overdue_clients": None,
-                "upcoming_clients": None,
-                "overdue_overflow_text": None,
-                "upcoming_overflow_text": None,
-            },
+            }.items(),
+        )
+
+    def test_small_goals(self) -> None:
+        """Test that compliance goals are not higher than the number of overdue clients"""
+        actual = self._get_prepared_data(
+            {
+                "assessments_out_of_date_clients": [
+                    {
+                        "person_external_id": "987",
+                        "full_name": '{"surname": "KAHLO", "given_names": "FRIDA"}',
+                    }
+                ],
+                "facetoface_out_of_date_clients": [
+                    {
+                        "person_external_id": "123",
+                        "full_name": '{"surname": "MIRO", "given_names": "JOAN"}',
+                        "recommended_date": "2020-06-12",
+                    },
+                    {
+                        "person_external_id": "456",
+                        "full_name": '{"surname": "MUNCH", "given_names": "EDVARD"}',
+                        "recommended_date": "2020-06-25",
+                    },
+                ],
+            }
+        )
+        self.assertGreater(
+            actual["compliance_tasks"][ASSESSMENTS].items(),
+            {
+                "goal": 1,
+            }.items(),
+        )
+
+        self.assertGreater(
+            actual["compliance_tasks"][FACE_TO_FACE].items(),
+            {
+                "goal": 2,
+            }.items(),
         )
 
     def test_completions(self) -> None:
