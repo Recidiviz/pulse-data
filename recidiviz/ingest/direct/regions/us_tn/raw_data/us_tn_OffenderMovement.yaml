@@ -1,19 +1,19 @@
 file_tag: OffenderMovement
 file_description: |-
-  This table contains one occurrence for every arrivel and/or departure of an offender from an institution.
+  This table contains one occurrence for every arrivel and/or departure of a person  from an institution.
 primary_key_cols:
   - OffenderID
   - MovementDateTime
 columns:
   - name: OffenderID
     description: |-
-      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+      This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: MovementDateTime
     description: |-
-      The date on which an offender is moved from one location to another. / The time at which an offender was moved.
+      The date on which a person  is moved from one location to another. / The time at which a person  was moved.
   - name: MovementType
     description: |-
-      This is the general type of movement of the offender and incitates the "from" and "to" locations (e.g. facility).
+      This is the general type of movement of the person and incitates the "from" and "to" locations (e.g. facility).
     known_values:
       - value: ABCC
         description: ABSCOND TO COMMUNITY CORR
@@ -131,7 +131,7 @@ columns:
         description: WORK RELEASE TO FACILITY
   - name: MovementReason
     description: |-
-      This is the description of the specific reason for the movement of the offender (e.g. parole revoked). The movement is temporary or permanent, based on the movement reasons.
+      This is the description of the specific reason for the movement of the person (e.g. parole revoked). The movement is temporary or permanent, based on the movement reasons.
     known_values:
       - value: 1DAY
         description: 1-DAY FURLOUGH PASS
@@ -340,9 +340,9 @@ columns:
       - value: RVIA
         description: REVOKED IN ABSENCE
       - value: SAFED
-        description: SAFETY VALVE / DETAINER (From TDOC website - "Earliest date that an offender can be released under executive order for overcrowding. Most violent offenders are excluded from this provision.")
+        description: SAFETY VALVE / DETAINER (From TDOC website - "Earliest date that a person  can be released under executive order for overcrowding. Most violent offenders are excluded from this provision.")
       - value: SAFEV
-        description: SAFETY VALVE (From TDOC website - "Earliest date that an offender can be released under executive order for overcrowding. Most violent offenders are excluded from this provision.")
+        description: SAFETY VALVE (From TDOC website - "Earliest date that a person  can be released under executive order for overcrowding. Most violent offenders are excluded from this provision.")
       - value: SAREC
         description: SAFEKEEPING RECEIVED
       - value: SARET

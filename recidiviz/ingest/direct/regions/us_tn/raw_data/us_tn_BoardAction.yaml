@@ -1,11 +1,11 @@
 file_tag: BoardAction
 file_description: |-
-  This table contains one occurrence for each board member's voting for each offender for each hearing type. These votes will be collected and become a single board decision for this offender and hearing.
+  This table contains one occurrence for each board member's voting for each person for each hearing type. These votes will be collected and become a single board decision for this person and hearing.
 primary_key_cols: []
 columns:
   - name: OffenderID
     description: |-
-      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+      This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: HearingDate
     description: |-
       The date that a hearing is originally scheduled to take place. This item is used to uniquely identify a particular offender.

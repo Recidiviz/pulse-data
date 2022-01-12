@@ -8,7 +8,7 @@ primary_key_cols:
 columns:
   - name: OffenderID
     description: |-
-      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+      This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: HearingDate
     is_datetime: True
     description: |-
@@ -1872,7 +1872,7 @@ columns:
         description: "TODO(#7424): Update with definition."
   - name: DecisionReason1
     description: |-
-      A code value defining the final reason which the board members have agreed upon to deny an offender parole.
+      A code value defining the final reason which the board members have agreed upon to deny a person  parole.
     known_values:
       - value: 01
         description: "TODO(#7424): Update with definition."
@@ -1994,7 +1994,7 @@ columns:
         description: OTHER RECISSION REASON
   - name: DecisionReason2
     description: |-
-      A code value defining the final reason which the board members have agreed upon to deny an offender parole.
+      A code value defining the final reason which the board members have agreed upon to deny a person  parole.
     known_values:
       - value: 01
         description: "TODO(#7424): Update with definition."
@@ -2118,7 +2118,7 @@ columns:
         description: "TODO(#7424): Update with definition."
   - name: DecisionReason3
     description: |-
-      A code value defining the final reason which the board members have agreed upon to deny an offender parole.
+      A code value defining the final reason which the board members have agreed upon to deny a person  parole.
     known_values:
       - value: 03
         description: "TODO(#7424): Update with definition."
@@ -2202,7 +2202,7 @@ columns:
         description: "TODO(#7424): Update with definition."
   - name: DecisionReason4
     description: |-
-      A code value defining the final reason which the board members have agreed upon to deny an offender parole.
+      A code value defining the final reason which the board members have agreed upon to deny a person  parole.
     known_values:
       - value: AC
         description: "TODO(#7424): Update with definition."
@@ -2337,7 +2337,7 @@ columns:
         description: "TODO(#7424): Update with definition."
   - name: TechnicalViolatorFlag
     description: |-
-      The code to indicate the type of technical violator an offender is.
+      The code to indicate the type of technical violator a person  is.
     known_values:
       - value: NMS
         description: "TODO(#7424): Update with definition."
@@ -2349,7 +2349,7 @@ columns:
         description: "TODO(#7424): Update with definition."
   - name: NotEligibleReason
     description: |-
-      The reason an offender is not eligible for technical violator diversion program.
+      The reason a person  is not eligible for technical violator diversion program.
     known_values:
       - value: AD
         description: "TODO(#7424): Update with definition."

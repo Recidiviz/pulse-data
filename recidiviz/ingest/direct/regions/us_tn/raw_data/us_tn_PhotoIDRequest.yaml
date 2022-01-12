@@ -7,7 +7,7 @@ primary_key_cols:
 columns:
   - name: OffenderID
     description: |-
-      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+      This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: RequestDate
     is_datetime: True
     description: |-
@@ -137,7 +137,7 @@ columns:
         description: REFUSES TO COMPLETE AN APPLICATION
   - name: IndigentFlag
     description: |-
-      This indicates the offender is indigent (suffering from extreme poverty).
+      This indicates the person is indigent (suffering from extreme poverty).
     known_values:
       - value: N
         description: "TODO(#7424): Update with definition."

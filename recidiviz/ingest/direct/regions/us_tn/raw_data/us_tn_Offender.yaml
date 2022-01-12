@@ -1,12 +1,12 @@
 file_tag: Offender
 file_description: |-
-  This table contains one occurrence for each offender in the TOMIS system. It contains location information used throughout the system. It is the "parent" table for associated offender tables.
+  This table contains one occurrence for each person in the TOMIS system. It contains location information used throughout the system. It is the "parent" table for associated person tables.
 primary_key_cols:
   - OffenderID
 columns:
   - name: OffenderID
     description: |-
-      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+      This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: AssignedSiteID
     description: |-
       This identifies an organizational/location entity. Sites may include institutions, staff agencies, hospitals, etc. This is a database element.
@@ -21,16 +21,16 @@ columns:
       A unique identifier assigned to a particular bed.
   - name: ActualUnitID
     description: |-
-      A unique identifier assigned to a particular unit within an institution where an offender is actually located.
+      A unique identifier assigned to a particular unit within an institution where a person  is actually located.
   - name: ActualCellID
     description: |-
-      A unique identifier assigned to a particular cell at an institutuion where an offender is actually located.
+      A unique identifier assigned to a particular cell at an institutuion where a person  is actually located.
   - name: ActualBedID
     description: |-
-      A unique identifier assigned to a particular bed where an offender is actually located.
+      A unique identifier assigned to a particular bed where a person  is actually located.
   - name: CustodyLevel
     description: |-
-      An abbreviation representing a level of custody of an offender as determined by the classification committee.
+      An abbreviation representing a level of custody of a person  as determined by the classification committee.
     # TODO(#7424) - Populate with definitions.
     known_values: []
   - name: NumberOffenderVisitor
@@ -38,36 +38,36 @@ columns:
       The number of visitors entertained by an offender.
   - name: EscapeFlag
     description: |-
-      Indicator for an offender that tells whether the offender is escaped.
+      Indicator for a person  that tells whether the person is escaped.
     # TODO(#7424) - Populate with definitions.
     known_values: []
   - name: EscapeHistoryFlag
     description: |-
-      Indicator for an offender that tells whether the offender has a history of escaping.
+      Indicator for a person  that tells whether the person has a history of escaping.
     # TODO(#7424) - Populate with definitions.
     known_values: []
   - name: Jurisdication
     description: |-
-      The code for the jurisdiction in which an offender is serving his sentence.
+      The code for the jurisdiction in which a person  is serving his sentence.
     # TODO(#7424) - Populate with definitions.
     known_values: []
   - name: ArchiveDate
     is_datetime: True
     description: |-
-      The date on which an offender and his related tables have been archived to tape.
+      The date on which a person  and his related tables have been archived to tape.
   - name: AbscondedParoleFlag
     description: |-
-      Indicator for an offender that tells whether the offender has absconded from parole.
+      Indicator for a person  that tells whether the person has absconded from parole.
     # TODO(#7424) - Populate with definitions.
     known_values: []
   - name: AbscondedProbationFlag
     description: |-
-      Indicator for an offender that tells whether the offender has absconded from probation.
+      Indicator for a person  that tells whether the person has absconded from probation.
     # TODO(#7424) - Populate with definitions.
     known_values: []
   - name: AbscondedCommunityCorrectionFlag
     description: |-
-      Indicator for an offender that tells whether the offender has absconded from community corrections.
+      Indicator for a person  that tells whether the person has absconded from community corrections.
     # TODO(#7424) - Populate with definitions.
     known_values: []
   - name: ParoleOfficeID
@@ -82,13 +82,13 @@ columns:
   - name: NotInCustodyDate
     is_datetime: True
     description: |-
-      The date an offender obtains 'NIC' status.
+      The date a person  obtains 'NIC' status.
   - name: NotIncustoryReason
     description: |-
       The move reason code for the 'NIC' status.
   - name: VisitorRelationshipResetDate
     description: |-
-      The date a movement was made to cause the visitor offender relationship data to be spaced out.
+      The date a movement was made to cause the visitor person relationship data to be spaced out.
   - name: PostedByStaffID
     description: |-
       The Staff identifier which posted the the row on the table.

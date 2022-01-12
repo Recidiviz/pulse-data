@@ -8,14 +8,14 @@ primary_key_cols:
 columns:
   - name: OffenderID
     description: |-
-      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+      This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: PlanStartDate
     is_datetime: True
     description: |-
       The effective date of a plan of supervision for an offender.
   - name: PlanType
     description: |-
-      The type of plan of supvn. that an offender has agreed to follow.
+      The type of plan of supvn. that a person  has agreed to follow.
     known_values:
       - value: COMM
         description: COMMUNITY CORRECTIONS
@@ -267,7 +267,7 @@ columns:
         description: WARRANT STATUS
   - name: OPIScore
     description: |-
-      Used to store OPI score. OPI is the acronym for Offender Profile Index.
+      Used to store OPI score. OPI is the acronym for OffenderProfileIndex.
   - name: GroupReportFlag
     description: |-
       This flag indicates if group reporting is a requirement on a plan of supervision.
@@ -277,25 +277,25 @@ columns:
       This code represents either a class or a treatment program.
   - name: ProgramFrequency1
     description: |-
-      The frequency that an offender is assigned to a program for a specified period.
+      The frequency that a person  is assigned to a program for a specified period.
   - name: ProgramPeriod1
     description: |-
-      The period for which an offender is assigned for a program frequency.
+      The period for which a person  is assigned for a program frequency.
   - name: ProgramID2
     description: |-
       This is the second suggested program possible for an offender.
   - name: ProgramFrequency2
     description: |-
-      The frequency that an offender is assigned to a program for a specified period.
+      The frequency that a person  is assigned to a program for a specified period.
   - name: ProgramPeriod2
     description: |-
-      The period for which an offender is assigned for a program frequency.
+      The period for which a person  is assigned for a program frequency.
   - name: ProgramID3
     description: |-
       This is the third suggested program possible for an offender.
   - name: ProgramFrequency3
     description: |-
-      The frequency that an offender is assigned to a program for a specified period.
+      The frequency that a person  is assigned to a program for a specified period.
   - name: ProgramPeriod3
     description: |-
       This is the third suggested program possible for an offender.
@@ -304,19 +304,19 @@ columns:
       This is the third suggested program possible for an offender.
   - name: ProgramFrequency4
     description: |-
-      The frequency that an offender is assigned to a program for a specified period.
+      The frequency that a person  is assigned to a program for a specified period.
   - name: ProgramPeriod4
     description: |-
-      The period for which an offender is assigned for a program frequency.
+      The period for which a person  is assigned for a program frequency.
   - name: ProgramID5
     description: |-
       This is the third suggested program possible for an offender.
   - name: ProgramFrequency5
     description: |-
-      The frequency that an offender is assigned to a program for a specified period.
+      The frequency that a person  is assigned to a program for a specified period.
   - name: ProgramPeriod5
     description: |-
-      The period for which an offender is assigned for a program frequency.
+      The period for which a person  is assigned for a program frequency.
   - name: Condition1
     description: |-
       The type of condition for which a standard is defined.
@@ -527,7 +527,7 @@ columns:
       This element will be associated with each record in each DB2 table in TOMIS.  It is the timestamp of the last time this record was updated.
   - name: SexOffenderSupervisionFlag
     description: |-
-      Indicates an offender is to be supervised as a sex offender on his plan of supervision.
+      Indicates a person  is to be supervised as a sex person on his plan of supervision.
     known_values:
       - value: N
         description: "TODO(#7424): Update with definition."
@@ -535,7 +535,7 @@ columns:
         description: "TODO(#7424): Update with definition."
   - name: SexOffenderSupervisionType
     description: |-
-      An abbreviation for the sex offender supervision type code on a Plan of Supervision.
+      An abbreviation for the sex person supervision type code on a Plan of Supervision.
     known_values:
       - value: K
         description: "TODO(#7424): Update with definition."
@@ -545,7 +545,7 @@ columns:
         description: "TODO(#7424): Update with definition."
   - name: GPSSupervisionFlag
     description: |-
-      Indicates an offender is to be supervised using IOT on his plan of supervision.
+      Indicates a person  is to be supervised using IOT on his plan of supervision.
     known_values:
       - value: N
         description: "TODO(#7424): Update with definition."
@@ -553,7 +553,7 @@ columns:
         description: "TODO(#7424): Update with definition."
   - name: RFSupervisionFlag
     description: |-
-      Indicates an offender is to be supervised using RF on his plan of supervision.
+      Indicates a person  is to be supervised using RF on his plan of supervision.
     known_values:
       - value: N
         description: "TODO(#7424): Update with definition."
@@ -561,7 +561,7 @@ columns:
         description: "TODO(#7424): Update with definition."
   - name: IOTSupervisionFlag
     description: |-
-      Indicates an offender is to be supervised using IOT on his plan of supervision.
+      Indicates a person  is to be supervised using IOT on his plan of supervision.
     known_values:
       - value: N
         description: "TODO(#7424): Update with definition."
@@ -569,7 +569,7 @@ columns:
         description: "TODO(#7424): Update with definition."
   - name: WarrantOnBond
     description: |-
-      Indicates whether or not an offender is Warrant on Bond.
+      Indicates whether or not a person  is Warrant on Bond.
     known_values:
       - value: N
         description: "TODO(#7424): Update with definition."

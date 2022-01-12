@@ -12,14 +12,14 @@ columns:
   - name: OrientationDueDate
     is_datetime: True
     description: |-
-      The date the orientation should be completed on an offender who has transferred to a new institution.
+      The date the orientation should be completed on a person  who has transferred to a new institution.
   - name: OffenderID
     description: |-
-      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+      This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: OrientationCompletedDate
     is_datetime: True
     description: |-
-      The date an offender signs the orientation form, having completed either initial or new institution.
+      The date a person  signs the orientation form, having completed either initial or new institution.
   - name: SignedDate
     is_datetime: True
     description: |-
