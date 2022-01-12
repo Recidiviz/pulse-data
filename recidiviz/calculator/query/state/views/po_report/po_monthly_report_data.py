@@ -39,16 +39,6 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = """
     WITH report_data_per_officer AS (
       SELECT * FROM `{project_id}.{po_report_dataset}.report_data_by_officer_by_month_materialized`
     ),
-    goals AS (
-      SELECT 
-        state_code, 
-        officer_external_id,
-        year,
-        month,
-        COALESCE(LEAST(3, ARRAY_LENGTH(assessments_out_of_date_clients)), 0) as overdue_assessments_goal,
-        COALESCE(LEAST(9, ARRAY_LENGTH(facetoface_out_of_date_clients)), 0) as overdue_facetoface_goal,
-      FROM report_data_per_officer
-    ),
     last_month AS (
       SELECT
         * EXCEPT (year, month),
@@ -212,27 +202,11 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = """
       report_month.assessments_upcoming_clients,
       report_month.assessments,
       report_month.caseload_count,
-      report_month.assessments_up_to_date,
       report_month.facetoface_out_of_date_clients,
       report_month.facetoface_upcoming_clients,
       report_month.facetoface,
       report_month.facetoface_frequencies_sufficient,
-      overdue_assessments_goal,
-      overdue_facetoface_goal,
       report_month.upcoming_release_date_clients,
-      # TODO(#9106): refactor to move these calcs into Python 
-      IF(report_month.caseload_count = 0,
-        1,
-        IEEE_DIVIDE(report_month.assessments_up_to_date, report_month.caseload_count)) * 100 AS assessments_percent,
-      IF(report_month.caseload_count = 0,
-        1,
-        IEEE_DIVIDE(report_month.facetoface_frequencies_sufficient, report_month.caseload_count)) * 100 as facetoface_percent,
-      IF(report_month.caseload_count = 0,
-        1,
-        IEEE_DIVIDE(report_month.assessments_up_to_date + overdue_assessments_goal, report_month.caseload_count)) * 100 as overdue_assessments_goal_percent,
-      IF(report_month.caseload_count = 0,
-        1,
-        IEEE_DIVIDE(report_month.facetoface_frequencies_sufficient + overdue_facetoface_goal, report_month.caseload_count)) * 100 as overdue_facetoface_goal_percent
     FROM `{project_id}.{static_reference_dataset}.po_report_recipients`
     LEFT JOIN report_data_per_officer report_month
       USING (state_code, officer_external_id)
@@ -254,8 +228,6 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = """
       USING (state_code, year, month, officer_external_id)
     LEFT JOIN agents
       USING (state_code, officer_external_id)
-    LEFT JOIN goals
-        USING (state_code, officer_external_id, year, month)
     -- Only include output for the month before the current month
     WHERE DATE(year, month, 1) = DATE_SUB(DATE(EXTRACT(YEAR FROM CURRENT_DATE('US/Eastern')), EXTRACT(MONTH FROM CURRENT_DATE('US/Eastern')), 1), INTERVAL 1 MONTH)
     """
