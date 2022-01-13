@@ -18,7 +18,7 @@
 from typing import List, Optional
 
 from recidiviz.calculator.pipeline.utils.period_utils import (
-    find_last_terminated_period_before_date,
+    find_last_terminated_period_on_or_before_date,
 )
 from recidiviz.calculator.pipeline.utils.supervision_period_pre_processing_manager import (
     StateSpecificSupervisionPreProcessingDelegate,
@@ -54,8 +54,8 @@ class UsNdSupervisionPreProcessingDelegate(
             raise ValueError(
                 "Found null supervision_period.start_date while inferring admission reason."
             )
-        most_recent_previous_period = find_last_terminated_period_before_date(
-            upper_bound_date=supervision_period.start_date,
+        most_recent_previous_period = find_last_terminated_period_on_or_before_date(
+            upper_bound_date_inclusive=supervision_period.start_date,
             periods=supervision_periods,
             maximum_months_proximity=LOOKBACK_MONTHS_LIMIT,
         )

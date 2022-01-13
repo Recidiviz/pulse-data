@@ -29,7 +29,7 @@ from recidiviz.calculator.pipeline.utils.incarceration_period_utils import (
     periods_are_temporally_adjacent,
 )
 from recidiviz.calculator.pipeline.utils.period_utils import (
-    find_last_terminated_period_before_date,
+    find_last_terminated_period_on_or_before_date,
 )
 from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index import (
     PreProcessedSupervisionPeriodIndex,
@@ -228,8 +228,8 @@ def _us_nd_normalize_period_if_commitment_from_supervision(
 
     admission_reason = incarceration_period.admission_reason
     if admission_reason == StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION:
-        most_recent_supervision_period = find_last_terminated_period_before_date(
-            upper_bound_date=admission_date,
+        most_recent_supervision_period = find_last_terminated_period_on_or_before_date(
+            upper_bound_date_inclusive=admission_date,
             periods=supervision_period_index.supervision_periods,
             maximum_months_proximity=_NEW_ADMISSION_PROBATION_COMMITMENT_LOOKBACK_MONTHS,
         )

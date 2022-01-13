@@ -2984,7 +2984,8 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
         incarceration_period_index = (
             incarceration_period_index
             or default_pre_processed_ip_index_for_tests(
-                incarceration_periods=[incarceration_period]
+                incarceration_periods=[incarceration_period],
+                transfers_are_collapsed=True,
             )
         )
         supervision_period_index = default_pre_processed_sp_index_for_tests(

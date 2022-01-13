@@ -31,7 +31,7 @@ from recidiviz.calculator.pipeline.utils.incarceration_period_utils import (
 )
 from recidiviz.calculator.pipeline.utils.period_utils import (
     find_earliest_date_of_period_ending_in_death,
-    find_last_terminated_period_before_date,
+    find_last_terminated_period_on_or_before_date,
 )
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
     standard_date_sort_for_supervision_periods,
@@ -51,7 +51,7 @@ from recidiviz.persistence.entity.state.entities import (
 
 
 class TestLastTerminatedPeriodBeforeDate(unittest.TestCase):
-    """Tests the find_last_terminated_period_before_date function."""
+    """Tests the find_last_terminated_period_on_or_before_date function."""
 
     def test_find_last_terminated_period_before_date(self):
         supervision_period_older = StateSupervisionPeriod.new_with_defaults(
@@ -66,8 +66,8 @@ class TestLastTerminatedPeriodBeforeDate(unittest.TestCase):
             termination_date=date(2010, 9, 1),
         )
 
-        most_recently_terminated_period = find_last_terminated_period_before_date(
-            upper_bound_date=date(2010, 10, 1),
+        most_recently_terminated_period = find_last_terminated_period_on_or_before_date(
+            upper_bound_date_inclusive=date(2010, 10, 1),
             periods=[
                 supervision_period_older,
                 supervision_period_recent,
@@ -90,8 +90,8 @@ class TestLastTerminatedPeriodBeforeDate(unittest.TestCase):
             termination_date=date(2010, 1, 1),
         )
 
-        most_recently_terminated_period = find_last_terminated_period_before_date(
-            upper_bound_date=date(1990, 10, 1),
+        most_recently_terminated_period = find_last_terminated_period_on_or_before_date(
+            upper_bound_date_inclusive=date(1990, 10, 1),
             periods=[
                 supervision_period_older,
                 supervision_period_recent,
@@ -122,8 +122,8 @@ class TestLastTerminatedPeriodBeforeDate(unittest.TestCase):
             + relativedelta(days=1)
         )
 
-        most_recently_terminated_period = find_last_terminated_period_before_date(
-            upper_bound_date=admission_date,
+        most_recently_terminated_period = find_last_terminated_period_on_or_before_date(
+            upper_bound_date_inclusive=admission_date,
             periods=[
                 supervision_period_older,
                 supervision_period_recent,
@@ -152,8 +152,8 @@ class TestLastTerminatedPeriodBeforeDate(unittest.TestCase):
             days=SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT
         )
 
-        most_recently_terminated_period = find_last_terminated_period_before_date(
-            upper_bound_date=admission_date,
+        most_recently_terminated_period = find_last_terminated_period_on_or_before_date(
+            upper_bound_date_inclusive=admission_date,
             periods=[
                 supervision_period_older,
                 supervision_period_recent,
@@ -177,8 +177,8 @@ class TestLastTerminatedPeriodBeforeDate(unittest.TestCase):
             termination_date=date(2010, 1, 1),
         )
 
-        most_recently_terminated_period = find_last_terminated_period_before_date(
-            upper_bound_date=date(2007, 10, 1),
+        most_recently_terminated_period = find_last_terminated_period_on_or_before_date(
+            upper_bound_date_inclusive=date(2007, 10, 1),
             periods=[
                 supervision_period_older,
                 supervision_period_recent,
@@ -203,8 +203,8 @@ class TestLastTerminatedPeriodBeforeDate(unittest.TestCase):
             start_date=date(2006, 3, 1),
         )
 
-        most_recently_terminated_period = find_last_terminated_period_before_date(
-            upper_bound_date=date(2007, 10, 1),
+        most_recently_terminated_period = find_last_terminated_period_on_or_before_date(
+            upper_bound_date_inclusive=date(2007, 10, 1),
             periods=[
                 supervision_period_older,
                 supervision_period_recent,
@@ -215,8 +215,8 @@ class TestLastTerminatedPeriodBeforeDate(unittest.TestCase):
         self.assertEqual(supervision_period_older, most_recently_terminated_period)
 
     def test_find_last_terminated_period_before_date_no_periods(self):
-        most_recently_terminated_period = find_last_terminated_period_before_date(
-            upper_bound_date=date(1990, 10, 1),
+        most_recently_terminated_period = find_last_terminated_period_on_or_before_date(
+            upper_bound_date_inclusive=date(1990, 10, 1),
             periods=[],
             maximum_months_proximity=SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT,
         )
@@ -230,8 +230,8 @@ class TestLastTerminatedPeriodBeforeDate(unittest.TestCase):
             termination_date=date(2005, 3, 31),
         )
 
-        most_recently_terminated_period = find_last_terminated_period_before_date(
-            upper_bound_date=date(2005, 4, 1),
+        most_recently_terminated_period = find_last_terminated_period_on_or_before_date(
+            upper_bound_date_inclusive=date(2005, 4, 1),
             periods=[supervision_period],
             maximum_months_proximity=SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT,
         )
@@ -247,8 +247,8 @@ class TestLastTerminatedPeriodBeforeDate(unittest.TestCase):
             termination_date=date(2007, 12, 31),
         )
 
-        most_recently_terminated_period = find_last_terminated_period_before_date(
-            upper_bound_date=date(2007, 12, 31),
+        most_recently_terminated_period = find_last_terminated_period_on_or_before_date(
+            upper_bound_date_inclusive=date(2007, 12, 31),
             periods=[supervision_period_recent],
             maximum_months_proximity=SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT,
         )
@@ -264,8 +264,8 @@ class TestLastTerminatedPeriodBeforeDate(unittest.TestCase):
             termination_date=date(2007, 12, 31),
         )
 
-        most_recently_terminated_period = find_last_terminated_period_before_date(
-            upper_bound_date=date(2006, 1, 1),
+        most_recently_terminated_period = find_last_terminated_period_on_or_before_date(
+            upper_bound_date_inclusive=date(2006, 1, 1),
             periods=[supervision_period_recent],
             maximum_months_proximity=SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT,
         )
@@ -289,8 +289,8 @@ class TestLastTerminatedPeriodBeforeDate(unittest.TestCase):
             termination_date=date(2007, 12, 31),
         )
 
-        most_recently_terminated_period = find_last_terminated_period_before_date(
-            upper_bound_date=date(2008, 1, 10),
+        most_recently_terminated_period = find_last_terminated_period_on_or_before_date(
+            upper_bound_date_inclusive=date(2008, 1, 10),
             periods=[supervision_period_a, supervision_period_b],
             maximum_months_proximity=SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT,
         )
@@ -300,7 +300,7 @@ class TestLastTerminatedPeriodBeforeDate(unittest.TestCase):
     def test_find_last_terminated_period_before_date_same_termination_date_override(
         self,
     ):
-        """Tests the find_last_terminated_period_before_date function when a
+        """Tests the find_last_terminated_period_on_or_before_date function when a
         same_date_sort_fn function is included.
         """
         supervision_period_a = StateSupervisionPeriod.new_with_defaults(
@@ -337,8 +337,8 @@ class TestLastTerminatedPeriodBeforeDate(unittest.TestCase):
                 return 0
             return -1 if prioritize_a else 1
 
-        most_recently_terminated_period = find_last_terminated_period_before_date(
-            upper_bound_date=date(2008, 1, 10),
+        most_recently_terminated_period = find_last_terminated_period_on_or_before_date(
+            upper_bound_date_inclusive=date(2008, 1, 10),
             periods=[supervision_period_a, supervision_period_b],
             maximum_months_proximity=SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT,
             same_date_sort_fn=_same_date_sort_override,
