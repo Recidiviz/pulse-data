@@ -101,6 +101,7 @@ class UsPaIncarcerationPreProcessingDelegate(
         self,
         incarceration_period_list_index: int,
         sorted_incarceration_periods: List[StateIncarcerationPeriod],
+        original_sorted_incarceration_periods: List[StateIncarcerationPeriod],
         supervision_period_index: Optional[PreProcessedSupervisionPeriodIndex],
     ) -> StateIncarcerationPeriod:
 
