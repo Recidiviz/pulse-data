@@ -39,6 +39,7 @@ from recidiviz.persistence.database.constants import (
     SQLALCHEMY_DB_HOST,
     SQLALCHEMY_DB_NAME,
     SQLALCHEMY_DB_PASSWORD,
+    SQLALCHEMY_DB_PORT,
     SQLALCHEMY_DB_USER,
 )
 
@@ -48,10 +49,11 @@ def reset_case_triage_fixtures() -> None:
     user = os.getenv(SQLALCHEMY_DB_USER, "postgres")
     password = os.getenv(SQLALCHEMY_DB_PASSWORD, "example")
     host = os.getenv(SQLALCHEMY_DB_HOST, "localhost")
+    port = os.getenv(SQLALCHEMY_DB_PORT, "5432")
     database = os.getenv(SQLALCHEMY_DB_NAME, "postgres")
 
     connection = psycopg2.connect(
-        dbname=database, host=host, user=user, password=password
+        dbname=database, host=host, port=port, user=user, password=password
     )
 
     with connection.cursor() as cursor:
