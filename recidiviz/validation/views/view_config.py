@@ -58,6 +58,9 @@ from recidiviz.validation.views.state.active_in_population_after_death_date impo
 from recidiviz.validation.views.state.active_program_participation_by_region_internal_consistency import (
     ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_INTERNAL_CONSISTENCY_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.admission_pfi_pop_pfi_mismatch import (
+    ADMISSION_PFI_POP_PFI_MISMATCH_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.case_termination_by_type_comparison import (
     CASE_TERMINATIONS_BY_TYPE_COMPARISON_VIEW_BUILDER,
 )
@@ -315,6 +318,7 @@ VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = (
         REVOCATION_MATRIX_CASELOAD_ADMISSION_HISTORY_VIEW_BUILDER,
         ACTIVE_IN_POPULATION_AFTER_DEATH_DATE_VIEW_BUILDER,
         ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_INTERNAL_CONSISTENCY_VIEW_BUILDER,
+        ADMISSION_PFI_POP_PFI_MISMATCH_VIEW_BUILDER,
         CASE_TERMINATIONS_BY_TYPE_COMPARISON_VIEW_BUILDER,
         FTR_REFERRALS_COMPARISON_VIEW_BUILDER,
         INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_VIEW_BUILDER,
