@@ -1437,9 +1437,9 @@ class TestOriginalAdmissionReasonsByPeriodID(unittest.TestCase):
 
 
 class TestPrecedingIncarcerationPeriod(unittest.TestCase):
-    """Tests the preceding_incarceration_period_in_index function."""
+    """Tests the most_recent_board_hold_in_index function."""
 
-    def test_preceding_incarceration_period_in_index_first_period(self) -> None:
+    def test_most_recent_board_hold_in_index_first_period(self) -> None:
         """Tests that this returns None when the given period is the first in the
         index."""
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
@@ -1464,25 +1464,25 @@ class TestPrecedingIncarcerationPeriod(unittest.TestCase):
         incarceration_periods = [incarceration_period_1, incarceration_period_2]
         index = default_pre_processed_ip_index_for_tests(incarceration_periods)
 
-        preceding_period = index.preceding_incarceration_period_in_index(
+        most_recent_board_hold = index.most_recent_board_hold_in_index(
             incarceration_period_1
         )
-        self.assertIsNone(preceding_period)
+        self.assertIsNone(most_recent_board_hold)
 
-    def test_preceding_incarceration_period_in_index_second_period(self) -> None:
+    def test_most_recent_board_hold_in_index_second_period(self) -> None:
         """Tests that this returns the first period when the given period is the
         second in the index."""
-        incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+        board_hold = StateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
             incarceration_period_id=111,
             admission_date=date(2000, 1, 1),
             release_date=date(2000, 10, 3),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
-            release_reason=StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
         )
 
-        incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
             incarceration_period_id=222,
             admission_date=date(2015, 10, 3),
@@ -1491,37 +1491,38 @@ class TestPrecedingIncarcerationPeriod(unittest.TestCase):
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
-        incarceration_periods = [incarceration_period_1, incarceration_period_2]
+        incarceration_periods = [board_hold, incarceration_period]
         index = default_pre_processed_ip_index_for_tests(incarceration_periods)
 
-        preceding_period = index.preceding_incarceration_period_in_index(
-            incarceration_period_2
+        most_recent_board_hold = index.most_recent_board_hold_in_index(
+            incarceration_period
         )
-        self.assertEqual(incarceration_period_1, preceding_period)
+        self.assertEqual(board_hold, most_recent_board_hold)
 
-    def test_preceding_incarceration_period_in_index_later_period(self) -> None:
+    def test_most_recent_board_hold_in_index_later_period(self) -> None:
         """Tests that this returns the period directly preceding the given period
         when it is not the first period."""
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
             incarceration_period_id=111,
-            admission_date=date(2000, 1, 1),
-            release_date=date(2000, 10, 3),
+            admission_date=date(1993, 1, 1),
+            release_date=date(1995, 8, 3),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             release_reason=StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN,
         )
 
-        incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+        board_hold = StateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
             incarceration_period_id=222,
             admission_date=date(2015, 10, 3),
             release_date=date(2015, 10, 11),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
-            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
         )
 
-        incarceration_period_3 = StateIncarcerationPeriod.new_with_defaults(
+        incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
             incarceration_period_id=333,
             admission_date=date(2019, 4, 8),
@@ -1533,17 +1534,17 @@ class TestPrecedingIncarcerationPeriod(unittest.TestCase):
 
         incarceration_periods = [
             incarceration_period_1,
+            board_hold,
             incarceration_period_2,
-            incarceration_period_3,
         ]
         index = default_pre_processed_ip_index_for_tests(incarceration_periods)
 
-        preceding_period = index.preceding_incarceration_period_in_index(
-            incarceration_period_3
+        most_recent_board_hold = index.most_recent_board_hold_in_index(
+            incarceration_period_2
         )
-        self.assertEqual(incarceration_period_2, preceding_period)
+        self.assertEqual(board_hold, most_recent_board_hold)
 
-    def test_preceding_incarceration_period_in_index_not_in_index(self) -> None:
+    def test_most_recent_board_hold_in_index_not_in_index(self) -> None:
         """Tests that this raises a KeyError when the given period is not in the
         index."""
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
@@ -1582,4 +1583,4 @@ class TestPrecedingIncarcerationPeriod(unittest.TestCase):
         index = default_pre_processed_ip_index_for_tests(incarceration_periods)
 
         with self.assertRaises(KeyError):
-            index.preceding_incarceration_period_in_index(incarceration_period_3)
+            index.most_recent_board_hold_in_index(incarceration_period_3)

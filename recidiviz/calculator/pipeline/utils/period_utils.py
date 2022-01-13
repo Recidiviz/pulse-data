@@ -220,8 +220,8 @@ def sort_periods_by_set_dates_and_statuses(
     periods.sort(key=cmp_to_key(_sort_function))
 
 
-def find_last_terminated_period_before_date(
-    upper_bound_date: date,
+def find_last_terminated_period_on_or_before_date(
+    upper_bound_date_inclusive: date,
     periods: Optional[List[PeriodType]],
     maximum_months_proximity: int,
     same_date_sort_fn: Callable[
@@ -236,7 +236,7 @@ def find_last_terminated_period_before_date(
     if not periods:
         return None
 
-    termination_date_cutoff = upper_bound_date - relativedelta(
+    termination_date_cutoff = upper_bound_date_inclusive - relativedelta(
         months=maximum_months_proximity
     )
 
@@ -246,7 +246,9 @@ def find_last_terminated_period_before_date(
         if period.start_date_inclusive is not None
         and period.end_date_exclusive is not None
         and period.end_date_exclusive >= termination_date_cutoff
-        and period.start_date_inclusive <= period.end_date_exclusive <= upper_bound_date
+        and period.start_date_inclusive
+        <= period.end_date_exclusive
+        <= upper_bound_date_inclusive
     ]
 
     def _sort_function(period_a: PeriodType, period_b: PeriodType) -> int:

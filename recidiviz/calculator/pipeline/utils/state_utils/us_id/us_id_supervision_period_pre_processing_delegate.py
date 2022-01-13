@@ -18,7 +18,7 @@
 from typing import List, Optional
 
 from recidiviz.calculator.pipeline.utils.period_utils import (
-    find_last_terminated_period_before_date,
+    find_last_terminated_period_on_or_before_date,
 )
 from recidiviz.calculator.pipeline.utils.supervision_period_pre_processing_manager import (
     StateSpecificSupervisionPreProcessingDelegate,
@@ -67,8 +67,8 @@ class UsIdSupervisionPreProcessingDelegate(
             if period.supervision_type is not None
         ]
 
-        most_recent_previous_period = find_last_terminated_period_before_date(
-            upper_bound_date=supervision_period.start_date,
+        most_recent_previous_period = find_last_terminated_period_on_or_before_date(
+            upper_bound_date_inclusive=supervision_period.start_date,
             periods=periods_with_set_supervision_types,
             maximum_months_proximity=SUPERVISION_TYPE_LOOKBACK_MONTH_LIMIT,
         )

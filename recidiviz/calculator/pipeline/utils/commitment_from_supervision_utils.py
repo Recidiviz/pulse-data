@@ -23,7 +23,7 @@ from recidiviz.calculator.pipeline.utils.incarceration_period_utils import (
     periods_are_temporally_adjacent,
 )
 from recidiviz.calculator.pipeline.utils.period_utils import (
-    find_last_terminated_period_before_date,
+    find_last_terminated_period_on_or_before_date,
     sort_period_by_external_id,
 )
 from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
@@ -188,34 +188,37 @@ def get_commitment_from_supervision_details(
 
 def period_is_commitment_from_supervision_admission_from_parole_board_hold(
     incarceration_period: StateIncarcerationPeriod,
-    preceding_incarceration_period: Optional[StateIncarcerationPeriod],
+    most_recent_board_hold: Optional[StateIncarcerationPeriod],
 ) -> bool:
-    """Determines whether the transition from the preceding_incarceration_period to
-    the incarceration_period is a commitment from supervision admission after being
-    held for a parole board hold."""
-    if not preceding_incarceration_period:
+    """Determines whether the incarceration_period represents a commitment from
+    supervision admission after being held for a parole board hold."""
+    if not most_recent_board_hold:
         # Commitments from board holds must follow a period of being in a parole
         # board hold
         return False
 
-    if not periods_are_temporally_adjacent(
-        first_incarceration_period=preceding_incarceration_period,
-        second_incarceration_period=incarceration_period,
+    if (
+        most_recent_board_hold.specialized_purpose_for_incarceration
+        != StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD
     ):
-        return False
+        raise ValueError(
+            "Found an IP that is not a board hold in the most_recent_board_hold arg."
+        )
 
     return (
-        incarceration_period.admission_reason
+        # Admissions from a parole board hold should happen on the same day
+        # as the release from the parole board hold
+        periods_are_temporally_adjacent(
+            first_incarceration_period=most_recent_board_hold,
+            second_incarceration_period=incarceration_period,
+        )
+        and incarceration_period.admission_reason
         # Valid commitment from supervision admission reasons following a parole board
         # hold
         in (
             StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
             StateIncarcerationPeriodAdmissionReason.REVOCATION,
         )
-        # Admissions from a parole board hold should happen on the same day
-        # as the release from the parole board hold
-        and preceding_incarceration_period.specialized_purpose_for_incarceration
-        == StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD
     )
 
 
@@ -299,33 +302,37 @@ def _get_commitment_from_supervision_supervision_period(
             f"{admission_reason}."
         )
 
-    preceding_incarceration_period = (
-        incarceration_period_index.preceding_incarceration_period_in_index(
-            incarceration_period
+    if not incarceration_period_index.transfers_are_collapsed:
+        raise ValueError(
+            "Must perform commitment from supervision calculations on IPs "
+            "with collapsed transfers."
         )
+
+    most_recent_board_hold = incarceration_period_index.most_recent_board_hold_in_index(
+        incarceration_period
     )
 
     if period_is_commitment_from_supervision_admission_from_parole_board_hold(
         incarceration_period=incarceration_period,
-        preceding_incarceration_period=preceding_incarceration_period,
+        most_recent_board_hold=most_recent_board_hold,
     ):
-        if not preceding_incarceration_period:
+        if not most_recent_board_hold:
             raise ValueError(
                 "This should never happen, since the determination of "
                 "whether the commitment came from a board hold requires "
-                "the preceding_incarceration_period to be a board hold."
+                "the existence of the most_recent_board_hold."
             )
 
-        if not preceding_incarceration_period.admission_date:
+        if not most_recent_board_hold.admission_date:
             raise ValueError(
                 "Unexpected missing admission_date on incarceration period: "
-                f"[{preceding_incarceration_period}]"
+                f"[{most_recent_board_hold}]"
             )
 
         # If this person was a commitment from supervision from a parole board hold,
         # then the date that they entered prison was the date of the preceding
         # incarceration period.
-        admission_date = preceding_incarceration_period.admission_date
+        admission_date = most_recent_board_hold.admission_date
 
     relevant_periods = _get_relevant_sps_for_pre_commitment_sp_search(
         admission_reason=admission_reason,
@@ -355,8 +362,8 @@ def _get_commitment_from_supervision_supervision_period(
             return sort_period_by_external_id(period_a, period_b)
         return -1 if prioritize_a else 1
 
-    most_recent_terminated_period = find_last_terminated_period_before_date(
-        upper_bound_date=admission_date,
+    most_recent_terminated_period = find_last_terminated_period_on_or_before_date(
+        upper_bound_date_inclusive=admission_date,
         periods=relevant_periods,
         maximum_months_proximity=SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT,
         same_date_sort_fn=_same_date_sort_override,

@@ -106,6 +106,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
             ),
             incarceration_period_index=default_pre_processed_ip_index_for_tests(
                 incarceration_periods=incarceration_periods,
+                transfers_are_collapsed=True,
                 incarceration_delegate=UsNdIncarcerationDelegate(),
             ),
         )

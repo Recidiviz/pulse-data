@@ -31,7 +31,7 @@ from recidiviz.calculator.pipeline.utils.incarceration_period_utils import (
     periods_are_temporally_adjacent,
 )
 from recidiviz.calculator.pipeline.utils.period_utils import (
-    find_last_terminated_period_before_date,
+    find_last_terminated_period_on_or_before_date,
 )
 from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index import (
     PreProcessedSupervisionPeriodIndex,
@@ -133,10 +133,12 @@ def _us_id_normalize_period_if_commitment_from_supervision(
 
         # US_ID does not have overlapping supervision periods, so there there is a
         # maximum of one pre-commitment period.
-        pre_commitment_supervision_period = find_last_terminated_period_before_date(
-            upper_bound_date=incarceration_period.admission_date,
-            periods=relevant_sps,
-            maximum_months_proximity=SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT,
+        pre_commitment_supervision_period = (
+            find_last_terminated_period_on_or_before_date(
+                upper_bound_date_inclusive=incarceration_period.admission_date,
+                periods=relevant_sps,
+                maximum_months_proximity=SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT,
+            )
         )
 
         if (
