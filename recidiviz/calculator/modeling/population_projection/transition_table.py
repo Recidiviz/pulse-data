@@ -16,7 +16,6 @@
 # =============================================================================
 """table containing probabilities of transition to other FullCompartments used by CompartmentTransitions object"""
 import collections
-from copy import deepcopy
 from typing import Any, Dict, List, Optional
 
 import numpy as np
@@ -160,43 +159,34 @@ class TransitionTable:
                 "`normalize_transitions` cannot be called with a normalized `before_table`"
             )
 
-        normalized_df = deepcopy(table)
-
         before_totals = before_table.sum()
         after_totals = table.sum()
 
-        before_counteds = before_totals * 0
-        after_counteds = after_totals * 0
-
         outflow_ratios = after_totals / after_totals.sum()
 
-        for sentence_len in range(1, max_sentence + 1):
-            # want to release number of people X that causes (before_counteds at time t) + X to equal
-            # (after_counteds at time t+1), so we start by stepping forward after_counteds to t+1
-            ts_released = table.loc[sentence_len]
-            after_counteds += ts_released
+        # want to release number of people X that causes (before_counteds at time t) + X to equal
+        # (after_counteds at time t+1), so we start by stepping forward after_counteds to t+1
+        before_counteds = before_table.shift(1, fill_value=0.0).cumsum()
+        after_counteds = table.cumsum()
 
-            # calculate the fraction of each outflow remaining at this time step
-            after_remaining = np.clip(1 - after_counteds / after_totals, 0, 1)
-            before_remaining = np.clip(1 - before_counteds / before_totals, 0, 1)
+        # calculate the fraction of each outflow remaining for each time step
+        after_remaining = 1 - after_counteds / after_totals
+        after_remaining.clip(0, 1, inplace=True)
+        before_remaining = 1 - before_counteds / before_totals
+        before_remaining.clip(0, 1, inplace=True)
 
-            # Calculate X from above for each outflow, then scale by size of 'cohort' for that outflow
-            outflow_scaled_releases = (
-                before_remaining - after_remaining
-            ) * outflow_ratios
+        # Calculate X from above for each outflow, then scale by size of 'cohort' for that outflow
+        outflow_scaled_releases = (before_remaining - after_remaining) * outflow_ratios
 
-            # In order to normalize, we also need to calculate the total remaining, also scaled by outflows
-            outflow_scaled_remaining = (before_remaining * outflow_ratios).sum()
+        # In order to normalize, we also need to calculate the total remaining, also scaled by outflows
+        outflow_scaled_remaining = (before_remaining * outflow_ratios).sum(axis=1)
 
-            # combine the above to get the release probabilities for this time step
-            # Note: we allow division by zero above when before_remaining is 0, but in that case no one is left to be
-            # influenced by this row of probabilities, so we can trivially fillna with 0s.
-            normalized_df.loc[sentence_len] = (
-                (outflow_scaled_releases / outflow_scaled_remaining).clip(0).fillna(0)
-            )
-
-            before_counteds += before_table.loc[sentence_len]
-
+        # combine the above to get the release probabilities for each time step
+        # Note: we allow division by zero above when before_remaining is 0, but in that case no one is left to be
+        # influenced by this table of probabilities, so we can trivially fillna with 0s.
+        normalized_df = outflow_scaled_releases.div(outflow_scaled_remaining, axis=0)
+        normalized_df.fillna(0.0, inplace=True)
+        normalized_df.clip(0, 1, inplace=True)
         normalized_df = normalized_df.apply(lambda x: round(x, SIG_FIGS))
 
         # Assign the residual probability as the proportion that remains in the current compartment per month
