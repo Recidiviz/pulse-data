@@ -333,5 +333,5 @@ class TestPreProcessingManagersForCalculations(unittest.TestCase):
 
         assert ip_pre_processing_manager is not None
         assert sp_pre_processing_manager is not None
-        self.assertEqual([], ip_pre_processing_manager._incarceration_periods)
+        self.assertEqual([], ip_pre_processing_manager._original_incarceration_periods)
         self.assertEqual([], sp_pre_processing_manager._supervision_periods)

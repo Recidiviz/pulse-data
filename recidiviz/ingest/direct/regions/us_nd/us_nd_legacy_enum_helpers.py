@@ -39,9 +39,6 @@ from recidiviz.common.constants.state.state_incarceration_incident import (
     StateIncarcerationIncidentOutcomeType,
     StateIncarcerationIncidentType,
 )
-from recidiviz.common.constants.state.state_incarceration_period import (
-    StateIncarcerationPeriodAdmissionReason,
-)
 from recidiviz.common.constants.state.state_person_alias import StatePersonAliasType
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
@@ -134,10 +131,6 @@ def supervision_contact_location_mapper(
 
 IGNORES: Dict[Type[Enum], List[str]] = {
     StateCourtCaseStatus: ["A", "STEP"],
-    # TODO(#10152): Delete the StateIncarcerationPeriodAdmissionReason mappings
-    #  once the dependency on this logic has been removed from US_ND Dataflow
-    #  pre-processing.
-    StateIncarcerationPeriodAdmissionReason: ["COM", "CONT", "CONV", "NTAD"],
 }
 
 
@@ -166,46 +159,6 @@ def generate_enum_overrides() -> EnumOverrides:
         StateSentenceStatus.SERVING: ["O"],
         StateChargeClassificationType.FELONY: ["IF"],
         StateChargeClassificationType.MISDEMEANOR: ["IM"],
-        # TODO(#10152): Delete the StateIncarcerationPeriodAdmissionReason mappings
-        #  once the dependency on this logic has been removed from US_ND Dataflow
-        #  pre-processing.
-        StateIncarcerationPeriodAdmissionReason.ADMITTED_IN_ERROR: ["ADM ERROR"],
-        StateIncarcerationPeriodAdmissionReason.EXTERNAL_UNKNOWN: ["OTHER", "PREA"],
-        StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION: [
-            "ADMN",
-            "RAB",
-            "DEF",
-        ],
-        StateIncarcerationPeriodAdmissionReason.REVOCATION: [
-            "PARL",
-            "PV",
-            "NPRB",
-            "NPROB",
-            "PRB",
-            "RPRB",
-        ],
-        StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE: ["REC", "RECA"],
-        StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE: [
-            "READMN"
-        ],
-        StateIncarcerationPeriodAdmissionReason.TRANSFER: [
-            "CONF",
-            "CRT",
-            "DETOX",
-            "FED",
-            "HOSP",
-            "HOSPS",
-            "HOSPU",
-            "INT",
-            "JOB",
-            "MED",
-            "PROG",
-            "RB",
-            "SUPL",
-        ],
-        StateIncarcerationPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION: [
-            "OOS"
-        ],
         StateIncarcerationIncidentType.DISORDERLY_CONDUCT: [
             "DAMAGE",
             "DISCON",

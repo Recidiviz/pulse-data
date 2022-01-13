@@ -58,6 +58,7 @@ class UsIdIncarcerationPreProcessingDelegate(
         self,
         incarceration_period_list_index: int,
         sorted_incarceration_periods: List[StateIncarcerationPeriod],
+        original_sorted_incarceration_periods: List[StateIncarcerationPeriod],
         supervision_period_index: Optional[PreProcessedSupervisionPeriodIndex],
     ) -> StateIncarcerationPeriod:
         return _us_id_normalize_period_if_commitment_from_supervision(
