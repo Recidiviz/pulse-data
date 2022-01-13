@@ -53,7 +53,7 @@ Compartment sessions differs from other sessionized views in that the edges shou
 |	end_date	|	Last full-day of a person's session. The release or termination date will be the `end_date` + 1 day	|
 |	state_code	|	State	|
 |	compartment_level_1	|	Level 1 Compartment. Possible values are: <br>-`INCARCERATION`<br>-`INCARCERATION_OUT_OF_STATE`<br>-`SUPERVISION`<br>-`SUPERVISION_OUT_OF_STATE`<br>-`RELEASE`<br>-`INTERNAL_UNKNOWN`, <br>-`PENDING_CUSTODY`<br>-`PENDING_SUPERVISION`<br>-`SUSPENSION`<br>ERRONEOUS_RELEASE	|
-|	compartment_level_2	|	Level 2 Compartment. Possible values for the incarceration compartments are: <br>-`GENERAL`<br>-`PAROLE_BOARD_HOLD`<br>-`TREATMENT_IN_PRISON` <br>-`SHOCK_INCARCERATION`<br>-`ABSCONSION`<br>-`INTERNAL_UNKNOWN`<br>-`COMMUNITY_PLACEMENT_PROGRAM`<br>-`TEMPORARY_CUSTODY`<br><br>Possible values for the supervision compartments are: <br>-`PROBATION`<br>-`PAROLE`<br>-`ABSCONSION`<br>-`DUAL`<br>-`BENCH_WARRANT`<br>-`INFORMAL_PROBATION`<br>-`INTERNAL_UNKNOWN`<br><br>All other `compartment_level_1` values have the same value for `compartment_level_1` and `comparmtent_level_2`	|
+|	compartment_level_2	|	Level 2 Compartment. Possible values for the incarceration compartments are: <br>-`GENERAL`<br>-`PAROLE_BOARD_HOLD`<br>-`TREATMENT_IN_PRISON` <br>-`SHOCK_INCARCERATION`<br>-`ABSCONSION`<br>-`INTERNAL_UNKNOWN`<br>-`COMMUNITY_CONFINEMENT`<br>-`TEMPORARY_CUSTODY`<br><br>Possible values for the supervision compartments are: <br>-`PROBATION`<br>-`PAROLE`<br>-`ABSCONSION`<br>-`DUAL`<br>-`BENCH_WARRANT`<br>-`INFORMAL_PROBATION`<br>-`INTERNAL_UNKNOWN`<br><br>All other `compartment_level_1` values have the same value for `compartment_level_1` and `comparmtent_level_2`	|
 |	session_length_days	|	Length of session in days. For active sessions this is the number of days between session start and the most recent day of data. The minimum value of this field is `1` in cases where the person has the same `start_date` and `end_date` (they spent one full day in the compartment)	|
 |	session_days_inferred	|	The number of days (out of the total `session_length_days`) that are inferred. This type onference happens when we have a gap between the same compartment with no dataflow start/end events indicating a compartment transition. As an example let's say someone was in GENERAL for 30 days, then we had a gap in population data of 5 days, and then they were in GENERAL again for 30 days. If there are no dataflow events at the transition edges, we infer that that person was in GENERAL for that entire time. They would have a session length of 65 days with a value of `5` for `session_days_inferred`	|
 |	start_reason	|	Reason for the session start. This is pulled from `compartment_session_start_reasons` which is generated from the union of the incarceration admission and supervision start dataflow metrics. Start events are deduplicated to unique person/days within supervision and within incarceration and then joined to sessions generated from the population metric. This field is not fully hydrated.	|
@@ -125,7 +125,88 @@ MO_DATA_GAP_DAYS = "10"
 
 COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
     /*{description}*/
-    WITH dataflow_session_gaps AS
+    WITH session_attributes_unnested AS 
+    (
+    SELECT DISTINCT
+        person_id, 
+        dataflow_session_id,
+        state_code,
+        start_date,
+        end_date,
+        session_attributes.metric_source,
+        session_attributes.compartment_level_1 AS compartment_level_1,
+        session_attributes.compartment_level_2 AS compartment_level_2,
+        session_attributes.supervising_officer_external_id AS supervising_officer_external_id,
+        session_attributes.compartment_location AS compartment_location,
+        session_attributes.correctional_level AS correctional_level,
+        session_attributes.case_type,
+        last_day_of_data,
+    FROM `{project_id}.{sessions_dataset}.dataflow_sessions_materialized`,
+    UNNEST(session_attributes) session_attributes
+    )
+    ,
+    dual_recategorization_cte AS
+    (
+    SELECT DISTINCT
+        person_id,
+        dataflow_session_id,
+        state_code,
+        start_date,
+        end_date,
+        compartment_level_1,
+        CASE WHEN cnt > 1 AND compartment_level_1 = 'SUPERVISION' THEN 'DUAL' ELSE compartment_level_2 END AS compartment_level_2,
+        supervising_officer_external_id,
+        compartment_location,
+        correctional_level,
+        case_type,
+        metric_source,
+        last_day_of_data,
+    FROM 
+        (
+        SELECT 
+            *,
+        COUNT(DISTINCT(CASE WHEN compartment_level_2 IN ('PAROLE', 'PROBATION') 
+            THEN compartment_level_2 END)) OVER(PARTITION BY person_id, state_code, dataflow_session_id, compartment_level_1) AS cnt,
+        FROM session_attributes_unnested
+        )
+    )
+    ,
+    dedup_compartment_cte AS 
+    (
+    SELECT 
+        cte.person_id,
+        cte.dataflow_session_id,
+        cte.state_code,
+        cte.metric_source,
+        cte.compartment_level_1,
+        cte.compartment_level_2,
+        cte.supervising_officer_external_id,
+        cte.compartment_location,
+        cte.correctional_level,
+        cte.case_type,
+        cte.start_date,
+        cte.end_date,
+        cte.last_day_of_data,
+    FROM dual_recategorization_cte cte
+    LEFT JOIN `{project_id}.{sessions_dataset}.compartment_level_1_dedup_priority` cl1_dedup
+        USING(compartment_level_1)
+    LEFT JOIN `{project_id}.{sessions_dataset}.compartment_level_2_dedup_priority` cl2_dedup
+        USING(compartment_level_1, compartment_level_2)
+    LEFT JOIN `{project_id}.{sessions_dataset}.supervision_level_dedup_priority` sl_dedup
+        ON cte.correctional_level = sl_dedup.correctional_level
+        AND cte.compartment_level_1 IN ('SUPERVISION','SUPERVISION_OUT_OF_STATE')
+    WHERE TRUE
+    QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id, state_code, dataflow_session_id 
+        ORDER BY COALESCE(cl1_dedup.priority, 999), 
+                COALESCE(cl2_dedup.priority, 999),
+                COALESCE(correctional_level_priority, 999),
+                NULLIF(supervising_officer_external_id, 'EXTERNAL_UNKNOWN') NULLS LAST,
+                NULLIF(compartment_location, 'EXTERNAL_UNKNOWN') NULLS LAST,
+                NULLIF(case_type, 'EXTERNAL_UNKNOWN') NULLS LAST
+                ) = 1
+    )
+    ,
+    session_gaps_cte AS
     /*
     Take dataflow_sessions output and fill gaps between sessions. At this point these are identified with a 
     metric_source value of "INFERRED" but the compartment values are not specified yet. Once dataflow metrics are joined
@@ -144,6 +225,7 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         CAST(NULL AS STRING) AS supervising_officer_external_id,
         CAST(NULL AS STRING) AS compartment_location,
         CAST(NULL AS STRING) AS correctional_level,
+        CAST(NULL AS STRING) AS case_type,
         start_date,
         end_date,
         MIN(last_day_of_data) OVER(PARTITION BY state_code) AS last_day_of_data
@@ -158,7 +240,7 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
             --new session ends the day before the following row's start date
             DATE_SUB(LEAD(start_date) OVER(PARTITION BY person_id ORDER BY start_date ASC), INTERVAL 1 DAY) AS end_date,
             last_day_of_data
-        FROM `{project_id}.{sessions_dataset}.dataflow_sessions_materialized` 
+        FROM dedup_compartment_cte 
         )
     /*
     This where clause ensures that these new release records are only created when there is a gap in sessions.
@@ -169,27 +251,15 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
     WHERE COALESCE(end_date, '9999-01-01') >= start_date
     )
     ,
-    dataflow_session_full_coverage AS
+    session_full_coverage_cte AS
     /*
     Union together the incarceration and supervision sessions with the newly created inferred sessions.
     */
     (
-    SELECT 
-        person_id,
-        dataflow_session_id,
-        state_code,
-        metric_source,
-        compartment_level_1,
-        compartment_level_2,
-        supervising_officer_external_id,
-        compartment_location,
-        correctional_level,
-        start_date,
-        end_date,
-        last_day_of_data
-    FROM `{project_id}.{sessions_dataset}.dataflow_sessions_materialized` 
+    SELECT *
+    FROM dedup_compartment_cte 
     UNION ALL
-    SELECT * FROM dataflow_session_gaps
+    SELECT * FROM session_gaps_cte
     )
     ,
     dataflow_sessions_with_session_ids AS
@@ -208,7 +278,7 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
             *,
             COALESCE(LAG(compartment_level_1) OVER(PARTITION BY person_id ORDER BY start_date),'') != COALESCE(compartment_level_1,'') AS new_compartment_level_1,
             COALESCE(LAG(compartment_level_2) OVER(PARTITION BY person_id ORDER BY start_date),'') != COALESCE(compartment_level_2,'') AS new_compartment_level_2
-        FROM dataflow_session_full_coverage
+        FROM session_full_coverage_cte
         )
     )
     ,
@@ -235,9 +305,11 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         ANY_VALUE(compartment_location_end) AS compartment_location_end,
         ANY_VALUE(correctional_level_start) AS correctional_level_start,
         ANY_VALUE(correctional_level_end) AS correctional_level_end,
-    FROM
-        /*  
-        This logic is used to calculate the first non-null session attribute for a given person_id and session_id (and 
+        ANY_VALUE(case_type_start) AS case_type_start,
+        ANY_VALUE(case_type_end) AS case_type_end,
+    FROM 
+        /*
+        This logic is used to calculate the first non-null session attribute for a given person_id and session_id (and
         last non-null session attribute for the _end values
         */ 
         (
@@ -254,6 +326,10 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
                                                                 ORDER BY dataflow_session_id ASC) AS correctional_level_start,
             FIRST_VALUE(correctional_level IGNORE NULLS) OVER(PARTITION BY person_id, session_id, state_code 
                                                                 ORDER BY dataflow_session_id DESC) AS correctional_level_end,
+            FIRST_VALUE(case_type IGNORE NULLS) OVER(PARTITION BY person_id, session_id, state_code 
+                                                                ORDER BY dataflow_session_id ASC) AS case_type_start,
+            FIRST_VALUE(case_type IGNORE NULLS) OVER(PARTITION BY person_id, session_id, state_code 
+                                                                ORDER BY dataflow_session_id DESC) AS case_type_end,
         FROM dataflow_sessions_with_session_ids
         )
     GROUP BY 1,2,3,4,5,6,7
@@ -279,6 +355,8 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         sessions.compartment_location_end,
         sessions.correctional_level_start,
         sessions.correctional_level_end,
+        sessions.case_type_start,
+        sessions.case_type_end,
         sessions.start_date,
         sessions.end_date,
         starts.start_reason,
@@ -357,6 +435,8 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         compartment_location_end,
         correctional_level_start,
         correctional_level_end,
+        case_type_start,
+        case_type_end,
         start_date,
         end_date,
         start_reason,
@@ -431,9 +511,7 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
     ,
     sessions_aggregated_2 AS
     /*
-    Reaggregate sessions with newly inferred compartments. Taking the maximum of session attributes also retains
-    the non-null attributes when collapsing adjacent inferred and non-inferred compartments. Also drop "DEATH" 
-    compartments (except for those which have an end date meaning there is some sort of data bug).
+    Reaggregate sessions with newly inferred compartments.
     */
     (
     SELECT 
@@ -445,15 +523,42 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         earliest_start_date,
         last_day_of_data,
         MIN(start_date) AS start_date,
-        MAX(supervising_officer_external_id_start) AS supervising_officer_external_id_start,
-        MAX(supervising_officer_external_id_end) AS supervising_officer_external_id_end,
-        MAX(compartment_location_start) AS compartment_location_start,
-        MAX(compartment_location_end) AS compartment_location_end,
-        MAX(correctional_level_start) AS correctional_level_start,
-        MAX(correctional_level_end) AS correctional_level_end,
         CASE WHEN LOGICAL_AND(end_date IS NOT NULL) THEN MAX(end_date) END AS end_date,
+        ANY_VALUE(supervising_officer_external_id_start) AS supervising_officer_external_id_start,
+        ANY_VALUE(supervising_officer_external_id_end) AS supervising_officer_external_id_end,
+        ANY_VALUE(compartment_location_start) AS compartment_location_start,
+        ANY_VALUE(compartment_location_end) AS compartment_location_end,
+        ANY_VALUE(correctional_level_start) AS correctional_level_start,
+        ANY_VALUE(correctional_level_end) AS correctional_level_end,    
+        ANY_VALUE(case_type_start) AS case_type_start,
+        ANY_VALUE(case_type_end) AS case_type_end, 
         SUM(CASE WHEN metric_source = 'INFERRED' THEN DATE_DIFF(COALESCE(end_date, last_day_of_data), start_date, DAY) + 1 ELSE 0 END) AS session_days_inferred,
-    FROM session_with_ids_2
+    FROM
+        (
+        /*
+        This logic is used to calculate the first non-null session attribute for a given person_id and session_id (and
+        last non-null session attribute for the _end values)
+        */
+        SELECT
+            * EXCEPT(supervising_officer_external_id_start, supervising_officer_external_id_end, compartment_location_start, compartment_location_end, correctional_level_start, correctional_level_end, case_type_start, case_type_end),
+            FIRST_VALUE(supervising_officer_external_id_start IGNORE NULLS) OVER(PARTITION BY person_id, session_id, state_code
+                                                                ORDER BY start_date ASC) AS supervising_officer_external_id_start,
+            FIRST_VALUE(supervising_officer_external_id_end IGNORE NULLS) OVER(PARTITION BY person_id, session_id, state_code
+                                                                ORDER BY start_date DESC) AS supervising_officer_external_id_end,
+            FIRST_VALUE(compartment_location_start IGNORE NULLS) OVER(PARTITION BY person_id, session_id, state_code
+                                                                ORDER BY start_date ASC) AS compartment_location_start,
+            FIRST_VALUE(compartment_location_end IGNORE NULLS) OVER(PARTITION BY person_id, session_id, state_code
+                                                                ORDER BY start_date DESC) AS compartment_location_end,
+            FIRST_VALUE(correctional_level_start IGNORE NULLS) OVER(PARTITION BY person_id, session_id, state_code
+                                                                ORDER BY start_date ASC) AS correctional_level_start,
+            FIRST_VALUE(correctional_level_end IGNORE NULLS) OVER(PARTITION BY person_id, session_id, state_code
+                                                                ORDER BY start_date DESC) AS correctional_level_end,
+            FIRST_VALUE(case_type_start IGNORE NULLS) OVER(PARTITION BY person_id, session_id, state_code
+                                                                ORDER BY start_date ASC) AS case_type_start,
+            FIRST_VALUE(case_type_end IGNORE NULLS) OVER(PARTITION BY person_id, session_id, state_code
+                                                                ORDER BY start_date DESC) AS case_type_end,
+        FROM session_with_ids_2
+        )
     GROUP BY 1,2,3,4,5,6,7
     )
     ,
@@ -479,6 +584,8 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         s.compartment_location_end,
         s.correctional_level_start,
         s.correctional_level_end,
+        s.case_type_start,
+        s.case_type_end,
         DATE_DIFF(COALESCE(s.end_date, first.last_day_of_data), s.start_date, DAY) + 1 AS session_length_days,
         s.session_days_inferred,
         first.start_reason,
@@ -566,18 +673,20 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         sessions.inflow_from_level_2,
         sessions.outflow_to_level_1,
         sessions.outflow_to_level_2,
-        compartment_location_start,
-        compartment_location_end,
-        correctional_level_start,
-        correctional_level_end,
         age_start,
         age_end,     
         gender,
         prioritized_race_or_ethnicity,
         assessment_score_start,
         assessment_score_end,
-        supervising_officer_external_id_start, 
-        supervising_officer_external_id_end,  
+        supervising_officer_external_id_start,
+        supervising_officer_external_id_end,
+        compartment_location_start,
+        compartment_location_end,
+        correctional_level_start,
+        correctional_level_end,
+        case_type_start,
+        case_type_end,
         CASE WHEN age_start <=24 THEN '<25'
             WHEN age_start <=29 THEN '25-29'
             WHEN age_start <=39 THEN '30-39'

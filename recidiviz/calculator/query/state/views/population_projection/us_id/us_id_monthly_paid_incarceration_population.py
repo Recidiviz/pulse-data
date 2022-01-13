@@ -81,6 +81,21 @@ US_ID_MONTHLY_PAID_INCARCERATION_POPULATION_QUERY_TEMPLATE = """
         UNNEST(assgn_rsn_list) AS assgn_rsn_cd
         GROUP BY state_code, person_id, movement_start_date, movement_end_date
     ),
+    incarceration_sessions_cte AS (
+        SELECT
+            person_id,
+            state_code,
+            start_date,
+            end_date,
+            session_attributes.compartment_location AS compartment_location,
+            session_attributes.compartment_level_1 AS compartment_level_1,
+            session_attributes.compartment_level_2 AS compartment_level_2,
+        FROM `{project_id}.{sessions_dataset}.dataflow_sessions_materialized`,
+        UNNEST (session_attributes) session_attributes
+        WHERE state_code = 'US_ID'
+            AND compartment_level_2 NOT IN ('OTHER', 'INTERNAL_UNKNOWN')
+            AND compartment_level_1 = 'INCARCERATION'
+    ),
     paid_status_on_compartment_sessions AS (
         -- Join the movement sessions to dataflow_sessions to get the corresponding session data
         -- (admission/release dates, facility, and demographic info) for the periods that overlap the first of the month
@@ -99,7 +114,7 @@ US_ID_MONTHLY_PAID_INCARCERATION_POPULATION_QUERY_TEMPLATE = """
             sessions.compartment_level_2,
             pay_flag
         FROM `{project_id}.{population_projection_dataset}.simulation_run_dates` AS report_month
-        INNER JOIN `{project_id}.{sessions_dataset}.dataflow_sessions_materialized` sessions
+        INNER JOIN incarceration_sessions_cte sessions
             ON report_month.run_date BETWEEN sessions.start_date AND COALESCE(sessions.end_date, '9999-01-01')
         -- Drop incarceration locations that should not be counted (mostly out of state incarcerations)
         INNER JOIN `{project_id}.{static_reference_dataset}.population_projection_facilities` facilities
@@ -111,10 +126,7 @@ US_ID_MONTHLY_PAID_INCARCERATION_POPULATION_QUERY_TEMPLATE = """
             AND report_month.run_date BETWEEN paid_status.movement_start_date AND COALESCE(paid_status.movement_end_date, '9999-01-01')
         LEFT JOIN `{project_id}.{sessions_dataset}.person_demographics_materialized` demographics
             ON sessions.person_id = demographics.person_id        
-        WHERE sessions.state_code = 'US_ID'
-            AND gender IN ('FEMALE', 'MALE')
-            AND compartment_level_2 NOT IN ('OTHER', 'INTERNAL_UNKNOWN')
-            AND compartment_level_1 = 'INCARCERATION'
+        WHERE gender IN ('FEMALE', 'MALE')
     )
     SELECT
         state_code,

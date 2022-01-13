@@ -38,28 +38,39 @@ SUPERVISION_OFFICER_SESSIONS_QUERY_TEMPLATE = """
     UNNEST(session_attributes) session_attributes
     WHERE compartment_level_1 = 'SUPERVISION' OR compartment_level_1 = 'SUPERVISION_OUT_OF_STATE'
     )
-    SELECT state_code, person_id, supervising_officer_external_id, supervising_officer_session_id, MIN(start_date) start_date,
-    CASE WHEN LOGICAL_AND(end_date IS NOT NULL) THEN MAX(end_date) END AS end_date,
+    SELECT 
+        state_code, 
+        person_id, 
+        supervising_officer_external_id,
+        supervising_officer_session_id,
+        MIN(start_date) start_date,
+        CASE WHEN LOGICAL_AND(end_date IS NOT NULL) THEN MAX(end_date) END AS end_date,
+        MIN(dataflow_session_id) AS dataflow_session_id_start,
+        MAX(dataflow_session_id) AS dataflow_session_id_end,
     FROM (
         -- If any officer in the current session was not present in the preceding session, count an officer change
         SELECT *, 
             SUM(CASE WHEN COALESCE(officer_changed, 1) = 1 THEN 1 ELSE 0 END) 
                 OVER(PARTITION BY person_id ORDER BY start_date) AS supervising_officer_session_id
         FROM (
-            SELECT session.state_code, session.person_id, session.supervising_officer_external_id,
-                session.start_date, session.end_date,
+            SELECT
+                session.state_code,
+                session.person_id, 
+                session.supervising_officer_external_id,
+                session.start_date,
+                session.end_date,
+                session.dataflow_session_id,
                 -- Only count an officer toward an officer change once if officer was not present at all in preceding session
                 MIN(IF(session_lag.supervising_officer_external_id = session.supervising_officer_external_id, 0, 1)) AS officer_changed
             FROM sub_sessions_attributes_unnested session
             LEFT JOIN sub_sessions_attributes_unnested as session_lag
                 ON session.state_code = session_lag.state_code
                 AND session.person_id = session_lag.person_id
-                AND session.dataflow_session_id = session_lag.dataflow_session_id + 1
                 AND session.start_date = DATE_ADD(session_lag.end_date, INTERVAL 1 DAY)
-            GROUP BY state_code, person_id, supervising_officer_external_id, start_date, end_date
+            GROUP BY 1,2,3,4,5,6
             )
     )
-    GROUP BY state_code, person_id, supervising_officer_external_id, supervising_officer_session_id
+    GROUP BY 1,2,3,4
     """
 
 SUPERVISION_OFFICER_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(

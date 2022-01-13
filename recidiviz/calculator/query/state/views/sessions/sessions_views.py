@@ -36,6 +36,9 @@ from recidiviz.calculator.query.state.views.sessions.cohort_month_index import (
 from recidiviz.calculator.query.state.views.sessions.compartment_level_0_super_sessions import (
     COMPARTMENT_LEVEL_0_SUPER_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.compartment_level_1_dedup_priority import (
+    COMPARTMENT_LEVEL_1_DEDUP_PRIORITY_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.compartment_level_1_super_sessions import (
     COMPARTMENT_LEVEL_1_SUPER_SESSIONS_VIEW_BUILDER,
 )
@@ -153,6 +156,7 @@ SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     COHORT_MONTH_INDEX_VIEW_BUILDER,
     COMPARTMENT_LEVEL_0_SUPER_SESSIONS_VIEW_BUILDER,
     COMPARTMENT_LEVEL_1_SUPER_SESSIONS_VIEW_BUILDER,
+    COMPARTMENT_LEVEL_1_DEDUP_PRIORITY_VIEW_BUILDER,
     COMPARTMENT_LEVEL_2_DEDUP_PRIORITY_VIEW_BUILDER,
     COMPARTMENT_LEVEL_2_SUPER_SESSIONS_VIEW_BUILDER,
     COMPARTMENT_SENTENCES_VIEW_BUILDER,

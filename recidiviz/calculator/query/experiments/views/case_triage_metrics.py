@@ -137,22 +137,27 @@ CASE_TRIAGE_EVENTS_QUERY_TEMPLATE = """
 
     correct_levels_select AS (
         SELECT DISTINCT
-           metrics.state_code
+           compartment_metrics.state_code
            , selected.person_external_id
            , EXTRACT(DATE FROM selected.timestamp AT TIME ZONE 'US/Eastern') as date
-           , metrics.compartment_level_2 AS supervision_type
-           , COALESCE(metrics.correctional_level, 'INTERNAL_UNKNOWN') AS supervision_level
+           , compartment_metrics.compartment_level_2 AS supervision_type
+           , COALESCE(supervision_level_metrics.supervision_level, 'INTERNAL_UNKNOWN') AS supervision_level
         FROM `{project_id}.{case_triage_segment_dataset}.frontend_person_selected` selected
         INNER JOIN `{project_id}.{static_reference_tables_dataset}.case_triage_users` recipients
             ON selected.user_id = recipients.segment_id
         LEFT JOIN `{project_id}.{state_base_dataset}.state_person_external_id` client
             ON selected.person_external_id = client.external_id
             AND recipients.state_code = client.state_code
-        LEFT JOIN `{project_id}.{sessions_dataset}.dataflow_sessions_materialized` metrics
-            ON client.state_code = metrics.state_code
-            AND client.person_id = metrics.person_id
+        LEFT JOIN `{project_id}.{sessions_dataset}.supervision_level_sessions_materialized` supervision_level_metrics
+            ON client.state_code = supervision_level_metrics.state_code
+            AND client.person_id = supervision_level_metrics.person_id
             AND EXTRACT(DATE FROM selected.timestamp AT TIME ZONE 'US/Eastern')
-                BETWEEN metrics.start_date AND COALESCE(metrics.end_date, CURRENT_DATE('US/Eastern'))
+                BETWEEN supervision_level_metrics.start_date AND COALESCE(supervision_level_metrics.end_date, CURRENT_DATE('US/Eastern'))
+        LEFT JOIN `{project_id}.{sessions_dataset}.compartment_sessions_materialized` compartment_metrics
+            ON client.state_code = compartment_metrics.state_code
+            AND client.person_id = compartment_metrics.person_id
+            AND EXTRACT(DATE FROM selected.timestamp AT TIME ZONE 'US/Eastern')
+                BETWEEN compartment_metrics.start_date AND COALESCE(compartment_metrics.end_date, CURRENT_DATE('US/Eastern'))
     ),
 
     --match the timing of click events of a PO with whether a person was employed
@@ -218,16 +223,20 @@ CASE_TRIAGE_EVENTS_QUERY_TEMPLATE = """
             , updated.segment_id
             , updated.person_external_id
             , updated.feedback_date AS date
-            , metrics.compartment_level_2 AS supervision_type
-            , COALESCE(metrics.correctional_level, "INTERNAL_UNKNOWN") AS supervision_level
+            , compartment_metrics.compartment_level_2 AS supervision_type
+            , COALESCE(supervision_level_metrics.supervision_level, "INTERNAL_UNKNOWN") AS supervision_level
             -- indicate if the client had employment when the feedback was given
             , employ.recorded_start_date
             , employ.recorded_end AS recorded_end_date
         FROM `{project_id}.{experiments_dataset}.case_triage_feedback_actions` updated
-        LEFT JOIN `{project_id}.{sessions_dataset}.dataflow_sessions_materialized` metrics
-            ON updated.state_code = metrics.state_code
-            AND updated.person_id = metrics.person_id
-            AND updated.feedback_date BETWEEN metrics.start_date AND COALESCE(metrics.end_date, CURRENT_DATE('US/Eastern'))
+        LEFT JOIN `{project_id}.{sessions_dataset}.supervision_level_sessions_materialized` supervision_level_metrics
+            ON updated.state_code = supervision_level_metrics.state_code
+            AND updated.person_id = supervision_level_metrics.person_id
+            AND updated.feedback_date BETWEEN supervision_level_metrics.start_date AND COALESCE(supervision_level_metrics.end_date, CURRENT_DATE('US/Eastern'))
+        LEFT JOIN `{project_id}.{sessions_dataset}.compartment_sessions_materialized` compartment_metrics
+            ON updated.state_code = compartment_metrics.state_code
+            AND updated.person_id = compartment_metrics.person_id
+            AND updated.feedback_date BETWEEN compartment_metrics.start_date AND COALESCE(compartment_metrics.end_date, CURRENT_DATE('US/Eastern'))
         LEFT JOIN employ
             ON employ.state_code = updated.state_code
             AND employ.person_external_id = updated.person_external_id

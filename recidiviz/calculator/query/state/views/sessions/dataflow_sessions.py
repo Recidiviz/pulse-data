@@ -47,19 +47,12 @@ This table is the source of other sessions tables such as `compartment_sessions`
 |	Field	|	Description	|
 |	--------------------	|	--------------------	|
 |	person_id	|	Unique person identifier	|
+|	dataflow_session_id	|	Ordered session number per person	|
 |	state_code	|	State	|
-|	metric_source	|	The population dataflow metric from which the session was constructed (`INCARCERATION_POPULATION`, `SUPERVISION_POPULATION`, `SUPERVISION_OUT_OF_STATE_POPULATION` )	|
-|	compartment_level_1	|	Level 1 Compartment. Possible values are: <br>-`INCARCERATION`<br>-`INCARCERATION_OUT_OF_STATE`<br>-`SUPERVISION`<br>-`SUPERVISION_OUT_OF_STATE`<br>-`RELEASE`<br>-`INTERNAL_UNKNOWN`, <br>-`PENDING_CUSTODY`<br>-`PENDING_SUPERVISION`<br>-`SUSPENSION`<br>ERRONEOUS_RELEASE	|
-|	compartment_level_2	|	Level 2 Compartment. Possible values for the incarceration compartments are: <br>-`GENERAL`<br>-`PAROLE_BOARD_HOLD`<br>-`TREATMENT_IN_PRISON` <br>-`SHOCK_INCARCERATION`<br>-`ABSCONSION`<br>-`INTERNAL_UNKNOWN`<br>-`COMMUNITY_PLACEMENT_PROGRAM`<br>-`TEMPORARY_CUSTODY`<br><br>Possible values for the supervision compartments are: <br>-`PROBATION`<br>-`PAROLE`<br>-`ABSCONSION`<br>-`DUAL`<br>-`BENCH_WARRANT`<br>-`INFORMAL_PROBATION`<br>-`INTERNAL_UNKNOWN`<br><br>All other `compartment_level_1` values have the same value for `compartment_level_1` and `compartment_level_2`	|
-|	compartment_location	|	Facility or supervision district	|
-|	correctional_level	|	Person's custody level (for incarceration sessions) or supervision level (for supervision sessions)	|
-|	supervising_officer_external_id	|	Supervision officer at start of session (only populated for supervision sessions)	|
-|	case_type	|	The type of case that describes the associated period of supervision	|
-|	session_attributes	|	This is an array that stores values for compartment_level_2, supervising_officer_external_id, compartment_location in cases where there is more than of these values on a given day. The non-array versions of these fields determinstically and arbitrarily choose a single value, but this field allows us to unnest and look at cases where a person has more than one supervising officer or supervision location on a given day	|
 |	start_date	|	Start day of session	|
 |	end_date	|	Last full day of session	|
+|	session_attributes	|	This is an array that stores values for metric_source, compartment_level_1, compartment_level_2, correctional_level, supervising_officer_external_id, and compartment_location in cases where there is more than of these values on a given day. This field allows us to unnest to create overlapping sessions and look at cases where a person has more than one attribute for a given time period	|
 |	last_day_of_data	|	The last day for which we have data, specific to a state. The is is calculated as the state min of the max day of which we have population data across supervision and population metrics within a state. For example, if in ID the max incarceration population date value is 2021-09-01 and the max supervision population date value is 2021-09-02, we would say that the last day of data for ID is 2021-09-01.	|
-|	dataflow_session_id	|	Ordered session number per person	|
 
 ## Methodology
 
@@ -100,7 +93,7 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = """
         /* TODO(#6126): Investigate ID missing reason for incarceration */
         CASE 
             WHEN state_code = 'US_ND' AND facility = 'CPP' 
-                THEN 'COMMUNITY_PLACEMENT_PROGRAM'
+                THEN 'COMMUNITY_CONFINEMENT'
             ELSE COALESCE(specialized_purpose_for_incarceration, 'GENERAL') END as compartment_level_2,
         COALESCE(facility,'EXTERNAL_UNKNOWN') AS compartment_location,
         COALESCE(facility,'EXTERNAL_UNKNOWN') AS facility,
@@ -198,168 +191,43 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = """
     GROUP BY 1
     ) 
     ,
-    dedup_step_1_cte AS 
-    (
-    /*
-    If a record has a null value in compartment_level_2 and has a row that is otherwise identical with a non-null compartment_2_value,
-    then take the non-null version. 
-    This is done in a step prior to other deduplication because there are other cases where we want to combine
-    a person / day on both parole and probation supervision into dual supervision.
-    */
-    SELECT DISTINCT
-        a.person_id,
-        a.date,
-        a.state_code,
-        a.metric_source,
-        a.compartment_level_1,
-        COALESCE(a.compartment_level_2, b.compartment_level_2) compartment_level_2,
-        a.compartment_location,
-        a.facility,
-        a.supervision_office,
-        a.supervision_district,
-        a.correctional_level,
-        a.supervising_officer_external_id,
-        a.case_type 
-    FROM population_cte a 
-    LEFT JOIN  population_cte b 
-    ON a.person_id = b.person_id
-        AND a.date = b.date
-        AND a.metric_source = b.metric_source
-        AND b.compartment_level_2 IS NOT NULL
-    )
-    ,
-    dedup_correctional_level AS
-    /*
-    Select a single correctional level for a given date, prioritizing higher supervision levels
-    */
-    (
-    SELECT DISTINCT
-        person_id,
-        date,
-        state_code,
-        metric_source,
-        compartment_level_1,
-        correctional_level
-    FROM (
-        SELECT *, 
-        ROW_NUMBER() OVER(PARTITION BY person_id, date, compartment_level_1, metric_source 
-                ORDER BY COALESCE(correctional_level_priority, 999)) AS rn
-        FROM dedup_step_1_cte
-        LEFT JOIN `{project_id}.{sessions_dataset}.supervision_level_dedup_priority` p
-            USING(metric_source, correctional_level)
-    )
-    WHERE rn = 1    
-    )
-    ,
-    dedup_step_2_cte AS
-    /*
-    Creates dual supervision category by classifying any cases where a person is listed on "PROBATION" and "PAROLE" on  
-    the same day as being "DUAL".
-    */
-    (
-    SELECT DISTINCT
-        person_id,
-        date,
-        state_code,
-        metric_source,
-        compartment_level_1,
-        CASE WHEN cnt > 1 AND compartment_level_1 = 'SUPERVISION' THEN 'DUAL' ELSE compartment_level_2 END AS compartment_level_2,
-        compartment_location,
-        facility,
-        supervision_office,
-        supervision_district,
-        supervising_officer_external_id,
-        case_type,
-        FROM (
-            SELECT *,
-            COUNT(DISTINCT(CASE WHEN compartment_level_2 IN ('PAROLE', 'PROBATION') 
-                THEN compartment_level_2 END)) OVER(PARTITION BY person_id, date, compartment_level_1, metric_source) AS cnt,
-            FROM dedup_step_1_cte
-        )
-    )
-    ,
-    dedup_step_3_cte AS 
-    /* 
-    Row aggregation step that dedups each day to a single person per metric_source, along with an associated
-    array of session attributes (compartment_level_2, supervision officer, and location) in struct form.
-    */
+    session_attributes_cte AS
     (
     SELECT 
         person_id,
         date,
         state_code,
-        metric_source,
-        compartment_level_1,
-        compartment_level_2,
-        compartment_location,
-        facility,
-        supervision_office,
-        supervision_district,
-        correctional_level,
-        supervising_officer_external_id,
-        case_type,
-        session_attributes,
-        session_attributes_json,
-    FROM
-        (
-        SELECT 
-            *, 
-            /* Deduplicate population metrics for a single person/date by selecting the row with highest priority 
-            compartment_level_2, the highest correctional level and alphabetically first officer name and location name. */
-            ROW_NUMBER() OVER(PARTITION BY person_id, date, compartment_level_1, metric_source 
-                ORDER BY COALESCE(dedup.priority,999), supervising_officer_external_id, compartment_location) AS rn,
-            ARRAY_AGG(STRUCT(compartment_level_2, supervising_officer_external_id, compartment_location, facility, supervision_office, supervision_district)) 
-                OVER(PARTITION BY person_id, date, compartment_level_1, metric_source) AS session_attributes,
-            ARRAY_AGG(TO_JSON_STRING(STRUCT(compartment_level_2, supervising_officer_external_id, compartment_location, facility, supervision_office, supervision_district)))
-                OVER(PARTITION BY person_id, date, compartment_level_1, metric_source) AS session_attributes_json,
-        FROM dedup_step_2_cte
-        LEFT JOIN dedup_correctional_level
-            USING (person_id, date, state_code, metric_source, compartment_level_1)
-        LEFT JOIN `{project_id}.{sessions_dataset}.compartment_level_2_dedup_priority` dedup
-            USING(compartment_level_1, compartment_level_2)
-        )
-    WHERE rn = 1
-    )
-    ,
-    dedup_step_4_cte AS 
-    /*
-    Dedup across metric_source (INCARCERATION_POPULATION, SUPERVISION_POPULATION, SUPERVISION_OUT_OF_STATE_POPULATION),
-    prioritizing in that order. Additionally this query ensures that all person / dates are less than or equal to the
-    previously calculated last_day_of_data. This handles edge cases where population metric sources have different 
-    max dates and the person is listed as being on multiple population metrics on those respective dates. Without this
-    logic, the example above would cause a person to show up with multiple active sessions.
-    */
-    (
-    SELECT
-        person_id,
-        date,
-        state_code,
-        metric_source,
-        compartment_level_1,
-        compartment_level_2,
-        compartment_location,
-        facility,
-        supervision_office,
-        supervision_district,
-        correctional_level,
-        supervising_officer_external_id,
-        case_type,
-        session_attributes,
-        session_attributes_json,
-        CONCAT(COALESCE(compartment_level_1,''),'|', COALESCE(compartment_level_2,''),'|',COALESCE(compartment_location,''),'|',COALESCE(correctional_level,''),'|',COALESCE(supervising_officer_external_id,''),'|',COALESCE(case_type,'') ) AS new_session_string,
-    FROM 
-        (
-        SELECT 
-            *,
-            ROW_NUMBER() OVER(PARTITION BY person_id, date ORDER BY 
-                CASE WHEN metric_source = 'INCARCERATION_POPULATION' THEN 1 
-                    WHEN metric_source = 'SUPERVISION_POPULATION'  THEN 2 
-                    WHEN metric_source = 'SUPERVISION_OUT_OF_STATE_POPULATION' THEN 3 END ASC) AS rn
-        FROM  dedup_step_3_cte
-        )
-    JOIN last_day_of_data_by_state USING(state_code)
-    WHERE rn = 1 
-        AND date<=last_day_of_data 
+        last_day_of_data,
+        ARRAY_AGG(
+            STRUCT(
+                metric_source,
+                compartment_level_1,
+                compartment_level_2,
+                compartment_location,
+                facility,
+                supervision_office,
+                supervision_district,
+                correctional_level,
+                supervising_officer_external_id,
+                case_type
+                )
+            ORDER BY 
+                metric_source,
+                compartment_level_1,
+                compartment_level_2,
+                compartment_location,
+                facility,
+                supervision_office,
+                supervision_district,
+                correctional_level,
+                supervising_officer_external_id,
+                case_type
+            ) AS session_attributes,
+    FROM population_cte
+    JOIN last_day_of_data_by_state 
+        USING(state_code)
+    WHERE date<=last_day_of_data 
+    GROUP BY 1,2,3,4
     )
     ,
     sessionized_cte AS 
@@ -372,25 +240,12 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = """
         person_id,
         dataflow_session_id,
         state_code,
-        metric_source,
-        compartment_level_1,
-        compartment_level_2,
-        compartment_location,
-        facility,
-        supervision_office,
-        supervision_district,
-        correctional_level,
-        supervising_officer_external_id,
-        case_type,
-        ANY_VALUE(session_attributes) session_attributes,
+        last_day_of_data,
         MIN(date) AS start_date,
-        MAX(date) AS end_date
+        MAX(date) AS end_date,
+        ANY_VALUE(session_attributes) session_attributes,
     FROM 
         (
-        /*
-        Create groups used to identify unique sessions. This is the same technique used above to identify continuous 
-        dates, but now restricted to continuous dates within a compartment
-        */
         SELECT 
             *,
             SUM(IF(new_session OR date_gap,1,0)) OVER(PARTITION BY person_id ORDER BY date) AS dataflow_session_id
@@ -398,37 +253,25 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = """
             (
             SELECT 
                 *,
-                COALESCE(LAG(new_session_string) OVER(PARTITION BY person_id ORDER BY date),'') != COALESCE(new_session_string,'') AS new_session,
+                COALESCE(LAG(TO_JSON_STRING(session_attributes)) OVER(PARTITION BY person_id, state_code ORDER BY date),'') != COALESCE(TO_JSON_STRING(session_attributes),'') AS new_session,
                 LAG(date) OVER(PARTITION BY person_id ORDER BY date) != DATE_SUB(date, INTERVAL 1 DAY) AS date_gap
-            FROM dedup_step_4_cte
+            FROM session_attributes_cte
             )
         )
-    GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13
+    GROUP BY 1,2,3,4
     )
     /*
     Same as sessionized cte with null end dates for active sessions.
     */
     SELECT 
-        s.person_id,
-        s.dataflow_session_id,
-        s.state_code,
-        s.metric_source,
-        s.compartment_level_1,
-        s.compartment_level_2,
-        s.compartment_location,
-        s.facility,
-        s.supervision_office,
-        s.supervision_district,
-        s.correctional_level,
-        s.supervising_officer_external_id,
-        s.case_type,
-        s.session_attributes,
-        s.start_date,
-        CASE WHEN s.end_date < l.last_day_of_data THEN s.end_date END AS end_date,
-        l.last_day_of_data
-    FROM sessionized_cte s
-    LEFT JOIN last_day_of_data_by_state l
-        USING(state_code)
+        person_id,
+        dataflow_session_id,
+        state_code,
+        start_date,
+        CASE WHEN end_date < last_day_of_data THEN end_date END AS end_date,
+        session_attributes,
+        last_day_of_data
+    FROM sessionized_cte
 """
 
 DATAFLOW_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
