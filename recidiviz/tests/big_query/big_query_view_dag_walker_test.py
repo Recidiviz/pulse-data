@@ -1158,6 +1158,9 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
                 dataset_id="sessions", table_id="supervision_level_dedup_priority"
             ),
             BigQueryAddress(
+                dataset_id="sessions", table_id="compartment_level_1_dedup_priority"
+            ),
+            BigQueryAddress(
                 dataset_id="sessions", table_id="compartment_level_2_dedup_priority"
             ),
             BigQueryAddress(

@@ -55,6 +55,8 @@ LOCATION_SESSIONS_QUERY_TEMPLATE = """
         location_session_id_unordered,
         MIN(start_date) start_date,
         CASE WHEN LOGICAL_AND(end_date IS NOT NULL) THEN MAX(end_date) END AS end_date,
+        MIN(dataflow_session_id) AS dataflow_session_id_start,
+        MAX(dataflow_session_id) AS dataflow_session_id_end,
         FROM
             (
             /*
@@ -90,13 +92,14 @@ LOCATION_SESSIONS_QUERY_TEMPLATE = """
                     session.start_date,
                     session.end_date,
                     -- Only count a location toward an location change once if location was not present at all in preceding session
+                    session.dataflow_session_id,
                     MIN(IF(session_lag.location = session.location, 0, 1)) AS location_changed
                 FROM sub_sessions_attributes_unnested session
                 LEFT JOIN sub_sessions_attributes_unnested as session_lag
                     ON session.state_code = session_lag.state_code
                     AND session.person_id = session_lag.person_id
                     AND session.start_date = DATE_ADD(session_lag.end_date, INTERVAL 1 DAY)
-                GROUP BY 1,2,3,4,5,6,7,8
+                GROUP BY 1,2,3,4,5,6,7,8,9
                 )
             )           
     GROUP BY 1,2,3,4,5,6,7

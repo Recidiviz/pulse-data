@@ -93,7 +93,32 @@ SUPERVISION_OFFICER_CASELOAD_HEALTH_METRICS_QUERY_TEMPLATE = """
         WHERE officers.start_date <= supervision_date
         GROUP BY 1,2,3
     ),
-    
+    --TODO(#10631): Add case type to supervision_level_sessions with a deduplication ranking in case where a person has more than one case type at a given level
+    level_and_case_type_sessions AS 
+    (
+    SELECT DISTINCT
+        sl_sessions.person_id,
+        sl_sessions.state_code,
+        sl_sessions.start_date,
+        sl_sessions.end_date,
+        sl_sessions.supervision_level,
+        sl_sessions.supervision_level_session_id,
+        df_sessions.case_type,
+    FROM `{project_id}.{sessions_dataset}.supervision_level_sessions_materialized` AS sl_sessions
+    JOIN 
+        (
+        SELECT 
+            * 
+        FROM `{project_id}.{sessions_dataset}.dataflow_sessions_materialized`,
+        UNNEST (session_attributes)
+        ) AS df_sessions
+    ON sl_sessions.person_id = df_sessions.person_id
+        AND sl_sessions.state_code = df_sessions.state_code
+        AND sl_sessions.supervision_level = df_sessions.correctional_level
+        AND df_sessions.dataflow_session_id BETWEEN sl_sessions.dataflow_session_id_start AND sl_sessions.dataflow_session_id_end
+    WHERE TRUE
+    QUALIFY ROW_NUMBER() OVER(PARTITION BY sl_sessions.person_id, sl_sessions.supervision_level_session_id ORDER BY IF(df_sessions.case_type = 'SEX_OFFENSE',0,1), df_sessions.case_type)=1
+    ),
     caseload_characteristics AS (
         /* Calculates attributes of a caseload's composition on a single day snapshot*/
         SELECT officers.state_code, supervision_date, officers.supervising_officer_external_id,
@@ -102,14 +127,14 @@ SUPERVISION_OFFICER_CASELOAD_HEALTH_METRICS_QUERY_TEMPLATE = """
             COUNTIF(demographics.gender = 'FEMALE')/COUNT(1) AS prop_female_caseload,
             COUNTIF(demographics.prioritized_race_or_ethnicity = 'WHITE')/COUNT(1) AS prop_white_caseload,
             COUNTIF(demographics.prioritized_race_or_ethnicity = 'BLACK')/COUNT(1) AS prop_black_caseload,
-            COUNTIF(dataflow.correctional_level = 'MINIMUM')/COUNT(1) AS prop_low_risk_caseload,
+            COUNTIF(dataflow.supervision_level = 'MINIMUM')/COUNT(1) AS prop_low_risk_caseload,
             AVG(assessment.assessment_score) AS avg_risk_score,
             COUNTIF(recommended_supervision_downgrade_level IS NOT NULL) AS supervision_level_mismatch_count
     
         FROM officers_unnested officers
         LEFT JOIN `{project_id}.{sessions_dataset}.person_demographics_materialized` demographics
             USING (state_code, person_id)
-        LEFT JOIN `{project_id}.{sessions_dataset}.dataflow_sessions_materialized` dataflow
+        LEFT JOIN level_and_case_type_sessions dataflow
             ON officers.state_code = dataflow.state_code
             AND officers.person_id = dataflow.person_id
             AND supervision_date BETWEEN dataflow.start_date AND COALESCE(dataflow.end_date, CURRENT_DATE('US/Eastern')) 

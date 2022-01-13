@@ -30,7 +30,6 @@ SUPERVISION_LEVEL_DEDUP_PRIORITY_VIEW_DESCRIPTION = (
 SUPERVISION_LEVEL_DEDUP_PRIORITY_QUERY_TEMPLATE = """
     /*{description}*/
     SELECT 
-        'SUPERVISION' AS metric_source,
         correctional_level,
         correctional_level_priority,
         -- Indicator for whether supervision level can be assigned based on risk level/PO discretion, to determine inclusion in downgrade/upgrade counts
