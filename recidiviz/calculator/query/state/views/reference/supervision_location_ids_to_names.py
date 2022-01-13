@@ -74,12 +74,35 @@ SUPERVISION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = """
             UPPER(level_1_supervision_location_external_id) AS level_1_supervision_location_external_id,
             level_1_supervision_location_name,
         FROM `{project_id}.us_pa_raw_data_up_to_date_views.RECIDIVIZ_REFERENCE_supervision_location_ids_latest`
+    ),
+    me_location_names AS (
+        SELECT 
+            DISTINCT 'US_ME' AS state_code,
+            'NOT_APPLICABLE' AS level_3_supervision_location_external_id,
+            'NOT_APPLICABLE' AS level_3_supervision_location_name,
+            Cis_9009_Region_Cd AS level_2_supervision_location_external_id,
+            CASE 
+                WHEN Cis_9009_Region_Cd = '1' THEN 'Region 1 Portland'
+                WHEN Cis_9009_Region_Cd = '2' THEN 'Region 2 Auburn'
+                WHEN Cis_9009_Region_Cd = '3' THEN 'Region 3 Bangor'
+                WHEN Cis_9009_Region_Cd = '4' THEN 'Region 4'
+                WHEN Cis_9009_Region_Cd = '5' THEN 'Central Office'
+            ELSE NULL
+            END AS level_2_supervision_location_name,
+            Ccs_Location_Id AS level_1_supervision_location_external_id,
+            TRIM(REGEXP_REPLACE(Location_Name, r',|Adult1|Adult', '')) AS level_1_supervision_location_name
+        -- TODO(#10636): Replace this with CIS_908_CCS_LOCATION_latest once US_ME raw data is available in production.
+        FROM `{project_id}.static_reference_tables.us_me_cis_908_ccs_location`
+        -- Adult Supervision Office Location Type
+        WHERE Cis_9080_Ccs_Location_Type_Cd = '4' 
     )
     SELECT * FROM mo_location_names
     UNION ALL
     SELECT * FROM nd_location_names
     UNION ALL
-    SELECT * FROM pa_location_names;    
+    SELECT * FROM pa_location_names
+    UNION ALL
+    SELECT * FROM me_location_names;    
     """
 
 SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
