@@ -89,6 +89,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                         drivername="postgresql",
                         username="jails_v2_db_user_value",
                         password="jails_v2_db_password_value",
+                        port=5432,
                         database="postgres",
                         query={"host": "/cloudsql/jails_v2_cloudsql_instance_id_value"},
                     ),
@@ -102,6 +103,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                         drivername="postgresql",
                         username="operations_v2_db_user_value",
                         password="operations_v2_db_password_value",
+                        port=5432,
                         database="postgres",
                         query={
                             "host": "/cloudsql/operations_v2_cloudsql_instance_id_value"
@@ -120,6 +122,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                         drivername="postgresql",
                         username="justice_counts_db_user_value",
                         password="justice_counts_db_password_value",
+                        port=5432,
                         database="postgres",
                         query={
                             "host": "/cloudsql/justice_counts_cloudsql_instance_id_value"
@@ -135,6 +138,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                         drivername="postgresql",
                         username="case_triage_db_user_value",
                         password="case_triage_db_password_value",
+                        port=5432,
                         database="postgres",
                         query={
                             "host": "/cloudsql/case_triage_cloudsql_instance_id_value"
@@ -150,6 +154,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                         drivername="postgresql",
                         username="state_v2_db_user_value",
                         password="state_v2_db_password_value",
+                        port=5432,
                         database="us_xx_primary",
                         query={"host": "/cloudsql/state_v2_cloudsql_instance_id_value"},
                     ),
@@ -163,6 +168,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                         drivername="postgresql",
                         username="state_v2_db_user_value",
                         password="state_v2_db_password_value",
+                        port=5432,
                         database="us_ww_primary",
                         query={"host": "/cloudsql/state_v2_cloudsql_instance_id_value"},
                     ),
@@ -176,6 +182,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                         drivername="postgresql",
                         username="state_v2_db_user_value",
                         password="state_v2_db_password_value",
+                        port=5432,
                         database="us_xx_secondary",
                         query={"host": "/cloudsql/state_v2_cloudsql_instance_id_value"},
                     ),
@@ -189,6 +196,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                         drivername="postgresql",
                         username="state_v2_db_user_value",
                         password="state_v2_db_password_value",
+                        port=5432,
                         database="us_ww_secondary",
                         query={"host": "/cloudsql/state_v2_cloudsql_instance_id_value"},
                     ),
@@ -236,6 +244,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                         drivername="postgresql",
                         username="jails_v2_db_user_value",
                         password="jails_v2_db_password_value",
+                        port=5432,
                         database="postgres",
                         query={"host": "/cloudsql/jails_v2_cloudsql_instance_id_value"},
                     ),
@@ -249,6 +258,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                         drivername="postgresql",
                         username="operations_v2_db_user_value",
                         password="operations_v2_db_password_value",
+                        port=5432,
                         database="postgres",
                         query={
                             "host": "/cloudsql/operations_v2_cloudsql_instance_id_value"
@@ -267,6 +277,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                         drivername="postgresql",
                         username="justice_counts_db_user_value",
                         password="justice_counts_db_password_value",
+                        port=5432,
                         database="postgres",
                         query={
                             "host": "/cloudsql/justice_counts_cloudsql_instance_id_value"
@@ -282,6 +293,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                         drivername="postgresql",
                         username="case_triage_db_user_value",
                         password="case_triage_db_password_value",
+                        port=5432,
                         database="postgres",
                         query={
                             "host": "/cloudsql/case_triage_cloudsql_instance_id_value"
@@ -297,6 +309,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                         drivername="postgresql",
                         username="state_v2_db_user_value",
                         password="state_v2_db_password_value",
+                        port=5432,
                         database="us_xx_primary",
                         query={"host": "/cloudsql/state_v2_cloudsql_instance_id_value"},
                     ),
@@ -310,6 +323,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                         drivername="postgresql",
                         username="state_v2_db_user_value",
                         password="state_v2_db_password_value",
+                        port=5432,
                         database="us_ww_primary",
                         query={"host": "/cloudsql/state_v2_cloudsql_instance_id_value"},
                     ),
@@ -323,6 +337,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                         drivername="postgresql",
                         username="state_v2_db_user_value",
                         password="state_v2_db_password_value",
+                        port=5432,
                         database="us_xx_secondary",
                         query={"host": "/cloudsql/state_v2_cloudsql_instance_id_value"},
                     ),
@@ -336,6 +351,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                         drivername="postgresql",
                         username="state_v2_db_user_value",
                         password="state_v2_db_password_value",
+                        port=5432,
                         database="us_ww_secondary",
                         query={"host": "/cloudsql/state_v2_cloudsql_instance_id_value"},
                     ),

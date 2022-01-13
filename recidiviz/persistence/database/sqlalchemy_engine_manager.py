@@ -27,6 +27,7 @@ from recidiviz.persistence.database.constants import (
     SQLALCHEMY_DB_HOST,
     SQLALCHEMY_DB_NAME,
     SQLALCHEMY_DB_PASSWORD,
+    SQLALCHEMY_DB_PORT,
     SQLALCHEMY_DB_USER,
     SQLALCHEMY_SSL_CERT_PATH,
     SQLALCHEMY_SSL_KEY_PATH,
@@ -353,6 +354,7 @@ class SQLAlchemyEngineManager:
             SQLALCHEMY_DB_HOST,
             SQLALCHEMY_DB_USER,
             SQLALCHEMY_DB_PASSWORD,
+            SQLALCHEMY_DB_PORT,
             SQLALCHEMY_USE_SSL,
         ]
         original_values = {
@@ -426,7 +428,7 @@ class SQLAlchemyEngineManager:
 
         db_user = cls._get_db_user(database_key=database_key)
         db_password = cls._get_db_password(database_key=database_key)
-        db_name = database_key.db_name
+        db_port = cls._get_db_port()
         cloudsql_instance_id = secrets.get_secret(instance_id_key)
         db_name = database_key.db_name
 
@@ -435,6 +437,7 @@ class SQLAlchemyEngineManager:
             username=db_user,
             password=db_password,
             database=db_name,
+            port=db_port,
             query={"host": f"/cloudsql/{cloudsql_instance_id}"},
         )
 
@@ -449,12 +452,14 @@ class SQLAlchemyEngineManager:
         db_password = cls._get_db_password(database_key=database_key)
         host_name = cls._get_db_host(database_key=database_key)
         db_name = database_key.db_name
+        db_port = cls._get_db_port()
 
         url = URL.create(
             drivername="postgresql",
             username=db_user,
             password=db_password,
             host=host_name,
+            port=db_port,
             database=db_name,
         )
 
@@ -467,3 +472,7 @@ class SQLAlchemyEngineManager:
                 "sslrootcert": os.path.join(ssl_cert_path, "server-ca.pem"),
             },
         )
+
+    @classmethod
+    def _get_db_port(cls) -> int:
+        return int(os.environ.get(SQLALCHEMY_DB_PORT, "5432"))

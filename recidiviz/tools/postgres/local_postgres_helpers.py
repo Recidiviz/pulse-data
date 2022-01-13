@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """This module generates a local postgres instance for use in scripts in testing."""
+import logging
 import os
 import pwd
 import shutil
@@ -35,6 +36,7 @@ from recidiviz.persistence.database.constants import (
     SQLALCHEMY_DB_HOST,
     SQLALCHEMY_DB_NAME,
     SQLALCHEMY_DB_PASSWORD,
+    SQLALCHEMY_DB_PORT,
     SQLALCHEMY_DB_USER,
     SQLALCHEMY_USE_SSL,
 )
@@ -48,6 +50,7 @@ from recidiviz.tests.persistence.database.schema_entity_converter.test_base_sche
 )
 from recidiviz.tools.utils.script_helpers import run_command
 from recidiviz.utils import environment
+from recidiviz.utils.environment import in_ci
 
 DECLARATIVE_BASES = [
     OperationsBase,
@@ -71,16 +74,18 @@ def update_local_sqlalchemy_postgres_env_vars() -> Dict[str, Optional[str]]:
     sqlalchemy_vars = [
         SQLALCHEMY_DB_NAME,
         SQLALCHEMY_DB_HOST,
+        SQLALCHEMY_DB_PORT,
         SQLALCHEMY_USE_SSL,
         SQLALCHEMY_DB_USER,
         SQLALCHEMY_DB_PASSWORD,
     ]
     original_values = {env_var: os.environ.get(env_var) for env_var in sqlalchemy_vars}
 
-    os.environ[SQLALCHEMY_DB_NAME] = TEST_POSTGRES_DB_NAME
+    os.environ[SQLALCHEMY_DB_NAME] = get_on_disk_postgres_database_name()
     os.environ[SQLALCHEMY_DB_HOST] = "localhost"
     os.environ[SQLALCHEMY_USE_SSL] = "0"
     os.environ[SQLALCHEMY_DB_USER] = TEST_POSTGRES_USER_NAME
+    os.environ[SQLALCHEMY_DB_PORT] = str(get_on_disk_postgres_port())
     os.environ[SQLALCHEMY_DB_PASSWORD] = ""
 
     return original_values
@@ -108,6 +113,10 @@ def can_start_on_disk_postgresql_database() -> bool:
     return True
 
 
+def get_on_disk_postgres_log_dir_prefix() -> str:
+    return f"postgres{get_worker_id()}"
+
+
 @environment.local_only
 def start_on_disk_postgresql_database() -> str:
     """Starts and initializes a local postgres database for use in tests.
@@ -120,8 +129,12 @@ def start_on_disk_postgresql_database() -> str:
     _clear_all_on_disk_postgresql_databases()
 
     # Create the directory to use for the postgres database, if it does not already exist.
-    temp_db_data_dir = tempfile.mkdtemp(prefix="postgres")
+    temp_db_data_dir = tempfile.mkdtemp(prefix=get_on_disk_postgres_temp_dir_prefix())
     os.makedirs(temp_db_data_dir, exist_ok=True)
+
+    _temp_db_log_file, temp_db_log_path = tempfile.mkstemp(
+        prefix=get_on_disk_postgres_log_dir_prefix()
+    )
 
     # The database can't be owned by root so create a separate OS user to own the database if we are currently root.
     password_record = None
@@ -146,20 +159,27 @@ def start_on_disk_postgresql_database() -> str:
     # Write logs to file so that pg_ctl closes its stdout file descriptor when it moves to the background, otherwise
     # the subprocess will hang.
     run_command(
-        f"pg_ctl -D {temp_db_data_dir} -l /tmp/postgres initdb", as_user=password_record
+        f"pg_ctl -D {temp_db_data_dir} -l {temp_db_log_path} initdb",
+        as_user=password_record,
     )
 
-    if os.environ.get("CI") == "true":
-        # We need to set the host to 0.0.0.0 as CircleCI/GitHub Actions don't let us bind to 127.0.0.1 as the default.
-        run_command(
-            f'pg_ctl -D {temp_db_data_dir} -l /tmp/postgres start -o "-h 0.0.0.0"',
-            as_user=password_record,
-        )
-    else:
-        run_command(
-            f"pg_ctl -D {temp_db_data_dir} -l /tmp/postgres start",
-            as_user=password_record,
-        )
+    try:
+        if in_ci():
+            # We need to set the host to 0.0.0.0 as CircleCI/GitHub Actions don't let us bind to 127.0.0.1 as the default.
+            run_command(
+                f'pg_ctl -D {temp_db_data_dir} -l {temp_db_log_path} start -o "-h 0.0.0.0 -p {get_on_disk_postgres_port()}"',
+                as_user=password_record,
+            )
+        else:
+            run_command(
+                f'pg_ctl -D {temp_db_data_dir} -l {temp_db_log_path} start -o "-p {get_on_disk_postgres_port()}"',
+                as_user=password_record,
+            )
+    except RuntimeError as e:
+        with open(temp_db_log_path, "r", encoding="utf-8") as log:
+            logging.error("Log below:")
+            logging.error(log.read())
+        raise e
 
     # Create a user and database within postgres.
     # These will fail if they already exist, ignore that failure and continue.
@@ -167,15 +187,20 @@ def start_on_disk_postgresql_database() -> str:
     # should actually make sure that the set of permissions line up with what we have
     # in production.
     run_command(
-        f"createuser --superuser {TEST_POSTGRES_USER_NAME}",
+        f"createuser -p {get_on_disk_postgres_port()} --superuser {TEST_POSTGRES_USER_NAME}",
         as_user=password_record,
         assert_success=False,
     )
     run_command(
-        f"createdb -O {TEST_POSTGRES_USER_NAME} {TEST_POSTGRES_DB_NAME}",
+        f"createdb -p {get_on_disk_postgres_port()} -O {TEST_POSTGRES_USER_NAME} {get_on_disk_postgres_database_name()}",
         as_user=password_record,
-        assert_success=False,
     )
+
+    print(
+        f"Created database `{get_on_disk_postgres_database_name()}` on postgres instance bound to port {get_on_disk_postgres_port()}"
+    )
+    print(f"To query data, connect with `psql {on_disk_postgres_db_url()}`")
+
     return temp_db_data_dir
 
 
@@ -189,7 +214,7 @@ def _clear_all_on_disk_postgresql_databases() -> None:
     postgres_dirs = [
         os.path.join(tmp_dir, name)
         for name in tmp_directory_dirs
-        if name.startswith("postgres")
+        if name.startswith(get_on_disk_postgres_temp_dir_prefix())
     ]
     for postgres_dir in postgres_dirs:
         stop_and_clear_on_disk_postgresql_database(postgres_dir, assert_success=False)
@@ -216,7 +241,7 @@ def _stop_on_disk_postgresql_database(
         pwd.getpwnam(LINUX_TEST_DB_OWNER_NAME) if _is_root_user() else None
     )
     run_command(
-        f"pg_ctl -D {temp_db_data_dir} -l /tmp/postgres stop",
+        f"pg_ctl -D {temp_db_data_dir} -o '-p {get_on_disk_postgres_port()}' stop",
         as_user=password_record,
         assert_success=assert_success,
     )
@@ -242,13 +267,30 @@ def use_on_disk_postgresql_database(database_key: SQLAlchemyDatabaseKey) -> None
     database_key.declarative_meta.metadata.create_all(engine)
 
 
+def get_worker_id() -> int:
+    return int(os.environ.get("PYTEST_XDIST_WORKER", "gw0")[2:])
+
+
+def get_on_disk_postgres_port() -> int:
+    return 54300 + get_worker_id()
+
+
+def get_on_disk_postgres_database_name() -> str:
+    return f"{TEST_POSTGRES_DB_NAME}{get_worker_id()}"
+
+
+def get_on_disk_postgres_temp_dir_prefix() -> str:
+    return f"postgres{get_worker_id()}_"
+
+
 @environment.local_only
 def on_disk_postgres_db_url() -> URL:
     return URL.create(
         drivername="postgresql",
         username=TEST_POSTGRES_USER_NAME,
         host="localhost",
-        database=TEST_POSTGRES_DB_NAME,
+        port=get_on_disk_postgres_port(),
+        database=get_on_disk_postgres_database_name(),
     )
 
 
@@ -259,6 +301,7 @@ def postgres_db_url_from_env_vars() -> URL:
         username=os.getenv(SQLALCHEMY_DB_USER),
         password=os.getenv(SQLALCHEMY_DB_PASSWORD),
         host=os.getenv(SQLALCHEMY_DB_HOST),
+        port=os.getenv(SQLALCHEMY_DB_PORT),
         database=os.getenv(SQLALCHEMY_DB_NAME),
     )
 
