@@ -29,6 +29,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_specific_incarceratio
 from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
+    StateSpecializedPurposeForIncarceration,
     is_official_admission,
     is_official_release,
 )
@@ -44,8 +45,6 @@ class PreProcessedIncarcerationPeriodIndex:
 
     incarceration_periods: List[StateIncarcerationPeriod] = attr.ib()
 
-    # TODO(#10534): Use this to assert that consecutive periods of parole board holds
-    #  have been collapsed
     # Whether or not transfers between periods were collapsed during the IP
     # pre-processing that prepared these periods for calculations
     transfers_are_collapsed: bool = attr.ib()
@@ -370,16 +369,39 @@ class PreProcessedIncarcerationPeriodIndex:
             ip.incarceration_period_id: index
             for index, ip in enumerate(self.incarceration_periods)
         }
-
         return ip_id_to_index
 
-    def preceding_incarceration_period_in_index(
+    # A dictionary mapping incarceration_period_id values to the location of the most
+    # recent parole board hold in the index, if one exists
+    ip_index_to_most_recent_board_hold_index: Dict[int, Optional[int]] = attr.ib()
+
+    @ip_index_to_most_recent_board_hold_index.default
+    def _ip_index_to_most_recent_board_hold_index(self):
+        """Maps the incarceration_period_id of each incarceration period in the index to
+        the location of the most recent parole board period in the index, if one exists.
+        """
+        ip_index_to_most_recent_board_hold_index = {}
+
+        most_recent_board_hold_index = None
+
+        for index, ip in enumerate(self.incarceration_periods):
+            ip_index_to_most_recent_board_hold_index[
+                index
+            ] = most_recent_board_hold_index
+
+            if (
+                ip.specialized_purpose_for_incarceration
+                == StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD
+            ):
+                most_recent_board_hold_index = index
+
+        return ip_index_to_most_recent_board_hold_index
+
+    def most_recent_board_hold_in_index(
         self, incarceration_period: StateIncarcerationPeriod
     ) -> Optional[StateIncarcerationPeriod]:
-        """Returns the incarceration period which occurred immediately before the given
-        period in the index.
-        Returns None if the given period is the first period in the list. Errors if
-        the given period is not in the index."""
+        """Returns the most recent parole board hold that preceded the given
+        |incarceration_period|, if one exists."""
         if not incarceration_period.incarceration_period_id:
             raise ValueError(
                 "Unexpected incarceration period missing an incarceration_period_id."
@@ -387,6 +409,12 @@ class PreProcessedIncarcerationPeriodIndex:
         ip_list_index = self.ip_id_to_index[
             incarceration_period.incarceration_period_id
         ]
-        if ip_list_index > 0:
-            return self.incarceration_periods[ip_list_index - 1]
+
+        most_recent_board_hold_index = self.ip_index_to_most_recent_board_hold_index[
+            ip_list_index
+        ]
+
+        if most_recent_board_hold_index is not None:
+            return self.incarceration_periods[most_recent_board_hold_index]
+
         return None
