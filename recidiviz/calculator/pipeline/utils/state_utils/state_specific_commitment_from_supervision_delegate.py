@@ -87,6 +87,18 @@ class StateSpecificCommitmentFromSupervisionDelegate(abc.ABC):
 
         return set()
 
+    # TODO(#10536): Delete this if we end up using this methodology for US_PA,
+    #  which would make it shared methodology across all states
+    def prioritize_overlaps_with_board_holds_in_pre_commitment_sp_search(self) -> bool:
+        """Returns whether we should prioritize periods that *overlap* with the date of
+        admission to a parole board hold, as opposed to prioritizing periods that have
+        already terminated by the date of admission.
+
+        Default behavior is to prioritize periods that overlap with the admission to
+        the board hold.
+        """
+        return True
+
     def violation_history_window_pre_commitment_from_supervision(
         self,
         admission_date: datetime.date,
