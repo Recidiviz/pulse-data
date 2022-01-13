@@ -59,16 +59,14 @@ MICROSIM_PROJECTION_QUERY_TEMPLATE = """
           legal_status,
           simulation_group,
           COUNT(DISTINCT sessions.person_id) AS total_population
-      FROM `{project_id}.{sessions_dataset}.dataflow_sessions_materialized` sessions
-      LEFT JOIN `{project_id}.{sessions_dataset}.person_demographics_materialized` demographics
-        ON sessions.person_id = demographics.person_id 
+      FROM `{project_id}.{sessions_dataset}.compartment_sessions_materialized` sessions
       INNER JOIN historical_dates
         ON historical_dates.date BETWEEN sessions.start_date AND COALESCE(sessions.end_date, '9999-01-01'),
       UNNEST(['ALL', IF(compartment_level_2 = 'DUAL', 'PAROLE', compartment_level_2)]) AS legal_status,
       UNNEST(['ALL', gender]) AS simulation_group
       WHERE sessions.state_code IN ('US_ID', 'US_ND')
         AND gender IN ('FEMALE', 'MALE')
-        AND ((compartment_level_1 = 'SUPERVISION' AND metric_source = 'SUPERVISION_POPULATION')
+        AND (compartment_level_1 = 'SUPERVISION'
             OR (compartment_level_1 = 'INCARCERATION' AND sessions.state_code = 'US_ND')
         )
         AND compartment_level_2 IN ('{included_types}')

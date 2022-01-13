@@ -23,55 +23,107 @@ from recidiviz.utils.metadata import local_project_id_override
 
 SUPERVISION_LEVEL_SESSIONS_VIEW_NAME = "supervision_level_sessions"
 
-SUPERVISION_LEVEL_SESSIONS_VIEW_DESCRIPTION = """Sessionized view of non-verlapping periods of continuous stay on supervision on a given supervision level, along with level transitions (upgrades/downgrades)"""
+SUPERVISION_LEVEL_SESSIONS_VIEW_DESCRIPTION = """Sessionized view of non-overlapping periods of continuous stay on supervision on a given supervision level, along with level transitions (upgrades/downgrades)"""
 
 SUPERVISION_LEVEL_SESSIONS_QUERY_TEMPLATE = """
     /*{description}*/
-    WITH supervision_level_sessions AS
+    WITH sub_sessions_attributes_unnested AS
     (
-    SELECT state_code, person_id, supervision_level, supervision_level_session_id,
-        correctional_level_priority, is_discretionary_level,
+    SELECT DISTINCT
+        state_code,
+        person_id,
+        session_attributes.correctional_level AS supervision_level,
+        start_date,
+        end_date,
+        dataflow_session_id,
+    FROM `{project_id}.{sessions_dataset}.dataflow_sessions_materialized`,
+    UNNEST(session_attributes) session_attributes
+    WHERE session_attributes.compartment_level_1 IN ('SUPERVISION','SUPERVISION_OUT_OF_STATE')
+    )
+    ,
+    deduped_cte AS
+    (
+    SELECT
+        *
+    FROM sub_sessions_attributes_unnested ss
+    LEFT JOIN `{project_id}.{sessions_dataset}.supervision_level_dedup_priority` p
+        ON ss.supervision_level  = p.correctional_level
+    WHERE TRUE
+    QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id, state_code, dataflow_session_id
+        ORDER BY COALESCE(correctional_level_priority, 999)) = 1
+    )
+    ,
+    sessionized_cte AS
+    (
+    SELECT
+        state_code,
+        person_id,
+        supervision_level,
+        supervision_level_session_id_unordered,
+        correctional_level_priority,
+        is_discretionary_level,
         MIN(start_date) start_date,
         CASE WHEN LOGICAL_AND(end_date IS NOT NULL) THEN MAX(end_date) END AS end_date,
-    FROM (
-        SELECT *, 
-            SUM(CASE WHEN COALESCE(level_changed, 0) = 1 THEN 1 ELSE 0 END) 
-                OVER(PARTITION BY person_id ORDER BY start_date) AS supervision_level_session_id
-        FROM (
-            SELECT DISTINCT session.state_code, session.person_id, session.correctional_level as supervision_level, 
-                level_priority.correctional_level_priority, level_priority.is_discretionary_level,
-                session.start_date, session.end_date,
-                IF(COALESCE(session_lag.correctional_level, 'UNKNOWN') = COALESCE(session.correctional_level, 'UNKNOWN'), 0, 1) AS level_changed,
-            FROM `{project_id}.{sessions_dataset}.dataflow_sessions_materialized` session
-            LEFT JOIN `{project_id}.{sessions_dataset}.supervision_level_dedup_priority` as level_priority
-                USING(correctional_level)
-            LEFT JOIN `{project_id}.{sessions_dataset}.dataflow_sessions_materialized` session_lag
-                ON session.state_code = session_lag.state_code
-                AND session.person_id = session_lag.person_id
-                -- Self join with previous sub session within the same session to get previous supervision level
-                AND session.dataflow_session_id = session_lag.dataflow_session_id + 1
-                AND session.start_date = DATE_ADD(session_lag.end_date, INTERVAL 1 DAY)
-                AND session_lag.compartment_level_1 = 'SUPERVISION'
-            WHERE session.compartment_level_1 IN ('SUPERVISION', 'SUPERVISION_OUT_OF_STATE')
+        MIN(dataflow_session_id) AS dataflow_session_id_start,
+        MAX(dataflow_session_id) AS dataflow_session_id_end,
+        FROM
+            (
+            SELECT
+                *,
+                SUM(CASE WHEN COALESCE(level_changed, 1) = 1 THEN 1 ELSE 0 END)
+                    OVER(PARTITION BY person_id, state_code ORDER BY supervision_level, start_date) AS supervision_level_session_id_unordered
+            FROM
+                (
+                SELECT
+                    session.state_code,
+                    session.person_id,
+                    session.supervision_level,
+                    session.correctional_level_priority,
+                    session.is_discretionary_level,
+                    session.start_date,
+                    session.end_date,
+                    session.dataflow_session_id,
+                    MIN(IF(session_lag.supervision_level = session.supervision_level, 0, 1)) AS level_changed
+                FROM deduped_cte session
+                LEFT JOIN deduped_cte as session_lag
+                    ON session.state_code = session_lag.state_code
+                    AND session.person_id = session_lag.person_id
+                    AND session.start_date = DATE_ADD(session_lag.end_date, INTERVAL 1 DAY)
+                GROUP BY 1,2,3,4,5,6,7,8
+                )
             )
-        )
-GROUP BY state_code, person_id, supervision_level, supervision_level_session_id, correctional_level_priority, is_discretionary_level
-)
-SELECT session.state_code, session.person_id, session.supervision_level_session_id, session.supervision_level,
-    session.start_date, session.end_date,
-    session_lag.supervision_level as previous_supervision_level,
-    CASE WHEN session.correctional_level_priority < session_lag.correctional_level_priority 
-        AND session.is_discretionary_level AND session_lag.is_discretionary_level
-        THEN 1 ELSE 0 END as supervision_upgrade,
-    CASE WHEN session.correctional_level_priority > session_lag.correctional_level_priority 
-        AND session.is_discretionary_level AND session_lag.is_discretionary_level
-        THEN 1 ELSE 0 END as supervision_downgrade, 
-FROM supervision_level_sessions session
-LEFT JOIN supervision_level_sessions session_lag
-    ON session.state_code = session_lag.state_code
-        AND session.person_id = session_lag.person_id
-        AND session.supervision_level_session_id = session_lag.supervision_level_session_id + 1
-        AND session.start_date = DATE_ADD(session_lag.end_date, INTERVAL 1 DAY)
+    GROUP BY 1,2,3,4,5,6
+    )
+    ,
+    sessionized_cte_ordered AS
+    (
+    SELECT
+        *  EXCEPT(supervision_level_session_id_unordered),
+        ROW_NUMBER() OVER(PARTITION BY person_id, state_code ORDER BY start_date, COALESCE(end_date,'9999-01-01')) AS supervision_level_session_id
+    FROM sessionized_cte
+    ORDER BY supervision_level_session_id
+    )
+    SELECT
+        session.state_code,
+        session.person_id,
+        session.supervision_level_session_id,
+        session.dataflow_session_id_start,
+        session.dataflow_session_id_end,
+        session.supervision_level,
+        session.start_date,
+        session.end_date,
+        session_lag.supervision_level AS previous_supervision_level,
+        CASE WHEN session.correctional_level_priority < session_lag.correctional_level_priority
+            AND session.is_discretionary_level AND session_lag.is_discretionary_level
+            THEN 1 ELSE 0 END as supervision_upgrade,
+        CASE WHEN session.correctional_level_priority > session_lag.correctional_level_priority
+            AND session.is_discretionary_level AND session_lag.is_discretionary_level
+            THEN 1 ELSE 0 END as supervision_downgrade,
+    FROM sessionized_cte_ordered session
+    LEFT JOIN sessionized_cte_ordered session_lag
+        ON session.state_code = session_lag.state_code
+            AND session.person_id = session_lag.person_id
+            AND session.start_date = DATE_ADD(session_lag.end_date, INTERVAL 1 DAY)
     """
 
 SUPERVISION_LEVEL_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(

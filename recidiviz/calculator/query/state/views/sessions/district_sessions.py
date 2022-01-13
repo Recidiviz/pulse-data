@@ -62,6 +62,8 @@ SELECT
     district_session_id_unordered,
     MIN(start_date) start_date,
     CASE WHEN LOGICAL_AND(end_date IS NOT NULL) THEN MAX(end_date) END AS end_date,
+    MIN(dataflow_session_id) AS dataflow_session_id_start,
+    MAX(dataflow_session_id) AS dataflow_session_id_end,
     FROM
         (
         SELECT 
@@ -76,15 +78,15 @@ SELECT
                 session.district,
                 session.start_date, 
                 session.end_date,
-                -- Only count a district toward an district change once if district was not present at all in preceding session
+                -- Only count a district toward an district change once if district was not present at all in preceding session,
+                session.dataflow_session_id,
                 MIN(IF(session_lag.district = session.district, 0, 1)) AS district_changed
             FROM sub_sessions_attributes_unnested session
             LEFT JOIN sub_sessions_attributes_unnested as session_lag
                 ON session.state_code = session_lag.state_code
                 AND session.person_id = session_lag.person_id
-                AND session.dataflow_session_id = session_lag.dataflow_session_id + 1
                 AND session.start_date = DATE_ADD(session_lag.end_date, INTERVAL 1 DAY)
-            GROUP BY 1,2,3,4,5
+            GROUP BY 1,2,3,4,5,6
             )
         )           
 GROUP BY 1,2,3,4

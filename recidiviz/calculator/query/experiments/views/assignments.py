@@ -179,7 +179,7 @@ geo_cis_referral_matched AS (
     FROM 
         `{project_id}.{sessions_dataset}.compartment_sessions_materialized` a
     WHERE
-        compartment_level_2 = "COMMUNITY_PLACEMENT_PROGRAM"
+        compartment_level_2 = "COMMUNITY_CONFINEMENT"
     GROUP BY 1, 2, 3, 4, 5
 )
 

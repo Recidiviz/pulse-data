@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Dedup priority for compartment_level_2 values in population metrics"""
+"""Dedup priority for compartment_level_2 values in compartment_sessions"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
@@ -24,37 +24,46 @@ from recidiviz.utils.metadata import local_project_id_override
 COMPARTMENT_LEVEL_2_DEDUP_PRIORITY_VIEW_NAME = "compartment_level_2_dedup_priority"
 
 COMPARTMENT_LEVEL_2_DEDUP_PRIORITY_VIEW_DESCRIPTION = (
-    """Dedup priority for compartment_level_2 values in population metrics"""
+    """Dedup priority for compartment_level_2 values in compartment_sessions"""
 )
 
 COMPARTMENT_LEVEL_2_DEDUP_PRIORITY_QUERY_TEMPLATE = """
     /*{description}*/
     SELECT
-      'INCARCERATION' AS compartment_level_1,
-      *
+        'INCARCERATION' AS compartment_level_1,
+        *
     FROM
-      UNNEST([ 'GENERAL', 'TREATMENT_IN_PRISON', 'PAROLE_BOARD_HOLD', 'COMMUNITY_PLACEMENT_PROGRAM', 'INTERNAL_UNKNOWN']) AS compartment_level_2
+        UNNEST([ 'GENERAL', 'TREATMENT_IN_PRISON', 'SHOCK_INCARCERATION', 'PAROLE_BOARD_HOLD', 'TEMPORARY_CUSTODY', 'COMMUNITY_CONFINEMENT', 'INTERNAL_UNKNOWN']) AS compartment_level_2
     WITH
     OFFSET
-      AS priority
+        AS priority
     UNION ALL
     SELECT
-      'SUPERVISION' AS compartment_level_1,
-      *
+        'INCARCERATION_OUT_OF_STATE' AS compartment_level_1,
+        *
     FROM
-      UNNEST([ 'DUAL', 'PAROLE', 'PROBATION', 'INFORMAL_PROBATION', 'BENCH_WARRANT', 'ABSCONSION', 'INTERNAL_UNKNOWN']) AS compartment_level_2
+        UNNEST([ 'GENERAL', 'TREATMENT_IN_PRISON', 'SHOCK_INCARCERATION', 'PAROLE_BOARD_HOLD', 'TEMPORARY_CUSTODY', 'COMMUNITY_CONFINEMENT', 'INTERNAL_UNKNOWN']) AS compartment_level_2
     WITH
     OFFSET
-      AS priority
+        AS priority
     UNION ALL
     SELECT
-      'SUPERVISION_OUT_OF_STATE' AS compartment_level_1,
-      *
+        'SUPERVISION' AS compartment_level_1,
+        *
     FROM
-      UNNEST([ 'DUAL', 'PAROLE', 'PROBATION',  'INFORMAL_PROBATION', 'INTERNAL_UNKNOWN']) AS compartment_level_2
+        UNNEST([ 'DUAL', 'PAROLE', 'PROBATION', 'INFORMAL_PROBATION', 'BENCH_WARRANT', 'ABSCONSION', 'INTERNAL_UNKNOWN']) AS compartment_level_2
     WITH
     OFFSET
-      AS priority 
+        AS priority
+    UNION ALL
+    SELECT
+        'SUPERVISION_OUT_OF_STATE' AS compartment_level_1,
+        *
+    FROM
+        UNNEST([ 'DUAL', 'PAROLE', 'PROBATION',  'INFORMAL_PROBATION','BENCH_WARRANT', 'ABSCONSION', 'INTERNAL_UNKNOWN']) AS compartment_level_2
+    WITH
+    OFFSET
+        AS priority
     """
 
 COMPARTMENT_LEVEL_2_DEDUP_PRIORITY_VIEW_BUILDER = SimpleBigQueryViewBuilder(
