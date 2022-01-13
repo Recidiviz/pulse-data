@@ -19,7 +19,7 @@
 from datetime import date
 
 
-def supervision_transition_template(status: str, transition_type: str) -> str:
+def supervision_transition_template(status: str) -> str:
     current_year = date.today().year
 
     supervision_categories = [
@@ -33,14 +33,14 @@ def supervision_transition_template(status: str, transition_type: str) -> str:
     genders = ["MALE", "FEMALE", "ALL"]
 
     return f"""
-    WITH summed_{transition_type} AS (
+    WITH summed_person_count AS (
       SELECT
         state_code,
         EXTRACT(YEAR FROM transition_date) as year,
         EXTRACT(MONTH FROM transition_date) as month,
         gender,
         supervision_type,
-        COUNT(1) as {transition_type}
+        COUNT(1) as person_count
       FROM
         `{{project_id}}.{{reference_dataset}}.supervision_to_{status}_transitions`,
       UNNEST ([gender, 'ALL']) AS gender,
@@ -48,10 +48,10 @@ def supervision_transition_template(status: str, transition_type: str) -> str:
       GROUP BY 1, 2, 3, 4, 5
     ), blanks_filled AS (
       SELECT
-        * EXCEPT ({transition_type}),
-        IFNULL({transition_type}, 0) as {transition_type}
+        * EXCEPT (person_count),
+        IFNULL(person_count, 0) as person_count
       FROM
-        summed_{transition_type}
+        summed_person_count
       FULL OUTER JOIN
         (SELECT * FROM
           UNNEST(["US_ID"]) AS state_code,
@@ -60,10 +60,10 @@ def supervision_transition_template(status: str, transition_type: str) -> str:
           UNNEST({supervision_categories}) as supervision_type,
           UNNEST({genders}) as gender)
       USING (state_code, year, month, gender, supervision_type)
-    ), averaged_{transition_type} AS (
+    ), averaged_person_count AS (
       SELECT
         *,
-        ROUND(AVG({transition_type}) OVER (
+        ROUND(AVG(person_count) OVER (
           PARTITION BY state_code, gender, supervision_type
           ORDER BY year, month
           ROWS BETWEEN 2 PRECEDING AND CURRENT ROW
@@ -71,8 +71,8 @@ def supervision_transition_template(status: str, transition_type: str) -> str:
       FROM blanks_filled
     )
 
-    SELECT *, {transition_type} as person_count,
-    FROM averaged_{transition_type}
+    SELECT *
+    FROM averaged_person_count
     WHERE DATE(year, month, 1) BETWEEN
       DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 60 MONTH) AND CURRENT_DATE('US/Eastern')
     ORDER BY state_code, year, month, gender, supervision_type

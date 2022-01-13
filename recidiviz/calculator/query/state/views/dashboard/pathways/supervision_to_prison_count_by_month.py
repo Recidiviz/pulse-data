@@ -32,7 +32,6 @@ SUPERVISION_TO_PRISON_COUNT_BY_MONTH_DESCRIPTION = (
 
 SUPERVISION_TO_PRISON_COUNT_BY_MONTH_QUERY_TEMPLATE = supervision_transition_template(
     "prison",
-    "admissions",
 )
 
 SUPERVISION_TO_PRISON_COUNT_BY_MONTH_VIEW_BUILDER = MetricBigQueryViewBuilder(
