@@ -77,10 +77,6 @@ def cleanup_run(tmp_postgres_db_dir: str, clean_up_db: bool) -> None:
             "For future cleanup, the postgres data directory is at %s.",
             tmp_postgres_db_dir,
         )
-        logging.info(
-            "To query the data, connect to the local database with "
-            "`psql --dbname=recidiviz_test_db`"
-        )
 
 
 def run_justice_counts_ingest_locally(manifest_file: str, clean_up_db: bool) -> None:
