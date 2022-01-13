@@ -354,7 +354,6 @@ class SQLAlchemyEngineManager:
             SQLALCHEMY_DB_HOST,
             SQLALCHEMY_DB_USER,
             SQLALCHEMY_DB_PASSWORD,
-            SQLALCHEMY_DB_PORT,
             SQLALCHEMY_USE_SSL,
         ]
         original_values = {
