@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2019 Recidiviz, Inc.
+# Copyright (C) 2022 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -65,6 +65,30 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_violation_respo
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_violations_delegate import (
     UsIdViolationDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_me.us_me_commitment_from_supervision_delegate import (
+    UsMeCommitmentFromSupervisionDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_me.us_me_incarceration_delegate import (
+    UsMeIncarcerationDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_me.us_me_incarceration_period_pre_processing_delegate import (
+    UsMeIncarcerationPreProcessingDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_me.us_me_program_assignment_pre_processing_delegate import (
+    UsMeProgramAssignmentPreProcessingDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_me.us_me_supervision_delegate import (
+    UsMeSupervisionDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_me.us_me_supervision_period_pre_processing_delegate import (
+    UsMeSupervisionPreProcessingDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_me.us_me_violation_response_preprocessing_delegate import (
+    UsMeViolationResponsePreprocessingDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_me.us_me_violations_delegate import (
+    UsMeViolationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_commitment_from_supervision_delegate import (
     UsMoCommitmentFromSupervisionDelegate,
@@ -255,6 +279,8 @@ def get_state_specific_incarceration_period_pre_processing_delegate(
     pre-processing StateIncarcerationPeriod entities from a given |state_code|."""
     if state_code == StateCode.US_ID.value:
         return UsIdIncarcerationPreProcessingDelegate()
+    if state_code == StateCode.US_ME.value:
+        return UsMeIncarcerationPreProcessingDelegate()
     if state_code == StateCode.US_MO.value:
         return UsMoIncarcerationPreProcessingDelegate()
     if state_code == StateCode.US_ND.value:
@@ -274,6 +300,8 @@ def get_state_specific_supervision_period_pre_processing_delegate(
     pre-processing StateSupervisionPeriod entities from a given |state_code|."""
     if state_code == StateCode.US_ID.value:
         return UsIdSupervisionPreProcessingDelegate()
+    if state_code == StateCode.US_ME.value:
+        return UsMeSupervisionPreProcessingDelegate()
     if state_code == StateCode.US_MO.value:
         return UsMoSupervisionPreProcessingDelegate()
     if state_code == StateCode.US_ND.value:
@@ -293,6 +321,8 @@ def get_state_specific_program_assignment_pre_processing_delegate(
     pre-processing StateProgramAssignment entities from a given |state_code|."""
     if state_code == StateCode.US_ID.value:
         return UsIdProgramAssignmentPreProcessingDelegate()
+    if state_code == StateCode.US_ME.value:
+        return UsMeProgramAssignmentPreProcessingDelegate()
     if state_code == StateCode.US_MO.value:
         return UsMoProgramAssignmentPreProcessingDelegate()
     if state_code == StateCode.US_ND.value:
@@ -301,6 +331,7 @@ def get_state_specific_program_assignment_pre_processing_delegate(
         return UsPaProgramAssignmentPreProcessingDelegate()
     if state_code == StateCode.US_TN.value:
         return UsTnProgramAssignmentPreProcessingDelegate()
+
     raise ValueError(f"Unexpected state code [{state_code}]")
 
 
@@ -311,6 +342,8 @@ def get_state_specific_commitment_from_supervision_delegate(
     commitment from supervision admission calculations in a given |state_code|."""
     if state_code == StateCode.US_ID.value:
         return UsIdCommitmentFromSupervisionDelegate()
+    if state_code == StateCode.US_ME.value:
+        return UsMeCommitmentFromSupervisionDelegate()
     if state_code == StateCode.US_MO.value:
         return UsMoCommitmentFromSupervisionDelegate()
     if state_code == StateCode.US_ND.value:
@@ -330,6 +363,8 @@ def get_state_specific_violation_delegate(
     violation calculations in a given |state_code|."""
     if state_code == StateCode.US_ID.value:
         return UsIdViolationDelegate()
+    if state_code == StateCode.US_ME.value:
+        return UsMeViolationDelegate()
     if state_code == StateCode.US_MO.value:
         return UsMoViolationDelegate()
     if state_code == StateCode.US_ND.value:
@@ -349,6 +384,8 @@ def get_state_specific_violation_response_preprocessing_delegate(
     violation calculations in a given |state_code|."""
     if state_code == StateCode.US_ID.value:
         return UsIdViolationResponsePreprocessingDelegate()
+    if state_code == StateCode.US_ME.value:
+        return UsMeViolationResponsePreprocessingDelegate()
     if state_code == StateCode.US_MO.value:
         return UsMoViolationResponsePreprocessingDelegate()
     if state_code == StateCode.US_ND.value:
@@ -368,6 +405,8 @@ def get_state_specific_incarceration_delegate(
     incarceration calculations in a given |state_code|."""
     if state_code == StateCode.US_ID.value:
         return UsIdIncarcerationDelegate()
+    if state_code == StateCode.US_ME.value:
+        return UsMeIncarcerationDelegate()
     if state_code == StateCode.US_MO.value:
         return UsMoIncarcerationDelegate()
     if state_code == StateCode.US_ND.value:
@@ -387,6 +426,8 @@ def get_state_specific_supervision_delegate(
     supervision calculations in a given |state_code|."""
     if state_code == StateCode.US_ID.value:
         return UsIdSupervisionDelegate()
+    if state_code == StateCode.US_ME.value:
+        return UsMeSupervisionDelegate()
     if state_code == StateCode.US_MO.value:
         return UsMoSupervisionDelegate()
     if state_code == StateCode.US_ND.value:
