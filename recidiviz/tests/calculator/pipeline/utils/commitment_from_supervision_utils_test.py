@@ -85,9 +85,19 @@ from recidiviz.tests.calculator.pipeline.pre_processing_testing_utils import (
 )
 
 _DEFAULT_SUPERVISION_PERIOD_ID = 999
+_DEFAULT_SUPERVISION_PERIOD_ID_2 = 888
 
 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS: Dict[int, Dict[Any, Any]] = {
-    999: {"agent_id": 000, "agent_external_id": "XXX", "supervision_period_id": 999}
+    _DEFAULT_SUPERVISION_PERIOD_ID: {
+        "agent_id": 123,
+        "agent_external_id": "YYY",
+        "supervision_period_id": _DEFAULT_SUPERVISION_PERIOD_ID,
+    },
+    _DEFAULT_SUPERVISION_PERIOD_ID_2: {
+        "agent_id": 000,
+        "agent_external_id": "XXX",
+        "supervision_period_id": _DEFAULT_SUPERVISION_PERIOD_ID_2,
+    },
 }
 
 DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS = {
@@ -180,6 +190,136 @@ class TestGetCommitmentDetails(unittest.TestCase):
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervision_level=supervision_period.supervision_level,
                 supervision_level_raw_text=supervision_period.supervision_level_raw_text,
+                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            ),
+            commitment_details,
+        )
+
+    def test_get_commitment_from_supervision_details_from_board_hold(self) -> None:
+        terminated_supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=_DEFAULT_SUPERVISION_PERIOD_ID,
+            state_code="US_XX",
+            start_date=date(2018, 3, 5),
+            termination_date=date(2018, 5, 19),
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_site="DISTRICT 999",
+        )
+
+        overlapping_supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=_DEFAULT_SUPERVISION_PERIOD_ID_2,
+            state_code="US_XX",
+            start_date=date(2018, 5, 19),
+            termination_date=date(2018, 8, 20),
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_site="DISTRICT X",
+        )
+
+        board_hold = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=111,
+            external_id="ip1",
+            state_code="US_XX",
+            admission_date=date(2018, 6, 5),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+            release_date=date(2018, 8, 20),
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+        )
+
+        revocation_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id="ip2",
+            state_code="US_XX",
+            admission_date=date(2018, 8, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
+        )
+
+        ip_index = default_pre_processed_ip_index_for_tests(
+            incarceration_periods=[board_hold, revocation_period],
+            transfers_are_collapsed=True,
+        )
+
+        commitment_details = self._test_get_commitment_from_supervision_details(
+            revocation_period,
+            [terminated_supervision_period, overlapping_supervision_period],
+            incarceration_period_index=ip_index,
+        )
+
+        assert overlapping_supervision_period.supervision_period_id is not None
+        self.assertEqual(
+            CommitmentDetails(
+                purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
+                purpose_for_incarceration_subtype=None,
+                level_1_supervision_location_external_id=overlapping_supervision_period.supervision_site,
+                level_2_supervision_location_external_id=None,
+                supervising_officer_external_id=DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS.get(
+                    overlapping_supervision_period.supervision_period_id, {}
+                ).get(
+                    "agent_external_id"
+                ),
+                case_type=StateSupervisionCaseType.GENERAL,
+                supervision_level=overlapping_supervision_period.supervision_level,
+                supervision_level_raw_text=overlapping_supervision_period.supervision_level_raw_text,
+                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            ),
+            commitment_details,
+        )
+
+    def test_get_commitment_from_supervision_details_two_sps_not_board_hold(
+        self,
+    ) -> None:
+        terminated_supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=_DEFAULT_SUPERVISION_PERIOD_ID,
+            state_code="US_XX",
+            start_date=date(2018, 3, 5),
+            termination_date=date(2018, 5, 19),
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_site="DISTRICT 999",
+        )
+
+        overlapping_supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=_DEFAULT_SUPERVISION_PERIOD_ID_2,
+            state_code="US_XX",
+            start_date=date(2018, 5, 19),
+            termination_date=date(2018, 10, 4),
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_site="DISTRICT X",
+        )
+
+        revocation_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id="ip2",
+            state_code="US_XX",
+            admission_date=date(2018, 8, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
+        )
+
+        ip_index = default_pre_processed_ip_index_for_tests(
+            incarceration_periods=[revocation_period], transfers_are_collapsed=True
+        )
+
+        commitment_details = self._test_get_commitment_from_supervision_details(
+            revocation_period,
+            [terminated_supervision_period, overlapping_supervision_period],
+            incarceration_period_index=ip_index,
+        )
+
+        assert terminated_supervision_period.supervision_period_id is not None
+        self.assertEqual(
+            CommitmentDetails(
+                purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
+                purpose_for_incarceration_subtype=None,
+                level_1_supervision_location_external_id=terminated_supervision_period.supervision_site,
+                level_2_supervision_location_external_id=None,
+                supervising_officer_external_id=DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS.get(
+                    terminated_supervision_period.supervision_period_id, {}
+                ).get(
+                    "agent_external_id"
+                ),
+                case_type=StateSupervisionCaseType.GENERAL,
+                supervision_level=terminated_supervision_period.supervision_level,
+                supervision_level_raw_text=terminated_supervision_period.supervision_level_raw_text,
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             ),
             commitment_details,

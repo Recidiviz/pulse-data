@@ -84,3 +84,11 @@ class UsPaCommitmentFromSupervisionDelegate(
             "Unexpected admission reason being classified as a"
             f"commitment from supervision for US_PA: [{admission_reason}]."
         )
+
+    def prioritize_overlaps_with_board_holds_in_pre_commitment_sp_search(self) -> bool:
+        """TODO(#10536): Decide on most accurate methodology for US_PA here.
+        We are temporarily not prioritizing periods that overlap with parole board
+        hold admissions until we have confirmation on most accurate methodology for
+        the state.
+        """
+        return False
