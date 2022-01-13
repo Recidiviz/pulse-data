@@ -312,10 +312,14 @@ def _get_commitment_from_supervision_supervision_period(
         incarceration_period
     )
 
-    if period_is_commitment_from_supervision_admission_from_parole_board_hold(
-        incarceration_period=incarceration_period,
-        most_recent_board_hold=most_recent_board_hold,
-    ):
+    is_commitment_from_board_hold = (
+        period_is_commitment_from_supervision_admission_from_parole_board_hold(
+            incarceration_period=incarceration_period,
+            most_recent_board_hold=most_recent_board_hold,
+        )
+    )
+
+    if is_commitment_from_board_hold:
         if not most_recent_board_hold:
             raise ValueError(
                 "This should never happen, since the determination of "
@@ -374,6 +378,9 @@ def _get_commitment_from_supervision_supervision_period(
     )
 
     if (
+        is_commitment_from_board_hold
+        and commitment_from_supervision_delegate.prioritize_overlaps_with_board_holds_in_pre_commitment_sp_search()
+    ) or (
         admission_reason_raw_text
         in commitment_from_supervision_delegate.admission_reason_raw_texts_that_should_prioritize_overlaps_in_pre_commitment_sp_search()
     ):
