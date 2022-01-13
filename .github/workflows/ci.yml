@@ -139,7 +139,7 @@ jobs:
           echo "/usr/lib/postgresql/13/bin" >> $GITHUB_PATH
           sudo chown -R $USER /var/run/postgresql
       - name: Run db tests
-        run: pipenv run pytest recidiviz --test-set not-parallel -m 'uses_db' --with-emulator
+        run: pipenv run pytest recidiviz --test-set not-parallel -m 'uses_db'
 
   emulator-tests:
     name: Emulator tests

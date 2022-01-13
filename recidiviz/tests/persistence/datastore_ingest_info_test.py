@@ -17,14 +17,15 @@
 
 """Tests for utils/environment.py."""
 import json
-from datetime import datetime
 import unittest
+from datetime import datetime
+
 import pytest
 
 from recidiviz.ingest.models.ingest_info import IngestInfo
+from recidiviz.ingest.scrape import constants
 from recidiviz.ingest.scrape.task_params import Task
 from recidiviz.persistence import datastore_ingest_info
-from recidiviz.ingest.scrape import constants
 
 TEST_ENDPOINT = "www.test.com"
 
