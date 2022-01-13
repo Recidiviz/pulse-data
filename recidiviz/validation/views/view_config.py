@@ -73,6 +73,9 @@ from recidiviz.validation.views.state.incarceration_admission_nulls import (
 from recidiviz.validation.views.state.incarceration_admission_person_level_external_comparison import (
     INCARCERATION_ADMISSION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.incarceration_commitments_subset_of_admissions import (
+    INCARCERATION_COMMITMENTS_SUBSET_OF_ADMISSIONS_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.incarceration_lengths_by_demographics_internal_consistency import (
     INCARCERATION_LENGTHS_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER,
 )
@@ -317,6 +320,7 @@ VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = (
         INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_VIEW_BUILDER,
         INCARCERATION_ADMISSION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER,
         INCARCERATION_ADMISSION_NULLS_VIEW_BUILDER,
+        INCARCERATION_COMMITMENTS_SUBSET_OF_ADMISSIONS_VIEW_BUILDER,
         INCARCERATION_RELEASE_REASON_NO_DATE_VIEW_BUILDER,
         INCARCERATION_LENGTHS_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER,
         INCARCERATION_POPULATION_BY_ADMISSION_REASON_INTERNAL_CONSISTENCY_VIEW_BUILDER,
