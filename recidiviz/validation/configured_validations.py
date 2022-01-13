@@ -68,6 +68,9 @@ from recidiviz.validation.views.state.active_in_population_after_death_date impo
 from recidiviz.validation.views.state.active_program_participation_by_region_internal_consistency import (
     ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_INTERNAL_CONSISTENCY_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.admission_pfi_pop_pfi_mismatch import (
+    ADMISSION_PFI_POP_PFI_MISMATCH_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.case_termination_by_type_comparison import (
     CASE_TERMINATIONS_BY_TYPE_COMPARISON_VIEW_BUILDER,
 )
@@ -304,6 +307,10 @@ def get_all_validations() -> List[DataValidationCheck]:
     """
 
     all_data_validations: List[DataValidationCheck] = [
+        ExistenceDataValidationCheck(
+            view_builder=ADMISSION_PFI_POP_PFI_MISMATCH_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
         ExistenceDataValidationCheck(
             view_builder=INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,

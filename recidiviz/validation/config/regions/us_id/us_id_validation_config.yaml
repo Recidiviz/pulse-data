@@ -86,3 +86,6 @@ num_allowed_rows_overrides:
     hard_num_allowed_rows_override: 20
     override_reason: TODO(#5803) - Needs investigation. Likely related to shifting IP
       external ids / not handling object deletion properly.
+  - validation_name: admission_pfi_pop_pfi_mismatch
+    hard_num_allowed_rows_override: 20
+    override_reason: TODO(#10625) - Need to be handled in IP pre-processing.

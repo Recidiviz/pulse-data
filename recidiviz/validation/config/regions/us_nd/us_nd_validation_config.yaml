@@ -55,3 +55,6 @@ num_allowed_rows_overrides:
   - validation_name: supervision_termination_prior_to_start
     hard_num_allowed_rows_override: 300
     override_reason: TODO(#5803) - Needs investigation.
+  - validation_name: admission_pfi_pop_pfi_mismatch
+    hard_num_allowed_rows_override: 20
+    override_reason: TODO(#10625) - Need to be handled in IP pre-processing.
