@@ -682,7 +682,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
         )
         # Assert that the original incarceration periods are unchanged
         self.assertEqual(
-            stored_raw_copies, ip_pre_processing_manager._incarceration_periods
+            stored_raw_copies, ip_pre_processing_manager._original_incarceration_periods
         )
         # Assert that the previously-processed periods are unchanged
         self.assertEqual([collapsed_period], collapsed_incarceration_periods)
@@ -1191,6 +1191,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             incarceration_period_list_index: int,
             sorted_incarceration_periods: List[StateIncarcerationPeriod],
             # pylint: disable=unused-argument
+            original_sorted_incarceration_periods: List[StateIncarcerationPeriod],
             supervision_period_index: Optional[PreProcessedSupervisionPeriodIndex],
         ) -> StateIncarcerationPeriod:
             ip = sorted_incarceration_periods[incarceration_period_list_index]

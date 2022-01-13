@@ -30,17 +30,22 @@ usage: python -m recidiviz.tools.calculator.run_sandbox_calculation_pipeline \
           --project PROJECT \
           --state_code STATE_CODE \
           --sandbox_output_dataset SANDBOX_OUTPUT_DATASET \
+          --calculation_month_count NUM_MONTHS \
           [--input INPUT] \
           [--reference_view_input REFERENCE_VIEW_INPUT] \
-          [--static_reference_input STATIC_REFERENCE_VIEW_INPUT]
+          [--static_reference_input STATIC_REFERENCE_VIEW_INPUT] \
           # Note: The --metric_types arg must be last since it is a list
           [--metric_types METRIC_TYPES]
 
           ..and any other pipeline-specific args
 
 Examples:
-    python -m recidiviz.tools.calculator.run_sandbox_calculation_pipeline --pipeline incarceration \
-     --job_name incarceration-example --sandbox_output_dataset username_dataflow_metrics --state_code US_ND
+    python -m recidiviz.tools.calculator.run_sandbox_calculation_pipeline
+        --pipeline incarceration \
+        --project recidiviz-staging \
+        --job_name incarceration-test \
+        --sandbox_output_dataset username_dataflow_metrics \
+        --state_code US_ND
 
 You must also include any arguments required by the given pipeline.
 """

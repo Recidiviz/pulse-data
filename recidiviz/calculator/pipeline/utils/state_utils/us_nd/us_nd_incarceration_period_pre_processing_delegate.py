@@ -45,10 +45,6 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
-from recidiviz.ingest.direct.regions.us_nd import (
-    us_nd_custom_enum_parsers,
-    us_nd_legacy_enum_helpers,
-)
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
     StateSupervisionPeriod,
@@ -94,11 +90,13 @@ class UsNdIncarcerationPreProcessingDelegate(
         self,
         incarceration_period_list_index: int,
         sorted_incarceration_periods: List[StateIncarcerationPeriod],
+        original_sorted_incarceration_periods: List[StateIncarcerationPeriod],
         supervision_period_index: Optional[PreProcessedSupervisionPeriodIndex],
     ) -> StateIncarcerationPeriod:
         return _us_nd_normalize_period_if_commitment_from_supervision(
             incarceration_period_list_index=incarceration_period_list_index,
             sorted_incarceration_periods=sorted_incarceration_periods,
+            original_sorted_incarceration_periods=original_sorted_incarceration_periods,
             supervision_period_index=supervision_period_index,
         )
 
@@ -184,98 +182,11 @@ class UsNdIncarcerationPreProcessingDelegate(
         relies on supervision period entities."""
         return True
 
-    # TODO(#10152): Remove this once we've done a re-run in prod for US_ND with the
-    #  new IP ingest views
-    def pre_processing_incarceration_period_admission_reason_mapper(
-        self,
-        incarceration_period: StateIncarcerationPeriod,
-    ) -> Optional[StateIncarcerationPeriodAdmissionReason]:
-        """We have updated our ingest logic for StateIncarcerationPeriods in US_ND to
-        not handle periods of temporary custody during ingest. These changes require a
-        re-run since they are beyond the scope of a database migration. Until that
-        re-run happens in prod, we will be re-ingesting raw admission_reason_raw_text
-        values so that the rest of IP pre-processing can work with what
-        the incarceration periods will look like with the new form of ingest."""
-        if not incarceration_period.admission_reason_raw_text:
-            return incarceration_period.admission_reason
-
-        enum_overrides = us_nd_legacy_enum_helpers.generate_enum_overrides()
-
-        return StateIncarcerationPeriodAdmissionReason.parse(
-            incarceration_period.admission_reason_raw_text, enum_overrides
-        )
-
-    # TODO(#10152): Remove this once we've done a re-run in prod for US_ND with the
-    #  new IP ingest views
-    def pre_processing_incarceration_period_custodial_authority_mapper(
-        self,
-        incarceration_period: StateIncarcerationPeriod,
-    ) -> Optional[StateCustodialAuthority]:
-        """We have updated our ingest logic for StateIncarcerationPeriods in US_ND to
-        not handle periods of temporary custody during ingest. These changes require a
-        re-run since they are beyond the scope of a database migration. Until that
-        re-run happens in prod, we will be re-mapping custodial_authority
-        values so that the rest of IP pre-processing can work with what
-        the incarceration periods will look like with the new form of ingest."""
-        raw_text_value = _get_facility_date_string_for_mapping(incarceration_period)
-
-        if not raw_text_value:
-            return incarceration_period.custodial_authority
-
-        return us_nd_custom_enum_parsers.custodial_authority_from_facility_and_dates(
-            raw_text=raw_text_value
-        )
-
-    # TODO(#10152): Remove this once we've done a re-run in prod for US_ND with the
-    #  new IP ingest views
-    def pre_processing_incarceration_period_pfi_mapper(
-        self,
-        incarceration_period: StateIncarcerationPeriod,
-    ) -> Optional[StateSpecializedPurposeForIncarceration]:
-        """We have updated our ingest logic for StateIncarcerationPeriods in US_ND to
-        not handle periods of temporary custody during ingest. These changes require a
-        re-run since they are beyond the scope of a database migration. Until that
-        re-run happens in prod, we will be re-mapping
-        specialized_purpose_for_incarceration values so that the rest of IP
-        pre-processing can work with what the incarceration periods will look like
-        with the new form of ingest."""
-        raw_text_value = _get_facility_date_string_for_mapping(incarceration_period)
-
-        if not raw_text_value:
-            return incarceration_period.specialized_purpose_for_incarceration
-
-        return us_nd_custom_enum_parsers.pfi_from_facility_and_dates(
-            raw_text=raw_text_value
-        )
-
-
-# TODO(#10152): Remove this once we've done a re-run in prod for US_ND with the
-#  new IP ingest views
-def _get_facility_date_string_for_mapping(
-    incarceration_period: StateIncarcerationPeriod,
-) -> Optional[str]:
-    """Returns the raw text value that should be used to map custodial_authority and
-    specialized_purpose_for_incarceration values using the new v2 mappings."""
-    if not incarceration_period.facility:
-        return None
-
-    admission_date = incarceration_period.admission_date
-    release_date = incarceration_period.release_date
-
-    date_for_mapping = admission_date or release_date
-
-    # These values are required to map the custodial_authority and the pfi
-    if not date_for_mapping:
-        return None
-
-    date_for_raw_text = date_for_mapping.strftime("%-m/%-d/%Y %-I:%M:%S %p")
-
-    return f"{incarceration_period.facility}-{date_for_raw_text}"
-
 
 def _us_nd_normalize_period_if_commitment_from_supervision(
     incarceration_period_list_index: int,
     sorted_incarceration_periods: List[StateIncarcerationPeriod],
+    original_sorted_incarceration_periods: List[StateIncarcerationPeriod],
     supervision_period_index: Optional[PreProcessedSupervisionPeriodIndex],
 ) -> StateIncarcerationPeriod:
     """Returns an updated version of the specified incarceration period if it is a
@@ -293,13 +204,19 @@ def _us_nd_normalize_period_if_commitment_from_supervision(
             to make sure we do not mistakenly re-classify what is truly a NEW_ADMISSION
             as a REVOCATION.
 
-        - The person was has a TRANSFER admission into a GENERAL incarceration period
+        - The person has a TRANSFER admission into a GENERAL incarceration period
             after adjacent period(s) of TEMPORARY_CUSTODY.
     """
     if supervision_period_index is None:
         raise ValueError(
             "IP pre-processing relies on supervision periods for US_ND. "
             "Expected non-null supervision_period_index."
+        )
+    if len(sorted_incarceration_periods) != len(original_sorted_incarceration_periods):
+        raise ValueError(
+            f"Expected lengths of mid-processing and original periods to be equal. "
+            f"Found [{len(sorted_incarceration_periods)}] != "
+            f"[{len(original_sorted_incarceration_periods)}]."
         )
 
     incarceration_period = sorted_incarceration_periods[incarceration_period_list_index]
@@ -342,39 +259,61 @@ def _us_nd_normalize_period_if_commitment_from_supervision(
         and incarceration_period.specialized_purpose_for_incarceration
         == StateSpecializedPurposeForIncarceration.GENERAL
     ):
-        # Finds the admission_reason_raw_text associated with the earliest temporary
-        # custody period that is temporally adjacent to this incarceration period,
-        # if one exists.
-        idx = incarceration_period_list_index
-        earliest_temp_custody_admission_raw_text = None
-        subsequent_ip = None
-        while idx >= 0:
-            ip = sorted_incarceration_periods[idx]
-            if not subsequent_ip:
-                subsequent_ip = ip
-                idx = idx - 1
-                continue
-
-            if (
-                ip.specialized_purpose_for_incarceration
-                != StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY
-            ) or not periods_are_temporally_adjacent(ip, subsequent_ip):
-                break
-
-            earliest_temp_custody_admission_raw_text = ip.admission_reason_raw_text
-            subsequent_ip = ip
-            idx = idx - 1
+        earliest_temp_custody_admission = (
+            _get_earliest_adjacent_original_temp_custody_period(
+                incarceration_period_list_index,
+                original_sorted_incarceration_periods,
+                sorted_incarceration_periods,
+            )
+        )
 
         # Update the incarceration period to have the admission reason enum value
         # associated with the raw text on the earliest adjacent temporary custody
         # period.
-        if earliest_temp_custody_admission_raw_text:
+        if earliest_temp_custody_admission:
             return _update_ip_after_temp_custody(
-                incarceration_period, earliest_temp_custody_admission_raw_text
+                incarceration_period,
+                earliest_temp_custody_admission,
             )
 
     # This period does not require any updated values
     return incarceration_period
+
+
+def _get_earliest_adjacent_original_temp_custody_period(
+    incarceration_period_list_index: int,
+    original_sorted_incarceration_periods: List[StateIncarcerationPeriod],
+    mid_processing_sorted_incarceration_periods: List[StateIncarcerationPeriod],
+) -> Optional[StateIncarcerationPeriod]:
+    """Finds the earliest temporary custody period that is temporally adjacent to this
+    incarceration period (with only temporary custody periods between), if one exists.
+    Returns the corresponding period from original_sorted_incarceration_periods so that
+    the period will have the original admission reason, before it was overwritten to
+    TEMPORARY_CUSTODY.
+    """
+    earliest_adjacent_temp_custody_period = None
+    possible_temp_custody_idx = incarceration_period_list_index - 1
+    while possible_temp_custody_idx >= 0:
+        possible_temp_custody_ip = mid_processing_sorted_incarceration_periods[
+            possible_temp_custody_idx
+        ]
+        if (
+            possible_temp_custody_ip.specialized_purpose_for_incarceration
+            != StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY
+        ):
+            break
+
+        subsequent_ip = mid_processing_sorted_incarceration_periods[
+            possible_temp_custody_idx + 1
+        ]
+        if not periods_are_temporally_adjacent(possible_temp_custody_ip, subsequent_ip):
+            break
+
+        earliest_adjacent_temp_custody_period = original_sorted_incarceration_periods[
+            possible_temp_custody_idx
+        ]
+        possible_temp_custody_idx -= 1
+    return earliest_adjacent_temp_custody_period
 
 
 def _updated_ip_after_revoked_sp(
@@ -426,31 +365,41 @@ def _updated_ip_after_revoked_sp(
 
 def _update_ip_after_temp_custody(
     incarceration_period: StateIncarcerationPeriod,
-    earliest_temp_custody_admission_raw_text: str,
+    earliest_original_temp_custody_period: StateIncarcerationPeriod,
 ) -> StateIncarcerationPeriod:
     """Returns the incarceration period with updated admission_reason and,
     if necessary, admission_reason_raw_text values corresponding to the information
     in the admission_reason_raw_text on the earliest adjacent temporary custody
     period that preceded the |incarceration_period|."""
-    enum_overrides = us_nd_legacy_enum_helpers.generate_enum_overrides()
 
-    updated_admission_reason = StateIncarcerationPeriodAdmissionReason.parse(
-        earliest_temp_custody_admission_raw_text, enum_overrides
+    temp_custody_ip_admission_reason = (
+        earliest_original_temp_custody_period.admission_reason
+    )
+    temp_custody_ip_admission_reason_raw_text = (
+        earliest_original_temp_custody_period.admission_reason_raw_text
     )
 
-    if not updated_admission_reason:
+    if (
+        not temp_custody_ip_admission_reason
+        or temp_custody_ip_admission_reason
+        in (
+            StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
+            StateIncarcerationPeriodAdmissionReason.EXTERNAL_UNKNOWN,
+        )
+        or not temp_custody_ip_admission_reason_raw_text
+    ):
         return incarceration_period
 
     admission_reason_prefix: Optional[str] = None
-    if is_commitment_from_supervision(updated_admission_reason):
-        supervision_type_from_admission_raw_text = (
+    if is_commitment_from_supervision(temp_custody_ip_admission_reason):
+        pre_commitment_supervision_type = (
             PREVIOUS_SUPERVISION_TYPE_TO_INCARCERATION_ADMISSION_REASON_RAW_TEXT[
-                earliest_temp_custody_admission_raw_text
+                temp_custody_ip_admission_reason_raw_text
             ]
         )
 
         if (
-            supervision_type_from_admission_raw_text
+            pre_commitment_supervision_type
             == StateSupervisionPeriodSupervisionType.PROBATION
         ):
             admission_reason_prefix = PROBATION_REVOCATION_PREPROCESSING_PREFIX
@@ -459,7 +408,7 @@ def _update_ip_after_temp_custody(
 
     return attr.evolve(
         incarceration_period,
-        admission_reason=updated_admission_reason,
+        admission_reason=temp_custody_ip_admission_reason,
         # If there is a admission_reason_prefix, add it as prefix.
         # Otherwise, leave it as the existing admission_reason_raw_text.
         admission_reason_raw_text=f"{admission_reason_prefix}-{incarceration_period.admission_reason_raw_text}"
