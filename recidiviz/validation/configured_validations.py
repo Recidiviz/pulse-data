@@ -83,6 +83,9 @@ from recidiviz.validation.views.state.incarceration_admission_nulls import (
 from recidiviz.validation.views.state.incarceration_admission_person_level_external_comparison import (
     INCARCERATION_ADMISSION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.incarceration_commitments_subset_of_admissions import (
+    INCARCERATION_COMMITMENTS_SUBSET_OF_ADMISSIONS_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.incarceration_lengths_by_demographics_internal_consistency import (
     INCARCERATION_LENGTHS_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER,
 )
@@ -307,6 +310,10 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         ExistenceDataValidationCheck(
             view_builder=INCARCERATION_ADMISSION_NULLS_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=INCARCERATION_COMMITMENTS_SUBSET_OF_ADMISSIONS_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
         ),
         ExistenceDataValidationCheck(
