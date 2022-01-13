@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2019 Recidiviz, Inc.
+# Copyright (C) 2021 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,6 +17,9 @@
 """Dashboard views related to pathways."""
 from typing import List
 
+from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_supervision_location_name_map import (
+    PATHWAYS_SUPERVISION_LOCATION_NAME_MAP_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.dashboard.pathways.prison_population_snapshot_by_dimension import (
     PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER,
 )
@@ -40,4 +43,8 @@ PATHWAYS_VIEW_BUILDERS: List[MetricBigQueryViewBuilder] = [
     PRISON_POPULATION_TIME_SERIES_VIEW_BUILDER,
     SUPERVISION_TO_LIBERTY_COUNT_BY_MONTH_VIEW_BUILDER,
     SUPERVISION_TO_PRISON_COUNT_BY_MONTH_VIEW_BUILDER,
+]
+
+PATHWAYS_HELPER_VIEW_BUILDERS: List[MetricBigQueryViewBuilder] = [
+    PATHWAYS_SUPERVISION_LOCATION_NAME_MAP_VIEW_BUILDER,
 ]
