@@ -35,3 +35,6 @@ num_allowed_rows_overrides:
     hard_num_allowed_rows_override: 200
     override_reason: TODO(#5075) - We are generating a stable SQN number in the incarceration periods queries but not
       actually using it. Doing so will likely make these edge case periods go away.
+  - validation_name: admission_pfi_pop_pfi_mismatch
+    hard_num_allowed_rows_override: 20
+    override_reason: TODO(#10625) - Need to be handled in IP pre-processing.
