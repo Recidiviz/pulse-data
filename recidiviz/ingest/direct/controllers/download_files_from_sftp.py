@@ -218,13 +218,22 @@ class DownloadFilesFromSftpController:
             update_time = update_time.astimezone(pytz.UTC)
         return update_time >= self.lower_bound_update_datetime
 
+    def _normalize_sftp_path(self, file_path: str) -> str:
+        """Normalizes an SFTP path to download to GCS by first replacing dashes with
+        underscores within the path, then setting up the path to be only the base directory
+        and the base file name."""
+        normalized_file_path = os.path.normpath(file_path).replace("-", "_")
+        base_directory = os.path.basename(os.path.dirname(normalized_file_path))
+        base_file_name = os.path.basename(normalized_file_path)
+        return os.path.join(base_directory, base_file_name)
+
     def _fetch(
         self,
         file_path: str,
         file_timestamp: datetime.datetime,
     ) -> None:
         """Fetches data files from the SFTP, tracking which items downloaded and failed to download."""
-        normalized_sftp_path = os.path.normpath(file_path).replace("-", "_")
+        normalized_sftp_path = self._normalize_sftp_path(file_path)
         normalized_upload_path = GcsfsFilePath.from_directory_and_file_name(
             dir_path=self.download_dir,
             file_name=os.path.basename(

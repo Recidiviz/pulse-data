@@ -149,7 +149,7 @@ class BrokenGCSFSFakeSystem(FakeGCSFileSystem):
         contents_handle: FileContentsHandle[FileContentsRowType, IoType],
         content_type: str,
     ) -> None:
-        if "subdir1" in path.abs_path():
+        if "file1" in path.abs_path():
             raise IOError
         super().upload_from_contents_handle_stream(path, contents_handle, content_type)
 
@@ -303,7 +303,6 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
         files_with_timestamps = controller.get_paths_to_download()
         expected = [
             ("./testToday/file1.txt", TODAY.astimezone(pytz.UTC)),
-            ("./testToday/subdir1/file1.txt", TODAY.astimezone(pytz.UTC)),
             ("./testToday/already_processed.csv", TODAY.astimezone(pytz.UTC)),
             ("./testToday/discovered.csv", TODAY.astimezone(pytz.UTC)),
         ]
@@ -343,11 +342,10 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
                         RAW_INGEST_DIRECTORY,
                         TODAY.astimezone(pytz.UTC).strftime("%Y-%m-%dT%H:%M:%S:%f"),
                         "testToday",
-                        item,
+                        "file1.txt",
                     ),
                     TODAY.astimezone(pytz.UTC),
                 )
-                for item in ["subdir1/file1.txt", "file1.txt"]
             ],
         )
         self.assertEqual(len(mock_fs.files), len(result.successes))
@@ -387,11 +385,10 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
                         RAW_INGEST_DIRECTORY,
                         TODAY.astimezone(pytz.UTC).strftime("%Y-%m-%dT%H:%M:%S:%f"),
                         "testToday",
-                        item,
+                        "file1.txt",
                     ),
                     TODAY.astimezone(pytz.UTC),
                 )
-                for item in ["subdir1/file1.txt", "file1.txt"]
             ],
         )
         self.assertEqual(len(mock_fs.files), len(result.successes))
@@ -458,7 +455,7 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
                                         "%Y-%m-%dT%H:%M:%S:%f"
                                     ),
                                     "testToday",
-                                    item,
+                                    "file1.txt",
                                 ),
                                 TODAY.astimezone(pytz.UTC),
                             ),
@@ -470,12 +467,11 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
                                         "%Y-%m-%dT%H:%M:%S:%f"
                                     ),
                                     "testTwoDaysAgo",
-                                    item,
+                                    "file1.txt",
                                 ),
                                 TWO_DAYS_AGO.astimezone(pytz.UTC),
                             ),
                         ]
-                        for item in ["subdir1/file1.txt", "file1.txt"]
                     ]
                 )
             ),
@@ -505,21 +501,7 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
             self.project_id, self.region, self.lower_bound_date
         )
         result = controller.do_fetch()
-        self.assertEqual(
-            result.successes,
-            [
-                (
-                    os.path.join(
-                        "recidiviz-456-direct-ingest-state-us-xx-sftp",
-                        RAW_INGEST_DIRECTORY,
-                        TODAY.astimezone(pytz.UTC).strftime("%Y-%m-%dT%H:%M:%S:%f"),
-                        "testToday",
-                        "file1.txt",
-                    ),
-                    TODAY.astimezone(pytz.UTC),
-                )
-            ],
-        )
+        self.assertEqual(result.failures, ["./testToday/file1.txt"])
         self.assertEqual(len(mock_fs.files), len(result.successes))
 
     @patch.object(
