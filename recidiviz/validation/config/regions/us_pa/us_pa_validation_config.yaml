@@ -68,12 +68,12 @@ max_allowed_error_overrides:
     override_reason: Needs investigation.
 num_allowed_rows_overrides:
   - validation_name: incarceration_admission_after_open_period
-    hard_num_allowed_rows_override: 800
+    hard_num_allowed_rows_override: 900
     override_reason: There is a small amount of disagreement between the two data
       sources we pull data from to hydrate incarceration periods - CCIS tables and DOC
       tables. This value was 12 as of 3/5/2021 and we expect that it may slowly grow
       over time as new data is added. TODO(#9734) - need to investigate increase due to
-      CCC ingest.
+      CCC ingest. TODO(#10681) - Rerun might also fix some of these.
   - validation_name: overlapping_incarceration_periods
     hard_num_allowed_rows_override: 150000
     override_reason: There is a small amount of disagreement between the two data
@@ -85,11 +85,11 @@ num_allowed_rows_overrides:
     override_reason: TODO(#9735) - needs investigation
   - validation_name: overlapping_supervision_periods
     hard_num_allowed_rows_override: 700
-    override_reason: TODO(#6253) - Likely a rare edge case related to ordering movements
+    override_reason: TODO(#6253), TODO(#10681)? - Likely a rare edge case related to ordering movements
       in the PA supervision_period ingest view. There are 95 of these as of 3/5/2021.
   - validation_name: supervision_termination_prior_to_start
     hard_num_allowed_rows_override: 50
-    override_reason: TODO(#6254) - Likely a rare edge case related to how the ingest
+    override_reason: TODO(#6254), TODO(#10681)? - Likely a rare edge case related to how the ingest
       view and entity matching handles cases where a supervision period is deleted.
       There are 12 of these as of 3/5/2021.
   - validation_name: supervision_period_dates_existence
@@ -101,10 +101,10 @@ num_allowed_rows_overrides:
     override_reason: TODO(#9735) - needs investigation
   - validation_name: admission_pfi_pop_pfi_mismatch
     hard_num_allowed_rows_override: 4500
-    override_reason: TODO(#10625) - Need to be handled in IP pre-processing.
+    override_reason: TODO(#10625), TODO(#10681)? - Need to be handled in IP pre-processing.
   - validation_name: multiple_supervision_info_for_commitment_admission
     hard_num_allowed_rows_override: 3
-    override_reason: TODO(#10614) - In the rare case where a person has multiple
+    override_reason: TODO(#10614), TODO(#10681)? - In the rare case where a person has multiple
       periods of parole board holds and multiple revocation admissions on the same day,
       we end up with more than one commitment from supervision admission with multiple
       different parole board hold periods (of different lengths) that preceed them,
