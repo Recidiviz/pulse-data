@@ -205,7 +205,6 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = """
       report_month.facetoface_out_of_date_clients,
       report_month.facetoface_upcoming_clients,
       report_month.facetoface,
-      report_month.facetoface_frequencies_sufficient,
       report_month.upcoming_release_date_clients,
     FROM `{project_id}.{static_reference_dataset}.po_report_recipients`
     LEFT JOIN report_data_per_officer report_month
