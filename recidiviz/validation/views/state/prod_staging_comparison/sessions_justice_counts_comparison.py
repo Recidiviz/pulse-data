@@ -55,7 +55,11 @@ SESSIONS_JUSTICE_COUNTS_COMPARISON_QUERY_TEMPLATE = """
         CASE
             WHEN compartment_level_1 = "INCARCERATION" THEN "POPULATION_PRISON"
             WHEN compartment_level_2 IN ("PAROLE", "DUAL") THEN "POPULATION_PAROLE"
-            WHEN compartment_level_2 = "PROBATION" THEN "POPULATION_PROBATION"
+            WHEN compartment_level_2 = "PROBATION"
+                -- Justice Counts probation data collection process in TN includes
+                -- Community Confinement unlike other states
+                OR (state_code = "US_TN" AND compartment_level_2 = "COMMUNITY_CONFINEMENT")
+                THEN "POPULATION_PROBATION"
             END AS metric
       FROM `{project_id}.{sessions_dataset}.compartment_sessions_materialized`
       ) b
