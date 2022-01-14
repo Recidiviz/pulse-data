@@ -145,6 +145,9 @@ from recidiviz.validation.views.state.invalid_pfi_for_temporary_custody_admissio
 from recidiviz.validation.views.state.invalid_release_reasons_for_temporary_custody import (
     INVALID_RELEASE_REASONS_FOR_TEMPORARY_CUSTODY_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.multiple_supervision_info_for_commitment_admission import (
+    MULTIPLE_SUPERVISION_INFO_FOR_COMMITMENT_ADMISSION_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.overlapping_incarceration_periods import (
     OVERLAPPING_INCARCERATION_PERIODS_VIEW_BUILDER,
 )
@@ -299,6 +302,8 @@ from recidiviz.validation.views.state.supervision_termination_reason_no_date imp
 )
 
 # Validations that query from both production and staging views
+
+
 _CROSS_PROJECT_VALIDATION_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     INCARCERATION_ADMISSION_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_BUILDER,
     INCARCERATION_RELEASE_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_BUILDER,
@@ -344,6 +349,7 @@ VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = (
         INVALID_NULL_SPFI_IN_METRICS_VIEW_BUILDER,
         INVALID_PFI_FOR_TEMPORARY_CUSTODY_ADMISSIONS_VIEW_BUILDER,
         INVALID_RELEASE_REASONS_FOR_TEMPORARY_CUSTODY_VIEW_BUILDER,
+        MULTIPLE_SUPERVISION_INFO_FOR_COMMITMENT_ADMISSION_VIEW_BUILDER,
         PO_REPORT_AVGS_PER_DISTRICT_STATE_VIEW_BUILDER,
         OVERLAPPING_INCARCERATION_PERIODS_VIEW_BUILDER,
         OVERLAPPING_SUPERVISION_PERIODS_VIEW_BUILDER,
