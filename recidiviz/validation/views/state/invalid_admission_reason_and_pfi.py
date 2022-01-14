@@ -41,7 +41,7 @@ INVALID_ADMISSION_REASON_AND_PFI_VIEW_NAME = "invalid_admission_reason_and_pfi"
 INVALID_ADMISSION_REASON_AND_PFI_DESCRIPTION = """Incarceration admission metrics with invalid combinations of admission_reason and specialized_purpose_for_incarceration."""
 
 INVALID_ROWS_FILTER_CLAUSE = f"""WHERE (admission_reason =
-'{StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY.value}'
+'{StateIncarcerationPeriodAdmissionReason.REVOCATION.value}'
     -- Any REVOCATION admission_reason should have a purpose of GENERAL
         AND specialized_purpose_for_incarceration NOT IN (
             '{StateSpecializedPurposeForIncarceration.GENERAL.value}'
