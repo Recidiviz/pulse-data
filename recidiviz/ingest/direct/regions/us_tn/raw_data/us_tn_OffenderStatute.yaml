@@ -1,4 +1,4 @@
-file_tag: OffenseStatute
+file_tag: OffenderStatute
 file_description: |-
   This table contains one occurrence for each offense type. It contains information about the offense for sentencing and for statistical analysis.
 primary_key_cols: []
