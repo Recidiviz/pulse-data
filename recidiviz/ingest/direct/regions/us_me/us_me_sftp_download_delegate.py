@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Class containing logic for how US_ME SFTP downloads are handled."""
-import os
 from datetime import datetime
 from typing import List
 
@@ -57,11 +56,5 @@ class UsMeSftpDownloadDelegate(BaseSftpDownloadDelegate):
     def post_process_downloads(
         self, downloaded_path: GcsfsFilePath, gcsfs: GCSFileSystem
     ) -> List[str]:
-        """For US_ME, the downloaded path is the same that will be streamed directly to GCS. The extension from sftp
-        comes through as .CSV, so we need to downcase the extension here and rename the blob on GCS."""
-        absolute_path = downloaded_path.abs_path()
-        filepath, ext = os.path.splitext(absolute_path)
-        new_filepath = GcsfsFilePath.from_absolute_path(f"{filepath}{ext.lower()}")
-
-        gcsfs.rename_blob(downloaded_path, new_filepath)
-        return [new_filepath.abs_path()]
+        """For US_ME, the downloaded path is the same that will be streamed directly to GCS."""
+        return [downloaded_path.abs_path()]

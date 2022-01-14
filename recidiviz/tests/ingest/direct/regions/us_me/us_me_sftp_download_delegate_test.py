@@ -53,11 +53,8 @@ class UsMESftpDownloadDelegateTest(unittest.TestCase):
         self.assertEqual(results, expected_results)
 
     def test_post_process_downloads(self) -> None:
-        absolute_path = GcsfsFilePath.from_absolute_path("test_bucket/TEST.CSV")
-        renamed_path = GcsfsFilePath.from_absolute_path("test_bucket/TEST.csv")
         result = self.delegate.post_process_downloads(
-            absolute_path,
-            self.mock_fs,
+            GcsfsFilePath.from_absolute_path("test_bucket/test.txt"),
+            FakeGCSFileSystem(),
         )
-        self.mock_fs.rename_blob.assert_called_with(absolute_path, renamed_path)
-        self.assertEqual(result, ["test_bucket/TEST.csv"])
+        self.assertEqual(result, ["test_bucket/test.txt"])
