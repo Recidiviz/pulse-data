@@ -366,24 +366,21 @@ class TestGetCommitmentDetails(unittest.TestCase):
             incarceration_period_index=ip_index,
         )
 
-        # TODO(#10536): Assert that the pre_commitment_sp was the one that was chosen
-        #  instead if we decide to prioritize periods overlapping with board hold
-        #  admissions for US_PA
-        assert pre_board_hold_sp.supervision_period_id is not None
+        assert pre_commitment_sp.supervision_period_id is not None
         self.assertEqual(
             CommitmentDetails(
                 purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
                 purpose_for_incarceration_subtype=None,
-                level_1_supervision_location_external_id=pre_board_hold_sp.supervision_site,
+                level_1_supervision_location_external_id=pre_commitment_sp.supervision_site,
                 level_2_supervision_location_external_id=None,
                 supervising_officer_external_id=DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS.get(
-                    pre_board_hold_sp.supervision_period_id, {}
+                    pre_commitment_sp.supervision_period_id, {}
                 ).get(
                     "agent_external_id"
                 ),
                 case_type=StateSupervisionCaseType.GENERAL,
-                supervision_level=pre_board_hold_sp.supervision_level,
-                supervision_level_raw_text=pre_board_hold_sp.supervision_level_raw_text,
+                supervision_level=pre_commitment_sp.supervision_level,
+                supervision_level_raw_text=pre_commitment_sp.supervision_level_raw_text,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             ),
             commitment_details,
