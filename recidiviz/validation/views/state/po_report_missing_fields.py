@@ -67,10 +67,8 @@ PO_REPORT_REQUIRED_FIELDS = [
     "crime_revocations_state_average",
     # assessments
     "assessments",
-    "assessments_percent",
     # face to face contact
     "facetoface",
-    "facetoface_percent",
 ]
 PO_REPORT_COMPARISON_COLUMNS = PO_REPORT_REQUIRED_FIELDS + ["total_rows"]
 
