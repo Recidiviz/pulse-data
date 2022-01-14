@@ -378,8 +378,10 @@ def _get_commitment_from_supervision_supervision_period(
     )
 
     if (
+        # We prioritize periods that overlap with the admission to parole boards
+        # holds, because we do not expect supervision periods to have already
+        # terminated on the date someone is admitted to a board hold
         is_commitment_from_board_hold
-        and commitment_from_supervision_delegate.prioritize_overlaps_with_board_holds_in_pre_commitment_sp_search()
     ) or (
         admission_reason_raw_text
         in commitment_from_supervision_delegate.admission_reason_raw_texts_that_should_prioritize_overlaps_in_pre_commitment_sp_search()
