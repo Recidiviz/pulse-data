@@ -28,6 +28,7 @@ from recidiviz.persistence.database.constants import (
     SQLALCHEMY_DB_HOST,
     SQLALCHEMY_DB_NAME,
     SQLALCHEMY_DB_PASSWORD,
+    SQLALCHEMY_DB_PORT,
     SQLALCHEMY_DB_USER,
     SQLALCHEMY_SSL_CERT_PATH,
     SQLALCHEMY_SSL_KEY_PATH,
@@ -105,6 +106,7 @@ def _get_sqlalchemy_url(use_ssl: bool = True) -> str:
     password = os.getenv(SQLALCHEMY_DB_PASSWORD)
     host = os.getenv(SQLALCHEMY_DB_HOST)
     db_name = os.getenv(SQLALCHEMY_DB_NAME)
+    port = os.getenv(SQLALCHEMY_DB_PORT)
 
     url = URL.create(
         drivername=_DB_TYPE,
@@ -112,6 +114,7 @@ def _get_sqlalchemy_url(use_ssl: bool = True) -> str:
         password=password,
         database=db_name,
         host=host,
+        port=port,
     )
     if use_ssl:
         ssl_key_path = os.getenv(SQLALCHEMY_SSL_KEY_PATH)
