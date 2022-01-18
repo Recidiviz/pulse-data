@@ -53,22 +53,22 @@ class TestValidateDeprecatedEntityFieldForStates(unittest.TestCase):
         raise an error if an entity is instantiated with a deprecated field for the
         given state."""
 
-        ip = entities.StateIncarcerationPeriod.new_with_defaults(
+        ip = entities.StatePerson.new_with_defaults(
             state_code="US_XX",
-            parole_decisions=[
-                entities.StateParoleDecision.new_with_defaults(state_code="US_XX")
+            supervision_violations=[
+                entities.StateSupervisionViolation.new_with_defaults(state_code="US_XX")
             ],
         )
 
         with self.assertRaises(ValueError) as e:
             entity_deprecation_utils.validate_deprecated_entity_field_for_states(
                 entity=ip,
-                field_name="parole_decisions",
+                field_name="supervision_violations",
                 deprecated_state_codes=["US_XX", "US_YY"],
             )
 
             self.assertEqual(
-                "The [parole_decisions] relationship "
+                "The [supervision_violations] relationship "
                 "is deprecated for state_code: [US_XX]. This relationship "
                 "should not be populated.",
                 e,

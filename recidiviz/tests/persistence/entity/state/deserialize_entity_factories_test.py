@@ -64,9 +64,6 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodReleaseReason,
     StateSpecializedPurposeForIncarceration,
 )
-from recidiviz.common.constants.state.state_parole_decision import (
-    StateParoleDecisionOutcome,
-)
 from recidiviz.common.constants.state.state_person_alias import StatePersonAliasType
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentDischargeReason,
@@ -219,40 +216,6 @@ class TestDeserializeEntityFactories(unittest.TestCase):
             external_id="123A",
             id_type="STATE_ID",
             state_code="US_XX",
-        )
-
-        self.assertEqual(expected_result, result)
-
-    def test_deserialize_StateParoleDecision(self) -> None:
-        result = deserialize_entity_factories.StateParoleDecisionFactory.deserialize(
-            external_id="PAROLE_DECISION_ID",
-            decision_date="1/2/2111",
-            corrective_action_deadline="2/2/2111",
-            state_code="us_xx",
-            county_code=None,
-            decision_outcome=StrictEnumParser(
-                "GRANTED",
-                StateParoleDecisionOutcome,
-                EnumOverrides.Builder()
-                .add("GRANTED", StateParoleDecisionOutcome.PAROLE_GRANTED)
-                .build(),
-            ),
-            decision_outcome_raw_text="GRANTED",
-            decision_reasoning="GREAT ALL AROUND PERSON",
-            corrective_action=None,
-        )
-
-        # Assert
-        expected_result = entities.StateParoleDecision(
-            external_id="PAROLE_DECISION_ID",
-            decision_date=date(year=2111, month=1, day=2),
-            corrective_action_deadline=date(year=2111, month=2, day=2),
-            state_code="US_XX",
-            county_code=None,
-            decision_outcome=StateParoleDecisionOutcome.PAROLE_GRANTED,
-            decision_outcome_raw_text="GRANTED",
-            decision_reasoning="GREAT ALL AROUND PERSON",
-            corrective_action=None,
         )
 
         self.assertEqual(expected_result, result)

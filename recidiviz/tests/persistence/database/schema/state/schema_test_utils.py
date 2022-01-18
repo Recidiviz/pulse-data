@@ -215,14 +215,6 @@ def generate_agent(**kwargs) -> schema.StateAgent:
     return schema.StateAgent(**args)
 
 
-def generate_parole_decision(person, **kwargs) -> schema.StateParoleDecision:
-    args = {
-        "state_code": _STATE_CODE,
-    }
-    args.update(kwargs)
-    return schema.StateParoleDecision(person=person, **args)
-
-
 def generate_early_discharge(person, **kwargs) -> schema.StateEarlyDischarge:
     args = {
         "state_code": _STATE_CODE,

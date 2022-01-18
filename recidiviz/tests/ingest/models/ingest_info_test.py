@@ -40,7 +40,6 @@ from recidiviz.ingest.models.ingest_info_pb2 import (
     StateIncarcerationIncidentOutcome,
     StateIncarcerationPeriod,
     StateIncarcerationSentence,
-    StateParoleDecision,
     StatePerson,
     StateProgramAssignment,
     StateSupervisionContact,
@@ -144,19 +143,12 @@ class TestIngestInfo(unittest.TestCase):
             "state_court_case",
         ]
         state_court_case_fields_ignore = ["judge_id", "judge"]
-        incarceration_period_fields_ignore = [
-            "state_incarceration_incident_ids",
-            "state_incarceration_incidents",
-            "state_parole_decision_ids",
-            "state_parole_decisions",
-        ]
         incarceration_incident_fields_ignore = [
             "responding_officer_id",
             "responding_officer",
             "state_incarceration_incident_outcomes",
             "state_incarceration_incident_outcome_ids",
         ]
-        parole_decision_fields_ignore = ["decision_agent_ids", "decision_agents"]
         supervision_period_fields_ignore = [
             "supervising_officer_id",
             "supervising_officer",
@@ -214,7 +206,6 @@ class TestIngestInfo(unittest.TestCase):
         _verify_fields(
             StateIncarcerationPeriod,
             ingest_info.StateIncarcerationPeriod(),
-            incarceration_period_fields_ignore,
         )
         _verify_fields(
             StateSupervisionPeriod,
@@ -235,11 +226,6 @@ class TestIngestInfo(unittest.TestCase):
             StateIncarcerationIncidentOutcome,
             ingest_info.StateIncarcerationIncidentOutcome(),
             incarceration_incident_fields_ignore,
-        )
-        _verify_fields(
-            StateParoleDecision,
-            ingest_info.StateParoleDecision(),
-            parole_decision_fields_ignore,
         )
         _verify_fields(
             StateSupervisionViolation,

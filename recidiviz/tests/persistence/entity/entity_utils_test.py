@@ -207,9 +207,6 @@ PLACEHOLDER_ENTITY_EXAMPLES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] = 
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
         )
     ],
-    schema.StateParoleDecision: [
-        schema.StateParoleDecision(state_code=StateCode.US_XX.value)
-    ],
     schema.StatePerson: [
         schema.StatePerson(state_code=StateCode.US_XX.value),
         schema.StatePerson(
@@ -327,11 +324,6 @@ REFERENCE_ENTITY_EXAMPLES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] = {
             external_id=_EXTERNAL_ID,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
         ),
-    ],
-    schema.StateParoleDecision: [
-        schema.StateParoleDecision(
-            state_code=StateCode.US_XX.value, external_id=_EXTERNAL_ID
-        )
     ],
     schema.StatePerson: [
         schema.StatePerson(
@@ -525,17 +517,6 @@ HAS_MEANINGFUL_DATA_ENTITIES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] =
         schema.StateIncarcerationSentence(
             state_code=StateCode.US_XX.value,
             status=StateSentenceStatus.SERVING.value,
-        ),
-    ],
-    schema.StateParoleDecision: [
-        schema.StateParoleDecision(
-            state_code=StateCode.US_XX.value,
-            external_id=_EXTERNAL_ID,
-            decision_date=datetime.date(2021, 1, 1),
-        ),
-        schema.StateParoleDecision(
-            state_code=StateCode.US_XX.value,
-            decision_date=datetime.date(2021, 1, 1),
         ),
     ],
     schema.StatePerson: [

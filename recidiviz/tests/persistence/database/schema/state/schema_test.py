@@ -31,7 +31,6 @@ from recidiviz.common.constants.state import (
     state_incarceration,
     state_incarceration_incident,
     state_incarceration_period,
-    state_parole_decision,
     state_person_alias,
     state_program_assignment,
     state_sentence,
@@ -68,7 +67,6 @@ from recidiviz.tests.persistence.database.schema.state.schema_test_utils import 
     generate_early_discharge,
     generate_external_id,
     generate_incarceration_period,
-    generate_parole_decision,
     generate_person,
     generate_program_assignment,
     generate_supervision_case_type_entry,
@@ -109,7 +107,6 @@ class TestStateSchemaEnums(TestSchemaEnums):
             "state_incarceration_facility_security_level": state_incarceration_period.StateIncarcerationFacilitySecurityLevel,
             "state_incarceration_period_admission_reason": state_incarceration_period.StateIncarcerationPeriodAdmissionReason,
             "state_incarceration_period_release_reason": state_incarceration_period.StateIncarcerationPeriodReleaseReason,
-            "state_parole_decision_outcome": state_parole_decision.StateParoleDecisionOutcome,
             "state_person_alias_type": state_person_alias.StatePersonAliasType,
             "state_supervision_period_admission_reason": state_supervision_period.StateSupervisionPeriodAdmissionReason,
             "state_supervision_period_supervision_type": state_supervision_period.StateSupervisionPeriodSupervisionType,
@@ -366,7 +363,7 @@ class TestUniqueExternalIdConstraint(unittest.TestCase):
 @pytest.mark.uses_db
 class TestStateSchemaUniqueConstraints(unittest.TestCase):
     """Generalized Test Class for SupervisionViolation, SupervisionCaseTypeEntry, IncarcerationPeriod,
-    SupervisionViolationResponse, Bond, ParoleDecision, EarlyDischarge, ProgramAssignment, SupervisionContact, Charge"""
+    SupervisionViolationResponse, Bond, EarlyDischarge, ProgramAssignment, SupervisionContact, Charge"""
 
     EXTERNAL_ID_1 = "EXTERNAL_ID_1"
     EXTERNAL_ID_2 = "EXTERNAL_ID_2"
@@ -378,7 +375,6 @@ class TestStateSchemaUniqueConstraints(unittest.TestCase):
         (generate_supervision_case_type_entry,),
         (generate_incarceration_period,),
         (generate_supervision_violation_response,),
-        (generate_parole_decision,),
         (generate_early_discharge,),
         (generate_program_assignment,),
         (generate_supervision_contact,),

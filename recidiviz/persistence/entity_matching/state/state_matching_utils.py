@@ -361,7 +361,6 @@ def can_atomically_merge_entity(
             schema.StateIncarcerationIncident,
             schema.StateIncarcerationIncidentOutcome,
             schema.StateIncarcerationPeriod,
-            schema.StateParoleDecision,
             schema.StatePersonExternalId,
             schema.StateProgramAssignment,
             schema.StateSupervisionContact,

@@ -280,19 +280,6 @@ class StateSupervisionPeriodFactory(EntityFactory):
         )
 
 
-class StateParoleDecisionFactory(EntityFactory):
-    @staticmethod
-    def deserialize(
-        **kwargs: Optional[Union[str, EnumParser]]
-    ) -> entities.StateParoleDecision:
-        return entity_deserialize(
-            cls=entities.StateParoleDecision,
-            converter_overrides={},
-            defaults={},
-            **kwargs
-        )
-
-
 class StateSupervisionCaseTypeEntryFactory(EntityFactory):
     @staticmethod
     def deserialize(

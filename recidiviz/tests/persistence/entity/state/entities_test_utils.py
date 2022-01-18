@@ -49,9 +49,6 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
 )
-from recidiviz.common.constants.state.state_parole_decision import (
-    StateParoleDecisionOutcome,
-)
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentDischargeReason,
     StateProgramAssignmentParticipationStatus,
@@ -432,17 +429,6 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
 
     person.incarceration_periods = [incarceration_period]
 
-    parole_decision = entities.StateParoleDecision.new_with_defaults(
-        decision_date=datetime.date(year=2004, month=7, day=1),
-        corrective_action_deadline=None,
-        state_code="US_XX",
-        decision_outcome=StateParoleDecisionOutcome.PAROLE_GRANTED,
-        decision_reasoning="GOOD BEHAVIOR",
-        corrective_action=None,
-    )
-
-    incarceration_period.parole_decisions = [parole_decision]
-
     person_supervising_officer = entities.StateAgent.new_with_defaults(
         state_code="US_XX",
         external_id="SUPERVISING_OFFICER_ID",
@@ -639,17 +625,6 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
 
         court_case.charges = [charge, charge2, charge3]
         court_case.person = person
-
-        incarceration_period_children: Sequence[Entity] = (
-            *incarceration_period.parole_decisions,
-        )
-
-        for child in incarceration_period_children:
-            if hasattr(child, "incarceration_periods"):
-                child.incarceration_periods = [incarceration_period]  # type: ignore[attr-defined]
-            else:
-                child.incarceration_period = incarceration_period  # type: ignore[attr-defined]
-            child.person = person  # type: ignore[attr-defined]
 
         incarceration_incident_children: List[
             StateIncarcerationIncidentOutcome

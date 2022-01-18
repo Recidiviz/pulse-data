@@ -66,9 +66,6 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodReleaseReason,
     StateSpecializedPurposeForIncarceration,
 )
-from recidiviz.common.constants.state.state_parole_decision import (
-    StateParoleDecisionOutcome,
-)
 from recidiviz.common.constants.state.state_person_alias import StatePersonAliasType
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentDischargeReason,
@@ -834,10 +831,6 @@ class StateIncarcerationPeriod(
     # Cross-entity relationships
     person: Optional["StatePerson"] = attr.ib(default=None)
 
-    parole_decisions: List["StateParoleDecision"] = attr.ib(
-        factory=list, validator=attr_validators.is_list
-    )
-
     @property
     def duration(self) -> DateRange:
         """Generates a DateRange for the days covered by the incarceration period. Since
@@ -1111,58 +1104,6 @@ class StateIncarcerationIncidentOutcome(
     person: Optional["StatePerson"] = attr.ib(default=None)
     incarceration_incident: Optional["StateIncarcerationIncident"] = attr.ib(
         default=None
-    )
-
-
-@attr.s(eq=False, kw_only=True)
-class StateParoleDecision(ExternalIdEntity, BuildableAttr, DefaultableAttr):
-    """Models a Parole Decision for a StatePerson while under Incarceration."""
-
-    # State Code
-    state_code: str = attr.ib(validator=attr_validators.is_str)
-
-    # Attributes
-    #   - When
-    decision_date: Optional[datetime.date] = attr.ib(
-        default=None, validator=attr_validators.is_opt_date
-    )
-    corrective_action_deadline: Optional[datetime.date] = attr.ib(
-        default=None, validator=attr_validators.is_opt_date
-    )
-
-    #   - Where
-    # The county where the decision was made, if different from the county where this
-    # person is incarcerated.
-    county_code: Optional[str] = attr.ib(
-        default=None, validator=attr_validators.is_opt_str
-    )
-
-    #   - What
-    decision_outcome: Optional[StateParoleDecisionOutcome] = attr.ib(
-        default=None, validator=attr_validators.is_opt(StateParoleDecisionOutcome)
-    )
-    decision_outcome_raw_text: Optional[str] = attr.ib(
-        default=None, validator=attr_validators.is_opt_str
-    )
-    decision_reasoning: Optional[str] = attr.ib(
-        default=None, validator=attr_validators.is_opt_str
-    )
-    corrective_action: Optional[str] = attr.ib(
-        default=None, validator=attr_validators.is_opt_str
-    )
-
-    #   - Who
-    # See |decision_agents| below
-
-    # Primary key - Only optional when hydrated in the data converter, before we have
-    # written this entity to the persistence layer
-    parole_decision_id: Optional[int] = attr.ib(default=None)
-
-    # Cross-entity relationships
-    person: Optional["StatePerson"] = attr.ib(default=None)
-    incarceration_period: Optional["StateIncarcerationPeriod"] = attr.ib(default=None)
-    decision_agents: List["StateAgent"] = attr.ib(
-        factory=list, validator=attr_validators.is_list
     )
 
 
