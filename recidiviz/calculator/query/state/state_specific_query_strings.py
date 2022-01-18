@@ -39,10 +39,20 @@ STATE_RACE_ETHNICITY_POPULATION_TABLE_NAME = "state_race_ethnicity_population_co
 # Select the raw table that ultimately powers a state's incarceration pathways calculations.
 # Note: there are a few limitations with this strategy. Most notably, this only picks one raw table per state. It does
 # not accommodate checking multiple tables that may potentially power incarceration periods in ingest.
-STATE_CODE_TO_PATHWAYS_LAST_UPDATED_DATE_SOURCE_TABLE: Dict[str, str] = {
+STATE_CODE_TO_PATHWAYS_INCARCERATION_LAST_UPDATED_DATE_SOURCE_TABLE: Dict[
+    StateCode, str
+] = {
     # TODO(#10453): Re-enable once we have some raw data
-    # StateCode.US_TN.value: "OffenderMovement",
-    StateCode.US_ID.value: "movement",
+    # StateCode.US_TN: "OffenderMovement",
+    StateCode.US_ID: "movement",
+}
+
+# Select the raw table that ultimately powers a state's supervision pathways calculations.
+STATE_CODE_TO_PATHWAYS_SUPERVISION_LAST_UPDATED_DATE_SOURCE_TABLE: Dict[
+    StateCode, str
+] = {
+    StateCode.US_ID: "movement",
+    StateCode.US_ND: "docstars_offendercasestable",
 }
 
 
@@ -400,22 +410,36 @@ def spotlight_state_specific_facility() -> str:
     """
 
 
-def get_pathways_incarceration_last_updated_date() -> str:
-    """Add state-specific last updated dates, based on the `update_datetime` of each state's pathways incarceration
-    specific table."""
-    last_item_index = len(STATE_CODE_TO_PATHWAYS_LAST_UPDATED_DATE_SOURCE_TABLE) - 1
+def _get_pathways_last_updated_date(tables: Dict[StateCode, str]) -> str:
+    """Builds query for state-specific last updated dates, based on the `update_datetime` of each table
+    in the provided mapping"""
+    last_item_index = len(tables) - 1
     query_string = ""
-    for index, (state_code, table_name) in enumerate(
-        STATE_CODE_TO_PATHWAYS_LAST_UPDATED_DATE_SOURCE_TABLE.items()
-    ):
+    for index, (state_code, table_name) in enumerate(tables.items()):
         query_string += f"""
         SELECT
-            \'{state_code}\' as state_code,
+            \'{state_code.value}\' as state_code,
             date(max(update_datetime)) as last_updated
-        FROM `{{project_id}}.{state_code.lower()}_raw_data.{table_name}`
+        FROM `{{project_id}}.{state_code.value.lower()}_raw_data.{table_name}`
          """
         if index != last_item_index:
             query_string += """
         UNION ALL
             """
     return query_string
+
+
+def get_pathways_incarceration_last_updated_date() -> str:
+    """Add state-specific last updated dates, based on the `update_datetime` of each state's pathways incarceration
+    specific table."""
+    return _get_pathways_last_updated_date(
+        STATE_CODE_TO_PATHWAYS_INCARCERATION_LAST_UPDATED_DATE_SOURCE_TABLE
+    )
+
+
+def get_pathways_supervision_last_updated_date() -> str:
+    """Add state-specific last updated dates, based on the `update_datetime` of each state's pathways supervision
+    specific table."""
+    return _get_pathways_last_updated_date(
+        STATE_CODE_TO_PATHWAYS_SUPERVISION_LAST_UPDATED_DATE_SOURCE_TABLE
+    )
