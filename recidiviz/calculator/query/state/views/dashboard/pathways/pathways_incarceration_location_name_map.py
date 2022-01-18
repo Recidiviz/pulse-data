@@ -38,7 +38,9 @@ PATHWAYS_INCARCERATION_LOCATION_NAME_MAP_QUERY_TEMPLATE = """
     SELECT
         state_code,
         level_1_incarceration_location_external_id AS location_id,
-        level_1_incarceration_location_name AS location_name,
+        IF(state_code = 'US_ND',
+            level_1_incarceration_location_external_id,
+            level_1_incarceration_location_name) AS location_name,
     FROM `{project_id}.{reference_views_dataset}.incarceration_location_ids_to_names`
     WHERE state_code IN ({enabled_states})
 """
