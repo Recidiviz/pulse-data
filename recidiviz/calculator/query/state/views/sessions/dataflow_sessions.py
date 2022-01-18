@@ -111,6 +111,26 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = """
     SELECT *
     FROM `{project_id}.{sessions_dataset}.us_id_incarceration_population_metrics_preprocessed_materialized`
     UNION ALL
+    SELECT
+        DISTINCT
+        person_id,
+        date_of_stay AS date,
+        metric_type AS metric_source,
+        created_on,
+        state_code,
+        'INCARCERATION_NOT_INCLUDED_IN_STATE' as compartment_level_1,
+        specialized_purpose_for_incarceration as compartment_level_2,
+        COALESCE(facility,'EXTERNAL_UNKNOWN') AS compartment_location,
+        COALESCE(facility,'EXTERNAL_UNKNOWN') AS facility,
+        CAST(NULL AS STRING) AS supervision_office,
+        CAST(NULL AS STRING) AS supervision_district,
+        CAST(NULL AS STRING) AS correctional_level,
+        CAST(NULL AS STRING) AS supervising_officer_external_id,
+        CAST(NULL AS STRING) AS case_type
+    FROM
+        `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_metrics_not_included_in_state_population_materialized`
+    WHERE state_code in ('{supported_states}')
+    UNION ALL
     SELECT 
         DISTINCT
         person_id,
