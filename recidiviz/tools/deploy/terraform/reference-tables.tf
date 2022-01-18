@@ -143,7 +143,7 @@ module "us_nd_incarceration_facility_names_table" {
     "name": "facility_name",
     "type": "STRING",
     "mode": "REQUIRED"
-  },
+  }
 ]
 EOF
 }
