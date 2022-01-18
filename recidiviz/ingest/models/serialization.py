@@ -80,7 +80,6 @@ def convert_ingest_info_to_proto(
     state_incarceration_incident_outcome_map: Dict[
         str, ingest_info.StateIncarcerationIncidentOutcome
     ] = {}
-    state_parole_decision_map: Dict[str, ingest_info.StateParoleDecision] = {}
     state_supervision_violation_map: Dict[
         str, ingest_info.StateSupervisionViolation
     ] = {}
@@ -350,25 +349,6 @@ def convert_ingest_info_to_proto(
             proto_state_person.state_incarceration_period_ids.append(
                 proto_period.state_incarceration_period_id
             )
-
-            for decision in incarceration_period.state_parole_decisions:
-                proto_decision = _populate_proto(
-                    "state_parole_decisions",
-                    decision,
-                    "state_parole_decision_id",
-                    state_parole_decision_map,
-                )
-                proto_period.state_parole_decision_ids.append(
-                    proto_decision.state_parole_decision_id
-                )
-
-                for agent in decision.decision_agents:
-                    proto_decision_agent = _populate_proto(
-                        "state_agents", agent, "state_agent_id", state_agent_map
-                    )
-                    proto_decision.decision_agent_ids.append(
-                        proto_decision_agent.state_agent_id
-                    )
 
         for supervision_period in state_person.state_supervision_periods:
             proto_period = _populate_proto(
@@ -697,12 +677,6 @@ def convert_proto_to_ingest_info(
         )
         for incarceration_incident_outcome in proto.state_incarceration_incident_outcomes
     )
-    state_parole_decision_map: Dict[str, ingest_info.StateParoleDecision] = dict(
-        _proto_to_py(
-            parole_decision, ingest_info.StateParoleDecision, "state_parole_decision_id"
-        )
-        for parole_decision in proto.state_parole_decisions
-    )
     state_supervision_violation_map: Dict[
         str, ingest_info.StateSupervisionViolation
     ] = dict(
@@ -810,16 +784,6 @@ def convert_proto_to_ingest_info(
             for proto_id in proto_sentence.state_early_discharge_ids
         ]
 
-    # Wire agents to respective parent entities
-    for proto_parole_decision in proto.state_parole_decisions:
-        parole_decision = state_parole_decision_map[
-            proto_parole_decision.state_parole_decision_id
-        ]
-        parole_decision.decision_agents = [
-            state_agent_map[proto_id]
-            for proto_id in proto_parole_decision.decision_agent_ids
-        ]
-
     for proto_court_case in proto.state_court_cases:
         state_court_case = state_court_case_map[proto_court_case.state_court_case_id]
         if proto_court_case.judge_id:
@@ -913,17 +877,6 @@ def convert_proto_to_ingest_info(
         supervision_period.state_supervision_case_type_entries = [
             state_supervision_case_type_entry_map[proto_id]
             for proto_id in proto_supervision_period.state_supervision_case_type_entry_ids
-        ]
-
-    # Wire child entities to respective incarceration periods
-    for proto_incarceration_period in proto.state_incarceration_periods:
-        incarceration_period = state_incarceration_period_map[
-            proto_incarceration_period.state_incarceration_period_id
-        ]
-
-        incarceration_period.state_parole_decisions = [
-            state_parole_decision_map[proto_id]
-            for proto_id in proto_incarceration_period.state_parole_decision_ids
         ]
 
     # Wire child entities to respective incarceration incidents

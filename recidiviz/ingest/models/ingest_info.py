@@ -41,7 +41,6 @@ PLURALS = {
     "state_incarceration_period": "state_incarceration_periods",
     "state_charge": "state_charges",
     "state_incarceration_incident": "state_incarceration_incidents",
-    "state_parole_decision": "state_parole_decisions",
     "state_supervision_violation": "state_supervision_violations",
     "state_supervision_violation_response": "state_supervision_violation_responses",
 }
@@ -867,9 +866,6 @@ class StatePerson(IngestObject):
         self.state_incarceration_sentences = [
             ins.prune() for ins in self.state_incarceration_sentences if ins
         ]
-        self.state_incarceration_periods = [
-            ip.prune() for ip in self.state_incarceration_periods if ip
-        ]
         self.state_supervision_periods = [
             sp.prune() for sp in self.state_supervision_periods if sp
         ]
@@ -1321,7 +1317,6 @@ class StateIncarcerationPeriod(IngestObject):
         projected_release_reason=None,
         release_reason=None,
         specialized_purpose_for_incarceration=None,
-        state_parole_decisions=None,
         custodial_authority=None,
     ):
         self.state_incarceration_period_id: Optional[
@@ -1343,24 +1338,8 @@ class StateIncarcerationPeriod(IngestObject):
         ] = specialized_purpose_for_incarceration
         self.custodial_authority = custodial_authority
 
-        self.state_parole_decisions: List[StateParoleDecision] = (
-            state_parole_decisions or []
-        )
-
     def __setattr__(self, name, value):
-        restricted_setattr(self, "state_parole_decisions", name, value)
-
-    def create_state_parole_decision(self, **kwargs) -> "StateParoleDecision":
-        parole_decision = StateParoleDecision(**kwargs)
-        self.state_parole_decisions.append(parole_decision)
-        return parole_decision
-
-    def prune(self) -> "StateIncarcerationPeriod":
-        self.state_parole_decisions = [pd for pd in self.state_parole_decisions if pd]
-        return self
-
-    def sort(self):
-        self.state_parole_decisions.sort()
+        restricted_setattr(self, "custodial_authority", name, value)
 
 
 class StateSupervisionPeriod(IngestObject):
@@ -1599,48 +1578,6 @@ class StateIncarcerationIncidentOutcome(IngestObject):
 
     def __setattr__(self, name, value):
         restricted_setattr(self, "punishment_length_days", name, value)
-
-
-class StateParoleDecision(IngestObject):
-    """Class for information about a parole decision. Referenced from IncarcerationPeriod."""
-
-    def __init__(
-        self,
-        state_parole_decision_id=None,
-        decision_date=None,
-        corrective_action_deadline=None,
-        state_code=None,
-        county_code=None,
-        decision_outcome=None,
-        decision_reasoning=None,
-        corrective_action=None,
-        decision_agents=None,
-    ):
-        self.state_parole_decision_id: Optional[str] = state_parole_decision_id
-        self.decision_date: Optional[str] = decision_date
-        self.corrective_action_deadline: Optional[str] = corrective_action_deadline
-        self.state_code: Optional[str] = state_code
-        self.county_code: Optional[str] = county_code
-        self.decision_outcome: Optional[str] = decision_outcome
-        self.decision_reasoning: Optional[str] = decision_reasoning
-        self.corrective_action: Optional[str] = corrective_action
-
-        self.decision_agents: List[StateAgent] = decision_agents or []
-
-    def __setattr__(self, name, value):
-        restricted_setattr(self, "decision_agents", name, value)
-
-    def create_state_agent(self, **kwargs) -> "StateAgent":
-        decision_agent = StateAgent(**kwargs)
-        self.decision_agents.append(decision_agent)
-        return decision_agent
-
-    def prune(self) -> "StateParoleDecision":
-        self.decision_agents = [da for da in self.decision_agents if da]
-        return self
-
-    def sort(self):
-        self.decision_agents.sort()
 
 
 class StateSupervisionViolationTypeEntry(IngestObject):

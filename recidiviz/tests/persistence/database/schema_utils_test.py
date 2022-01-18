@@ -96,8 +96,6 @@ def test_get_all_database_entity_classes() -> None:
         "StateIncarcerationPeriodHistory",
         "StateIncarcerationSentence",
         "StateIncarcerationSentenceHistory",
-        "StateParoleDecision",
-        "StateParoleDecisionHistory",
         "StatePerson",
         "StatePersonAlias",
         "StatePersonAliasHistory",
@@ -225,8 +223,6 @@ def test_get_all_table_classes() -> None:
         "state_incarceration_period_history",
         "state_incarceration_sentence",
         "state_incarceration_sentence_history",
-        "state_parole_decision",
-        "state_parole_decision_history",
         "state_person",
         "state_person_alias",
         "state_person_alias_history",
@@ -259,7 +255,6 @@ def test_get_all_table_classes() -> None:
         "state_supervision_violation_response_decision_entry_history",
         "state_charge_incarceration_sentence_association",
         "state_charge_supervision_sentence_association",
-        "state_parole_decision_decision_agent_association",
         "state_supervision_violation_response_decision_agent_association",
     ]
     operations_table_names = [
@@ -311,7 +306,6 @@ def test_get_non_history_state_database_entities() -> None:
         "StateIncarcerationIncidentOutcome",
         "StateIncarcerationPeriod",
         "StateIncarcerationSentence",
-        "StateParoleDecision",
         "StatePerson",
         "StatePersonAlias",
         "StatePersonEthnicity",

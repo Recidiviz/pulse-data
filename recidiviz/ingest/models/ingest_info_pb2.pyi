@@ -50,7 +50,6 @@ class IngestInfo(google.protobuf.message.Message):
     STATE_SUPERVISION_CASE_TYPE_ENTRIES_FIELD_NUMBER: builtins.int
     STATE_INCARCERATION_INCIDENTS_FIELD_NUMBER: builtins.int
     STATE_INCARCERATION_INCIDENT_OUTCOMES_FIELD_NUMBER: builtins.int
-    STATE_PAROLE_DECISIONS_FIELD_NUMBER: builtins.int
     STATE_SUPERVISION_VIOLATIONS_FIELD_NUMBER: builtins.int
     STATE_SUPERVISION_VIOLATION_TYPE_ENTRIES_FIELD_NUMBER: builtins.int
     STATE_SUPERVISION_VIOLATED_CONDITION_ENTRIES_FIELD_NUMBER: builtins.int
@@ -204,12 +203,6 @@ class IngestInfo(google.protobuf.message.Message):
         global___StateIncarcerationIncidentOutcome
     ]: ...
     @property
-    def state_parole_decisions(
-        self,
-    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
-        global___StateParoleDecision
-    ]: ...
-    @property
     def state_supervision_violations(
         self,
     ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
@@ -315,9 +308,6 @@ class IngestInfo(google.protobuf.message.Message):
         state_incarceration_incident_outcomes: typing.Optional[
             typing.Iterable[global___StateIncarcerationIncidentOutcome]
         ] = ...,
-        state_parole_decisions: typing.Optional[
-            typing.Iterable[global___StateParoleDecision]
-        ] = ...,
         state_supervision_violations: typing.Optional[
             typing.Iterable[global___StateSupervisionViolation]
         ] = ...,
@@ -383,8 +373,6 @@ class IngestInfo(google.protobuf.message.Message):
             b"state_incarceration_periods",
             "state_incarceration_sentences",
             b"state_incarceration_sentences",
-            "state_parole_decisions",
-            b"state_parole_decisions",
             "state_people",
             b"state_people",
             "state_person_ethnicities",
@@ -2212,7 +2200,6 @@ class StateIncarcerationPeriod(google.protobuf.message.Message):
     RELEASE_REASON_FIELD_NUMBER: builtins.int
     SPECIALIZED_PURPOSE_FOR_INCARCERATION_FIELD_NUMBER: builtins.int
     CUSTODIAL_AUTHORITY_FIELD_NUMBER: builtins.int
-    STATE_PAROLE_DECISION_IDS_FIELD_NUMBER: builtins.int
     state_incarceration_period_id: typing.Text = ...
     incarceration_type: typing.Text = ...
     admission_date: typing.Text = ...
@@ -2227,12 +2214,6 @@ class StateIncarcerationPeriod(google.protobuf.message.Message):
     release_reason: typing.Text = ...
     specialized_purpose_for_incarceration: typing.Text = ...
     custodial_authority: typing.Text = ...
-    @property
-    def state_parole_decision_ids(
-        self,
-    ) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[
-        typing.Text
-    ]: ...
     def __init__(
         self,
         *,
@@ -2250,7 +2231,6 @@ class StateIncarcerationPeriod(google.protobuf.message.Message):
         release_reason: typing.Optional[typing.Text] = ...,
         specialized_purpose_for_incarceration: typing.Optional[typing.Text] = ...,
         custodial_authority: typing.Optional[typing.Text] = ...,
-        state_parole_decision_ids: typing.Optional[typing.Iterable[typing.Text]] = ...,
     ) -> None: ...
     def HasField(
         self,
@@ -2316,8 +2296,6 @@ class StateIncarcerationPeriod(google.protobuf.message.Message):
             b"state_code",
             "state_incarceration_period_id",
             b"state_incarceration_period_id",
-            "state_parole_decision_ids",
-            b"state_parole_decision_ids",
         ],
     ) -> None: ...
 
@@ -2646,91 +2624,6 @@ class StateIncarcerationIncidentOutcome(google.protobuf.message.Message):
     ) -> None: ...
 
 global___StateIncarcerationIncidentOutcome = StateIncarcerationIncidentOutcome
-
-class StateParoleDecision(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
-    STATE_PAROLE_DECISION_ID_FIELD_NUMBER: builtins.int
-    DECISION_DATE_FIELD_NUMBER: builtins.int
-    CORRECTIVE_ACTION_DEADLINE_FIELD_NUMBER: builtins.int
-    STATE_CODE_FIELD_NUMBER: builtins.int
-    COUNTY_CODE_FIELD_NUMBER: builtins.int
-    DECISION_OUTCOME_FIELD_NUMBER: builtins.int
-    DECISION_REASONING_FIELD_NUMBER: builtins.int
-    CORRECTIVE_ACTION_FIELD_NUMBER: builtins.int
-    DECISION_AGENT_IDS_FIELD_NUMBER: builtins.int
-    state_parole_decision_id: typing.Text = ...
-    decision_date: typing.Text = ...
-    corrective_action_deadline: typing.Text = ...
-    state_code: typing.Text = ...
-    county_code: typing.Text = ...
-    decision_outcome: typing.Text = ...
-    decision_reasoning: typing.Text = ...
-    corrective_action: typing.Text = ...
-    @property
-    def decision_agent_ids(
-        self,
-    ) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[
-        typing.Text
-    ]: ...
-    def __init__(
-        self,
-        *,
-        state_parole_decision_id: typing.Optional[typing.Text] = ...,
-        decision_date: typing.Optional[typing.Text] = ...,
-        corrective_action_deadline: typing.Optional[typing.Text] = ...,
-        state_code: typing.Optional[typing.Text] = ...,
-        county_code: typing.Optional[typing.Text] = ...,
-        decision_outcome: typing.Optional[typing.Text] = ...,
-        decision_reasoning: typing.Optional[typing.Text] = ...,
-        corrective_action: typing.Optional[typing.Text] = ...,
-        decision_agent_ids: typing.Optional[typing.Iterable[typing.Text]] = ...,
-    ) -> None: ...
-    def HasField(
-        self,
-        field_name: typing_extensions.Literal[
-            "corrective_action",
-            b"corrective_action",
-            "corrective_action_deadline",
-            b"corrective_action_deadline",
-            "county_code",
-            b"county_code",
-            "decision_date",
-            b"decision_date",
-            "decision_outcome",
-            b"decision_outcome",
-            "decision_reasoning",
-            b"decision_reasoning",
-            "state_code",
-            b"state_code",
-            "state_parole_decision_id",
-            b"state_parole_decision_id",
-        ],
-    ) -> builtins.bool: ...
-    def ClearField(
-        self,
-        field_name: typing_extensions.Literal[
-            "corrective_action",
-            b"corrective_action",
-            "corrective_action_deadline",
-            b"corrective_action_deadline",
-            "county_code",
-            b"county_code",
-            "decision_agent_ids",
-            b"decision_agent_ids",
-            "decision_date",
-            b"decision_date",
-            "decision_outcome",
-            b"decision_outcome",
-            "decision_reasoning",
-            b"decision_reasoning",
-            "state_code",
-            b"state_code",
-            "state_parole_decision_id",
-            b"state_parole_decision_id",
-        ],
-    ) -> None: ...
-
-global___StateParoleDecision = StateParoleDecision
 
 class StateSupervisionViolatedConditionEntry(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...

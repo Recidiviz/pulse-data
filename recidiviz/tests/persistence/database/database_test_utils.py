@@ -18,9 +18,6 @@ from recidiviz.common.constants.state.state_early_discharge import (
 from recidiviz.common.constants.state.state_incarceration_incident import (
     StateIncarcerationIncidentOutcomeType,
 )
-from recidiviz.common.constants.state.state_parole_decision import (
-    StateParoleDecisionOutcome,
-)
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
@@ -223,24 +220,13 @@ def generate_test_incarceration_incident(
     return instance
 
 
-def generate_test_parole_decision(person_id) -> state_schema.StateParoleDecision:
-    instance = state_schema.StateParoleDecision(
-        parole_decision_id=789,
-        state_code="US_XX",
-        decision_outcome=StateParoleDecisionOutcome.PAROLE_DENIED.value,
-        person_id=person_id,
-    )
-    return instance
-
-
 def generate_test_incarceration_period(
-    person_id, parole_decisions
+    person_id,
 ) -> state_schema.StateIncarcerationPeriod:
     instance = state_schema.StateIncarcerationPeriod(
         incarceration_period_id=5555,
         state_code="US_XX",
         person_id=person_id,
-        parole_decisions=parole_decisions,
     )
     return instance
 
@@ -430,10 +416,8 @@ def generate_schema_state_person_obj_tree() -> state_schema.StatePerson:
         [test_supervision_case_type],
     )
 
-    test_parole_decision = generate_test_parole_decision(test_person_id)
-
     test_incarceration_period = generate_test_incarceration_period(
-        test_person_id, [test_parole_decision]
+        test_person_id,
     )
 
     test_court_case = generate_test_court_case(test_person_id)

@@ -59,7 +59,6 @@ message IngestInfo {
     repeated StateSupervisionCaseTypeEntry state_supervision_case_type_entries = 24;
     repeated StateIncarcerationIncident state_incarceration_incidents = 25;
     repeated StateIncarcerationIncidentOutcome state_incarceration_incident_outcomes = 26;
-    repeated StateParoleDecision state_parole_decisions = 27;
     repeated StateSupervisionViolation state_supervision_violations = 28;
     repeated StateSupervisionViolationTypeEntry state_supervision_violation_type_entries = 29;
     repeated StateSupervisionViolatedConditionEntry state_supervision_violated_condition_entries = 30;
@@ -343,8 +342,6 @@ message StateIncarcerationPeriod {
     optional string release_reason = 13;
     optional string specialized_purpose_for_incarceration = 14;
     optional string custodial_authority = 15;
-
-    repeated string state_parole_decision_ids = 17;
 }
 
 message StateSupervisionPeriod {
@@ -393,19 +390,6 @@ message StateIncarcerationIncidentOutcome {
     optional string state_code = 6;
     optional string outcome_description = 7;
     optional string punishment_length_days = 8;
-}
-
-message StateParoleDecision {
-    optional string state_parole_decision_id = 1;
-    optional string decision_date = 2;
-    optional string corrective_action_deadline = 3;
-    optional string state_code = 4;
-    optional string county_code = 5;
-    optional string decision_outcome = 6;
-    optional string decision_reasoning = 7;
-    optional string corrective_action = 8;
-
-    repeated string decision_agent_ids = 9;
 }
 
 message StateSupervisionViolatedConditionEntry {

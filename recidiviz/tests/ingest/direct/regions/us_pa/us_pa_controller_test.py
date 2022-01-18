@@ -329,7 +329,6 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                 release_reason="CCIS-PTST",
                 specialized_purpose_for_incarceration="CCIS-60",
                 custodial_authority="60",
-                state_parole_decisions=[],
             ),
         ]
 
