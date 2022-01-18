@@ -25,7 +25,6 @@ from recidiviz.ingest.models.ingest_info_pb2 import (
     StateIncarcerationIncident,
     StateIncarcerationPeriod,
     StateIncarcerationSentence,
-    StateParoleDecision,
     StatePerson,
     StateProgramAssignment,
     StateSupervisionContact,
@@ -43,7 +42,6 @@ from recidiviz.persistence.entity.state.deserialize_entity_factories import (
     StateIncarcerationIncidentFactory,
     StateIncarcerationPeriodFactory,
     StateIncarcerationSentenceFactory,
-    StateParoleDecisionFactory,
     StatePersonFactory,
     StateProgramAssignmentFactory,
     StateSupervisionContactFactory,
@@ -64,7 +62,6 @@ from recidiviz.persistence.ingest_info_converter.state.entity_helpers import (
     state_incarceration_incident_outcome,
     state_incarceration_period,
     state_incarceration_sentence,
-    state_parole_decision,
     state_person,
     state_person_ethnicity,
     state_person_external_id,
@@ -138,12 +135,6 @@ class StateConverter(BaseConverter[entities.StatePerson]):
         self.incarceration_periods = {
             ip.state_incarceration_period_id: ip
             for ip in ingest_info.state_incarceration_periods
-        }
-        self.parole_decisions = {
-            pd.state_parole_decision_id: pd for pd in ingest_info.state_parole_decisions
-        }
-        self.parole_decisions = {
-            pd.state_parole_decision_id: pd for pd in ingest_info.state_parole_decisions
         }
         self.incarceration_incidents = {
             ii.state_incarceration_incident_id: ii
@@ -412,12 +403,6 @@ class StateConverter(BaseConverter[entities.StatePerson]):
             incarceration_period_builder, ingest_incarceration_period, self.metadata
         )
 
-        converted_decisions = [
-            self._convert_parole_decision(self.parole_decisions[decision_id])
-            for decision_id in ingest_incarceration_period.state_parole_decision_ids
-        ]
-        incarceration_period_builder.parole_decisions = converted_decisions
-
         return incarceration_period_builder.build(
             StateIncarcerationPeriodFactory.deserialize
         )
@@ -615,22 +600,3 @@ class StateConverter(BaseConverter[entities.StatePerson]):
         )
 
         return contact_builder.build(StateSupervisionContactFactory.deserialize)
-
-    def _convert_parole_decision(
-        self, ingest_parole_decision: StateParoleDecision
-    ) -> entities.StateParoleDecision:
-        """Converts an ingest_info proto StateParoleDecision to a
-        persistence entity."""
-        parole_decision_builder = entities.StateParoleDecision.builder()
-
-        state_parole_decision.copy_fields_to_builder(
-            parole_decision_builder, ingest_parole_decision, self.metadata
-        )
-
-        converted_agents = [
-            state_agent.convert(self.agents[agent_id], self.metadata)
-            for agent_id in ingest_parole_decision.decision_agent_ids
-        ]
-        parole_decision_builder.decision_agents = converted_agents
-
-        return parole_decision_builder.build(StateParoleDecisionFactory.deserialize)

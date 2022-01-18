@@ -27,9 +27,6 @@ from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.person_characteristics import Ethnicity, Gender, Race
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
-from recidiviz.common.constants.state.state_parole_decision import (
-    StateParoleDecisionOutcome,
-)
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
@@ -83,7 +80,6 @@ from recidiviz.tests.persistence.database.schema.state.schema_test_utils import 
     generate_incarceration_incident,
     generate_incarceration_period,
     generate_incarceration_sentence,
-    generate_parole_decision,
     generate_person,
     generate_race,
     generate_supervision_case_type_entry,
@@ -1499,10 +1495,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             state_code=_STATE_CODE, external_id=_EXTERNAL_ID, full_name="full_name"
         )
         entity_agent = self.to_entity(db_agent)
-        db_agent_2 = generate_agent(
-            state_code=_STATE_CODE, external_id=_EXTERNAL_ID_2, full_name="full_name_2"
-        )
-        entity_agent_2 = self.to_entity(db_agent_2)
         db_agent_po = generate_agent(
             state_code=_STATE_CODE, external_id=_EXTERNAL_ID_5, full_name="full_name_po"
         )
@@ -1567,28 +1559,11 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             supervision_violation_responses=[db_supervision_violation_response],
         )
         entity_supervision_violation = self.to_entity(db_supervision_violation)
-        db_parole_decision = generate_parole_decision(
-            person=db_person,
-            state_code=_STATE_CODE,
-            external_id=_EXTERNAL_ID,
-            decision_outcome=StateParoleDecisionOutcome.EXTERNAL_UNKNOWN.value,
-            decision_agents=[db_agent_2],
-        )
-        entity_parole_decision = self.to_entity(db_parole_decision)
-        db_parole_decision_2 = generate_parole_decision(
-            person=db_person,
-            state_code=_STATE_CODE,
-            external_id=_EXTERNAL_ID_2,
-            decision_outcome=StateParoleDecisionOutcome.EXTERNAL_UNKNOWN.value,
-            decision_agents=[db_agent_2],
-        )
-        entity_parole_decision_2 = self.to_entity(db_parole_decision_2)
         db_incarceration_period = generate_incarceration_period(
             person=db_person,
             external_id=_EXTERNAL_ID,
             state_code=_STATE_CODE,
             facility="facility",
-            parole_decisions=[db_parole_decision, db_parole_decision_2],
         )
         entity_incarceration_period = self.to_entity(db_incarceration_period)
         db_incarceration_sentence = generate_incarceration_sentence(
@@ -1662,9 +1637,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             assessment_metadata="metadata_2-updated",
         )
         agent = attr.evolve(entity_agent, agent_id=None, full_name="full_name-updated")
-        agent_2 = attr.evolve(
-            entity_agent_2, agent_id=None, full_name="full_name_2-updated"
-        )
         agent_po = attr.evolve(
             entity_agent_po, agent_id=None, full_name="full_name_po-updated"
         )
@@ -1679,23 +1651,10 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             incident_details="details-updated",
             responding_officer=agent,
         )
-        parole_decision = attr.evolve(
-            entity_parole_decision,
-            parole_decision_id=None,
-            decision_outcome=StateParoleDecisionOutcome.PAROLE_GRANTED,
-            decision_agents=[attr.evolve(agent_2)],
-        )
-        parole_decision_2 = attr.evolve(
-            entity_parole_decision_2,
-            parole_decision_id=None,
-            decision_outcome=StateParoleDecisionOutcome.PAROLE_GRANTED,
-            decision_agents=[attr.evolve(agent_2)],
-        )
         incarceration_period = attr.evolve(
             entity_incarceration_period,
             incarceration_period_id=None,
             facility="facility-updated",
-            parole_decisions=[parole_decision, parole_decision_2],
         )
         incarceration_sentence = attr.evolve(
             entity_incarceration_sentence,
@@ -1774,23 +1733,14 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         expected_assessment = attr.evolve(assessment)
         expected_assessment_2 = attr.evolve(assessment_2)
         expected_agent = attr.evolve(agent)
-        expected_agent_2 = attr.evolve(agent_2)
         expected_agent_po = attr.evolve(agent_po)
         expected_agent_term = attr.evolve(agent_term)
         expected_incarceration_incident = attr.evolve(
             incarceration_incident,
             responding_officer=expected_agent,
         )
-        expected_parole_decision = attr.evolve(
-            parole_decision, decision_agents=[expected_agent_2]
-        )
-        expected_parole_decision_2 = attr.evolve(
-            parole_decision_2,
-            decision_agents=[expected_agent_2],
-        )
         expected_incarceration_period = attr.evolve(
             incarceration_period,
-            parole_decisions=[expected_parole_decision, expected_parole_decision_2],
         )
         expected_incarceration_sentence = attr.evolve(
             incarceration_sentence,

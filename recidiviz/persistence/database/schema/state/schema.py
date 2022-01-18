@@ -435,12 +435,6 @@ state_supervision_violation_response_deciding_body_type = Enum(
     name="state_supervision_violation_response_deciding_body_type",
 )
 
-state_parole_decision_outcome = Enum(
-    enum_strings.external_unknown,
-    state_enum_strings.state_parole_decision_parole_denied,
-    state_enum_strings.state_parole_decision_parole_granted,
-    name="state_parole_decision_outcome",
-)
 state_program_assignment_participation_status = Enum(
     enum_strings.external_unknown,
     enum_strings.present_without_info,
@@ -615,34 +609,6 @@ state_charge_supervision_sentence_association_table = Table(
         ASSOCIATON_TABLE_COMMENT_TEMPLATE,
         first_object_name_plural="charges",
         second_object_name_plural="supervision sentences",
-    ),
-)
-
-state_parole_decision_decision_agent_association_table = Table(
-    "state_parole_decision_decision_agent_association",
-    StateBase.metadata,
-    Column(
-        "parole_decision_id",
-        Integer,
-        ForeignKey("state_parole_decision.parole_decision_id"),
-        index=True,
-        comment=StrictStringFormatter().format(
-            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="parole decision"
-        ),
-    ),
-    Column(
-        "agent_id",
-        Integer,
-        ForeignKey("state_agent.agent_id"),
-        index=True,
-        comment=StrictStringFormatter().format(
-            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="fine"
-        ),
-    ),
-    comment=StrictStringFormatter().format(
-        ASSOCIATON_TABLE_COMMENT_TEMPLATE,
-        first_object_name_plural="parole decisions",
-        second_object_name_plural="agents",
     ),
 )
 
@@ -2047,10 +2013,6 @@ class StateIncarcerationPeriod(StateBase, _StateIncarcerationPeriodSharedColumns
             "platform and involves work in jurisdictional ingest mappings, entity "
             "matching, and calculation. Fortunately, this means that we have practice "
             "working with varied representations of this information."
-            "<br /><br />Incarceration Periods can be children of either Incarceration "
-            "Sentences or Supervision Sentences, for reasons established in the "
-            "descriptions of those objects. Incarceration periods have zero to many "
-            "Parole Decisions as children."
         },
     )
     incarceration_period_id = Column(
@@ -2059,11 +2021,6 @@ class StateIncarcerationPeriod(StateBase, _StateIncarcerationPeriodSharedColumns
         comment=StrictStringFormatter().format(
             PRIMARY_KEY_COMMENT_TEMPLATE, object_name="incarceration period"
         ),
-    )
-
-    # TODO(#5411): DEPRECATED - Relationship to be moved to the StatePerson
-    parole_decisions = relationship(
-        "StateParoleDecision", backref="incarceration_period", lazy="selectin"
     )
 
 
@@ -2220,11 +2177,6 @@ class StateSupervisionPeriod(StateBase, _StateSupervisionPeriodSharedColumns):
         "may be overlapping, due to extended periods of supervision that are "
         "temporarily interrupted by, say, periods of incarceration, or periods of "
         "supervision stemming from different charges."
-        "<br/><br />StateSupervisionPeriods can be children of either "
-        "StateIncarcerationSentences or StateSupervisionSentences, for reasons "
-        "established in the descriptions of those objects."
-        "<br /><br />StateSupervisionPeriods have zero to many "
-        "StateSupervisionViolations as children."
     }
 
     supervision_period_id = Column(
@@ -2638,133 +2590,6 @@ class StateIncarcerationIncidentOutcomeHistory(
         index=True,
         comment=StrictStringFormatter().format(
             FOREIGN_KEY_COMMENT_TEMPLATE, object_name="incarceration incident outcome"
-        ),
-    )
-
-
-# StateParoleDecision
-
-
-class _StateParoleDecisionSharedColumns(_ReferencesStatePersonSharedColumns):
-    """A mixin which defines all columns common to StateParoleDecision and
-    StateParoleDecisionHistory
-    """
-
-    # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_: Any, **__: Any) -> "_StateParoleDecisionSharedColumns":
-        if cls is _StateParoleDecisionSharedColumns:
-            raise Exception(f"[{cls}] cannot be instantiated")
-        return super().__new__(cls)  # type: ignore
-
-    external_id = Column(
-        String(255),
-        index=True,
-        comment=StrictStringFormatter().format(
-            EXTERNAL_ID_COMMENT_TEMPLATE, object_name="StateParoleDecision"
-        ),
-    )
-
-    decision_date = Column(Date, comment="The date on which the decision was made.")
-    corrective_action_deadline = Column(
-        Date,
-        comment="The date by which any corrective actions must be taken to ensure parole is granted, if applicable.",
-    )
-    state_code = Column(
-        String(255), nullable=False, index=True, comment=STATE_CODE_COMMENT
-    )
-    county_code = Column(
-        String(255),
-        index=True,
-        comment="The code of the county under whose jurisdiction the parole hearing is convened.",
-    )
-    decision_outcome = Column(
-        state_parole_decision_outcome, comment="The outcome of the decision."
-    )
-    decision_outcome_raw_text = Column(
-        String(255), comment="The raw text value of the outcome of the decision."
-    )
-    decision_reasoning = Column(
-        String(255),
-        comment="Descriptive notes describing the reasoning behind the decision.",
-    )
-    corrective_action = Column(
-        String(255),
-        comment="Any corrective actions that must be taken by the person to ensure their parole is granted, "
-        "if applicable.",
-    )
-
-    @declared_attr
-    def incarceration_period_id(self) -> Column:
-        return Column(
-            Integer,
-            ForeignKey("state_incarceration_period.incarceration_period_id"),
-            index=True,
-            nullable=True,
-            comment=StrictStringFormatter().format(
-                FOREIGN_KEY_COMMENT_TEMPLATE, object_name="incarceration period"
-            ),
-        )
-
-
-class StateParoleDecision(StateBase, _StateParoleDecisionSharedColumns):
-    """Represents a StateParoleDecision in the SQL schema"""
-
-    __tablename__ = "state_parole_decision"
-    __table_args__ = (
-        UniqueConstraint(
-            "state_code",
-            "external_id",
-            name="parole_decision_external_ids_unique_within_state",
-            deferrable=True,
-            initially="DEFERRED",
-        ),
-        {
-            "comment": "The StateParoleDecision object represents information about a particular parole hearing deciding "
-            "whether or not to grant parole to a currently incarcerated person. This includes information about "
-            "the context of the hearing and also its final decision/outcome."
-        },
-    )
-    parole_decision_id = Column(
-        Integer,
-        primary_key=True,
-        comment=StrictStringFormatter().format(
-            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="parole decision"
-        ),
-    )
-
-    person = relationship("StatePerson", uselist=False)
-    decision_agents = relationship(
-        "StateAgent",
-        secondary=state_parole_decision_decision_agent_association_table,
-        lazy="selectin",
-    )
-
-
-class StateParoleDecisionHistory(
-    StateBase, _StateParoleDecisionSharedColumns, HistoryTableSharedColumns
-):
-    """Represents the historical state of a StateParoleDecision"""
-
-    __tablename__ = "state_parole_decision_history"
-    __table_args__ = {
-        "comment": StrictStringFormatter().format(
-            HISTORICAL_TABLE_COMMENT_TEMPLATE, object_name="StateParoleDecision"
-        )
-    }
-
-    # This primary key should NOT be used. It only exists because SQLAlchemy
-    # requires every table to have a unique primary key.
-    parole_decision_history_id = Column(
-        Integer, primary_key=True, comment=HISTORICAL_ID_COMMENT
-    )
-
-    parole_decision_id = Column(
-        Integer,
-        ForeignKey("state_parole_decision.parole_decision_id"),
-        nullable=False,
-        index=True,
-        comment=StrictStringFormatter().format(
-            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="parole decision"
         ),
     )
 

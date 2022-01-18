@@ -62,7 +62,6 @@ from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationIncidentOutcome,
     StateIncarcerationPeriod,
     StateIncarcerationSentence,
-    StateParoleDecision,
     StatePerson,
     StatePersonAlias,
     StatePersonEthnicity,
@@ -290,7 +289,6 @@ class TestIngestInfoStateConverter(unittest.TestCase):
 
         ingest_info.state_incarceration_periods.add(
             state_incarceration_period_id="I_PERIOD_ID",
-            state_parole_decision_ids=["DECISION_ID"],
         )
 
         ingest_info.state_supervision_violation_type_entries.add(
@@ -350,10 +348,6 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             state_code="US_XX",
             outcome_description="Good time",
             punishment_length_days="7",
-        )
-        ingest_info.state_parole_decisions.add(
-            state_parole_decision_id="DECISION_ID",
-            decision_agent_ids=["AGENT_ID2", "AGENT_ID3"],
         )
         ingest_info.state_supervision_contacts.add(
             state_supervision_contact_id="SUPERVISION_CONTACT_ID",
@@ -612,26 +606,6 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                         external_id="I_PERIOD_ID",
                         incarceration_type=StateIncarcerationType.STATE_PRISON,
                         state_code="US_XX",
-                        parole_decisions=[
-                            StateParoleDecision.new_with_defaults(
-                                external_id="DECISION_ID",
-                                state_code="US_XX",
-                                decision_agents=[
-                                    StateAgent.new_with_defaults(
-                                        external_id="AGENT_ID2",
-                                        agent_type=StateAgentType.PRESENT_WITHOUT_INFO,
-                                        state_code="US_XX",
-                                        full_name='{"full_name": "AGENT HERNANDEZ"}',
-                                    ),
-                                    StateAgent.new_with_defaults(
-                                        external_id="AGENT_ID3",
-                                        state_code="US_XX",
-                                        agent_type=StateAgentType.PRESENT_WITHOUT_INFO,
-                                        full_name='{"full_name": "AGENT SMITH"}',
-                                    ),
-                                ],
-                            )
-                        ],
                     )
                 ],
                 supervision_periods=[
