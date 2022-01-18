@@ -18,4 +18,9 @@
 
 from recidiviz.common.constants.states import StateCode
 
-ENABLED_STATES = [StateCode.US_TN.value, StateCode.US_ID.value, StateCode.US_ND.value]
+ENABLED_STATES = [
+    StateCode.US_ID.value,
+    StateCode.US_ME.value,
+    StateCode.US_ND.value,
+    StateCode.US_TN.value,
+]
