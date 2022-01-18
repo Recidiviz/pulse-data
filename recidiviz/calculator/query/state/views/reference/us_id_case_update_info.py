@@ -30,26 +30,27 @@ US_ID_CASE_UPDATE_INFO_QUERY_TEMPLATE = """
     WITH person_id_with_external_ids AS (
         SELECT
             person_id,
-            external_id
+            external_id AS person_external_id
         FROM
             `{project_id}.{base_dataset}.state_person_external_id`
         WHERE
             state_code = 'US_ID' AND id_type = 'US_ID_DOC'),
     agnt_case_updt AS (
         SELECT
+            agnt_case_updt_id,
             ofndr_num,
-            create_dt,
+            DATE(SAFE_CAST(create_dt AS DATETIME)) AS create_dt,
             create_by_usr_id,
             agnt_note_title
         FROM
             `{project_id}.us_id_raw_data_up_to_date_views.agnt_case_updt_latest`)
     SELECT
-        *
+        * EXCEPT (ofndr_num)
     FROM
         person_id_with_external_ids
     JOIN
         agnt_case_updt
-    ON person_id_with_external_ids.external_id = agnt_case_updt.ofndr_num
+    ON person_id_with_external_ids.person_external_id = agnt_case_updt.ofndr_num
 """
 
 US_ID_CASE_UPDATE_INFO_VIEW_BUILDER = SimpleBigQueryViewBuilder(
