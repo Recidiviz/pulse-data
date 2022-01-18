@@ -41,6 +41,7 @@ LOCATION_SESSIONS_QUERY_TEMPLATE = """
         dataflow_session_id,
     FROM `{project_id}.{sessions_dataset}.dataflow_sessions_materialized`,
     UNNEST(session_attributes) session_attributes
+    WHERE session_attributes.compartment_level_1 != 'INCARCERATION_NOT_INCLUDED_IN_STATE'
     )
     ,
     sessionized_cte AS

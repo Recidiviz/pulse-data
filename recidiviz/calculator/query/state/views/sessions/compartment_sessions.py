@@ -143,6 +143,7 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         last_day_of_data,
     FROM `{project_id}.{sessions_dataset}.dataflow_sessions_materialized`,
     UNNEST(session_attributes) session_attributes
+    WHERE session_attributes.compartment_level_1 != 'INCARCERATION_NOT_INCLUDED_IN_STATE'
     )
     ,
     dual_recategorization_cte AS
