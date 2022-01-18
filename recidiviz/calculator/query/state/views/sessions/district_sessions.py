@@ -51,6 +51,7 @@ SELECT DISTINCT
 FROM `{project_id}.{sessions_dataset}.dataflow_sessions_materialized`,
 UNNEST(session_attributes) session_attributes
 WHERE session_attributes.supervision_district IS NOT NULL
+    AND session_attributes.compartment_level_1 != 'INCARCERATION_NOT_INCLUDED_IN_STATE'
 )
 ,
 sessionized_cte AS
