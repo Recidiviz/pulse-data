@@ -1,7 +1,12 @@
 file_tag: OffenderFinding
 file_description: |-
   This table contains one occurrence for each finding that is discovered about the offender. These findings include counselling, drug treatment, AA, etc.
-primary_key_cols: []
+primary_key_cols:
+  - FindingDate
+  - FindingType
+  - OffenderID
+  - PageNumber
+  - StaffID
 columns:
   - name: OffenderID
     description: |-

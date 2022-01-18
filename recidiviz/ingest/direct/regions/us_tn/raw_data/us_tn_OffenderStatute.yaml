@@ -1,7 +1,8 @@
 file_tag: OffenderStatute
 file_description: |-
   This table contains one occurrence for each offense type. It contains information about the offense for sentencing and for statistical analysis.
-primary_key_cols: []
+primary_key_cols:
+  - Offense
 columns:
   - name: Offense
     description: |-
@@ -168,7 +169,7 @@ columns:
       - value: 510
         description: 
       - value: 520
-        description: 
+        description:
       - value: 72O
         description: "TODO(#7424): Update with definition."
       - value: 90A
