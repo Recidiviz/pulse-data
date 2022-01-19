@@ -21,9 +21,6 @@ Closes #XXXX
 ### Development
 
 These boxes should be checked by the submitter prior to merging:
-
-- [ ] Lint and mypy rules pass locally
-- [ ] All tests related to the changed code pass locally
 - [ ] Tests have been written to cover the code changed/added as part of this pull request
 
 ### Code review
