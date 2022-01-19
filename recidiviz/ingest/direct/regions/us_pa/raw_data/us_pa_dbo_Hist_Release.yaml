@@ -50,7 +50,6 @@ columns:
     description: |-
       PBPP code of the offense with the longest sentence.
   - name: HReReldate
-    is_datetime: True
     description: |-
       Date when the period of supervision began, i.e. when released from prison, started probation sentence,
       or exchanged through interstate compact.

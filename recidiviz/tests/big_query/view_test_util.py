@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2021 Recidiviz, Inc.
+# Copyright (C) 2022 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -187,6 +187,58 @@ _DROP_COND_FUNC = """
 DROP FUNCTION cond(boolean, anyelement, anyelement)
 """
 
+
+# Adapted from: https://patternmatchers.wordpress.com/2021/06/11/ignore-nulls-in-postgres/
+_CREATE_COALESCE_REVERSE_FUNC = """
+CREATE FUNCTION coalesce_reverse (state anyelement, value anyelement)
+    returns anyelement
+    immutable parallel safe
+as
+$func$
+SELECT COALESCE(value, state);
+$func$ language sql;
+"""
+
+_DROP_COALESCE_REVERSE_FUNC = """
+DROP FUNCTION coalesce_reverse(anyelement, anyelement)
+"""
+
+_CREATE_LAST_IGNORE_NULLS_FUNC = """
+CREATE AGGREGATE last_value_ignore_nulls(anyelement) (
+    sfunc = coalesce_reverse,
+    stype = anyelement
+);
+"""
+
+_DROP_LAST_IGNORE_NULLS_FUNC = """
+DROP AGGREGATE last_value_ignore_nulls(anyelement)
+"""
+
+_CREATE_COALESCE_FORWARD_FUNC = """
+CREATE FUNCTION coalesce_forward (state anyelement, value anyelement)
+    returns anyelement
+    immutable parallel safe
+as
+$func$
+SELECT COALESCE(state, value);
+$func$ language sql;
+"""
+
+_DROP_COALESCE_FORWARD_FUNC = """
+DROP FUNCTION coalesce_forward(anyelement, anyelement)
+"""
+
+_CREATE_FIRST_IGNORE_NULLS_FUNC = """
+CREATE AGGREGATE first_value_ignore_nulls(anyelement) (
+    sfunc = coalesce_forward,
+    stype = anyelement
+);
+"""
+
+_DROP_FIRST_IGNORE_NULLS_FUNC = """
+DROP AGGREGATE first_value_ignore_nulls(anyelement)
+"""
+
 MAX_POSTGRES_TABLE_NAME_LENGTH = 63
 
 DEFAULT_FILE_UPDATE_DATETIME = datetime.datetime(2021, 4, 14, 0, 0, 0)
@@ -240,6 +292,12 @@ class BaseViewTest(unittest.TestCase):
         # Implement COND to behave like IF, as munging to case is error prone
         self._execute_statement(_CREATE_COND_FUNC)
 
+        # Implement IGNORE NULLS for FIRST and LAST window functions.
+        self._execute_statement(_CREATE_COALESCE_REVERSE_FUNC)
+        self._execute_statement(_CREATE_COALESCE_FORWARD_FUNC)
+        self._execute_statement(_CREATE_FIRST_IGNORE_NULLS_FUNC)
+        self._execute_statement(_CREATE_LAST_IGNORE_NULLS_FUNC)
+
     def _execute_statement(self, statement: str) -> None:
         session = Session(bind=self.postgres_engine)
         try:
@@ -262,6 +320,10 @@ class BaseViewTest(unittest.TestCase):
                 self._execute_statement(f"DROP TYPE {type_name}")
         self._execute_statement(_DROP_ARRAY_CONCAT_AGG_FUNC)
         self._execute_statement(_DROP_COND_FUNC)
+        self._execute_statement(_DROP_LAST_IGNORE_NULLS_FUNC)
+        self._execute_statement(_DROP_FIRST_IGNORE_NULLS_FUNC)
+        self._execute_statement(_DROP_COALESCE_REVERSE_FUNC)
+        self._execute_statement(_DROP_COALESCE_FORWARD_FUNC)
 
         if self.postgres_engine is not None:
             self.postgres_engine.dispose()
@@ -552,19 +614,39 @@ class BaseViewTest(unittest.TestCase):
     def _rewrite_sql(self, query: str) -> str:
         """Modifies the SQL query, translating BQ syntax to Postgres syntax where necessary."""
         query = self._rewrite_table_references(query)
-
         query = self._rewrite_unnest_with_offset(query)
 
         # Replace '#' comments with '--'
         query = _replace_iter(query, r"#", "--")
+
+        # Replace timestamp format strings like '%m/%d/%y' to match PG 'MM/DD/YYYY'
+        query = self._rewrite_timestamp_formats(query)
+
+        # Replace date format strings like '%Y%m%d' to match PG 'YYYYMMDD'
+        query = self._rewrite_date_formats(query)
 
         # Update % signs in format args to be double escaped
         query = _replace_iter(
             query, r"(?P<first_char>[^\%])\%(?P<fmt>[A-Za-z])", "{first_char}%%{fmt}"
         )
 
+        # SPLIT function has different format
+        query = _replace_iter(
+            query,
+            r"SPLIT\((?P<first>[^,]+?), (?P<delimiter>.+?)\)\[OFFSET\((?P<offset>.+?)\)\]",
+            "split_part({first}, {delimiter}, {offset})",
+        )
+        query = _replace_iter(
+            query,
+            r"SPLIT\((?P<first>[^,]+?), (?P<delimiter>.+?)\)",
+            "regexp_split_to_array({first}, {delimiter})",
+        )
+
         # Must index the array directly, instead of using OFFSET or ORDINAL
         query = _replace_iter(query, r"\[OFFSET\((?P<offset>.+?)\)\]", "[{offset}]")
+        query = _replace_iter(
+            query, r"\[SAFE_OFFSET\((?P<offset>.+?)\)\]", "[{offset}]"
+        )
         query = _replace_iter(query, r"\[ORDINAL\((?P<ordinal>.+?)\)\]", "[{ordinal}]")
 
         # Array concatenation is performed with the || operator
@@ -639,7 +721,7 @@ class BaseViewTest(unittest.TestCase):
         # only the first match will be replaced.
         query = _replace_iter(
             query,
-            r"REGEXP_REPLACE\((?P<value>.+), r?\'(?P<regex>.+)\', \'(?P<replacement>.*)\'\)",
+            r"REGEXP_REPLACE\((?P<value>.+), r?\'(?P<regex>[^']+)\', \'(?P<replacement>[^']*)\'\)",
             "REGEXP_REPLACE({value}, '{regex}', '{replacement}', 'g')",
         )
 
@@ -666,9 +748,6 @@ class BaseViewTest(unittest.TestCase):
             r"EXTRACT\(DATE\sFROM\s(?P<clause>.+)\)(?P<end>.+)",
             "{clause}::date{end}",
         )
-
-        # Replace timestamp format strings like '%m/%d/%y' to match PG 'MM/DD/YYYY'
-        query = self._rewrite_timestamp_formats(query)
 
         # LAST_DAY doesn't exist in postgres, so replace with the logic to calculate it
         query = _replace_iter(
@@ -729,13 +808,19 @@ class BaseViewTest(unittest.TestCase):
 
         query = self._rewrite_structs(query)
 
-        # Postgres doesn't support IGNORE NULLS in window functions and there isn't a
-        # straightforward way to implement it on top. This instead simply strips out the
-        # IGNORE NULL fragment. Note this is a significant behavior change.
+        # Postgres doesn't support IGNORE NULLS in window functions so we replace with
+        # our own custom implementations.
         query = _replace_iter(
             query,
-            r"(?P<function>LEAD|LAG|FIRST_VALUE|LAST_VALUE|NTH_VALUE)\((?P<column>\w+?) IGNORE NULLS\)",
-            "{function}({column})",
+            r"FIRST_VALUE\((?P<column>\w+?) IGNORE NULLS\)",
+            "first_value_ignore_nulls({column})",
+            flags=re.IGNORECASE,
+        )
+
+        query = _replace_iter(
+            query,
+            r"LAST_VALUE\((?P<column>\w+?) IGNORE NULLS\)",
+            "last_value_ignore_nulls({column})",
             flags=re.IGNORECASE,
         )
 
@@ -743,14 +828,14 @@ class BaseViewTest(unittest.TestCase):
         query = _replace_iter(query, r",(?P<whitespace>\s+)FROM", "{whitespace}FROM")
         return query
 
-    BQ_TIMESTAMP_FORMAT_TO_POSTGRES = {
-        "%%m": "MM",
-        "%%Y": "YYYY",
-        "%%d": "DD",
-        "%%r": "HH:MI:SS AM",
-        "%%H": "HH24",
-        "%%M": "MI",
-        "%%S": "SS",
+    BQ_TIMESTAMP_DATE_FORMAT_TO_POSTGRES = {
+        "%m": "MM",
+        "%Y": "YYYY",
+        "%d": "DD",
+        "%r": "HH:MI:SS AM",
+        "%H": "HH24",
+        "%M": "MI",
+        "%S": "SS",
     }
 
     def _rewrite_timestamp_formats(self, query: str) -> str:
@@ -762,7 +847,22 @@ class BaseViewTest(unittest.TestCase):
                 for (
                     bq_format,
                     pg_format,
-                ) in self.BQ_TIMESTAMP_FORMAT_TO_POSTGRES.items():
+                ) in self.BQ_TIMESTAMP_DATE_FORMAT_TO_POSTGRES.items():
+                    new_format = new_format.replace(bq_format, pg_format)
+
+                query = query.replace(item, new_format)
+        return query
+
+    def _rewrite_date_formats(self, query: str) -> str:
+        date_format_pattern = re.compile(r"DATE\((?P<date_format>'%.+')")
+
+        for match in re.finditer(date_format_pattern, query):
+            for item in match.groups():
+                new_format = item
+                for (
+                    bq_format,
+                    pg_format,
+                ) in self.BQ_TIMESTAMP_DATE_FORMAT_TO_POSTGRES.items():
                     new_format = new_format.replace(bq_format, pg_format)
 
                 query = query.replace(item, new_format)

@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2021 Recidiviz, Inc.
+# Copyright (C) 2022 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -84,40 +84,56 @@ parole_count_id_level_info_base AS (
         hr.HReDo as most_recent_district_office,
         1 AS is_history_row
       FROM {dbo_Hist_Release} hr
-    )
-  )
+    ) as releases
+  ) as releases_with_priority
   WHERE entry_priority = 1
 ),
 conditions_by_parole_count_id AS (
   SELECT
     ParoleNumber as parole_number,
     ParoleCountID as parole_count_id,
-    STRING_AGG(DISTINCT CndConditionCode ORDER BY CndConditionCode) as condition_codes,
+    STRING_AGG(DISTINCT CndConditionCode, ',' ORDER BY CndConditionCode) as condition_codes,
   FROM {dbo_ConditionCode} cc
   GROUP BY parole_number, parole_count_id
 ),
 parole_count_id_level_info AS (
   -- This query returns one row per parole count id, with some cleanup of invalid rows
   SELECT 
-    * REPLACE(
-      # Sets the termination date to the day after the start date if it is set to a date before the start date
-      IF(parole_count_id_termination_date IS NOT NULL,
-         GREATEST(DATE_ADD(parole_count_id_start_date, INTERVAL 1 DAY), parole_count_id_termination_date),
-         NULL) AS parole_count_id_termination_date
-    ),
+    parole_number,
+    parole_count_id,
+    supervision_type,
+    condition_codes,
+    parole_count_id_admission_reason,
+    parole_count_id_termination_reason,
+    county_of_residence,
+    supervision_level,
+    most_recent_district_office,
+    parole_count_id_start_date,
+    parole_count_id_start_date_raw,
+    parole_count_id_termination_date_raw,
+    IF(parole_count_id_termination_date IS NOT NULL,
+        GREATEST(DATE_ADD(parole_count_info.parole_count_id_start_date, INTERVAL 1 DAY), parole_count_info.parole_count_id_termination_date),
+        NULL) as parole_count_id_termination_date
   FROM (
     SELECT 
-    * REPLACE(
-      SAFE.PARSE_DATE('%Y%m%d', parole_count_id_start_date) AS parole_count_id_start_date,
-      SAFE.PARSE_DATE('%Y%m%d', parole_count_id_termination_date) AS parole_count_id_termination_date
-    ),
-    parole_count_id_start_date AS parole_count_id_start_date_raw,
-    parole_count_id_termination_date AS parole_count_id_termination_date_raw
+        parole_number,
+        parole_count_id,
+        supervision_type,
+        condition_codes,
+        parole_count_id_admission_reason,
+        parole_count_id_termination_reason,
+        county_of_residence,
+        supervision_level,
+        most_recent_district_office,
+        SAFE.PARSE_DATE('%Y%m%d', parole_count_id_start_date) AS parole_count_id_start_date,
+        SAFE.PARSE_DATE('%Y%m%d', parole_count_id_termination_date) AS parole_count_id_termination_date,
+        parole_count_id_start_date AS parole_count_id_start_date_raw,
+        parole_count_id_termination_date AS parole_count_id_termination_date_raw
     FROM parole_count_id_level_info_base
     LEFT JOIN conditions_by_parole_count_id cp
     USING (parole_number, parole_count_id)
     WHERE parole_count_id != '-1'
-  )
+  ) as parole_count_info
   # Filters out all supervision stints with no start date or for which the termination date does not parse (only ~10, 
   # usually because they dropped a digit).
   WHERE parole_count_id_start_date IS NOT NULL AND (
@@ -167,6 +183,29 @@ end_count_edges AS (
         -1 AS open_delta,
     FROM parole_count_id_level_info 
 ),
+agent_employee_numbers AS (
+    SELECT
+        AgentName, 
+        -- There are only 27 AgentName associated with more than one Agent_EmpNum, so just pick one arbitrarily if there are two.
+        MAX(Agent_EmpNum) AS Agent_EmpNum
+    FROM {dbo_RelAgentHistory}
+    WHERE Agent_EmpNum IS NOT NULL
+    GROUP BY AgentName
+),
+agent_history_base AS (
+    SELECT
+        ParoleNumber,
+        ParoleCountID,
+        AgentName AS supervising_officer_name,
+        -- If there isn't an employee num associated with this row, pick look at the mapping of name to employee num
+        COALESCE(agent_history.Agent_EmpNum, agent_employee_numbers.Agent_EmpNum) AS supervising_officer_id,
+        CAST(LastModifiedDateTime AS DATETIME) AS po_modified_time,
+        SupervisorName,
+        SPLIT(SupervisorName, ' ') AS supervisor_info
+    FROM {dbo_RelAgentHistory} agent_history
+    LEFT OUTER JOIN agent_employee_numbers
+    USING (AgentName)
+),
 agent_update_dates AS (
   SELECT *
   FROM (
@@ -179,18 +218,10 @@ agent_update_dates AS (
         supervising_officer_name, 
         supervising_officer_id,
         EXTRACT(DATE FROM po_modified_time) AS po_modified_date, 
-        SupervisorName,
         SAFE_CAST(supervisor_info[SAFE_OFFSET(ARRAY_LENGTH(supervisor_info)-2)] AS INT64) AS supervision_location_org_code,
         ROW_NUMBER() OVER (PARTITION BY ParoleNumber, ParoleCountId ORDER BY po_modified_time) AS update_rank
-      FROM (
-        SELECT 
-          ParoleNumber, ParoleCountID, AgentName AS supervising_officer_name,
-          Agent_EmpNum AS supervising_officer_id,
-          CAST(LastModifiedDateTime AS DATETIME) AS po_modified_time,
-          SupervisorName, SPLIT(SupervisorName, ' ') AS supervisor_info
-        FROM {dbo_RelAgentHistory}
-      )
-  )
+      FROM agent_history_base
+  ) as updated_agent_history_base
   -- When there are multiple PO updates in a day, just pick the last one
   WHERE agent_update_recency_rank = 1
 ),
@@ -252,7 +283,7 @@ edges_with_sequence_numbers AS (
       SELECT 
         *,
         IF(open_count = 0, 0, 1) AS open_block,
-        LAG(IF(open_count = 0, 0, 1)) OVER (PARTITION BY parole_number ORDER BY sequence_number) AS prev_open_block
+        LAG(CASE WHEN open_count = 0 THEN 0 ELSE 1 END) OVER (PARTITION BY parole_number ORDER BY sequence_number) AS prev_open_block
       FROM (
         SELECT
           *,
@@ -280,17 +311,30 @@ edges_with_sequence_numbers AS (
                 CAST(parole_count_id AS INT64)
             ) AS sequence_number
           FROM all_update_dates
-        )
-      )
-    )
-  )
+        ) as all_update_dates_with_sequence_number
+      ) as all_updated_dates_with_open_count
+    ) as all_updated_dates_with_prev_open_count
+  ) as all_updated_dates_with_open_count_did_change
 ),
 -- Sometimes, PA assigns a supervising agent to an incarcerated person shortly before their incarceration period ends
 -- This block looks back 7 days from a transition from incarceration to supervision and carries forward any
 -- supervisor assigned during that window
 edges_with_backfilled_supervising_agents AS (
     SELECT
-        * EXCEPT(supervising_officer_name, supervising_officer_id, district_office, district_sub_office_id, supervision_location_org_code),
+        sequence_number,
+        block_sequence_number,
+        open_count,
+        open_block_did_change,
+        started_supervision_type,
+        ended_supervision_type,
+        edge_type,
+        parole_number,
+        parole_count_id,
+        edge_date,
+        edge_reason,
+        county_of_residence,
+        supervision_level,
+        condition_codes,
         IFNULL(supervising_officer_name,
             IF(open_block_did_change = 1 AND DATE_DIFF(edge_date, LAG(edge_date) OVER parolee_window, DAY) < 8,
                 LAG(supervising_officer_name) OVER parolee_window,
@@ -344,7 +388,10 @@ hydrated_edges AS (
     LAST_VALUE(county_of_residence IGNORE NULLS) OVER preceding_for_parole_number AS county_of_residence,
     LAST_VALUE(supervision_level IGNORE NULLS) OVER preceding_for_parole_number AS supervision_level,
     LAST_VALUE(supervising_officer_name IGNORE NULLS) OVER preceding_for_parole_number AS supervising_officer_name,
-    LAST_VALUE(supervising_officer_id IGNORE NULLS) OVER preceding_for_parole_number AS supervising_officer_id,
+    # Do not IGNORE NULLS for supervising_officer_id because we do not want to incorrectly assign an id
+    # to an officer if the associated id is NULL. The agent_employee_numbers block should reduce the number of NULL values
+    # in supervising_officer_id but NULL values are still possible.
+    LAST_VALUE(supervising_officer_id) OVER preceding_for_parole_number AS supervising_officer_id,
     LAST_VALUE(district_office IGNORE NULLS) OVER preceding_for_parole_number AS district_office,
     LAST_VALUE(district_sub_office_id IGNORE NULLS) OVER preceding_for_parole_number AS district_sub_office_id,
     LAST_VALUE(supervision_location_org_code IGNORE NULLS) OVER preceding_for_parole_number AS supervision_location_org_code,
@@ -359,7 +406,22 @@ hydrated_edges_better_districts AS (
   -- If an edge doesn't have a district, pull in the district from the first following
   -- edge that does have a district.
   SELECT 
-    * EXCEPT(district_office, block_sequence_number),
+    parole_number,
+    sequence_number,
+    started_supervision_types,
+    ended_supervision_types,
+    edge_type,
+    edge_reason,
+    edge_date,
+    county_of_residence,
+    district_sub_office_id,
+    supervision_location_org_code,
+    supervision_level,
+    supervising_officer_name,
+    supervising_officer_id,
+    condition_codes,
+    open_count,
+    open_block_did_change,
     FIRST_VALUE(district_office IGNORE NULLS) OVER following_for_parole_number AS district_office,
   FROM hydrated_edges
   WINDOW following_for_parole_number AS (
@@ -386,8 +448,9 @@ filtered_edges AS (
     supervising_officer_name,
     supervising_officer_id,
     condition_codes,
-    open_count
-  FROM hydrated_edges_better_districts, UNNEST([(
+    open_count,
+    open_block_did_change
+  FROM hydrated_edges_better_districts, UNNEST(ARRAY[(
         -- Subtracts ended types from started types to return the list of current supervision types someone is on
         SELECT
           -- Strips the parole count id from the level and aggregates distinct ongoing levels
@@ -402,7 +465,7 @@ filtered_edges AS (
               UNNEST(SPLIT(hydrated_edges_better_districts.ended_supervision_types, ','))  AS ended_level
             ON started_level = ended_level
             WHERE ended_level IS NULL
-        )
+        ) as better_supervision_type
     )]) AS supervision_types
   WHERE open_count > 0 OR open_block_did_change = 1
 ),
