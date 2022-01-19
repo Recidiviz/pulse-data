@@ -18,6 +18,7 @@
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import (
+    ANALYST_VIEWS_DATASET,
     SESSIONS_DATASET,
     STATE_BASE_DATASET,
 )
@@ -151,6 +152,8 @@ COMPARTMENT_SENTENCES_QUERY_TEMPLATE = """
         UNION ALL
         SELECT * FROM incarceration_sentences_cte
         )
+    LEFT JOIN `{project_id}.{analyst_dataset}.offense_type_mapping_materialized` offense_type_ref
+        USING(state_code, offense_type)
     )
     ,
     deduped_sentence_id_cte AS 
@@ -186,6 +189,7 @@ COMPARTMENT_SENTENCES_QUERY_TEMPLATE = """
         ARRAY_AGG(COALESCE(description, 'MISSING')) description,
         ARRAY_AGG(COALESCE(ncic_code, 'MISSING')) ncic_code,
         ARRAY_AGG(COALESCE(offense_type, 'MISSING')) offense_type,
+        ARRAY_AGG(COALESCE(offense_type_short, 'MISSING')) offense_type_short,
         LOGICAL_OR(life_sentence) AS life_sentence,
     FROM unioned_sentences_cte
     WHERE start_date IS NOT NULL
@@ -273,6 +277,7 @@ COMPARTMENT_SENTENCES_QUERY_TEMPLATE = """
         description,
         ncic_code,
         offense_type,
+        offense_type_short,
         CASE WHEN completion_date < last_day_of_data THEN sentence_length_days END AS sentence_length_days,
         min_projected_sentence_length,
         max_projected_sentence_length
@@ -287,6 +292,7 @@ COMPARTMENT_SENTENCES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=COMPARTMENT_SENTENCES_QUERY_TEMPLATE,
     description=COMPARTMENT_SENTENCES_VIEW_DESCRIPTION,
     base_dataset=STATE_BASE_DATASET,
+    analyst_dataset=ANALYST_VIEWS_DATASET,
     sessions_dataset=SESSIONS_DATASET,
     clustering_fields=["state_code", "person_id"],
     should_materialize=True,
