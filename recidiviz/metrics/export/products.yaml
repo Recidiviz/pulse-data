@@ -93,12 +93,6 @@ products:
         environment: production
       - state_code: US_ND
         environment: production
-  - name: Vitals Report
-    description: Vitals provides a snapshot of agency performance on a set of key operational metrics, which can be drilled down by geographic region and officer. This helps community supervision leadership and supervisors proactively identify resource constraints as well as opportunities for improvement in both compliance and policy.
-    exports: []
-    states:
-      - state_code: US_ND
-        environment: production
   - name: Pathways
     description: Prison and Supervision populations and flows over time which can be drilled down by time period, gender and legal status or supervision type.
     exports:
@@ -106,3 +100,5 @@ products:
     states:
       - state_code: US_ID
         environment: production
+      - state_code: US_ND
+        environment: staging
