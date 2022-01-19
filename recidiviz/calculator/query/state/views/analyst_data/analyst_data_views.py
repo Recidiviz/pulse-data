@@ -24,6 +24,9 @@ from recidiviz.calculator.query.state.views.analyst_data.event_based_metrics_by_
 from recidiviz.calculator.query.state.views.analyst_data.event_based_metrics_by_supervision_officer import (
     EVENT_BASED_METRICS_BY_SUPERVISION_OFFICER_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.offense_type_mapping import (
+    OFFENSE_TYPE_MAPPING_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.officer_events import (
     OFFICER_EVENTS_VIEW_BUILDER,
 )
@@ -100,4 +103,5 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_PA_RAW_TREATMENT_CLASSIFICATION_CODES_VIEW_BUILDER,
     US_PA_RAW_REQUIRED_TREATMENT_VIEW_BUILDER,
     US_ID_EARLY_DISCHARGE_REQUESTS_VIEW_BUILDER,
+    OFFENSE_TYPE_MAPPING_VIEW_BUILDER,
 ]
