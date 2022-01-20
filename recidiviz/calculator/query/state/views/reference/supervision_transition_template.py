@@ -18,6 +18,10 @@
 
 from typing import List
 
+from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
+    ENABLED_STATES,
+)
+
 
 def supervision_transition_template(outflow_compartments: List[str]) -> str:
     return f"""
@@ -31,7 +35,7 @@ def supervision_transition_template(outflow_compartments: List[str]) -> str:
       FROM
         `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized`
       WHERE
-        state_code = 'US_ID'
+        state_code IN {tuple(ENABLED_STATES)}
         AND compartment_level_1 = 'SUPERVISION'
         AND compartment_level_2 IN ('PAROLE', 'PROBATION', 'INFORMAL_PROBATION', 'BENCH_WARRANT', 'DUAL', 'ABSCONSION')
         AND outflow_to_level_1 IN ('{"', '".join(outflow_compartments)}')
