@@ -22,6 +22,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
 )
+from recidiviz.utils import environment
 
 
 class UsTnController(BaseDirectIngestController):
@@ -35,8 +36,14 @@ class UsTnController(BaseDirectIngestController):
         super().__init__(ingest_bucket_path)
 
     def get_file_tag_rank_list(self) -> List[str]:
-        return [
-            "OffenderName",
-            "OffenderMovementIncarcerationPeriod",
-            "AssignedStaffSupervisionPeriod",
-        ]
+        tags = []
+        # TODO(#10740): Remove gating once ingest views are ready to be launched in prod.
+        if not environment.in_gcp_production():
+            tags.extend(
+                [
+                    "OffenderName",
+                    "OffenderMovementIncarcerationPeriod",
+                    "AssignedStaffSupervisionPeriod",
+                ]
+            )
+        return tags
