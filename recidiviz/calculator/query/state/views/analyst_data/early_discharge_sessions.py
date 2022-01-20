@@ -62,7 +62,7 @@ EARLY_DISCHARGE_SESSIONS_QUERY_TEMPLATE = """
         LEFT JOIN all_ed_sessions ed
             USING (state_code, person_id, session_id)
         -- Restrict final output to only include states where we have early discharge data
-        WHERE sessions.state_code IN ({supported_states})
+        WHERE sessions.state_code IN ('{supported_states}')
     )
 
     SELECT * FROM final_sessions
