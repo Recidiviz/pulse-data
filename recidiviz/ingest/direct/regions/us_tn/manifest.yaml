@@ -2,5 +2,5 @@ agency_name: Tennessee Department of Correction
 agency_type: prison
 base_url: unused
 timezone: America/New_York
-environment: staging
+environment: production
 jurisdiction_id: unknown
