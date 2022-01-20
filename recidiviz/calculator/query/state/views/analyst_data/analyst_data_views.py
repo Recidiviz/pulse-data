@@ -18,6 +18,9 @@
 from typing import List
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.state.views.analyst_data.early_discharge_sessions import (
+    EARLY_DISCHARGE_SESSIONS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.event_based_metrics_by_district import (
     EVENT_BASED_METRICS_BY_DISTRICT_VIEW_BUILDER,
 )
@@ -54,6 +57,9 @@ from recidiviz.calculator.query.state.views.analyst_data.us_id.us_id_behavior_re
 from recidiviz.calculator.query.state.views.analyst_data.us_id.us_id_early_discharge_requests import (
     US_ID_EARLY_DISCHARGE_REQUESTS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_id.us_id_early_discharge_sessions_preprocessing import (
+    US_ID_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.us_id.us_id_ppo_metrics_early_discharge_reduction import (
     US_ID_PPO_METRICS_EARLY_DISCHARGE_REDUCTION_VIEW_BUILDER,
 )
@@ -75,6 +81,9 @@ from recidiviz.calculator.query.state.views.analyst_data.us_id.us_id_ppo_metrics
 from recidiviz.calculator.query.state.views.analyst_data.us_id.us_id_raw_supervision_contacts import (
     US_ID_RAW_SUPERVISION_CONTACTS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_nd.us_nd_early_discharge_sessions_preprocessing import (
+    US_ND_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.us_pa.us_pa_raw_required_treatment import (
     US_PA_RAW_REQUIRED_TREATMENT_VIEW_BUILDER,
 )
@@ -83,8 +92,10 @@ from recidiviz.calculator.query.state.views.analyst_data.us_pa.us_pa_raw_treatme
 )
 
 ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
-    EVENT_BASED_METRICS_BY_SUPERVISION_OFFICER_VIEW_BUILDER,
+    EARLY_DISCHARGE_SESSIONS_VIEW_BUILDER,
     EVENT_BASED_METRICS_BY_DISTRICT_VIEW_BUILDER,
+    EVENT_BASED_METRICS_BY_SUPERVISION_OFFICER_VIEW_BUILDER,
+    OFFENSE_TYPE_MAPPING_VIEW_BUILDER,
     OFFICER_EVENTS_VIEW_BUILDER,
     PERSON_EVENTS_VIEW_BUILDER,
     PERSON_STATUSES_VIEW_BUILDER,
@@ -93,15 +104,16 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     SUPERVISION_POPULATION_ATTRIBUTES_BY_DISTRICT_BY_MONTH_VIEW_BUILDER,
     SUPERVISION_POPULATION_BY_OFFICER_DAILY_WINDOWS_VIEW_BUILDER,
     US_ID_BEHAVIOR_RESPONSES_VIEW_BUILDER,
+    US_ID_EARLY_DISCHARGE_REQUESTS_VIEW_BUILDER,
+    US_ID_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER,
     US_ID_PPO_METRICS_EARLY_DISCHARGE_REDUCTION_VIEW_BUILDER,
+    US_ID_PPO_METRICS_EARLY_DISCHARGE_REQUESTS_VIEW_BUILDER,
     US_ID_PPO_METRICS_EARLY_DISCHARGE_TERMINATIONS_VIEW_BUILDER,
     US_ID_PPO_METRICS_EARLY_DISCHARGES_VIEW_BUILDER,
-    US_ID_PPO_METRICS_EARLY_DISCHARGE_REQUESTS_VIEW_BUILDER,
     US_ID_PPO_METRICS_SUCCESSFUL_SUPERVISION_TERMINATIONS_VIEW_BUILDER,
     US_ID_PPO_METRICS_SUPERVISION_LEVEL_VIEW_BUILDER,
     US_ID_RAW_SUPERVISION_CONTACTS_VIEW_BUILDER,
-    US_PA_RAW_TREATMENT_CLASSIFICATION_CODES_VIEW_BUILDER,
+    US_ND_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER,
     US_PA_RAW_REQUIRED_TREATMENT_VIEW_BUILDER,
-    US_ID_EARLY_DISCHARGE_REQUESTS_VIEW_BUILDER,
-    OFFENSE_TYPE_MAPPING_VIEW_BUILDER,
+    US_PA_RAW_TREATMENT_CLASSIFICATION_CODES_VIEW_BUILDER,
 ]
