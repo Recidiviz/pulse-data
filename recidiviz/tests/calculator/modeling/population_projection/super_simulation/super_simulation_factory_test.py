@@ -43,7 +43,7 @@ class TestSuperSimulationFactory(unittest.TestCase):
         macrosim = SuperSimulationFactory.build_super_simulation(
             get_inputs_path("super_simulation_data_ingest.yaml")
         )
-        self.assertFalse(macrosim.initializer.microsim)
+        self.assertFalse(macrosim.initializer.get_data_inputs().microsim)
         self.assertFalse(macrosim.simulator.microsim)
         self.assertFalse(macrosim.validator.microsim)
         self.assertFalse(macrosim.exporter.microsim)
@@ -56,7 +56,7 @@ class TestSuperSimulationFactory(unittest.TestCase):
         microsim = SuperSimulationFactory.build_super_simulation(
             get_inputs_path("super_simulation_microsim_model_inputs.yaml")
         )
-        self.assertTrue(microsim.initializer.microsim)
+        self.assertTrue(microsim.initializer.get_data_inputs().microsim)
         self.assertTrue(microsim.simulator.microsim)
         self.assertTrue(microsim.validator.microsim)
         self.assertTrue(microsim.exporter.microsim)

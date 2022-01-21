@@ -26,7 +26,10 @@ class SparkPolicy:
 
     def __init__(
         self,
-        # policy_fn takes a transition_table.TransitionTable as input.
+        # policy_fn can take a transition_table.TransitionTable, modify it in place, then return None
+        # e.g. transition_table.py (TransitionTable.reallocate_outflow)
+        # policy_fn can also take a pd.DataFrame, without modifying it, and return a new pd.DataFrame
+        # e.g. shell_compartment.py (ShellCompartment.use_alternate_outflows_data)
         policy_fn: Callable[[Any], Optional[pd.DataFrame]],
         spark_compartment: str,
         sub_population: Dict[str, str],

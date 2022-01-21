@@ -18,7 +18,7 @@
 # pylint: disable=super-init-not-called, unused-variable
 
 import unittest
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional, cast
 from unittest.mock import patch
 
 import pandas as pd
@@ -32,6 +32,9 @@ from recidiviz.calculator.modeling.population_projection.sub_simulation.sub_simu
 )
 from recidiviz.calculator.modeling.population_projection.sub_simulation.sub_simulation_factory import (
     SubSimulationFactory,
+)
+from recidiviz.calculator.modeling.population_projection.super_simulation.initializer import (
+    UserInputs,
 )
 
 
@@ -62,7 +65,7 @@ class TestSubSimulation(unittest.TestCase):
     starting_cohort_sizes = pd.DataFrame()
     test_architecture: Dict[str, str] = {}
     compartment_policies: List[SparkPolicy] = []
-    test_user_inputs: Dict[str, Any] = {}
+    test_user_inputs: UserInputs = cast(UserInputs, None)
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -110,13 +113,12 @@ class TestSubSimulation(unittest.TestCase):
             "prison": "full",
         }
 
-        cls.test_user_inputs = {
-            "start_time_step": 0,
-            "policy_time_step": 5,
-            "projection_time_steps": 10,
-            "constant_admissions": False,
-            "speed_run": False,
-        }
+        cls.test_user_inputs = UserInputs(
+            start_time_step=0,
+            projection_time_steps=10,
+            constant_admissions=False,
+            speed_run=False,
+        )
 
     def setUp(self) -> None:
         self.sub_simulation = SubSimulation(

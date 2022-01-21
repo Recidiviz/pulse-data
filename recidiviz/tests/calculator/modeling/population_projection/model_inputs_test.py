@@ -43,6 +43,10 @@ class TestModelInputs(unittest.TestCase):
         "recidiviz.calculator.modeling.population_projection.utils.ignite_bq_utils.load_ignite_table_from_big_query",
         mock.MagicMock(return_value=pd.DataFrame(columns=["compartment"])),
     )
+    @patch(
+        "recidiviz.calculator.modeling.population_projection.super_simulation.initializer.Initializer.fully_hydrate_outflows",
+        mock.MagicMock(return_value=pd.DataFrame(columns=["compartment"])),
+    )
     def test_existing_model_inputs(self) -> None:
         all_file_paths = get_all_files_recursive(root_dir_path)
         for file_path in all_file_paths:

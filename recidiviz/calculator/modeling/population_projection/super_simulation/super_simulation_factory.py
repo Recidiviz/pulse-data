@@ -15,13 +15,18 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Population projection simulation initializer object -- instantiates SuperSimulation"""
-from typing import Any, Dict, Tuple
+from typing import Dict, Tuple, Union
+
+import numpy as np
 
 from recidiviz.calculator.modeling.population_projection.super_simulation.exporter import (
     Exporter,
 )
 from recidiviz.calculator.modeling.population_projection.super_simulation.initializer import (
     Initializer,
+    MacroSimulationDataInputs,
+    MicroSimulationDataInputs,
+    UserInputs,
 )
 from recidiviz.calculator.modeling.population_projection.super_simulation.simulator import (
     Simulator,
@@ -39,83 +44,58 @@ from recidiviz.utils.yaml_dict import YAMLDict
 
 
 class SuperSimulationFactory:
-    """Parse yaml config and initialize either a MacroSuperSimulation or MicroSuperSimulation"""
-
-    # TODO(#5185): incorporate dataclass
+    """Parse yaml config and initialize a SuperSimulation"""
 
     @classmethod
     def build_super_simulation(cls, yaml_file_path: str) -> SuperSimulation:
         """Initialize a SuperSimulation object using the config defined in the YAML file"""
-        model_params = cls.get_model_params(yaml_file_path)
+        initialization_params = YAMLDict.from_path(yaml_file_path)
 
-        if "big_query_simulation_tag" in model_params["data_inputs_raw"].keys():
+        cls._check_valid_yaml_inputs(initialization_params)
+
+        reference_year = initialization_params.pop("reference_date", float)
+
+        time_step = initialization_params.pop("time_step", float)
+
+        disaggregation_axes = initialization_params.pop("disaggregation_axes", list)
+
+        data_inputs_raw = cls._get_valid_data_inputs(initialization_params)
+
+        (
+            compartments_architecture,
+            compartment_costs,
+        ) = cls._get_valid_compartments(initialization_params)
+
+        if isinstance(data_inputs_raw, MacroSimulationDataInputs):
             microsim = False
-            simulation_tag = model_params["data_inputs_raw"]["big_query_simulation_tag"]
-
-        elif "big_query_inputs" in model_params["data_inputs_raw"].keys():
+            simulation_tag = data_inputs_raw.big_query_simulation_tag
+        elif isinstance(data_inputs_raw, MicroSimulationDataInputs):
             microsim = True
-            simulation_tag = model_params["data_inputs_raw"]["big_query_inputs"][
-                "state_code"
-            ]
-
+            simulation_tag = data_inputs_raw.state_code
         else:
-            raise RuntimeError(
-                f'Unrecognized data input: {model_params["data_inputs_raw"].keys()}'
+            raise TypeError(
+                f"{data_inputs_raw=} must be an instance of MacroSimulationDataInputs or MicroSimulationDataInputs"
             )
 
-        time_converter = TimeConverter(
-            model_params["reference_year"], model_params["time_step"]
+        time_converter = TimeConverter(reference_year, time_step)
+
+        user_inputs = cls._get_yaml_user_inputs(
+            initialization_params.pop_dict("user_inputs"), time_converter, microsim
         )
         initializer = Initializer(
             time_converter,
-            model_params["user_inputs_raw"],
-            model_params["data_inputs_raw"],
-            model_params["compartments_architecture"],
-            model_params["disaggregation_axes"],
+            user_inputs,
+            data_inputs_raw,
+            compartments_architecture,
+            disaggregation_axes,
             microsim,
         )
 
         simulator = Simulator(microsim, time_converter)
         validator = Validator(microsim, time_converter)
-        exporter = Exporter(
-            microsim, model_params["compartment_costs"], simulation_tag, time_converter
-        )
+        exporter = Exporter(microsim, compartment_costs, simulation_tag, time_converter)
 
         return SuperSimulation(initializer, simulator, validator, exporter)
-
-    @classmethod
-    def get_model_params(cls, yaml_file_path: str) -> Dict[str, Any]:
-        """Get the model parameters from the YAMLDict"""
-        initialization_params = YAMLDict.from_path(yaml_file_path)
-
-        cls._check_valid_yaml_inputs(initialization_params)
-
-        model_params: Dict[str, Any] = {}
-
-        model_params["reference_year"] = initialization_params.pop(
-            "reference_date", float
-        )
-
-        model_params["time_step"] = initialization_params.pop("time_step", float)
-
-        model_params["disaggregation_axes"] = initialization_params.pop(
-            "disaggregation_axes", list
-        )
-
-        model_params["data_inputs_raw"] = cls._get_valid_data_inputs(
-            initialization_params
-        )
-
-        model_params["user_inputs_raw"] = cls._get_user_inputs(
-            initialization_params, model_params
-        )
-
-        (
-            model_params["compartments_architecture"],
-            model_params["compartment_costs"],
-        ) = cls._get_valid_compartments(initialization_params)
-
-        return model_params
 
     @staticmethod
     def _check_valid_yaml_inputs(initialization_params: YAMLDict) -> None:
@@ -141,7 +121,9 @@ class SuperSimulationFactory:
             raise ValueError(f"Unexpected yaml inputs: {unexpected_inputs}")
 
     @staticmethod
-    def _get_valid_data_inputs(initialization_params: YAMLDict) -> Dict[str, Any]:
+    def _get_valid_data_inputs(
+        initialization_params: YAMLDict,
+    ) -> Union[MicroSimulationDataInputs, MacroSimulationDataInputs]:
         """Helper to retrieve data_inputs for get_model_params"""
 
         given_data_inputs = initialization_params.pop_dict("data_inputs")
@@ -149,8 +131,6 @@ class SuperSimulationFactory:
             raise ValueError(
                 f"Only one data input can be set in the yaml file, not {len(given_data_inputs)}"
             )
-
-        data_inputs: Dict[str, Any] = {}
 
         if "big_query_inputs" in given_data_inputs.keys():
             big_query_inputs_yaml_dict = given_data_inputs.pop_dict("big_query_inputs")
@@ -160,53 +140,65 @@ class SuperSimulationFactory:
             for k in big_query_inputs_keys:
                 big_query_inputs_dict[k] = big_query_inputs_yaml_dict.pop(k, str)
 
-            data_inputs["big_query_inputs"] = big_query_inputs_dict
-        elif "big_query_simulation_tag" in given_data_inputs.keys():
-            data_inputs["big_query_simulation_tag"] = given_data_inputs.pop(
-                "big_query_simulation_tag", str
+            return MicroSimulationDataInputs(**big_query_inputs_dict)
+        if "big_query_simulation_tag" in given_data_inputs.keys():
+            return MacroSimulationDataInputs(
+                big_query_simulation_tag=given_data_inputs.pop(
+                    "big_query_simulation_tag", str
+                )
             )
-        else:
-            raise ValueError(
-                f"Received unexpected key in data_inputs: {given_data_inputs.keys()[0]}"
-            )
-
-        return data_inputs
+        raise ValueError(
+            f"Received unexpected key in data_inputs: {given_data_inputs.keys()[0]}"
+        )
 
     @staticmethod
-    def _get_user_inputs(
-        initialization_params: YAMLDict, model_params: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        """Helper to retrieve user_inputs for get_model_params"""
+    def _get_yaml_user_inputs(
+        user_inputs_yaml_dict: YAMLDict, time_converter: TimeConverter, microsim: bool
+    ) -> UserInputs:
+        """Populate the simulation UserInputs from the `user_inputs` yaml section"""
 
-        user_inputs: Dict[str, Any] = {}
-        user_inputs_yaml_dict = initialization_params.pop_dict("user_inputs")
+        start_time_step = time_converter.convert_year_to_time_step(
+            user_inputs_yaml_dict.pop("start_year", float)
+        )
+        projection_years = user_inputs_yaml_dict.pop("projection_years", float)
+        projection_time_steps = time_converter.get_num_time_steps(projection_years)
+        if not np.isclose(projection_time_steps, round(projection_time_steps)):
+            raise ValueError(
+                f"Projection years {projection_years} input cannot be evenly divided "
+                f"by time step {time_converter.get_time_step()}"
+            )
+        projection_time_steps = round(projection_time_steps)
 
-        if "big_query_simulation_tag" in model_params["data_inputs_raw"].keys():
-            user_inputs = {
-                "start_year": user_inputs_yaml_dict.pop("start_year", float),
-                "projection_years": user_inputs_yaml_dict.pop(
-                    "projection_years", float
-                ),
-            }
+        # Load all remaining user inputs, set them to the default value if not provided
+        if microsim:
+            run_date = user_inputs_yaml_dict.pop("run_date", str)
+            speed_run = None
+        else:
+            run_date = None
+            speed_run = user_inputs_yaml_dict.pop_optional("speed_run", bool)
+            speed_run = speed_run if speed_run is not None else False
 
-        if "big_query_inputs" in model_params["data_inputs_raw"].keys():
-            user_inputs = {
-                "start_year": user_inputs_yaml_dict.pop("start_year", float),
-                "projection_years": user_inputs_yaml_dict.pop(
-                    "projection_years", float
-                ),
-                "run_date": user_inputs_yaml_dict.pop("run_date", str),
-            }
+        constant_admissions = user_inputs_yaml_dict.pop_optional(
+            "constant_admissions", bool
+        )
+        cross_flow_function = user_inputs_yaml_dict.pop_optional(
+            "cross_flow_function", str
+        )
 
-        # Check for optional arguments
+        # Check for any remaining unused arguments
         if user_inputs_yaml_dict:
-            user_inputs_keys = user_inputs_yaml_dict.keys()
-            for k in user_inputs_keys:
-                if k not in {"constant_admissions", "speed_run", "cross_flow_function"}:
-                    raise ValueError(f"Received unexpected key in user_inputs: {k}")
-                user_inputs[k] = user_inputs_yaml_dict.pop(k, bool)
+            raise ValueError(
+                f"Received unexpected keys in user_inputs: {user_inputs_yaml_dict.keys()}"
+            )
 
-        return user_inputs
+        return UserInputs(
+            start_time_step=start_time_step,
+            projection_time_steps=projection_time_steps,
+            constant_admissions=constant_admissions,
+            run_date=run_date,
+            speed_run=speed_run,
+            cross_flow_function=cross_flow_function,
+        )
 
     @staticmethod
     def _get_valid_compartments(
@@ -220,11 +212,11 @@ class SuperSimulationFactory:
         )
         compartments_architecture_keys = compartments_architecture_raw.keys()
 
-        compartments_architecture_dict: Dict[str, Any] = {}
+        compartments_architecture_dict: Dict[str, str] = {}
         for k in compartments_architecture_keys:
-            compartments_architecture_dict[
-                k
-            ] = compartments_architecture_raw.pop_optional(k, str)
+            compartments_architecture_dict[k] = compartments_architecture_raw.pop(
+                k, str
+            )
 
         compartment_costs_key = "per_year_costs"
         compartment_costs_raw = initialization_params.pop_dict(compartment_costs_key)
