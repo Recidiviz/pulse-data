@@ -17,9 +17,6 @@
 """Prison population count time series."""
 from recidiviz.calculator.query.bq_utils import add_age_groups, filter_to_enabled_states
 from recidiviz.calculator.query.state import dataset_config
-from recidiviz.calculator.query.state.dataset_config import (
-    DATAFLOW_METRICS_MATERIALIZED_DATASET,
-)
 from recidiviz.calculator.query.state.state_specific_query_strings import (
     get_pathways_incarceration_last_updated_date,
 )
@@ -37,18 +34,21 @@ PRISON_POPULATION_TIME_SERIES_DESCRIPTION = """Prison population time series """
 PRISON_POPULATION_TIME_SERIES_QUERY_TEMPLATE = """
     /*{description}*/
     WITH get_last_updated AS ({get_pathways_incarceration_last_updated_date}),
-    add_age_groups AS (
+    add_mapped_dimensions AS (
         SELECT 
-            state_code,
+            pop.state_code,
             year,
             month,
             gender,
-            admission_reason as legal_status,
-            facility,
+            admission_reason AS legal_status,
+            IFNULL(location_name, pop.facility) AS facility,
             {add_age_groups}
             count(distinct person_id) as person_count
-        FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_metrics_included_in_state_population_materialized`
-        group by state_code, year, month, gender, legal_status, facility, age_group
+        FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_metrics_included_in_state_population_materialized` pop
+        LEFT JOIN `{project_id}.{dashboard_views_dataset}.pathways_incarceration_location_name_map` name_map
+            ON pop.state_code = name_map.state_code
+            AND pop.facility = name_map.location_id
+        GROUP BY 1, 2, 3, 4, 5, 6, 7
     )
     
     SELECT
@@ -61,14 +61,16 @@ PRISON_POPULATION_TIME_SERIES_QUERY_TEMPLATE = """
         facility,
         age_group,
         SUM(person_count) as person_count,
-    FROM add_age_groups,
+    FROM add_mapped_dimensions,
     UNNEST ([age_group, 'ALL']) as age_group,
     UNNEST ([legal_status, 'ALL']) as legal_status,
     UNNEST ([facility, 'ALL']) as facility,
     UNNEST ([gender, 'ALL']) as gender
     LEFT JOIN get_last_updated  USING (state_code)
+
     {filter_to_enabled_states}
-    group by 1, 2, 3, 4, 5, 6, 7, 8
+    GROUP BY 1, 2, 3, 4, 5, 6, 7, 8
+    ORDER BY year, month
 """
 
 PRISON_POPULATION_TIME_SERIES_VIEW_BUILDER = MetricBigQueryViewBuilder(
@@ -86,7 +88,8 @@ PRISON_POPULATION_TIME_SERIES_VIEW_BUILDER = MetricBigQueryViewBuilder(
         "facility",
         "age_group",
     ),
-    materialized_metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    dashboard_views_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,
+    materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     add_age_groups=add_age_groups(),
     get_pathways_incarceration_last_updated_date=get_pathways_incarceration_last_updated_date(),
     filter_to_enabled_states=filter_to_enabled_states(

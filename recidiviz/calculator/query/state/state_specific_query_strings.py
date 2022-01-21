@@ -45,6 +45,7 @@ STATE_CODE_TO_PATHWAYS_INCARCERATION_LAST_UPDATED_DATE_SOURCE_TABLE: Dict[
     # TODO(#10453): Re-enable once we have some raw data
     # StateCode.US_TN: "OffenderMovement",
     StateCode.US_ID: "movement",
+    StateCode.US_ND: "elite_externalmovements",
 }
 
 # Select the raw table that ultimately powers a state's supervision pathways calculations.
