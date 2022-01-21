@@ -1,0 +1,91 @@
+file_tag: CIS_116_LSI_HISTORY
+file_description: |-
+  This table has LSI assessments results for a client and includes information about when the LSI assessment was 
+  taken, whether the LSI rating was overridden, the reason it was overridden, the reassessment date, 
+  and the date the score is effective from.
+primary_key_cols:
+  - Lsi_History_Id
+columns:
+  - name: Cis_100_Client_Id
+    description: |-
+      The unique identifier for the client that took the assessment.
+  - name: Cis_1009_Lsi_Type_Cd
+    description: |-
+      The type of LSI questionnaire that was completed, see CIS_1009_LSI_TYPE for all possible values and descriptions.
+  - name: Cis_1161_Comm_Lsi_Apprv_Rating_Date
+    description: |-
+      The date the LSI rating was approved, is either NULL or matches the date in Cis_1161_Comm_Lsi_Effct_Date and Cis_1161_Comm_Lsi_Or_Date. 
+      This date matches what is in the `Lsi_Effct_Date` column in the CIS_1161_LSI_RATING table.
+    is_datetime: True
+  - name: Cis_1161_Comm_Lsi_Effct_Date
+    description: |-
+      The date the LSI rating went into effect, is either NULL or matches the date in Cis_1161_Comm_Lsi_Apprv_Rating_Date and Cis_1161_Comm_Lsi_Or_Date. 
+      This date matches what is in the `Lsi_Effct_Date` column in the CIS_1161_LSI_RATING table.
+    is_datetime: True
+  - name: Cis_1161_Comm_Lsi_Or_Date
+    description: |-
+      The date the LSI rating went into effect, is either NULL or matches the date in Cis_1161_Comm_Lsi_Apprv_Rating_Date and Cis_1161_Comm_Lsi_Effct_Date. 
+      This date matches what is in the `Lsi_Effct_Date` column in the CIS_1161_LSI_RATING table.
+    is_datetime: True
+  - name: Cis_1161_Comm_Lsi_Or_Rating_Cd
+    description: |-
+      The overridden LSI rating code for this client. This field is manually updated by the supervising officer. See CIS_1161_LSI_RATING for all possible values and descriptions.
+  - name: Cis_1161_Comm_Lsi_Rating_Cd
+    description: |-
+      The original LSI rating code for this assessment date, see CIS_1161_LSI_RATING for all possible values and descriptions.
+  - name: Cis_1162_Occupation_Cd
+    description: |-
+      The associated occupation code that describes the client's occupation status.
+    known_values:
+      - value: 1
+        description: Student
+      - value: 2
+        description: Pensioner
+      - value: 3
+        description: Homemaker
+      - value: 4
+        description: Other
+  - name: Cis_900_Approver_Id
+  - name: Cis_900_Employee_Id
+    description: |-
+      The employee who last modified the information, which could include applying an override code for the LSI rating.
+  - name: Citrix_Lsi_Id
+  - name: Comm_Apprv_Notes_Tx
+    description: Note entered when the LSI rating was approved.
+  - name: Comm_Override_Notes_Tx
+    description: Note entered when the LSI rating was overridden.
+  - name: Competency_Tx
+    description: Notes about the client and assessment results.
+  - name: Created_By_Tx
+  - name: Created_On_Date
+  - name: Home_Visit_Ind
+  - name: Lsi_Date
+    description: |-
+      The date the LSI assessment was completed.
+    is_datetime: True
+  - name: Lsi_History_Id
+    description: |-
+      The primary key for the table.
+  - name: Lsi_Score_Num
+    description: |-
+      The LSI raw score number from the questionnaire from 0-49.
+  - name: Lsi_Xml_Tx
+  - name: Manual_Score_Ind
+  - name: Modified_By_Tx
+  - name: Modified_On_Date
+  - name: Reassessment_Date
+    description: |-
+      The date the client needs to be reassessed.
+    is_datetime: True
+  - name: Submit_Score_Ind
+  - name: Cis_1161_Comm_Lsi_Apprv_Rating_Cd
+    description: |-
+      The "approved" rating code, see CIS_1161_LSI_RATING for all possible values and descriptions.
+  - name: Override_Type
+    description: |-
+      The type of reason the LSI score was overridden.
+    known_values:
+      - value: 1
+        description: Policy - There are some policies that require a client's score to be overridden, for example, domestic violence and sex offense cases are usually overridden to a Moderate rating because the LSI score is generally lower.
+      - value: 2
+        description: Discretionary - A client's supervision level can be overridden based on the supervising officer's discretion.

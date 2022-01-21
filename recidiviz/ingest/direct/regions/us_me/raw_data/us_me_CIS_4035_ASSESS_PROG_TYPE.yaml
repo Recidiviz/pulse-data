@@ -1,0 +1,347 @@
+file_tag: CIS_4035_ASSESS_PROG_TYPE
+file_description: |-
+  The code table mapping the code to the description of type of program the assessment is for.
+primary_key_cols:
+  - Assess_Prog_Type_Cd
+columns:
+  - name : Adult_Comm_Ind
+  - name : Adult_Cust_Ind
+  - name : Assess_Prog_Desc
+    description: The type of program that the assessment is for.
+  - name : Assessment_Ind
+  - name : Created_By_Tx
+  - name : Created_On_Date
+  - name : Juvenile_Comm_Ind
+  - name : Juvenile_Cust_Ind
+  - name : Logical_Delete_Ind
+  - name : Modified_By_Tx
+  - name : Modified_On_Date
+  - name : Program_Ind
+  - name : Sys_Row_Ind
+  - name : System_Ref_Comments_Tx
+  - name : System_Ref_Tx
+  - name : Assess_Prog_Type_Cd
+    description: The primary key for this table.
+    known_values:
+      - value: 0
+        description: Other
+      - value: 1
+        description: Academic Education
+      - value: 2
+        description: Anger Management
+      - value: 3
+        description: Domestic Violence
+      - value: 4
+        description: Education Assessment
+      - value: 5
+        description: Forensic Evaluation (Mental Health)
+      - value: 6
+        description: Forensic Evaluation (Sex Offender)
+      - value: 7
+        description: Forensic Evaluation (Psychosocial)
+      - value: 8
+        description: Medical Assessment
+      - value: 9
+        description: Mathematics Assessment
+      - value: 10
+        description: Mental Health – Screening/Assessment
+      - value: 11
+        description: Mental Health
+      - value: 12
+        description: Physical Fitness
+      - value: 13
+        description: Psychosocial History
+      - value: 14
+        description: Reading Assessment
+      - value: 15
+        description: Sex Offender
+      - value: 16
+        description: Substance Abuse – Screening
+      - value: 17
+        description: Substance Abuse
+      - value: 18
+        description: Vocational Education
+      - value: 19
+        description: Education – Culinary Arts
+      - value: 20
+        description: Education – Action Technology
+      - value: 21
+        description: Education – Graphic Arts
+      - value: 22
+        description: Education – Carpentry
+      - value: 23
+        description: Religious – Bible Study
+      - value: 24
+        description: Religious – Counseling
+      - value: 25
+        description: Religious Services
+      - value: 26
+        description: Substance Abuse – Individual
+      - value: 27
+        description: Substance Abuse – Group
+      - value: 28
+        description: Substance Abuse – Narcotics Anonymous
+      - value: 29
+        description: Substance Abuse – Alcoholics Anonymous
+      - value: 30
+        description: Substance Abuse – Ala-teen
+      - value: 31
+        description: Cognitive Skills Groups
+      - value: 32
+        description: Volunteer – Mentor
+      - value: 33
+        description: Volunteer – Tutor
+      - value: 34
+        description: Volunteer – Visitor
+      - value: 35
+        description: Volunteer – Other
+      - value: 36
+        description: Counseling – Individual
+      - value: 37
+        description: Counseling – Group
+      - value: 38
+        description: Residential - Group Home/Male
+      - value: 39
+        description: Counseling – Other
+      - value: 40
+        description: Recreation & Leisure Time Activities – Intramurals
+      - value: 41
+        description: Recreation & Leisure Time Activities – Off-grounds
+      - value: 42
+        description: Recreation & Leisure Time Activities – Theater
+      - value: 43
+        description: Recreation & Leisure Time Activities – Special Events
+      - value: 44
+        description: Facility Work Programs – Laundry
+      - value: 45
+        description: Facility Work Programs – Food Services
+      - value: 46
+        description: Facility Work Programs – Facility Maintenance
+      - value: 47
+        description: Off-Grounds Work Programs
+      - value: 48
+        description: Residential - Foster Care
+      - value: 49
+        description: Residential - Therapeutic Foster Care
+      - value: 50
+        description: Residential - Emergency
+      - value: 51
+        description: Residential - Sex Offender
+      - value: 52
+        description: Residential - Substance Abuse
+      - value: 53
+        description: Residential - Group Home/Female
+      - value: 54
+        description: Residential - Psychiatric Hospital
+      - value: 55
+        description: Residential - Diagnostic
+      - value: 56
+        description: Community-Based - Diagnostic
+      - value: 57
+        description: Educational - Experiential
+      - value: 58
+        description: Educational - Vocational
+      - value: 59
+        description: Education - Academic
+      - value: 60
+        description: Education - Life Skills
+      - value: 61
+        description: Counseling - Sex Offender
+      - value: 62
+        description: Counseling - Family
+      - value: 63
+        description: Counseling - Mental Health
+      - value: 64
+        description: Counseling - Substance Abuse
+      - value: 65
+        description: Drug Court
+      - value: 66
+        description: Community Resolution Teams
+      - value: 67
+        description: Day Reporting
+      - value: 68
+        description: Commissary Services
+      - value: 69
+        description: Community Services
+      - value: 70
+        description: Educational/Vocation Services
+      - value: 71
+        description: Hair Care Services
+      - value: 72
+        description: Industries Programs
+      - value: 73
+        description: Medical Services
+      - value: 74
+        description: Mental Health Services
+      - value: 75
+        description: Recreation & Leisure Activities Programs
+      - value: 76
+        description: Religious Programs
+      - value: 77
+        description: Social Services
+      - value: 78
+        description: Substance Abuse Treatment Services
+      - value: 79
+        description: Victim Services
+      - value: 80
+        description: Visiting Programs
+      - value: 81
+        description: Volunteer Programs
+      - value: 82
+        description: Community Re-entry
+      - value: 83
+        description: ABE
+      - value: 84
+        description: GED
+      - value: 85
+        description: HSD
+      - value: 86
+        description: Special Education
+      - value: 87
+        description: Literacy
+      - value: 88
+        description: Math
+      - value: 89
+        description: Writing
+      - value: 90
+        description: College
+      - value: 91
+        description: Career
+      - value: 92
+        description: SCH STU STA
+      - value: 93
+        description: NOVANET
+      - value: 94
+        description: Sch Tutor
+      - value: 95
+        description: Psychosexual
+      - value: 96
+        description: Risk Assessment
+      - value: 97
+        description: Treatment Needs Assessment
+      - value: 98
+        description: PET
+      - value: 99
+        description: Medical Screening
+      - value: 100
+        description: Psychosocial Assessment
+      - value: 101
+        description: CRA
+      - value: 102
+        description: Substance Abuse - Assessment
+      - value: 103
+        description: Education Assessment - Math (Starter/Placement)
+      - value: 104
+        description: Education Assessment - Reading (Starter/Placement)
+      - value: 105
+        description: Education Assessment - Language
+      - value: 106
+        description: Education Assessment - Full Battery
+      - value: 107
+        description: Prior Incarcerations/Probations
+      - value: 108
+        description: Transitional Treatment
+      - value: 109
+        description: Substance Abuse - Outpatient
+      - value: 110
+        description: Mental Health
+      - value: 111
+        description: LSI-R Risk/Needs
+      - value: 112
+        description: JUVENILE CONTRACTED SERVICES
+      - value: 113
+        description: Juvenile Screening Tool
+      - value: 114
+        description: Inactive Programs
+      - value: 115
+        description: Education Assessment - Math (Full)
+      - value: 116
+        description: Education Assessment - Reading (Full)
+      - value: 117
+        description: Sexual Behavior Review
+      - value: 118
+        description: Basic Literacy Reading Life Skills
+      - value: 119
+        description: Education CASAS Pre-test Reading A 081R
+      - value: 120
+        description: Education CASAS Post-test Reading A 082R
+      - value: 121
+        description: Education CASAS Pre-test Reading A 81RX Extended
+      - value: 122
+        description: Education CASAS Post-test Reading A 82RX Extended
+      - value: 123
+        description: Education CASAS Pre-test Reading B 83R
+      - value: 124
+        description: Education CASAS Post-test Reading B 84R
+      - value: 125
+        description: Education CASAS Pre-test Reading C 85R
+      - value: 126
+        description: Education CASAS Post-test Reading C 86R
+      - value: 127
+        description: Education CASAS Pre-test Reading C 185R
+      - value: 128
+        description: Education CASAS Pre-test Reading C 186R
+      - value: 129
+        description: Education CASAS Pre-test Reading D 187R
+      - value: 130
+        description: Education CASAS Post-test Reading D 188R
+      - value: 131
+        description: Education CASAS Pre-test Math A 11M
+      - value: 132
+        description: Education CASAS Post-test Math A 12M
+      - value: 133
+        description: Education CASAS Pre-test Math B 13M
+      - value: 134
+        description: Education CASAS Post-test Math B 14M
+      - value: 135
+        description: Education CASAS Pre-test Math C 15M
+      - value: 136
+        description: Education CASAS Post-test Math C 16M
+      - value: 137
+        description: Education CASAS Pre-test Math D 17M
+      - value: 138
+        description: Education CASAS Post-test Math D 18M
+      - value: 139
+        description: HiSET-Practice-English/Reading
+      - value: 140
+        description: HiSET-Practice-English/Writing
+      - value: 141
+        description: HiSET-Practice-Math
+      - value: 142
+        description: HISET-Practice-Science
+      - value: 143
+        description: HiSET-Practice-Social Studies
+      - value: 144
+        description: HiSET English/Reading
+      - value: 145
+        description: HiSET English/Writing
+      - value: 146
+        description: HiSET Math
+      - value: 147
+        description: HiSET Science
+      - value: 148
+        description: HiSET Social Studies
+      - value: 149
+        description: Education CASAS Post-test Reading C 186R
+      - value: 150
+        description: Education CASAS B 33M
+      - value: 151
+        description: Education CASAS B 34M
+      - value: 152
+        description: Education CASAS A 31M
+      - value: 153
+        description: Education CASAS A 32M
+      - value: 154
+        description: Education CASAS C 35M
+      - value: 155
+        description: Education CASAS C 36M
+      - value: 156
+        description: Education CASAS D 37M
+      - value: 157
+        description: Education CASAS D 38M
+      - value: 158
+        description: Start Now
+      - value: 159
+        description: Mapping Your Reentry
+      - value: 160
+        description: Proxy Tool

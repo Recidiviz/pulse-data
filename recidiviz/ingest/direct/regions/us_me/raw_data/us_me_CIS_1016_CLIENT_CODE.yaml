@@ -1,11 +1,16 @@
 file_tag: CIS_1016_CLIENT_CODE
 file_description: |-
-  TODO(#9296): Add raw data descriptions
-primary_key_cols: []
+  This table includes codes that are referenced in other raw tables in the system. The Cis_1015_Client_Sub_Type_Cd can
+  be helpful in determining which table the code is found in. Codes in other raw tables that reference these codes will
+  have a column name starting with "CIS_1016".
+primary_key_cols:
+  - Client_Cd
 columns:
   - name : Adult_Ind
   - name : Cis_1015_Client_Sub_Type_Cd
+    description: The type of code this references, usually a two-letter code followed by a number. For example, RC_10173 refers to the code used in the Cis_1016_Religion_Cd column of the CIS_100_CLIENT table.
   - name : Client_Cd_Desc
+    description: The description that maps to the code.
   - name : Created_By_Tx
   - name : Created_On_Date
   - name : Juvenile_Ind
@@ -16,3 +21,4 @@ columns:
   - name : System_Ref_Comments_Tx
   - name : System_Ref_Tx
   - name : Client_Cd
+    description: The primary key for this table and the code that is used in other raw tables.

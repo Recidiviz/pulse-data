@@ -1,0 +1,25 @@
+file_tag: CIS_403_CONDITION
+file_description: |-
+  This table includes information about types of conditions imposed on supervision sentences.
+primary_key_cols:
+  - Condition_Id
+columns:
+  - name : Cis_4009_Cond_Imposed_By_Cd
+    description: The entity that imposed the conditions for the supervision period.
+  - name : Cis_4030_Condition_Type_Cd
+    description: The code that maps to the type of condition. See CIS_4030_CONDITION_TYPE for all values.
+  - name : Cis_408_Condition_Hdr_Id
+    description: The foreign key that associates this table and CIS_408_CONDITION_HDR and CIS_409_CRT_ORDER_CNDTION_HDR. This allows us to join the Client Id.
+  - name : Completed_Ind
+  - name : Condition_Id
+    description: The primary key for this table.
+  - name : Created_By_Tx
+  - name : Created_On_Date
+  - name : Due_Date
+    description: The date the condition must be met by.
+    is_datetime: True
+  - name : Fulfilled_Inactive_Comment_Tx
+  - name : General_Comments_Tx
+  - name : Logical_Delete_Ind
+  - name : Modified_By_Tx
+  - name : Modified_On_Date

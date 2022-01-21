@@ -1,0 +1,35 @@
+file_tag: CIS_1009_LSI_TYPE
+file_description: |-
+  This is a code table that maps the plain text description of the type of LSI questionnaire used to its code.
+primary_key_cols:
+  - Lsi_Type_Cd
+columns:
+  - name : Created_By_Tx
+  - name : Created_On_Date
+  - name : E_Lsi_Type_Desc
+    description: The description of the LSI questionnaire type
+    known_values:
+      - value: 1
+        description: Adult, Male, Community
+      - value: 2
+        description: Adult, Male, Facility
+      - value: 3
+        description: Juvenile, Male, Community
+      - value: 4
+        description: Juvenile, Male, Facility
+      - value: 5
+        description: Adult, Female, Community
+      - value: 6
+        description: Adult, Female, Facility
+      - value: 7
+        description: Juvenile, Female, Community
+      - value: 8
+        description: Juvenile, Female, Facility
+  - name : Logical_Delete_Ind
+  - name : Lsi_Interface_Ind
+  - name : Modified_By_Tx
+  - name : Modified_On_Date
+  - name : System_Ref_Comments_Tx
+  - name : System_Ref_Tx
+  - name : Lsi_Type_Cd
+    description: The primary key of the code table and the LSI type code referenced in other raw tables.
