@@ -284,7 +284,6 @@ class GCSFileSystemImpl(GCSFileSystem):
 
     @retry.Retry(predicate=retry_predicate)
     def copy(self, src_path: GcsfsFilePath, dst_path: GcsfsPath) -> None:
-        src_bucket = self.storage_client.bucket(src_path.bucket_name)
         src_blob = self._get_blob(src_path)
 
         dst_bucket = self.storage_client.bucket(dst_path.bucket_name)
@@ -298,7 +297,33 @@ class GCSFileSystemImpl(GCSFileSystem):
         else:
             raise ValueError(f"Unexpected path type [{type(dst_path)}]")
 
-        src_bucket.copy_blob(src_blob, dst_bucket, dst_blob_name)
+        dest_blob = dst_bucket.blob(dst_blob_name)
+
+        # We copy using rewrite instead of copy_blob to avoid this error: 'Copy spanning
+        # locations and/or storage classes could not complete within 30 seconds. Please
+        # use the Rewrite method
+        # (https://cloud.google.com/storage/docs/json_api/v1/objects/rewrite) instead.'
+        # Solution here adapted from:
+        # https://objectpartners.com/2021/01/19/rewriting-files-in-google-cloud-storage/
+        rewrite_token = False
+        while True:
+            rewrite_token, bytes_rewritten, bytes_to_rewrite = dest_blob.rewrite(
+                src_blob, token=rewrite_token
+            )
+
+            if not rewrite_token:
+                logging.info(
+                    "Finished copying [%s] bytes to path: %s",
+                    bytes_to_rewrite,
+                    dst_path.uri(),
+                )
+
+            logging.info(
+                "Copied [%s] of [%s] bytes to path: %s",
+                bytes_rewritten,
+                bytes_to_rewrite,
+                dst_path.uri(),
+            )
 
     @retry.Retry(predicate=retry_predicate)
     def delete(self, path: GcsfsFilePath) -> None:
@@ -310,7 +335,10 @@ class GCSFileSystemImpl(GCSFileSystem):
 
             blob.delete(self.storage_client)
         except GCSBlobDoesNotExistError:
+            logging.info("Did not delete path because it did not exist: %s", path.uri())
             return
+
+        logging.info("Finished deleting path: %s", path.uri())
 
     @retry.Retry(predicate=retry_predicate)
     def download_to_temp_file(
