@@ -4,20 +4,19 @@ about: Request to investigate or ingest state data about a certain topic.
 title: '[US_XX] Title'
 labels: 'External State Data Ask, Internal State Data Ask'
 assignees: ''
-projects: State Data Asks
 ---
+> BEFORE YOU BEGIN!! PLEASE CHECK OFF AND COMPLETE THE FOLLOWING.
+- [ ] I have added the `State Data Asks` project to the `Projects` section on the right hand panel.
+- [ ] I have added the corresponding `REGION: US_XX` label associated with my request.
+- [ ] `Internal State Data Ask` and `External State Data Ask` labels are both added by default. I have removed the one that doesn't apply.
+
+
 ### Request Information				
 #### Summary of data ask:
 Summary of request. Please link any relevant docs, if applicable.
 
 #### Specific tool/task this information is needed for:
 What will this information be used for?
-
-#### Is this request coming from an internal or external team?
-- [ ] External - the tool/task this information is needed for was asked for by an external party.
-- [ ] Internal - the tool/task this information is needed for is a part of an internal effort.
-
-> Note: both labels `Internal State Data Ask` and `External State Data Ask` are by default added to the issue. Remove the one that doesn't apply.
 
 #### Deadline or Preferred Timeline (if applicable):
 Deadline of the request. Ex: XX-YY-20ZZ, Within X week(s)/month(s), By End of 20XXQ1. If there isn't one, please state so.
