@@ -21,11 +21,11 @@ from typing import Any, Dict, List, Optional, Tuple
 from dateutil.relativedelta import relativedelta
 
 from recidiviz.calculator.pipeline.supervision.events import SupervisionPopulationEvent
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_supervision_period_index import (
+    NormalizedSupervisionPeriodIndex,
+)
 from recidiviz.calculator.pipeline.utils.period_utils import (
     sort_periods_by_set_dates_and_statuses,
-)
-from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index import (
-    PreProcessedSupervisionPeriodIndex,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_delegate import (
     StateSpecificSupervisionDelegate,
@@ -175,7 +175,7 @@ def should_produce_supervision_event_for_period(
     supervision_period: StateSupervisionPeriod,
 ) -> bool:
     """Whether or not any SupervisionEvents should be created using the
-    supervision_period. In some cases, supervision period pre-processing will not drop
+    supervision_period. In some cases, supervision period normalization will not drop
     periods entirely because we need them for context in some of the calculations,
     but we do not want to create metrics using the periods.
 
@@ -199,7 +199,7 @@ def should_produce_supervision_event_for_period(
 
 def get_post_incarceration_supervision_type(
     incarceration_period: StateIncarcerationPeriod,
-    supervision_period_index: PreProcessedSupervisionPeriodIndex,
+    supervision_period_index: NormalizedSupervisionPeriodIndex,
     supervision_delegate: StateSpecificSupervisionDelegate,
 ) -> Optional[StateSupervisionPeriodSupervisionType]:
     """If the person was released from incarceration onto some form of supervision,

@@ -37,8 +37,8 @@ from recidiviz.calculator.pipeline.incarceration.events import (
 from recidiviz.calculator.pipeline.utils.assessment_utils import (
     DEFAULT_ASSESSMENT_SCORE_BUCKET,
 )
-from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
-    PreProcessedIncarcerationPeriodIndex,
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_incarceration_period_index import (
+    NormalizedIncarcerationPeriodIndex,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_commitment_from_supervision_delegate import (
     StateSpecificCommitmentFromSupervisionDelegate,
@@ -58,17 +58,17 @@ from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_commi
 from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_incarceration_delegate import (
     UsXxIncarcerationDelegate,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_incarceration_period_pre_processing_delegate import (
-    UsXxIncarcerationPreProcessingDelegate,
+from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_incarceration_period_normalization_delegate import (
+    UsXxIncarcerationNormalizationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_supervision_delegate import (
     UsXxSupervisionDelegate,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_supervision_period_pre_processing_delegate import (
-    UsXxSupervisionPreProcessingDelegate,
+from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_supervision_period_normalization_delegate import (
+    UsXxSupervisionNormalizationDelegate,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_violation_response_preprocessing_delegate import (
-    UsXxViolationResponsePreprocessingDelegate,
+from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_violation_response_normalization_delegate import (
+    UsXxViolationResponseNormalizationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_violations_delegate import (
     UsXxViolationDelegate,
@@ -104,7 +104,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_del
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_violations_delegate import (
     UsNdViolationDelegate,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_incarceration_period_pre_processing_delegate import (
+from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_incarceration_period_normalization_delegate import (
     SHOCK_INCARCERATION_9_MONTHS,
 )
 from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
@@ -148,9 +148,9 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionViolationResponseDecisionEntry,
     StateSupervisionViolationTypeEntry,
 )
-from recidiviz.tests.calculator.pipeline.pre_processing_testing_utils import (
-    default_pre_processed_ip_index_for_tests,
-    default_pre_processed_sp_index_for_tests,
+from recidiviz.tests.calculator.pipeline.utils.entity_normalization.normalization_testing_utils import (
+    default_normalized_ip_index_for_tests,
+    default_normalized_sp_index_for_tests,
 )
 from recidiviz.tests.calculator.pipeline.utils.us_mo_fakes import (
     FakeUsMoIncarcerationSentence,
@@ -191,31 +191,31 @@ class TestFindIncarcerationEvents(unittest.TestCase):
     """Tests the find_incarceration_events function."""
 
     def setUp(self) -> None:
-        self.incarceration_pre_processing_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils.get_state_specific_incarceration_period_pre_processing_delegate"
+        self.incarceration_normalization_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_utils.get_state_specific_incarceration_period_normalization_delegate"
         )
-        self.mock_incarceration_pre_processing_delegate = (
-            self.incarceration_pre_processing_delegate_patcher.start()
+        self.mock_incarceration_normalization_delegate = (
+            self.incarceration_normalization_delegate_patcher.start()
         )
-        self.mock_incarceration_pre_processing_delegate.return_value = (
-            UsXxIncarcerationPreProcessingDelegate()
+        self.mock_incarceration_normalization_delegate.return_value = (
+            UsXxIncarcerationNormalizationDelegate()
         )
-        self.supervision_pre_processing_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils"
-            ".get_state_specific_supervision_period_pre_processing_delegate"
+        self.supervision_normalization_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_utils"
+            ".get_state_specific_supervision_period_normalization_delegate"
         )
-        self.mock_supervision_pre_processing_delegate = (
-            self.supervision_pre_processing_delegate_patcher.start()
+        self.mock_supervision_normalization_delegate = (
+            self.supervision_normalization_delegate_patcher.start()
         )
-        self.mock_supervision_pre_processing_delegate.return_value = (
-            UsXxSupervisionPreProcessingDelegate()
+        self.mock_supervision_normalization_delegate.return_value = (
+            UsXxSupervisionNormalizationDelegate()
         )
-        self.pre_processing_incarceration_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils"
+        self.normalization_incarceration_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_utils"
             ".get_state_specific_incarceration_delegate"
         )
         self.mock_incarceration_delegate = (
-            self.pre_processing_incarceration_delegate_patcher.start()
+            self.normalization_incarceration_delegate_patcher.start()
         )
         self.mock_incarceration_delegate.return_value = UsXxIncarcerationDelegate()
 
@@ -235,14 +235,14 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         )
         self.mock_violation_delegate = self.violation_delegate_patcher.start()
         self.mock_violation_delegate.return_value = UsXxViolationDelegate()
-        self.violation_pre_processing_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils.get_state_specific_violation_response_preprocessing_delegate"
+        self.violation_normalization_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_utils.get_state_specific_violation_response_normalization_delegate"
         )
-        self.mock_violation_pre_processing_delegate = (
-            self.violation_pre_processing_delegate_patcher.start()
+        self.mock_violation_normalization_delegate = (
+            self.violation_normalization_delegate_patcher.start()
         )
-        self.mock_violation_pre_processing_delegate.return_value = (
-            UsXxViolationResponsePreprocessingDelegate()
+        self.mock_violation_normalization_delegate.return_value = (
+            UsXxViolationResponseNormalizationDelegate()
         )
         self.supervision_delegate_patcher = mock.patch(
             "recidiviz.calculator.pipeline.incarceration.identifier.get_state_specific_supervision_delegate"
@@ -259,14 +259,14 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         self._stop_state_specific_delegate_patchers()
 
     def _stop_state_specific_delegate_patchers(self) -> None:
-        self.incarceration_pre_processing_delegate_patcher.stop()
-        self.supervision_pre_processing_delegate_patcher.stop()
+        self.incarceration_normalization_delegate_patcher.stop()
+        self.supervision_normalization_delegate_patcher.stop()
         self.commitment_from_supervision_delegate_patcher.stop()
         self.violation_delegate_patcher.stop()
-        self.violation_pre_processing_delegate_patcher.stop()
+        self.violation_normalization_delegate_patcher.stop()
         self.supervision_delegate_patcher.stop()
         self.incarceration_delegate_patcher.stop()
-        self.pre_processing_incarceration_delegate_patcher.stop()
+        self.normalization_incarceration_delegate_patcher.stop()
 
     def _run_find_incarceration_events(
         self,
@@ -2182,7 +2182,7 @@ class TestFindIncarcerationStays(unittest.TestCase):
 
         incarceration_delegate = incarceration_delegate or UsXxIncarcerationDelegate()
 
-        incarceration_period_index = default_pre_processed_ip_index_for_tests(
+        incarceration_period_index = default_normalized_ip_index_for_tests(
             incarceration_periods=[incarceration_period]
         )
 
@@ -2543,7 +2543,7 @@ class TestFindIncarcerationStays(unittest.TestCase):
 
         ips = [incarceration_period_1, incarceration_period_2]
 
-        incarceration_period_index = default_pre_processed_ip_index_for_tests(
+        incarceration_period_index = default_normalized_ip_index_for_tests(
             incarceration_periods=ips
         )
 
@@ -2601,7 +2601,7 @@ class TestFindIncarcerationStays(unittest.TestCase):
 
         incarceration_periods = [incarceration_period_1, incarceration_period_2]
 
-        incarceration_period_index = default_pre_processed_ip_index_for_tests(
+        incarceration_period_index = default_normalized_ip_index_for_tests(
             incarceration_periods=incarceration_periods
         )
 
@@ -2663,9 +2663,7 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
     def _run_admission_event_for_period(
         self,
         incarceration_period: StateIncarcerationPeriod,
-        incarceration_period_index: Optional[
-            PreProcessedIncarcerationPeriodIndex
-        ] = None,
+        incarceration_period_index: Optional[NormalizedIncarcerationPeriodIndex] = None,
         incarceration_sentences: Optional[List[StateIncarcerationSentence]] = None,
         supervision_sentences: Optional[List[StateSupervisionSentence]] = None,
         supervision_periods: Optional[List[StateSupervisionPeriod]] = None,
@@ -2685,11 +2683,11 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
 
         incarceration_period_index = (
             incarceration_period_index
-            or default_pre_processed_ip_index_for_tests(
+            or default_normalized_ip_index_for_tests(
                 incarceration_periods=[incarceration_period]
             )
         )
-        supervision_period_index = default_pre_processed_sp_index_for_tests(
+        supervision_period_index = default_normalized_sp_index_for_tests(
             supervision_periods=supervision_periods
         )
         assessments = assessments or []
@@ -2950,9 +2948,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
         pre_commitment_supervision_period: Optional[StateSupervisionPeriod],
         violation_delegate: StateSpecificViolationDelegate,
         supervision_delegate: StateSpecificSupervisionDelegate,
-        incarceration_period_index: Optional[
-            PreProcessedIncarcerationPeriodIndex
-        ] = None,
+        incarceration_period_index: Optional[NormalizedIncarcerationPeriodIndex] = None,
         supervision_sentences: Optional[List[StateSupervisionSentence]] = None,
         incarceration_sentences: Optional[List[StateIncarcerationSentence]] = None,
         assessments: Optional[List[StateAssessment]] = None,
@@ -2983,12 +2979,12 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
 
         incarceration_period_index = (
             incarceration_period_index
-            or default_pre_processed_ip_index_for_tests(
+            or default_normalized_ip_index_for_tests(
                 incarceration_periods=[incarceration_period],
                 transfers_are_collapsed=True,
             )
         )
-        supervision_period_index = default_pre_processed_sp_index_for_tests(
+        supervision_period_index = default_normalized_sp_index_for_tests(
             supervision_periods=[pre_commitment_supervision_period]
             if pre_commitment_supervision_period
             else []
@@ -3618,12 +3614,12 @@ class TestReleaseEventForPeriod(unittest.TestCase):
         """
 
         incarceration_delegate = incarceration_delegate or UsXxIncarcerationDelegate()
-        incarceration_period_index = default_pre_processed_ip_index_for_tests(
+        incarceration_period_index = default_normalized_ip_index_for_tests(
             incarceration_periods=[incarceration_period],
             transfers_are_collapsed=True,
         )
 
-        supervision_period_index = default_pre_processed_sp_index_for_tests()
+        supervision_period_index = default_normalized_sp_index_for_tests()
 
         incarceration_delegate = incarceration_delegate or UsXxIncarcerationDelegate()
         supervision_delegate = supervision_delegate or UsXxSupervisionDelegate()
@@ -3759,12 +3755,12 @@ class TestReleaseEventForPeriod(unittest.TestCase):
         incarceration_delegate = UsIdIncarcerationDelegate()
         supervision_delegate = UsIdSupervisionDelegate()
 
-        incarceration_period_index = default_pre_processed_ip_index_for_tests(
+        incarceration_period_index = default_normalized_ip_index_for_tests(
             incarceration_periods=[incarceration_period],
             transfers_are_collapsed=True,
         )
 
-        supervision_period_index = default_pre_processed_sp_index_for_tests(
+        supervision_period_index = default_normalized_sp_index_for_tests(
             supervision_periods=[supervision_period]
         )
 
@@ -3821,12 +3817,12 @@ class TestReleaseEventForPeriod(unittest.TestCase):
         incarceration_delegate = UsMoIncarcerationDelegate()
         supervision_delegate = UsMoSupervisionDelegate()
 
-        incarceration_period_index = default_pre_processed_ip_index_for_tests(
+        incarceration_period_index = default_normalized_ip_index_for_tests(
             incarceration_periods=[incarceration_period],
             transfers_are_collapsed=True,
         )
 
-        supervision_period_index = default_pre_processed_sp_index_for_tests(
+        supervision_period_index = default_normalized_sp_index_for_tests(
             supervision_periods=[supervision_period]
         )
 
@@ -3887,12 +3883,12 @@ class TestReleaseEventForPeriod(unittest.TestCase):
             start_date=date(2010, 12, 4),
         )
 
-        incarceration_period_index = default_pre_processed_ip_index_for_tests(
+        incarceration_period_index = default_normalized_ip_index_for_tests(
             incarceration_periods=[incarceration_period],
             transfers_are_collapsed=True,
         )
 
-        supervision_period_index = default_pre_processed_sp_index_for_tests(
+        supervision_period_index = default_normalized_sp_index_for_tests(
             supervision_periods=[supervision_period]
         )
 

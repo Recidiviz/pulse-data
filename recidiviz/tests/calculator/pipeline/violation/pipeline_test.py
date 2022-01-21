@@ -31,8 +31,8 @@ from recidiviz.calculator.pipeline.utils.beam_utils.person_utils import (
     ExtractPersonEventsMetadata,
 )
 from recidiviz.calculator.pipeline.utils.metric_utils import PersonMetadata
-from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_violation_response_preprocessing_delegate import (
-    UsXxViolationResponsePreprocessingDelegate,
+from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_violation_response_normalization_delegate import (
+    UsXxViolationResponseNormalizationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_violations_delegate import (
     UsXxViolationDelegate,
@@ -89,19 +89,19 @@ class TestViolationPipeline(unittest.TestCase):
         )
         self.mock_violation_delegate = self.violation_delegate_patcher.start()
         self.mock_violation_delegate.return_value = UsXxViolationDelegate()
-        self.violation_pre_processing_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils.get_state_specific_violation_response_preprocessing_delegate"
+        self.violation_normalization_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_utils.get_state_specific_violation_response_normalization_delegate"
         )
-        self.mock_violation_pre_processing_delegate = (
-            self.violation_pre_processing_delegate_patcher.start()
+        self.mock_violation_normalization_delegate = (
+            self.violation_normalization_delegate_patcher.start()
         )
-        self.mock_violation_pre_processing_delegate.return_value = (
-            UsXxViolationResponsePreprocessingDelegate()
+        self.mock_violation_normalization_delegate.return_value = (
+            UsXxViolationResponseNormalizationDelegate()
         )
 
     def tearDown(self) -> None:
         self.violation_delegate_patcher.stop()
-        self.violation_pre_processing_delegate_patcher.stop()
+        self.violation_normalization_delegate_patcher.stop()
 
     @staticmethod
     def build_data_dict(
@@ -304,19 +304,19 @@ class TestClassifyViolationEvents(unittest.TestCase):
         )
         self.mock_violation_delegate = self.violation_delegate_patcher.start()
         self.mock_violation_delegate.return_value = UsXxViolationDelegate()
-        self.violation_pre_processing_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils.get_state_specific_violation_response_preprocessing_delegate"
+        self.violation_normalization_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_utils.get_state_specific_violation_response_normalization_delegate"
         )
-        self.mock_violation_pre_processing_delegate = (
-            self.violation_pre_processing_delegate_patcher.start()
+        self.mock_violation_normalization_delegate = (
+            self.violation_normalization_delegate_patcher.start()
         )
-        self.mock_violation_pre_processing_delegate.return_value = (
-            UsXxViolationResponsePreprocessingDelegate()
+        self.mock_violation_normalization_delegate.return_value = (
+            UsXxViolationResponseNormalizationDelegate()
         )
 
     def tearDown(self) -> None:
         self.violation_delegate_patcher.stop()
-        self.violation_pre_processing_delegate_patcher.stop()
+        self.violation_normalization_delegate_patcher.stop()
 
     def testClassifyViolationEvents(self) -> None:
         """Tests the ClassifyViolationEvents DoFn."""

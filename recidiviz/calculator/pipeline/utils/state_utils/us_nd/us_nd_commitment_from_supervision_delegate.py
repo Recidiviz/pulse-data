@@ -24,10 +24,10 @@ from dateutil.relativedelta import relativedelta
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_commitment_from_supervision_delegate import (
     StateSpecificCommitmentFromSupervisionDelegate,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_incarceration_period_pre_processing_delegate import (
-    PAROLE_REVOCATION_PREPROCESSING_PREFIX,
+from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_incarceration_period_normalization_delegate import (
+    PAROLE_REVOCATION_NORMALIZED_PREFIX,
     PREVIOUS_SUPERVISION_TYPE_TO_INCARCERATION_ADMISSION_REASON_RAW_TEXT,
-    PROBATION_REVOCATION_PREPROCESSING_PREFIX,
+    PROBATION_REVOCATION_NORMALIZED_PREFIX,
 )
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
@@ -166,8 +166,8 @@ class UsNdCommitmentFromSupervisionDelegate(
             or (
                 key
                 in (
-                    PAROLE_REVOCATION_PREPROCESSING_PREFIX,
-                    PROBATION_REVOCATION_PREPROCESSING_PREFIX,
+                    PAROLE_REVOCATION_NORMALIZED_PREFIX,
+                    PROBATION_REVOCATION_NORMALIZED_PREFIX,
                 )
                 and admission_reason_raw_text.startswith(key)
             )

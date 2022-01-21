@@ -19,18 +19,18 @@ supervision."""
 import datetime
 from typing import Any, Dict, List, NamedTuple, Optional
 
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_incarceration_period_index import (
+    NormalizedIncarcerationPeriodIndex,
+)
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_supervision_period_index import (
+    NormalizedSupervisionPeriodIndex,
+)
 from recidiviz.calculator.pipeline.utils.incarceration_period_utils import (
     periods_are_temporally_adjacent,
 )
 from recidiviz.calculator.pipeline.utils.period_utils import (
     find_last_terminated_period_on_or_before_date,
     sort_period_by_external_id,
-)
-from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
-    PreProcessedIncarcerationPeriodIndex,
-)
-from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index import (
-    PreProcessedSupervisionPeriodIndex,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_commitment_from_supervision_delegate import (
     StateSpecificCommitmentFromSupervisionDelegate,
@@ -87,8 +87,8 @@ CommitmentDetails = NamedTuple(
 
 def get_commitment_from_supervision_details(
     incarceration_period: StateIncarcerationPeriod,
-    incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
-    supervision_period_index: PreProcessedSupervisionPeriodIndex,
+    incarceration_period_index: NormalizedIncarcerationPeriodIndex,
+    supervision_period_index: NormalizedSupervisionPeriodIndex,
     incarceration_sentences: List[StateIncarcerationSentence],
     supervision_sentences: List[StateSupervisionSentence],
     commitment_from_supervision_delegate: StateSpecificCommitmentFromSupervisionDelegate,
@@ -126,7 +126,7 @@ def get_commitment_from_supervision_details(
         raise ValueError(
             "Unexpected incarceration period without an "
             f"specialized_purpose_for_incarceration: {incarceration_period}. Should "
-            f"be set in IP pre-processing."
+            f"be set in IP normalization."
         )
 
     purpose_for_incarceration = (
@@ -264,8 +264,8 @@ def _filter_to_matching_supervision_types(
 def _get_commitment_from_supervision_supervision_period(
     incarceration_period: StateIncarcerationPeriod,
     commitment_from_supervision_delegate: StateSpecificCommitmentFromSupervisionDelegate,
-    supervision_period_index: PreProcessedSupervisionPeriodIndex,
-    incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
+    supervision_period_index: NormalizedSupervisionPeriodIndex,
+    incarceration_period_index: NormalizedIncarcerationPeriodIndex,
 ) -> Optional[StateSupervisionPeriod]:
     """Identifies the supervision period associated with the commitment to supervision
     admission on the given |admission_date|.

@@ -24,11 +24,11 @@ from recidiviz.calculator.pipeline.utils import commitment_from_supervision_util
 from recidiviz.calculator.pipeline.utils.commitment_from_supervision_utils import (
     CommitmentDetails,
 )
-from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
-    PreProcessedIncarcerationPeriodIndex,
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_incarceration_period_index import (
+    NormalizedIncarcerationPeriodIndex,
 )
-from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index import (
-    PreProcessedSupervisionPeriodIndex,
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_supervision_period_index import (
+    NormalizedSupervisionPeriodIndex,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_commitment_from_supervision_delegate import (
     UsPaCommitmentFromSupervisionDelegate,
@@ -36,7 +36,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_commitment_from
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_incarceration_delegate import (
     UsPaIncarcerationDelegate,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_incarceration_period_pre_processing_delegate import (
+from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_incarceration_period_normalization_delegate import (
     PURPOSE_FOR_INCARCERATION_PVC,
     SHOCK_INCARCERATION_PVC,
 )
@@ -61,8 +61,8 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionCaseTypeEntry,
     StateSupervisionPeriod,
 )
-from recidiviz.tests.calculator.pipeline.pre_processing_testing_utils import (
-    default_pre_processed_ip_index_for_tests,
+from recidiviz.tests.calculator.pipeline.utils.entity_normalization.normalization_testing_utils import (
+    default_normalized_ip_index_for_tests,
 )
 
 _DEFAULT_SUPERVISION_PERIOD_ID = 999
@@ -196,9 +196,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
     def _test_get_commitment_from_supervision_details(
         incarceration_period: StateIncarcerationPeriod,
         supervision_periods: Optional[List[StateSupervisionPeriod]] = None,
-        incarceration_period_index: Optional[
-            PreProcessedIncarcerationPeriodIndex
-        ] = None,
+        incarceration_period_index: Optional[NormalizedIncarcerationPeriodIndex] = None,
         supervision_period_to_agent_associations: Optional[
             Dict[int, Dict[Any, Any]]
         ] = None,
@@ -210,13 +208,13 @@ class TestGetCommitmentDetails(unittest.TestCase):
         )
         incarceration_period_index = (
             incarceration_period_index
-            or default_pre_processed_ip_index_for_tests(
+            or default_normalized_ip_index_for_tests(
                 incarceration_periods=[incarceration_period],
                 incarceration_delegate=UsPaIncarcerationDelegate(),
             )
         )
 
-        supervision_period_index = PreProcessedSupervisionPeriodIndex(
+        supervision_period_index = NormalizedSupervisionPeriodIndex(
             supervision_periods=(supervision_periods or [])
         )
 
@@ -267,7 +265,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
         )
 
         assert incarceration_period.incarceration_period_id is not None
-        ip_index = default_pre_processed_ip_index_for_tests(
+        ip_index = default_normalized_ip_index_for_tests(
             incarceration_periods=[incarceration_period],
             transfers_are_collapsed=True,
             ip_id_to_pfi_subtype={
@@ -350,7 +348,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
             start_date=shock_period.admission_date,
         )
 
-        ip_index = default_pre_processed_ip_index_for_tests(
+        ip_index = default_normalized_ip_index_for_tests(
             incarceration_periods=[board_hold, shock_period],
             transfers_are_collapsed=True,
             incarceration_delegate=UsPaIncarcerationDelegate(),
