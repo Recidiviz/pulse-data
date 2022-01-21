@@ -1,35 +1,100 @@
 file_tag: CIS_480_VIOLATION
 file_description: |-
-  TODO(#9296): Add raw data descriptions
-primary_key_cols: []
+  This table lists violations that occurred while someone was on community supervision. If a client was on SCCP
+  (Supervised Community Confinement Program), the supervising officer might enter the violation info in either
+  this table or in CIS_460_INCIDENTS, since they are still considered to be part of the incarcerated population.
+primary_key_cols:
+  - Violation_Id
 columns:
   - name : Arrested_Warr_Date
+    description: The date the arrest took place.
+    is_datetime: True
   - name : Cis_100_Client_Id
+    description: The client that is associated with this violation entry.
   - name : Cis_1016_Extradition_Cd
   - name : Cis_4009_Client_Loc_Cd
   - name : Cis_4009_Disposition_Cd
   - name : Cis_4009_Served_At_Cd
   - name : Cis_4009_Supervision_Type_Cd
+    description: The type of supervision.
+    known_values:
+      - value: 96
+        description: Probation
+      - value: 97
+        description: Community Reintegration - Juvenile only
+      - value: 98
+        description: Supervised Community Confinement (SCCP)
+      - value: 113
+        description: Parole
   - name : Cis_4009_Toll_Violation_Cd
   - name : Cis_4009_Violation_Type_Cd
+    description: The type of violation
+    known_values:
+      - value: 63
+        description: Technical
+      - value: 64
+        description: Misdemeanor
+      - value: 65
+        description: Felony
+      - value: 122
+        description: Migration - Unknown
+      - value: 116
+        description: Migration - New Offense
+      - value: 150
+        description: UNKNOWN - This value is not in the CIS_4009_SENT_CALC_SYS table and only occurs a handful of times.
   - name : Cis_4800_Violation_Finding_Cd
+    description: The result of the violation.
+    known_values:
+      - value: 1
+        description: Violation Found
+      - value: 2
+        description: Violation Not Found
+      - value: 3
+        description: Dismissed by Court
+      - value: 4
+        description: Withdrawn by Officer
+      - value: 5
+        description: Not Approved by Prosecuting Attorney
+      - value: 6
+        description: Graduated Sanction By Officer
+      - value: 7
+        description: Warning By Officer
+      - value: 8
+        description: Warning By Officer
+      - value: 9
+        description: Return to Facility by Officer
+      - value: 10
+        description: Graduated Sanction By Officer
+      - value: 11
+        description: Absconded - Facility Notified
   - name : Cis_900_Employee_Id
   - name : Created_By_Tx
   - name : Created_On_Date
   - name : Extradition_Other_Tx
   - name : Finding_Date
+    description: The date the violation outcome decision was completed.
+    is_datetime: True
   - name : Finding_Notes_Tx
+    description: Notes recorded about the finding results.
   - name : Fta_Date
   - name : Fta_Ind
   - name : Logical_Delete_Ind
   - name : Modified_By_Tx
   - name : Modified_On_Date
   - name : Start_Date
+    description: The date the violation was entered.
+    is_datetime: True
   - name : Stayed_Ind
   - name : Toll_End_Date
+    description: The end date the client is in a state of awaiting a violation outcome decision.
+    is_datetime: True
   - name : Toll_Start_Date
+    description: The start date the client is in a state of awaiting a violation outcome decision.
+    is_datetime: True
   - name : Violation_Descr_Tx
+    description: A note describing the violation entered by the supervising officer.
   - name : Violation_Id
+    description: The primary key for this table.
   - name : Warning_Issued_Ind
   - name : Serve_Days
   - name : Serve_Mths

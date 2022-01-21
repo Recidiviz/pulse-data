@@ -1,6 +1,6 @@
 file_tag: CIS_9903_PROFESSIONAL_TYPE
 file_description: |-
-  TODO(#9296): Add raw data descriptions
+  TODO(#10734): Add raw data descriptions
 primary_key_cols: []
 columns:
   - name : Created_By_Tx

@@ -1,0 +1,54 @@
+file_tag: CIS_4302_REQUESTED_TYPE
+file_description: |-
+  The code table mapping the person or entity that requested an assessment to the code used in other raw tables.
+primary_key_cols:
+  - Request_Type_Cd
+columns:
+  - name : Created_By_Tx
+  - name : Created_On_Date
+  - name : E_Request_Type_Desc
+    description: The person or entity who requested the assessment.
+  - name : Logical_Delete_Ind
+  - name : Modified_By_Tx
+  - name : Modified_On_Date
+  - name : System_Ref_Comments_Tx
+  - name : System_Ref_Tx
+  - name : Request_Type_Cd
+    description: The primary key for this table.
+    known_values:
+      - value: 1
+        description: Probation Officer
+      - value: 2
+        description: Court
+      - value: 3
+        description: Family
+      - value: 4
+        description: Health Care Staff (Medical)
+      - value: 5
+        description: Health Care Staff (Mental Health)
+      - value: 6
+        description: Initial Intake
+      - value: 7
+        description: Other
+      - value: 8
+        description: BDS
+      - value: 9
+        description: Classification
+      - value: 10
+        description: CAO
+      - value: 11
+        description: DHHS (Department of Health and Human Services)
+      - value: 12
+        description: JCCO (Juvenile Community Corrections Officer)
+      - value: 13
+        description: Education
+      - value: 14
+        description: Supervisory Security Staff
+      - value: 15
+        description: Social Services
+      - value: 16
+        description: Unit Management Team
+      - value: 17
+        description: Unit Treatment Team
+      - value: 18
+        description: Education (CASAS Pre/Post Tests)

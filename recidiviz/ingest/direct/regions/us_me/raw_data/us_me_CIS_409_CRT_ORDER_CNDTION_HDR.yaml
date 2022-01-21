@@ -1,0 +1,17 @@
+file_tag: CIS_409_CRT_ORDER_CNDTION_HDR
+file_description: |-
+  This is a join table between CIS_401_CRT_ORDER_HDR and CIS_403_CONDITION using the Cis_408_Condition_Hdr_Id column.
+  This allows us to join sentencing and client information to supervision conditions. Both Cis_401_Court_Order_Id
+  and Cis_408_Condition_Hdr_Id can be used as primary keys for this table.
+primary_key_cols:
+  - Cis_408_Condition_Hdr_Id
+columns:
+  - name : Cis_401_Court_Order_Id
+    description: The foreign key for the CIS_401_CRT_ORDER_HDR table.
+  - name : Cis_408_Condition_Hdr_Id
+    description: The foreign key for the CIS_403_CONDITION table.
+  - name : Created_By_Tx
+  - name : Created_On_Date
+  - name : Modified_By_Tx
+  - name : Modified_On_Date
+  - name : Original_Ind

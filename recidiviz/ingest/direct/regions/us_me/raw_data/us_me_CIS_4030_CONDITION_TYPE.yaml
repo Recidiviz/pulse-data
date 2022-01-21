@@ -1,0 +1,360 @@
+file_tag: CIS_4030_CONDITION_TYPE
+file_description: |-
+  This table has descriptions of different condition types that are imposed on supervision sentences.
+primary_key_cols:
+  - Condition_Type_Cd
+columns:
+  - name : Adult_Ind
+  - name : Cis_4009_Sent_Calc_Sys_Cd
+  - name : Created_By_Tx
+  - name : Created_On_Date
+  - name : E_Condition_Type_Desc
+    description: The description of the condition imposed.
+    known_values:
+      - value: 1
+        description: No new criminal acts
+      - value: 2
+        description: Report as directed
+      - value: 3
+        description: No excessive alcohol
+      - value: 4
+        description: No unlawful drug use
+      - value: 5
+        description: Seek and maintain employment
+      - value: 6
+        description: Devote to an employment /education program
+      - value: 7
+        description: Answer all Questions
+      - value: 8
+        description: Permit visit
+      - value: 9
+        description: Agree to waive extradition
+      - value: 10
+        description: Provide DNA sample as directed
+      - value: 11
+        description: Identify as a probationer
+      - value: 12
+        description: Obtain permission before change of address
+      - value: 13
+        description: Obtain permission before change of employment
+      - value: 14
+        description: Not to leave State without permission
+      - value: 15
+        description: Notify of Police Contact
+      - value: 16
+        description: No new criminal acts
+      - value: 17
+        description: To report as directed
+      - value: 18
+        description: Permit visit and answer inquiries
+      - value: 19
+        description: Obtain permission before change of address
+      - value: 20
+        description: Not to leave State without permission
+      - value: 21
+        description: Devote to employment /education program
+      - value: 22
+        description: No tobacco, alcohol or drugs
+      - value: 23
+        description: To identify self as a probationer
+      - value: 24
+        description: To waive extradition
+      - value: 25
+        description: Not to own or possess any firearms or dangerous weapons
+      - value: 26
+        description: To notify of Police Contact within 24 hours.
+      - value: 27
+        description: Maintain employment
+      - value: 28
+        description: Obtain employment 30 days from release
+      - value: 29
+        description: Sufficient means of support for at least 120 days
+      - value: 30
+        description: RCA to approve residence
+      - value: 31
+        description: Must have operable telephone w/no additional features
+      - value: 32
+        description: Remain at approved residence
+      - value: 33
+        description: Shall not leave the State of Maine
+      - value: 34
+        description: Subject to travel restrictions
+      - value: 35
+        description: All travel / movement to be approved in advance
+      - value: 36
+        description: No possession or in presence of firearms and dangerous weapons
+      - value: 37
+        description: Submit to searches of person, residence, papers and effects, for items prohibited by law or SCC conditions
+      - value: 38
+        description: No room mates who do not submit to warrantless searches
+      - value: 39
+        description: Must not violate any state of federal law or any other law
+      - value: 40
+        description: No possession illegal drugs or other illegal substances
+      - value: 41
+        description: No use / possession alcohol or other legal substances
+      - value: 42
+        description: Submit to urinalysis, breath testing or other chemical tests
+      - value: 43
+        description: Carry official identification card at all times and show to any law enforcement officer that they have contact with.
+      - value: 44
+        description: Notify PPO immediately of any police contact
+      - value: 45
+        description: Contribute to participation costs of the program
+      - value: 46
+        description: Pay court ordered fines, fees and restitution
+      - value: 47
+        description: Waiving extradition
+      - value: 48
+        description: Must pay for incurred personal expenses
+      - value: 49
+        description: Notify PPO of any illness, injury or medical condition or changes in prescribed medications
+      - value: 50
+        description: PPO to approve visitors to residence
+      - value: 51
+        description: Sign all required releases
+      - value: 52
+        description: Report to PPO within 48 hours of transfer to program
+      - value: 53
+        description: No use / possession motor vehicle, unless approved by PPO and RCA (Regional Corrections Agent)
+      - value: 54
+        description: Readily available to answer telephone, door bell, or door knocking, while a curfew is in effect
+      - value: 55
+        description: No telephone use beyond 15 minutes and within 15 minute intervals
+      - value: 56
+        description: Must allow any law enforcement agency to facilitate supervision
+      - value: 57
+        description: Other SCCP (Supervised Community Confinement Program) Condition
+      - value: 58
+        description: Obey all laws of the State of Maine and directives from the JCCO
+      - value: 59
+        description: No leaving State without permission
+      - value: 60
+        description: Waive extradition
+      - value: 61
+        description: Reside where directed by JCCO (Juvenile Community Corrections Officer)
+      - value: 62
+        description: Report to JCCO (Juvenile Community Corrections Officer) as directed
+      - value: 63
+        description: Report any change of education or employment
+      - value: 64
+        description: Notify of Police Contact within 24 hours.
+      - value: 65
+        description: No alcohol
+      - value: 66
+        description: No drugs (illegal or misuse of prescription drugs)
+      - value: 67
+        description: Pay Fines
+      - value: 68
+        description: Pay assessments
+      - value: 69
+        description: Pay Restitution
+      - value: 70
+        description: Pay counsel fees
+      - value: 71
+        description: Pay for victim(s)’ counseling costs
+      - value: 72
+        description: Pay supervision fee
+      - value: 73
+        description: Pay substance abuse testing fee
+      - value: 74
+        description: Pay electronic monitoring fee
+      - value: 75
+        description: Electronic monitoring
+      - value: 76
+        description: Not to own, possess any firearm or dangerous weapon
+      - value: 77
+        description: Search and testing for alcohol
+      - value: 78
+        description: Search and testing for drugs
+      - value: 79
+        description: Search and testing for weapons
+      - value: 80
+        description: Search and testing for firearms
+      - value: 81
+        description: Search and testing for pornographic material
+      - value: 82
+        description: Search and testing for incendiary devices
+      - value: 83
+        description: Search and testing for other
+      - value: 84
+        description: No pornographic material
+      - value: 85
+        description: Not to own a computer
+      - value: 86
+        description: Not to have internet access
+      - value: 87
+        description: Counseling - substance abuse (in patient)
+      - value: 88
+        description: Counseling - substance abuse (out patient)
+      - value: 89
+        description: Counseling - psychological
+      - value: 90
+        description: Counseling - domestic abuse
+      - value: 91
+        description: Counseling - batterer’ intervention program
+      - value: 92
+        description: Counseling - sexual abuse
+      - value: 93
+        description: Counseling - sexual offender
+      - value: 94
+        description: Counseling - anger management
+      - value: 95
+        description: Counseling - to the satisfaction of probation
+      - value: 96
+        description: Evaluation - substance abuse
+      - value: 97
+        description: Evaluation - anger management
+      - value: 98
+        description: Evaluation - psychological
+      - value: 99
+        description: Evaluation - sex offender
+      - value: 100
+        description: Evaluation - other
+      - value: 101
+        description: Medical Treatment - (in patient)
+      - value: 102
+        description: Medical Treatment - (outpatient)
+      - value: 103
+        description: Psychiatric Treatment – (in patient)
+      - value: 104
+        description: Psychiatric Treatment – (out patient)
+      - value: 105
+        description: Not to operate any motor vehicle
+      - value: 106
+        description: Not to operate any motor vehicle unless properly licensed
+      - value: 107
+        description: Not to own/possess any firearms or dangerous weapons
+      - value: 108
+        description: No contact with children (specify)
+      - value: 109
+        description: No contact of any kind (specify)
+      - value: 110
+        description: Not to return to (specific address or area)
+      - value: 111
+        description: No association with other probationers
+      - value: 112
+        description: No association with other DOC clients
+      - value: 113
+        description: Community Service Work
+      - value: 114
+        description: Not to be in any establishment that serves liquor
+      - value: 115
+        description: Satisfy sex offender registry requirements and notification act
+      - value: 116
+        description: Support Dependents
+      - value: 117
+        description: Pursue G.E.D.
+      - value: 118
+        description: Take prescribed medication
+      - value: 119
+        description: Follow all DHHS recommendations
+      - value: 120
+        description: Follow all B.D.S. recommendations
+      - value: 121
+        description: Abide by protective order
+      - value: 122
+        description: Parenting education classes
+      - value: 123
+        description: Curfew
+      - value: 124
+        description: Sign all releases
+      - value: 125
+        description: Other
+      - value: 126
+        description: Participate in program (specify)
+      - value: 127
+        description: Reside and abide by placement (specify)
+      - value: 128
+        description: Letter of apology
+      - value: 129
+        description: Complete a report/project (specify)
+      - value: 130
+        description: Keep a Drug Log
+      - value: 131
+        description: Not to possess or use hypodermic needles
+      - value: 132
+        description: Restricted to single pharmacy
+      - value: 133
+        description: Restricted to single primary doctor
+      - value: 134
+        description: Submit to DNA Sample if required by Sentence
+      - value: 135
+        description: Search and testing for drugs/alcohol/any illegal items.
+      - value: 136
+        description: No firearms or dangerous weapons.
+      - value: 137
+        description: No operation or purchase of a motor vehicle written permission of JCCO.
+      - value: 138
+        description: Not to incur debt without first obtaining written permission of JCCO.
+      - value: 139
+        description: Seek and maintain employment.
+      - value: 140
+        description: Attend educational/vocational program as directed.
+      - value: 141
+        description: No use or possession of illegal drugs or alcohol.
+      - value: 142
+        description: Judicial Monitoring
+      - value: 143
+        description: Report prescribed medications to PPO
+      - value: 144
+        description: No use / possession of incendiary devices
+      - value: 145
+        description: Counseling - Substance Abuse
+      - value: 146
+        description: Search and test for alcohol and drugs
+      - value: 147
+        description: Search and test for alcohol, drugs, firearms, weapons
+      - value: 148
+        description: Search for tobacco
+      - value: 149
+        description: Abide by protective order
+      - value: 150
+        description: Add Standard Probation Conditions
+      - value: 151
+        description: Add Standard SCCP Conditions
+      - value: 152
+        description: Add Standard CRI Conditions
+      - value: 153
+        description: Pharmacy Conditions
+      - value: 154
+        description: Comply With Detention Response
+      - value: 155
+        description: Not to own or possess motor vehicle keys
+      - value: 156
+        description: Not to own or possess any firearms
+      - value: 157
+        description: Not to own or possess any dangerous weapons
+      - value: 158
+        description: Appear in court on the date and time I am notified to appear.
+      - value: 159
+        description: Identify myself as being on deferred disposition if arrested or questioned by law enforcement and notify the District Attorney's Office in writing of any contact with law enforcement within 96 hours of the contact.
+      - value: 160
+        description: Advise the court named above and the District Attorney's Office in writing of any change in my address or telephone number within 24 hours of the change.
+      - value: 161
+        description: Pay an administrative supervision fee.
+      - value: 162
+        description: Pay OOS supervision fee
+      - value: 163
+        description: No Alcohol Restrictions
+      - value: 164
+        description: Not to possess marijuana
+      - value: 165
+        description: Marijuana not to excess
+      - value: 166
+        description: Search and testing for marijuana
+      - value: 167
+        description: No excessive use of alcohol
+      - value: 168
+        description: Counseling - Mental Health
+  - name : Juvenile_Ind
+  - name : Logical_Delete_Ind
+  - name : Modified_By_Tx
+  - name : Modified_On_Date
+  - name : Standard_Ind
+  - name : Sys_Row_Ind
+  - name : System_Ref_Comments_Tx
+  - name : System_Ref_Tx
+  - name : Web_Include_Ind
+  - name : Condition_Type_Cd
+    description: The primary key for this table.

@@ -1,0 +1,17 @@
+file_tag: CIS_465_INCIDENT_REASON
+file_description: |-
+  This table lists the type of incident for incidents in the CIS_460_INCIDENTS table.
+primary_key_cols:
+  - Inc_Cd_Rsn_Id
+columns:
+  - name : Cis_460_Incident_Id
+    description: The incident ID associated with this row.
+  - name : Cis_460_Year_Id
+  - name : Cis_9909_Code_Type_Cd
+  - name : Created_By_Tx
+  - name : Created_On_Date
+  - name : Inc_Cd_Rsn_Id
+    description: The primary key for this table.
+  - name : Logical_Delete_Ind
+  - name : Modified_By_Tx
+  - name : Modified_On_Date

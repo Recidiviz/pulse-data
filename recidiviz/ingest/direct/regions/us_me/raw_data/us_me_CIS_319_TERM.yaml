@@ -14,6 +14,8 @@ columns:
     description: |-
       The unique identifier for all clients in the offender management system.
   - name : Cis_1200_Term_Status_Cd
+    description: |-
+      Lists whether the status is Active (1) or Complete (2).
   - name : Comm_Rel_Date
     description: |-
       The date that probation is expected to end.
@@ -30,6 +32,8 @@ columns:
     description: |-
       The earliest release date from incarceration with all earned/good time credits applied.
   - name : Intake_Date
+    description: |-
+      The date the person entered a DOC facility.
   - name : Max_Cust_Rel_Date
     description: |-
       The max release date from incarceration.

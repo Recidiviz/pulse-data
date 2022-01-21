@@ -1,0 +1,39 @@
+file_tag: CIS_2150_SEX_OFF_ASSESS_TYPE
+file_description: |-
+  The code table mapping the type of assessment for sex offense cases.
+primary_key_cols:
+  - Sex_Off_Assess_Type_Cd
+columns:
+  - name : Adult_Ind
+  - name : Created_By_Tx
+  - name : Created_On_Date
+  - name : Juvenile_Ind
+  - name : Logical_Delete_Ind
+  - name : Modified_By_Tx
+  - name : Modified_On_Date
+  - name : Sex_Off_Assess_Type_Desc
+    description: The name of the assessment.
+  - name : Sys_Row_Ind
+  - name : System_Ref_Comments_Tx
+  - name : System_Ref_Tx
+  - name : Sex_Off_Assess_Type_Cd
+    description: The primary key for this table.
+    known_values:
+      - value: 1
+        description: Static 99
+      - value: 2
+        description: J-SOAP II
+      - value: 3
+        description: Exempt
+      - value: 4
+        description: Static 99 R
+      - value: 5
+        description: ODARA - Domestic Violence
+      - value: 6
+        description: SPIN-W - Women assessment
+      - value: 7
+        description: SOTIPS
+      - value: 8
+        description: OYAS
+      - value: 9
+        description: STABLE

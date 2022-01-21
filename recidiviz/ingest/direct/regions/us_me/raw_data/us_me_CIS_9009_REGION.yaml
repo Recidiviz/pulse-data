@@ -1,11 +1,13 @@
 file_tag: CIS_9009_REGION
 file_description: |-
-  TODO(#10017): Fill in raw data descriptions
-primary_key_cols: []
+  This table has all of the region codes and their names.
+primary_key_cols:
+  - Region_Cd
 columns:
   - name : Created_By_Tx
   - name : Created_On_Date
   - name : E_Region_Desc
+    description: The name of the region.
   - name : Logical_Delete_Ind
   - name : Medicaid_Provider_Num
   - name : Modified_By_Tx
@@ -13,3 +15,15 @@ columns:
   - name : System_Ref_Comments_Tx
   - name : System_Ref_Tx
   - name : Region_Cd
+    description: The primary key for this table and the region code referenced in other raw tables.
+    known_values:
+      - value: 1
+        description: Region 1 Portland
+      - value: 2
+        description: Region 2 Auburn
+      - value: 3
+        description: Region 3 Bangor
+      - value: 4
+        description: Region 4
+      - value: 5
+        description: Central Office

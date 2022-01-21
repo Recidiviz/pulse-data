@@ -1,14 +1,17 @@
 file_tag: CIS_9907_CODES
 file_description: |-
-  TODO(#9296): Add raw data descriptions
-primary_key_cols: []
+  This is a code table that includes codes found in other raw tables.
+primary_key_cols:
+  - Code_Cd
 columns:
   - name : Adult_Ind
   - name : Cis_9906_Subtype_Cd
   - name : Code_Cd
+    description: The primary key
   - name : Created_By_Tx
   - name : Created_On_Date
   - name : E_Code_Desc
+    description: The description that maps to the code.
   - name : Juvenile_Ind
   - name : Logical_Delete_Ind
   - name : Modified_By_Tx

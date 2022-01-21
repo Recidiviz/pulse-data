@@ -1,0 +1,38 @@
+file_tag: CIS_215_SEX_OFFENDER_ASSESS
+file_description: |-
+  This table lists sex offense assessment results for a client.
+primary_key_cols:
+  - Sex_Offender_Assess_Id
+columns:
+  - name : Assessment_Date
+    description: The date the assessment was completed.
+    is_datetime: True
+  - name : Assessment_Notes_Tx
+    description: Notes about the assessment, usually entered by the supervising officer.
+  - name : Assessment_Score_Num
+    description: A numeric score for the assessment.
+  - name : Cis_100_Client_Id
+    description: The client ID that completed the assessment.
+  - name : Cis_1161_Lsi_Effct_Date
+    description: The date the LSI rating went into effect, is either NULL or matches the date in Cis_1161_Lsi_Effct_Over_Date. This date matches what is in the `Lsi_Effct_Date` column in the CIS_1161_LSI_RATING table.
+    is_datetime: True
+  - name : Cis_1161_Lsi_Effct_Over_Date
+    description: The date the LSI rating went into effect, is either NULL or matches the date in Cis_1161_Lsi_Effct_Date. This date matches what is in the `Lsi_Effct_Date` column in the CIS_1161_LSI_RATING table.
+    is_datetime: True
+  - name : Cis_1161_Lsi_Rating_Cd
+    description: The LSI rating result for this client. See CIS_1161_LSI_RATING for all possible values.
+  - name : Cis_1161_Lsi_Rating_Over_Cd
+    description: The overridden LSI rating result for this client. See CIS_1161_LSI_RATING for all possible values.
+  - name : Cis_2150_Assess_Type_Cd
+    description: The type of assessment used for this client, this includes all kinds of assessments, not only those regarding sex offense cases. See CIS_2150_SEX_OFF_ASSESS_TYPEd for all possible values.
+  - name : Cis_900_Employee_Id
+    description: The employee who last modified this row.
+  - name : Created_By_Tx
+  - name : Created_On_Date
+  - name : Modified_By_Tx
+  - name : Modified_On_Date
+  - name : Notes_Tx
+    description: Additional notes about this assessment.
+  - name : Override_Ind
+  - name : Sex_Offender_Assess_Id
+    description: The primary key for this table.

@@ -3,194 +3,324 @@ file_description: |-
   This table includes information related to the client's sentence and is related to the CIS_319_TERM table.
   A term can have many sentences. The CIS_401_CRT_ORDER_HDR table is updated to include days earned or lost
   by time spent at the county jail awaiting sentencing, which then affects the early and current expected release dates
-  on the term.
+  on the term. This table also joins to the CIS_409_CRT_ORDER_CNDTION_HDR table and links a client to the conditions 
+  imposed on their supervision sentence. The conditions are found in the CIS_403_CONDITION table.
 primary_key_cols:
-  - Cis_401_Court_Order_Id
+  - Court_Order_Id
 columns:
-  - name : Adj_Days_Earned_Num
-  - name : Adj_Days_Lost_Num
-  - name : Adj_Days_Restored_Num
-  - name : Amended_Comments_Tx
-  - name : Amended_Date
-  - name : Apply_Det_Days_Ind
-  - name : Cis_319_Term_Id
+  - name: Adj_Days_Earned_Num
+    description: Good time days earned, for example by going to work or attending programs.
+  - name: Adj_Days_Lost_Num
+    description: Good time days lost as a displinary decision.
+  - name: Adj_Days_Restored_Num
+    description: Good time days restored from the Adj_Days_Lost_Num.
+  - name: Amended_Comments_Tx
+  - name: Amended_Date
+  - name: Apply_Det_Days_Ind
+  - name: Cis_319_Term_Id
     description: |-
       Foreign-key association to the CIS_319_TERM table.
-  - name : Cis_400_Charge_Id
+  - name: Cis_400_Charge_Id
     description: |-
       Foreign-key association to the CIS_400_CHARGE table.
-  - name : Cis_400_Cis_100_Client_Id
+  - name: Cis_400_Cis_100_Client_Id
     description: |-
-      The unique MEDOC client ID that is associated with this sentence information.
-  - name : Cis_4003_Offence_Type_Cd
-  - name : Cis_4009_Comm_Override_Rsn_Cd
+      The unique MEDOC client ID that is associated with this sentence information, associated with the CIS_100_CLIENT table.
+  - name: Cis_4003_Offence_Type_Cd
+    description: |-
+      This code maps to an offense type that is listed in the CIS_4003_OFFENCE_TYPE table. There are over 10k possible offense types listed.
+  - name: Cis_4009_Comm_Override_Rsn_Cd
     description: |-
       This is a Community Override Reason code that describes why a probation was ended early.
     known_values:
-      - value: '78'
-        description: "Interstate Compact"
-      - value: '79'
-        description: "Vacated Sentence"
-      - value: '80'
-        description: "Parole Board Decision"
-      - value: '81'
-        description: "Pre 1983 Code"
-      - value: '82'
-        description: "Commutation/Pardon"
-      - value: '83'
-        description: "Deceased"
-      - value: '118'
-        description: "Full Revocation"
-      - value: '119'
-        description: "Early Termination"
-      - value: '120'
-        description: "Partial Revocation - Terminate"
-      - value: '131'
-        description: "Migration"
-  - name : Cis_4009_Cons_Conc_Cd
-  - name : Cis_4009_Cust_Override_Rsn_Cd
+      - value: 118
+        description: Full Revocation
+      - value: 119
+        description: Early Termination
+      - value: 120
+        description: Partial Revocation - Terminate
+      - value: 131
+        description: Migration
+      - value: 78
+        description: Interstate Compact
+      - value: 79
+        description: Vacated Sentence
+      - value: 80
+        description: Parole Board Decision
+      - value: 81
+        description: Pre 1983 Code
+      - value: 82
+        description: Commutation/Pardon
+      - value: 83
+        description: Deceased
+  - name: Cis_4009_Cons_Conc_Cd
+    description: This identifies whether the sentence is concurrent, non-concurrent or consecutive.
+    known_values:
+      - value: 20
+        description: Concurrent
+      - value: 21
+        description: Non-Concurrent
+      - value: 22
+        description: Consecutive
+  - name: Cis_4009_Cust_Override_Rsn_Cd
     description: |-
       This is a Custody Override Reason code that describes why an incarceration sentence was ended early. The values
       chosen for this field seem to be unreliable, and most of the time "Other" is chosen and a note is added to the
       "Cust_Override_Notes_Tx" field.
     known_values:
-      - value: '74'
-        description: "InterState Compact (IN)"
-      - value: '75'
-        description: "Early Termination"
-      - value: '76'
-        description: "Parole"
-      - value: '77'
-        description: "Deceased"
-      - value: '109'
-        description: "Vacated"
-      - value: '117'
-        description: "Pre 1983 Code"
-      - value: '121'
-        description: "County Jail"
-      - value: '130'
-        description: "Migration"
-      - value: '132'
-        description: "Holiday Release"
-      - value: '133'
-        description: "Other"
-  - name : Cis_4009_Sex_Offense_Cd
-  - name : Cis_4009_Trial_Type_Cd
-  - name : Cis_401_Court_Order_Id
-    description: |-
-      Primary key field
-  - name : Cis_4010_Crt_Order_Status_Cd
+      - value: 109
+        description: Vacated
+      - value: 117
+        description: Pre 1983 Code
+      - value: 121
+        description: County Jail
+      - value: 130
+        description: Migration
+      - value: 132
+        description: Holiday Release
+      - value: 133
+        description: Other
+      - value: 74
+        description: InterState Compact (IN)
+      - value: 75
+        description: Early Termination
+      - value: 76
+        description: Parole
+      - value: 77
+        description: Deceased
+  - name: Cis_4009_Sex_Offense_Cd
+    description: This code identifies a sex offense category for the sentence.
+    known_values:
+      - value: 23
+        description: 10 year Registrant
+      - value: 24
+        description: Lifetime Registrant
+      - value: 137
+        description: Sex Offender
+  - name: Cis_4009_Trial_Type_Cd
+    description: This code describes the trial type.
+    known_values:
+      - value: 123
+        description: Revocation of Probation
+      - value: 124
+        description: Probation Violations
+      - value: 125
+        description: Violation of ISP
+      - value: 126
+        description: Violation of Condition
+      - value: 127
+        description: Jury Trial
+      - value: 128
+        description: Waived Jury Trial
+      - value: 129
+        description: Plea Bargain
+  - name: Cis_401_Court_Order_Id
+    description: This field is not a unique ID and refers to a Court_Id value in the same table. There's one row per charge within a single court order date.
+  - name: Cis_4010_Crt_Order_Status_Cd
     description: |-
       Current status of the court order
     known_values:
-      - value: '1'
+      - value: 1
         description: Pending - The court order is still in progress
-      - value: '2'
-        description: Committed - The incarceration sentence has started
-      - value: '3'
-        description: Complete - The sentence as ended
-      - value: '4'
-        description: Probation - The probation sentence has started
-      - value: '7'
-        description: Tolled - The client is in a violation period and awaiting an outcome decision
-      - value: '11'
+      - value: 11
         description: Court Sanction - Client does not have a term to serve but has restitution fines due
-  - name : Cis_4012_Crt_Order_Type_Cd
-  - name : Cis_4020_Offns_Class_Cd
-  - name : Cis_404_Docket_Id
-  - name : Cis_9003_Cnty_Jail_Snt_Cd
-  - name : Cis_908_Ccs_Location_Id
-  - name : Cis_9902_Court_Cd
-  - name : Cis_9904_Judge_Prof_Id
-  - name : Cis_9910_Def_Att_Id
-  - name : Cis_9910_Pros_Att_Id
-  - name : Comm_Override_Notes_Tx
+      - value: 2
+        description: Committed - The incarceration sentence has started
+      - value: 3
+        description: Complete - The sentence as ended
+      - value: 4
+        description: Probation - The probation sentence has started
+      - value: 7
+        description: Tolled - The client is in a violation period and awaiting an outcome decision
+  - name: Cis_4012_Crt_Order_Type_Cd
+    description: The court order type description.
+    known_values:
+      - value: 1
+        description: Disposition
+      - value: 2
+        description: Pre Disposition
+      - value: 3
+        description: Re Disposition
+  - name: Cis_4020_Offns_Class_Cd
+    description: The class associated with the offense type.
+    known_values:
+      - value: A
+        description: Class A
+      - value: B
+        description: Class B
+      - value: C
+        description: Class C
+      - value: D
+        description: Class D (Includes Criminal Contempt)
+      - value: E
+        description: Class E
+      - value: F
+        description: Class F (Unclassified Felonies)
+      - value: M
+        description: Class M (Murder)
+      - value: T
+        description: Class T
+      - value: U
+        description: Class U (Unclassified Misdemeanors)
+      - value: V
+        description: Class V (Civil Violation)
+      - value: X
+        description: Migration - class unknown in source
+      - value: Z
+        description: Migration - class invalid in source
+  - name: Cis_404_Docket_Id
+  - name: Cis_9003_Cnty_Jail_Snt_Cd
+    description: This is the county jail where the person may be awaiting court decisions.
+    known_values:
+      - value: 1
+        description: Androscoggin
+      - value: 3
+        description: Aroostook
+      - value: 5
+        description: Cumberland
+      - value: 7
+        description: Franklin
+      - value: 9
+        description: Hancock
+      - value: 11
+        description: Kennebec
+      - value: 13
+        description: Knox
+      - value: 15
+        description: Lincoln
+      - value: 17
+        description: Oxford
+      - value: 19
+        description: Penobscot
+      - value: 21
+        description: Piscataquis
+      - value: 23
+        description: Sagadahoc
+      - value: 25
+        description: Somerset
+      - value: 27
+        description: Waldo
+      - value: 29
+        description: Washington
+      - value: 31
+        description: York
+  - name: Cis_908_Ccs_Location_Id
+  - name: Cis_9902_Court_Cd
+    description: The court where the order originated from, see CIS_9902_COURT for all possible values.
+  - name: Cis_9904_Judge_Prof_Id
+  - name: Cis_9910_Def_Att_Id
+  - name: Cis_9910_Pros_Att_Id
+  - name: Comm_Override_Notes_Tx
     description: |-
       Additional information about the community override code
-  - name : Comm_Override_Rel_Date
-  - name : Comm_Override_Rel_Ind
-  - name : Comm_Rel_Date
-  - name : Comments_Tx
-  - name : Count_Num
-  - name : Court_Finding_Date
-  - name : Court_Order_Date
-  - name : Court_Order_Id
-  - name : Court_Order_Sent_Date
-  - name : Created_By_Tx
-  - name : Created_On_Date
-  - name : Csw_Comments_Tx
-  - name : Csw_Due_Date
-  - name : Csw_Hours_Num
-  - name : Csw_Sus_Hours_Num
-  - name : Csw_Total_Hours_Num
-  - name : Curr_Cust_Rel_Date
-  - name : Cust_Override_Notes_Tx
+  - name: Comm_Override_Rel_Date
+    description: The overridden release date for a community supervision status. Updates to this date are also reflected in the CIS_319_TERM table.
+    is_datetime: True
+  - name: Comm_Override_Rel_Ind
+  - name: Comm_Rel_Date
+    description: The original release date for a community supervision status.
+    is_datetime: True
+  - name: Comments_Tx
+  - name: Count_Num
+  - name: Court_Finding_Date
+  - name: Court_Order_Date
+  - name: Court_Order_Id
+    description: Primary key field
+  - name: Court_Order_Sent_Date
+    description: The date the court sentence was created.
+    is_datetime: True
+  - name: Created_By_Tx
+  - name: Created_On_Date
+  - name: Csw_Comments_Tx
+  - name: Csw_Due_Date
+  - name: Csw_Hours_Num
+  - name: Csw_Sus_Hours_Num
+  - name: Csw_Total_Hours_Num
+  - name: Curr_Cust_Rel_Date
+    description: The most current custody release date, with adjusted good time factored in.
+    is_datetime: True
+  - name: Cust_Override_Notes_Tx
     description: |-
-      Additional information about the community override code
-  - name : Cust_Override_Rel_Date
-  - name : Cust_Override_Rel_Ind
-  - name : Days_Earned_Num
-  - name : Days_Lost_Num
-  - name : Days_Served_Det_Num
-  - name : Days_Served_Num
-  - name : Detention_Conduct_Days_Num
-  - name : Detention_Days_Num
-  - name : Dhs_Cust_Age_Num
-  - name : Domestic_Violence_Ind
-  - name : Early_Cust_Rel_Date
-  - name : Est_Sent_Start_Date
-  - name : Fine_Amount_Num
-  - name : Fine_Comments_Tx
-  - name : Fine_Due_Date
-  - name : Fine_Paid_Date
-  - name : Fine_Paid_Ind
-  - name : Fine_Paid_Not_By_Tx
-  - name : Fine_Pmt_Schd_Tx
-  - name : Fine_Sus_Amount_Num
-  - name : Fine_Total_Amount_Num
-  - name : Guardian_Tx
-  - name : Life_Ind
-  - name : Max_Cust_Rel_Date
-  - name : Modified_By_Tx
-  - name : Modified_On_Date
-  - name : Other_Court_Desc_Tx
-  - name : Pre_Disp_Crt_App_Date
-  - name : Pre_Sent_Rpt_Ord_Date
-  - name : Pre_Sent_Rpt_Sub_Date
-  - name : Prob_Consecutive_Ind
-  - name : Prob_Days_Num
-  - name : Prob_Mths_Num
-  - name : Prob_Start_Date
-  - name : Prob_Yrs_Num
-  - name : Probation_Term_Ind
-  - name : Process_Adjustment_Ind
-  - name : Resentence_Comments_Tx
-  - name : Resentence_Ind
-  - name : Rest_Amount_Num
-  - name : Rest_Comments_Tx
-  - name : Rest_Cond_Prob_Ind
-  - name : Rest_Due_Date
-  - name : Rest_Paid_Date
-  - name : Rest_Paid_Ind
-  - name : Rest_Paid_Not_By_Tx
-  - name : Rest_Pmt_Schd_Tx
-  - name : Revocation_Age_Num
-  - name : Revocation_Days_Num
-  - name : Revocation_Mths_Num
-  - name : Revocation_Yrs_Num
-  - name : Serve_Days_Num
-  - name : Serve_Mths_Num
-  - name : Serve_Yrs_Num
-  - name : Shock_Prob_Days_Num
-  - name : Shock_Prob_Mths_Num
-  - name : Shock_Prob_Yrs_Num
-  - name : Shock_Serve_Days_Num
-  - name : Shock_Stc_Days_Num
-  - name : Statute_Num
-  - name : Stayed_Ind
-  - name : Stc_Days_Num
-  - name : Stc_Mths_Num
-  - name : Stc_To_Age_Num
-  - name : Stc_Yrs_Num
-  - name : Victim_Comp_Fee_Num
-  - name : Weekend_Holiday_Ind
+      Additional information about the custody override code
+  - name: Cust_Override_Rel_Date
+    description: The overridden release date for a release from custody. Updates to this date are also reflected in the CIS_319_TERM table.
+    is_datetime: True
+  - name: Cust_Override_Rel_Ind
+  - name: Days_Earned_Num
+  - name: Days_Lost_Num
+  - name: Days_Served_Det_Num
+  - name: Days_Served_Num
+  - name: Detention_Conduct_Days_Num
+  - name: Detention_Days_Num
+  - name: Dhs_Cust_Age_Num
+  - name: Domestic_Violence_Ind
+  - name: Early_Cust_Rel_Date
+    description: The earliest possible custody release date.
+    is_datetime: True
+  - name: Est_Sent_Start_Date
+    description: The estimated start date for the sentence.
+    is_datetime: True
+  - name: Fine_Amount_Num
+  - name: Fine_Comments_Tx
+  - name: Fine_Due_Date
+  - name: Fine_Paid_Date
+  - name: Fine_Paid_Ind
+  - name: Fine_Paid_Not_By_Tx
+  - name: Fine_Pmt_Schd_Tx
+  - name: Fine_Sus_Amount_Num
+  - name: Fine_Total_Amount_Num
+  - name: Guardian_Tx
+  - name: Life_Ind
+    description: Whether the sentence was a life sentence.
+  - name: Max_Cust_Rel_Date
+    description: The max date for release from custody.
+    is_datetime: True
+  - name: Modified_By_Tx
+  - name: Modified_On_Date
+  - name: Other_Court_Desc_Tx
+  - name: Pre_Disp_Crt_App_Date
+  - name: Pre_Sent_Rpt_Ord_Date
+  - name: Pre_Sent_Rpt_Sub_Date
+  - name: Prob_Consecutive_Ind
+  - name: Prob_Days_Num
+    description: The number of days in the probation sentence.
+  - name: Prob_Mths_Num
+    description: The number of months in the probation sentence.
+  - name: Prob_Start_Date
+  - name: Prob_Yrs_Num
+    description: The number of years in the probation sentence.
+  - name: Probation_Term_Ind
+  - name: Process_Adjustment_Ind
+  - name: Resentence_Comments_Tx
+  - name: Resentence_Ind
+  - name: Rest_Amount_Num
+  - name: Rest_Comments_Tx
+  - name: Rest_Cond_Prob_Ind
+  - name: Rest_Due_Date
+  - name: Rest_Paid_Date
+  - name: Rest_Paid_Ind
+  - name: Rest_Paid_Not_By_Tx
+  - name: Rest_Pmt_Schd_Tx
+  - name: Revocation_Age_Num
+  - name: Revocation_Days_Num
+    description: The number of days in the revocation sentence.
+  - name: Revocation_Mths_Num
+    description: The number of months in the revocation sentence.
+  - name: Revocation_Yrs_Num
+    description: The number of years in the revocation sentence.
+  - name: Serve_Days_Num
+  - name: Serve_Mths_Num
+  - name: Serve_Yrs_Num
+  - name: Shock_Prob_Days_Num
+  - name: Shock_Prob_Mths_Num
+  - name: Shock_Prob_Yrs_Num
+  - name: Shock_Serve_Days_Num
+  - name: Shock_Stc_Days_Num
+  - name: Statute_Num
+  - name: Stayed_Ind
+  - name: Stc_Days_Num
+  - name: Stc_Mths_Num
+  - name: Stc_To_Age_Num
+  - name: Stc_Yrs_Num
+  - name: Victim_Comp_Fee_Num
+  - name: Weekend_Holiday_Ind

@@ -1,0 +1,36 @@
+file_tag: CIS_4305_RECOMMENDATION_ACTION
+file_description: |-
+  The code table that maps to the recommended actions for assessment results.
+primary_key_cols:
+  - Recommendation_Action_Cd
+columns:
+  - name : Cis_4035_Assess_Prog_Type_Cd
+    description: The assessment program type associated with this recommended action. See CIS_4035_ASSESS_PROG_TYPE for all values.
+  - name : Created_By_Tx
+  - name : Created_On_Date
+  - name : Logical_Delete_Ind
+  - name : Modified_By_Tx
+  - name : Modified_On_Date
+  - name : Recommendation_Action_Desc
+    description: The description of the recommended action.
+  - name : System_Ref_Comments_Tx
+  - name : System_Ref_Tx
+  - name : Recommendation_Action_Cd
+    description: The primary key for this table.
+    known_values:
+      - value: 1
+        description: No further action required
+      - value: 2
+        description: Residential Sub Abuse Treatment waitlist
+      - value: 3
+        description: Outpatient Sub Abuse Treatment wait list
+      - value: 4
+        description: Appropriate for therapeutic community
+      - value: 5
+        description: Appropriate for outpatient sub abuse treatment
+      - value: 6
+        description: Not appropriate for therapeutic community, recommend outpatient
+      - value: 7
+        description: Not appropriate for outpatient recommend therapeutic community
+      - value: 8
+        description: Appropriate for individual sub abuse treatment

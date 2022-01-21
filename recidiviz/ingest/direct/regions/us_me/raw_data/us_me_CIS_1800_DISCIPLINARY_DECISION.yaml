@@ -1,0 +1,24 @@
+file_tag: CIS_1800_DISCIPLINARY_DECISION
+file_description: |-
+  This lists the descriptions for disciplinary decisions related to violations or incidents.
+primary_key_cols:
+  - Disciplinary_Decision_Cd
+columns:
+  - name : Created_By_Tx
+  - name : Created_On_Date
+  - name : E_Disciplinary_Decision_Desc
+    description: The description that maps to the code in the table.
+  - name : Logical_Delete_Ind
+  - name : Modified_By_Tx
+  - name : Modified_On_Date
+  - name : Disciplinary_Decision_Cd
+    description: The primary key for the table.
+    known_values:
+      - value: 1
+        description: Dismissed
+      - value: 2
+        description: Attempt Informal
+      - value: 3
+        description: Referred for Further Investigation
+      - value: 4
+        description: Referred for Hearing

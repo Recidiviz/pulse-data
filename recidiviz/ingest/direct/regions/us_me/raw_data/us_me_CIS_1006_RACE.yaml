@@ -1,15 +1,18 @@
 file_tag: CIS_1006_RACE
 file_description: |-
-  TODO(#9296): Add raw data descriptions
-primary_key_cols: []
+  The code table that maps the race CD value to a text description.
+primary_key_cols:
+  - Race_Cd
 columns:
-  - name : Created_By_Tx
-  - name : Created_On_Date
-  - name : E_Race_Desc
-  - name : Logical_Delete_Ind
-  - name : Modified_By_Tx
-  - name : Modified_On_Date
-  - name : Ncic_Code_Tx
-  - name : System_Ref_Comments_Tx
-  - name : System_Ref_Tx
-  - name : Race_Cd
+  - name: Created_By_Tx
+  - name: Created_On_Date
+  - name: E_Race_Desc
+    description: The text description of the race.
+  - name: Logical_Delete_Ind
+  - name: Modified_By_Tx
+  - name: Modified_On_Date
+  - name: Ncic_Code_Tx
+  - name: System_Ref_Comments_Tx
+  - name: System_Ref_Tx
+  - name: Race_Cd
+    description: The primary key of the table and the code used in other raw tables.
