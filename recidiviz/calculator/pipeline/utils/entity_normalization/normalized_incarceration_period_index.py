@@ -362,13 +362,20 @@ class NormalizedIncarcerationPeriodIndex:
     ip_id_to_index: Dict[int, int] = attr.ib()
 
     @ip_id_to_index.default
-    def _ip_id_to_index(self):
+    def _ip_id_to_index(self) -> Dict[int, int]:
         """Maps the incarceration_period_id of each incarceration period in the index to
         the location of the period in the index."""
-        ip_id_to_index = {
-            ip.incarceration_period_id: index
-            for index, ip in enumerate(self.incarceration_periods)
-        }
+        ip_id_to_index: Dict[int, int] = {}
+
+        for index, ip in enumerate(self.incarceration_periods):
+            if not ip.incarceration_period_id:
+                raise ValueError(
+                    "Found incarceration period without a set "
+                    f"incarceration_period_id: {ip}."
+                )
+
+            ip_id_to_index[ip.incarceration_period_id] = index
+
         return ip_id_to_index
 
     # A dictionary mapping incarceration_period_id values to the location of the most
@@ -376,11 +383,11 @@ class NormalizedIncarcerationPeriodIndex:
     ip_index_to_most_recent_board_hold_index: Dict[int, Optional[int]] = attr.ib()
 
     @ip_index_to_most_recent_board_hold_index.default
-    def _ip_index_to_most_recent_board_hold_index(self):
+    def _ip_index_to_most_recent_board_hold_index(self) -> Dict[int, Optional[int]]:
         """Maps the incarceration_period_id of each incarceration period in the index to
         the location of the most recent parole board period in the index, if one exists.
         """
-        ip_index_to_most_recent_board_hold_index = {}
+        ip_index_to_most_recent_board_hold_index: Dict[int, Optional[int]] = {}
 
         most_recent_board_hold_index = None
 
