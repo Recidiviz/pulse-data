@@ -39,9 +39,9 @@ from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
     StateSupervisionPeriod,
 )
-from recidiviz.tests.calculator.pipeline.pre_processing_testing_utils import (
-    default_pre_processed_ip_index_for_tests,
-    default_pre_processed_sp_index_for_tests,
+from recidiviz.tests.calculator.pipeline.utils.entity_normalization.normalization_testing_utils import (
+    default_normalized_ip_index_for_tests,
+    default_normalized_sp_index_for_tests,
 )
 
 
@@ -68,10 +68,10 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         return _get_commitment_from_supervision_supervision_period(
             incarceration_period=ip,
             commitment_from_supervision_delegate=UsIdCommitmentFromSupervisionDelegate(),
-            supervision_period_index=default_pre_processed_sp_index_for_tests(
+            supervision_period_index=default_normalized_sp_index_for_tests(
                 supervision_periods=supervision_periods
             ),
-            incarceration_period_index=default_pre_processed_ip_index_for_tests(
+            incarceration_period_index=default_normalized_ip_index_for_tests(
                 incarceration_periods=incarceration_periods,
                 transfers_are_collapsed=True,
                 incarceration_delegate=UsIdIncarcerationDelegate(),

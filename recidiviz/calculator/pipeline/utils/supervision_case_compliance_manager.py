@@ -31,8 +31,8 @@ from recidiviz.calculator.pipeline.supervision.supervision_case_compliance impor
 from recidiviz.calculator.pipeline.utils.assessment_utils import (
     find_most_recent_applicable_assessment_of_class_for_state,
 )
-from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
-    PreProcessedIncarcerationPeriodIndex,
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_incarceration_period_index import (
+    NormalizedIncarcerationPeriodIndex,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_delegate import (
     StateSpecificSupervisionDelegate,
@@ -73,7 +73,7 @@ class StateSupervisionCaseComplianceManager:
         supervision_contacts: List[StateSupervisionContact],
         violation_responses: List[StateSupervisionViolationResponse],
         incarceration_sentences: List[StateIncarcerationSentence],
-        incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
+        incarceration_period_index: NormalizedIncarcerationPeriodIndex,
         supervision_delegate: StateSpecificSupervisionDelegate,
     ):
         self.person = person

@@ -36,17 +36,17 @@ from recidiviz.calculator.pipeline.utils.assessment_utils import (
 from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_incarceration_delegate import (
     UsXxIncarcerationDelegate,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_incarceration_period_pre_processing_delegate import (
-    UsXxIncarcerationPreProcessingDelegate,
+from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_incarceration_period_normalization_delegate import (
+    UsXxIncarcerationNormalizationDelegate,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_program_assignment_pre_processing_delegate import (
-    UsXxProgramAssignmentPreProcessingDelegate,
+from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_program_assignment_normalization_delegate import (
+    UsXxProgramAssignmentNormalizationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_supervision_delegate import (
     UsXxSupervisionDelegate,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_supervision_period_pre_processing_delegate import (
-    UsXxSupervisionPreProcessingDelegate,
+from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_supervision_period_normalization_delegate import (
+    UsXxSupervisionNormalizationDelegate,
 )
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType
 from recidiviz.common.constants.state.state_program_assignment import (
@@ -75,32 +75,32 @@ class TestFindProgramEvents(unittest.TestCase):
     """Tests the find_program_events function."""
 
     def setUp(self) -> None:
-        self.incarceration_pre_processing_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils"
-            ".get_state_specific_incarceration_period_pre_processing_delegate"
+        self.incarceration_normalization_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_utils"
+            ".get_state_specific_incarceration_period_normalization_delegate"
         )
-        self.mock_incarceration_pre_processing_delegate = (
-            self.incarceration_pre_processing_delegate_patcher.start()
+        self.mock_incarceration_normalization_delegate = (
+            self.incarceration_normalization_delegate_patcher.start()
         )
-        self.mock_incarceration_pre_processing_delegate.return_value = (
-            UsXxIncarcerationPreProcessingDelegate()
+        self.mock_incarceration_normalization_delegate.return_value = (
+            UsXxIncarcerationNormalizationDelegate()
         )
-        self.supervision_pre_processing_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils"
-            ".get_state_specific_supervision_period_pre_processing_delegate"
+        self.supervision_normalization_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_utils"
+            ".get_state_specific_supervision_period_normalization_delegate"
         )
-        self.mock_supervision_pre_processing_delegate = (
-            self.supervision_pre_processing_delegate_patcher.start()
+        self.mock_supervision_normalization_delegate = (
+            self.supervision_normalization_delegate_patcher.start()
         )
-        self.mock_supervision_pre_processing_delegate.return_value = (
-            UsXxSupervisionPreProcessingDelegate()
+        self.mock_supervision_normalization_delegate.return_value = (
+            UsXxSupervisionNormalizationDelegate()
         )
-        self.pre_processing_incarceration_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils"
+        self.normalization_incarceration_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_utils"
             ".get_state_specific_incarceration_delegate"
         )
         self.mock_incarceration_delegate = (
-            self.pre_processing_incarceration_delegate_patcher.start()
+            self.normalization_incarceration_delegate_patcher.start()
         )
         self.mock_incarceration_delegate.return_value = UsXxIncarcerationDelegate()
         self.supervision_delegate_patcher = mock.patch(
@@ -108,14 +108,14 @@ class TestFindProgramEvents(unittest.TestCase):
         )
         self.mock_supervision_delegate = self.supervision_delegate_patcher.start()
         self.mock_supervision_delegate.return_value = UsXxSupervisionDelegate()
-        self.pre_processing_program_assignment_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils.get_state_specific_program_assignment_pre_processing_delegate"
+        self.normalization_program_assignment_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_utils.get_state_specific_program_assignment_normalization_delegate"
         )
-        self.mock_program_assignment_pre_processing_delegate = (
-            self.pre_processing_program_assignment_delegate_patcher.start()
+        self.mock_program_assignment_normalization_delegate = (
+            self.normalization_program_assignment_delegate_patcher.start()
         )
-        self.mock_program_assignment_pre_processing_delegate.return_value = (
-            UsXxProgramAssignmentPreProcessingDelegate()
+        self.mock_program_assignment_normalization_delegate.return_value = (
+            UsXxProgramAssignmentNormalizationDelegate()
         )
         self.identifier = identifier.ProgramIdentifier()
 
@@ -123,11 +123,11 @@ class TestFindProgramEvents(unittest.TestCase):
         self._stop_state_specific_delegate_patchers()
 
     def _stop_state_specific_delegate_patchers(self) -> None:
-        self.incarceration_pre_processing_delegate_patcher.stop()
-        self.supervision_pre_processing_delegate_patcher.stop()
+        self.incarceration_normalization_delegate_patcher.stop()
+        self.supervision_normalization_delegate_patcher.stop()
         self.supervision_delegate_patcher.stop()
-        self.pre_processing_incarceration_delegate_patcher.stop()
-        self.pre_processing_program_assignment_delegate_patcher.stop()
+        self.normalization_incarceration_delegate_patcher.stop()
+        self.normalization_program_assignment_delegate_patcher.stop()
 
     @freeze_time("2020-01-02")
     def test_find_program_events(self) -> None:

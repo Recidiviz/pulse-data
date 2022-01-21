@@ -28,9 +28,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_commitment_from
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_incarceration_delegate import (
     UsNdIncarcerationDelegate,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_incarceration_period_pre_processing_delegate import (
-    PAROLE_REVOCATION_PREPROCESSING_PREFIX,
-    PROBATION_REVOCATION_PREPROCESSING_PREFIX,
+from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_incarceration_period_normalization_delegate import (
+    PAROLE_REVOCATION_NORMALIZED_PREFIX,
+    PROBATION_REVOCATION_NORMALIZED_PREFIX,
 )
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
@@ -47,9 +47,9 @@ from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
     StateSupervisionPeriod,
 )
-from recidiviz.tests.calculator.pipeline.pre_processing_testing_utils import (
-    default_pre_processed_ip_index_for_tests,
-    default_pre_processed_sp_index_for_tests,
+from recidiviz.tests.calculator.pipeline.utils.entity_normalization.normalization_testing_utils import (
+    default_normalized_ip_index_for_tests,
+    default_normalized_sp_index_for_tests,
 )
 
 
@@ -101,10 +101,10 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         return _get_commitment_from_supervision_supervision_period(
             incarceration_period=ip,
             commitment_from_supervision_delegate=UsNdCommitmentFromSupervisionDelegate(),
-            supervision_period_index=default_pre_processed_sp_index_for_tests(
+            supervision_period_index=default_normalized_sp_index_for_tests(
                 supervision_periods=supervision_periods
             ),
-            incarceration_period_index=default_pre_processed_ip_index_for_tests(
+            incarceration_period_index=default_normalized_ip_index_for_tests(
                 incarceration_periods=incarceration_periods,
                 transfers_are_collapsed=True,
                 incarceration_delegate=UsNdIncarcerationDelegate(),
@@ -532,7 +532,7 @@ class TestGetPreIncarcerationSupervisionTypeFromIPAdmissionReason(unittest.TestC
         self,
     ) -> None:
         admission_reason = StateIncarcerationPeriodAdmissionReason.REVOCATION
-        admission_reason_raw_text = f"{PAROLE_REVOCATION_PREPROCESSING_PREFIX}-ABC"
+        admission_reason_raw_text = f"{PAROLE_REVOCATION_NORMALIZED_PREFIX}-ABC"
 
         supervision_type: Optional[
             StateSupervisionPeriodSupervisionType
@@ -581,7 +581,7 @@ class TestGetPreIncarcerationSupervisionTypeFromIPAdmissionReason(unittest.TestC
         self,
     ) -> None:
         admission_reason = StateIncarcerationPeriodAdmissionReason.REVOCATION
-        admission_reason_raw_text = f"{PROBATION_REVOCATION_PREPROCESSING_PREFIX}-ABC"
+        admission_reason_raw_text = f"{PROBATION_REVOCATION_NORMALIZED_PREFIX}-ABC"
 
         supervision_type: Optional[
             StateSupervisionPeriodSupervisionType

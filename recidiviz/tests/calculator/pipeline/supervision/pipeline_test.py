@@ -58,17 +58,17 @@ from recidiviz.calculator.pipeline.utils.metric_utils import (
 from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_incarceration_delegate import (
     UsXxIncarcerationDelegate,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_incarceration_period_pre_processing_delegate import (
-    UsXxIncarcerationPreProcessingDelegate,
+from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_incarceration_period_normalization_delegate import (
+    UsXxIncarcerationNormalizationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_supervision_delegate import (
     UsXxSupervisionDelegate,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_supervision_period_pre_processing_delegate import (
-    UsXxSupervisionPreProcessingDelegate,
+from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_supervision_period_normalization_delegate import (
+    UsXxSupervisionNormalizationDelegate,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_violation_response_preprocessing_delegate import (
-    UsXxViolationResponsePreprocessingDelegate,
+from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_violation_response_normalization_delegate import (
+    UsXxViolationResponseNormalizationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_violations_delegate import (
     UsXxViolationDelegate,
@@ -157,32 +157,32 @@ class TestSupervisionPipeline(unittest.TestCase):
             metric_type.value: True for metric_type in SupervisionMetricType
         }
 
-        self.incarceration_pre_processing_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils"
-            ".get_state_specific_incarceration_period_pre_processing_delegate"
+        self.incarceration_normalization_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_utils"
+            ".get_state_specific_incarceration_period_normalization_delegate"
         )
-        self.mock_incarceration_pre_processing_delegate = (
-            self.incarceration_pre_processing_delegate_patcher.start()
+        self.mock_incarceration_normalization_delegate = (
+            self.incarceration_normalization_delegate_patcher.start()
         )
-        self.mock_incarceration_pre_processing_delegate.return_value = (
-            UsXxIncarcerationPreProcessingDelegate()
+        self.mock_incarceration_normalization_delegate.return_value = (
+            UsXxIncarcerationNormalizationDelegate()
         )
-        self.supervision_pre_processing_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils"
-            ".get_state_specific_supervision_period_pre_processing_delegate"
+        self.supervision_normalization_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_utils"
+            ".get_state_specific_supervision_period_normalization_delegate"
         )
-        self.mock_supervision_pre_processing_delegate = (
-            self.supervision_pre_processing_delegate_patcher.start()
+        self.mock_supervision_normalization_delegate = (
+            self.supervision_normalization_delegate_patcher.start()
         )
-        self.mock_supervision_pre_processing_delegate.return_value = (
-            UsXxSupervisionPreProcessingDelegate()
+        self.mock_supervision_normalization_delegate.return_value = (
+            UsXxSupervisionNormalizationDelegate()
         )
-        self.pre_processing_incarceration_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils"
+        self.normalization_incarceration_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_utils"
             ".get_state_specific_incarceration_delegate"
         )
         self.mock_incarceration_delegate = (
-            self.pre_processing_incarceration_delegate_patcher.start()
+            self.normalization_incarceration_delegate_patcher.start()
         )
         self.mock_incarceration_delegate.return_value = UsXxIncarcerationDelegate()
         self.violation_delegate_patcher = mock.patch(
@@ -191,14 +191,14 @@ class TestSupervisionPipeline(unittest.TestCase):
         self.mock_violation_delegate = self.violation_delegate_patcher.start()
         self.mock_violation_delegate.return_value = UsXxViolationDelegate()
 
-        self.violation_pre_processing_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils.get_state_specific_violation_response_preprocessing_delegate"
+        self.violation_normalization_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_utils.get_state_specific_violation_response_normalization_delegate"
         )
-        self.mock_violation_pre_processing_delegate = (
-            self.violation_pre_processing_delegate_patcher.start()
+        self.mock_violation_normalization_delegate = (
+            self.violation_normalization_delegate_patcher.start()
         )
-        self.mock_violation_pre_processing_delegate.return_value = (
-            UsXxViolationResponsePreprocessingDelegate()
+        self.mock_violation_normalization_delegate.return_value = (
+            UsXxViolationResponseNormalizationDelegate()
         )
         self.identifier_supervision_delegate_patcher = mock.patch(
             "recidiviz.calculator.pipeline.supervision.identifier.get_state_specific_supervision_delegate"
@@ -220,13 +220,13 @@ class TestSupervisionPipeline(unittest.TestCase):
         )
 
     def tearDown(self) -> None:
-        self.incarceration_pre_processing_delegate_patcher.stop()
-        self.supervision_pre_processing_delegate_patcher.stop()
+        self.incarceration_normalization_delegate_patcher.stop()
+        self.supervision_normalization_delegate_patcher.stop()
         self.violation_delegate_patcher.stop()
-        self.violation_pre_processing_delegate_patcher.stop()
+        self.violation_normalization_delegate_patcher.stop()
         self.identifier_supervision_delegate_patcher.stop()
         self.metric_producer_supervision_delegate_patcher.stop()
-        self.pre_processing_incarceration_delegate_patcher.stop()
+        self.normalization_incarceration_delegate_patcher.stop()
 
     @staticmethod
     def build_supervision_pipeline_data_dict(
@@ -1048,32 +1048,32 @@ class TestClassifyEvents(unittest.TestCase):
     def setUp(self) -> None:
         self.maxDiff = None
 
-        self.incarceration_pre_processing_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils"
-            ".get_state_specific_incarceration_period_pre_processing_delegate"
+        self.incarceration_normalization_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_utils"
+            ".get_state_specific_incarceration_period_normalization_delegate"
         )
-        self.mock_incarceration_pre_processing_delegate = (
-            self.incarceration_pre_processing_delegate_patcher.start()
+        self.mock_incarceration_normalization_delegate = (
+            self.incarceration_normalization_delegate_patcher.start()
         )
-        self.mock_incarceration_pre_processing_delegate.return_value = (
-            UsXxIncarcerationPreProcessingDelegate()
+        self.mock_incarceration_normalization_delegate.return_value = (
+            UsXxIncarcerationNormalizationDelegate()
         )
-        self.supervision_pre_processing_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils"
-            ".get_state_specific_supervision_period_pre_processing_delegate"
+        self.supervision_normalization_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_utils"
+            ".get_state_specific_supervision_period_normalization_delegate"
         )
-        self.mock_supervision_pre_processing_delegate = (
-            self.supervision_pre_processing_delegate_patcher.start()
+        self.mock_supervision_normalization_delegate = (
+            self.supervision_normalization_delegate_patcher.start()
         )
-        self.mock_supervision_pre_processing_delegate.return_value = (
-            UsXxSupervisionPreProcessingDelegate()
+        self.mock_supervision_normalization_delegate.return_value = (
+            UsXxSupervisionNormalizationDelegate()
         )
-        self.pre_processing_incarceration_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils"
+        self.normalization_incarceration_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_utils"
             ".get_state_specific_incarceration_delegate"
         )
         self.mock_incarceration_delegate = (
-            self.pre_processing_incarceration_delegate_patcher.start()
+            self.normalization_incarceration_delegate_patcher.start()
         )
         self.mock_incarceration_delegate.return_value = UsXxIncarcerationDelegate()
         self.violation_delegate_patcher = mock.patch(
@@ -1083,14 +1083,14 @@ class TestClassifyEvents(unittest.TestCase):
         self.mock_violation_delegate.return_value = UsXxViolationDelegate()
         self.identifier = identifier.SupervisionIdentifier()
 
-        self.violation_pre_processing_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils.get_state_specific_violation_response_preprocessing_delegate"
+        self.violation_normalization_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_utils.get_state_specific_violation_response_normalization_delegate"
         )
-        self.mock_violation_pre_processing_delegate = (
-            self.violation_pre_processing_delegate_patcher.start()
+        self.mock_violation_normalization_delegate = (
+            self.violation_normalization_delegate_patcher.start()
         )
-        self.mock_violation_pre_processing_delegate.return_value = (
-            UsXxViolationResponsePreprocessingDelegate()
+        self.mock_violation_normalization_delegate.return_value = (
+            UsXxViolationResponseNormalizationDelegate()
         )
         self.supervision_delegate_patcher = mock.patch(
             "recidiviz.calculator.pipeline.supervision.identifier.get_state_specific_supervision_delegate"
@@ -1102,12 +1102,12 @@ class TestClassifyEvents(unittest.TestCase):
         self._stop_state_specific_delegate_patchers()
 
     def _stop_state_specific_delegate_patchers(self) -> None:
-        self.incarceration_pre_processing_delegate_patcher.stop()
-        self.supervision_pre_processing_delegate_patcher.stop()
-        self.violation_pre_processing_delegate_patcher.stop()
+        self.incarceration_normalization_delegate_patcher.stop()
+        self.supervision_normalization_delegate_patcher.stop()
+        self.violation_normalization_delegate_patcher.stop()
         self.violation_delegate_patcher.stop()
         self.supervision_delegate_patcher.stop()
-        self.pre_processing_incarceration_delegate_patcher.stop()
+        self.normalization_incarceration_delegate_patcher.stop()
 
     @staticmethod
     def load_person_entities_dict(

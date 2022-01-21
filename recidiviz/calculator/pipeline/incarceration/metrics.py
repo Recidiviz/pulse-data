@@ -64,11 +64,7 @@ class IncarcerationMetric(
     PersonLevelMetric,
     SecondaryPersonExternalIdMetric,
 ):
-    """Models a single incarceration metric.
-
-    Contains all of the identifying characteristics of the metric, including required characteristics for normalization
-    as well as optional characteristics for slicing the data.
-    """
+    """Base model for incarceration metrics."""
 
     # Required characteristics
     metric_type_cls = IncarcerationMetricType
@@ -99,6 +95,8 @@ class IncarcerationMetric(
         """Should be implemented by metric subclasses to return a description of the metric."""
 
 
+# TODO(#10727): Update this metric description when we move IP transfer collapsing
+#  out of entity normalization
 @attr.s
 class IncarcerationPopulationMetric(IncarcerationMetric):
     """Subclass of IncarcerationMetric that contains incarceration population information on a given date."""
@@ -116,7 +114,7 @@ With this metric, we can answer questions like:
 
 This metric is derived from the `StateIncarcerationPeriod` entities, which store information about periods of time that an individual was in an incarceration facility. All population metrics are end date exclusive, meaning a person is not counted in a facility’s population on the day that they are released from that facility. The population metrics are start date inclusive, meaning that a person is counted in a facility’s population on the date that they are admitted to the facility.
 
-When pre-processing the `StateIncarcerationPeriod` entities to create this metric, transfers between facilities are not collapsed. This means that if a person was held in Facility X on 2001-01-01, and was transferred to Facility Z on 2001-01-02, there will be an `IncarcerationPopulationMetric` for 2001-01-01 in Facility X, and another metric for 2001-01-02 in Facility Z. 
+When normalizing the `StateIncarcerationPeriod` entities to create this metric, transfers between facilities are not collapsed. This means that if a person was held in Facility X on 2001-01-01, and was transferred to Facility Z on 2001-01-02, there will be an `IncarcerationPopulationMetric` for 2001-01-01 in Facility X, and another metric for 2001-01-02 in Facility Z. 
 """
 
     # Required characteristics
@@ -155,6 +153,8 @@ When pre-processing the `StateIncarcerationPeriod` entities to create this metri
     ] = attr.ib(default=None)
 
 
+# TODO(#10727): Update this metric description when we move IP transfer collapsing
+#  out of entity normalization
 @attr.s
 class IncarcerationAdmissionMetric(IncarcerationMetric):
     """Subclass of IncarcerationMetric that contains admission information."""
@@ -170,7 +170,7 @@ With this metric, we can answer questions like:
 - What percent of admissions to prison in 2017 were due to parole revocations?
 - Of all admissions to prison due to a new court sentence in August 2014, what percent were by people who are Black?
 
-This metric is derived from the `StateIncarcerationPeriod` entities, which store information about periods of time that an individual was in an incarceration facility. When pre-processing the `StateIncarcerationPeriod` entities to create this metric, transfers between facilities are collapsed. This means that if a person has two chronologically consecutive `StateIncarcerationPeriod` entities, where the `release_reason` from the first period is `TRANSFER`, and the `admission_reason` on the second period is also `TRANSFER`, then the two periods are collapsed into one continuous period of time spent incarcerated. The consequence of collapsing transfers in the making of this metric is that `TRANSFER` admissions are (for the most part) not included in the `IncarcerationAdmissionMetric` output. However, there are a few exceptions to this: if the `admission_reason` on a `StateIncarcerationPeriod` is `TRANSFER` but the `release_reason` on the previous period is not `TRANSFER`, then the two periods are not collapsed in IP pre-processing, and the `TRANSFER` admission will be included in the metrics.
+This metric is derived from the `StateIncarcerationPeriod` entities, which store information about periods of time that an individual was in an incarceration facility. When normalizing the `StateIncarcerationPeriod` entities to create this metric, transfers between facilities are collapsed. This means that if a person has two chronologically consecutive `StateIncarcerationPeriod` entities, where the `release_reason` from the first period is `TRANSFER`, and the `admission_reason` on the second period is also `TRANSFER`, then the two periods are collapsed into one continuous period of time spent incarcerated. The consequence of collapsing transfers in the making of this metric is that `TRANSFER` admissions are (for the most part) not included in the `IncarcerationAdmissionMetric` output. However, there are a few exceptions to this: if the `admission_reason` on a `StateIncarcerationPeriod` is `TRANSFER` but the `release_reason` on the previous period is not `TRANSFER`, then the two periods are not collapsed in IP normalization, and the `TRANSFER` admission will be included in the metrics.
 
 If a person was admitted to Facility X on 2021-01-01, was transferred out of Facility X and into Facility Z on 2021-03-31, and is still being held in Facility Z, then there will be a single `IncarcerationAdmissionMetric` for this person on 2021-01-01 into Facility X.
 """
@@ -290,6 +290,8 @@ If a person was admitted to Facility X on 2021-01-01 for a `REVOCATION` from par
     ] = attr.ib(default=None)
 
 
+# TODO(#10727): Update this metric description when we move IP transfer collapsing
+#  out of entity normalization
 @attr.s
 class IncarcerationReleaseMetric(IncarcerationMetric):
     """Subclass of IncarcerationMetric that contains release information."""
@@ -305,7 +307,7 @@ With this metric, we can answer questions like:
 - For all individuals released from Facility X in 2015, what was the average number of days each person spent incarcerated prior to their release?
 - How did the number of releases per month change after the state implemented a new release policy?
 
-This metric is derived from the `StateIncarcerationPeriod` entities, which store information about periods of time that an individual was in an incarceration facility. When pre-processing the `StateIncarcerationPeriod` entities to create this metric, transfers between facilities are collapsed. This means that if a person has two chronologically consecutive `StateIncarcerationPeriod` entities, where the `release_reason` from the first period is `TRANSFER`, and the `admission_reason` on the second period is also `TRANSFER`, then the two periods are collapsed into one continuous period of time spent incarcerated. The consequence of collapsing transfers in the making of this metric is that `TRANSFER` releases are (for the most part) not included in the `IncarcerationReleaseMetric` output. However, there are a few exceptions to this: if the `release_reason` on a `StateIncarcerationPeriod` is `TRANSFER` but the `admission_reason` on the subsequent period is not `TRANSFER`, then the two periods are not collapsed in IP pre-processing, and the `TRANSFER` release will be included in the metrics. 
+This metric is derived from the `StateIncarcerationPeriod` entities, which store information about periods of time that an individual was in an incarceration facility. When normalizing the `StateIncarcerationPeriod` entities to create this metric, transfers between facilities are collapsed. This means that if a person has two chronologically consecutive `StateIncarcerationPeriod` entities, where the `release_reason` from the first period is `TRANSFER`, and the `admission_reason` on the second period is also `TRANSFER`, then the two periods are collapsed into one continuous period of time spent incarcerated. The consequence of collapsing transfers in the making of this metric is that `TRANSFER` releases are (for the most part) not included in the `IncarcerationReleaseMetric` output. However, there are a few exceptions to this: if the `release_reason` on a `StateIncarcerationPeriod` is `TRANSFER` but the `admission_reason` on the subsequent period is not `TRANSFER`, then the two periods are not collapsed in IP normalization, and the `TRANSFER` release will be included in the metrics. 
 
 If a person was admitted to Facility X on 2021-01-01, was transferred out of Facility X and into Facility Z on 2021-03-31, and then was released from Facility Z on 2021-06-09, then there will be a single `IncarcerationReleaseMetric` for this person on 2021-06-09 from Facility Z.
 """

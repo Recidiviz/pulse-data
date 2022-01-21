@@ -36,8 +36,8 @@ from recidiviz.calculator.pipeline.recidivism.events import (
     RecidivismReleaseEvent,
     ReleaseEvent,
 )
-from recidiviz.calculator.pipeline.utils.entity_pre_processing_utils import (
-    pre_processing_managers_for_calculations,
+from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_utils import (
+    entity_normalization_managers_for_calculations,
 )
 from recidiviz.calculator.pipeline.utils.execution_utils import (
     extract_county_of_residence_from_rows,
@@ -125,25 +125,25 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
 
         state_code = get_single_state_code(incarceration_periods)
 
-        (ip_pre_processing_manager, _,) = pre_processing_managers_for_calculations(
+        (ip_normalization_manager, _,) = entity_normalization_managers_for_calculations(
             state_code=state_code,
             incarceration_periods=incarceration_periods,
             supervision_periods=supervision_periods,
             # Note: This pipeline cannot be run for any state that relies on
-            # StateSupervisionViolationResponse entities in IP pre-processing
-            pre_processed_violation_responses=None,
+            # StateSupervisionViolationResponse entities in IP normalization
+            normalized_violation_responses=None,
             field_index=self.field_index,
             # Note: This pipeline cannot be run for any state that relies on
             # StateIncarcerationSentence and StateSupervisionSentence entities
-            # in SP pre-processing
+            # in SP normalization
             incarceration_sentences=None,
             supervision_sentences=None,
         )
 
-        if not ip_pre_processing_manager:
-            raise ValueError("Expected pre-processed SPs for this pipeline.")
+        if not ip_normalization_manager:
+            raise ValueError("Expected normalized SPs for this pipeline.")
 
-        incarceration_periods = ip_pre_processing_manager.pre_processed_incarceration_period_index_for_calculations(
+        incarceration_periods = ip_normalization_manager.normalized_incarceration_period_index_for_calculations(
             collapse_transfers=True,
             overwrite_facility_information_in_transfers=True,
         ).incarceration_periods
@@ -218,7 +218,7 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
                             or not reincarceration_admission_reason
                         ):
                             raise ValueError(
-                                "Incarceration period pre-processing should have set admission_dates and"
+                                "Incarceration period normalization should have set admission_dates and"
                                 "admission_reasons on all periods."
                             )
 
@@ -255,13 +255,13 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
             if not ip.admission_date or not ip.admission_reason:
                 raise ValueError(
                     "All incarceration periods should have set a admission_date and admission_reason after"
-                    "pre-processing."
+                    "normalization."
                 )
 
             if ip.admission_date < release_date:
                 raise ValueError(
                     f"Release from incarceration on date {release_date} overlaps with another period of"
-                    " incarceration. Failure in IP pre-processing or should_include_in_release_cohort"
+                    " incarceration. Failure in IP normalization or should_include_in_release_cohort"
                     f" function: {incarceration_periods}"
                 )
 
@@ -299,7 +299,7 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
             if ip.admission_reason == AdmissionReason.ADMITTED_FROM_SUPERVISION:
                 raise ValueError(
                     "ADMITTED_FROM_SUPERVISION is an ingest-only enum, and we should "
-                    "not see this value after IP pre-processing."
+                    "not see this value after IP normalization."
                 )
 
             raise ValueError(
