@@ -95,7 +95,7 @@ class PopulationProjector:
 
         # Run the baseline projection over the latest month
         print(
-            f"Running the baseline simulation on {self.simulation.initializer.get_user_inputs()['run_date']}"
+            f"Running the baseline simulation on {self.simulation.initializer.get_user_inputs().run_date}"
         )
         self.simulation.simulate_baseline(display_compartments=[], reset=False)
         self.prediction_intervals = self.get_prediction_intervals()
@@ -137,9 +137,8 @@ class PopulationProjector:
 
     def get_historical_population_data(self) -> pd.DataFrame:
         """Format the historical data from the simulation to match the other tables"""
-        historical_population = self.simulation.initializer.data_dict[
-            "total_population_data"
-        ]
+        simulation_data_inputs = self.simulation.initializer.get_data_inputs()
+        historical_population = simulation_data_inputs.total_population_data
         # Drop the historical data outside the validation time period
         last_ts = self.simulation.initializer.get_first_relevant_ts()
         first_ts = last_ts - int(

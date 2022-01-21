@@ -16,7 +16,7 @@
 # =============================================================================
 """Composition object for SubSimulation to initialize compartments for a macro-simulation and scale populations."""
 import logging
-from typing import Any, Dict, List, Tuple
+from typing import Dict, List, Tuple
 
 import pandas as pd
 
@@ -36,6 +36,9 @@ from recidiviz.calculator.modeling.population_projection.spark_policy import Spa
 from recidiviz.calculator.modeling.population_projection.sub_simulation.sub_simulation import (
     SubSimulation,
 )
+from recidiviz.calculator.modeling.population_projection.super_simulation.initializer import (
+    UserInputs,
+)
 
 
 class SubSimulationFactory:
@@ -47,7 +50,7 @@ class SubSimulationFactory:
         outflows_data: pd.DataFrame,
         transitions_data: pd.DataFrame,
         compartments_architecture: Dict[str, str],
-        user_inputs: Dict[str, Any],
+        user_inputs: UserInputs,
         policy_list: List[SparkPolicy],
         first_relevant_ts: int,
         should_single_cohort_initialize_compartments: bool,
@@ -188,7 +191,7 @@ class SubSimulationFactory:
         preprocessed_data: pd.DataFrame,
         transition_tables_by_compartment: Dict[str, CompartmentTransitions],
         shell_policies: Dict[str, List[SparkPolicy]],
-        user_inputs: Dict[str, Any],
+        user_inputs: UserInputs,
         simulation_architecture: Dict[str, str],
         first_relevant_ts: int,
         starting_cohort_sizes: pd.DataFrame,
@@ -213,7 +216,10 @@ class SubSimulationFactory:
                 simulation_compartments[compartment] = ShellCompartment(
                     outflows_data=outflows_data,
                     starting_ts=first_relevant_ts,
-                    constant_admissions=user_inputs["constant_admissions"],
+                    # Default `constant_admissions` to False if not set
+                    constant_admissions=user_inputs.constant_admissions
+                    if user_inputs.constant_admissions is not None
+                    else False,
                     tag=compartment,
                     policy_list=shell_policies[compartment],
                 )

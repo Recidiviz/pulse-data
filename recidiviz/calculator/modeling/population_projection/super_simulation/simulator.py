@@ -33,6 +33,10 @@ from recidiviz.calculator.modeling.population_projection.shell_compartment impor
     ShellCompartment,
 )
 from recidiviz.calculator.modeling.population_projection.spark_policy import SparkPolicy
+from recidiviz.calculator.modeling.population_projection.super_simulation.initializer import (
+    SimulationInputData,
+    UserInputs,
+)
 from recidiviz.calculator.modeling.population_projection.super_simulation.time_converter import (
     TimeConverter,
 )
@@ -53,8 +57,8 @@ class Simulator:
 
     def simulate_policy(
         self,
-        user_inputs: Dict[str, Any],
-        data_inputs: Dict[str, Any],
+        user_inputs: UserInputs,
+        data_inputs: SimulationInputData,
         first_relevant_ts: int,
         policy_list: List[SparkPolicy],
         output_compartment: str,
@@ -84,7 +88,7 @@ class Simulator:
             for scenario, simulation in self.pop_simulations.items()
         }
         results = {
-            i: results[i][results[i]["time_step"] >= user_inputs["start_time_step"]]
+            i: results[i][results[i]["time_step"] >= user_inputs.start_time_step]
             for i in results
         }
 
@@ -96,8 +100,8 @@ class Simulator:
 
     def simulate_baseline(
         self,
-        user_inputs: Dict[str, Any],
-        data_inputs: Dict[str, Any],
+        user_inputs: UserInputs,
+        data_inputs: SimulationInputData,
         display_compartments: List[str],
         first_relevant_ts: int,
         reset: bool = True,
@@ -111,10 +115,10 @@ class Simulator:
         if reset:
             self._reset_pop_simulations()
 
-        if first_relevant_ts > user_inputs["start_time_step"]:
+        if first_relevant_ts > user_inputs.start_time_step:
             raise ValueError(
                 f"first_relevant_ts ({first_relevant_ts}) must be less than start_time_step "
-                f"({user_inputs['start_time_step']})"
+                f"({user_inputs.start_time_step})"
             )
 
         # Run one simulation
@@ -143,7 +147,7 @@ class Simulator:
                 else:
                     relevant_results = simulation_results[
                         (simulation_results.compartment == comp)
-                        & (user_inputs["start_time_step"] <= simulation_results.year)
+                        & (user_inputs.start_time_step <= simulation_results.year)
                     ]
                     display_results[comp] = relevant_results[
                         "baseline_projections_total_population"
@@ -158,8 +162,8 @@ class Simulator:
 
     def microsim_baseline_over_time(
         self,
-        user_inputs: Dict[str, Any],
-        run_date_data_inputs: Dict[datetime, Dict[str, Any]],
+        user_inputs: UserInputs,
+        run_date_data_inputs: Dict[datetime, SimulationInputData],
         run_date_first_relevant_ts: Dict[datetime, int],
         projection_time_steps_override: Optional[int],
     ) -> None:
@@ -167,11 +171,11 @@ class Simulator:
 
         # Change some user_inputs for the validation loop
         if projection_time_steps_override is not None:
-            user_inputs["projection_time_steps"] = projection_time_steps_override
+            user_inputs.projection_time_steps = projection_time_steps_override
 
         for start_date, data_inputs in run_date_data_inputs.items():
             print(start_date)
-            user_inputs["start_time_step"] = run_date_first_relevant_ts[start_date]
+            user_inputs.start_time_step = run_date_first_relevant_ts[start_date]
             simulation_name = f"baseline_{start_date.date()}"
             self.pop_simulations[simulation_name] = self._build_population_simulation(
                 user_inputs, data_inputs, [], run_date_first_relevant_ts[start_date]
@@ -184,8 +188,8 @@ class Simulator:
 
     def get_cohort_hydration_simulations(
         self,
-        user_inputs: Dict[str, Any],
-        data_inputs: Dict[str, Any],
+        user_inputs: UserInputs,
+        data_inputs: SimulationInputData,
         range_start: int,
         range_end: int,
         step_size: float,
@@ -202,7 +206,7 @@ class Simulator:
                 user_inputs,
                 data_inputs,
                 [],
-                first_relevant_ts=user_inputs["start_time_step"] - ts,
+                first_relevant_ts=user_inputs.start_time_step - ts,
             )
             self.pop_simulations[f"backfill_period_{ts}_time_steps"].simulate_policies()
 
@@ -216,7 +220,7 @@ class Simulator:
 
     def _graph_results(
         self,
-        user_inputs: Dict[str, Any],
+        user_inputs: UserInputs,
         simulations: Dict[str, pd.DataFrame],
         output_compartment: str,
     ) -> None:
@@ -245,14 +249,14 @@ class Simulator:
 
     def _format_simulation_results(
         self,
-        user_inputs: Dict[str, Any],
+        user_inputs: UserInputs,
         collapse_compartments: bool = False,
     ) -> pd.DataFrame:
         """Re-format PopulationSimulation results so each simulation is a column"""
         simulation_results = pd.DataFrame()
         for scenario, simulation in self.pop_simulations.items():
             results = simulation.get_population_projections()
-            results = results[results.time_step >= user_inputs["start_time_step"]]
+            results = results[results.time_step >= user_inputs.start_time_step]
             results = results.rename(
                 {
                     "time_step": "year",
@@ -308,8 +312,8 @@ class Simulator:
 
     @staticmethod
     def _build_population_simulation(
-        user_inputs: Dict[str, Any],
-        data_inputs: Dict[str, Any],
+        user_inputs: UserInputs,
+        data_inputs: SimulationInputData,
         policy_list: List[SparkPolicy],
         first_relevant_ts: int,
     ) -> PopulationSimulation:
@@ -317,5 +321,5 @@ class Simulator:
             user_inputs=user_inputs,
             policy_list=policy_list,
             first_relevant_ts=first_relevant_ts,
-            **data_inputs,
+            data_inputs=data_inputs,
         )

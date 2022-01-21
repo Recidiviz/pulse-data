@@ -81,6 +81,33 @@ data_dict_macro = {
     "total_population_data_raw": total_population_data_macro,
 }
 
+# total_population generated with np.random.randint(350, 400, 12)
+micro_total_population = [
+    376,
+    353,
+    375,
+    358,
+    352,
+    355,
+    388,
+    372,
+    375,
+    351,
+    365,
+    363,
+    361,
+    366,
+    382,
+    369,
+    363,
+    371,
+    361,
+    385,
+    373,
+    352,
+    389,
+    392,
+]
 outflows_data_micro = pd.DataFrame(
     {
         "compartment": ["PRETRIAL"] * 24,
@@ -90,33 +117,20 @@ outflows_data_micro = pd.DataFrame(
         "state_code": ["test_state"] * 24,
         "run_date": [datetime(2020, 12, 1)] * 12 + [datetime(2021, 1, 1)] * 12,
         "gender": ["MALE"] * 6 + ["FEMALE"] * 6 + ["MALE"] * 6 + ["FEMALE"] * 6,
-        # total_population generated with np.random.randint(350, 400, 24)
-        "total_population": [
-            376,
-            353,
-            375,
-            358,
-            352,
-            355,
-            388,
-            372,
-            375,
-            351,
-            365,
-            363,
-            361,
-            366,
-            382,
-            369,
-            363,
-            371,
-            361,
-            385,
-            373,
-            352,
-            389,
-            392,
-        ],
+        "total_population": micro_total_population,
+    }
+)
+
+outflows_data_micro_missing_time_steps = pd.DataFrame(
+    {
+        "compartment": ["PRETRIAL"] * 12,
+        "outflow_to": ["PRISON"] * 12,
+        "time_step": [datetime(2020, i, 1) for i in range(6, 12, 2)] * 2
+        + [datetime(2020, i, 1) for i in range(7, 13, 2)] * 2,
+        "state_code": ["test_state"] * 12,
+        "run_date": [datetime(2020, 12, 1)] * 6 + [datetime(2021, 1, 1)] * 6,
+        "gender": ["MALE"] * 3 + ["FEMALE"] * 3 + ["MALE"] * 3 + ["FEMALE"] * 3,
+        "total_population": micro_total_population[:12],
     }
 )
 
@@ -161,6 +175,8 @@ data_dict_micro = {
     "test_total_population": total_population_data_micro,
     "test_remaining_sentences": remaining_sentence_data_micro,
     "test_excluded_population": pd.DataFrame(columns=["state_code", "time_step"]),
+    # outflows data with missing values for some time steps
+    "test_outflows_missing_time_steps": outflows_data_micro_missing_time_steps,
 }
 
 
@@ -190,6 +206,16 @@ def mock_upload_policy_results(
 def mock_load_table_from_big_query_micro(
     project_id: str, dataset: str, table_name: str, state_code: str
 ) -> pd.DataFrame:
+    return data_dict_micro[table_name][
+        data_dict_micro[table_name]["state_code"] == state_code
+    ]
+
+
+def mock_load_table_from_big_query_micro_outflows_missing_time_steps(
+    project_id: str, dataset: str, table_name: str, state_code: str
+) -> pd.DataFrame:
+    if table_name == "test_outflows":
+        table_name = "test_outflows_missing_time_steps"
     return data_dict_micro[table_name][
         data_dict_micro[table_name]["state_code"] == state_code
     ]
@@ -262,23 +288,19 @@ class TestSuperSimulation(unittest.TestCase):
     def test_macrosim_data_hydrated(self) -> None:
         """Tests macrosimulation are properly ingesting data from BQ"""
         assert isinstance(self.macrosim, SuperSimulation)
-        self.assertFalse(self.macrosim.initializer.data_dict["outflows_data"].empty)
-        self.assertFalse(self.macrosim.initializer.data_dict["transitions_data"].empty)
-        self.assertFalse(
-            self.macrosim.initializer.data_dict["total_population_data"].empty
-        )
+        data_inputs = self.macrosim.initializer.get_data_inputs()
+        self.assertFalse(data_inputs.outflows_data.empty)
+        self.assertFalse(data_inputs.transitions_data.empty)
+        self.assertFalse(data_inputs.total_population_data.empty)
 
     def test_microsim_data_hydrated(self) -> None:
         """Tests microsimulation are properly ingesting data from BQ"""
         assert isinstance(self.microsim, SuperSimulation)
-        self.assertFalse(self.microsim.initializer.data_dict["outflows_data"].empty)
-        self.assertFalse(self.microsim.initializer.data_dict["transitions_data"].empty)
-        self.assertFalse(
-            self.microsim.initializer.data_dict["total_population_data"].empty
-        )
-        self.assertFalse(
-            self.microsim.initializer.data_dict["remaining_sentence_data"].empty
-        )
+        data_inputs = self.microsim.initializer.get_data_inputs()
+        self.assertFalse(data_inputs.outflows_data.empty)
+        self.assertFalse(data_inputs.transitions_data.empty)
+        self.assertFalse(data_inputs.total_population_data.empty)
+        self.assertFalse(data_inputs.microsim_data.empty)
 
     @patch(
         "recidiviz.calculator.modeling.population_projection.utils.bq_utils.upload_baseline_simulation_results"
@@ -310,15 +332,10 @@ class TestSuperSimulation(unittest.TestCase):
         microsim.simulate_baseline(["PRISON"])
 
         # get time before starting cohort filters out of prison
-        affected_time_frame = self.microsim.initializer.data_dict["transitions_data"][
-            (
-                self.microsim.initializer.data_dict["transitions_data"].compartment
-                == "PRISON"
-            )
-            & (
-                self.microsim.initializer.data_dict["transitions_data"].total_population
-                > 0
-            )
+        transitions_data = self.microsim.initializer.get_data_inputs().transitions_data
+        affected_time_frame = transitions_data[
+            (transitions_data.compartment == "PRISON")
+            & (transitions_data.total_population > 0)
         ].compartment_duration.max()
 
         # get projected prison population from simulation substituting transitions data for remaining sentences
@@ -330,11 +347,11 @@ class TestSuperSimulation(unittest.TestCase):
                 (substitute_outputs.compartment == "PRISON")
                 & (
                     substitute_outputs.time_step
-                    > microsim.initializer.user_inputs["start_time_step"] + 1
+                    > microsim.initializer.user_inputs.start_time_step + 1
                 )
                 & (
                     substitute_outputs.time_step
-                    - microsim.initializer.user_inputs["start_time_step"]
+                    - microsim.initializer.user_inputs.start_time_step
                     < affected_time_frame
                 )
             ]
@@ -352,11 +369,11 @@ class TestSuperSimulation(unittest.TestCase):
                 (regular_outputs.compartment == "PRISON")
                 & (
                     regular_outputs.time_step
-                    > self.microsim.initializer.user_inputs["start_time_step"] + 1
+                    > self.microsim.initializer.user_inputs.start_time_step + 1
                 )
                 & (
                     regular_outputs.time_step
-                    - self.microsim.initializer.user_inputs["start_time_step"]
+                    - self.microsim.initializer.user_inputs.start_time_step
                     < affected_time_frame
                 )
             ]
@@ -422,7 +439,7 @@ class TestSuperSimulation(unittest.TestCase):
                 policy_fn=policy_function,
                 spark_compartment="PRISON",
                 sub_population={"crime_type": crime_type},
-                policy_ts=self.macrosim.initializer.get_user_inputs()["start_time_step"]
+                policy_ts=self.macrosim.initializer.get_user_inputs().start_time_step
                 + 5,
                 apply_retroactive=True,
             )
@@ -508,3 +525,53 @@ class TestSuperSimulation(unittest.TestCase):
             ]
             # Error should be 0 for each compartment/simulation group on the first ts
             self.assertTrue((initial_error == 0).all())
+
+    @patch(
+        "recidiviz.calculator.modeling.population_projection.utils.ignite_bq_utils.load_ignite_table_from_big_query",
+        mock_load_table_from_big_query_micro_outflows_missing_time_steps,
+    )
+    def test_initializer_fills_missing_time_steps_in_outflows(self) -> None:
+        """Tests the SuperSimulation initialization fills in missing outflows with 0s"""
+
+        microsim = SuperSimulationFactory.build_super_simulation(
+            get_inputs_path("super_simulation_microsim_model_inputs.yaml")
+        )
+        data_inputs = microsim.initializer.get_data_inputs()
+        comparison_columns = [
+            "time_step",
+            "gender",
+            "compartment",
+            "outflow_to",
+            "run_date",
+            "total_population",
+        ]
+        expected_outflows_data = (
+            pd.concat(
+                [
+                    outflows_data_micro_missing_time_steps[
+                        outflows_data_micro_missing_time_steps.run_date
+                        == datetime(2021, 1, 1)
+                    ][comparison_columns],
+                    pd.DataFrame(
+                        {
+                            "time_step": [datetime(2020, 8, 1), datetime(2020, 10, 1)]
+                            * 2,
+                            "gender": ["FEMALE"] * 2 + ["MALE"] * 2,
+                            "compartment": ["PRETRIAL"] * 4,
+                            "outflow_to": ["PRISON"] * 4,
+                            "run_date": [datetime(2021, 1, 1)] * 4,
+                            "total_population": [0.0] * 4,
+                        }
+                    ),
+                ]
+            )
+            .sort_values(by=["gender", "time_step"])
+            .reset_index(drop=True)
+        )
+        expected_outflows_data["time_step"] = expected_outflows_data["time_step"].apply(
+            microsim.initializer.time_converter.convert_timestamp_to_time_step
+        )
+        # Test the two dfs are the same but ignore the index
+        assert_frame_equal(
+            data_inputs.outflows_data.reset_index(drop=True), expected_outflows_data
+        )
