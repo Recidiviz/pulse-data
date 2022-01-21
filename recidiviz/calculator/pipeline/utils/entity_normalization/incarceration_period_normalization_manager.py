@@ -1023,7 +1023,9 @@ class IncarcerationNormalizationManager:
         return updated_ips
 
     @staticmethod
-    def validate_ip_invariants(incarceration_periods: List[StateIncarcerationPeriod]):
+    def validate_ip_invariants(
+        incarceration_periods: List[StateIncarcerationPeriod],
+    ) -> None:
         """Validates that no IPs violate standards that we can expect to be
         met for all periods in all states at the end of IP normalization."""
         for ip in incarceration_periods:
@@ -1174,7 +1176,7 @@ class IncarcerationNormalizationManager:
     def _handle_erroneously_set_temporary_custody_periods(
         self,
         incarceration_periods: List[StateIncarcerationPeriod],
-    ):
+    ) -> List[StateIncarcerationPeriod]:
         """For periods with a pfi of TEMPORARY_CUSTODY, sends the period to the
         state-specific normalization delegate to be updated if necessary."""
         updated_periods: List[StateIncarcerationPeriod] = []
