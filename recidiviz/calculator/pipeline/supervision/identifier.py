@@ -40,18 +40,18 @@ from recidiviz.calculator.pipeline.supervision.supervision_case_compliance impor
     SupervisionCaseCompliance,
 )
 from recidiviz.calculator.pipeline.utils import assessment_utils
-from recidiviz.calculator.pipeline.utils.entity_pre_processing_utils import (
-    pre_processed_violation_responses_for_calculations,
-    pre_processing_managers_for_calculations,
+from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_utils import (
+    entity_normalization_managers_for_calculations,
+    normalized_violation_responses_for_calculations,
+)
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_incarceration_period_index import (
+    NormalizedIncarcerationPeriodIndex,
+)
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_supervision_period_index import (
+    NormalizedSupervisionPeriodIndex,
 )
 from recidiviz.calculator.pipeline.utils.execution_utils import (
     list_of_dicts_to_dict_with_keys,
-)
-from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
-    PreProcessedIncarcerationPeriodIndex,
-)
-from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index import (
-    PreProcessedSupervisionPeriodIndex,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
     get_state_specific_case_compliance_manager,
@@ -193,44 +193,42 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
             StateSupervisionPeriod.get_class_id_name(),
         )
 
-        pre_processed_violation_responses = (
-            pre_processed_violation_responses_for_calculations(
+        normalized_violation_responses = (
+            normalized_violation_responses_for_calculations(
                 violation_responses=violation_responses, state_code=state_code
             )
         )
 
         (
-            ip_pre_processing_manager,
-            sp_pre_processing_manager,
-        ) = pre_processing_managers_for_calculations(
+            ip_normalization_manager,
+            sp_normalization_manager,
+        ) = entity_normalization_managers_for_calculations(
             state_code=state_code,
             incarceration_periods=incarceration_periods,
             supervision_periods=supervision_periods,
-            pre_processed_violation_responses=pre_processed_violation_responses,
+            normalized_violation_responses=normalized_violation_responses,
             field_index=self.field_index,
             incarceration_sentences=incarceration_sentences,
             supervision_sentences=supervision_sentences,
         )
 
-        if not ip_pre_processing_manager or not sp_pre_processing_manager:
-            raise ValueError(
-                "Expected both pre-processed IPs and SPs for this pipeline."
-            )
+        if not ip_normalization_manager or not sp_normalization_manager:
+            raise ValueError("Expected both normalized IPs and SPs for this pipeline.")
 
-        incarceration_period_index = ip_pre_processing_manager.pre_processed_incarceration_period_index_for_calculations(
+        incarceration_period_index = ip_normalization_manager.normalized_incarceration_period_index_for_calculations(
             collapse_transfers=True,
             overwrite_facility_information_in_transfers=True,
         )
 
         supervision_period_index = (
-            sp_pre_processing_manager.pre_processed_supervision_period_index_for_calculations()
+            sp_normalization_manager.normalized_supervision_period_index_for_calculations()
         )
 
         violation_delegate = get_state_specific_violation_delegate(state_code)
         violation_responses_for_history = (
             filter_violation_responses_for_violation_history(
                 violation_delegate,
-                violation_responses=pre_processed_violation_responses,
+                violation_responses=normalized_violation_responses,
                 include_follow_up_responses=False,
             )
         )
@@ -316,8 +314,8 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         supervision_sentences: List[StateSupervisionSentence],
         incarceration_sentences: List[StateIncarcerationSentence],
         supervision_period: StateSupervisionPeriod,
-        supervision_period_index: PreProcessedSupervisionPeriodIndex,
-        incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
+        supervision_period_index: NormalizedSupervisionPeriodIndex,
+        incarceration_period_index: NormalizedIncarcerationPeriodIndex,
         assessments: List[StateAssessment],
         violation_responses_for_history: List[StateSupervisionViolationResponse],
         supervision_contacts: List[StateSupervisionContact],
@@ -519,7 +517,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
     def _supervision_period_counts_towards_supervision_population_in_date_range(
         self,
         date_range: DateRange,
-        incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
+        incarceration_period_index: NormalizedIncarcerationPeriodIndex,
         supervision_period: StateSupervisionPeriod,
         supervising_officer_external_id: Optional[str],
         supervision_delegate: StateSpecificSupervisionDelegate,
@@ -550,7 +548,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         self,
         evaluation_date: date,
         supervision_period: StateSupervisionPeriod,
-        incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
+        incarceration_period_index: NormalizedIncarcerationPeriodIndex,
         supervision_delegate: StateSpecificSupervisionDelegate,
         supervising_officer_external_id: Optional[str],
         validate_duration: bool = True,
@@ -578,8 +576,8 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
     def _in_supervision_population_on_date(
         self,
         evaluation_date: date,
-        supervision_period_index: PreProcessedSupervisionPeriodIndex,
-        incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
+        supervision_period_index: NormalizedSupervisionPeriodIndex,
+        incarceration_period_index: NormalizedIncarcerationPeriodIndex,
         supervision_delegate: StateSpecificSupervisionDelegate,
         supervising_officer_external_id: Optional[str],
     ) -> bool:
@@ -607,8 +605,8 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
     def _find_supervision_start_event(
         self,
         supervision_period: StateSupervisionPeriod,
-        supervision_period_index: PreProcessedSupervisionPeriodIndex,
-        incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
+        supervision_period_index: NormalizedSupervisionPeriodIndex,
+        incarceration_period_index: NormalizedIncarcerationPeriodIndex,
         supervision_delegate: StateSpecificSupervisionDelegate,
         supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
         judicial_district_code: Optional[str] = None,
@@ -674,8 +672,8 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
     def _find_supervision_termination_event(
         self,
         supervision_period: StateSupervisionPeriod,
-        supervision_period_index: PreProcessedSupervisionPeriodIndex,
-        incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
+        supervision_period_index: NormalizedSupervisionPeriodIndex,
+        incarceration_period_index: NormalizedIncarcerationPeriodIndex,
         assessments: List[StateAssessment],
         violation_responses_for_history: List[StateSupervisionViolationResponse],
         supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
@@ -834,7 +832,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         supervision_sentences: List[StateSupervisionSentence],
         incarceration_sentences: List[StateIncarcerationSentence],
         supervision_periods: List[StateSupervisionPeriod],
-        incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
+        incarceration_period_index: NormalizedIncarcerationPeriodIndex,
         supervision_delegate: StateSpecificSupervisionDelegate,
         supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
         supervision_period_to_judicial_district_associations: Dict[int, Dict[Any, Any]],
@@ -962,7 +960,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         projected_completion_date: date,
         supervision_period: StateSupervisionPeriod,
         supervision_type_for_event: StateSupervisionPeriodSupervisionType,
-        incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
+        incarceration_period_index: NormalizedIncarcerationPeriodIndex,
         supervision_delegate: StateSpecificSupervisionDelegate,
         supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
         supervision_period_to_judicial_district_associations: Dict[int, Dict[Any, Any]],
@@ -1349,7 +1347,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
 
     def _get_supervision_downgrade_details_if_downgrade_occurred(
         self,
-        supervision_period_index: PreProcessedSupervisionPeriodIndex,
+        supervision_period_index: NormalizedSupervisionPeriodIndex,
         current_supervision_period: StateSupervisionPeriod,
     ) -> Tuple[bool, Optional[StateSupervisionLevel]]:
         """Given a supervision period and the supervision period index it belongs to, determine whether a supervision

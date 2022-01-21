@@ -31,9 +31,9 @@ from recidiviz.calculator.pipeline.program.events import (
     ProgramReferralEvent,
 )
 from recidiviz.calculator.pipeline.utils import assessment_utils
-from recidiviz.calculator.pipeline.utils.entity_pre_processing_utils import (
-    pre_processed_program_assignments_for_calculations,
-    pre_processing_managers_for_calculations,
+from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_utils import (
+    entity_normalization_managers_for_calculations,
+    normalized_program_assignments_for_calculations,
 )
 from recidiviz.calculator.pipeline.utils.execution_utils import (
     list_of_dicts_to_dict_with_keys,
@@ -120,7 +120,7 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
             return program_events
 
         state_code = get_single_state_code(program_assignments)
-        program_assignments = pre_processed_program_assignments_for_calculations(
+        program_assignments = normalized_program_assignments_for_calculations(
             state_code, program_assignments
         )
 
@@ -129,29 +129,29 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
             StateSupervisionPeriod.get_class_id_name(),
         )
 
-        (_, sp_pre_processing_manager,) = pre_processing_managers_for_calculations(
+        (_, sp_normalization_manager,) = entity_normalization_managers_for_calculations(
             state_code=state_code,
-            # SP pre-processing doesn't rely on StateIncarcerationPeriod entities,
+            # SP normalization doesn't rely on StateIncarcerationPeriod entities,
             # and this pipeline doesn't require StateIncarcerationPeriods
             incarceration_periods=None,
             supervision_periods=supervision_periods,
             # Note: This pipeline cannot be run for any state that relies on
-            # StateSupervisionViolationResponse entities in IP pre-processing
-            pre_processed_violation_responses=None,
+            # StateSupervisionViolationResponse entities in IP normalization
+            normalized_violation_responses=None,
             field_index=self.field_index,
             # Note: This pipeline cannot be run for any state that relies on
             # StateIncarcerationSentence and StateSupervisionSentence entities
-            # in SP pre-processing
+            # in SP normalization
             incarceration_sentences=None,
             supervision_sentences=None,
         )
         supervision_delegate = get_state_specific_supervision_delegate(state_code)
 
-        if not sp_pre_processing_manager:
-            raise ValueError("Expected pre-processed SPs for this pipeline.")
+        if not sp_normalization_manager:
+            raise ValueError("Expected normalized SPs for this pipeline.")
 
         supervision_periods_for_calculations = (
-            sp_pre_processing_manager.pre_processed_supervision_period_index_for_calculations().supervision_periods
+            sp_normalization_manager.normalized_supervision_period_index_for_calculations().supervision_periods
         )
 
         for program_assignment in program_assignments:

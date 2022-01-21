@@ -37,22 +37,25 @@ from recidiviz.calculator.pipeline.utils import assessment_utils
 from recidiviz.calculator.pipeline.utils.commitment_from_supervision_utils import (
     get_commitment_from_supervision_details,
 )
-from recidiviz.calculator.pipeline.utils.entity_pre_processing_utils import (
-    pre_processed_violation_responses_for_calculations,
-    pre_processing_managers_for_calculations,
+from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_utils import (
+    entity_normalization_managers_for_calculations,
+    normalized_violation_responses_for_calculations,
+)
+from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_period_normalization_manager import (
+    IncarcerationNormalizationManager,
+)
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_incarceration_period_index import (
+    NormalizedIncarcerationPeriodIndex,
+)
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_supervision_period_index import (
+    NormalizedSupervisionPeriodIndex,
+)
+from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_period_normalization_manager import (
+    SupervisionNormalizationManager,
 )
 from recidiviz.calculator.pipeline.utils.execution_utils import (
     extract_county_of_residence_from_rows,
     list_of_dicts_to_dict_with_keys,
-)
-from recidiviz.calculator.pipeline.utils.incarceration_period_pre_processing_manager import (
-    IncarcerationPreProcessingManager,
-)
-from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
-    PreProcessedIncarcerationPeriodIndex,
-)
-from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index import (
-    PreProcessedSupervisionPeriodIndex,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
     get_state_specific_commitment_from_supervision_delegate,
@@ -71,9 +74,6 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_violations_delegate import (
     StateSpecificViolationDelegate,
-)
-from recidiviz.calculator.pipeline.utils.supervision_period_pre_processing_manager import (
-    SupervisionPreProcessingManager,
 )
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
     get_post_incarceration_supervision_type,
@@ -203,29 +203,27 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
             StateSupervisionPeriod.get_class_id_name(),
         )
 
-        pre_processed_violation_responses = (
-            pre_processed_violation_responses_for_calculations(
+        normalized_violation_responses = (
+            normalized_violation_responses_for_calculations(
                 violation_responses=violation_responses, state_code=state_code
             )
         )
 
         (
-            ip_pre_processing_manager,
-            sp_pre_processing_manager,
-        ) = pre_processing_managers_for_calculations(
+            ip_normalization_manager,
+            sp_normalization_manager,
+        ) = entity_normalization_managers_for_calculations(
             state_code=state_code,
             incarceration_periods=incarceration_periods,
             supervision_periods=supervision_periods,
-            pre_processed_violation_responses=pre_processed_violation_responses,
+            normalized_violation_responses=normalized_violation_responses,
             field_index=self.field_index,
             incarceration_sentences=incarceration_sentences,
             supervision_sentences=supervision_sentences,
         )
 
-        if not ip_pre_processing_manager or not sp_pre_processing_manager:
-            raise ValueError(
-                "Expected both pre-processed IPs and SPs for this pipeline."
-            )
+        if not ip_normalization_manager or not sp_normalization_manager:
+            raise ValueError("Expected both normalized IPs and SPs for this pipeline.")
 
         (
             release_events,
@@ -233,10 +231,10 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
         ) = self._find_all_admission_release_events(
             incarceration_sentences=incarceration_sentences,
             supervision_sentences=supervision_sentences,
-            ip_pre_processing_manager=ip_pre_processing_manager,
-            sp_pre_processing_manager=sp_pre_processing_manager,
+            ip_normalization_manager=ip_normalization_manager,
+            sp_normalization_manager=sp_normalization_manager,
             assessments=assessments,
-            sorted_violation_responses=pre_processed_violation_responses,
+            sorted_violation_responses=normalized_violation_responses,
             supervision_period_to_agent_associations=supervision_period_to_agent_associations,
             county_of_residence=county_of_residence,
             incarceration_delegate=state_specific_incarceration_delegate,
@@ -246,7 +244,7 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
         incarceration_events.extend(release_events)
         incarceration_events.extend(
             self._find_all_stay_events(
-                ip_pre_processing_manager=ip_pre_processing_manager,
+                ip_normalization_manager=ip_normalization_manager,
                 incarceration_period_to_judicial_district=incarceration_period_to_judicial_district,
                 incarceration_delegate=state_specific_incarceration_delegate,
                 county_of_residence=county_of_residence,
@@ -260,8 +258,8 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
         self,
         incarceration_sentences: List[StateIncarcerationSentence],
         supervision_sentences: List[StateSupervisionSentence],
-        ip_pre_processing_manager: IncarcerationPreProcessingManager,
-        sp_pre_processing_manager: SupervisionPreProcessingManager,
+        ip_normalization_manager: IncarcerationNormalizationManager,
+        sp_normalization_manager: SupervisionNormalizationManager,
         assessments: List[StateAssessment],
         sorted_violation_responses: List[StateSupervisionViolationResponse],
         supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
@@ -279,13 +277,13 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
             Union[IncarcerationAdmissionEvent, IncarcerationReleaseEvent]
         ] = []
 
-        incarceration_period_index_for_admissions = ip_pre_processing_manager.pre_processed_incarceration_period_index_for_calculations(
+        incarceration_period_index_for_admissions = ip_normalization_manager.normalized_incarceration_period_index_for_calculations(
             collapse_transfers=True,
             overwrite_facility_information_in_transfers=False,
         )
 
         supervision_period_index = (
-            sp_pre_processing_manager.pre_processed_supervision_period_index_for_calculations()
+            sp_normalization_manager.normalized_supervision_period_index_for_calculations()
         )
 
         commitments_from_supervision: Dict[
@@ -318,7 +316,7 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
                         admission_event.admission_date
                     ] = admission_event
 
-        incarceration_period_index_for_releases = ip_pre_processing_manager.pre_processed_incarceration_period_index_for_calculations(
+        incarceration_period_index_for_releases = ip_normalization_manager.normalized_incarceration_period_index_for_calculations(
             collapse_transfers=True,
             overwrite_facility_information_in_transfers=True,
         )
@@ -343,7 +341,7 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
 
     def _find_all_stay_events(
         self,
-        ip_pre_processing_manager: IncarcerationPreProcessingManager,
+        ip_normalization_manager: IncarcerationNormalizationManager,
         incarceration_period_to_judicial_district: Dict[int, Dict[Any, Any]],
         incarceration_delegate: StateSpecificIncarcerationDelegate,
         commitments_from_supervision: Dict[
@@ -352,12 +350,12 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
         county_of_residence: Optional[str],
     ) -> List[IncarcerationStayEvent]:
         """Generates and returns all IncarcerationStayEvents for the
-        pre-processed incarceration periods provided by the
-        |ip_pre_processing_manager|.
+        normalized incarceration periods provided by the
+        |ip_normalization_manager|.
         """
         incarceration_stay_events: List[IncarcerationStayEvent] = []
 
-        incarceration_period_index = ip_pre_processing_manager.pre_processed_incarceration_period_index_for_calculations(
+        incarceration_period_index = ip_normalization_manager.normalized_incarceration_period_index_for_calculations(
             collapse_transfers=False,
             overwrite_facility_information_in_transfers=False,
         )
@@ -382,7 +380,7 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
     def _find_incarceration_stays(
         self,
         incarceration_period: StateIncarcerationPeriod,
-        incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
+        incarceration_period_index: NormalizedIncarcerationPeriodIndex,
         incarceration_period_to_judicial_district: Dict[int, Dict[Any, Any]],
         incarceration_delegate: StateSpecificIncarcerationDelegate,
         commitments_from_supervision: Dict[
@@ -489,8 +487,8 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
         incarceration_sentences: List[StateIncarcerationSentence],
         supervision_sentences: List[StateSupervisionSentence],
         incarceration_period: StateIncarcerationPeriod,
-        incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
-        supervision_period_index: PreProcessedSupervisionPeriodIndex,
+        incarceration_period_index: NormalizedIncarcerationPeriodIndex,
+        supervision_period_index: NormalizedSupervisionPeriodIndex,
         assessments: List[StateAssessment],
         sorted_violation_responses: List[StateSupervisionViolationResponse],
         supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
@@ -551,8 +549,8 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
         incarceration_sentences: List[StateIncarcerationSentence],
         supervision_sentences: List[StateSupervisionSentence],
         incarceration_period: StateIncarcerationPeriod,
-        incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
-        supervision_period_index: PreProcessedSupervisionPeriodIndex,
+        incarceration_period_index: NormalizedIncarcerationPeriodIndex,
+        supervision_period_index: NormalizedSupervisionPeriodIndex,
         assessments: List[StateAssessment],
         sorted_violation_responses: List[StateSupervisionViolationResponse],
         supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
@@ -700,8 +698,8 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
     def _release_event_for_period(
         self,
         incarceration_period: StateIncarcerationPeriod,
-        incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
-        supervision_period_index: PreProcessedSupervisionPeriodIndex,
+        incarceration_period_index: NormalizedIncarcerationPeriodIndex,
+        supervision_period_index: NormalizedSupervisionPeriodIndex,
         incarceration_delegate: StateSpecificIncarcerationDelegate,
         supervision_delegate: StateSpecificSupervisionDelegate,
         commitments_from_supervision: Dict[

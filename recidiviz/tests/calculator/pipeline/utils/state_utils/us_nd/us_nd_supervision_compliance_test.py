@@ -54,8 +54,8 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionContact,
     StateSupervisionPeriod,
 )
-from recidiviz.tests.calculator.pipeline.pre_processing_testing_utils import (
-    default_pre_processed_ip_index_for_tests,
+from recidiviz.tests.calculator.pipeline.utils.entity_normalization.normalization_testing_utils import (
+    default_normalized_ip_index_for_tests,
 )
 
 
@@ -64,7 +64,7 @@ class TestAssessmentsCompletedInComplianceMonth(unittest.TestCase):
 
     def setUp(self) -> None:
         self.person = StatePerson.new_with_defaults(state_code="US_ND")
-        self.empty_ip_index = default_pre_processed_ip_index_for_tests(
+        self.empty_ip_index = default_normalized_ip_index_for_tests(
             incarceration_delegate=UsNdIncarcerationDelegate()
         )
 
@@ -144,7 +144,7 @@ class TestFaceToFaceContactsInComplianceMonth(unittest.TestCase):
 
     def setUp(self) -> None:
         self.person = StatePerson.new_with_defaults(state_code="US_ND")
-        self.empty_ip_index = default_pre_processed_ip_index_for_tests(
+        self.empty_ip_index = default_normalized_ip_index_for_tests(
             incarceration_delegate=UsNdIncarcerationDelegate()
         )
 
@@ -233,7 +233,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
 
     def setUp(self) -> None:
         self.person = StatePerson.new_with_defaults(state_code="US_ND")
-        self.empty_ip_index = default_pre_processed_ip_index_for_tests(
+        self.empty_ip_index = default_normalized_ip_index_for_tests(
             incarceration_delegate=UsNdIncarcerationDelegate()
         )
 
@@ -454,7 +454,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
 
     def setUp(self) -> None:
         self.person = StatePerson.new_with_defaults(state_code="US_ND")
-        self.empty_ip_index = default_pre_processed_ip_index_for_tests(
+        self.empty_ip_index = default_normalized_ip_index_for_tests(
             incarceration_delegate=UsNdIncarcerationDelegate()
         )
 
@@ -851,7 +851,7 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
 
     def setUp(self) -> None:
         self.person = StatePerson.new_with_defaults(state_code="US_ND")
-        self.empty_ip_index = default_pre_processed_ip_index_for_tests(
+        self.empty_ip_index = default_normalized_ip_index_for_tests(
             incarceration_delegate=UsNdIncarcerationDelegate()
         )
 
@@ -946,7 +946,7 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
 
     def setUp(self) -> None:
         self.person = StatePerson.new_with_defaults(state_code="US_ND")
-        self.empty_ip_index = default_pre_processed_ip_index_for_tests(
+        self.empty_ip_index = default_normalized_ip_index_for_tests(
             incarceration_delegate=UsNdIncarcerationDelegate()
         )
 

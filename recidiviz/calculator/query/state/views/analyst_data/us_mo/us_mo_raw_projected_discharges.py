@@ -48,7 +48,7 @@ US_MO_RAW_PROJECTED_DISCHARGES_SUBQUERY_TEMPLATE = """
             SELECT DISTINCT BW_DOC AS external_id
             FROM `{project_id}.us_mo_raw_data_up_to_date_views.LBAKRDTA_TAK026_latest`
             -- Lifetime supervision status codes as listed in us_mo_sentence_classification
-            -- TODO(#9848) Remove special case logic when Dataflow IP/SP pre-processing results are output to BQ
+            -- TODO(#9848) Remove special case logic when Dataflow IP/SP normalization results are output to BQ
             WHERE BW_SCD IN ('35I6010', '35I6020', '40O6010', '40O6020', '90O1070', '95O1020', '95O2060')
         ),
         us_mo AS (

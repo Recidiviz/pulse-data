@@ -67,8 +67,8 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionContact,
     StateSupervisionPeriod,
 )
-from recidiviz.tests.calculator.pipeline.pre_processing_testing_utils import (
-    default_pre_processed_ip_index_for_tests,
+from recidiviz.tests.calculator.pipeline.utils.entity_normalization.normalization_testing_utils import (
+    default_normalized_ip_index_for_tests,
 )
 
 
@@ -77,7 +77,7 @@ class TestCaseCompliance(unittest.TestCase):
 
     def setUp(self) -> None:
         self.person = StatePerson.new_with_defaults(state_code="US_XX")
-        self.empty_ip_index = default_pre_processed_ip_index_for_tests()
+        self.empty_ip_index = default_normalized_ip_index_for_tests()
 
     @patch.object(UsNdSupervisionCaseCompliance, "_guidelines_applicable_for_case")
     def test_us_nd_guidelines_not_applicable_provided(
@@ -1193,7 +1193,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
 
     def setUp(self) -> None:
         self.person = StatePerson.new_with_defaults(state_code="US_XX")
-        self.empty_ip_index = default_pre_processed_ip_index_for_tests()
+        self.empty_ip_index = default_normalized_ip_index_for_tests()
 
     def test_us_id_next_recommended_assessment_date(self) -> None:
         supervision_period = StateSupervisionPeriod.new_with_defaults(

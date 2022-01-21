@@ -18,14 +18,20 @@
 from datetime import date
 from typing import List, Optional
 
-from recidiviz.calculator.pipeline.utils.incarceration_period_pre_processing_manager import (
-    StateSpecificIncarcerationPreProcessingDelegate,
+from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_period_normalization_manager import (
+    StateSpecificIncarcerationNormalizationDelegate,
 )
-from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
-    PreProcessedIncarcerationPeriodIndex,
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_incarceration_period_index import (
+    NormalizedIncarcerationPeriodIndex,
 )
-from recidiviz.calculator.pipeline.utils.program_assignment_pre_processing_manager import (
-    StateSpecificProgramAssignmentPreProcessingDelegate,
+from recidiviz.calculator.pipeline.utils.entity_normalization.program_assignment_normalization_manager import (
+    StateSpecificProgramAssignmentNormalizationDelegate,
+)
+from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_period_normalization_manager import (
+    StateSpecificSupervisionNormalizationDelegate,
+)
+from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_violation_responses_normalization_manager import (
+    StateSpecificViolationResponseNormalizationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_commitment_from_supervision_delegate import (
     StateSpecificCommitmentFromSupervisionDelegate,
@@ -45,11 +51,11 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_commitment_from
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_incarceration_delegate import (
     UsIdIncarcerationDelegate,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_incarceration_period_pre_processing_delegate import (
-    UsIdIncarcerationPreProcessingDelegate,
+from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_incarceration_period_normalization_delegate import (
+    UsIdIncarcerationNormalizationDelegate,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_program_assignment_pre_processing_delegate import (
-    UsIdProgramAssignmentPreProcessingDelegate,
+from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_program_assignment_normalization_delegate import (
+    UsIdProgramAssignmentNormalizationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_compliance import (
     UsIdSupervisionCaseCompliance,
@@ -57,11 +63,11 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_com
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_delegate import (
     UsIdSupervisionDelegate,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_period_pre_processing_delegate import (
-    UsIdSupervisionPreProcessingDelegate,
+from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_period_normalization_delegate import (
+    UsIdSupervisionNormalizationDelegate,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_violation_response_preprocessing_delegate import (
-    UsIdViolationResponsePreprocessingDelegate,
+from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_violation_response_normalization_delegate import (
+    UsIdViolationResponseNormalizationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_violations_delegate import (
     UsIdViolationDelegate,
@@ -72,20 +78,20 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_me.us_me_commitment_from
 from recidiviz.calculator.pipeline.utils.state_utils.us_me.us_me_incarceration_delegate import (
     UsMeIncarcerationDelegate,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.us_me.us_me_incarceration_period_pre_processing_delegate import (
-    UsMeIncarcerationPreProcessingDelegate,
+from recidiviz.calculator.pipeline.utils.state_utils.us_me.us_me_incarceration_period_normalization_delegate import (
+    UsMeIncarcerationNormalizationDelegate,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.us_me.us_me_program_assignment_pre_processing_delegate import (
-    UsMeProgramAssignmentPreProcessingDelegate,
+from recidiviz.calculator.pipeline.utils.state_utils.us_me.us_me_program_assignment_normalization_delegate import (
+    UsMeProgramAssignmentNormalizationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_me.us_me_supervision_delegate import (
     UsMeSupervisionDelegate,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.us_me.us_me_supervision_period_pre_processing_delegate import (
-    UsMeSupervisionPreProcessingDelegate,
+from recidiviz.calculator.pipeline.utils.state_utils.us_me.us_me_supervision_period_normalization_delegate import (
+    UsMeSupervisionNormalizationDelegate,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.us_me.us_me_violation_response_preprocessing_delegate import (
-    UsMeViolationResponsePreprocessingDelegate,
+from recidiviz.calculator.pipeline.utils.state_utils.us_me.us_me_violation_response_normalization_delegate import (
+    UsMeViolationResponseNormalizationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_me.us_me_violations_delegate import (
     UsMeViolationDelegate,
@@ -96,20 +102,20 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_commitment_from
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_incarceration_delegate import (
     UsMoIncarcerationDelegate,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_incarceration_period_pre_processing_delegate import (
-    UsMoIncarcerationPreProcessingDelegate,
+from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_incarceration_period_normalization_delegate import (
+    UsMoIncarcerationNormalizationDelegate,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_program_assignment_pre_processing_delegate import (
-    UsMoProgramAssignmentPreProcessingDelegate,
+from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_program_assignment_normalization_delegate import (
+    UsMoProgramAssignmentNormalizationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_supervision_delegate import (
     UsMoSupervisionDelegate,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_supervision_period_pre_processing_delegate import (
-    UsMoSupervisionPreProcessingDelegate,
+from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_supervision_period_normalization_delegate import (
+    UsMoSupervisionNormalizationDelegate,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_violation_response_preprocessing_delegate import (
-    UsMoViolationResponsePreprocessingDelegate,
+from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_violation_response_normalization_delegate import (
+    UsMoViolationResponseNormalizationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_violations_delegate import (
     UsMoViolationDelegate,
@@ -120,11 +126,11 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_commitment_from
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_incarceration_delegate import (
     UsNdIncarcerationDelegate,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_incarceration_period_pre_processing_delegate import (
-    UsNdIncarcerationPreProcessingDelegate,
+from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_incarceration_period_normalization_delegate import (
+    UsNdIncarcerationNormalizationDelegate,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_program_assignment_pre_processing_delegate import (
-    UsNdProgramAssignmentPreProcessingDelegate,
+from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_program_assignment_normalization_delegate import (
+    UsNdProgramAssignmentNormalizationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_compliance import (
     UsNdSupervisionCaseCompliance,
@@ -132,11 +138,11 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_com
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_delegate import (
     UsNdSupervisionDelegate,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_period_pre_processing_delegate import (
-    UsNdSupervisionPreProcessingDelegate,
+from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_period_normalization_delegate import (
+    UsNdSupervisionNormalizationDelegate,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_violation_response_preprocessing_delegate import (
-    UsNdViolationResponsePreprocessingDelegate,
+from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_violation_response_normalization_delegate import (
+    UsNdViolationResponseNormalizationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_violations_delegate import (
     UsNdViolationDelegate,
@@ -147,11 +153,11 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_commitment_from
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_incarceration_delegate import (
     UsPaIncarcerationDelegate,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_incarceration_period_pre_processing_delegate import (
-    UsPaIncarcerationPreProcessingDelegate,
+from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_incarceration_period_normalization_delegate import (
+    UsPaIncarcerationNormalizationDelegate,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_program_assignment_pre_processing_delegate import (
-    UsPaProgramAssignmentPreProcessingDelegate,
+from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_program_assignment_normalization_delegate import (
+    UsPaProgramAssignmentNormalizationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_supervision_compliance import (
     UsPaSupervisionCaseCompliance,
@@ -159,11 +165,11 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_supervision_com
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_supervision_delegate import (
     UsPaSupervisionDelegate,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_supervision_period_pre_processing_delegate import (
-    UsPaSupervisionPreProcessingDelegate,
+from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_supervision_period_normalization_delegate import (
+    UsPaSupervisionNormalizationDelegate,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_violation_response_preprocessing_delegate import (
-    UsPaViolationResponsePreprocessingDelegate,
+from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_violation_response_normalization_delegate import (
+    UsPaViolationResponseNormalizationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_violations_delegate import (
     UsPaViolationDelegate,
@@ -174,32 +180,26 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_tn.us_tn_commitment_from
 from recidiviz.calculator.pipeline.utils.state_utils.us_tn.us_tn_incarceration_delegate import (
     UsTnIncarcerationDelegate,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.us_tn.us_tn_incarceration_period_pre_processing_delegate import (
-    UsTnIncarcerationPreProcessingDelegate,
+from recidiviz.calculator.pipeline.utils.state_utils.us_tn.us_tn_incarceration_period_normalization_delegate import (
+    UsTnIncarcerationNormalizationDelegate,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.us_tn.us_tn_program_assignment_pre_processing_delegate import (
-    UsTnProgramAssignmentPreProcessingDelegate,
+from recidiviz.calculator.pipeline.utils.state_utils.us_tn.us_tn_program_assignment_normalization_delegate import (
+    UsTnProgramAssignmentNormalizationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_tn.us_tn_supervision_delegate import (
     UsTnSupervisionDelegate,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.us_tn.us_tn_supervision_period_pre_processing_delegate import (
-    UsTnSupervisionPreProcessingDelegate,
+from recidiviz.calculator.pipeline.utils.state_utils.us_tn.us_tn_supervision_period_normalization_delegate import (
+    UsTnSupervisionNormalizationDelegate,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.us_tn.us_tn_violation_response_preprocessing_delegate import (
-    UsTnViolationResponsePreprocessingDelegate,
+from recidiviz.calculator.pipeline.utils.state_utils.us_tn.us_tn_violation_response_normalization_delegate import (
+    UsTnViolationResponseNormalizationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_tn.us_tn_violations_delegate import (
     UsTnViolationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.supervision_case_compliance_manager import (
     StateSupervisionCaseComplianceManager,
-)
-from recidiviz.calculator.pipeline.utils.supervision_period_pre_processing_manager import (
-    StateSpecificSupervisionPreProcessingDelegate,
-)
-from recidiviz.calculator.pipeline.utils.supervision_violation_responses_pre_processing_manager import (
-    StateSpecificViolationResponsePreProcessingDelegate,
 )
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.states import StateCode
@@ -222,7 +222,7 @@ def get_state_specific_case_compliance_manager(
     supervision_contacts: List[StateSupervisionContact],
     violation_responses: List[StateSupervisionViolationResponse],
     incarceration_sentences: List[StateIncarcerationSentence],
-    incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
+    incarceration_period_index: NormalizedIncarcerationPeriodIndex,
     supervision_delegate: StateSpecificSupervisionDelegate,
 ) -> Optional[StateSupervisionCaseComplianceManager]:
     """Returns a state-specific SupervisionCaseComplianceManager object, containing information about whether the
@@ -272,65 +272,65 @@ def get_state_specific_case_compliance_manager(
     return None
 
 
-def get_state_specific_incarceration_period_pre_processing_delegate(
+def get_state_specific_incarceration_period_normalization_delegate(
     state_code: str,
-) -> StateSpecificIncarcerationPreProcessingDelegate:
-    """Returns the type of IncarcerationPreProcessingDelegate that should be used for
-    pre-processing StateIncarcerationPeriod entities from a given |state_code|."""
+) -> StateSpecificIncarcerationNormalizationDelegate:
+    """Returns the type of IncarcerationNormalizationDelegate that should be used for
+    normalizing StateIncarcerationPeriod entities from a given |state_code|."""
     if state_code == StateCode.US_ID.value:
-        return UsIdIncarcerationPreProcessingDelegate()
+        return UsIdIncarcerationNormalizationDelegate()
     if state_code == StateCode.US_ME.value:
-        return UsMeIncarcerationPreProcessingDelegate()
+        return UsMeIncarcerationNormalizationDelegate()
     if state_code == StateCode.US_MO.value:
-        return UsMoIncarcerationPreProcessingDelegate()
+        return UsMoIncarcerationNormalizationDelegate()
     if state_code == StateCode.US_ND.value:
-        return UsNdIncarcerationPreProcessingDelegate()
+        return UsNdIncarcerationNormalizationDelegate()
     if state_code == StateCode.US_PA.value:
-        return UsPaIncarcerationPreProcessingDelegate()
+        return UsPaIncarcerationNormalizationDelegate()
     if state_code == StateCode.US_TN.value:
-        return UsTnIncarcerationPreProcessingDelegate()
+        return UsTnIncarcerationNormalizationDelegate()
 
     raise ValueError(f"Unexpected state code [{state_code}]")
 
 
-def get_state_specific_supervision_period_pre_processing_delegate(
+def get_state_specific_supervision_period_normalization_delegate(
     state_code: str,
-) -> StateSpecificSupervisionPreProcessingDelegate:
-    """Returns the type of SupervisionPreProcessingDelegate that should be used for
-    pre-processing StateSupervisionPeriod entities from a given |state_code|."""
+) -> StateSpecificSupervisionNormalizationDelegate:
+    """Returns the type of SupervisionNormalizationDelegate that should be used for
+    normalizing StateSupervisionPeriod entities from a given |state_code|."""
     if state_code == StateCode.US_ID.value:
-        return UsIdSupervisionPreProcessingDelegate()
+        return UsIdSupervisionNormalizationDelegate()
     if state_code == StateCode.US_ME.value:
-        return UsMeSupervisionPreProcessingDelegate()
+        return UsMeSupervisionNormalizationDelegate()
     if state_code == StateCode.US_MO.value:
-        return UsMoSupervisionPreProcessingDelegate()
+        return UsMoSupervisionNormalizationDelegate()
     if state_code == StateCode.US_ND.value:
-        return UsNdSupervisionPreProcessingDelegate()
+        return UsNdSupervisionNormalizationDelegate()
     if state_code == StateCode.US_PA.value:
-        return UsPaSupervisionPreProcessingDelegate()
+        return UsPaSupervisionNormalizationDelegate()
     if state_code == StateCode.US_TN.value:
-        return UsTnSupervisionPreProcessingDelegate()
+        return UsTnSupervisionNormalizationDelegate()
 
     raise ValueError(f"Unexpected state code [{state_code}]")
 
 
-def get_state_specific_program_assignment_pre_processing_delegate(
+def get_state_specific_program_assignment_normalization_delegate(
     state_code: str,
-) -> StateSpecificProgramAssignmentPreProcessingDelegate:
-    """Returns the type of ProgramAssignmentPreProcessingDelegate that should be used for
-    pre-processing StateProgramAssignment entities from a given |state_code|."""
+) -> StateSpecificProgramAssignmentNormalizationDelegate:
+    """Returns the type of ProgramAssignmentNormalizationDelegate that should be used for
+    normalizing StateProgramAssignment entities from a given |state_code|."""
     if state_code == StateCode.US_ID.value:
-        return UsIdProgramAssignmentPreProcessingDelegate()
+        return UsIdProgramAssignmentNormalizationDelegate()
     if state_code == StateCode.US_ME.value:
-        return UsMeProgramAssignmentPreProcessingDelegate()
+        return UsMeProgramAssignmentNormalizationDelegate()
     if state_code == StateCode.US_MO.value:
-        return UsMoProgramAssignmentPreProcessingDelegate()
+        return UsMoProgramAssignmentNormalizationDelegate()
     if state_code == StateCode.US_ND.value:
-        return UsNdProgramAssignmentPreProcessingDelegate()
+        return UsNdProgramAssignmentNormalizationDelegate()
     if state_code == StateCode.US_PA.value:
-        return UsPaProgramAssignmentPreProcessingDelegate()
+        return UsPaProgramAssignmentNormalizationDelegate()
     if state_code == StateCode.US_TN.value:
-        return UsTnProgramAssignmentPreProcessingDelegate()
+        return UsTnProgramAssignmentNormalizationDelegate()
 
     raise ValueError(f"Unexpected state code [{state_code}]")
 
@@ -377,23 +377,23 @@ def get_state_specific_violation_delegate(
     raise ValueError(f"Unexpected state code [{state_code}]")
 
 
-def get_state_specific_violation_response_preprocessing_delegate(
+def get_state_specific_violation_response_normalization_delegate(
     state_code: str,
-) -> StateSpecificViolationResponsePreProcessingDelegate:
-    """Returns the type of StateSpecificViolationResponsePreProcessingDelegate that should be used for
+) -> StateSpecificViolationResponseNormalizationDelegate:
+    """Returns the type of StateSpecificViolationResponseNormalizationDelegate that should be used for
     violation calculations in a given |state_code|."""
     if state_code == StateCode.US_ID.value:
-        return UsIdViolationResponsePreprocessingDelegate()
+        return UsIdViolationResponseNormalizationDelegate()
     if state_code == StateCode.US_ME.value:
-        return UsMeViolationResponsePreprocessingDelegate()
+        return UsMeViolationResponseNormalizationDelegate()
     if state_code == StateCode.US_MO.value:
-        return UsMoViolationResponsePreprocessingDelegate()
+        return UsMoViolationResponseNormalizationDelegate()
     if state_code == StateCode.US_ND.value:
-        return UsNdViolationResponsePreprocessingDelegate()
+        return UsNdViolationResponseNormalizationDelegate()
     if state_code == StateCode.US_PA.value:
-        return UsPaViolationResponsePreprocessingDelegate()
+        return UsPaViolationResponseNormalizationDelegate()
     if state_code == StateCode.US_TN.value:
-        return UsTnViolationResponsePreprocessingDelegate()
+        return UsTnViolationResponseNormalizationDelegate()
 
     raise ValueError(f"Unexpected state code [{state_code}]")
 
