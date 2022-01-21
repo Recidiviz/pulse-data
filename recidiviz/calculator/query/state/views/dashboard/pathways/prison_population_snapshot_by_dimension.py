@@ -18,7 +18,9 @@
 from recidiviz.calculator.query.bq_utils import add_age_groups, filter_to_enabled_states
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import (
+    DASHBOARD_VIEWS_DATASET,
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    SESSIONS_DATASET,
 )
 from recidiviz.calculator.query.state.state_specific_query_strings import (
     get_pathways_incarceration_last_updated_date,
@@ -41,16 +43,55 @@ PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_DESCRIPTION = (
 PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = """
     /*{description}*/
     WITH get_last_updated AS ({get_pathways_incarceration_last_updated_date}),
-    add_age_groups AS (
+    length_of_stay_bins AS (
         SELECT 
+        person_id,
+        CASE 
+            WHEN length_of_stay_months < 3 THEN 'months_0_3'
+            WHEN length_of_stay_months < 6 THEN 'months_3_6'
+            WHEN length_of_stay_months < 9 THEN 'months_6_9'
+            WHEN length_of_stay_months < 12 THEN 'months_9_12'
+            WHEN length_of_stay_months < 15 THEN 'months_12_15'
+            WHEN length_of_stay_months < 18 THEN 'months_15_18'
+            WHEN length_of_stay_months < 21 THEN 'months_18_21'
+            WHEN length_of_stay_months < 24 THEN 'months_21_24'
+            WHEN length_of_stay_months < 36 THEN 'months_24_36'
+            WHEN length_of_stay_months < 48 THEN 'months_36_48'
+            WHEN length_of_stay_months <= 60 THEN 'months_48_60'
+        END AS length_of_stay,
+        FROM (
+            SELECT
+                person_id,
+                DATE_DIFF(CURRENT_DATE('US/Eastern'), start_date, MONTH) AS length_of_stay_months,
+            FROM `{project_id}.{sessions_dataset}.compartment_level_1_super_sessions_materialized`
+            WHERE compartment_level_1 = 'INCARCERATION'
+                AND end_date IS NULL
+        )
+    ),
+    get_total_pop AS (
+        SELECT
             state_code,
-            gender,
-            admission_reason as legal_status,
-            facility,
-            {add_age_groups}
-            count(distinct person_id) as person_count
+            COUNT(DISTINCT person_id) AS total_population
         FROM `{project_id}.{materialized_metrics_dataset}.most_recent_single_day_incarceration_population_metrics_included_in_state_population_materialized`
-        group by state_code, gender, legal_status, facility, age_group
+        GROUP BY 1
+    ),
+    all_dimensions AS (
+        SELECT 
+            metrics.state_code,
+            gender,
+            admission_reason AS legal_status,
+            IFNULL(location_name, metrics.facility) AS facility,
+            {add_age_groups}
+            length_of_stay,
+            total_population,
+            COUNT(DISTINCT person_id) as person_count
+        FROM `{project_id}.{materialized_metrics_dataset}.most_recent_single_day_incarceration_population_metrics_included_in_state_population_materialized` metrics
+        LEFT JOIN length_of_stay_bins USING (person_id)
+        LEFT JOIN get_total_pop USING (state_code)
+        LEFT JOIN `{project_id}.{dashboard_views_dataset}.pathways_incarceration_location_name_map` name_map
+            ON metrics.state_code = name_map.state_code
+            AND metrics.facility = name_map.location_id
+        group by 1, 2, 3, 4, 5, 6, 7
     )
     
     SELECT
@@ -60,15 +101,18 @@ PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = """
         legal_status,
         facility,
         age_group,
+        length_of_stay,
+        total_population,
         SUM(person_count) as person_count
-    FROM add_age_groups,
+    FROM all_dimensions,
     UNNEST ([age_group, 'ALL']) as age_group,
     UNNEST ([legal_status, 'ALL']) as legal_status,
     UNNEST ([facility, 'ALL']) as facility,
-    UNNEST ([gender, 'ALL']) as gender
+    UNNEST ([gender, 'ALL']) as gender,
+    UNNEST ([length_of_stay, 'ALL']) as length_of_stay
     LEFT JOIN get_last_updated  USING (state_code)
     {filter_to_enabled_states}
-    group by 1, 2, 3, 4, 5, 6 
+    group by 1, 2, 3, 4, 5, 6, 7, 8 
 """
 
 PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER = MetricBigQueryViewBuilder(
@@ -83,8 +127,11 @@ PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER = MetricBigQueryViewBuilder
         "legal_status",
         "facility",
         "age_group",
+        "length_of_stay",
     ),
+    dashboard_views_dataset=DASHBOARD_VIEWS_DATASET,
     materialized_metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    sessions_dataset=SESSIONS_DATASET,
     add_age_groups=add_age_groups(),
     get_pathways_incarceration_last_updated_date=get_pathways_incarceration_last_updated_date(),
     filter_to_enabled_states=filter_to_enabled_states(
