@@ -267,7 +267,6 @@ columns:
         description: Bearings - Long Creek Youth Center
       - value: 81
         description: Unit 1 - Downeast Correctional Facility
-
   - name: Cis_913_Pod_Id
   - name: Cis_914_Cell_Id
   - name: Cis_915_Bed_Id
@@ -278,15 +277,18 @@ columns:
     description: |-
       Primary key of the table
   - name: Effct_Date
+    is_dateime: True
     description: |-
       The date that the status starts.
   - name: End_Date
+    is_dateime: True
     description: |-
       The date that the status ends. If this date is in the future, then the status is still active.
   - name: End_Datetime
   - name: Furlough_Ind
   - name: Hospital_Ind
   - name: Ineffct_Date
+    is_dateime: True
     description: |-
       The date that the status ends. If this date is 12/31/9999 then the status is still active and the End_Date shows
       the anticipated end date or in some cases the End_Date is NULL.

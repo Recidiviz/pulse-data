@@ -1,7 +1,8 @@
 file_tag: CIS_400_CHARGE
 file_description: |-
-  TODO(#9296): Add raw data descriptions
-primary_key_cols: []
+  This table lists all of the charges related to a single client.
+primary_key_cols:
+  - Charge_Id
 columns:
   - name : Atn_Tx
   - name : Bind_Over_Result_Tx

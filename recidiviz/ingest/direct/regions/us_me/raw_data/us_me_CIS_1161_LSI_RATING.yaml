@@ -1,0 +1,106 @@
+file_tag: CIS_1161_LSI_RATING
+file_description: |-
+  This is a code table that maps the LSI rating result description to a code used in other raw tables. It also includes
+  the LSI rating upper and lower value ranges used to determine the LSI rating.
+primary_key_cols:
+  - Lsi_Rating_Cd
+columns:
+  - name: Cis_1009_Lsi_Type_Cd
+    description: |-
+      The type of LSI questionnaire associated with the rating. This code maps to the values found in the CIS_1009_LSI_TYPE raw table.
+  - name: Created_By_Tx
+  - name: Created_On_Date
+  - name: E_Lsi_Rating_Desc
+    description: |-
+      The description of the LSI rating.
+  - name: Logical_Delete_Ind
+  - name: Lsi_Effct_Date
+    description: The date the LSI rating became effective. This is always the same date.
+    is_datetime: True
+  - name: Lsi_Rating_Group_Tx
+  - name: Modified_By_Tx
+  - name: Modified_On_Date
+  - name: System_Ref_Comments_Tx
+  - name: System_Ref_Tx
+  - name: Lsi_Rating_Cd
+    description: |-
+      The primary key for this table and the LSI rating code referenced in other raw tables.
+    known_values:
+      - value: 1
+        description: Administrative, Adult, Male, Community
+      - value: 2
+        description: Administrative, Adult, Male, Facility
+      - value: 3
+        description: Administrative, Adult, Female, Community
+      - value: 4
+        description: Administrative, Adult, Female, Facility
+      - value: 5
+        description: Moderate, Adult, Male, Community
+      - value: 6
+        description: Moderate, Adult, Male, Facility
+      - value: 7
+        description: Moderate, Adult, Female, Community
+      - value: 8
+        description: Moderate, Adult, Female, Facility
+      - value: 9
+        description: High, Adult, Male, Community
+      - value: 10
+        description: High, Adult, Male, Facility
+      - value: 11
+        description: High, Adult, Female, Community
+      - value: 12
+        description: High, Adult, Female, Facility
+      - value: 13
+        description: Maximum, Adult, Male, Community
+      - value: 14
+        description: Maximum, Adult, Male, Facility
+      - value: 15
+        description: Maximum, Adult, Female, Community
+      - value: 16
+        description: Maximum, Adult, Female, Facility
+      - value: 17
+        description: Low, Juvenile, Male, Community
+      - value: 18
+        description: Low, Juvenile, Male, Facility
+      - value: 19
+        description: Low, Juvenile, Female, Community
+      - value: 20
+        description: Low, Juvenile, Female, Facility
+      - value: 21
+        description: Moderate, Juvenile, Male, Community
+      - value: 22
+        description: Moderate, Juvenile, Male, Facility
+      - value: 23
+        description: Moderate, Juvenile, Female, Community
+      - value: 24
+        description: Moderate, Juvenile, Female, Facility
+      - value: 25
+        description: High, Juvenile, Male, Community
+      - value: 26
+        description: High, Juvenile, Male, Facility
+      - value: 27
+        description: High, Juvenile, Female, Community
+      - value: 28
+        description: High, Juvenile, Female, Facility
+      - value: 29
+        description: Very High, Juvenile, Male, Community
+      - value: 30
+        description: Very High, Juvenile, Male, Facility
+      - value: 31
+        description: Very High, Juvenile, Female, Community
+      - value: 32
+        description: Very High, Juvenile, Female, Facility
+      - value: 33
+        description: Low, Adult, Male, Community
+      - value: 34
+        description: Low, Adult, Male, Facility
+      - value: 35
+        description: Low, Adult, Female, Community
+      - value: 36
+        description: Low, Adult, Female, Facility
+  - name: Lsi_Rating_Lower_Val
+    description: |-
+      The lower-end of the numeric range for the LSI rating.
+  - name: Lsi_Rating_Upper_Val
+    description: |-
+      The upper-end of the numeric range for the LSI rating.

@@ -1,9 +1,11 @@
 file_tag: CIS_204_GEN_NOTE
 file_description: |-
-  TODO(#10017): Add raw data descriptions
-primary_key_cols: []
+  This table lists contact notes and details recorded for supervision clients by supervising officers.
+primary_key_cols:
+  - Note_Id
 columns:
   - name : Cis_100_Client_Id
+    description: This is the client ID associated with the note.
   - name : Cis_2040_Contact_Mode_Cd
   - name : Cis_2041_Note_Type_Cd
   - name : Cis_2042_Person_Contacted_Cd
@@ -20,7 +22,10 @@ columns:
   - name : Modified_By_Tx
   - name : Modified_On_Date
   - name : Note_Date
+    description: This is the date the note was entered.
+    is_datetime: True
   - name : Note_Id
+    description: This is the primary key for the table.
   - name : Note_Tx
   - name : Running_Rpt_Ind
   - name : Short_Note_Tx

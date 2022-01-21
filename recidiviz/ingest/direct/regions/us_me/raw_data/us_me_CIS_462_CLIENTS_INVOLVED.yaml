@@ -1,0 +1,30 @@
+file_tag: CIS_462_CLIENTS_INVOLVED
+file_description: |-
+  This table lists the clients involved in an incident and has additional notes about the incident and the client.
+primary_key_cols:
+  - Clients_Involved_Id
+columns:
+  - name : Cis_100_Client_Id
+    description: The client ID that was involved in the incident.
+  - name : Cis_460_Incident_Id
+    description: The incident ID that is associated with the CIS_460_INCIDENTS table.
+  - name : Cis_460_Year_Id
+  - name : Cis_9907_Injury_Cd
+  - name : Cis_9907_Prea_Role_Client_Cd
+  - name : Cis_9907_Restraint_Cd
+  - name : Cis_9907_Restraint2_Cd
+  - name : Cis_9907_Restraint3_Cd
+  - name : Cis_9909_Action_Cd
+  - name : Clients_Involved_Id
+    description: The primary key for this table.
+  - name : Comment_Tx
+    description: Note about the incident.
+  - name : Created_By_Tx
+  - name : Created_On_Date
+  - name : Injury_Date
+  - name : Logical_Delete_Ind
+  - name : Medical_Ind
+  - name : Mental_Health_Ind
+  - name : Modified_By_Tx
+  - name : Modified_On_Date
+  - name : Type_Force_Used_Cd

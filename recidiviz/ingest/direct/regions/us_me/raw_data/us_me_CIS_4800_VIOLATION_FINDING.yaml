@@ -1,7 +1,8 @@
 file_tag: CIS_4800_VIOLATION_FINDING
 file_description: |-
-  TODO(#10017): Add raw data descriptions
-primary_key_cols: []
+  This lists the violation finding codes and their descriptions.
+primary_key_cols:
+  - Violation_Finding_Cd
 columns:
   - name : Adult_Ind
   - name : Created_By_Tx
@@ -14,4 +15,29 @@ columns:
   - name : System_Ref_Comments_Tx
   - name : System_Ref_Tx
   - name : Violation_Finding_Descr_Tx
+    description: The description that maps to the code.
   - name : Violation_Finding_Cd
+    description: The violation finding code that is used in other raw tables.
+    known_values:
+      - value: 1
+        description: Violation Found
+      - value: 2
+        description: Violation Not Found
+      - value: 3
+        description: Dismissed by Court
+      - value: 4
+        description: Withdrawn by Officer
+      - value: 5
+        description: Not Approved by Prosecuting Attorney
+      - value: 6
+        description: Graduated Sanction By Officer
+      - value: 7
+        description: Warning By Officer
+      - value: 8
+        description: Warning By Officer
+      - value: 9
+        description: Return to Facility by Officer
+      - value: 10
+        description: Graduated Sanction By Officer
+      - value: 11
+        description: Absconded - Facility Notified

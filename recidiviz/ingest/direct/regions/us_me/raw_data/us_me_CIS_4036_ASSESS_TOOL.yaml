@@ -1,0 +1,69 @@
+file_tag: CIS_4036_ASSESS_TOOL
+file_description: |-
+  The code table for the assessment tool that was used.
+primary_key_cols:
+  - Tool_Id
+columns:
+  - name : Created_By_Tx
+  - name : Created_On_Date
+  - name : Logical_Delete_Ind
+  - name : Modified_By_Tx
+  - name : Modified_On_Date
+  - name : Sys_Row_Ind
+  - name : System_Ref_Comments_Tx
+  - name : System_Ref_Tx
+  - name : Tool_Desc
+    description: The type of tool that maps to the code under Tool_Id.
+  - name : Tool_Id
+    description: The primary key for the table.
+    known_values:
+      - value: 1
+        description: Woodcock Johnson (J)
+      - value: 2
+        description: Choices (J)
+      - value: 3
+        description: TABE (A)
+      - value: 4
+        description: TAB (J)
+      - value: 5
+        description: IOWA (J)
+      - value: 6
+        description: KTEA (J)
+      - value: 7
+        description: MAYSI II (J)
+      - value: 8
+        description: JASAE
+      - value: 9
+        description: WRS (A)
+      - value: 10
+        description: TABE Locator 9-10 Reading
+      - value: 11
+        description: TABE Locator 9-10 Math
+      - value: 12
+        description: TABE Locator 9-10 Language
+      - value: 13
+        description: TABE 9 - Full Battery
+      - value: 14
+        description: CRA
+      - value: 15
+        description: Substance Abuse Screening
+      - value: 16
+        description: Substance Abuse Assessment
+      - value: 17
+        description: TABE Locator
+      - value: 18
+        description: CASAS Appraisal
+      - value: 19
+        description: Juvenile Screening Tool
+      - value: 20
+        description: Sexual Behavior Review
+      - value: 21
+        description: TCU Drug Screen II
+      - value: 22
+        description: DSAT Screen
+      - value: 23
+        description: Unknown Screen
+      - value: 24
+        description: CCS
+      - value: 25
+        description: Other

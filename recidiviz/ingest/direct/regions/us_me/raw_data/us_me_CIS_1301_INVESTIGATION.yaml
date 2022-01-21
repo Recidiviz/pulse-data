@@ -1,0 +1,50 @@
+file_tag: CIS_1301_INVESTIGATION
+file_description: |-
+  This table lists the types of investigations that may be related to pre or post sentencing events.
+primary_key_cols:
+  - Investigation_Cd
+columns:
+  - name : Adult_Ind
+  - name : Cis_1302_Sub_Type_Cd
+  - name : Created_By_Tx
+  - name : Created_On_Date
+  - name : Investi_Cd_Desc
+    description: The description of the investigation code.
+  - name : Juvenile_Ind
+  - name : Logical_Delete_Ind
+  - name : Modified_By_Tx
+  - name : Modified_On_Date
+  - name : Sys_Row_Ind
+  - name : System_Ref_Comments_Tx
+  - name : System_Ref_Tx
+  - name : Investigation_Cd
+    description: The primary key for this table.
+    known_values:
+      - value: 1
+        description: Pre-Sentence Investigation
+      - value: 2
+        description: Furlough Investigation
+      - value: 3
+        description: Out-Of-State Investigation
+      - value: 4
+        description: Social Study
+      - value: 5
+        description: Post-Disposition Investigation
+      - value: 6
+        description: Out-Of-State Compact
+      - value: 7
+        description: Home Study
+      - value: 8
+        description: Quarterly Report
+      - value: 9
+        description: Pardon
+      - value: 10
+        description: Post-Sentence Investigation
+      - value: 11
+        description: SCCP
+      - value: 12
+        description: Violation Report
+      - value: 13
+        description: Out-Of-Home Placement Review
+      - value: 14
+        description: Conditions

@@ -1,0 +1,39 @@
+file_tag: CIS_460_INCIDENTS
+file_description: |-
+  This table has incidents reported for a client that is either incarcerated or on Supervised Community Confinement.
+primary_key_cols:
+  - Incident_Id
+columns:
+  - name : Cis_900_Employee_1_Id
+  - name : Cis_900_Employee_2_Id
+  - name : Cis_908_Ccs_Location_Id
+  - name : Cis_912_Unit_Id
+  - name : Cis_913_Pod_Id
+  - name : Cis_9907_Facility_Note_Cd
+  - name : Cis_9907_Location_Type_Cd
+  - name : Cis_9907_Prea_Finding_Cd
+  - name : Cis_9907_Prea_Location_Type_Cd
+  - name : Complete_Ind
+  - name : Created_By_Tx
+  - name : Created_On_Date
+  - name : Crim_Inv_Tx
+  - name : Evidence_Tx
+  - name : Facility_End_Date
+  - name : Final_Finding_Ind
+  - name : Finding_Reasons_Tx
+  - name : Incident_Date
+  - name : Incident_Designation_Tx
+  - name : Incident_Id
+    description: The primary key for this table.
+  - name : Location_Tx
+  - name : Logical_Delete_Ind
+  - name : Modified_By_Tx
+  - name : Modified_On_Date
+  - name : Pbs_Ind
+  - name : Reason_For_Change_Officer_Tx
+  - name : Reason_For_Change_Reviewer_Tx
+  - name : Recommendation_Tx
+  - name : Resolution_Tx
+  - name : Summary_Tx
+  - name : Summary_Tx_Has_Confidential_Info_Ind
+  - name : Year_Num

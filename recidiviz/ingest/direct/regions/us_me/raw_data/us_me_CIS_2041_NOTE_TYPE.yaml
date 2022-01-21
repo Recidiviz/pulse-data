@@ -1,6 +1,6 @@
 file_tag: CIS_2041_NOTE_TYPE
 file_description: |-
-  TODO(#10017): Add raw data descriptions
+  TODO(#10734): Add raw data descriptions
 primary_key_cols: []
 columns:
   - name : Adult_Ind

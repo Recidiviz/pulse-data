@@ -1,15 +1,18 @@
 file_tag: CIS_9003_COUNTY
 file_description: |-
-  TODO(#9296): Add raw data descriptions
-primary_key_cols: []
+  This table lists all of the counties in Maine and the codes associated with them.
+primary_key_cols:
+  - County_Cd
 columns:
   - name : Created_By_Tx
   - name : Created_On_Date
   - name : E_County_Name
+    description: The name of the county.
   - name : Logical_Delete_Ind
   - name : Modified_By_Tx
   - name : Modified_On_Date
   - name : System_Ref_Comments_Tx
   - name : System_Ref_Tx
   - name : County_Cd
+    description: The primary key for this table and the county code referenced in other raw tables.
   - name : Rel_Dir_Region_Cd
