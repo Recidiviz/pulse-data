@@ -16,6 +16,7 @@
 # =============================================================================
 """Highest level simulation object -- runs various comparative scenarios"""
 
+from copy import deepcopy
 from datetime import datetime
 from typing import Callable, Dict, List, Optional, Tuple
 
@@ -104,7 +105,7 @@ class SuperSimulation:
         Run a microsim at many different run_dates.
         `start_run_dates` should be a list of datetime at which to run the simulation
         """
-        user_inputs = self.initializer.get_user_inputs().copy()
+        user_inputs = deepcopy(self.initializer.get_user_inputs())
         (
             data_inputs_dict,
             first_relevant_ts_dict,
@@ -137,14 +138,17 @@ class SuperSimulation:
             output_data = override_population_data
 
         data_inputs = self.initializer.get_data_inputs()
-        excluded_pop_data = self.initializer.get_excluded_pop_data()
+        excluded_pop_data = data_inputs.excluded_population_data
         user_inputs = self.initializer.get_user_inputs()
 
-        total_population_data = data_inputs["total_population_data"]
+        # Use the total population from the starting time step to compute the
+        # excluded population ratio
+        total_population_data = data_inputs.total_population_data
         total_population_data = total_population_data[
-            total_population_data.time_step == user_inputs["start_time_step"]
+            total_population_data.time_step == user_inputs.start_time_step
         ]
 
+        # Format the projected outflows data before uploading it
         output_outflows_per_pop_sim = self.simulator.pop_simulations[
             "baseline_projections"
         ].get_outflows()
@@ -190,7 +194,7 @@ class SuperSimulation:
         output_data = self.validator.get_output_data_for_upload()
         sub_group_ids_dict = self.simulator.get_sub_group_ids_dict()
         data_inputs = self.initializer.get_data_inputs()
-        disaggregation_axes = data_inputs["disaggregation_axes"]
+        disaggregation_axes = data_inputs.disaggregation_axes
 
         return self.exporter.upload_policy_simulation_results_to_bq(
             "recidiviz-staging",

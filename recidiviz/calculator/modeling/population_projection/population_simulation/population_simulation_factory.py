@@ -18,7 +18,7 @@
 import logging
 from functools import partial
 from time import time
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Dict, List
 
 import pandas as pd
 
@@ -32,6 +32,10 @@ from recidiviz.calculator.modeling.population_projection.sub_simulation.sub_simu
 from recidiviz.calculator.modeling.population_projection.sub_simulation.sub_simulation_factory import (
     SubSimulationFactory,
 )
+from recidiviz.calculator.modeling.population_projection.super_simulation.initializer import (
+    SimulationInputData,
+    UserInputs,
+)
 from recidiviz.calculator.modeling.population_projection.transition_table import (
     TransitionTable,
 )
@@ -43,69 +47,38 @@ class PopulationSimulationFactory:
     @classmethod
     def build_population_simulation(
         cls,
-        outflows_data: pd.DataFrame,
-        transitions_data: pd.DataFrame,
-        total_population_data: pd.DataFrame,
-        compartments_architecture: Dict[str, str],
-        disaggregation_axes: List[str],
-        user_inputs: Dict[str, Any],
+        user_inputs: UserInputs,
         policy_list: List[SparkPolicy],
         first_relevant_ts: int,
-        microsim_data: pd.DataFrame,
-        should_initialize_compartment_populations: bool,
-        should_scale_populations_after_step: bool,
-        override_cross_flow_function: Optional[
-            Callable[[pd.DataFrame, int], pd.DataFrame]
-        ],
+        data_inputs: SimulationInputData,
     ) -> PopulationSimulation:
         """
         Initializes sub-simulations
-        `outflows_data` should be a DataFrame with columns for each sub-group, year, compartment, outflow_to,
-            and total_population
-        `transitions_data` should be a DataFrame with columns for each dis-aggregation axis, compartment,
-            outflow_to, compartment_duration, and total_population
-        `total_population_data` should be a DataFrame with columns for each disaggregation axis, compartment,
-            time_step and total_population
-        `disaggregation_axes` should be names of columns in historical_data that refer to sub-group categorizations
-        `user_inputs` should be a dict including:
-            'projection_time_steps': number of ts to project forward
-            'start_time_step': first ts of projection
-            'policy_list': List of SparkPolicy objects to use for this simulation
-            'backcast_projection': True if the simulation should be initialized with a backcast projection
-            'constant_admissions': True if the admission population total should remain constant for each time step
+        `user_inputs`: UserInputs
+        'policy_list': List of SparkPolicy objects to use for this simulation
         `first_relevant_ts` should be the ts to start initialization at
             initialization. Default is 2 to ensure long-sentence cohorts are well-populated.
-        `microsim_data` should only be passed if microsim, and should be a DataFrame with real transitions data, whereas
-            in that case `transitions_data` will actually be remaining_duration_data
-        `should_initialize_compartment_populations` should be True if compartments should initialize with a single
-            start cohort
-        `should_scale_populations_after_step` should be True if compartment populations should be scaled to match
-            total_population_data after each step forward
-        `override_cross_flow_function` is an optional override function to use for cross-sub-simulation cohort flows
+        `data_inputs`: RawDataInputs
         """
         start = time()
 
         cls._check_inputs_valid(
-            outflows_data,
-            transitions_data,
-            total_population_data,
-            disaggregation_axes,
+            data_inputs,
             user_inputs,
             policy_list,
-            should_initialize_compartment_populations,
         )
 
         sub_group_ids_dict = cls._populate_sub_group_ids_dict(
-            transitions_data, disaggregation_axes
+            data_inputs.transitions_data, data_inputs.disaggregation_axes
         )
-        if should_initialize_compartment_populations:
+        if data_inputs.should_initialize_compartment_populations:
 
             # add to `policy_list` to switch from remaining sentences data to transitions data
             alternate_transition_policies = []
             for group_attributes in sub_group_ids_dict.values():
-                disaggregated_microsim_data = microsim_data[
+                disaggregated_microsim_data = data_inputs.microsim_data[
                     (
-                        microsim_data[disaggregation_axes]
+                        data_inputs.microsim_data[data_inputs.disaggregation_axes]
                         == pd.Series(group_attributes)
                     ).all(axis=1)
                 ]
@@ -113,8 +86,8 @@ class PopulationSimulationFactory:
                 # add one policy per compartment to switch from remaining sentence data to transitions data
                 for full_comp in [
                     i
-                    for i in compartments_architecture
-                    if compartments_architecture[i] != "shell"
+                    for i in data_inputs.compartments_architecture
+                    if data_inputs.compartments_architecture[i] != "shell"
                 ]:
                     alternate_transitions = disaggregated_microsim_data[
                         disaggregated_microsim_data.compartment == full_comp
@@ -122,7 +95,6 @@ class PopulationSimulationFactory:
                     # Only apply the alternate transitions to this compartment
                     # if they were provided
                     if not alternate_transitions.empty:
-
                         alternate_transition_policies.append(
                             SparkPolicy(
                                 policy_fn=partial(
@@ -132,7 +104,7 @@ class PopulationSimulationFactory:
                                 ),
                                 spark_compartment=full_comp,
                                 sub_population=group_attributes,
-                                policy_ts=user_inputs["start_time_step"] + 1,
+                                policy_ts=user_inputs.start_time_step + 1,
                                 apply_retroactive=False,
                             )
                         )
@@ -149,40 +121,35 @@ class PopulationSimulationFactory:
             policy_list = alternate_transition_policies + policy_list
 
         sub_simulations = cls._build_sub_simulations(
-            outflows_data,
-            transitions_data,
-            total_population_data,
-            compartments_architecture,
-            disaggregation_axes,
+            data_inputs,
             user_inputs,
             policy_list,
             first_relevant_ts,
             sub_group_ids_dict,
-            should_initialize_compartment_populations,
         )
 
         # If compartment populations are initialized, the first ts is handled in initialization
-        if should_initialize_compartment_populations:
+        if data_inputs.should_initialize_compartment_populations:
             pop_sim_start_ts = first_relevant_ts + 1
-            projection_time_steps = user_inputs["projection_time_steps"] - 1
+            projection_time_steps = user_inputs.projection_time_steps - 1
         else:
             pop_sim_start_ts = first_relevant_ts
-            projection_time_steps = user_inputs["projection_time_steps"]
+            projection_time_steps = user_inputs.projection_time_steps
 
         population_simulation = PopulationSimulation(
-            sub_simulations,
-            sub_group_ids_dict,
-            total_population_data,
-            projection_time_steps,
-            pop_sim_start_ts,
-            cross_flow_function=user_inputs.get("cross_flow_function"),
-            override_cross_flow_function=override_cross_flow_function,
-            should_scale_populations=should_scale_populations_after_step,
+            sub_simulations=sub_simulations,
+            sub_group_ids_dict=sub_group_ids_dict,
+            total_population_data=data_inputs.total_population_data,
+            projection_time_steps=projection_time_steps,
+            first_relevant_ts=pop_sim_start_ts,
+            cross_flow_function=user_inputs.cross_flow_function,
+            override_cross_flow_function=data_inputs.override_cross_flow_function,
+            should_scale_populations=data_inputs.should_scale_populations_after_step,
         )
 
         # run simulation up to the start_year
         population_simulation.step_forward(
-            user_inputs["start_time_step"] - first_relevant_ts
+            user_inputs.start_time_step - first_relevant_ts
         )
 
         print("initialization time: ", time() - start)
@@ -222,24 +189,19 @@ class PopulationSimulationFactory:
     @classmethod
     def _build_sub_simulations(
         cls,
-        outflows_data: pd.DataFrame,
-        transitions_data: pd.DataFrame,
-        total_population_data: pd.DataFrame,
-        simulation_compartments: Dict[str, str],
-        disaggregation_axes: List[str],
-        user_inputs: Dict[str, Any],
+        data_inputs: SimulationInputData,
+        user_inputs: UserInputs,
         policy_list: List[SparkPolicy],
         first_relevant_ts: int,
         sub_group_ids_dict: Dict[str, Dict[str, Any]],
-        should_initialize_compartment_populations: bool,
     ) -> Dict[str, SubSimulation]:
         """Helper function for initialize_simulation. Initialize one sub simulation per sub-population."""
         sub_simulations = {}
 
         # reset indices to facilitate unused data tracking
-        transitions_data = transitions_data.reset_index(drop=True)
-        outflows_data = outflows_data.reset_index(drop=True)
-        total_population_data = total_population_data.reset_index(drop=True)
+        transitions_data = data_inputs.transitions_data.reset_index(drop=True)
+        outflows_data = data_inputs.outflows_data.reset_index(drop=True)
+        total_population_data = data_inputs.total_population_data.reset_index(drop=True)
 
         unused_transitions_data = transitions_data
         unused_outflows_data = outflows_data
@@ -247,16 +209,22 @@ class PopulationSimulationFactory:
         for sub_group_id in sub_group_ids_dict:
             group_attributes = pd.Series(sub_group_ids_dict[sub_group_id])
             disaggregated_transitions_data = transitions_data[
-                (transitions_data[disaggregation_axes] == group_attributes).all(axis=1)
+                (
+                    transitions_data[data_inputs.disaggregation_axes]
+                    == group_attributes
+                ).all(axis=1)
             ]
             disaggregated_outflows_data = outflows_data[
-                (outflows_data[disaggregation_axes] == group_attributes).all(axis=1)
+                (
+                    outflows_data[data_inputs.disaggregation_axes] == group_attributes
+                ).all(axis=1)
             ]
 
-            if should_initialize_compartment_populations:
+            if data_inputs.should_initialize_compartment_populations:
                 disaggregated_total_population_data = total_population_data[
                     (
-                        total_population_data[disaggregation_axes] == group_attributes
+                        total_population_data[data_inputs.disaggregation_axes]
+                        == group_attributes
                     ).all(axis=1)
                 ]
                 unused_total_population_data = unused_total_population_data.drop(
@@ -264,7 +232,7 @@ class PopulationSimulationFactory:
                 )
                 start_cohort_sizes = disaggregated_total_population_data[
                     disaggregated_total_population_data.time_step
-                    == user_inputs["start_time_step"]
+                    == user_inputs.start_time_step
                 ]
             else:
                 start_cohort_sizes = pd.DataFrame()
@@ -284,11 +252,11 @@ class PopulationSimulationFactory:
             sub_simulations[sub_group_id] = SubSimulationFactory.build_sub_simulation(
                 outflows_data=disaggregated_outflows_data,
                 transitions_data=disaggregated_transitions_data,
-                compartments_architecture=simulation_compartments,
+                compartments_architecture=data_inputs.compartments_architecture,
                 user_inputs=user_inputs,
                 policy_list=group_policies,
                 first_relevant_ts=first_relevant_ts,
-                should_single_cohort_initialize_compartments=should_initialize_compartment_populations,
+                should_single_cohort_initialize_compartments=data_inputs.should_initialize_compartment_populations,
                 starting_cohort_sizes=start_cohort_sizes,
             )
 
@@ -299,7 +267,7 @@ class PopulationSimulationFactory:
         if len(unused_outflows_data) > 0:
             logging.warning("Some outflows data left unused: %s", unused_outflows_data)
         if (
-            should_initialize_compartment_populations
+            data_inputs.should_initialize_compartment_populations
             and len(unused_total_population_data) > 0
         ):
             logging.warning(
@@ -312,52 +280,46 @@ class PopulationSimulationFactory:
     @classmethod
     def _check_inputs_valid(
         cls,
-        outflows_data: pd.DataFrame,
-        transitions_data: pd.DataFrame,
-        total_population_data: pd.DataFrame,
-        disaggregation_axes: List[str],
-        user_inputs: Dict[str, Any],
+        data_inputs: SimulationInputData,
+        user_inputs: UserInputs,
         policy_list: List[SparkPolicy],
-        should_initialize_compartment_populations: bool,
     ) -> None:
         """Throws if any of the inputs are invalid."""
         # Check the inputs have the required fields and types
-        required_user_inputs = [
-            "projection_time_steps",
-            "start_time_step",
-            "constant_admissions",
-        ]
-        if not should_initialize_compartment_populations:
-            required_user_inputs += ["speed_run"]
-        missing_inputs = [key for key in required_user_inputs if key not in user_inputs]
-        if len(missing_inputs) != 0:
-            raise ValueError(f"Required user input are missing: {missing_inputs}")
+        if (
+            not data_inputs.should_initialize_compartment_populations
+            and user_inputs.speed_run is None
+        ):
+            raise ValueError(f"Required user_inputs.speed_run is None: {user_inputs=}")
 
         if any(not isinstance(policy, SparkPolicy) for policy in policy_list):
             raise ValueError(
                 f"Policy list can only include SparkPolicy objects: {policy_list}"
             )
 
-        for axis in disaggregation_axes:
+        for axis in data_inputs.disaggregation_axes:
             # Unless starting cohorts are required, total_population_data is allowed to be aggregated
-            fully_disaggregated_dfs = [outflows_data, transitions_data]
-            if should_initialize_compartment_populations:
-                fully_disaggregated_dfs.append(total_population_data)
+            fully_disaggregated_dfs = [
+                data_inputs.outflows_data,
+                data_inputs.transitions_data,
+            ]
+            if data_inputs.should_initialize_compartment_populations:
+                fully_disaggregated_dfs.append(data_inputs.total_population_data)
 
-            for df in [outflows_data, transitions_data]:
+            for df in [data_inputs.outflows_data, data_inputs.transitions_data]:
                 if axis not in df.columns:
                     raise ValueError(
                         f"All disagregation axis must be included in the input dataframe columns\n"
-                        f"Expected: {disaggregation_axes}, Actual: {df.columns}"
+                        f"Expected: {data_inputs.disaggregation_axes}, Actual: {df.columns}"
                     )
 
-        if not total_population_data.empty:
+        if not data_inputs.total_population_data.empty:
             if (
-                user_inputs["start_time_step"]
-                not in total_population_data.time_step.values
+                user_inputs.start_time_step
+                not in data_inputs.total_population_data.time_step.values
             ):
                 raise ValueError(
                     f"Start time must be included in population data input\n"
-                    f"Expected: {user_inputs['start_time_step']}, "
-                    f"Actual: {total_population_data.time_step.unique()}"
+                    f"Expected: {user_inputs.start_time_step}, "
+                    f"Actual: {data_inputs.total_population_data.time_step.unique()}"
                 )
