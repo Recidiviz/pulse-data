@@ -83,7 +83,7 @@ def _match_note_title(agnt_note_title: str) -> Set[TextEntity]:
     return TEXT_ANALYZER.extract_entities(agnt_note_title)
 
 
-# Custom Enum Parsers needed for us_id_sprvsn_cntc_v2
+# Custom Enum Parsers needed for us_id_sprvsn_cntc_v3
 def contact_method_from_contact_fields(raw_text: str) -> StateSupervisionContactMethod:
     location_text, type_text = raw_text.split("##")
     if location_text == "TELEPHONE":
