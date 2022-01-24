@@ -317,6 +317,7 @@ class GCSFileSystemImpl(GCSFileSystem):
                     bytes_to_rewrite,
                     dst_path.uri(),
                 )
+                break
 
             logging.info(
                 "Copied [%s] of [%s] bytes to path: %s",
