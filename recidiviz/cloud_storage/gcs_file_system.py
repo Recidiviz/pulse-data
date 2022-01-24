@@ -305,26 +305,34 @@ class GCSFileSystemImpl(GCSFileSystem):
         # (https://cloud.google.com/storage/docs/json_api/v1/objects/rewrite) instead.'
         # Solution here adapted from:
         # https://objectpartners.com/2021/01/19/rewriting-files-in-google-cloud-storage/
-        rewrite_token = False
-        while True:
-            rewrite_token, bytes_rewritten, bytes_to_rewrite = dest_blob.rewrite(
-                src_blob, token=rewrite_token
-            )
+        rewrite_token = None
+        try:
+            while True:
+                rewrite_token, bytes_rewritten, bytes_to_rewrite = dest_blob.rewrite(
+                    src_blob, token=rewrite_token
+                )
 
-            if not rewrite_token:
+                if not rewrite_token:
+                    logging.info(
+                        "Finished copying [%s] bytes to path: %s",
+                        bytes_to_rewrite,
+                        dst_path.uri(),
+                    )
+                    break
+
                 logging.info(
-                    "Finished copying [%s] bytes to path: %s",
+                    "Copied [%s] of [%s] bytes to path: %s",
+                    bytes_rewritten,
                     bytes_to_rewrite,
                     dst_path.uri(),
                 )
-                break
-
-            logging.info(
-                "Copied [%s] of [%s] bytes to path: %s",
-                bytes_rewritten,
-                bytes_to_rewrite,
+        except Exception as e:
+            logging.error(
+                "File rewrite failed. Attempting to delete partially written file: %s",
                 dst_path.uri(),
             )
+            self.delete(dst_path)
+            raise e
 
     @retry.Retry(predicate=retry_predicate)
     def delete(self, path: GcsfsFilePath) -> None:

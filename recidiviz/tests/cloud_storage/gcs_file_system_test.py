@@ -19,11 +19,16 @@ from unittest import TestCase
 
 from google.api_core import exceptions
 from google.cloud import storage
-from google.cloud.storage import Bucket
+from google.cloud.storage import Blob, Bucket
 from mock import create_autospec
+from mock.mock import call, patch
 
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystemImpl
-from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
+from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
+
+
+def no_retries_predicate(_exception: Exception) -> bool:
+    return False
 
 
 class TestGcsFileSystem(TestCase):
@@ -60,3 +65,82 @@ class TestGcsFileSystem(TestCase):
         with self.assertRaises(ValueError):
             self.fs.exists(GcsfsBucketPath.from_absolute_path("gs://my-bucket"))
         self.mock_storage_client.bucket.assert_called()
+
+    def test_copy(self) -> None:
+        bucket_path = GcsfsBucketPath.from_absolute_path("gs://my-bucket")
+        src_path = GcsfsFilePath.from_directory_and_file_name(bucket_path, "src.txt")
+        dst_path = GcsfsFilePath.from_directory_and_file_name(bucket_path, "dst.txt")
+
+        mock_src_blob = create_autospec(Blob)
+
+        mock_dst_blob = create_autospec(Blob)
+        mock_dst_blob.rewrite.side_effect = [
+            ("rewrite-token", 100, 200),
+            (None, 200, 200),
+        ]
+        mock_dst_bucket = create_autospec(Bucket)
+
+        def mock_get_blob(blob_name: str) -> Blob:
+            if blob_name == src_path.file_name:
+                return mock_src_blob
+            if blob_name == dst_path.file_name:
+                return mock_dst_blob
+            raise ValueError(f"Unexpected blob: {blob_name}")
+
+        mock_dst_bucket.get_blob.side_effect = mock_get_blob
+        mock_dst_bucket.blob.return_value = mock_dst_blob
+
+        self.mock_storage_client.bucket.return_value = mock_dst_bucket
+
+        self.fs.copy(src_path=src_path, dst_path=dst_path)
+        mock_dst_blob.rewrite.assert_has_calls(
+            calls=[
+                call(mock_src_blob, token=None),
+                call(mock_src_blob, "rewrite-token"),
+            ]
+        )
+
+    # Disable retries for "transient" errors to make test easier to mock / follow.
+    @patch(
+        "recidiviz.cloud_storage.gcs_file_system.retry.if_transient_error",
+        no_retries_predicate,
+    )
+    def test_copy_failure(self) -> None:
+        bucket_path = GcsfsBucketPath.from_absolute_path("gs://my-bucket")
+        src_path = GcsfsFilePath.from_directory_and_file_name(bucket_path, "src.txt")
+        dst_path = GcsfsFilePath.from_directory_and_file_name(bucket_path, "dst.txt")
+
+        mock_src_blob = create_autospec(Blob)
+
+        mock_dst_blob = create_autospec(Blob)
+        mock_dst_blob.rewrite.side_effect = [
+            ("rewrite-token", 100, 200),
+            exceptions.TooManyRequests("Too many requests!"),  # type: ignore [attr-defined]
+        ]
+        mock_dst_bucket = create_autospec(Bucket)
+
+        def mock_get_blob(blob_name: str) -> Blob:
+            if blob_name == src_path.file_name:
+                return mock_src_blob
+            if blob_name == dst_path.file_name:
+                return mock_dst_blob
+            raise ValueError(f"Unexpected blob: {blob_name}")
+
+        mock_dst_bucket.get_blob.side_effect = mock_get_blob
+        mock_dst_bucket.blob.return_value = mock_dst_blob
+
+        self.mock_storage_client.bucket.return_value = mock_dst_bucket
+
+        with self.assertRaisesRegex(
+            exceptions.TooManyRequests,  # type: ignore [attr-defined]
+            "Too many requests!",
+        ):
+            self.fs.copy(src_path=src_path, dst_path=dst_path)
+        mock_dst_blob.rewrite.assert_has_calls(
+            calls=[
+                call(mock_src_blob, token=None),
+                call(mock_src_blob, "rewrite-token"),
+            ]
+        )
+        # Assert we tried to clean up the destination file
+        mock_dst_blob.delete.assert_called()
