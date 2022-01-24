@@ -322,6 +322,12 @@ function deploy_terraform_infrastructure {
         run_cmd terraform -chdir=${BASH_SOURCE_DIR}/terraform plan -var="project_id=${PROJECT_ID}" -var="git_hash=${GIT_HASH}" -var="docker_image_tag=${DOCKER_IMAGE_TAG}" -out=tfplan
         script_prompt "Does the generated terraform plan look correct? [You can inspect it with \`terraform show tfplan\`]"
 
+        CURRENT_TIME=$(date +'%s')
+        PLAN_FILE_NAME=${DOCKER_IMAGE_TAG}-${GIT_HASH}-${CURRENT_TIME}.tfplan
+        PLAN_FILE_PATH=gs://${PROJECT_ID}-tf-state/tf-plans/${PLAN_FILE_NAME}
+        echo "Storing plan to ${PLAN_FILE_PATH} for posterity..."
+        run_cmd gsutil cp ${BASH_SOURCE_DIR}/terraform/tfplan $PLAN_FILE_PATH
+
         echo "Applying the terraform plan..."
         # not using run_cmd because we don't want to exit_on_fail
         terraform -chdir=./recidiviz/tools/deploy/terraform apply tfplan | indent_output
