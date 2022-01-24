@@ -2,14 +2,14 @@ file_tag: CIS_1163_LSI_OVERRIDE_TYPE
 file_description: |-
   This is a code table for the reasons associated with overriding an LSI rating for a client's supervision level.
 primary_key_cols:
-  - Override_Type_Cd
+  - _Override_Type_Cd_
 columns:
   - name: Created_By_Tx
   - name: Created_On_Date
   - name: Logical_Delete_Ind
   - name: Modified_By_Tx
   - name: Modified_On_Date
-  - name: Override_Type_Desc
+  - name: _Override_Type_Desc_
     description: The description of the override type.
     known_values:
       - value: 1
@@ -18,5 +18,5 @@ columns:
         description: Discretionary - A client's supervision level can be overridden based on the supervising officer's discretion.
   - name: System_Ref_Comments_Tx
   - name: System_Ref_Tx
-  - name: Override_Type_Cd
+  - name: _Override_Type_Cd_
     description: The primary key for the table and the override type code referenced in other raw tables.
