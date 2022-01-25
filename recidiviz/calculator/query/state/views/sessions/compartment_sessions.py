@@ -140,6 +140,7 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         session_attributes.compartment_location AS compartment_location,
         session_attributes.correctional_level AS correctional_level,
         session_attributes.case_type,
+        session_attributes.judicial_district_code,
         last_day_of_data,
     FROM `{project_id}.{sessions_dataset}.dataflow_sessions_materialized`,
     UNNEST(session_attributes) session_attributes
@@ -160,6 +161,7 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         compartment_location,
         correctional_level,
         case_type,
+        judicial_district_code,
         metric_source,
         last_day_of_data,
     FROM 
@@ -185,6 +187,7 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         cte.compartment_location,
         cte.correctional_level,
         cte.case_type,
+        cte.judicial_district_code,
         cte.start_date,
         cte.end_date,
         cte.last_day_of_data,
@@ -203,7 +206,8 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
                 COALESCE(correctional_level_priority, 999),
                 NULLIF(supervising_officer_external_id, 'EXTERNAL_UNKNOWN') NULLS LAST,
                 NULLIF(compartment_location, 'EXTERNAL_UNKNOWN') NULLS LAST,
-                NULLIF(case_type, 'EXTERNAL_UNKNOWN') NULLS LAST
+                NULLIF(case_type, 'EXTERNAL_UNKNOWN') NULLS LAST,
+                NULLIF(judicial_district_code, 'EXTERNAL_UNKNOWN') NULLS LAST
                 ) = 1
     )
     ,
@@ -227,6 +231,7 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         CAST(NULL AS STRING) AS compartment_location,
         CAST(NULL AS STRING) AS correctional_level,
         CAST(NULL AS STRING) AS case_type,
+        CAST(NULL AS STRING) AS judicial_district_code,
         start_date,
         end_date,
         MIN(last_day_of_data) OVER(PARTITION BY state_code) AS last_day_of_data
@@ -308,6 +313,10 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         ANY_VALUE(correctional_level_end) AS correctional_level_end,
         ANY_VALUE(case_type_start) AS case_type_start,
         ANY_VALUE(case_type_end) AS case_type_end,
+        ANY_VALUE(judicial_district_code_start) AS judicial_district_code_start,
+        ANY_VALUE(judicial_district_code_end) AS judicial_district_code_end,
+        
+        
     FROM 
         /*
         This logic is used to calculate the first non-null session attribute for a given person_id and session_id (and
@@ -331,6 +340,10 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
                                                                 ORDER BY dataflow_session_id ASC) AS case_type_start,
             FIRST_VALUE(case_type IGNORE NULLS) OVER(PARTITION BY person_id, session_id, state_code 
                                                                 ORDER BY dataflow_session_id DESC) AS case_type_end,
+            FIRST_VALUE(judicial_district_code IGNORE NULLS) OVER(PARTITION BY person_id, session_id, state_code 
+                                                                ORDER BY dataflow_session_id ASC) AS judicial_district_code_start,
+            FIRST_VALUE(judicial_district_code IGNORE NULLS) OVER(PARTITION BY person_id, session_id, state_code 
+                                                                ORDER BY dataflow_session_id DESC) AS judicial_district_code_end,
         FROM dataflow_sessions_with_session_ids
         )
     GROUP BY 1,2,3,4,5,6,7
@@ -358,6 +371,8 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         sessions.correctional_level_end,
         sessions.case_type_start,
         sessions.case_type_end,
+        sessions.judicial_district_code_start,
+        sessions.judicial_district_code_end,
         sessions.start_date,
         sessions.end_date,
         starts.start_reason,
@@ -438,6 +453,8 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         correctional_level_end,
         case_type_start,
         case_type_end,
+        judicial_district_code_start,
+        judicial_district_code_end,
         start_date,
         end_date,
         start_reason,
@@ -533,6 +550,8 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         ANY_VALUE(correctional_level_end) AS correctional_level_end,    
         ANY_VALUE(case_type_start) AS case_type_start,
         ANY_VALUE(case_type_end) AS case_type_end, 
+        ANY_VALUE(judicial_district_code_start) AS judicial_district_code_start,
+        ANY_VALUE(judicial_district_code_end) AS judicial_district_code_end, 
         SUM(CASE WHEN metric_source = 'INFERRED' THEN DATE_DIFF(COALESCE(end_date, last_day_of_data), start_date, DAY) + 1 ELSE 0 END) AS session_days_inferred,
     FROM
         (
@@ -541,7 +560,7 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         last non-null session attribute for the _end values)
         */
         SELECT
-            * EXCEPT(supervising_officer_external_id_start, supervising_officer_external_id_end, compartment_location_start, compartment_location_end, correctional_level_start, correctional_level_end, case_type_start, case_type_end),
+            * EXCEPT(supervising_officer_external_id_start, supervising_officer_external_id_end, compartment_location_start, compartment_location_end, correctional_level_start, correctional_level_end, case_type_start, case_type_end, judicial_district_code_start, judicial_district_code_end),
             FIRST_VALUE(supervising_officer_external_id_start IGNORE NULLS) OVER(PARTITION BY person_id, session_id, state_code
                                                                 ORDER BY start_date ASC) AS supervising_officer_external_id_start,
             FIRST_VALUE(supervising_officer_external_id_end IGNORE NULLS) OVER(PARTITION BY person_id, session_id, state_code
@@ -558,6 +577,10 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
                                                                 ORDER BY start_date ASC) AS case_type_start,
             FIRST_VALUE(case_type_end IGNORE NULLS) OVER(PARTITION BY person_id, session_id, state_code
                                                                 ORDER BY start_date DESC) AS case_type_end,
+            FIRST_VALUE(judicial_district_code_start IGNORE NULLS) OVER(PARTITION BY person_id, session_id, state_code
+                                                                ORDER BY start_date ASC) AS judicial_district_code_start,
+            FIRST_VALUE(judicial_district_code_end IGNORE NULLS) OVER(PARTITION BY person_id, session_id, state_code
+                                                                ORDER BY start_date DESC) AS judicial_district_code_end,
         FROM session_with_ids_2
         )
     GROUP BY 1,2,3,4,5,6,7
@@ -587,6 +610,8 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         s.correctional_level_end,
         s.case_type_start,
         s.case_type_end,
+        s.judicial_district_code_start,
+        s.judicial_district_code_end,
         DATE_DIFF(COALESCE(s.end_date, first.last_day_of_data), s.start_date, DAY) + 1 AS session_length_days,
         s.session_days_inferred,
         first.start_reason,
@@ -688,6 +713,8 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         correctional_level_end,
         case_type_start,
         case_type_end,
+        judicial_district_code_start,
+        judicial_district_code_end,
         CASE WHEN age_start <=24 THEN '<25'
             WHEN age_start <=29 THEN '25-29'
             WHEN age_start <=39 THEN '30-39'
