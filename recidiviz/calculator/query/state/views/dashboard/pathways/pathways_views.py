@@ -18,11 +18,14 @@
 from typing import List
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
-from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_dimension_combinations import (
-    PATHWAYS_DIMENSION_COMBINATIONS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_incarceration_location_name_map import (
     PATHWAYS_INCARCERATION_LOCATION_NAME_MAP_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_prison_dimension_combinations import (
+    PATHWAYS_PRISON_DIMENSION_COMBINATIONS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_supervision_dimension_combinations import (
+    PATHWAYS_SUPERVISION_DIMENSION_COMBINATIONS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_supervision_location_name_map import (
     PATHWAYS_SUPERVISION_LOCATION_NAME_MAP_VIEW_BUILDER,
@@ -35,6 +38,9 @@ from recidiviz.calculator.query.state.views.dashboard.pathways.prison_population
 )
 from recidiviz.calculator.query.state.views.dashboard.pathways.prison_population_time_series import (
     PRISON_POPULATION_TIME_SERIES_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.dashboard.pathways.prison_to_supervision_count_by_month import (
+    PRISON_TO_SUPERVISION_COUNT_BY_MONTH_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.dashboard.pathways.supervision_population_snapshot_by_dimension import (
     SUPERVISION_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER,
@@ -58,10 +64,12 @@ PATHWAYS_VIEW_BUILDERS: List[MetricBigQueryViewBuilder] = [
     SUPERVISION_TO_PRISON_COUNT_BY_MONTH_VIEW_BUILDER,
     SUPERVISION_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER,
     SUPERVISION_POPULATION_TIME_SERIES_VIEW_BUILDER,
+    PRISON_TO_SUPERVISION_COUNT_BY_MONTH_VIEW_BUILDER,
 ]
 
 PATHWAYS_HELPER_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     PATHWAYS_SUPERVISION_LOCATION_NAME_MAP_VIEW_BUILDER,
     PATHWAYS_INCARCERATION_LOCATION_NAME_MAP_VIEW_BUILDER,
-    PATHWAYS_DIMENSION_COMBINATIONS_VIEW_BUILDER,
+    PATHWAYS_SUPERVISION_DIMENSION_COMBINATIONS_VIEW_BUILDER,
+    PATHWAYS_PRISON_DIMENSION_COMBINATIONS_VIEW_BUILDER,
 ]

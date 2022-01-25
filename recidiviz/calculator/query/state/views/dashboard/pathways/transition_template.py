@@ -21,6 +21,7 @@ from typing import List
 
 def _get_zero_imputation_query(
     dimensions: List[str],
+    dimension_combination_view: str,
 ) -> str:
     """Builds a query that calculates all combinations of the provided dimensions
     and imputes the event counts to zero where the aggregates are NULL."""
@@ -38,14 +39,15 @@ def _get_zero_imputation_query(
                 year,
                 month,
                 {','.join(dimensions)},
-            FROM `{{project_id}}.{{dashboard_views_dataset}}.pathways_dimension_combinations`
+            FROM `{{project_id}}.{{dashboard_views_dataset}}.{dimension_combination_view}`
         )USING (state_code, year, month,{','.join(dimensions)})
     """
 
 
-def supervision_transition_monthly_aggregate_template(
+def transition_monthly_aggregate_template(
     aggregate_query: str,
     dimensions: List[str],
+    dimension_combination_view: str,
 ) -> str:
     """Constructs the boilerplate parts of the metric view (building date arrays, missing rows, computing averages).
     `aggregate_query` should have a field for each provided dimension as well as "state_code", "year", and "month"
@@ -55,7 +57,7 @@ def supervision_transition_monthly_aggregate_template(
     WITH aggregate_event_counts AS (
         {aggregate_query}
     ), blanks_filled AS (
-        {_get_zero_imputation_query(dimensions)}
+        {_get_zero_imputation_query(dimensions, dimension_combination_view)}
     ), averaged_event_count AS (
       SELECT
         *,

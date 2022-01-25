@@ -69,6 +69,9 @@ from recidiviz.calculator.query.state.views.reference.persons_to_recent_county_o
 from recidiviz.calculator.query.state.views.reference.persons_with_last_known_address import (
     PERSONS_WITH_LAST_KNOWN_ADDRESS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.reference.prison_to_supervision_transitions import (
+    PRISON_TO_SUPERVISION_TRANSITIONS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.reference.revocations_matrix_by_person import (
     REVOCATIONS_MATRIX_BY_PERSON_VIEW_BUILDER,
 )
@@ -139,6 +142,7 @@ REFERENCE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     AGENT_EXTERNAL_ID_TO_FULL_NAMES_VIEW_BUILDER,
     SUPERVISION_TO_LIBERTY_TRANSITIONS_VIEW_BUILDER,
     SUPERVISION_TO_PRISON_TRANSITIONS_VIEW_BUILDER,
+    PRISON_TO_SUPERVISION_TRANSITIONS_VIEW_BUILDER,
     OVERDUE_DISCHARGE_OUTCOMES_VIEW_BUILDER,
     OVERDUE_DISCHARGE_ALERT_EXCLUSIONS_VIEW_BUILDER,
     SUPERVISION_CASE_COMPLIANCE_METRICS_VIEW_BUILDER,
