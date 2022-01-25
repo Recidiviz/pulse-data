@@ -1633,6 +1633,12 @@ class _StateSupervisionSentenceSharedColumns(_ReferencesStatePersonSharedColumns
     max_length_days = Column(
         Integer, comment="Maximum duration of this sentence in days."
     )
+    sentence_metadata = Column(
+        Text,
+        comment="Arbitrary JSON-formatted metadata relevant to a fine"
+        " understanding of a particular sentence. It can be provided in any "
+        "format, but will be transformed into JSON prior to persistence.",
+    )
 
 
 class StateSupervisionSentence(StateBase, _StateSupervisionSentenceSharedColumns):
@@ -1799,6 +1805,12 @@ class _StateIncarcerationSentenceSharedColumns(
         Integer,
         comment="Any earned time (in days) the person has credited against this sentence due to participation in "
         "programming designed to reduce the likelihood of re-offense, if applicable.",
+    )
+    sentence_metadata = Column(
+        Text,
+        comment="Arbitrary JSON-formatted metadata relevant to a fine"
+        " understanding of a particular sentence. It can be provided in any "
+        "format, but will be transformed into JSON prior to persistence.",
     )
 
 
