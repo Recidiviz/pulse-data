@@ -601,6 +601,10 @@ class StateSupervisionSentence(ExternalIdEntity, BuildableAttr, DefaultableAttr)
         default=None, validator=attr_validators.is_opt_int
     )
 
+    sentence_metadata: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+
     #   - Who
 
     # Primary key - Only optional when hydrated in the data converter, before we have
@@ -703,6 +707,10 @@ class StateIncarcerationSentence(ExternalIdEntity, BuildableAttr, DefaultableAtt
     )
     earned_time_days: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
+    )
+
+    sentence_metadata: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
     )
 
     #   - Who
