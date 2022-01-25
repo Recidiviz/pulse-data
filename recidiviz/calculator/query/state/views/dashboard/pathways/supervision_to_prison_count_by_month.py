@@ -17,8 +17,11 @@
 """Reincarcerations by month."""
 
 from recidiviz.calculator.query.state import dataset_config
-from recidiviz.calculator.query.state.views.dashboard.pathways.supervision_transition_template import (
-    supervision_transition_monthly_aggregate_template,
+from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_supervision_dimension_combinations import (
+    PATHWAYS_SUPERVISION_DIMENSION_COMBINATIONS_VIEW_NAME,
+)
+from recidiviz.calculator.query.state.views.dashboard.pathways.transition_template import (
+    transition_monthly_aggregate_template,
 )
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -70,7 +73,11 @@ dimensions = [
 
 
 SUPERVISION_TO_PRISON_COUNT_BY_MONTH_QUERY_TEMPLATE = (
-    supervision_transition_monthly_aggregate_template(aggregate_query, dimensions)
+    transition_monthly_aggregate_template(
+        aggregate_query,
+        dimensions,
+        PATHWAYS_SUPERVISION_DIMENSION_COMBINATIONS_VIEW_NAME,
+    )
 )
 
 SUPERVISION_TO_PRISON_COUNT_BY_MONTH_VIEW_BUILDER = MetricBigQueryViewBuilder(
