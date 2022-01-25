@@ -18,8 +18,8 @@
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
-from recidiviz.calculator.query.state.views.reference.supervision_transition_template import (
-    supervision_transition_template,
+from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
+    ENABLED_STATES,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -30,16 +30,32 @@ SUPERVISION_TO_LIBERTY_TRANSITIONS_DESCRIPTION = (
     "Transitions from supervision to liberty by month."
 )
 
-SUPERVISION_TO_LIBERTY_TRANSITIONS_QUERY_TEMPLATE = supervision_transition_template(
-    ["RELEASE"]
-)
+SUPERVISION_TO_LIBERTY_TRANSITIONS_QUERY_TEMPLATE = """
+    SELECT
+        state_code,
+        person_id,
+        end_date AS transition_date,
+        IF(compartment_level_2 = 'DUAL', 'PAROLE', compartment_level_2) AS supervision_type,
+        gender,
+        supervising_officer_external_id_end as supervising_officer,
+    FROM `{project_id}.{sessions_dataset}.compartment_sessions_materialized`
+    WHERE
+        state_code IN {enabled_states}
+        AND compartment_level_1 = 'SUPERVISION'
+        AND compartment_level_2 IN ('PAROLE', 'PROBATION', 'INFORMAL_PROBATION', 'BENCH_WARRANT', 'DUAL', 'ABSCONSION')
+        AND outflow_to_level_1 IN {outflow_compartments}
+        AND end_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 64 MONTH)
+        -- (5 years X 12 months) + (3 for 90-day avg) + (1 to capture to beginning of first month) = 64 months
+"""
 
 SUPERVISION_TO_LIBERTY_TRANSITIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.REFERENCE_VIEWS_DATASET,
     view_id=SUPERVISION_TO_LIBERTY_TRANSITIONS_VIEW_NAME,
     view_query_template=SUPERVISION_TO_LIBERTY_TRANSITIONS_QUERY_TEMPLATE,
     description=SUPERVISION_TO_LIBERTY_TRANSITIONS_DESCRIPTION,
+    outflow_compartments='("RELEASE")',
     sessions_dataset=dataset_config.SESSIONS_DATASET,
+    enabled_states=str(tuple(ENABLED_STATES)),
 )
 
 if __name__ == "__main__":

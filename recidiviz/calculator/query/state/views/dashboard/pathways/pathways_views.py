@@ -17,6 +17,10 @@
 """Dashboard views related to pathways."""
 from typing import List
 
+from recidiviz.big_query.big_query_view import BigQueryViewBuilder
+from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_dimension_combinations import (
+    PATHWAYS_DIMENSION_COMBINATIONS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_incarceration_location_name_map import (
     PATHWAYS_INCARCERATION_LOCATION_NAME_MAP_VIEW_BUILDER,
 )
@@ -56,7 +60,8 @@ PATHWAYS_VIEW_BUILDERS: List[MetricBigQueryViewBuilder] = [
     SUPERVISION_POPULATION_TIME_SERIES_VIEW_BUILDER,
 ]
 
-PATHWAYS_HELPER_VIEW_BUILDERS: List[MetricBigQueryViewBuilder] = [
+PATHWAYS_HELPER_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     PATHWAYS_SUPERVISION_LOCATION_NAME_MAP_VIEW_BUILDER,
     PATHWAYS_INCARCERATION_LOCATION_NAME_MAP_VIEW_BUILDER,
+    PATHWAYS_DIMENSION_COMBINATIONS_VIEW_BUILDER,
 ]

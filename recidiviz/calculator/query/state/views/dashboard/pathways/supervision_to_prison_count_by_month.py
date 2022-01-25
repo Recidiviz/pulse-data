@@ -18,7 +18,7 @@
 
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.views.dashboard.pathways.supervision_transition_template import (
-    supervision_transition_template,
+    supervision_transition_monthly_aggregate_template,
 )
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -30,16 +30,56 @@ SUPERVISION_TO_PRISON_COUNT_BY_MONTH_DESCRIPTION = (
     """Admissions to prison from supervision by month."""
 )
 
-SUPERVISION_TO_PRISON_COUNT_BY_MONTH_QUERY_TEMPLATE = supervision_transition_template(
-    "prison",
+# TODO(#10742): implement violation fields
+aggregate_query = """
+SELECT
+    transitions.state_code,
+    EXTRACT(YEAR FROM transition_date) as year,
+    EXTRACT(MONTH FROM transition_date) as month,
+    gender,
+    supervision_type,
+    age_group,
+    race,
+    district,
+    "ALL" AS supervision_level,
+    "ALL" AS most_severe_violation,
+    "ALL" AS number_of_violations,
+    COUNT(1) as event_count
+FROM
+    `{project_id}.{reference_dataset}.supervision_to_prison_transitions` transitions,
+    UNNEST ([gender, 'ALL']) AS gender,
+    UNNEST ([supervision_type, 'ALL']) AS supervision_type,
+    UNNEST ([age_group, 'ALL']) AS age_group,
+    UNNEST ([prioritized_race_or_ethnicity, "ALL"]) AS race
+LEFT JOIN `{project_id}.{dashboard_views_dataset}.pathways_supervision_location_name_map` location
+    ON transitions.state_code = location.state_code 
+    AND transitions.level_1_location_external_id = location.location_id,
+    UNNEST ([IFNULL(location_name, level_1_location_external_id), "ALL"]) AS district
+GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11"""
+
+dimensions = [
+    "supervision_type",
+    "gender",
+    "age_group",
+    "race",
+    "district",
+    "supervision_level",
+    "most_severe_violation",
+    "number_of_violations",
+]
+
+
+SUPERVISION_TO_PRISON_COUNT_BY_MONTH_QUERY_TEMPLATE = (
+    supervision_transition_monthly_aggregate_template(aggregate_query, dimensions)
 )
 
 SUPERVISION_TO_PRISON_COUNT_BY_MONTH_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=SUPERVISION_TO_PRISON_COUNT_BY_MONTH_VIEW_NAME,
     view_query_template=SUPERVISION_TO_PRISON_COUNT_BY_MONTH_QUERY_TEMPLATE,
-    dimensions=("state_code", "year", "month", "supervision_type", "gender"),
+    dimensions=("state_code", "year", "month", *dimensions),
     description=SUPERVISION_TO_PRISON_COUNT_BY_MONTH_DESCRIPTION,
+    dashboard_views_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,
     reference_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
 )
 
