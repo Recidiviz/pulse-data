@@ -61,7 +61,8 @@ US_ID_SUPERVISION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
         COALESCE(level_2_supervision_location_external_id,'EXTERNAL_UNKNOWN') AS supervision_district,
         population.supervision_level AS correctional_level,
         population.supervising_officer_external_id,
-        population.case_type
+        population.case_type,
+        judicial_district_code,
     FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_metrics_materialized` population
     LEFT JOIN bench_warrant_cte bw
         ON bw.person_id = population.person_id

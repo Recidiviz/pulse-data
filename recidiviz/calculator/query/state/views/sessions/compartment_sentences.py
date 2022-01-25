@@ -66,6 +66,7 @@ Sentencing data is significantly messier and less-validated than sessions data w
 
 This view is constructed off of sentencing data in the `state` dataset, joined to `compartment_sessions`, and then deduped so that we have the best matched sentence for each session.
 """
+INCLUDED_STATES = ["US_ID", "US_MO", "US_ND", "US_PA"]
 
 COMPARTMENT_SENTENCES_QUERY_TEMPLATE = """
     /*{description}*/
@@ -102,6 +103,7 @@ COMPARTMENT_SENTENCES_QUERY_TEMPLATE = """
         USING (state_code, supervision_sentence_id)
     LEFT JOIN `{project_id}.{base_dataset}.state_charge`
         USING (state_code, person_id, charge_id)
+    WHERE sss.state_code IN ('{included_states}')
     )
     ,
     incarceration_sentences_cte AS 
@@ -130,6 +132,7 @@ COMPARTMENT_SENTENCES_QUERY_TEMPLATE = """
         USING (state_code, incarceration_sentence_id)
     LEFT JOIN `{project_id}.{base_dataset}.state_charge`
         USING (state_code, person_id, charge_id)
+    WHERE sis.state_code IN ('{included_states}')
     )
     ,
     unioned_sentences_cte AS (
@@ -283,7 +286,14 @@ COMPARTMENT_SENTENCES_QUERY_TEMPLATE = """
         max_projected_sentence_length
     FROM final_pre_deduped_date_proximity_cte
     WHERE longest_projected_sentence = 1
-    ORDER by person_id ASC, session_id ASC, sentence_start_date ASC
+    
+    UNION ALL
+    --TODO(#10746): Remove sentencing pre-processing when TN sentences are ingested
+    SELECT
+        *
+    FROM `{project_id}.{sessions_dataset}.us_tn_compartment_sentences_materialized` 
+
+    
     """
 
 COMPARTMENT_SENTENCES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -295,6 +305,7 @@ COMPARTMENT_SENTENCES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     analyst_dataset=ANALYST_VIEWS_DATASET,
     sessions_dataset=SESSIONS_DATASET,
     clustering_fields=["state_code", "person_id"],
+    included_states="', '".join(INCLUDED_STATES),
     should_materialize=True,
 )
 

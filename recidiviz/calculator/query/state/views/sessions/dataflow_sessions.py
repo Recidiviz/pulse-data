@@ -101,7 +101,8 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = """
         CAST(NULL AS STRING) AS supervision_district,    
         CAST(NULL AS STRING) AS correctional_level,
         CAST(NULL AS STRING) AS supervising_officer_external_id,
-        CAST(NULL AS STRING) AS case_type
+        CAST(NULL AS STRING) AS case_type,
+        judicial_district_code,
     FROM
         `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_metrics_included_in_state_population_materialized`
     WHERE state_code in ('{supported_states}')
@@ -126,7 +127,8 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = """
         CAST(NULL AS STRING) AS supervision_district,
         CAST(NULL AS STRING) AS correctional_level,
         CAST(NULL AS STRING) AS supervising_officer_external_id,
-        CAST(NULL AS STRING) AS case_type
+        CAST(NULL AS STRING) AS case_type,
+        judicial_district_code,
     FROM
         `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_metrics_not_included_in_state_population_materialized`
     WHERE state_code in ('{supported_states}')
@@ -146,7 +148,8 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = """
         COALESCE(level_2_supervision_location_external_id,'EXTERNAL_UNKNOWN') AS supervision_district,
         supervision_level AS correctional_level,
         supervising_officer_external_id,
-        case_type
+        case_type,
+        judicial_district_code,
     FROM
         `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_metrics_materialized`
     WHERE state_code in ('{supported_states}')
@@ -177,7 +180,8 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = """
         COALESCE(level_2_supervision_location_external_id,'EXTERNAL_UNKNOWN') AS supervision_district,
         supervision_level AS correctional_level,
         supervising_officer_external_id,
-        case_type
+        case_type,
+        judicial_district_code,
     FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_out_of_state_population_metrics_materialized`
     WHERE state_code in ('{supported_states}')
       AND state_code != 'US_ID'
@@ -214,9 +218,9 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = """
     session_attributes_cte AS
     (
     SELECT 
-        person_id,
+        p.person_id,
         date,
-        state_code,
+        p.state_code,
         last_day_of_data,
         ARRAY_AGG(
             STRUCT(
@@ -229,7 +233,8 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = """
                 supervision_district,
                 correctional_level,
                 supervising_officer_external_id,
-                case_type
+                case_type,
+                COALESCE(j.judicial_district_code, p.judicial_district_code) AS judicial_district_code
                 )
             ORDER BY 
                 metric_source,
@@ -241,11 +246,17 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = """
                 supervision_district,
                 correctional_level,
                 supervising_officer_external_id,
-                case_type
+                case_type,
+                COALESCE(j.judicial_district_code, p.judicial_district_code)
             ) AS session_attributes,
-    FROM population_cte
+    FROM population_cte p
     JOIN last_day_of_data_by_state 
         USING(state_code)
+    --TODO(#10747): Remove judicial district preprocessing once hydrated in population metrics
+    LEFT JOIN `{project_id}.{sessions_dataset}.us_tn_judicial_district_sessions_materialized` j
+        ON p.person_id = j.person_id
+        AND p.date BETWEEN j.judicial_district_start_date AND COALESCE(j.judicial_district_end_date,'9999-01-01')
+        AND p.state_code = 'US_TN'
     WHERE date<=last_day_of_data 
     GROUP BY 1,2,3,4
     )

@@ -55,7 +55,8 @@ US_ID_INCARCERATION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
             CAST(NULL AS STRING) AS supervision_district,
             CAST(NULL AS STRING) AS correctional_level,
             CAST(NULL AS STRING) AS supervising_officer_external_id,
-            CAST(NULL AS STRING) AS case_type
+            CAST(NULL AS STRING) AS case_type,
+            judicial_district_code,
         FROM
             `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_metrics_included_in_state_population_materialized`
         WHERE state_code = 'US_ID'
@@ -77,7 +78,8 @@ US_ID_INCARCERATION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
         pop.supervision_district,
         pop.correctional_level,
         pop.supervising_officer_external_id,
-        pop.case_type
+        pop.case_type,
+        pop.judicial_district_code,
     FROM incarceration_population_cte pop
     LEFT JOIN `{project_id}.{static_reference_dataset}.state_incarceration_facilities` facilities
         ON pop.compartment_location = facilities.facility
