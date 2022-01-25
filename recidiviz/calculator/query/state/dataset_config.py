@@ -77,3 +77,6 @@ VITALS_REPORT_DATASET: str = "vitals_report_views"
 
 # Where Sendgrid datasets live
 SENDGRID_EMAIL_DATA_DATASET: str = "sendgrid_email_data"
+
+# Where US_TN raw data lives
+US_TN_RAW_DATASET: str = "us_tn_raw_data_up_to_date_views"
