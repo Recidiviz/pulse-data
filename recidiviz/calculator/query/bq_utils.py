@@ -162,19 +162,19 @@ def hack_us_id_supervising_officer_external_id(dataflow_metric_table: str) -> st
     """
 
 
-def add_age_groups() -> str:
-    return """
+def add_age_groups(age_field: str = "age") -> str:
+    return f"""
             CASE 
-                WHEN age < 25 THEN "<25"
-                WHEN age >= 25 and age <= 29 THEN "25-29"
-                WHEN age >= 30 and age <= 35 THEN "30-34"
-                WHEN age >= 35 and age <= 39 THEN "35-39"
-                WHEN age >= 40 and age <= 44 THEN "40-44"
-                WHEN age >= 45 and age <= 49 THEN "45-49"
-                WHEN age >= 50 and age <= 54 THEN "50-54"
-                WHEN age >= 55 and age <= 59 THEN "55-59"
-                WHEN age >= 60 THEN "60+"
-                WHEN age is null THEN NULL
+                WHEN {age_field} < 25 THEN "<25"
+                WHEN {age_field} >= 25 and {age_field} <= 29 THEN "25-29"
+                WHEN {age_field} >= 30 and {age_field} <= 35 THEN "30-34"
+                WHEN {age_field} >= 35 and {age_field} <= 39 THEN "35-39"
+                WHEN {age_field} >= 40 and {age_field} <= 44 THEN "40-44"
+                WHEN {age_field} >= 45 and {age_field} <= 49 THEN "45-49"
+                WHEN {age_field} >= 50 and {age_field} <= 54 THEN "50-54"
+                WHEN {age_field} >= 55 and {age_field} <= 59 THEN "55-59"
+                WHEN {age_field} >= 60 THEN "60+"
+                WHEN {age_field} is null THEN NULL
             end as age_group,
     """
 
