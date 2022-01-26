@@ -22,7 +22,9 @@ from recidiviz.common.date import (
     DateRange,
     DateRangeDiff,
     NonNegativeDateRange,
+    is_date_str,
     munge_date_string,
+    today_in_iso,
 )
 
 
@@ -52,6 +54,10 @@ def test_mungeDateString_noDay() -> None:
 
 def test_mungeDateString_ZeroAm() -> None:
     assert munge_date_string("Jan 1, 2018 00:00 AM") == "Jan 1, 2018 12:00 AM"
+
+
+def test_today_in_iso() -> None:
+    assert is_date_str(today_in_iso())
 
 
 class TestDateRange(unittest.TestCase):
