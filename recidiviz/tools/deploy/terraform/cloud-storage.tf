@@ -21,6 +21,13 @@ module "justice-counts-data-bucket" {
   name_suffix = "justice-counts-data"
 }
 
+module "justice-counts-ingest" {
+  source = "./modules/cloud-storage-bucket"
+
+  project_id                  = var.project_id
+  name_suffix                 = "justice-counts-ingest"
+}
+
 module "direct-ingest-state-storage" {
   source = "./modules/cloud-storage-bucket"
 
@@ -43,6 +50,24 @@ module "direct-ingest-cloud-sql-exports" {
 
   project_id  = var.project_id
   name_suffix = "cloud-sql-exports"
+}
+
+module "direct-ingest-temporary-files" {
+  source = "./modules/cloud-storage-bucket"
+
+  project_id  = var.project_id
+  name_suffix = "direct-ingest-temporary-files"
+
+  lifecycle_rules = [
+    {
+      action = {
+        type = "Delete"
+      }
+      condition = {
+        num_newer_versions = 2
+      }
+    }
+  ]
 }
 
 module "dashboard-data" {
@@ -138,6 +163,159 @@ module "dataflow-templates" {
       }
     },
   ]
+}
+
+module "gcslock" {
+  source = "./modules/cloud-storage-bucket"
+
+  project_id                  = var.project_id
+  name_suffix                 = "gcslock"
+  uniform_bucket_level_access = false
+
+  lifecycle_rules = [
+    {
+      action = {
+        type = "Delete"
+      }
+      condition = {
+        num_newer_versions = 3
+      }
+    },
+    {
+      action = {
+        type = "Delete"
+      }
+      condition = {
+        age = 1
+      }
+    },
+  ]
+}
+
+module "ingest-metadata" {
+  source = "./modules/cloud-storage-bucket"
+
+  project_id                  = var.project_id
+  name_suffix                 = "ingest-metadata"
+  uniform_bucket_level_access = false
+}
+
+module "processed-state-aggregates" {
+  source = "./modules/cloud-storage-bucket"
+
+  project_id                  = var.project_id
+  name_suffix                 = "processed-state-aggregates"
+  storage_class               = "MULTI_REGIONAL"
+  uniform_bucket_level_access = false
+
+  labels = {
+    "recidiviz_service" = "scrapers"
+  }
+
+  lifecycle_rules = [
+    {
+      action = {
+        type = "Delete"
+      }
+      condition = {
+        num_newer_versions = 2
+      }
+    }
+  ]
+}
+
+module "public-dashboard-data" {
+  source = "./modules/cloud-storage-bucket"
+
+  project_id                  = var.project_id
+  name_suffix                 = "public-dashboard-data"
+  uniform_bucket_level_access = false
+}
+
+module "report-data" {
+  source = "./modules/cloud-storage-bucket"
+
+  project_id  = var.project_id
+  name_suffix = "report-data"
+
+  lifecycle_rules = [
+    {
+      action = {
+        type = "Delete"
+      }
+      condition = {
+        num_newer_versions = 5
+      }
+    }
+  ]
+}
+
+module "report-data-archive" {
+  source = "./modules/cloud-storage-bucket"
+
+  project_id  = var.project_id
+  name_suffix = "report-data-archive"
+
+  lifecycle_rules = [
+    {
+      action = {
+        type = "Delete"
+      }
+      condition = {
+        num_newer_versions = 2
+      }
+    }
+  ]
+}
+
+module "report-html" {
+  source = "./modules/cloud-storage-bucket"
+
+  project_id  = var.project_id
+  name_suffix = "report-html"
+
+  lifecycle_rules = [
+    {
+      action = {
+        type = "Delete"
+      }
+      condition = {
+        num_newer_versions = 2
+      }
+    }
+  ]
+}
+
+module "report-images" {
+  source = "./modules/cloud-storage-bucket"
+
+  project_id  = var.project_id
+  name_suffix = "report-images"
+
+  lifecycle_rules = [
+    {
+      action = {
+        type = "Delete"
+      }
+      condition = {
+        num_newer_versions = 2
+      }
+    }
+  ]
+}
+
+module "sendgrid-data" {
+  source = "./modules/cloud-storage-bucket"
+
+  project_id  = var.project_id
+  name_suffix = "sendgrid-data"
+}
+
+module "validation-metadata" {
+  source = "./modules/cloud-storage-bucket"
+
+  project_id  = var.project_id
+  name_suffix = "validation-metadata"
 }
 
 # TODO(#6052): Refactor to use ../cloud-storage-bucket
