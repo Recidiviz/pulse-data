@@ -147,17 +147,31 @@ def hack_us_id_supervising_officer_external_id(dataflow_metric_table: str) -> st
           WHERE
             termination_date IS NULL
             AND (state_code != 'US_ID' OR admission_reason != 'ABSCONSION')
+        ),
+        latest_ofndr_agnt AS (
+          SELECT
+            ofndr_num AS person_external_id,
+            UPPER(agnt_id) AS agnt_id,
+          FROM `{{project_id}}.us_id_raw_data_up_to_date_views.ofndr_agnt_latest`
+          -- These filters limit the results to only currently assigned POs
+          -- in the unlikely case where two POs are assigned to a single client,
+          -- the query returns the one with the most recent start date
+          WHERE end_dt IS NULL
+          QUALIFY ROW_NUMBER() OVER (
+            PARTITION BY ofndr_num
+            ORDER BY agnt_strt_dt DESC
+          ) = 1
         )
         SELECT
           * EXCEPT (supervising_officer_external_id),
-          IF(state_code != 'US_ID', supervising_officer_external_id, UPPER(ofndr_agnt.agnt_id)) AS supervising_officer_external_id
+          IF(state_code != 'US_ID', supervising_officer_external_id, latest_ofndr_agnt.agnt_id) AS supervising_officer_external_id
         FROM `{{project_id}}.{{materialized_metrics_dataset}}.{dataflow_metric_table}` metric
         INNER JOIN latest_periods lp
         USING (person_id, state_code)
         LEFT OUTER JOIN
-          `{{project_id}}.us_id_raw_data_up_to_date_views.ofndr_agnt_latest` ofndr_agnt
-        ON person_external_id = ofndr_agnt.ofndr_num
-        WHERE IF(state_code != 'US_ID', supervising_officer_external_id, UPPER(ofndr_agnt.agnt_id)) IS NOT NULL
+          latest_ofndr_agnt
+        USING(person_external_id)
+        WHERE IF(state_code != 'US_ID', supervising_officer_external_id, latest_ofndr_agnt.agnt_id) IS NOT NULL
             AND supervision_level IS NOT NULL
     """
 
