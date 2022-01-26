@@ -15,7 +15,11 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
 """Prison population snapshot by dimension."""
-from recidiviz.calculator.query.bq_utils import add_age_groups, filter_to_enabled_states
+from recidiviz.calculator.query.bq_utils import (
+    add_age_groups,
+    filter_to_enabled_states,
+    length_of_stay_month_groups,
+)
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import (
     DASHBOARD_VIEWS_DATASET,
@@ -46,19 +50,7 @@ PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = """
     length_of_stay_bins AS (
         SELECT 
         person_id,
-        CASE 
-            WHEN length_of_stay_months < 3 THEN 'months_0_3'
-            WHEN length_of_stay_months < 6 THEN 'months_3_6'
-            WHEN length_of_stay_months < 9 THEN 'months_6_9'
-            WHEN length_of_stay_months < 12 THEN 'months_9_12'
-            WHEN length_of_stay_months < 15 THEN 'months_12_15'
-            WHEN length_of_stay_months < 18 THEN 'months_15_18'
-            WHEN length_of_stay_months < 21 THEN 'months_18_21'
-            WHEN length_of_stay_months < 24 THEN 'months_21_24'
-            WHEN length_of_stay_months < 36 THEN 'months_24_36'
-            WHEN length_of_stay_months < 48 THEN 'months_36_48'
-            WHEN length_of_stay_months <= 60 THEN 'months_48_60'
-        END AS length_of_stay,
+        {length_of_stay_months_grouped} AS length_of_stay,
         FROM (
             SELECT
                 person_id,
@@ -137,6 +129,7 @@ PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER = MetricBigQueryViewBuilder
     filter_to_enabled_states=filter_to_enabled_states(
         state_code_column="state_code", enabled_states=ENABLED_STATES
     ),
+    length_of_stay_months_grouped=length_of_stay_month_groups(),
 )
 
 if __name__ == "__main__":
