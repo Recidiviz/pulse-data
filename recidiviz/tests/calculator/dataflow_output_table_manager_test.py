@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests the dataflow_metric_table_manager."""
+"""Tests the dataflow_output_table_manager."""
 import unittest
 from typing import cast
 from unittest import mock
@@ -23,7 +23,7 @@ from google.cloud import bigquery
 from mock import patch
 from mock.mock import Mock
 
-from recidiviz.calculator import dataflow_metric_table_manager
+from recidiviz.calculator import dataflow_output_table_manager
 from recidiviz.calculator.dataflow_config import (
     DATAFLOW_METRICS_TO_TABLES,
     DATAFLOW_TABLES_TO_METRIC_TYPES,
@@ -36,7 +36,7 @@ from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric
 
 
 class DataflowMetricTableManagerTest(unittest.TestCase):
-    """Tests for dataflow_metric_table_manager.py."""
+    """Tests for dataflow_output_table_manager.py."""
 
     def setUp(self) -> None:
 
@@ -52,7 +52,7 @@ class DataflowMetricTableManagerTest(unittest.TestCase):
         self.project_number_patcher.start().return_value = "123456789"
 
         self.bq_client_patcher = mock.patch(
-            "recidiviz.calculator.dataflow_metric_table_manager.BigQueryClientImpl"
+            "recidiviz.calculator.dataflow_output_table_manager.BigQueryClientImpl"
         )
         self.mock_client = self.bq_client_patcher.start().return_value
 
@@ -90,7 +90,7 @@ class DataflowMetricTableManagerTest(unittest.TestCase):
             return table
 
         self.mock_client.get_table.side_effect = get_table
-        dataflow_metric_table_manager.update_dataflow_metric_tables_schemas()
+        dataflow_output_table_manager.update_dataflow_metric_tables_schemas()
         self.mock_client.update_schema.assert_called()
 
     def test_update_dataflow_metric_tables_schemas_without_clustering_set(self) -> None:
@@ -98,14 +98,14 @@ class DataflowMetricTableManagerTest(unittest.TestCase):
 
         self.mock_client.get_table.return_value.clustering_fields = None
         with self.assertRaises(ValueError):
-            dataflow_metric_table_manager.update_dataflow_metric_tables_schemas()
+            dataflow_output_table_manager.update_dataflow_metric_tables_schemas()
 
     def test_update_dataflow_metric_tables_schemas_create_table(self) -> None:
         """Test that update_dataflow_metric_tables_schemas calls the client to create a new table when the table
         does not yet exist."""
         self.mock_client.table_exists.return_value = False
 
-        dataflow_metric_table_manager.update_dataflow_metric_tables_schemas()
+        dataflow_output_table_manager.update_dataflow_metric_tables_schemas()
 
         self.mock_client.create_table_with_schema.assert_called()
 
