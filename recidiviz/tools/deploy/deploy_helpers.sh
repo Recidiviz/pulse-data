@@ -151,7 +151,7 @@ function pre_deploy_configure_infrastructure {
     # Update the Dataflow metric table schemas and update all BigQuery views.
     echo "Updating the BigQuery Dataflow metric table schemas to match the metric classes"
     verify_hash $COMMIT_HASH
-    run_cmd pipenv run python -m recidiviz.calculator.dataflow_metric_table_manager --project_id ${PROJECT}
+    run_cmd pipenv run python -m recidiviz.calculator.dataflow_output_table_manager --project_id ${PROJECT}
 
     echo "Updating all BigQuery views"
     verify_hash $COMMIT_HASH
