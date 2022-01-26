@@ -16,21 +16,26 @@
 # =============================================================================
 """Contains the logic for a ViolationResponseNormalizationManager that manages the
 normalization of StateSupervisionViolationResponse entities in the calculation
-pipelines. """
+pipelines."""
 import datetime
 from collections import defaultdict
 from copy import deepcopy
-from typing import Dict, List, Optional, Set
+from typing import Dict, List, Optional, Set, Type
 
 import attr
 
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
+    EntityNormalizationManager,
+)
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
+from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state.entities import (
     StateSupervisionViolatedConditionEntry,
     StateSupervisionViolation,
     StateSupervisionViolationResponse,
+    StateSupervisionViolationResponseDecisionEntry,
     StateSupervisionViolationTypeEntry,
 )
 
@@ -69,7 +74,7 @@ class StateSpecificViolationResponseNormalizationDelegate:
         return condition_entry
 
 
-class ViolationResponseNormalizationManager:
+class ViolationResponseNormalizationManager(EntityNormalizationManager):
     """Interface for generalized and state-specific normalization of
     StateSupervisionViolationResponses for use in calculations."""
 
@@ -80,6 +85,16 @@ class ViolationResponseNormalizationManager:
     ):
         self._violation_responses = deepcopy(violation_responses)
         self.delegate = delegate
+
+    @staticmethod
+    def normalized_entity_classes() -> List[Type[Entity]]:
+        return [
+            StateSupervisionViolationResponse,
+            StateSupervisionViolation,
+            StateSupervisionViolationTypeEntry,
+            StateSupervisionViolatedConditionEntry,
+            StateSupervisionViolationResponseDecisionEntry,
+        ]
 
     def normalized_violation_responses_for_calculations(
         self,

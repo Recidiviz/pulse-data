@@ -18,7 +18,7 @@
 from typing import Dict, List, Optional
 
 from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_period_normalization_manager import (
-    IncarcerationNormalizationManager,
+    IncarcerationPeriodNormalizationManager,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_incarceration_period_index import (
     NormalizedIncarcerationPeriodIndex,
@@ -49,7 +49,7 @@ def default_normalized_ip_index_for_tests(
 ) -> NormalizedIncarcerationPeriodIndex:
     # Validate  standards that we can expect to be met for all periods in all states
     # at the end of IP pre-processing
-    IncarcerationNormalizationManager.validate_ip_invariants(
+    IncarcerationPeriodNormalizationManager.validate_ip_invariants(
         incarceration_periods=incarceration_periods or []
     )
 

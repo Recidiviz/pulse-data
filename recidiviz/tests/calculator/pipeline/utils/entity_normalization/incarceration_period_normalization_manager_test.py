@@ -28,7 +28,7 @@ from freezegun import freeze_time
 
 from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_period_normalization_manager import (
     ATTRIBUTES_TRIGGERING_STATUS_CHANGE,
-    IncarcerationNormalizationManager,
+    IncarcerationPeriodNormalizationManager,
     PurposeForIncarcerationInfo,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_supervision_period_index import (
@@ -67,7 +67,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         # None of the state-agnostic tests rely on violation responses
         violation_responses = None
 
-        ip_normalization_manager = IncarcerationNormalizationManager(
+        ip_normalization_manager = IncarcerationPeriodNormalizationManager(
             incarceration_periods=incarceration_periods,
             normalization_delegate=UsXxIncarcerationNormalizationDelegate(),
             incarceration_delegate=UsXxIncarcerationDelegate(),
@@ -632,7 +632,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         sp_index = None
         violation_responses = None
 
-        ip_normalization_manager = IncarcerationNormalizationManager(
+        ip_normalization_manager = IncarcerationPeriodNormalizationManager(
             incarceration_periods=incarceration_periods,
             normalization_delegate=UsXxIncarcerationNormalizationDelegate(),
             incarceration_delegate=UsXxIncarcerationDelegate(),
@@ -1440,7 +1440,7 @@ class TestCollapseIncarcerationPeriods(unittest.TestCase):
         # None of the state-agnostic tests rely on violation responses
         violation_responses = None
 
-        ip_normalization_manager = IncarcerationNormalizationManager(
+        ip_normalization_manager = IncarcerationPeriodNormalizationManager(
             incarceration_periods=incarceration_periods,
             normalization_delegate=UsXxIncarcerationNormalizationDelegate(),
             incarceration_delegate=UsXxIncarcerationDelegate(),
@@ -1885,7 +1885,7 @@ class TestCombineIncarcerationPeriods(unittest.TestCase):
         )
 
         combined_incarceration_period = (
-            IncarcerationNormalizationManager._combine_incarceration_periods(
+            IncarcerationPeriodNormalizationManager._combine_incarceration_periods(
                 start_incarceration_period,
                 end_incarceration_period,
                 overwrite_facility_information=True,
@@ -1939,7 +1939,7 @@ class TestCombineIncarcerationPeriods(unittest.TestCase):
         )
 
         combined_incarceration_period = (
-            IncarcerationNormalizationManager._combine_incarceration_periods(
+            IncarcerationPeriodNormalizationManager._combine_incarceration_periods(
                 start_incarceration_period,
                 end_incarceration_period,
                 overwrite_facility_information=True,
@@ -1995,7 +1995,7 @@ class TestCombineIncarcerationPeriods(unittest.TestCase):
         )
 
         combined_incarceration_period = (
-            IncarcerationNormalizationManager._combine_incarceration_periods(
+            IncarcerationPeriodNormalizationManager._combine_incarceration_periods(
                 start_incarceration_period,
                 end_incarceration_period,
                 overwrite_facility_information=True,
@@ -2030,7 +2030,7 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
         # None of the state-agnostic tests rely on violation responses
         violation_responses = None
 
-        ip_normalization_manager = IncarcerationNormalizationManager(
+        ip_normalization_manager = IncarcerationPeriodNormalizationManager(
             incarceration_periods=incarceration_periods,
             normalization_delegate=UsXxIncarcerationNormalizationDelegate(),
             incarceration_delegate=UsXxIncarcerationDelegate(),
@@ -3247,7 +3247,7 @@ class TestIsZeroDayErroneousPeriod(unittest.TestCase):
         )
 
         self.assertTrue(
-            IncarcerationNormalizationManager._is_zero_day_erroneous_period(
+            IncarcerationPeriodNormalizationManager._is_zero_day_erroneous_period(
                 invalid_incarceration_period, None, None
             )
         )
@@ -3267,7 +3267,7 @@ class TestIsZeroDayErroneousPeriod(unittest.TestCase):
         )
 
         self.assertFalse(
-            IncarcerationNormalizationManager._is_zero_day_erroneous_period(
+            IncarcerationPeriodNormalizationManager._is_zero_day_erroneous_period(
                 valid_incarceration_period, None, None
             )
         )
@@ -3286,7 +3286,7 @@ class TestIsZeroDayErroneousPeriod(unittest.TestCase):
         )
 
         self.assertFalse(
-            IncarcerationNormalizationManager._is_zero_day_erroneous_period(
+            IncarcerationPeriodNormalizationManager._is_zero_day_erroneous_period(
                 valid_incarceration_period, None, None
             )
         )
@@ -3305,7 +3305,7 @@ class TestIsZeroDayErroneousPeriod(unittest.TestCase):
         )
 
         self.assertFalse(
-            IncarcerationNormalizationManager._is_zero_day_erroneous_period(
+            IncarcerationPeriodNormalizationManager._is_zero_day_erroneous_period(
                 valid_incarceration_period, None, None
             )
         )
@@ -3342,19 +3342,19 @@ class TestIsZeroDayErroneousPeriod(unittest.TestCase):
         )
 
         self.assertTrue(
-            IncarcerationNormalizationManager._is_zero_day_erroneous_period(
+            IncarcerationPeriodNormalizationManager._is_zero_day_erroneous_period(
                 zero_day_period_start, None, valid_incarceration_period
             )
         )
 
         self.assertTrue(
-            IncarcerationNormalizationManager._is_zero_day_erroneous_period(
+            IncarcerationPeriodNormalizationManager._is_zero_day_erroneous_period(
                 zero_day_period_end, valid_incarceration_period, None
             )
         )
 
         self.assertFalse(
-            IncarcerationNormalizationManager._is_zero_day_erroneous_period(
+            IncarcerationPeriodNormalizationManager._is_zero_day_erroneous_period(
                 valid_incarceration_period,
                 zero_day_period_start,
                 zero_day_period_end,
@@ -3397,7 +3397,7 @@ class TestStatusChangeEdges(unittest.TestCase):
         incarceration_periods = [incarceration_period_1, incarceration_period_2]
 
         updated_periods = (
-            IncarcerationNormalizationManager._update_transfers_to_status_changes(
+            IncarcerationPeriodNormalizationManager._update_transfers_to_status_changes(
                 incarceration_periods
             )
         )
@@ -3444,7 +3444,7 @@ class TestStatusChangeEdges(unittest.TestCase):
         incarceration_periods = [incarceration_period_1, incarceration_period_2]
 
         updated_periods = (
-            IncarcerationNormalizationManager._update_transfers_to_status_changes(
+            IncarcerationPeriodNormalizationManager._update_transfers_to_status_changes(
                 incarceration_periods
             )
         )
@@ -3502,7 +3502,7 @@ class TestStatusChangeEdges(unittest.TestCase):
         incarceration_periods = [incarceration_period_1, incarceration_period_2]
 
         updated_periods = (
-            IncarcerationNormalizationManager._update_transfers_to_status_changes(
+            IncarcerationPeriodNormalizationManager._update_transfers_to_status_changes(
                 incarceration_periods
             )
         )
@@ -3551,7 +3551,7 @@ class TestStatusChangeEdges(unittest.TestCase):
         incarceration_periods = [incarceration_period_1, incarceration_period_2]
 
         updated_periods = (
-            IncarcerationNormalizationManager._update_transfers_to_status_changes(
+            IncarcerationPeriodNormalizationManager._update_transfers_to_status_changes(
                 incarceration_periods
             )
         )
@@ -3598,7 +3598,7 @@ class TestStatusChangeEdges(unittest.TestCase):
         incarceration_periods = [incarceration_period_1, incarceration_period_2]
 
         updated_periods = (
-            IncarcerationNormalizationManager._update_transfers_to_status_changes(
+            IncarcerationPeriodNormalizationManager._update_transfers_to_status_changes(
                 incarceration_periods
             )
         )
@@ -3636,13 +3636,13 @@ class TestValidateIpInvariants(unittest.TestCase):
 
     def test_validate_ip_invariants_valid(self):
         # Assert no error
-        IncarcerationNormalizationManager.validate_ip_invariants([self.valid_ip])
+        IncarcerationPeriodNormalizationManager.validate_ip_invariants([self.valid_ip])
 
     def test_validate_ip_invariants_missing_admission_reason(self):
         invalid_ip_missing = attr.evolve(self.valid_ip, admission_reason=None)
 
         with self.assertRaises(ValueError):
-            IncarcerationNormalizationManager.validate_ip_invariants(
+            IncarcerationPeriodNormalizationManager.validate_ip_invariants(
                 [invalid_ip_missing]
             )
 
@@ -3650,7 +3650,7 @@ class TestValidateIpInvariants(unittest.TestCase):
         invalid_ip_missing = attr.evolve(self.valid_ip, admission_date=None)
 
         with self.assertRaises(ValueError):
-            IncarcerationNormalizationManager.validate_ip_invariants(
+            IncarcerationPeriodNormalizationManager.validate_ip_invariants(
                 [invalid_ip_missing]
             )
 
@@ -3660,7 +3660,7 @@ class TestValidateIpInvariants(unittest.TestCase):
         )
 
         with self.assertRaises(ValueError):
-            IncarcerationNormalizationManager.validate_ip_invariants(
+            IncarcerationPeriodNormalizationManager.validate_ip_invariants(
                 [invalid_ip_missing]
             )
 
@@ -3671,6 +3671,6 @@ class TestValidateIpInvariants(unittest.TestCase):
         )
 
         with self.assertRaises(ValueError):
-            IncarcerationNormalizationManager.validate_ip_invariants(
+            IncarcerationPeriodNormalizationManager.validate_ip_invariants(
                 [invalid_ip_missing]
             )

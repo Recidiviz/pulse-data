@@ -25,7 +25,7 @@ import attr
 from freezegun import freeze_time
 
 from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_period_normalization_manager import (
-    SupervisionNormalizationManager,
+    SupervisionPeriodNormalizationManager,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_supervision_period_normalization_delegate import (
     UsXxSupervisionNormalizationDelegate,
@@ -45,7 +45,7 @@ class TestNormalizedSupervisionPeriodsForCalculations(unittest.TestCase):
         supervision_periods: List[StateSupervisionPeriod],
         earliest_death_date: Optional[datetime.date] = None,
     ) -> List[StateSupervisionPeriod]:
-        sp_normalization_manager = SupervisionNormalizationManager(
+        sp_normalization_manager = SupervisionPeriodNormalizationManager(
             supervision_periods=supervision_periods,
             delegate=UsXxSupervisionNormalizationDelegate(),
             earliest_death_date=earliest_death_date,

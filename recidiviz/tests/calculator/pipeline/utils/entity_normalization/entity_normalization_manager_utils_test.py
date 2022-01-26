@@ -15,13 +15,21 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 # pylint: disable=protected-access
-"""Tests the entity_normalization_utils file."""
+"""Tests the entity_normalization_manager_utils file."""
 import datetime
+import inspect
 import unittest
+from typing import Dict, Set, Type
 from unittest import mock
 
-from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_utils import (
+from recidiviz.calculator.pipeline.utils.entity_normalization import (
+    entity_normalization_manager_utils,
+)
+from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager_utils import (
     entity_normalization_managers_for_calculations,
+)
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
+    EntityNormalizationManager,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_incarceration_delegate import (
     UsXxIncarcerationDelegate,
@@ -43,10 +51,14 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
+from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
     StateSupervisionPeriod,
+)
+from recidiviz.tests.calculator.pipeline.utils.entity_normalization.normalized_entities_test import (
+    classes_in_normalized_entity_subtree,
 )
 
 
@@ -68,7 +80,7 @@ class TestNormalizationManagersForCalculations(unittest.TestCase):
 
     def setUp(self) -> None:
         self.incarceration_normalization_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_utils"
+            "recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager_utils"
             ".get_state_specific_incarceration_period_normalization_delegate"
         )
         self.mock_incarceration_normalization_delegate = (
@@ -78,11 +90,11 @@ class TestNormalizationManagersForCalculations(unittest.TestCase):
             UsXxIncarcerationNormalizationDelegate()
         )
         self.supervision_normalization_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_utils"
+            "recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager_utils"
             ".get_state_specific_supervision_period_normalization_delegate"
         )
         self.normalization_incarceration_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_utils"
+            "recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager_utils"
             ".get_state_specific_incarceration_delegate"
         )
         self.mock_incarceration_delegate = (
@@ -335,3 +347,60 @@ class TestNormalizationManagersForCalculations(unittest.TestCase):
         assert sp_normalization_manager is not None
         self.assertEqual([], ip_normalization_manager._original_incarceration_periods)
         self.assertEqual([], sp_normalization_manager._supervision_periods)
+
+    def test_normalization_managers_completeness(self):
+        all_normalization_managers = [
+            obj
+            for _, obj in inspect.getmembers(entity_normalization_manager_utils)
+            if inspect.isclass(obj)
+            and issubclass(obj, EntityNormalizationManager)
+            and obj != EntityNormalizationManager
+        ]
+
+        self.assertCountEqual(
+            all_normalization_managers,
+            entity_normalization_manager_utils.NORMALIZATION_MANAGERS,
+        )
+
+    def test_non_overlapping_normalized_subtrees(self):
+        """Confirms that there are no entity types that are modified by more than one
+        normalization manager."""
+        normalized_entities_by_manager: Dict[str, Set[Type[Entity]]] = {}
+
+        for manager in entity_normalization_manager_utils.NORMALIZATION_MANAGERS:
+            normalized_entities_by_manager[manager.__name__] = set(
+                manager.normalized_entity_classes()
+            )
+
+        for manager, normalized_entities in normalized_entities_by_manager.items():
+            for (
+                other_manager,
+                other_normalized_entities,
+            ) in normalized_entities_by_manager.items():
+                if manager == other_manager:
+                    continue
+
+                if shared_entities := normalized_entities.intersection(
+                    other_normalized_entities
+                ):
+                    raise ValueError(
+                        f"Entities that are normalized by {manager} are also "
+                        f"normalized by {other_manager}: {shared_entities}. "
+                        f"Entity cannot be normalized by more than one normalization "
+                        f"manager."
+                    )
+
+    def test_subtree_completeness(self):
+        """Tests that there are no entities reachable by any of the entities in the
+        normalized_entity_classes list of a normalization manager that aren't also
+        listed as modified by the manager during normalization."""
+        for manager in entity_normalization_manager_utils.NORMALIZATION_MANAGERS:
+            normalized_entities = set(manager.normalized_entity_classes())
+            all_entities_in_subtree: Set[Type[Entity]] = set()
+
+            for entity in normalized_entities:
+                all_entities_in_subtree.update(
+                    classes_in_normalized_entity_subtree(entity)
+                )
+
+            self.assertEqual(normalized_entities, all_entities_in_subtree)

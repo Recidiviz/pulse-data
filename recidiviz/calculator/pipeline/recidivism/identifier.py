@@ -36,7 +36,7 @@ from recidiviz.calculator.pipeline.recidivism.events import (
     RecidivismReleaseEvent,
     ReleaseEvent,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_utils import (
+from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager_utils import (
     entity_normalization_managers_for_calculations,
 )
 from recidiviz.calculator.pipeline.utils.execution_utils import (

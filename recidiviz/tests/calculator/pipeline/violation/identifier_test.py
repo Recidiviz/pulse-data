@@ -57,7 +57,7 @@ class TestFindViolationEvents(unittest.TestCase):
         self.mock_violation_delegate = self.violation_delegate_patcher.start()
         self.mock_violation_delegate.return_value = UsXxViolationDelegate()
         self.violation_normalization_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_utils.get_state_specific_violation_response_normalization_delegate"
+            "recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager_utils.get_state_specific_violation_response_normalization_delegate"
         )
         self.mock_violation_normalization_delegate = (
             self.violation_normalization_delegate_patcher.start()
@@ -170,7 +170,7 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
         self.mock_violation_delegate = self.violation_delegate_patcher.start()
         self.mock_violation_delegate.return_value = UsXxViolationDelegate()
         self.violation_normalization_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_utils.get_state_specific_violation_response_normalization_delegate"
+            "recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager_utils.get_state_specific_violation_response_normalization_delegate"
         )
         self.mock_violation_normalization_delegate = (
             self.violation_normalization_delegate_patcher.start()
