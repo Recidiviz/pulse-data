@@ -2,7 +2,10 @@ file_tag: ofndr_agnt
 file_description: |-
   Contains a single row for every person on supervision and has their associated Parole/Probation officer (if known).
   When a person’s PO is updated, a new row is not created, but the existing row is updated. If a person ends
-  supervision, we expect them to disappear from this table.
+  supervision, we expect them to disappear from this table. There are some instances where a person on supervision has
+  two supervising officers assigned, however in these cases only one record will be the current assignment. The correct
+  record will have a NULL `end_dt`. This table is automatically populated from the `casemgr` table, but it can also be
+  manually edited by POs via the CIS user interface, which can introduce multiple rows.
 
 
   We do not use this table, and instead use the `casemgr` table to understand PO assignments. This is for two reasons:
@@ -16,6 +19,7 @@ file_description: |-
   `ofndr_agnt` was the one that matched POs' understanding of who was on their caseload. The error seemed to be in the
   copy of `casemgr` that was being sent to us, but in the event of future discrepancies, it is worth re-confirming with
   IDOC whether our data is correct.
+
 primary_key_cols:
   - ofndr_num
 columns:
@@ -33,8 +37,11 @@ columns:
     description: |-
       Date the agent started supervising this person
   - name: end_dt
+    is_datetime: True
     description: |-
-      Date the agent ended supervising this person (almost always null)
+      Date the agent ended supervising this person. We should only consider
+      records in this table where this field is NULL in order to de-duplicate on
+      rare occasions when a person on supervision appears twice in this table.
   - name: usr_typ_cd
   - name: updt_usr_id
     description: |-
@@ -42,3 +49,7 @@ columns:
   - name: updt_dt
     description: |-
       Date that this data was most recently updated
+# In rare cases of duplicates, sort current assignment first, that is end_dt is NULL
+# In unlikely event of two current assignments, sort most recently assigned first
+supplemental_order_by_clause: |-
+  "CASE WHEN end_dt IS NULL THEN 0 ELSE 1 END, agnt_strt_dt DESC"

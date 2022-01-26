@@ -210,15 +210,29 @@ WHERE
 -- HACK ALERT HACK ALERT HACK ALERT HACK ALERT
 --
 -- HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT
+latest_ofndr_agnt AS (
+  SELECT
+    ofndr_num AS person_external_id,
+    UPPER(agnt_id) AS agnt_id,
+  FROM `{{project_id}}.us_id_raw_data_up_to_date_views.ofndr_agnt_latest`
+  -- These filters limit the results to only currently assigned POs
+  -- in the unlikely case where two POs are assigned to a single client,
+  -- the query returns the one with the most recent start date
+  WHERE end_dt IS NULL
+  QUALIFY ROW_NUMBER() OVER (
+    PARTITION BY ofndr_num
+    ORDER BY agnt_strt_dt DESC
+  ) = 1
+),
 with_derived_supervising_officer as (
     SELECT
       ideal_query.* EXCEPT (supervising_officer_external_id),
-      IF(state_code != 'US_ID', ideal_query.supervising_officer_external_id, UPPER(ofndr_agnt.agnt_id)) AS supervising_officer_external_id
+      IF(state_code != 'US_ID', ideal_query.supervising_officer_external_id, latest_ofndr_agnt.agnt_id) AS supervising_officer_external_id
   FROM
       ideal_query
     LEFT OUTER JOIN
-      `{project_id}.us_id_raw_data_up_to_date_views.ofndr_agnt_latest` ofndr_agnt
-    ON ideal_query.person_external_id = ofndr_agnt.ofndr_num
+      latest_ofndr_agnt
+    USING (person_external_id)
 )
 SELECT *
 FROM with_derived_supervising_officer
