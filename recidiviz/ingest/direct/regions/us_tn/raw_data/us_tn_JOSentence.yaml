@@ -63,9 +63,9 @@ columns:
       Indicates whether a defendant has been rendered infamous. This is captured on the judgment order.
     known_values:
       - value: N
-        description: "TODO(#7424): Update with definition."
+        description: "NO - Has not been rendered infamous"
       - value: Y
-        description: "TODO(#7424): Update with definition."
+        description: "YES - Has been rendered infamous"
   - name: EnhancementYears
     description: |-
       The length of an enhancement in years for an offender's sentence.
@@ -163,25 +163,25 @@ columns:
       Indicates if a sentence is to a Drug Court.
     known_values:
       - value: N
-        description: "TODO(#7424): Update with definition."
+        description: "NO - Is not to a Drug Court"
       - value: Y
-        description: "TODO(#7424): Update with definition."
+        description: "YES - Is to a Drug Court"
   - name: UnsupervisedPrivateProbationFlag
     description: |-
       Indicates if a sentence is to private or unsupervised probation.
     known_values:
       - value: N
-        description: "TODO(#7424): Update with definition."
+        description: "NO - Is not to private or unsupervised probation"
       - value: Y
-        description: "TODO(#7424): Update with definition."
+        description: "YES - Is to private or unsupervised probation"
   - name: HIVSpecimenFlag
     description: |-
       Indicates if a sentence indicates the person needs to provide a specimen for a HIV test.
     known_values:
       - value: N
-        description: "TODO(#7424): Update with definition."
+        description: "NO - Does not need to provide a specimen for a HIV test"
       - value: Y
-        description: "TODO(#7424): Update with definition."
+        description: "YES - Needs to provide a specimen for a HIV test"
   - name: SexOffenderTaxAmount
     description: |-
       The amount a person  is to pay for sex person tax according to the judgment order.
@@ -194,9 +194,9 @@ columns:
       Indicates if a sentence indicates TCA 68-11-10 Abuse Registry.
     known_values:
       - value: N
-        description: "TODO(#7424): Update with definition."
+        description: "NO - Is not TCA 68-11-10 Abuse Registry"
       - value: Y
-        description: "TODO(#7424): Update with definition."
+        description: "YES - Is TCA 68-11-10 Abuse Registry"
   - name: StayExecutionDate
     is_datetime: True
     description: |-

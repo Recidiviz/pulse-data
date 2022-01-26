@@ -121,9 +121,9 @@ columns:
       This flag indicates a new victim letter is to be produced informing the victim or victim family member of VOICE information.
     known_values:
       - value: N
-        description: "TODO(#7424): Update with definition."
+        description: "NO - New victim letter is not to be produced"
       - value: Y
-        description: "TODO(#7424): Update with definition."
+        description: "YES - New victim letter is to be produced"
   - name: LastUpdateUserID
     description: |-
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.

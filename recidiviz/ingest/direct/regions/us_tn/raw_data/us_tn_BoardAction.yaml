@@ -1062,10 +1062,10 @@ columns:
         description: "TODO(#7424): Update with definition."
   - name: FinalDecision
     description: |-
-      This is an indicator to show whether board members agreed on a final decision for an offender's parole hearing.
+      This is an indicator to show whether board members agreed on a final decision for an offender's parole hearing. If null, board members have not agreed on a final decision.
     known_values:
       - value: Y
-        description: "TODO(#7424): Update with definition."
+        description: "YES - Board Members agreed on final decision"
   - name: Comments
     description: |-
       The freeform text for comments.

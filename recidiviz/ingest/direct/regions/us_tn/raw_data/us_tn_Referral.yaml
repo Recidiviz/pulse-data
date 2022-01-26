@@ -102,9 +102,9 @@ columns:
       Indicator to tell whether a person  used weapons in committing his offense.
     known_values:
       - value: N
-        description: "TODO(#7424): Update with definition."
+        description: "NO - Did not use weapons"
       - value: Y
-        description: "TODO(#7424): Update with definition."
+        description: "YES - Used weapons"
   - name: Violence
     description: |-
       Indicator for an offense statute that tells whether the particular offense was violent.

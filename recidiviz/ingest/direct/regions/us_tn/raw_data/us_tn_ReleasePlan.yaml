@@ -76,9 +76,9 @@ columns:
       A field that decribes whether an offender's release plan is for release on parole.
     known_values:
       - value: N
-        description: "TODO(#7424): Update with definition."
+        description: "NO - Is not for release on parole"
       - value: Y
-        description: "TODO(#7424): Update with definition."
+        description: "YES - Is for release on parole"
   - name: ParolePlanStatus
     description: |-
       The indication of whether an offender's parole plan has been approved or denied based on the status of the address and employment.
@@ -115,9 +115,9 @@ columns:
       A field that decribes whether an offender's release plan is for probation release.
     known_values:
       - value: N
-        description: "TODO(#7424): Update with definition."
+        description: "NO - Is not for probation release"
       - value: Y
-        description: "TODO(#7424): Update with definition."
+        description: "YES - Is for probation release"
   - name: RatePayAmount
     description: |-
       Rate of Pay

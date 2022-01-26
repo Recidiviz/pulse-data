@@ -2331,10 +2331,10 @@ columns:
       The recomnmended date on which some future action will be taken.
   - name: Pre1998HearingFlag
     description: |-
-      This flag indicates the hearing is a pre 1998 hearing.
+      This flag indicates the hearing is a pre 1998 hearing. If null, hearing is not a pre-1998 hearing.
     known_values:
       - value: Y
-        description: "TODO(#7424): Update with definition."
+        description: "YES - Is a Pre 1998 Hearing. "
   - name: TechnicalViolatorFlag
     description: |-
       The code to indicate the type of technical violator a person  is.

@@ -45,9 +45,9 @@ columns:
       Indicator for a judgment order to tell if the judgment order has been overriden to legal.
     known_values:
       - value: N
-        description: "TODO(#7424): Update with definition."
+        description: "NO - Is not overriden to legal"
       - value: Y
-        description: "TODO(#7424): Update with definition."
+        description: "YES - Is overriden to legal"
   - name: JOEntryDate
     is_datetime: True
     description: |-

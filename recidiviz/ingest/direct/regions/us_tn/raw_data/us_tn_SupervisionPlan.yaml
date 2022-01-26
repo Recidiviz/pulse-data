@@ -530,9 +530,9 @@ columns:
       Indicates a person  is to be supervised as a sex person on his plan of supervision.
     known_values:
       - value: N
-        description: "TODO(#7424): Update with definition."
+        description: "NO - Not to be supervised as a sex person"
       - value: Y
-        description: "TODO(#7424): Update with definition."
+        description: "YES - Supervised as a sex person"
   - name: SexOffenderSupervisionType
     description: |-
       An abbreviation for the sex person supervision type code on a Plan of Supervision.
@@ -548,30 +548,30 @@ columns:
       Indicates a person  is to be supervised using IOT on his plan of supervision.
     known_values:
       - value: N
-        description: "TODO(#7424): Update with definition."
+        description: "NO - Not supervised using IOT"
       - value: Y
-        description: "TODO(#7424): Update with definition."
+        description: "YES - Supervised using IOT"
   - name: RFSupervisionFlag
     description: |-
       Indicates a person  is to be supervised using RF on his plan of supervision.
     known_values:
       - value: N
-        description: "TODO(#7424): Update with definition."
+        description: "NO - Not supervised using RF"
       - value: Y
-        description: "TODO(#7424): Update with definition."
+        description: "YES - Supervised using RF"
   - name: IOTSupervisionFlag
     description: |-
       Indicates a person  is to be supervised using IOT on his plan of supervision.
     known_values:
       - value: N
-        description: "TODO(#7424): Update with definition."
+        description: "NO - Not supervised using IOT"
       - value: Y
-        description: "TODO(#7424): Update with definition."
+        description: "YES - Supervised using IOT"
   - name: WarrantOnBond
     description: |-
       Indicates whether or not a person  is Warrant on Bond.
     known_values:
       - value: N
-        description: "TODO(#7424): Update with definition."
+        description: "NO - Not Warrant on Bond"
       - value: Y
-        description: "TODO(#7424): Update with definition."
+        description: "YES - Is Warrant on Bond"
