@@ -20,25 +20,25 @@ columns:
       Indicates whether or not the person has volunteered to participate in the SAIU program (boot camp).
     known_values:
       - value: N
-        description: "TODO(#7424): Update with definition."
+        description: "NO - Has not volunteered to participate in the SAIU program"
       - value: Y
-        description: "TODO(#7424): Update with definition."
+        description: "YES - Has volunteered to participate in the SAIU program"
   - name: RecommendedByJudgeFlag
     description: |-
       Indicates whether or not a sentencing judge recommends the person to SAIU.
     known_values:
       - value: N
-        description: "TODO(#7424): Update with definition."
+        description: "NO - Judge does not recommend the person to SAIU"
       - value: Y
-        description: "TODO(#7424): Update with definition."
+        description: "YES - Judge recommends the person to SAIU"
   - name: EligibleFlag
     description: |-
       Indicates whether or not a person  is considered eligible for 7IU after the screening.
     known_values:
       - value: N
-        description: "TODO(#7424): Update with definition."
+        description: "NO - Not considered eligible for 7IU"
       - value: Y
-        description: "TODO(#7424): Update with definition."
+        description: "YES - Considered eligible for 7IU"
   - name: StaffID
     description: |-
       This is a unique identifier assigned to a particular staff member. This includes all types of staff people including judges, guards, etc.

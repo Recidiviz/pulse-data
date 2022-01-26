@@ -114,9 +114,9 @@ columns:
       Indicates an application has been submitted.
     known_values:
       - value: N
-        description: "TODO(#7424): Update with definition."
+        description: "NO - Application not submitted"
       - value: Y
-        description: "TODO(#7424): Update with definition."
+        description: "YES - Application submitted"
   - name: SubmittedApplicationDate
     is_datetime: True
     description: |-
@@ -140,9 +140,9 @@ columns:
       This indicates the person is indigent (suffering from extreme poverty).
     known_values:
       - value: N
-        description: "TODO(#7424): Update with definition."
+        description: "NO - Is not indigent"
       - value: Y
-        description: "TODO(#7424): Update with definition."
+        description: "YES - Is indigent"
   - name: ReceivedDate
     is_datetime: True
     description: |-
