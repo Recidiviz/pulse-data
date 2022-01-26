@@ -29,15 +29,14 @@ Run locally with the following command:
 import argparse
 import logging
 import sys
-from typing import Tuple, List
+from typing import List, Tuple
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
-
-from recidiviz.calculator.dataflow_metric_table_manager import (
+from recidiviz.calculator.dataflow_output_table_manager import (
     update_dataflow_metric_tables_schemas,
 )
 from recidiviz.calculator.query.state import dataset_config
-from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION
+from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 # When creating temporary datasets with prefixed names, set the default table expiration to 72 hours
