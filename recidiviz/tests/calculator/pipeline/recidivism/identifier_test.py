@@ -64,7 +64,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
     def setUp(self) -> None:
         self.incarceration_normalization_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_utils"
+            "recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager_utils"
             ".get_state_specific_incarceration_period_normalization_delegate"
         )
         self.mock_incarceration_normalization_delegate = (
@@ -74,7 +74,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             UsXxIncarcerationNormalizationDelegate()
         )
         self.supervision_normalization_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_utils"
+            "recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager_utils"
             ".get_state_specific_supervision_period_normalization_delegate"
         )
         self.mock_supervision_normalization_delegate = (
@@ -84,7 +84,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             UsXxSupervisionNormalizationDelegate()
         )
         self.normalization_incarceration_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_utils"
+            "recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager_utils"
             ".get_state_specific_incarceration_delegate"
         )
         self.mock_incarceration_delegate = (

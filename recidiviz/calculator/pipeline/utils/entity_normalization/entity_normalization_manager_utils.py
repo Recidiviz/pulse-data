@@ -14,12 +14,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Utils for normalization state entities for calculations."""
+"""Utils for the normalization of state entities for calculations."""
 import datetime
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Tuple, Type, Union
 
 from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_period_normalization_manager import (
-    IncarcerationNormalizationManager,
+    IncarcerationPeriodNormalizationManager,
+)
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
+    EntityNormalizationManager,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_supervision_period_index import (
     NormalizedSupervisionPeriodIndex,
@@ -28,7 +31,7 @@ from recidiviz.calculator.pipeline.utils.entity_normalization.program_assignment
     ProgramAssignmentNormalizationManager,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_period_normalization_manager import (
-    SupervisionNormalizationManager,
+    SupervisionPeriodNormalizationManager,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_violation_responses_normalization_manager import (
     ViolationResponseNormalizationManager,
@@ -53,6 +56,14 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionViolationResponse,
 )
 
+# All EntityNormalizationManagers
+NORMALIZATION_MANAGERS: List[Type[EntityNormalizationManager]] = [
+    IncarcerationPeriodNormalizationManager,
+    ProgramAssignmentNormalizationManager,
+    SupervisionPeriodNormalizationManager,
+    ViolationResponseNormalizationManager,
+]
+
 
 def entity_normalization_managers_for_calculations(
     state_code: str,
@@ -63,8 +74,8 @@ def entity_normalization_managers_for_calculations(
     incarceration_sentences: Optional[List[StateIncarcerationSentence]],
     supervision_sentences: Optional[List[StateSupervisionSentence]],
 ) -> Tuple[
-    Optional[IncarcerationNormalizationManager],
-    Optional[SupervisionNormalizationManager],
+    Optional[IncarcerationPeriodNormalizationManager],
+    Optional[SupervisionPeriodNormalizationManager],
 ]:
     """Helper for returning the IncarcerationNormalizationManager and
     SupervisionNormalizationManager needed to access normalized incarceration and
@@ -132,11 +143,11 @@ def entity_normalization_managers_for_calculations(
         datetime.date
     ] = find_earliest_date_of_period_ending_in_death(periods=all_periods)
 
-    sp_normalization_manager: Optional[SupervisionNormalizationManager] = None
+    sp_normalization_manager: Optional[SupervisionPeriodNormalizationManager] = None
     supervision_period_index: Optional[NormalizedSupervisionPeriodIndex] = None
 
     if supervision_periods is not None:
-        sp_normalization_manager = SupervisionNormalizationManager(
+        sp_normalization_manager = SupervisionPeriodNormalizationManager(
             supervision_periods=supervision_periods,
             delegate=state_sp_normalization_manager_delegate,
             earliest_death_date=earliest_death_date,
@@ -150,7 +161,7 @@ def entity_normalization_managers_for_calculations(
         )
 
     ip_normalization_manager = (
-        IncarcerationNormalizationManager(
+        IncarcerationPeriodNormalizationManager(
             incarceration_periods=incarceration_periods,
             normalization_delegate=state_ip_normalization_manager_delegate,
             incarceration_delegate=state_incarceration_delegate,

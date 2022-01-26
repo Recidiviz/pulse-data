@@ -24,7 +24,7 @@ from typing import List, Optional
 import attr
 
 from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_period_normalization_manager import (
-    IncarcerationNormalizationManager,
+    IncarcerationPeriodNormalizationManager,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_incarceration_delegate import (
     UsNdIncarcerationDelegate,
@@ -77,7 +77,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
             supervision_periods=supervision_periods
         )
 
-        ip_normalization_manager = IncarcerationNormalizationManager(
+        ip_normalization_manager = IncarcerationPeriodNormalizationManager(
             incarceration_periods=incarceration_periods,
             normalization_delegate=UsNdIncarcerationNormalizationDelegate(),
             incarceration_delegate=UsNdIncarcerationDelegate(),

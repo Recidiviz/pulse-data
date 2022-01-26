@@ -40,7 +40,7 @@ from recidiviz.calculator.pipeline.supervision.supervision_case_compliance impor
     SupervisionCaseCompliance,
 )
 from recidiviz.calculator.pipeline.utils import assessment_utils
-from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_utils import (
+from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager_utils import (
     entity_normalization_managers_for_calculations,
     normalized_violation_responses_for_calculations,
 )
