@@ -58,6 +58,7 @@ types-pytz = "*"
 types-redis = "*"
 types-requests = "*"
 types-PyYAML = "*"
+msal = "*"
 
 [packages]
 jupyter = "*"
