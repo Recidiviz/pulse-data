@@ -68,9 +68,9 @@ columns:
       The indicator for a warrant approved by Board of Paroles.
     known_values:
       - value: N
-        description: "TODO(#7424): Update with definition."
+        description: "NO - Warrant not approved by Board of Paroles"
       - value: Y
-        description: "TODO(#7424): Update with definition."
+        description: "YES - Warrant approved by Board of Paroles"
   - name: PersonID
     description: |-
       This is a unique identifier assigned to a particular person. This database element will be displayed on screen and reports as either TOMIS-ID or STAFF-ID depending on the functional requirements.

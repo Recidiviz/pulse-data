@@ -49,33 +49,33 @@ columns:
       Indicates whether or not a psychological evaluation must be done on an offender. This flag is tied to the offense statute.
     known_values:
       - value: N
-        description: "TODO(#7424): Update with definition."
+        description: "NO - Psychological evaluation does not need to be done"
       - value: Y
-        description: "TODO(#7424): Update with definition."
+        description: "YES - Psychological evaluation must be done"
   - name: DrugOffensesFlag
     description: |-
       Indicates an offense is a drug related offense for which a person  may serve the sentence in boot camp when the sentence length is greater than six years. Tied to person status.
     known_values:
       - value: N
-        description: "TODO(#7424): Update with definition."
+        description: "NO - Is not a drug related offense"
       - value: Y
-        description: "TODO(#7424): Update with definition."
+        description: "YES - Is a drug related offense"
   - name: AssaultiveOffenseFlag
     description: |-
       Indicator to tell whether an offense was assaultive or not. This information is used for classification.
     known_values:
       - value: N
-        description: "TODO(#7424): Update with definition."
+        description: "NO - Offense was not assaultive"
       - value: Y
-        description: "TODO(#7424): Update with definition."
+        description: "YES - Offense was assaultive"
   - name: SexOffenderFlag
     description: |-
       Indicates the offense is considered to be a sex offense. This flag is tied to the offense status, and is used to determine eligibility for safety-value release.
     known_values:
       - value: N
-        description: "TODO(#7424): Update with definition."
+        description: "NO - Not considered to be a sex offense"
       - value: Y
-        description: "TODO(#7424): Update with definition."
+        description: "YES - Considered to be a sex offense"
   - name: FelonyFlag
     description: |-
       An indicator for whether a crime was a felony.

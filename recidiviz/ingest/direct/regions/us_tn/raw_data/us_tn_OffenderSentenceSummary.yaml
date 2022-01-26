@@ -82,17 +82,17 @@ columns:
       Indicator for a person  that tells whether the person is out to court.
     known_values:
       - value: N
-        description: "TODO(#7424): Update with definition."
+        description: "NO - Is not out to court"
       - value: Y
-        description: "TODO(#7424): Update with definition."
+        description: "YES - Is out to court"
   - name: CalculateOffenderFlag
     description: |-
       Indicator specifying the need to calculate sentences of an offender.
     known_values:
       - value: N
-        description: "TODO(#7424): Update with definition."
+        description: "NO - Does not need to calculate sentences of an offender"
       - value: Y
-        description: "TODO(#7424): Update with definition."
+        description: "YES - Needs to calculate sentences of an offender"
   - name: LastUpdateUserID
     description: |-
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.

@@ -56,9 +56,9 @@ columns:
       An indicator informing whether a staff member is presiding at a meeting.
     known_values:
       - value: N
-        description: "TODO(#7424): Update with definition."
+        description: "NO - Staff member is not presiding at a meeting"
       - value: Y
-        description: "TODO(#7424): Update with definition."
+        description: "YES - Staff member is presiding at a meeting"
   - name: PostedDate
     is_datetime: True
     description: |-

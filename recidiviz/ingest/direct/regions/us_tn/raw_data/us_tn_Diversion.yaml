@@ -36,9 +36,9 @@ columns:
       The status of an offender's diversion.  A valid status is either open or closed.
     known_values:
       - value: C
-        description: "TODO(#7424): Update with definition."
+        description: CLOSED
       - value: O
-        description: "TODO(#7424): Update with definition."
+        description: OPEN
   - name: StatusDate
     is_datetime: True
     description: |-

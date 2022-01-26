@@ -178,86 +178,86 @@ columns:
       Indicates if a sentence is for a multiple rape offense.
     known_values:
       - value: N
-        description: "TODO(#7424): Update with definition."
+        description: "NO - Is not for a multiple rape offense"
       - value: Y
-        description: "TODO(#7424): Update with definition."
+        description: "YES - Is for a multiple rape offense"
   - name: ChildRapistFlag
     description: |-
       Indicates if a sentence is for rape of a child.
     known_values:
       - value: N
-        description: "TODO(#7424): Update with definition."
+        description: "NO - Is not for rape of a child"
       - value: Y
-        description: "TODO(#7424): Update with definition."
+        description: "YES - Is for rape of a child"
   - name: RepeatViolentOffenderFlag
     description: |-
       Indicator that tells if a person  is a repeat violent offender.
     known_values:
       - value: N
-        description: "TODO(#7424): Update with definition."
+        description: "NO - Is not a repet violent offender"
       - value: Y
-        description: "TODO(#7424): Update with definition."
+        description: "YES - Is a repeat violent offender"
   - name: SchoolZoneFlag
     description: |-
       This flag indicates the offense was committed in a school zone.
     known_values:
       - value: N
-        description: "TODO(#7424): Update with definition."
+        description: "NO - Was not committed in a school zone"
       - value: Y
-        description: "TODO(#7424): Update with definition."
+        description: "YES - Was committed in a school zone"
   - name: MethRelatedFlag
     description: |-
       Indicates if a sentence is a methamphetamine related offense.
     known_values:
       - value: N
-        description: "TODO(#7424): Update with definition."
+        description: "NO - Is not a methamphetamine related offense"
       - value: Y
-        description: "TODO(#7424): Update with definition."
+        description: "YES - Is a methamphetamine related offense"
   - name: FirearmFlag
     description: |-
-      Indicates if a sentence is involved possession and employment of a firearm.
+      Indicates if a sentence is involved possession and employment of a firearm. If null, sentence did not involve possession and employment of a firearm.
     known_values:
       - value: Y
-        description: "TODO(#7424): Update with definition."
+        description: "YES - Involved possession and employment of a firearm"
   - name: GangRelatedFlag
     description: |-
       Indicates if a sentence is gang related offense.
     known_values:
       - value: N
-        description: "TODO(#7424): Update with definition."
+        description: "NO - Is not a gang related offense"
       - value: Y
-        description: "TODO(#7424): Update with definition."
+        description: "YES - Is a gang related offense"
   - name: ChildPredatorFlag
     description: |-
-      Indicates if a sentence is a child predator offense.
+      Indicates if a sentence is a child predator offense
     known_values:
       - value: N
-        description: "TODO(#7424): Update with definition."
+        description: "NO - Is not a child predator offense"
       - value: Y
-        description: "TODO(#7424): Update with definition."
+        description: "YES - Is a child predator offense"
   - name: AlternatePercentRange
     description: |-
       The alternate percentage amount to be used when the court sentences a specific range percent instead of using the sentence person type code to determine the range percent.
   - name: AggrevatedRapeFlag
     description: |-
-      Indicates if a sentence is for a aggravated rape offense.
+      Indicates if a sentence is for a aggravated rape offense. If null, sentence is not for an aggravated rape offense.
     known_values:
       - value: Y
-        description: "TODO(#7424): Update with definition."
+        description: "YES - Is an aggravated rape offense"
   - name: ChildSexAbuseFlag
     description: |-
-      NOT FOUND IN SOURCE DOCUMENT
+      Indicates if a sentence is for a child sex abuse offense.
     known_values:
       - value: N
-        description: "TODO(#7424): Update with definition."
+        description: "NO - Is not for a child sex abuse offense"
       - value: Y
-        description: "TODO(#7424): Update with definition."
+        description: "YES - Is for a child sex abuse offense"
   - name: MultipleFirearmFlag
     description: |-
-      Indicates if a sentence is for a multiple firearm offense.
+      Indicates if a sentence is for a multiple firearm offense. If null, sentence is not for a multiple firearm offense.
     known_values:
       - value: Y
-        description: "TODO(#7424): Update with definition."
+        description: "YES - Is a multiple firearm offense"
   - name: LastUpdateUserID
     description: |-
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
