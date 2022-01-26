@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2019 Recidiviz, Inc.
+# Copyright (C) 2021 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -93,6 +93,10 @@ def first_day_of_next_month(date: datetime.date) -> datetime.date:
 def first_day_of_next_year(date: datetime.date) -> datetime.date:
     """Returns the date corresponding to the first day of the first month of the next year for the given date."""
     return first_day_of_next_month(date.replace(month=12))
+
+
+def today_in_iso() -> str:
+    return datetime.date.today().strftime("%Y-%m-%d")
 
 
 @attr.s
