@@ -76,7 +76,7 @@ class TestFindProgramEvents(unittest.TestCase):
 
     def setUp(self) -> None:
         self.incarceration_normalization_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_utils"
+            "recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager_utils"
             ".get_state_specific_incarceration_period_normalization_delegate"
         )
         self.mock_incarceration_normalization_delegate = (
@@ -86,7 +86,7 @@ class TestFindProgramEvents(unittest.TestCase):
             UsXxIncarcerationNormalizationDelegate()
         )
         self.supervision_normalization_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_utils"
+            "recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager_utils"
             ".get_state_specific_supervision_period_normalization_delegate"
         )
         self.mock_supervision_normalization_delegate = (
@@ -96,7 +96,7 @@ class TestFindProgramEvents(unittest.TestCase):
             UsXxSupervisionNormalizationDelegate()
         )
         self.normalization_incarceration_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_utils"
+            "recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager_utils"
             ".get_state_specific_incarceration_delegate"
         )
         self.mock_incarceration_delegate = (
@@ -109,7 +109,7 @@ class TestFindProgramEvents(unittest.TestCase):
         self.mock_supervision_delegate = self.supervision_delegate_patcher.start()
         self.mock_supervision_delegate.return_value = UsXxSupervisionDelegate()
         self.normalization_program_assignment_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_utils.get_state_specific_program_assignment_normalization_delegate"
+            "recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager_utils.get_state_specific_program_assignment_normalization_delegate"
         )
         self.mock_program_assignment_normalization_delegate = (
             self.normalization_program_assignment_delegate_patcher.start()

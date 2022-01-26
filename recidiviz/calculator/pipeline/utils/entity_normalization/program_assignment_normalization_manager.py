@@ -19,8 +19,12 @@ normalization of StateProgramAssignment entities in the calculation
 pipelines."""
 import datetime
 from copy import deepcopy
-from typing import List
+from typing import List, Type
 
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
+    EntityNormalizationManager,
+)
+from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state.entities import StateProgramAssignment
 
 
@@ -37,7 +41,7 @@ class StateSpecificProgramAssignmentNormalizationDelegate:
         return program_assignments
 
 
-class ProgramAssignmentNormalizationManager:
+class ProgramAssignmentNormalizationManager(EntityNormalizationManager):
     """Interface for generalized and state-specific normalization of
     StateProgramAssignments for use in calculations."""
 
@@ -66,6 +70,10 @@ class ProgramAssignmentNormalizationManager:
             sorted_assignments
         )
         return merged_assignments
+
+    @staticmethod
+    def normalized_entity_classes() -> List[Type[Entity]]:
+        return [StateProgramAssignment]
 
     def _drop_assignments_with_missing_dates(
         self, program_assignments: List[StateProgramAssignment]

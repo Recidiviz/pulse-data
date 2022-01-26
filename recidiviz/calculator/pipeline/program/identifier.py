@@ -31,7 +31,7 @@ from recidiviz.calculator.pipeline.program.events import (
     ProgramReferralEvent,
 )
 from recidiviz.calculator.pipeline.utils import assessment_utils
-from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_utils import (
+from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager_utils import (
     entity_normalization_managers_for_calculations,
     normalized_program_assignments_for_calculations,
 )

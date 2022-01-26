@@ -25,7 +25,7 @@ from recidiviz.calculator.pipeline.base_identifier import (
     BaseIdentifier,
     IdentifierContextT,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_utils import (
+from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager_utils import (
     normalized_violation_responses_for_calculations,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (

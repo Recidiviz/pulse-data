@@ -20,10 +20,13 @@ import abc
 import datetime
 import logging
 from copy import deepcopy
-from typing import List, Optional
+from typing import List, Optional, Type
 
 import attr
 
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
+    EntityNormalizationManager,
+)
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_supervision_period_index import (
     NormalizedSupervisionPeriodIndex,
 )
@@ -34,6 +37,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodTerminationReason,
 )
+from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
     is_placeholder,
@@ -41,6 +45,7 @@ from recidiviz.persistence.entity.entity_utils import (
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
     StateIncarcerationSentence,
+    StateSupervisionCaseTypeEntry,
     StateSupervisionPeriod,
     StateSupervisionSentence,
 )
@@ -96,7 +101,7 @@ class StateSpecificSupervisionNormalizationDelegate(abc.ABC):
         return False
 
 
-class SupervisionNormalizationManager:
+class SupervisionPeriodNormalizationManager(EntityNormalizationManager):
     """Handles the normalization of StateSupervisionPeriods for use in calculations."""
 
     def __init__(
@@ -136,6 +141,10 @@ class SupervisionNormalizationManager:
         self.earliest_death_date = earliest_death_date
 
         self.field_index = CoreEntityFieldIndex()
+
+    @staticmethod
+    def normalized_entity_classes() -> List[Type[Entity]]:
+        return [StateSupervisionPeriod, StateSupervisionCaseTypeEntry]
 
     def normalized_supervision_period_index_for_calculations(
         self,

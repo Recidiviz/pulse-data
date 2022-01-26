@@ -22,7 +22,7 @@ from typing import List
 import mock
 
 from recidiviz.calculator.pipeline.utils import violation_response_utils
-from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_utils import (
+from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager_utils import (
     normalized_violation_responses_for_calculations,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_violation_response_normalization_delegate import (
@@ -343,7 +343,7 @@ class TestPrepareViolationResponsesForCalculation(unittest.TestCase):
     def setUp(self) -> None:
         self.delegate = UsXxViolationDelegate()
         self.violation_normalization_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_utils.get_state_specific_violation_response_normalization_delegate"
+            "recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager_utils.get_state_specific_violation_response_normalization_delegate"
         )
         self.mock_violation_normalization_delegate = (
             self.violation_normalization_delegate_patcher.start()

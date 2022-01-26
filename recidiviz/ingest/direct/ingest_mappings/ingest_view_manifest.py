@@ -45,7 +45,7 @@ from recidiviz.common.attr_mixins import (
     attr_field_enum_cls_for_field_name,
     attr_field_type_for_field_name,
 )
-from recidiviz.common.attr_utils import get_non_flat_attribute_class
+from recidiviz.common.attr_utils import get_non_flat_attribute_class_name
 from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.constants.enum_parser import EnumParser
 from recidiviz.common.constants.strict_enum_parser import (
@@ -188,7 +188,7 @@ class EntityTreeManifestFactory:
                 child_manifests: List[
                     Union[ExpandableListItemManifest, ManifestNode[Entity]]
                 ] = []
-                child_entity_cls_name = get_non_flat_attribute_class(attribute)
+                child_entity_cls_name = get_non_flat_attribute_class_name(attribute)
                 if not child_entity_cls_name:
                     raise ValueError(
                         f"Child class type unexpectedly null for field [{field_name}] "
@@ -212,7 +212,7 @@ class EntityTreeManifestFactory:
                     child_manifests=child_manifests
                 )
             elif field_type is BuildableAttrFieldType.FORWARD_REF:
-                child_entity_cls_name = get_non_flat_attribute_class(attribute)
+                child_entity_cls_name = get_non_flat_attribute_class_name(attribute)
                 if not child_entity_cls_name:
                     raise ValueError(
                         f"Child class type unexpectedly null for field [{field_name}] "

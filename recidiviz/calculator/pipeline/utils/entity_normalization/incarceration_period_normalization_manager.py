@@ -19,10 +19,13 @@ that they are ready to be used in pipeline calculations."""
 import logging
 from copy import deepcopy
 from datetime import date
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Dict, List, Optional, Set, Tuple, Type
 
 import attr
 
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
+    EntityNormalizationManager,
+)
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_incarceration_period_index import (
     NormalizedIncarcerationPeriodIndex,
 )
@@ -48,6 +51,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     is_official_admission,
     release_reason_overrides_released_from_temporary_custody,
 )
+from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
     is_placeholder,
@@ -223,7 +227,7 @@ class StateSpecificIncarcerationNormalizationDelegate:
         return False
 
 
-class IncarcerationNormalizationManager:
+class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
     """Interface for generalized and state-specific normalization of
     StateIncarcerationPeriods for use in calculations."""
 
@@ -268,6 +272,10 @@ class IncarcerationNormalizationManager:
         self.earliest_death_date = earliest_death_date
 
         self.field_index = field_index
+
+    @staticmethod
+    def normalized_entity_classes() -> List[Type[Entity]]:
+        return [StateIncarcerationPeriod]
 
     def normalized_incarceration_period_index_for_calculations(
         self,
@@ -693,8 +701,9 @@ class IncarcerationNormalizationManager:
                     return True
         return False
 
-    @staticmethod
+    @classmethod
     def _update_transfers_to_status_changes(
+        cls,
         incarceration_periods: List[StateIncarcerationPeriod],
     ) -> List[StateIncarcerationPeriod]:
         """Updates the admission and release reasons on adjacent periods that qualify
@@ -711,9 +720,7 @@ class IncarcerationNormalizationManager:
                 else None
             )
 
-            if next_ip and IncarcerationNormalizationManager._is_status_change_edge(
-                ip, next_ip
-            ):
+            if next_ip and cls._is_status_change_edge(ip, next_ip):
                 # Update the release_reason on the IP to STATUS_CHANGE
                 incarceration_periods[index] = attr.evolve(
                     ip,

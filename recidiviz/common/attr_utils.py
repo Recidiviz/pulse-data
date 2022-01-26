@@ -41,6 +41,11 @@ def is_forward_ref(attribute: attr.Attribute) -> bool:
     return _is_forward_ref(attr_type)
 
 
+def is_flat_field(attribute: attr.Attribute) -> bool:
+    """Returns True if the attribute is a flat field (not a list or a reference)."""
+    return not is_list(attribute) and not is_forward_ref(attribute)
+
+
 def is_attr_decorated(obj_cls: Type[Any]) -> bool:
     """Returns True if the object type is attr decorated"""
     return attr.has(obj_cls)
@@ -274,7 +279,7 @@ def _get_type_name_from_type(attr_type: Type) -> str:
     return attr_type.__name__
 
 
-def get_non_flat_attribute_class(attribute: attr.Attribute) -> Optional[str]:
+def get_non_flat_attribute_class_name(attribute: attr.Attribute) -> Optional[str]:
     """Returns the the inner class name for a type that is either List[<type>] or
     Optional[<type>], or None if the attribute type does not match either format.
     """

@@ -23,7 +23,7 @@ from typing import List, Optional
 import attr
 
 from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_period_normalization_manager import (
-    IncarcerationNormalizationManager,
+    IncarcerationPeriodNormalizationManager,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_incarceration_delegate import (
     UsMoIncarcerationDelegate,
@@ -65,7 +65,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         violation_responses: Optional[List[StateSupervisionViolationResponse]] = []
         sp_index = default_normalized_sp_index_for_tests()
 
-        ip_normalization_manager = IncarcerationNormalizationManager(
+        ip_normalization_manager = IncarcerationPeriodNormalizationManager(
             incarceration_periods=incarceration_periods,
             normalization_delegate=UsMoIncarcerationNormalizationDelegate(),
             incarceration_delegate=UsMoIncarcerationDelegate(),

@@ -22,7 +22,7 @@ from typing import Dict, List, Optional, Tuple
 import attr
 
 from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_period_normalization_manager import (
-    IncarcerationNormalizationManager,
+    IncarcerationPeriodNormalizationManager,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa import (
     us_pa_incarceration_period_normalization_delegate,
@@ -87,7 +87,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         violation_responses = violation_responses or []
 
-        ip_normalization_manager = IncarcerationNormalizationManager(
+        ip_normalization_manager = IncarcerationPeriodNormalizationManager(
             incarceration_periods=incarceration_periods,
             normalization_delegate=UsPaIncarcerationNormalizationDelegate(),
             incarceration_delegate=UsPaIncarcerationDelegate(),
