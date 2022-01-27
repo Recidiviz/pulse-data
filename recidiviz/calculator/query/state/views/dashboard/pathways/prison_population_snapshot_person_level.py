@@ -15,7 +15,11 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
 """Prison person level population snapshot by dimension."""
-from recidiviz.calculator.query.bq_utils import add_age_groups, filter_to_enabled_states
+from recidiviz.calculator.query.bq_utils import (
+    add_age_groups,
+    filter_to_enabled_states,
+    get_person_full_name,
+)
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.state_specific_query_strings import (
     get_pathways_incarceration_last_updated_date,
@@ -47,7 +51,7 @@ PRISON_POPULATION_SNAPSHOT_PERSON_LEVEL_QUERY_TEMPLATE = """
         {add_age_groups}
         pop.age,
         person_external_id AS state_id,
-        IF(person.full_name is not null, CONCAT(CONCAT(JSON_VALUE(person.full_name, '$.surname'), ", "), JSON_VALUE(person.full_name, '$.given_names')), null) as full_name
+        {formatted_name} AS full_name,
     FROM `{project_id}.{materialized_metrics_dataset}.most_recent_single_day_incarceration_population_metrics_included_in_state_population_materialized` pop
     LEFT JOIN get_last_updated USING (state_code)
     LEFT JOIN `{project_id}.{state_dataset}.state_person` person USING (person_id)
@@ -78,6 +82,7 @@ PRISON_POPULATION_SNAPSHOT_PERSON_LEVEL_VIEW_BUILDER = MetricBigQueryViewBuilder
     filter_to_enabled_states=filter_to_enabled_states(
         state_code_column="pop.state_code", enabled_states=ENABLED_STATES
     ),
+    formatted_name=get_person_full_name("person.full_name"),
 )
 
 if __name__ == "__main__":
