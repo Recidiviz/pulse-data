@@ -230,3 +230,21 @@ def get_binned_time_period_months(date_expr: str) -> str:
         WHEN {date_expr} >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 24 MONTH) THEN "months_13_24"
         WHEN {date_expr} >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 60 MONTH) THEN "months_25_60"
     END"""
+
+
+def get_person_full_name(name_expr: str) -> str:
+    """Given a SQL expression that will resolve to a standard Recidiviz full_name JSON object,
+    returns an expression that transforms it into a string in the format "Last, First"."""
+
+    return f"""IF(
+        {name_expr} IS NOT NULL, 
+        CONCAT(
+            JSON_VALUE({name_expr}, '$.surname'), 
+            ", ",
+            JSON_VALUE(
+                {name_expr}, 
+                '$.given_names'
+            )
+        ), 
+        NULL
+    )"""
