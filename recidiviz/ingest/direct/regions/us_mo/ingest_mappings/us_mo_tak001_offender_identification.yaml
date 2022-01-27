@@ -1,22 +1,76 @@
-key_mappings:
-  EK_ALN: state_person.surname
-  EK_AFN: state_person.given_names
-  EK_AMI: state_person.middle_names
-  EK_AGS: state_person.name_suffix
-  EK_SEX: state_person.gender
-  DOB: state_person.birthdate
-
-child_key_mappings:
-  EK_RAC: state_person_race.race
-  EK_ETH: state_person_ethnicity.ethnicity
-  EK_DOC: state_person_external_id.state_person_external_id_id
-
-primary_key:
-  EK_DOC: state_person.state_person_id
-
-keys_to_ignore:
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_tak001_offender_identification` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+- EK_ALN
+- EK_AFN
+- EK_AMI
+- EK_AGS
+- EK_SEX
+- DOB
+- EK_RAC
+- EK_ETH
+- EK_DOC
+- EK_CYC
+- EK_SID
+- EK_FBI
+- EK_OLN
+- DOC_ID_DOB
+unused_columns:
 - EK_CYC  # Unused - Cycle number
 - EK_SID  # Unused - SID Number - See #4632 for more context why we don't ingest this
 - EK_FBI  # Unused - FBI Number - See #4632 for more context why we don't ingest this
 - EK_OLN  # Unused - Operator License Number - See #4632 for more context why we don't ingest this
 - DOC_ID_DOB  # Unused - Duplicate of EK_DOC
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: EK_DOC
+          id_type: $literal("US_MO_DOC")
+    full_name:
+      $person_name:
+        $given_names: EK_AFN
+        $middle_names: EK_AMI
+        $surname: EK_ALN
+        $name_suffix: EK_AGS
+    aliases:
+      - StatePersonAlias:
+          full_name:
+            $person_name:
+              $given_names: EK_AFN
+              $middle_names: EK_AMI
+              $surname: EK_ALN
+              $name_suffix: EK_AGS
+          alias_type: $literal_enum(StatePersonAliasType.GIVEN_NAME)
+    gender:
+      $enum_mapping:
+        $raw_text: EK_SEX
+        $mappings:
+          Gender.MALE: M
+          Gender.FEMALE: F
+          Gender.EXTERNAL_UNKNOWN: U
+    birthdate: DOB
+    races:
+      - StatePersonRace:
+          race:
+            $enum_mapping:
+              $raw_text: EK_RAC
+              $mappings:
+                Race.AMERICAN_INDIAN_ALASKAN_NATIVE: I
+                Race.ASIAN: A
+                Race.BLACK: B
+                Race.WHITE: W
+                Race.EXTERNAL_UNKNOWN: U
+    ethnicities:
+      - StatePersonEthnicity:
+          ethnicity:
+            $enum_mapping:
+              $raw_text: EK_ETH
+              $mappings:
+                Ethnicity.HISPANIC: H
+                Ethnicity.NOT_HISPANIC: N
+                Ethnicity.EXTERNAL_UNKNOWN: U
+
+
