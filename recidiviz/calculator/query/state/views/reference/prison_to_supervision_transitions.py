@@ -36,6 +36,7 @@ PRISON_TO_SUPERVISION_TRANSITIONS_QUERY_TEMPLATE = """
         sessions.state_code,
         sessions.person_id,
         sessions.end_date AS transition_date,
+        sessions.age_end AS age,
         {age_group}
         sessions.gender,
         SPLIT(sessions.compartment_location_end, "|")[OFFSET(0)] AS level_1_location_external_id,
