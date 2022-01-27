@@ -1,0 +1,158 @@
+file_tag: VantagePointAssessments
+file_description: |-
+  This table contains the results of assessments given to people in the jurisdiction of TDOC.
+primary_key_cols:
+  - OffenderID
+  - AssessmentID
+columns:
+  - name: OffenderID
+    description: |-
+      This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
+  - name: AssessmentID
+    description: |-
+      This is a unique identifier assigned to a particular assessment taken by a particular person.
+  - name: AssignedStaffID
+    description: |-
+      This is a unique identifier assigned to the staff member who was initially assigned to conduct the assessment.
+  - name: SiteID
+    description: |-
+      This identifies an organizational/location entity where the assessment took place. Sites may include institutions, staff agencies, hospitals, etc.
+  - name: AssessmentStatus
+    description: |-
+      Completion status of the assessment.
+    known_values:
+      - value: C
+        description: Complete
+  - name: CompletedDate
+    is_datetime: True
+    description: |-
+      The date when the assessment was completed.
+  - name: CompleteByStaffID
+    description: |-
+      This is a unique identifier assigned to the particular staff member who conducted the assessment.
+  - name: AssessmentTitle
+    description: |-
+      "TODO(#7424): Update with definition."
+    known_values:
+      - value: SR
+        description: "TODO(#7424): Update with definition."
+  - name: AssignedDate
+    is_datetime: True
+    description: |-
+      The date when the assessment was assigned to the person.
+  - name: RiskLevel
+    description: |-
+      The overall assessed risk level.
+    known_values:
+      - value: HD
+        description: "TODO(#7424): Update with definition."
+      - value: HP
+        description: "TODO(#7424): Update with definition."
+      - value: HV
+        description: "TODO(#7424): Update with definition."
+      - value: HVPD
+        description: "TODO(#7424): Update with definition."
+      - value: LOW
+        description: Low
+      - value: MOD
+        description: Moderate
+  - name: FriendsNeedLevel
+    description: |-
+      The assessed level to which support from friends is needed.
+    known_values:
+      - value: HIGH
+        description: High
+      - value: LOW
+        description: Low
+      - value: MOD
+        description: Moderate
+  - name: AttitudeBehaviorNeedLevel
+    description: |-
+      The assessed level to which support is needed with attitudes and behaviors.
+    known_values:
+      - value: HIGH
+        description: High
+      - value: LOW
+        description: Low
+      - value: MOD
+        description: Moderate
+  - name: AggressionNeedLevel
+    description: |-
+      The assessed level to which support is needed in addressing aggression.
+    known_values:
+      - value: HIGH
+        description: High
+      - value: LOW
+        description: Low
+      - value: MOD
+        description: Moderate
+  - name: MentalHealthNeedLevel
+    description: |-
+      The assessed level to which mental health support is needed.
+    known_values:
+      - value: HIGH
+        description: High
+      - value: LOW
+        description: Low
+      - value: MOD
+        description: Moderate
+  - name: AlcoholDrugNeedLevel
+    description: |-
+      The assessed level to which support is needed with alcohol and drugs.
+    known_values:
+      - value: HIGH
+        description: High
+      - value: LOW
+        description: Low
+      - value: MOD
+        description: Moderate
+  - name: ResidentNeedLevel
+    description: |-
+      The assessed level to which support is needed with securing a place of residence.
+    known_values:
+      - value: HIGH
+        description: High
+      - value: LOW
+        description: Low
+      - value: MOD
+        description: Moderate
+  - name: FamilyNeedLevel
+    description: |-
+      The assessed level to which support from family is needed.
+    known_values:
+      - value: HIGH
+        description: High
+      - value: LOW
+        description: Low
+      - value: MOD
+        description: Moderate
+  - name: EmploymentNeedLevel
+    description: |-
+      The assessed level to which support is needed with securing employment.
+    known_values:
+      - value: HIGH
+        description: High
+      - value: LOW
+        description: Low
+      - value: MOD
+        description: Moderate
+  - name: EducationNeedLevel
+    description: |-
+      The assessed level to which support is needed with securing educational assistance.
+    known_values:
+      - value: HIGH
+        description: High
+      - value: LOW
+        description: Low
+      - value: MOD
+        description: Moderate
+  - name: LastUpdateStaffID
+    description: |-
+      Staff ID of the last person to update a row on a table.
+  - name: LastUpdateUserID
+    description: |-
+      This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
+  - name: LastUpdateDate
+    is_datetime: True
+    description: |-
+      This element will be associated with each record in each DB2 table in TOMIS.  It is the timestamp of the last time this record was updated.
