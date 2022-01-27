@@ -37,6 +37,7 @@ Please locate the state's [Ingest Catalog](https://app.gitbook.com/@recidiviz/s/
 #### Based on the information you've seen above, do new files need to be requested and uploaded to GCS?
 - [ ] Yes, the data I'm looking for seems to not be currently included in raw data provided by the state.
 - [ ] No, new files don't seem to need to be requested.
+- [ ] Maybe, there needs to be an investigation. 
 
 #### If new files don't need to be requested, which table(s) seem to contain the information you're looking for?
 
