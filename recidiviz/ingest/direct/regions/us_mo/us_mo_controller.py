@@ -129,7 +129,9 @@ from recidiviz.ingest.direct.regions.us_mo.us_mo_legacy_enum_helpers import (
 )
 from recidiviz.ingest.direct.state_shared_row_posthooks import (
     IngestGatingContext,
+    copy_name_to_alias,
     gen_convert_person_ids_to_external_id_objects,
+    gen_label_single_external_id_hook,
     gen_map_ymd_counts_to_max_length_field_posthook,
     gen_normalize_county_codes_posthook,
     gen_set_field_as_concatenated_values_hook,
@@ -161,6 +163,7 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
     PERIOD_SEQUENCE_PRIMARY_COL_PREFIX = "F1"
 
     PRIMARY_COL_PREFIXES_BY_FILE_TAG = {
+        "tak001_offender_identification": "EK",
         "tak022_tak023_tak025_tak026_offender_sentence_institution": "BS",
         "tak022_tak024_tak025_tak026_offender_sentence_supervision": "BS",
         "tak158_tak023_tak026_incarceration_period_from_incarceration_sentence": "BT",
@@ -456,6 +459,13 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             ),
         ]
 
+        tak001_offender_identification_row_processors: List[Callable] = [
+            copy_name_to_alias,
+            # When first parsed, the info object just has a single
+            # external id - the DOC id.
+            gen_label_single_external_id_hook(US_MO_DOC),
+        ]
+
         tak291_tak292_tak024_citations_row_processors: List[Callable] = [
             self._gen_violation_response_type_posthook(
                 StateSupervisionViolationResponseType.CITATION
@@ -491,6 +501,7 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
 
         self.row_post_processors_by_file: Dict[str, List[IngestRowPosthookCallable]] = {
             # SQL Preprocessing View
+            "tak001_offender_identification": tak001_offender_identification_row_processors,
             "tak022_tak023_tak025_tak026_offender_sentence_institution": self.get_tak022_tak023_tak025_tak026_offender_sentence_institution_row_processors(),
             "tak022_tak024_tak025_tak026_offender_sentence_supervision": self.get_tak022_tak023_tak025_tak026_offender_sentence_supervision_row_processors(),
             "tak158_tak023_tak026_incarceration_period_from_incarceration_sentence": incarceration_period_row_posthooks,

@@ -60,12 +60,15 @@ from recidiviz.ingest.direct.regions.us_mo.us_mo_controller import UsMoControlle
 from recidiviz.ingest.models.ingest_info import (
     IngestInfo,
     StateAgent,
+    StateAlias,
     StateAssessment,
     StateCharge,
     StateIncarcerationPeriod,
     StateIncarcerationSentence,
     StatePerson,
+    StatePersonEthnicity,
     StatePersonExternalId,
+    StatePersonRace,
     StateSupervisionCaseTypeEntry,
     StateSupervisionPeriod,
     StateSupervisionSentence,
@@ -110,6 +113,95 @@ class TestUsMoController(BaseDirectIngestControllerTests):
         self.assertEqual(UsMoController.mo_julian_date_to_iso("100001"), "2000-01-01")
         self.assertEqual(UsMoController.mo_julian_date_to_iso("115104"), "2015-04-14")
         self.assertEqual(UsMoController.mo_julian_date_to_iso("118365"), "2018-12-31")
+
+    def test_populate_data_tak001_offender_identification(self) -> None:
+        expected = IngestInfo(
+            state_people=[
+                StatePerson(
+                    state_person_id="110035",
+                    surname="ABAGNALE",
+                    given_names="FRANK",
+                    name_suffix="JR",
+                    gender="M",
+                    birthdate="19711120",
+                    state_person_external_ids=[
+                        StatePersonExternalId(
+                            state_person_external_id_id="110035", id_type=US_MO_DOC
+                        )
+                    ],
+                    state_person_races=[StatePersonRace(race="I")],
+                    state_person_ethnicities=[StatePersonEthnicity(ethnicity="H")],
+                    state_aliases=[
+                        StateAlias(
+                            surname="ABAGNALE",
+                            given_names="FRANK",
+                            name_suffix="JR",
+                            alias_type="GIVEN_NAME",
+                        )
+                    ],
+                ),
+                StatePerson(
+                    state_person_id="310261",
+                    surname="STEWART",
+                    given_names="MARTHA",
+                    middle_names="HELEN",
+                    gender="F",
+                    birthdate="19690617",
+                    state_person_external_ids=[
+                        StatePersonExternalId(
+                            state_person_external_id_id="310261", id_type=US_MO_DOC
+                        )
+                    ],
+                    state_person_races=[StatePersonRace(race="W")],
+                    state_person_ethnicities=[StatePersonEthnicity(ethnicity="U")],
+                    state_aliases=[
+                        StateAlias(
+                            surname="STEWART",
+                            given_names="MARTHA",
+                            middle_names="HELEN",
+                            alias_type="GIVEN_NAME",
+                        )
+                    ],
+                ),
+                StatePerson(
+                    state_person_id="710448",
+                    surname="WINNIFIELD",
+                    given_names="JULES",
+                    birthdate="19640831",
+                    state_person_external_ids=[
+                        StatePersonExternalId(
+                            state_person_external_id_id="710448", id_type=US_MO_DOC
+                        )
+                    ],
+                    state_person_races=[StatePersonRace(race="B")],
+                    state_aliases=[
+                        StateAlias(
+                            surname="WINNIFIELD",
+                            given_names="JULES",
+                            alias_type="GIVEN_NAME",
+                        )
+                    ],
+                ),
+                StatePerson(
+                    state_person_id="910324",
+                    given_names="KAONASHI",
+                    gender="U",
+                    birthdate="19580213",
+                    state_person_external_ids=[
+                        StatePersonExternalId(
+                            state_person_external_id_id="910324", id_type=US_MO_DOC
+                        )
+                    ],
+                    state_person_races=[StatePersonRace(race="A")],
+                    state_person_ethnicities=[StatePersonEthnicity(ethnicity="N")],
+                    state_aliases=[
+                        StateAlias(given_names="KAONASHI", alias_type="GIVEN_NAME")
+                    ],
+                ),
+            ]
+        )
+
+        self.run_legacy_parse_file_test(expected, "tak001_offender_identification")
 
     def test_populate_data_oras_assessments_weekly(self) -> None:
         expected = IngestInfo(
@@ -1359,7 +1451,8 @@ class TestUsMoController(BaseDirectIngestControllerTests):
         ######################################
         # Arrange
         person_110035 = entities.StatePerson.new_with_defaults(
-            full_name='{"given_names": "FRANK", "middle_names": "", "name_suffix": "JR", "surname": "ABAGNALE"}',
+            full_name='{"given_names": "FRANK", "name_suffix": "JR", '
+            '"surname": "ABAGNALE"}',
             gender=Gender.MALE,
             gender_raw_text="M",
             birthdate=datetime.date(year=1971, month=11, day=20),
@@ -1374,8 +1467,10 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             aliases=[
                 entities.StatePersonAlias.new_with_defaults(
                     state_code=_STATE_CODE_UPPER,
-                    full_name='{"given_names": "FRANK", "middle_names": "", "name_suffix": "JR", "surname": "ABAGNALE"}',
+                    full_name='{"given_names": "FRANK", "name_suffix": "JR", '
+                    '"surname": "ABAGNALE"}',
                     alias_type=StatePersonAliasType.GIVEN_NAME,
+                    alias_type_raw_text="GIVEN_NAME",
                 )
             ],
             races=[
@@ -1395,7 +1490,8 @@ class TestUsMoController(BaseDirectIngestControllerTests):
         )
 
         person_310261 = entities.StatePerson.new_with_defaults(
-            full_name='{"given_names": "MARTHA", "middle_names": "HELEN", "name_suffix": "", "surname": "STEWART"}',
+            full_name='{"given_names": "MARTHA", "middle_names": "HELEN", '
+            '"surname": "STEWART"}',
             gender=Gender.FEMALE,
             gender_raw_text="F",
             birthdate=datetime.date(year=1969, month=6, day=17),
@@ -1410,8 +1506,10 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             aliases=[
                 entities.StatePersonAlias.new_with_defaults(
                     state_code=_STATE_CODE_UPPER,
-                    full_name='{"given_names": "MARTHA", "middle_names": "HELEN", "name_suffix": "", "surname": "STEWART"}',
+                    full_name='{"given_names": "MARTHA", '
+                    '"middle_names": "HELEN", "surname": "STEWART"}',
                     alias_type=StatePersonAliasType.GIVEN_NAME,
+                    alias_type_raw_text="GIVEN_NAME",
                 )
             ],
             races=[
@@ -1430,7 +1528,7 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             ],
         )
         person_710448 = entities.StatePerson.new_with_defaults(
-            full_name='{"given_names": "JULES", "middle_names": "", "name_suffix": "", "surname": "WINNIFIELD"}',
+            full_name='{"given_names": "JULES", "surname": "WINNIFIELD"}',
             birthdate=datetime.date(year=1964, month=8, day=31),
             state_code=_STATE_CODE_UPPER,
             external_ids=[
@@ -1443,8 +1541,9 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             aliases=[
                 entities.StatePersonAlias.new_with_defaults(
                     state_code=_STATE_CODE_UPPER,
-                    full_name='{"given_names": "JULES", "middle_names": "", "name_suffix": "", "surname": "WINNIFIELD"}',
+                    full_name='{"given_names": "JULES", "surname": "WINNIFIELD"}',
                     alias_type=StatePersonAliasType.GIVEN_NAME,
+                    alias_type_raw_text="GIVEN_NAME",
                 )
             ],
             races=[
@@ -1457,7 +1556,7 @@ class TestUsMoController(BaseDirectIngestControllerTests):
         )
 
         person_910324 = entities.StatePerson.new_with_defaults(
-            full_name='{"given_names": "KAONASHI", "middle_names": "", "name_suffix": "", "surname": ""}',
+            full_name='{"given_names": "KAONASHI"}',
             gender=Gender.EXTERNAL_UNKNOWN,
             gender_raw_text="U",
             birthdate=datetime.date(year=1958, month=2, day=13),
@@ -1472,8 +1571,9 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             aliases=[
                 entities.StatePersonAlias.new_with_defaults(
                     state_code=_STATE_CODE_UPPER,
-                    full_name='{"given_names": "KAONASHI", "middle_names": "", "name_suffix": "", "surname": ""}',
+                    full_name='{"given_names": "KAONASHI"}',
                     alias_type=StatePersonAliasType.GIVEN_NAME,
+                    alias_type_raw_text="GIVEN_NAME",
                 )
             ],
             races=[
