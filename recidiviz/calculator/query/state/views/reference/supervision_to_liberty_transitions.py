@@ -17,7 +17,7 @@
 """People who have transitioned from supervision to liberty by date of release."""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.bq_utils import first_known_location
+from recidiviz.calculator.query.bq_utils import add_age_groups, first_known_location
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
     ENABLED_STATES,
@@ -42,7 +42,16 @@ SUPERVISION_TO_LIBERTY_TRANSITIONS_QUERY_TEMPLATE = """
         IF(compartment_level_2 = 'DUAL', 'PAROLE', compartment_level_2) AS supervision_type,
         gender,
         supervising_officer_external_id_end as supervising_officer,
+        supervision_start_date,
+        {age_group}
     FROM `{project_id}.{sessions_dataset}.compartment_sessions_materialized`
+    LEFT JOIN (
+        SELECT
+            person_id,
+            end_date,
+            start_date AS supervision_start_date,
+        FROM `{project_id}.{sessions_dataset}.compartment_level_1_super_sessions_materialized`
+      ) super_sessions USING (person_id, end_date)
     WHERE
         state_code IN {enabled_states}
         AND compartment_level_1 = 'SUPERVISION'
@@ -60,6 +69,7 @@ SUPERVISION_TO_LIBERTY_TRANSITIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     sessions_dataset=dataset_config.SESSIONS_DATASET,
     first_known_location=first_known_location("compartment_location_end"),
     enabled_states=str(tuple(ENABLED_STATES)),
+    age_group=add_age_groups("age_end"),
 )
 
 if __name__ == "__main__":

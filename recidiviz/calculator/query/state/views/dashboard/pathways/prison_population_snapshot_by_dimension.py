@@ -60,13 +60,6 @@ PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = """
                 AND end_date IS NULL
         )
     ),
-    get_total_pop AS (
-        SELECT
-            state_code,
-            COUNT(DISTINCT person_id) AS total_population
-        FROM `{project_id}.{materialized_metrics_dataset}.most_recent_single_day_incarceration_population_metrics_included_in_state_population_materialized`
-        GROUP BY 1
-    ),
     all_dimensions AS (
         SELECT 
             metrics.state_code,
@@ -75,15 +68,13 @@ PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = """
             IFNULL(location_name, metrics.facility) AS facility,
             {add_age_groups}
             length_of_stay,
-            total_population,
             COUNT(DISTINCT person_id) as person_count
         FROM `{project_id}.{materialized_metrics_dataset}.most_recent_single_day_incarceration_population_metrics_included_in_state_population_materialized` metrics
         LEFT JOIN length_of_stay_bins USING (person_id)
-        LEFT JOIN get_total_pop USING (state_code)
         LEFT JOIN `{project_id}.{dashboard_views_dataset}.pathways_incarceration_location_name_map` name_map
             ON metrics.state_code = name_map.state_code
             AND metrics.facility = name_map.location_id
-        group by 1, 2, 3, 4, 5, 6, 7
+        group by 1, 2, 3, 4, 5, 6
     )
     
     SELECT
@@ -94,7 +85,6 @@ PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = """
         facility,
         age_group,
         length_of_stay,
-        total_population,
         SUM(person_count) as person_count
     FROM all_dimensions,
     UNNEST ([age_group, 'ALL']) as age_group,
@@ -104,7 +94,7 @@ PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = """
     UNNEST ([length_of_stay, 'ALL']) as length_of_stay
     LEFT JOIN get_last_updated  USING (state_code)
     {filter_to_enabled_states}
-    group by 1, 2, 3, 4, 5, 6, 7, 8 
+    group by 1, 2, 3, 4, 5, 6, 7
 """
 
 PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER = MetricBigQueryViewBuilder(
