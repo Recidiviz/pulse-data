@@ -49,6 +49,7 @@ SUPERVISION_POPULATION_TIME_SERIES_VIEW_QUERY_TEMPLATE = """
         LEFT JOIN `{project_id}.{dashboards_dataset}.pathways_supervision_location_name_map` name_map
             ON metrics.state_code = name_map.state_code
             AND metrics.level_1_supervision_location_external_id = name_map.location_id
+        WHERE date_of_supervision >= DATE_TRUNC(DATE_SUB(CURRENT_DATE("US/Eastern"), INTERVAL 5 YEAR), MONTH)
     )
 
     SELECT
@@ -63,6 +64,7 @@ SUPERVISION_POPULATION_TIME_SERIES_VIEW_QUERY_TEMPLATE = """
     UNNEST([supervision_level, "ALL"]) AS supervision_level
     {filter_to_enabled_states}
     GROUP BY 1, 2, 3, 4, 5
+    ORDER BY year, month
     """
 
 SUPERVISION_POPULATION_TIME_SERIES_VIEW_BUILDER = MetricBigQueryViewBuilder(
