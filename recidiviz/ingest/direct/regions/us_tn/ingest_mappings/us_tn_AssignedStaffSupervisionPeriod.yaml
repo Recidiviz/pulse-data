@@ -9,7 +9,10 @@ input_columns:
   - EndDate
   - AdmissionReason
   - TerminationReason
-  - SupervisionOfficer
+  - SupervisionOfficerID
+  - SupervisionOfficerFirstName
+  - SupervisionOfficerLastName
+  - SupervisionOfficerSuffix
   - AssignmentType
   - Site
   - SupervisionPeriodSequenceNumber
@@ -33,9 +36,13 @@ output:
           supervision_site: Site
           supervising_officer:
             StateAgent:
-              # TODO(#9974): Hydrate supervision officer name.
-              external_id: SupervisionOfficer
+              external_id: SupervisionOfficerID
               agent_type: $literal_enum(StateAgentType.SUPERVISION_OFFICER)
+              full_name:
+                $person_name:
+                  $given_names: SupervisionOfficerFirstName
+                  $surname: SupervisionOfficerLastName
+                  $name_suffix: SupervisionOfficerSuffix
           admission_reason:
             $enum_mapping:
               $raw_text: AdmissionReason
@@ -122,4 +129,3 @@ output:
                 # TODO(#9421): update mapping, when community centers are standardized.
                 StateSupervisionPeriodSupervisionType.COMMUNITY_CONFINEMENT:
                   - CCC  # Community corrections
-

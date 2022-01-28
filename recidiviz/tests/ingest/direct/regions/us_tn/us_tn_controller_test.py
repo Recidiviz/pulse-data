@@ -208,12 +208,11 @@ class TestUsTnController(BaseDirectIngestControllerTests):
         # AssignedStaffSupervisionPeriod
         ######################################
 
-        shared_supervising_officer: entities.StateAgent = (
-            entities.StateAgent.new_with_defaults(
-                external_id="ABCDEF01",
-                agent_type=StateAgentType.SUPERVISION_OFFICER,
-                state_code=_STATE_CODE_UPPER,
-            )
+        shared_supervising_officer: entities.StateAgent = entities.StateAgent.new_with_defaults(
+            external_id="ABCDEF01",
+            agent_type=StateAgentType.SUPERVISION_OFFICER,
+            full_name='{"given_names": "DALE", "middle_names": "", "name_suffix": "JR.", "surname": "COOPER"}',
+            state_code=_STATE_CODE_UPPER,
         )
 
         add_supervision_period_to_person(

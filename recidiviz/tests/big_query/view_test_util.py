@@ -648,6 +648,9 @@ class BaseViewTest(unittest.TestCase):
             query, r"\[SAFE_OFFSET\((?P<offset>.+?)\)\]", "[{offset}]"
         )
         query = _replace_iter(query, r"\[ORDINAL\((?P<ordinal>.+?)\)\]", "[{ordinal}]")
+        query = _replace_iter(
+            query, r"\[SAFE_ORDINAL\((?P<ordinal>.+?)\)\]", "[{ordinal}]"
+        )
 
         # Array concatenation is performed with the || operator
         query = _replace_iter(query, r"ARRAY_CONCAT\((?P<first>[^,]+?)\)", "({first})")

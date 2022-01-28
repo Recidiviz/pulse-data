@@ -364,6 +364,7 @@ class UsTnIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         supervising_officer=StateAgent(
                             external_id="ABCDEF01",
                             agent_type=StateAgentType.SUPERVISION_OFFICER,
+                            full_name='{"given_names": "DALE", "middle_names": "", "name_suffix": "JR.", "surname": "COOPER"}',
                             state_code="US_TN",
                         ),
                         admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
@@ -393,6 +394,7 @@ class UsTnIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         supervising_officer=StateAgent(
                             external_id="ABCDEF01",
                             agent_type=StateAgentType.SUPERVISION_OFFICER,
+                            full_name='{"given_names": "DALE", "middle_names": "", "name_suffix": "JR.", "surname": "COOPER"}',
                             state_code="US_TN",
                         ),
                         admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
@@ -422,6 +424,7 @@ class UsTnIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         supervising_officer=StateAgent(
                             external_id="ABCDEF01",
                             agent_type=StateAgentType.SUPERVISION_OFFICER,
+                            full_name='{"given_names": "DALE", "middle_names": "", "name_suffix": "JR.", "surname": "COOPER"}',
                             state_code="US_TN",
                         ),
                         admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
@@ -451,6 +454,7 @@ class UsTnIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         supervising_officer=StateAgent(
                             external_id="ABCDEF01",
                             agent_type=StateAgentType.SUPERVISION_OFFICER,
+                            full_name='{"given_names": "DALE", "middle_names": "", "name_suffix": "JR.", "surname": "COOPER"}',
                             state_code="US_TN",
                         ),
                         admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,

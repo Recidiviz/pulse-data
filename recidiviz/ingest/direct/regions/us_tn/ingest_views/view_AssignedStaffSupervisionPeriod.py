@@ -25,7 +25,22 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-WITH clean_up_and_filter AS (
+WITH officer_names AS (
+    SELECT
+        REGEXP_REPLACE(StaffID, r'[^A-Z0-9]', '') as SupervisionOfficerID,
+        SPLIT(LastName, ',') as SupervisionOfficerLastNameAndSuffix,
+        FirstName as SupervisionOfficerFirstName
+    FROM {Staff}
+),
+split_officer_names AS (
+    SELECT
+        SupervisionOfficerID,
+        SupervisionOfficerFirstName,
+        SupervisionOfficerLastNameAndSuffix[SAFE_ORDINAL(1)] as SupervisionOfficerLastName,
+        REGEXP_REPLACE(SupervisionOfficerLastNameAndSuffix[SAFE_ORDINAL(2)], r'[^A-Z0-9.]', '') as SupervisionOfficerSuffix,
+    FROM officer_names
+),
+clean_up_and_filter AS (
     SELECT 
         OffenderID,
         REGEXP_REPLACE(CaseType, r'[^A-Z0-9]', '') as SupervisionType,
@@ -35,7 +50,7 @@ WITH clean_up_and_filter AS (
         -- letters and numbers).
         REGEXP_REPLACE(AssignmentBeginReason, r'[^A-Z]', '') as AdmissionReason,
         REGEXP_REPLACE(AssignmentEndReason, r'[^A-Z]', '') as TerminationReason,
-        REGEXP_REPLACE(StaffID, r'[^A-Z0-9]', '') as SupervisionOfficer,
+        REGEXP_REPLACE(StaffID, r'[^A-Z0-9]', '') as SupervisionOfficerID,
         REGEXP_REPLACE(AssignmentType, r'[^A-Z0-9]', '') as AssignmentType,
         REGEXP_REPLACE(SiteID, r'[^A-Z0-9]', '') as Site
     FROM {AssignedStaff}
@@ -49,7 +64,7 @@ WITH clean_up_and_filter AS (
 SELECT 
     *,
     ROW_NUMBER() OVER (PARTITION BY OffenderID ORDER BY StartDate ASC) AS SupervisionPeriodSequenceNumber
-FROM clean_up_and_filter
+FROM clean_up_and_filter LEFT JOIN split_officer_names USING (SupervisionOfficerID)
 """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
