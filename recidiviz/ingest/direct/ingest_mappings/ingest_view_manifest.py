@@ -250,13 +250,21 @@ class EntityTreeManifestFactory:
                     # Do not hydrate raw text for enum literals
                     pass
                 elif isinstance(field_manifest, BooleanConditionManifest):
-                    if field_manifest.result_type is not LiteralEnumParser:
-                        raise ValueError(
-                            f"Only enum literal expressions supported in $conditional "
-                            f"statements. Found [{field_manifest.result_type}] type "
-                            f"result for field [{field_name}] in class "
-                            f"[{entity_cls.__name__}]"
+                    # Generate a new BooleanConditionManifest that will determine
+                    # which raw text to use.
+                    field_manifests[
+                        EnumMappingManifest.raw_text_field_name(field_name)
+                    ] = BooleanConditionManifest(
+                        condition_manifest=field_manifest.condition_manifest,
+                        then_manifest=cls._get_inner_raw_text_manifest(
+                            field_manifest.then_manifest
+                        ),
+                        else_manifest=cls._get_inner_raw_text_manifest(
+                            field_manifest.else_manifest
                         )
+                        if field_manifest.else_manifest
+                        else None,
+                    )
                 else:
                     raise ValueError(
                         f"Unexpected field_manifest type: [{type(field_manifest)}]"
@@ -338,6 +346,22 @@ class EntityTreeManifestFactory:
 
             return enum_entity_filter_predicate
         return None
+
+    @staticmethod
+    def _get_inner_raw_text_manifest(manifest: ManifestNode) -> ManifestNode[str]:
+        """For a given enum ManifestNode, returns the manifest node used to generate the
+        corresponding raw text for that enum type.
+        """
+        if not issubclass(manifest.result_type, EnumParser):
+            raise ValueError(
+                "Cannot get raw text manifest for a non-enum type ManifestNode."
+            )
+        if isinstance(manifest, EnumMappingManifest):
+            return manifest.raw_text_field_manifest
+        if isinstance(manifest, EnumLiteralFieldManifest):
+            return StringLiteralFieldManifest(literal_value=None)
+
+        raise ValueError(f"Unexpected enum manifest type [{type(manifest)}]")
 
 
 @attr.s(kw_only=True)
@@ -538,13 +562,13 @@ class StringLiteralFieldManifest(ManifestNode[str]):
     # String literals are denoted like $literal("MY_STR")
     STRING_LITERAL_VALUE_REGEX = re.compile(r"^\$literal\(\"(.+)\"\)$")
 
-    literal_value: str = attr.ib()
+    literal_value: Optional[str] = attr.ib()
 
     @property
     def result_type(self) -> Type[str]:
         return str
 
-    def build_from_row(self, row: Dict[str, str]) -> str:
+    def build_from_row(self, row: Dict[str, str]) -> Optional[str]:
         return self.literal_value
 
     def columns_referenced(self) -> Set[str]:
