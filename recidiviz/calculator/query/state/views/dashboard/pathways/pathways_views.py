@@ -57,6 +57,9 @@ from recidiviz.calculator.query.state.views.dashboard.pathways.supervision_popul
 from recidiviz.calculator.query.state.views.dashboard.pathways.supervision_to_liberty_count_by_month import (
     SUPERVISION_TO_LIBERTY_COUNT_BY_MONTH_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.dashboard.pathways.supervision_to_liberty_population_snapshot_by_dimension import (
+    SUPERVISION_TO_LIBERTY_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.dashboard.pathways.supervision_to_prison_count_by_month import (
     SUPERVISION_TO_PRISON_COUNT_BY_MONTH_VIEW_BUILDER,
 )
@@ -70,6 +73,7 @@ PATHWAYS_VIEW_BUILDERS: List[MetricBigQueryViewBuilder] = [
     PRISON_POPULATION_SNAPSHOT_PERSON_LEVEL_VIEW_BUILDER,
     PRISON_POPULATION_TIME_SERIES_VIEW_BUILDER,
     SUPERVISION_TO_LIBERTY_COUNT_BY_MONTH_VIEW_BUILDER,
+    SUPERVISION_TO_LIBERTY_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER,
     SUPERVISION_TO_PRISON_COUNT_BY_MONTH_VIEW_BUILDER,
     SUPERVISION_TO_PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER,
     SUPERVISION_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER,

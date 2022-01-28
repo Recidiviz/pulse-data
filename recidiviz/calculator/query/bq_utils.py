@@ -248,3 +248,13 @@ def get_person_full_name(name_expr: str) -> str:
         ), 
         NULL
     )"""
+
+
+def first_known_location(location_expr: str) -> str:
+    """Given a sql expression that resolves to a string of packed location of the form
+    location_1|location_2, will return location_1 unless it contains the string "UNKNOWN",
+    in which case it will return location_2."""
+
+    return f"""IF(CONTAINS_SUBSTR(SPLIT({location_expr},"|")[OFFSET(0)], "UNKNOWN"),
+        SPLIT({location_expr},"|")[OFFSET(1)],
+        SPLIT({location_expr},"|")[OFFSET(0)])"""
