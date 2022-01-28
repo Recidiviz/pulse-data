@@ -1,5 +1,5 @@
 #  Recidiviz - a data platform for criminal justice reform
-#  Copyright (C) 2021 Recidiviz, Inc.
+#  Copyright (C) 2022 Recidiviz, Inc.
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -17,6 +17,7 @@
 """People who have transitioned from supervision to liberty by date of release."""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.bq_utils import first_known_location
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
     ENABLED_STATES,
@@ -35,6 +36,9 @@ SUPERVISION_TO_LIBERTY_TRANSITIONS_QUERY_TEMPLATE = """
         state_code,
         person_id,
         end_date AS transition_date,
+        age_end AS age,
+        prioritized_race_or_ethnicity,
+        {first_known_location} AS district_id,
         IF(compartment_level_2 = 'DUAL', 'PAROLE', compartment_level_2) AS supervision_type,
         gender,
         supervising_officer_external_id_end as supervising_officer,
@@ -43,7 +47,7 @@ SUPERVISION_TO_LIBERTY_TRANSITIONS_QUERY_TEMPLATE = """
         state_code IN {enabled_states}
         AND compartment_level_1 = 'SUPERVISION'
         AND compartment_level_2 IN ('PAROLE', 'PROBATION', 'INFORMAL_PROBATION', 'BENCH_WARRANT', 'DUAL', 'ABSCONSION')
-        AND outflow_to_level_1 IN {outflow_compartments}
+        AND outflow_to_level_1 = 'RELEASE'
         AND end_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 64 MONTH)
         -- (5 years X 12 months) + (3 for 90-day avg) + (1 to capture to beginning of first month) = 64 months
 """
@@ -53,8 +57,8 @@ SUPERVISION_TO_LIBERTY_TRANSITIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=SUPERVISION_TO_LIBERTY_TRANSITIONS_VIEW_NAME,
     view_query_template=SUPERVISION_TO_LIBERTY_TRANSITIONS_QUERY_TEMPLATE,
     description=SUPERVISION_TO_LIBERTY_TRANSITIONS_DESCRIPTION,
-    outflow_compartments='("RELEASE")',
     sessions_dataset=dataset_config.SESSIONS_DATASET,
+    first_known_location=first_known_location("compartment_location_end"),
     enabled_states=str(tuple(ENABLED_STATES)),
 )
 

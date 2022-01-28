@@ -1,5 +1,5 @@
 #  Recidiviz - a data platform for criminal justice reform
-#  Copyright (C) 2021 Recidiviz, Inc.
+#  Copyright (C) 2022 Recidiviz, Inc.
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -37,6 +37,7 @@ SUPERVISION_TO_PRISON_TRANSITIONS_QUERY_TEMPLATE = """
         sessions.person_id,
         sessions.end_date AS transition_date,
         IF(sessions.compartment_level_2 = 'DUAL', 'PAROLE', sessions.compartment_level_2) AS supervision_type,
+        sessions.age_end AS age,
         {age_group}
         sessions.gender,
         sessions.prioritized_race_or_ethnicity,
@@ -56,7 +57,7 @@ SUPERVISION_TO_PRISON_TRANSITIONS_QUERY_TEMPLATE = """
         state_code IN {enabled_states}
         AND compartment_level_1 = 'SUPERVISION'
         AND compartment_level_2 IN ('PAROLE', 'PROBATION', 'INFORMAL_PROBATION', 'BENCH_WARRANT', 'DUAL', 'ABSCONSION')
-        AND outflow_to_level_1 IN {outflow_compartments}
+        AND outflow_to_level_1 IN ("INCARCERATION", "INCARCERATION_OUT_OF_STATE", "PENDING_CUSTODY")
         AND end_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 64 MONTH)
         -- (5 years X 12 months) + (3 for 90-day avg) + (1 to capture to beginning of first month) = 64 months"""
 
@@ -66,9 +67,6 @@ SUPERVISION_TO_PRISON_TRANSITIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=SUPERVISION_TO_PRISON_TRANSITIONS_QUERY_TEMPLATE,
     description=SUPERVISION_TO_PRISON_TRANSITIONS_DESCRIPTION,
     sessions_dataset=dataset_config.SESSIONS_DATASET,
-    outflow_compartments=str(
-        ("INCARCERATION", "INCARCERATION_OUT_OF_STATE", "PENDING_CUSTODY")
-    ),
     age_group=add_age_groups("sessions.age_end"),
     enabled_states=str(tuple(ENABLED_STATES)),
 )
