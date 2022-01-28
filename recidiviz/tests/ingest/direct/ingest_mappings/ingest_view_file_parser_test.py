@@ -1586,6 +1586,64 @@ class IngestViewFileParserTest(unittest.TestCase):
         # Assert
         self.assertEqual(expected_output, parsed_output)
 
+    def test_boolean_condition_enum_mappings(self) -> None:
+        # Arrange
+        expected_output = [
+            FakePerson(
+                fake_state_code="US_XX",
+                gender=FakeGender.FEMALE,
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX", external_id="1", id_type="ID_TYPE"
+                    )
+                ],
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                gender=FakeGender.MALE,
+                gender_raw_text="M",
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX", external_id="2", id_type="ID_TYPE"
+                    )
+                ],
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                gender=FakeGender.MALE,
+                gender_raw_text="MA",
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX", external_id="2", id_type="ID_TYPE"
+                    )
+                ],
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                gender=FakeGender.FEMALE,
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX", external_id="3", id_type="ID_TYPE"
+                    )
+                ],
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                gender=FakeGender.FEMALE,
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX", external_id="4", id_type="ID_TYPE"
+                    )
+                ],
+            ),
+        ]
+
+        # Act
+        parsed_output = self._run_parse_for_tag("boolean_condition_enum_mappings")
+
+        # Assert
+        self.assertEqual(expected_output, parsed_output)
+
     def test_boolean_condition_entity_tree(self) -> None:
         # Arrange
         expected_output = [
