@@ -20,8 +20,8 @@ To generate the BQ view, run:
 python -m recidiviz.calculator.query.state.views.dashboard.pathways.supervision_to_liberty_population_snapshot_by_dimension
 """
 from recidiviz.calculator.query.bq_utils import (
-    add_age_groups,
     get_binned_time_period_months,
+    length_of_stay_month_groups,
 )
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.state_specific_query_strings import (
@@ -46,12 +46,18 @@ SUPERVISION_TO_LIBERTY_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = """
             state_code,
             person_id,
             gender,
-            {add_age_groups}
+            age_group,
             supervision_type,
             district_id,
             prioritized_race_or_ethnicity AS race,
             {binned_time_periods} AS time_period,
-        FROM `{project_id}.{reference_views_dataset}.supervision_to_liberty_transitions`
+            {length_of_stay_binned} AS length_of_stay,
+        FROM (
+            SELECT
+                *,
+                DATE_DIFF(transition_date, supervision_start_date, MONTH) AS length_of_stay_months,
+            FROM `{project_id}.{reference_views_dataset}.supervision_to_liberty_transitions`
+        )
         WHERE state_code = 'US_ND'
             AND transition_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 60 MONTH)
     ),
@@ -66,19 +72,21 @@ SUPERVISION_TO_LIBERTY_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = """
         race,
         supervision_type,
         IFNULL(location_name, district_id) AS district,
+        length_of_stay,
         COUNT(1) AS event_count,
     FROM transitions,
     UNNEST([gender, 'ALL']) AS gender,
     UNNEST([race, 'ALL']) AS race,
     UNNEST([age_group, 'ALL']) AS age_group,
     UNNEST([supervision_type, 'ALL']) AS supervision_type,
-    UNNEST([district_id, 'ALL']) AS district_id
+    UNNEST([district_id, 'ALL']) AS district_id,
+    UNNEST([length_of_stay, 'ALL']) AS length_of_stay
     LEFT JOIN get_last_updated
         USING (state_code)
     LEFT JOIN `{project_id}.{dashboards_dataset}.pathways_supervision_location_name_map` locations
         ON district_id = location_id
         AND transitions.state_code = locations.state_code
-    GROUP BY 1, 2, 3, 4, 5, 6, 7, 8
+    GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9
 """
 
 SUPERVISION_TO_LIBERTY_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER = MetricBigQueryViewBuilder(
@@ -94,12 +102,13 @@ SUPERVISION_TO_LIBERTY_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER = MetricBig
         "supervision_level",
         "age_group",
         "race",
+        "length_of_stay",
     ),
     dashboards_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     binned_time_periods=get_binned_time_period_months("transition_date"),
     get_pathways_supervision_last_updated_date=get_pathways_supervision_last_updated_date(),
-    add_age_groups=add_age_groups("age"),
+    length_of_stay_binned=length_of_stay_month_groups(),
 )
 
 if __name__ == "__main__":

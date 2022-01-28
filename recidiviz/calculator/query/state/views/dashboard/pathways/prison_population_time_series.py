@@ -43,11 +43,12 @@ PRISON_POPULATION_TIME_SERIES_QUERY_TEMPLATE = """
             admission_reason AS legal_status,
             IFNULL(location_name, pop.facility) AS facility,
             {add_age_groups}
-            count(distinct person_id) as person_count
+            COUNT(DISTINCT person_id) AS person_count
         FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_metrics_included_in_state_population_materialized` pop
         LEFT JOIN `{project_id}.{dashboard_views_dataset}.pathways_incarceration_location_name_map` name_map
             ON pop.state_code = name_map.state_code
             AND pop.facility = name_map.location_id
+        WHERE date_of_stay >= DATE_TRUNC(DATE_SUB(CURRENT_DATE("US/Eastern"), INTERVAL 5 YEAR), MONTH)
         GROUP BY 1, 2, 3, 4, 5, 6, 7
     )
     

@@ -47,36 +47,26 @@ SUPERVISION_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = """
     /*{description}*/
     WITH 
     get_last_updated AS ({get_pathways_supervision_last_updated_date})
-    , get_total_pop AS (
-        SELECT
-            state_code,
-            COUNT(DISTINCT person_id) as total_population,
-        FROM `{project_id}.{metrics_dataset}.most_recent_single_day_supervision_population_metrics_materialized`
-        GROUP BY 1
-    )
     , all_dimensions AS (
         SELECT 
             state_code, 
             last_updated,
             IFNULL(location_name, location_id) AS district,
             supervision_level,
-            total_population,
             COUNT(DISTINCT person_id) as person_count,
         FROM `{project_id}.{metrics_dataset}.most_recent_single_day_supervision_population_metrics_materialized`,
         UNNEST([level_1_supervision_location_external_id, 'ALL']) AS location_id,
         UNNEST([supervision_level, 'ALL']) AS supervision_level
         LEFT JOIN get_last_updated  USING (state_code)
-        LEFT JOIN get_total_pop USING (state_code)
         LEFT JOIN `{project_id}.{dashboards_dataset}.pathways_supervision_location_name_map` USING (state_code, location_id)
         {filter_to_enabled_states}
-        GROUP BY 1, 2, 3, 4, 5
+        GROUP BY 1, 2, 3, 4
     )
     SELECT
         state_code, 
         last_updated,
         district,
         supervision_level,
-        total_population,
         person_count,
     FROM all_dimensions
     WHERE supervision_level IS NOT NULL

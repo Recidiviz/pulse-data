@@ -37,19 +37,28 @@ SUPERVISION_TO_LIBERTY_COUNT_BY_MONTH_DESCRIPTION = (
 
 aggregate_query = """
 SELECT
-    state_code,
+    transitions.state_code,
     EXTRACT(YEAR FROM transition_date) as year,
     EXTRACT(MONTH FROM transition_date) as month,
     gender,
     supervision_type,
+    age_group,
+    prioritized_race_or_ethnicity AS race,
+    district,
     COUNT(1) as event_count,
 FROM
-    `{project_id}.{reference_dataset}.supervision_to_liberty_transitions`,
+    `{project_id}.{reference_dataset}.supervision_to_liberty_transitions` transitions,
     UNNEST ([gender, 'ALL']) AS gender,
-    UNNEST ([supervision_type, 'ALL']) AS supervision_type
-GROUP BY 1, 2, 3, 4, 5"""
+    UNNEST ([supervision_type, 'ALL']) AS supervision_type,
+    UNNEST ([age_group, 'ALL']) AS age_group,
+    UNNEST ([prioritized_race_or_ethnicity, "ALL"]) AS race
+LEFT JOIN `{project_id}.{dashboard_views_dataset}.pathways_supervision_location_name_map` location
+    ON transitions.state_code = location.state_code 
+    AND transitions.district_id = location.location_id,
+    UNNEST ([IFNULL(location_name, district_id), "ALL"]) AS district
+GROUP BY 1, 2, 3, 4, 5, 6, 7, 8"""
 
-dimensions = ["supervision_type", "gender"]
+dimensions = ["supervision_type", "gender", "age_group", "race", "district"]
 
 
 SUPERVISION_TO_LIBERTY_COUNT_BY_MONTH_QUERY_TEMPLATE = (
