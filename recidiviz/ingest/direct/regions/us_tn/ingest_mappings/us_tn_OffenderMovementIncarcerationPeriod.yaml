@@ -69,8 +69,6 @@ output:
 
                 StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION:
                   - CTFA-NEWAD  # Court to Facility - new admission
-                  - CTFA-RTCHG  # Court to Facility - return charges
-                  - CTFA-RETNO  # Court to Facility - return no charges
                   # Only 2 instances, both in 1991. Seems to have been accidental.
                   - PAFA-RTCHG  # Return with charges
                   - DIFA-ADMCO  # Discharge to facility - Administrative correction/court ordered
@@ -113,6 +111,8 @@ output:
                   - CTFA-INTRS  # Court to facility - in transit
                   - CTFA-OUTYS  # Court to facility (charges)
                   - CTFA-OUTNO  # Court to facility (no charges)
+                  - CTFA-RTCHG  # Court to Facility - return charges
+                  - CTFA-RETNO  # Court to Facility - return no charges
                   # The following are all movements from facility to facility (FAFA).
                   - FAFA-JAILT  # Jail transfer
                   - FAFA-CLASN  # Classification assignment
