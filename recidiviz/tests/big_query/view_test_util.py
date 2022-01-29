@@ -74,8 +74,10 @@ from recidiviz.utils.string import StrictStringFormatter
 def _replace_iter(query: str, regex: str, replacement: str, flags: int = 0) -> str:
     compiled = re.compile(regex, flags)
     for match in re.finditer(compiled, query):
+        grouped_matches = {k: str(v or "") for k, v in dict(match.groupdict()).items()}
         query = query.replace(
-            match[0], StrictStringFormatter().format(replacement, **match.groupdict())
+            match[0],
+            StrictStringFormatter().format(replacement, **grouped_matches),
         )
     return query
 
@@ -694,7 +696,7 @@ class BaseViewTest(unittest.TestCase):
         query = _replace_iter(
             query,
             r"DATE_DIFF\((?P<first>.+?), (?P<second>.+?), DAY\)",
-            "({first} - {second})",
+            "({first}::date - {second}::date)",
         )
 
         # Date arithmetic just uses operators (e.g. -), not function calls
@@ -744,11 +746,11 @@ class BaseViewTest(unittest.TestCase):
             "EXTRACT({clause})::integer{end}",
         )
 
-        # EXTRACT DATE returns a DATE type in BQ, this strips out the EXTRACT(DATE FROM timestamp_col)
+        # EXTRACT DATE returns a DATE type in BQ, this strips out the EXTRACT(DATE FROM timestamp_col) AS xx_column
         # and becomes timestamp_col::date
         query = _replace_iter(
             query,
-            r"EXTRACT\(DATE\sFROM\s(?P<clause>.+)\)(?P<end>.+)",
+            r"EXTRACT\(DATE\sFROM\s(?P<clause>.+)\)(?P<end>.+)?",
             "{clause}::date{end}",
         )
 
