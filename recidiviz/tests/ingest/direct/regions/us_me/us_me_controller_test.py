@@ -206,7 +206,7 @@ class TestUsMeController(BaseDirectIngestControllerTests):
             custodial_authority=StateCustodialAuthority.STATE_PRISON,
             custodial_authority_raw_text="2",
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-            admission_reason_raw_text="NULL@@INCARCERATED@@SENTENCE/DISPOSITION@@SOCIETY IN@@SENTENCE/DISPOSITION@@2",
+            admission_reason_raw_text="NONE@@INCARCERATED@@SENTENCE/DISPOSITION@@SOCIETY IN@@SENTENCE/DISPOSITION@@2",
             release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_TO_SUPERVISION,
             release_reason_raw_text="INCARCERATED@@SCCP@@TRANSFER@@SENTENCE/DISPOSITION@@2@@4",
             specialized_purpose_for_incarceration_raw_text="INCARCERATED@@SENTENCE/DISPOSITION@@2",
@@ -224,7 +224,7 @@ class TestUsMeController(BaseDirectIngestControllerTests):
             housing_unit="UNIT 2",
             custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
             custodial_authority_raw_text="4",
-            admission_reason=StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
             admission_reason_raw_text="SCCP@@INCARCERATED@@TRANSFER@@DOC TRANSFER@@VIOLATION OF SCCP@@2",
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
             release_reason_raw_text="INCARCERATED@@INCARCERATED@@TRANSFER@@VIOLATION OF SCCP@@2@@2",
@@ -299,8 +299,8 @@ class TestUsMeController(BaseDirectIngestControllerTests):
             release_date=datetime.date(year=2017, month=12, day=1),
             facility="SOUTHERN MAINE WOMEN'S REENTRY CENTER",
             housing_unit="SMWRC",
-            custodial_authority=StateCustodialAuthority.STATE_PRISON,
-            custodial_authority_raw_text="13",
+            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+            custodial_authority_raw_text="4",
             admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
             admission_reason_raw_text="INCARCERATED@@INCARCERATED@@TRANSFER@@DOC TRANSFER@@POPULATION DISTRIBUTION@@2",
             release_reason=StateIncarcerationPeriodReleaseReason.ESCAPE,
@@ -308,6 +308,24 @@ class TestUsMeController(BaseDirectIngestControllerTests):
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             specialized_purpose_for_incarceration_raw_text="INCARCERATED@@POPULATION DISTRIBUTION@@2",
             incarceration_type_raw_text="2",
+        )
+
+        add_incarceration_period_to_person(
+            person=person_1,
+            external_id="00000001-7",
+            state_code="US_ME",
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            specialized_purpose_for_incarceration_raw_text="INCARCERATED@@CASE MANAGEMENT PLAN@@2",
+            incarceration_type_raw_text="2",
+            admission_date=datetime.date(2018, 1, 1),
+            release_date=None,
+            facility="MAINE CORRECTIONAL CENTER",
+            custodial_authority_raw_text="4",
+            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            admission_reason_raw_text="INCARCERATED@@INCARCERATED@@TRANSFER@@DOC TRANSFER@@CASE MANAGEMENT PLAN@@2",
+            release_reason=None,
+            release_reason_raw_text=None,
         )
 
         expected_people = [

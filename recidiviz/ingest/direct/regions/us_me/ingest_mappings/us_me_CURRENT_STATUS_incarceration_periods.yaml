@@ -4,16 +4,16 @@
 manifest_language: 1.0.0
 input_columns:
   - client_id
+  - start_date
+  - end_date
   - previous_status
   - current_status
   - next_status
   - current_status_location
   - location_type
   - next_location_type
-  - housing_unit
   - jurisdiction_location_type
-  - start_date
-  - end_date
+  - housing_unit
   - movement_type
   - next_movement_type
   - transfer_type
@@ -21,7 +21,6 @@ input_columns:
   - incarceration_period_id
 unused_columns: []
 output:
-  # TODO(#9969): Populate additional fields: [county_code,housing_unit,custodial_authority]
   StatePerson:
     external_ids:
       - StatePersonExternalId:
@@ -44,7 +43,6 @@ output:
                   - "2" # Adult DOC Facilities
                   - "7" # Pre-Release Centers
                   - "9" # County jails
-                  - "13" # Maine counties
                   - "8" # State of Maine
           housing_unit: housing_unit
           admission_date: start_date
@@ -90,16 +88,20 @@ output:
                   $include_nulls: True
               $custom_parser: us_me_custom_enum_parsers.parse_admission_reason
           release_reason:
-            $enum_mapping:
-              $raw_text:
-                $concat:
-                  $separator: "@@"
-                  $values:
-                    - current_status
-                    - next_status
-                    - next_movement_type
-                    - transfer_reason
-                    - location_type
-                    - next_location_type
-                  $include_nulls: True
-              $custom_parser: us_me_custom_enum_parsers.parse_release_reason
+            $conditional:
+                - $if:
+                    $not_null: end_date
+                  $then:
+                    $enum_mapping:
+                      $raw_text:
+                        $concat:
+                          $separator: "@@"
+                          $values:
+                            - current_status
+                            - next_status
+                            - next_movement_type
+                            - transfer_reason
+                            - location_type
+                            - next_location_type
+                          $include_nulls: True
+                      $custom_parser: us_me_custom_enum_parsers.parse_release_reason

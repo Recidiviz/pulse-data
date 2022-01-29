@@ -56,3 +56,21 @@ class CurrentStatusIncarcerationPeriodTest(BaseViewTest):
         self.run_ingest_view_test(
             fixtures_files_name="incarceration_period_ends_with_death_status.csv"
         )
+
+    def test_incarceration_period_furlough_and_death(self) -> None:
+        """Assert that periods that have furloughs and a next status of 'DECEASED' are captured correctly."""
+        self.run_ingest_view_test(
+            fixtures_files_name="incarceration_period_furlough_and_death.csv"
+        )
+
+    def test_ip_admitted_from_supervision_with_inactive(self) -> None:
+        """Assert that periods with Inactive statuses in between supervision and incarceration periods are captured."""
+        self.run_ingest_view_test(
+            fixtures_files_name="ip_admitted_from_supervision_with_inactive.csv"
+        )
+
+    def test_pending_discharge_or_release_periods(self) -> None:
+        """Assert that open periods have null end dates."""
+        self.run_ingest_view_test(
+            fixtures_files_name="pending_discharge_or_release_periods.csv"
+        )

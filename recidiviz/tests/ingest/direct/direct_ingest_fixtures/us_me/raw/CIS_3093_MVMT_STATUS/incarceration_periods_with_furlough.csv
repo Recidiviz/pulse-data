@@ -1,5 +1,9 @@
 E_Mvmt_Status_Desc,Mvmt_Status_Cd
 Pending,1
+In Transit,2
+Complete, 3
+Cancelled, 4
 Complete,3
+Pending,1
 Cancelled,4
 In Transit,2

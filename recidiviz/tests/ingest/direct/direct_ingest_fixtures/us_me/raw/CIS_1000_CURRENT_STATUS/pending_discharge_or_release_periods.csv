@@ -1,0 +1,33 @@
+E_Current_Status_Desc,Current_Status_Cd
+Active,31
+Parole,4
+Escape,12
+Partial Revocation - probation to terminate,17
+County Jail,8
+Federal Hold,27
+Warrant Absconded,9
+Drug Court Participant,25
+Conditional Release,26
+Sole Sanction,19
+Committed - In Custody,3
+Partial Revocation - probation to continue,16
+Incarcerated,2
+Detention,21
+Petition Authorized,20
+Pending Violation - Incarcerated,29
+SCCP,5
+Interstate Compact,15
+Probation,1
+Interstate Compact In,28
+Drug Court Sanction,24
+Partial Revocation - incarcerated,11
+Inactive,13
+Informal Adjustment,18
+Interstate Compact Out,6
+Interstate Active Detainer,7
+Pending Violation,10
+No Further Action,32
+Partial Revocation - County Jail,33
+Community Reintegration,14
+Shock Sentence,22
+Referral,23

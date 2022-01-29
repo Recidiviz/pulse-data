@@ -30,12 +30,21 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
 )
 
+FURLOUGH_MOVEMENT_TYPES = ["Furlough", "Furlough Hospital"]
+
 OTHER_JURISDICTION_TRANSFER_TYPES = [
     "Non-DOC In",
     "Non-DOC County Jail In",
     "DOC County Jail Return From",
     "DOC Interstate Compact Return From/In",
     "DOC Interstate Active Detainer Return",
+]
+
+SUPERVISION_VIOLATION_TRANSFER_REASONS = [
+    "Violation of Probation",
+    "Violation of Probation - Prob. to Terminate(J)",
+    "Violation of Parole",
+    "Violation of SCCP",
 ]
 
 TEMPORARY_CUSTODY_TRANSFER_REASONS = ["Safe Keepers", "Federal Hold", "Federal BOP"]
@@ -47,33 +56,55 @@ INCARCERATED_STATUSES = [
     "Partial Revocation - incarcerated",
 ]
 
+OTHER_JURISDICTION_STATUSES = [
+    "Interstate Compact Out",
+    "Interstate Active Detainer",
+]
+
+COMMUNITY_CONFINEMENT_STATUS = "SCCP"
+
+SUPERVISION_PRECEDING_INCARCERATION_STATUSES = [
+    "Pending Violation",
+    "Pending Violation - Incarcerated",
+    "Warrant Absconded",
+    "Partial Revocation - County Jail",
+]
+
 SUPERVISION_STATUSES = [
-    "SCCP",
+    COMMUNITY_CONFINEMENT_STATUS,
     "Probation",
     "Parole",
-    "Warrant Absconded",
-    "Pending Violation - Incarcerated",
-    "Partial Revocation - probation to continue",
-    "Partial Revocation - probation to terminate",
 ]
 
 # Location types are from the CIS_908_CCS_LOCATION.Cis_9080_Ccs_Location_Type_Cd column
 DOC_FACILITY_LOCATION_TYPES = [
     "2",  # Adult DOC Facilities
-    "3",  # Juvenile DOC Facilities
     "7",  # Pre-Release Centers
 ]
-COUNTY_JAIL_LOCATION_TYPES = ["9", "13"]  # County Jails and Maine Counties
+SUPERVISION_LOCATION_TYPES = ["4"]  # Adult Supervision Offices
+COUNTY_JAIL_LOCATION_TYPES = ["9"]  # County Jails
 
 
-def in_temporary_custody(
+def _in_temporary_custody(
     current_status: str,
     location_type: str,
     transfer_reason: Optional[str],
 ) -> bool:
     return (
-        current_status == "County Jail" and location_type in DOC_FACILITY_LOCATION_TYPES
-    ) or transfer_reason in TEMPORARY_CUSTODY_TRANSFER_REASONS
+        (
+            current_status == "County Jail"
+            and location_type in DOC_FACILITY_LOCATION_TYPES
+        )
+        or transfer_reason in TEMPORARY_CUSTODY_TRANSFER_REASONS
+        or location_type in COUNTY_JAIL_LOCATION_TYPES
+    )
+
+
+def _is_new_admission(transfer_reason: str, movement_type: str) -> bool:
+    return (
+        movement_type == "Sentence/Disposition"
+        or transfer_reason == "Sentence/Disposition"
+    )
 
 
 def parse_incarceration_type(raw_text: str) -> StateIncarcerationType:
@@ -92,7 +123,7 @@ def parse_specialized_purpose_for_incarceration(
         transfer_reason,
         location_type,
     ) = raw_text.split("@@")
-    if in_temporary_custody(current_status, location_type, transfer_reason):
+    if _in_temporary_custody(current_status, location_type, transfer_reason):
         return StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY
     return StateSpecializedPurposeForIncarceration.GENERAL
 
@@ -108,36 +139,37 @@ def parse_admission_reason(raw_text: str) -> StateIncarcerationPeriodAdmissionRe
         location_type,
     ) = raw_text.split("@@")
 
-    if transfer_reason == "Sentence/Disposition":
-        if previous_status in SUPERVISION_STATUSES:
-            return StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION
+    if (
+        previous_status
+        in SUPERVISION_STATUSES + SUPERVISION_PRECEDING_INCARCERATION_STATUSES
+    ):
+        # This includes when someone violates the terms of their community confinement (SCCP) and is sent back to
+        # prison. Maine does not use the term "revocation" to describe these instances, but they fit our internal
+        # definition of revocations.
+        return StateIncarcerationPeriodAdmissionReason.REVOCATION
 
+    if _is_new_admission(transfer_reason, movement_type):
         return StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION
 
-    if movement_type in ("Furlough", "Furlough Hospital"):
+    if movement_type in FURLOUGH_MOVEMENT_TYPES:
         return StateIncarcerationPeriodAdmissionReason.RETURN_FROM_TEMPORARY_RELEASE
 
-    if in_temporary_custody(current_status, location_type, transfer_reason):
+    if _in_temporary_custody(current_status, location_type, transfer_reason):
         return StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY
 
     if (
         transfer_type in OTHER_JURISDICTION_TRANSFER_TYPES
         or transfer_reason == "Other Jurisdiction"
+        or previous_status in OTHER_JURISDICTION_STATUSES
     ):
         return StateIncarcerationPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION
 
     if (
-        transfer_reason
-        in [
-            "Violation of Probation",
-            "Violation of Probation - Prob. to Terminate(J)",
-            "Violation of Parole",
-        ]
-        or current_status == "Partial Revocation - incarcerated"
-    ):
+        previous_status == "NONE"
+    ) and transfer_reason in SUPERVISION_VIOLATION_TRANSFER_REASONS:
+        # These rare cases happen if the previous supervision period occurred in a supervision office, or if the
+        # supervision period occurred before the year 2000.
         return StateIncarcerationPeriodAdmissionReason.REVOCATION
-    if previous_status in SUPERVISION_STATUSES:
-        return StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION
 
     if previous_status == "Escape" or movement_type == "Escape":
         return StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE
@@ -145,7 +177,9 @@ def parse_admission_reason(raw_text: str) -> StateIncarcerationPeriodAdmissionRe
     return StateIncarcerationPeriodAdmissionReason.TRANSFER
 
 
-def parse_release_reason(raw_text: str) -> StateIncarcerationPeriodReleaseReason:
+def parse_release_reason(
+    raw_text: str,
+) -> Optional[StateIncarcerationPeriodReleaseReason]:
     """Parse release reason from raw text"""
     (
         current_status,
@@ -158,28 +192,35 @@ def parse_release_reason(raw_text: str) -> StateIncarcerationPeriodReleaseReason
     if next_movement_type == "Discharge":
         return StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED
 
-    if next_status == "Inactive" and next_location_type == "14":
+    if next_location_type == "14":
         return StateIncarcerationPeriodReleaseReason.DEATH
 
-    if next_status in SUPERVISION_STATUSES:
-        return StateIncarcerationPeriodReleaseReason.RELEASED_TO_SUPERVISION
+    if next_movement_type in FURLOUGH_MOVEMENT_TYPES:
+        return StateIncarcerationPeriodReleaseReason.TEMPORARY_RELEASE
 
     if next_status == "Escape" or next_movement_type == "Escape":
         return StateIncarcerationPeriodReleaseReason.ESCAPE
 
-    if in_temporary_custody(current_status, location_type, transfer_reason):
+    if (
+        next_status in SUPERVISION_STATUSES
+        or next_movement_type == "Release"
+        or next_location_type in SUPERVISION_LOCATION_TYPES
+    ):
+        return StateIncarcerationPeriodReleaseReason.RELEASED_TO_SUPERVISION
+
+    if _in_temporary_custody(current_status, location_type, transfer_reason):
         return StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY
 
     if (
-        next_status in INCARCERATED_STATUSES
+        next_status in INCARCERATED_STATUSES + OTHER_JURISDICTION_STATUSES
         and next_location_type not in DOC_FACILITY_LOCATION_TYPES
     ):
         return StateIncarcerationPeriodReleaseReason.TRANSFER_TO_OTHER_JURISDICTION
 
-    if next_movement_type in ("Furlough", "Furlough Hospital"):
-        return StateIncarcerationPeriodReleaseReason.TEMPORARY_RELEASE
-
-    if next_movement_type == "Transfer":
+    if next_movement_type == "Transfer" or (
+        next_status in INCARCERATED_STATUSES
+        and next_location_type in DOC_FACILITY_LOCATION_TYPES
+    ):
         return StateIncarcerationPeriodReleaseReason.TRANSFER
 
     return StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN

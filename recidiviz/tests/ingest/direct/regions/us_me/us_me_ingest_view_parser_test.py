@@ -30,6 +30,11 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.regions.us_me.us_me_custom_enum_parsers import (
     DOC_FACILITY_LOCATION_TYPES,
+    FURLOUGH_MOVEMENT_TYPES,
+    OTHER_JURISDICTION_STATUSES,
+    SUPERVISION_PRECEDING_INCARCERATION_STATUSES,
+    SUPERVISION_STATUSES,
+    SUPERVISION_VIOLATION_TRANSFER_REASONS,
     parse_admission_reason,
     parse_release_reason,
 )
@@ -316,7 +321,7 @@ class UsMeIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         custodial_authority_raw_text="2",
                         custodial_authority=StateCustodialAuthority.STATE_PRISON,
                         admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-                        admission_reason_raw_text="NULL@@INCARCERATED@@SENTENCE/DISPOSITION@@SOCIETY IN@@SENTENCE/DISPOSITION@@2",
+                        admission_reason_raw_text="NONE@@INCARCERATED@@SENTENCE/DISPOSITION@@SOCIETY IN@@SENTENCE/DISPOSITION@@2",
                         release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_TO_SUPERVISION,
                         release_reason_raw_text="INCARCERATED@@SCCP@@TRANSFER@@SENTENCE/DISPOSITION@@2@@4",
                     )
@@ -345,7 +350,7 @@ class UsMeIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         housing_unit="UNIT 2",
                         custodial_authority_raw_text="4",
                         custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
-                        admission_reason=StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
+                        admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
                         admission_reason_raw_text="SCCP@@INCARCERATED@@TRANSFER@@DOC TRANSFER@@VIOLATION OF SCCP@@2",
                         release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
                         release_reason_raw_text="INCARCERATED@@INCARCERATED@@TRANSFER@@VIOLATION OF SCCP@@2@@2",
@@ -460,12 +465,38 @@ class UsMeIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         county_code=None,
                         facility="SOUTHERN MAINE WOMEN'S REENTRY CENTER",
                         housing_unit="SMWRC",
-                        custodial_authority_raw_text="13",
-                        custodial_authority=StateCustodialAuthority.STATE_PRISON,
+                        custodial_authority_raw_text="4",
+                        custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
                         admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
                         admission_reason_raw_text="INCARCERATED@@INCARCERATED@@TRANSFER@@DOC TRANSFER@@POPULATION DISTRIBUTION@@2",
                         release_reason=StateIncarcerationPeriodReleaseReason.ESCAPE,
                         release_reason_raw_text="INCARCERATED@@ESCAPE@@ESCAPE@@POPULATION DISTRIBUTION@@2@@2",
+                    )
+                ],
+            ),
+            # Open period
+            StatePerson(
+                state_code="US_ME",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_ME", external_id="00000001", id_type="US_ME_DOC"
+                    )
+                ],
+                incarceration_periods=[
+                    StateIncarcerationPeriod(
+                        external_id="00000001-7",
+                        state_code="US_ME",
+                        incarceration_type=StateIncarcerationType.STATE_PRISON,
+                        specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+                        specialized_purpose_for_incarceration_raw_text="INCARCERATED@@CASE MANAGEMENT PLAN@@2",
+                        incarceration_type_raw_text="2",
+                        admission_date=date(2018, 1, 1),
+                        facility="MAINE CORRECTIONAL CENTER",
+                        custodial_authority_raw_text="4",
+                        custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+                        admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+                        admission_reason_raw_text="INCARCERATED@@INCARCERATED@@TRANSFER@@DOC TRANSFER@@CASE MANAGEMENT PLAN@@2",
+                        release_reason_raw_text=None,
                     )
                 ],
             ),
@@ -480,12 +511,12 @@ class UsMeIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
     ######################################
     @staticmethod
     def _build_release_reason_raw_text(
-        current_status: Optional[str] = "NULL",
-        next_status: Optional[str] = "NULL",
-        next_movement_type: Optional[str] = "NULL",
-        transfer_reason: Optional[str] = "NULL",
-        location_type: Optional[str] = "NULL",
-        next_location_type: Optional[str] = "NULL",
+        current_status: Optional[str] = "NONE",
+        next_status: Optional[str] = "NONE",
+        next_movement_type: Optional[str] = "NONE",
+        transfer_reason: Optional[str] = "NONE",
+        location_type: Optional[str] = "NONE",
+        next_location_type: Optional[str] = "NONE",
     ) -> str:
         return (
             f"{current_status}@@{next_status}@@{next_movement_type}"
@@ -498,8 +529,8 @@ class UsMeIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
             next_movement_type="Discharge"
         )
         self.assertEqual(
-            parse_release_reason(release_reason_raw_text),
             StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+            parse_release_reason(release_reason_raw_text),
         )
 
     def test_parse_release_reason_escape(self) -> None:
@@ -508,8 +539,8 @@ class UsMeIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
             next_status="Escape"
         )
         self.assertEqual(
-            parse_release_reason(release_reason_raw_text),
             StateIncarcerationPeriodReleaseReason.ESCAPE,
+            parse_release_reason(release_reason_raw_text),
         )
 
         # Next movement type is Escape
@@ -517,8 +548,8 @@ class UsMeIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
             next_movement_type="Escape"
         )
         self.assertEqual(
-            parse_release_reason(release_reason_raw_text),
             StateIncarcerationPeriodReleaseReason.ESCAPE,
+            parse_release_reason(release_reason_raw_text),
         )
 
     def test_parse_release_reason_temporary_custody(self) -> None:
@@ -528,8 +559,8 @@ class UsMeIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                 current_status="County Jail", location_type=location_type
             )
             self.assertEqual(
-                parse_release_reason(release_reason_raw_text),
                 StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+                parse_release_reason(release_reason_raw_text),
             )
 
         # Current status is County Jail and location type is not a DOC Facility
@@ -537,8 +568,8 @@ class UsMeIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
             current_status="County Jail", location_type="9"
         )
         self.assertEqual(
+            StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
             parse_release_reason(release_reason_raw_text),
-            StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN,
         )
 
         # Transfer reason is temporary custody
@@ -546,19 +577,23 @@ class UsMeIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
             transfer_reason="Safe Keepers",
         )
         self.assertEqual(
-            parse_release_reason(release_reason_raw_text),
             StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+            parse_release_reason(release_reason_raw_text),
         )
 
     def test_parse_release_reason_transfer_jurisdiction(self) -> None:
-        # Next status is incarceration and next location is not a DOC Facility
-        release_reason_raw_text = self._build_release_reason_raw_text(
-            next_status="County Jail", location_type="9"
-        )
-        self.assertEqual(
-            parse_release_reason(release_reason_raw_text),
-            StateIncarcerationPeriodReleaseReason.TRANSFER_TO_OTHER_JURISDICTION,
-        )
+        # Next status is either incarceration or other jurisdiction and next location is not a DOC Facility
+        for next_status in [
+            "Incarcerated",
+            "County Jail",
+        ] + OTHER_JURISDICTION_STATUSES:
+            release_reason_raw_text = self._build_release_reason_raw_text(
+                next_status=next_status, location_type="13"
+            )
+            self.assertEqual(
+                StateIncarcerationPeriodReleaseReason.TRANSFER_TO_OTHER_JURISDICTION,
+                parse_release_reason(release_reason_raw_text),
+            )
 
     def test_parse_release_reason_temporary_release(self) -> None:
         # Next movement type is Furlough or Furlough Hospital
@@ -567,8 +602,8 @@ class UsMeIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                 next_movement_type=next_movement_type
             )
             self.assertEqual(
-                parse_release_reason(release_reason_raw_text),
                 StateIncarcerationPeriodReleaseReason.TEMPORARY_RELEASE,
+                parse_release_reason(release_reason_raw_text),
             )
 
     def test_parse_release_reason_transfer(self) -> None:
@@ -577,8 +612,8 @@ class UsMeIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
             next_movement_type="Transfer"
         )
         self.assertEqual(
-            parse_release_reason(release_reason_raw_text),
             StateIncarcerationPeriodReleaseReason.TRANSFER,
+            parse_release_reason(release_reason_raw_text),
         )
 
     ######################################
@@ -586,12 +621,12 @@ class UsMeIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
     ######################################
     @staticmethod
     def _build_admission_reason_raw_text(
-        previous_status: Optional[str] = "NULL",
-        current_status: Optional[str] = "NULL",
-        movement_type: Optional[str] = "NULL",
-        transfer_type: Optional[str] = "NULL",
-        transfer_reason: Optional[str] = "NULL",
-        location_type: Optional[str] = "NULL",
+        previous_status: Optional[str] = "NONE",
+        current_status: Optional[str] = "NONE",
+        movement_type: Optional[str] = "NONE",
+        transfer_type: Optional[str] = "NONE",
+        transfer_reason: Optional[str] = "NONE",
+        location_type: Optional[str] = "NONE",
     ) -> str:
         return (
             f"{previous_status}@@{current_status}@@{movement_type}@@{transfer_type}"
@@ -604,28 +639,33 @@ class UsMeIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
             transfer_reason="Sentence/Disposition"
         )
         self.assertEqual(
-            parse_admission_reason(admission_reason_raw_text),
             StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            parse_admission_reason(admission_reason_raw_text),
         )
 
-    def test_parse_admission_reason_admitted_from_supervision(self) -> None:
-        # Transfer reason is Sentence/Disposition
+    def test_parse_admission_reason_new_admission_movement(self) -> None:
+        # Movement type is Sentence/Disposition
         admission_reason_raw_text = self._build_admission_reason_raw_text(
-            transfer_reason="Sentence/Disposition", previous_status="Probation"
+            movement_type="Sentence/Disposition"
         )
         self.assertEqual(
+            StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             parse_admission_reason(admission_reason_raw_text),
-            StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
         )
 
+    def test_parse_admission_reason_revocation(self) -> None:
         # Next status is supervision
-        admission_reason_raw_text = self._build_admission_reason_raw_text(
-            transfer_reason="DOC Transfer", previous_status="Probation"
-        )
-        self.assertEqual(
-            parse_admission_reason(admission_reason_raw_text),
-            StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
-        )
+        for supervision_status in (
+            SUPERVISION_STATUSES + SUPERVISION_PRECEDING_INCARCERATION_STATUSES
+        ):
+            admission_reason_raw_text = self._build_admission_reason_raw_text(
+                transfer_reason="Sentence/Disposition",
+                previous_status=supervision_status,
+            )
+            self.assertEqual(
+                StateIncarcerationPeriodAdmissionReason.REVOCATION,
+                parse_admission_reason(admission_reason_raw_text),
+            )
 
     def test_parse_admission_reason_temporary_custody(self) -> None:
         # Current status is County Jail and location type is a DOC Facility
@@ -634,8 +674,8 @@ class UsMeIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                 current_status="County Jail", location_type=location_type
             )
             self.assertEqual(
-                parse_admission_reason(admission_reason_raw_text),
                 StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+                parse_admission_reason(admission_reason_raw_text),
             )
 
         # Transfer reason is temporary custody
@@ -643,8 +683,8 @@ class UsMeIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
             transfer_reason="Safe Keepers",
         )
         self.assertEqual(
-            parse_admission_reason(admission_reason_raw_text),
             StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            parse_admission_reason(admission_reason_raw_text),
         )
 
     def test_parse_admission_reason_transfer_jurisdiction(self) -> None:
@@ -653,8 +693,8 @@ class UsMeIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
             transfer_type="Non-DOC In"
         )
         self.assertEqual(
-            parse_admission_reason(admission_reason_raw_text),
             StateIncarcerationPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION,
+            parse_admission_reason(admission_reason_raw_text),
         )
 
         # Transfer reason is Other Jurisdiction
@@ -662,19 +702,29 @@ class UsMeIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
             transfer_reason="Other Jurisdiction"
         )
         self.assertEqual(
-            parse_admission_reason(admission_reason_raw_text),
             StateIncarcerationPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION,
+            parse_admission_reason(admission_reason_raw_text),
         )
+
+        # Previous status from other jurisdiction
+        for previous_status in OTHER_JURISDICTION_STATUSES:
+            admission_reason_raw_text = self._build_admission_reason_raw_text(
+                previous_status=previous_status
+            )
+            self.assertEqual(
+                StateIncarcerationPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION,
+                parse_admission_reason(admission_reason_raw_text),
+            )
 
     def test_parse_admission_reason_temporary_release(self) -> None:
         # Movement type is Furlough or Furlough Hospital
-        for movement_type in ["Furlough", "Furlough Hospital"]:
+        for movement_type in FURLOUGH_MOVEMENT_TYPES:
             admission_reason_raw_text = self._build_admission_reason_raw_text(
                 movement_type=movement_type
             )
             self.assertEqual(
-                parse_admission_reason(admission_reason_raw_text),
                 StateIncarcerationPeriodAdmissionReason.RETURN_FROM_TEMPORARY_RELEASE,
+                parse_admission_reason(admission_reason_raw_text),
             )
 
     def test_parse_admission_reason_escape(self) -> None:
@@ -683,43 +733,28 @@ class UsMeIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
             movement_type="Escape"
         )
         self.assertEqual(
-            parse_admission_reason(admission_reason_raw_text),
             StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE,
+            parse_admission_reason(admission_reason_raw_text),
         )
 
         admission_reason_raw_text = self._build_admission_reason_raw_text(
             previous_status="Escape"
         )
         self.assertEqual(
-            parse_admission_reason(admission_reason_raw_text),
             StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE,
+            parse_admission_reason(admission_reason_raw_text),
         )
 
-    def test_parse_admission_reason_probation_revocation(self) -> None:
-        admission_reason_raw_text = self._build_admission_reason_raw_text(
-            transfer_reason="Violation of Probation"
-        )
-        self.assertEqual(
-            parse_admission_reason(admission_reason_raw_text),
-            StateIncarcerationPeriodAdmissionReason.REVOCATION,
-        )
-
-        admission_reason_raw_text = self._build_admission_reason_raw_text(
-            current_status="Partial Revocation - incarcerated"
-        )
-        self.assertEqual(
-            parse_admission_reason(admission_reason_raw_text),
-            StateIncarcerationPeriodAdmissionReason.REVOCATION,
-        )
-
-    def test_parse_admission_reason_parole_revocation(self) -> None:
-        admission_reason_raw_text = self._build_admission_reason_raw_text(
-            transfer_reason="Violation of Parole"
-        )
-        self.assertEqual(
-            parse_admission_reason(admission_reason_raw_text),
-            StateIncarcerationPeriodAdmissionReason.REVOCATION,
-        )
+    def test_parse_admission_reason_revocation_no_previous_status(self) -> None:
+        # previous_status is NULL and transfer_reason is a violation reason
+        for violation_reason in SUPERVISION_VIOLATION_TRANSFER_REASONS:
+            admission_reason_raw_text = self._build_admission_reason_raw_text(
+                transfer_reason=violation_reason
+            )
+            self.assertEqual(
+                StateIncarcerationPeriodAdmissionReason.REVOCATION,
+                parse_admission_reason(admission_reason_raw_text),
+            )
 
     def test_parse_admission_reason_transfer(self) -> None:
         # Next movement type is Transfer
@@ -727,6 +762,6 @@ class UsMeIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
             movement_type="Transfer"
         )
         self.assertEqual(
-            parse_admission_reason(admission_reason_raw_text),
             StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            parse_admission_reason(admission_reason_raw_text),
         )
