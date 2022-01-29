@@ -15,7 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Query containing MDOC client incarceration periods."""
-
+from recidiviz.ingest.direct.regions.us_me.ingest_views.us_me_view_query_fragments import (
+    VIEW_CLIENT_FILTER_CONDITION,
+)
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
     DirectIngestPreProcessedIngestViewBuilder,
 )
@@ -24,13 +26,20 @@ from recidiviz.utils.metadata import local_project_id_override
 
 REGEX_TIMESTAMP_NANOS_FORMAT = r"\.\d+"
 
+# A quick analysis showed that a 7 day look back period captured most of instances when a person transitioned from
+# supervision to incarceration because of a revocation.
+# TODO(#10573): Investigate using sentencing data to determine revocation admission reasons
+NUM_DAYS_STATUS_LOOK_BACK = 7
+
 VIEW_QUERY_TEMPLATE = f"""
     WITH transfers AS (
         SELECT
             Cis_100_Client_Id AS client_id,
             Transfer_Id AS transfer_id,
             type.E_Trans_Type_Desc AS transfer_type,
-            reason.E_Transfer_Reason_Desc AS transfer_reason
+            reason.E_Transfer_Reason_Desc AS transfer_reason,
+            IF(Cancelled_Ind = 'Y', TRUE, NULL) AS cancelled,
+            PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE(Transfer_Date, r'{REGEX_TIMESTAMP_NANOS_FORMAT}', '')) AS transfer_datetime,
         FROM {{CIS_314_TRANSFER}}
         
         LEFT JOIN {{CIS_3140_TRANSFER_TYPE}} type
@@ -38,8 +47,6 @@ VIEW_QUERY_TEMPLATE = f"""
         
         LEFT JOIN {{CIS_3141_TRANSFER_REASON}} reason
         ON Cis_3141_Transfer_Reason_Cd = reason.Transfer_Reason_Cd
-
-        WHERE Cancelled_Ind != 'Y'
     ),
     all_statuses AS (
         SELECT
@@ -50,10 +57,13 @@ VIEW_QUERY_TEMPLATE = f"""
             juris_loc.Cis_9080_Ccs_Location_Type_Cd AS jurisdiction_location_type,
             unit.Name_Tx AS housing_unit,
             Cis_314_Transfer_Id AS transfer_id,
-            -- TODO(#9968) Update timestamp format when we receive SFTP transfer
-            EXTRACT(DATE FROM PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE(Effct_Date, r'{REGEX_TIMESTAMP_NANOS_FORMAT}', ''))) AS effective_date,
-            EXTRACT(DATE FROM PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE(End_Date, r'{REGEX_TIMESTAMP_NANOS_FORMAT}', ''))) AS end_date,
-            EXTRACT(DATE FROM PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE(Ineffct_Date, r'{REGEX_TIMESTAMP_NANOS_FORMAT}', ''))) AS ineffective_date
+            t.transfer_datetime,
+            t.transfer_type,
+            t.transfer_reason,
+            PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE(Effct_Date, r'{REGEX_TIMESTAMP_NANOS_FORMAT}', '')) AS effective_datetime,
+            # TODO(#10663): Investigate the use of End_Date vs Ineffct_Date
+            PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE(End_Date, r'{REGEX_TIMESTAMP_NANOS_FORMAT}', '')) AS end_datetime,
+            PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE(Ineffct_Date, r'{REGEX_TIMESTAMP_NANOS_FORMAT}', '')) AS ineffective_datetime
         FROM {{CIS_125_CURRENT_STATUS_HIST}}
         
         LEFT JOIN {{CIS_1000_CURRENT_STATUS}} status_code
@@ -67,148 +77,304 @@ VIEW_QUERY_TEMPLATE = f"""
         
         LEFT JOIN {{CIS_912_UNIT}} unit
         ON Cis_912_Unit_Id = unit.Unit_Id
+        
+        LEFT JOIN transfers t
+        ON Cis_314_Transfer_Id = t.transfer_id
+
+        -- Remove statuses that either do not mean anything or can cause issues when ordering by effective_date
+        WHERE Cis_1000_Current_Status_Cd NOT IN (
+            '31', -- Active
+            '23', -- Referral
+            '20', -- Petition Authorized
+            '18', -- Informal Adjustment
+            '32', -- No Further Action
+            '19', -- Sole Sanction, Juvenile only
+            '21', -- Detention, Juvenile only
+            '22', -- Shock Sentence, Juvenile only
+            '24', -- Drug Court Sanction, juvenile only
+            '25', -- Drug Court Participant, Juvenile only
+            '26', -- Conditional Release, Juvenile only
+            '3' -- Committed - In Custody, Juvenile only
+        )
+        -- Only include statuses associated with non-cancelled transfers
+        AND t.cancelled IS NULL
     ),
-    statuses_with_next_and_prev AS (
+    cleaned_up_statuses AS (
         SELECT
             client_id,
             current_status,
-            LAG(current_status) OVER status_seq AS previous_status,
-            LEAD(current_status) OVER status_seq AS next_status,
             current_status_location,
             location_type,
             jurisdiction_location_type,
             housing_unit,
-            LEAD(location_type) OVER status_seq AS next_location_type,
             transfer_id,
-            effective_date,
-            end_date,
-            ineffective_date
+            transfer_type,
+            transfer_reason,
+            LEAD(effective_datetime) OVER status_seq AS next_effective_datetime,
+            -- Fix dates that do not make sense chronologically 
+            CASE 
+                WHEN effective_datetime > end_datetime and effective_datetime != transfer_datetime
+                THEN end_datetime 
+                ELSE effective_datetime 
+            END AS effective_datetime,
+            CASE 
+                WHEN effective_datetime > end_datetime and effective_datetime != transfer_datetime
+                THEN EXTRACT(DATE FROM end_datetime) 
+                ELSE EXTRACT(DATE FROM effective_datetime) 
+            END AS effective_date,
+            CASE 
+                WHEN end_datetime < effective_datetime AND EXTRACT(YEAR FROM ineffective_datetime) = 9999
+                THEN NULL
+                WHEN end_datetime < effective_datetime and effective_datetime != transfer_datetime
+                THEN effective_datetime
+                ELSE end_datetime
+            END AS end_datetime,
+            CASE 
+                WHEN end_datetime < effective_datetime AND EXTRACT(YEAR FROM ineffective_datetime) = 9999
+                THEN NULL
+                WHEN end_datetime < effective_datetime and effective_datetime != transfer_datetime
+                THEN EXTRACT(DATE FROM effective_datetime)
+                ELSE EXTRACT(DATE FROM end_datetime)
+            END AS end_date,
+            ineffective_datetime,
+            EXTRACT(DATE FROM ineffective_datetime) AS ineffective_date
         FROM all_statuses
-        WINDOW status_seq AS (PARTITION BY client_id ORDER BY effective_date ASC)
+        
+        -- Remove statuses with effective dates in 1900
+        WHERE EXTRACT(YEAR FROM effective_datetime) != 1900
+
+        -- Order by effective_datetime and end_datetime to get the accurate next_effective_datetime for the status
+        -- window. This is used to filter out Inactive statuses that are following by an active status that has an
+        -- effective_datetime that's within the Inactive status date range.
+        WINDOW status_seq AS (
+            PARTITION BY client_id 
+            ORDER BY CASE 
+                WHEN effective_datetime > end_datetime and effective_datetime != transfer_datetime
+                THEN end_datetime
+                ELSE effective_datetime
+            END,
+            CASE 
+                WHEN end_datetime < effective_datetime AND EXTRACT(YEAR FROM ineffective_datetime) = 9999
+                THEN NULL
+                WHEN end_datetime < effective_datetime and effective_datetime != transfer_datetime
+                THEN effective_datetime
+                ELSE end_datetime
+            END,
+            ineffective_datetime
+        )
     ),
     all_movements AS (
         SELECT
-                Cis_Client_Id AS client_id,
-                Cis_314_Transfer_Id AS transfer_id,
-                type.E_Movement_Type_Desc AS movement_type,
-                status.E_Mvmt_Status_Desc AS movement_status,
-                direction.E_Mvmt_Direction_Desc AS movement_direction,
-                -- TODO(#9968) Update timestamp format when we receive SFTP transfer
-                EXTRACT(DATE FROM PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE(Movement_Date, r'{REGEX_TIMESTAMP_NANOS_FORMAT}', ''))) AS movement_date
-            FROM {{CIS_309_MOVEMENT}}
-            
-            LEFT JOIN {{CIS_3090_MOVEMENT_TYPE}} type
-            ON Cis_3090_Movement_Type_Cd = type.Movement_Type_Cd
-            
-            LEFT JOIN {{CIS_3093_MVMT_STATUS}} status
-            ON  Cis_3093_Mvmt_Status_Cd = status.Mvmt_Status_Cd
-            
-            LEFT JOIN {{CIS_3095_MVMT_DIRECTION}} direction
-            ON Cis_3095_Mvmt_Direction_Cd = direction.Mvmt_Direction_Cd
-    
-            -- Filter to movements with status 'Complete' and remove 'Transport' movements
-            WHERE Cis_3093_Mvmt_Status_Cd = '3' AND Cis_3090_Movement_Type_Cd != '5'
+            Cis_Client_Id AS client_id,
+            Cis_314_Transfer_Id AS transfer_id,
+            type.E_Movement_Type_Desc AS movement_type,
+            direction.E_Mvmt_Direction_Desc AS movement_direction,
+            status.E_Mvmt_Status_Desc AS movement_status,
+            PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE(Movement_Date, r'{REGEX_TIMESTAMP_NANOS_FORMAT}', '')) AS movement_datetime
+        FROM {{CIS_309_MOVEMENT}}
+        
+        LEFT JOIN {{CIS_3090_MOVEMENT_TYPE}} type
+        ON Cis_3090_Movement_Type_Cd = type.Movement_Type_Cd
+        
+        LEFT JOIN {{CIS_3095_MVMT_DIRECTION}} direction
+        ON Cis_3095_Mvmt_Direction_Cd = direction.Mvmt_Direction_Cd
+        
+        LEFT JOIN {{CIS_3093_MVMT_STATUS}} status
+        ON Cis_3093_Mvmt_Status_Cd = Mvmt_Status_Cd
+
+        -- Filter to movements with status 'Complete' and remove 'Transport' and 'Community Transition' movements
+        WHERE (Cis_3093_Mvmt_Status_Cd = '3' AND Cis_3090_Movement_Type_Cd NOT IN ('5', '9'))
+        -- Keep "Discharge" and "Release" movement types with a "Pending" status
+        OR (Cis_3090_Movement_Type_Cd in ('7', '8') AND Cis_3093_Mvmt_Status_Cd = '1')
     ),
     ranked_movements AS (
         SELECT
-            client_id,
-            transfer_id,
-            movement_type,
-            movement_status,
-            movement_direction,
-            movement_date,
-            -- Transfer movement types have 2 rows: one for movement 'In' to Cis_908_Ccs_Location_2_Id and one
-            -- for movement 'Out' of Cis_908_Ccs_Location_Id. This orders the rows so we only use the 'In' direction.
-            ROW_NUMBER() OVER (PARTITION BY client_id, movement_date, movement_type, transfer_id ORDER BY movement_direction ASC) AS movement_dedup_rank
-        FROM all_movements
-    ),
-    movements_with_next_and_prev AS (
-        SELECT
-            client_id,
-            transfer_id,
-            movement_type,
-            LAG(movement_type) OVER movement_seq AS previous_movement_type,
-            LEAD(movement_type) OVER movement_seq AS next_movement_type,
-            movement_status,
-            movement_direction,
-            movement_date,
-            LAG(movement_date) OVER movement_seq AS previous_movement_date,
-            LEAD(movement_date) OVER movement_seq AS next_movement_date,
-            movement_dedup_rank
-        FROM ranked_movements
-        -- Order by movement_direction DESC because Furlough and Escape types should be ordered Out then In
-        WINDOW movement_seq AS (PARTITION BY client_id ORDER BY movement_date, movement_direction DESC)
-    ),
-    ranked_movements_with_next_prev AS (
-        SELECT * FROM movements_with_next_and_prev 
-          -- Select the first ranked Transfer movement
-        WHERE (movement_dedup_rank = 1 AND movement_type = 'Transfer') 
-            -- Select the 'In' movements for types Escape, Furlough, Furlough Hospital
-            OR (movement_type != 'Transfer' AND movement_direction = 'In')
-            -- Discharge and Release movement types only have 'Out' directions
-            OR (movement_type IN ('Discharge', 'Release'))
-    ),
-    movements_with_incarceration_statuses AS (
-        SELECT
-            m.client_id,
-            m.previous_movement_type,
-            m.movement_type,
-            m.next_movement_type,
-            m.movement_status,
-            m.movement_direction,
-            m.previous_movement_date,
-            m.movement_date AS start_date,
-            CASE 
-                -- Deceased location type
-                WHEN next_location_type IN ('14')
-                THEN s.ineffective_date
-                WHEN m.next_movement_date IS NULL AND s.ineffective_date IS NOT NULL AND s.ineffective_date != DATE(9999, 12, 31)
-                THEN s.ineffective_date
-            ELSE m.next_movement_date END AS end_date,
-            t.transfer_type,
-            t.transfer_reason,
-            s.previous_status,
-            s.current_status,
-            s.next_status,
-            s.current_status_location,
-            s.location_type,
-            s.housing_unit,
-            s.next_location_type,
-            s.jurisdiction_location_type
-        FROM ranked_movements_with_next_prev m
-        
+              m.client_id,
+              m.transfer_id,
+              m.movement_type,
+              m.movement_direction,
+              m.movement_status,
+              m.movement_datetime,
+              EXTRACT(DATE FROM m.movement_datetime) AS movement_date,
+              t.transfer_type,
+              t.transfer_reason,
+              -- Transfer movement types have 2 rows: one for movement 'In' to Cis_908_Ccs_Location_2_Id and one
+              -- for movement 'Out' of Cis_908_Ccs_Location_Id. This orders the rows so we only use the 'In' direction.
+              ROW_NUMBER() OVER (
+                PARTITION BY m.client_id, EXTRACT(DATE FROM m.movement_datetime), m.movement_type, m.transfer_id
+                ORDER BY (m.movement_direction = 'In') DESC
+              ) AS movement_dedup_rank,
+        FROM all_movements m
+
         LEFT JOIN transfers t
         ON t.transfer_id = m.transfer_id
-        AND t.client_id = m.client_id
         
-        LEFT JOIN statuses_with_next_and_prev s
-        ON m.client_id = s.client_id
-        AND (
-            movement_date >= effective_date
+        -- Only keep movements associated with non-cancelled transfers
+        WHERE t.cancelled IS NULL
+    ),
+    filtered_movements_with_next_type AS (
+        SELECT
+            client_id,
+            transfer_id,
+            movement_type,
+            LEAD(movement_type) OVER movement_seq AS next_movement_type,
+            LEAD(movement_status) OVER movement_seq AS next_movement_status,
+            movement_direction,
+            movement_date,
+            movement_datetime,
+            transfer_type,
+            transfer_reason
+        FROM ranked_movements
+
+        -- Filter the "Out" movements for Transfers. This filter will keep the "Out" movements for all other movement
+        -- types so that we can get an accurate next and previous movement date and type in the next CTE.
+        WHERE movement_dedup_rank = 1
+
+        -- Order by movement_direction DESC because Furlough and Escape types should be ordered Out then In
+        WINDOW movement_seq AS (
+            PARTITION BY client_id 
+            ORDER BY movement_date, movement_direction = 'Out' DESC, movement_datetime,
+                -- "Release and "Discharge" movements have a corresponding "Transfer" movement. This orders the release
+                -- and discharge movement first so we have an accurate next_movement_type and status.
+                CASE WHEN movement_type IN ('Release', 'Discharge') THEN 1
+                ELSE 2
+            END
+        )
+    ),
+    join_statuses_and_movements AS (
+        SELECT 
+            s.client_id,
+            COALESCE(s.transfer_id, m.transfer_id) AS transfer_id,
+            -- Prioritize using the movement_date over the status's effective_date since there can be multiple
+            -- movements within a status period.
+            COALESCE(m.movement_date, s.effective_date) AS start_date,
+            m.movement_type,
+            m.movement_direction,
+            m.next_movement_status,
+            m.next_movement_type,
+            -- It is expected that some of these will be NULL when there are status changes without movements
+            -- We want to keep the NULL movement dates so that we correctly use the status end_date for these periods
+            -- instead of the next_movement_date 
+            LAG(movement_date) OVER movement_seq AS previous_movement_date,
+            LEAD(movement_date) OVER movement_seq AS next_movement_date,
+            s.current_status,
+            LAG(s.current_status) OVER movement_seq AS previous_status,
+            LAG(s.current_status, 2) OVER movement_seq AS previous_previous_status,
+            IF(m.next_movement_status = 'Pending', NULL, LEAD(s.current_status) OVER movement_seq) AS next_status,
+            s.current_status_location,
+            s.location_type,
+            IF(m.next_movement_status = 'Pending', NULL, LEAD(s.location_type) OVER movement_seq) AS next_location_type,
+            s.jurisdiction_location_type,
+            s.housing_unit,
+            s.end_date,
+            LAG(s.end_date, 2) OVER movement_seq AS previous_previous_end_date,
+            LAG(s.end_date) OVER movement_seq AS previous_end_date,
+            s.ineffective_date AS ineffective_date,
+            -- If the previous status has the same transfer_id, do not carry over transfer info to the next status
+            -- This prevents Furloughs and Escapes from repeating the previous movement's transfer reasons
+            IF(LAG(s.transfer_id) OVER movement_seq = s.transfer_id, m.transfer_type, s.transfer_type) AS transfer_type,
+            IF(LAG(s.transfer_id) OVER movement_seq = s.transfer_id, m.transfer_reason, s.transfer_reason) AS transfer_reason,
+        FROM cleaned_up_statuses s
+        
+        LEFT JOIN filtered_movements_with_next_type m
+            ON m.client_id = s.client_id
             AND (
-                s.end_date IS NOT NULL AND m.movement_date < s.end_date
-                OR (
-                    s.end_date IS NULL AND s.ineffective_date = DATE(9999, 12, 31)
+                movement_date >= effective_date
+                AND (
+                    s.end_date IS NOT NULL AND m.movement_date < s.end_date
+                    OR (
+                        s.end_date IS NULL AND s.ineffective_date = DATE(9999, 12, 31)
+                    )
                 )
+            )
+        -- Remove rows where the status is Inactive and the end date is later than the next status's start date
+        -- This helps to avoid joining multiple movements to an invalid status date range.  
+        WHERE NOT (current_status = 'Inactive' 
+            AND (
+                next_effective_datetime IS NOT NULL AND next_effective_datetime < s.end_datetime
             )
         )
         
-        -- Filter to statuses related to adult prison incarceration
-        -- County Jail status means the client was not sentenced to a DOC facility, but is being held at one
-        -- for the county because of resourcing needs, primarily for mental health resources. 
+        WINDOW movement_seq AS (
+            PARTITION BY s.client_id 
+            ORDER BY CASE WHEN m.movement_date = s.effective_date
+                     THEN s.effective_datetime 
+                     ELSE COALESCE(m.movement_datetime, s.effective_datetime) END, s.end_datetime, s.ineffective_datetime
+        )
+    ),             
+    incarceration_periods AS (
+        SELECT 
+            s.client_id,
+            start_date,
+            CASE 
+                -- Deceased location type
+                WHEN next_location_type IN ('14')
+                THEN ineffective_date
+                WHEN next_movement_type IN ('Discharge', 'Release') AND next_movement_status = 'Pending'
+                THEN NULL
+                WHEN next_movement_date IS NULL
+                -- Convert 9999-12-31 dates to NULL
+                THEN COALESCE(
+                    IF(end_date = DATE(9999, 12, 31), NULL, end_date), 
+                    IF(ineffective_date = DATE(9999, 12, 31), NULL, ineffective_date)
+                )
+                ELSE IF(s.next_movement_date = DATE(9999, 12, 31), NULL, s.next_movement_date) 
+            END AS end_date,
+            CASE
+                -- If the previous status is Inactive, check the status end date preceding Inactive and if it 
+                -- is within the look back period, use it as the previous_status value.
+                WHEN s.previous_status = 'Inactive'
+                    AND DATE_DIFF(s.start_date, s.previous_previous_end_date, DAY) <= CAST({NUM_DAYS_STATUS_LOOK_BACK} AS integer)
+                THEN previous_previous_status
+                WHEN DATE_DIFF(s.start_date, s.previous_end_date, DAY) <= CAST({NUM_DAYS_STATUS_LOOK_BACK} AS integer)
+                THEN s.previous_status
+                ELSE NULL
+            END AS previous_status,
+            current_status,
+            next_status,
+            current_status_location,
+            location_type,
+            jurisdiction_location_type,
+            next_location_type,
+            housing_unit,
+            movement_type,
+            next_movement_type,
+            next_movement_status,
+            transfer_type,
+            transfer_reason,
+        FROM join_statuses_and_movements s
+        
+        -- Filter out periods for test client IDs that have been removed from the client table
+        INNER JOIN {{CIS_100_CLIENT}} c
+        ON s.client_id = c.Client_Id
+        AND {VIEW_CLIENT_FILTER_CONDITION}
+    
         WHERE current_status IN (
             'Incarcerated',
             'Partial Revocation - incarcerated',
             'Interstate Compact In',
             'County Jail'
         )
-        -- Filter out periods at juvenile facilities
-        AND location_type NOT IN ('3','15')
-        AND jurisdiction_location_type NOT IN ('3', '15')
-        AND movement_type NOT IN ('Discharge', 'Release')
+        -- Filter to periods at Adult DOC Facilities and County Jails
+        AND location_type IN ('2','7','9')
+        -- Filter out periods with a Juvenile DOC jurisdiction
+        AND jurisdiction_location_type NOT IN ('3','15')
+        
+        -- Include periods that either do not have a movement_type, or have a Transfer "In" movement
+        AND (
+            movement_type IS NULL OR (
+                movement_type = 'Transfer'
+                -- Select the "In" movements for all other movement types
+                OR (movement_type != 'Transfer' AND movement_direction = 'In')
+            )
+            -- Filter out time periods after discharges and releases
+            AND movement_type NOT IN ('Discharge', 'Release')
+        )
     )
     SELECT
         client_id,
+        start_date,
+        end_date,
         previous_status,
         current_status,
         next_status,
@@ -217,14 +383,12 @@ VIEW_QUERY_TEMPLATE = f"""
         next_location_type,
         jurisdiction_location_type,
         housing_unit,
-        start_date,
-        end_date,
         movement_type,
         next_movement_type,
         transfer_type,
         transfer_reason,
-        CAST(ROW_NUMBER() OVER (PARTITION BY client_id ORDER BY start_date ASC) AS STRING) AS incarceration_period_id
-    FROM movements_with_incarceration_statuses
+        CAST(ROW_NUMBER() OVER (PARTITION BY client_id ORDER BY start_date ASC) AS STRING) AS incarceration_period_id,
+    FROM incarceration_periods
 """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(

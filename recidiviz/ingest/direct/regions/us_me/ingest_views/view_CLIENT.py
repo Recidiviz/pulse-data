@@ -15,14 +15,16 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Query containing MDOC client information."""
-
+from recidiviz.ingest.direct.regions.us_me.ingest_views.us_me_view_query_fragments import (
+    VIEW_CLIENT_FILTER_CONDITION,
+)
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
     DirectIngestPreProcessedIngestViewBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-VIEW_QUERY_TEMPLATE = """
+VIEW_QUERY_TEMPLATE = f""" # nosec
     SELECT DISTINCT
         Client_Id,
         First_Name,
@@ -34,20 +36,8 @@ VIEW_QUERY_TEMPLATE = """
         Cis_9012_Gender_Cd AS Gender,
         Cis_1016_Hispanic_Cd AS Ethnicity,
         Cis_1006_Race_Cd AS Race
-    FROM {CIS_100_CLIENT}
-    WHERE  (
-        -- Filters out clients that are test or duplicate accounts
-        NOT REGEXP_CONTAINS(First_Name, r'^\\^|(?i)(duplicate)')
-        AND Last_Name NOT IN ('^', '^^')
-        AND NOT (
-            Middle_Name IS NOT NULL 
-            AND REGEXP_CONTAINS(Middle_Name, r'(?i)(testing|duplicate)')
-        )
-        AND First_Name NOT IN (
-            'NOT A CLIENT'
-        )
-    )
-        
+    FROM {{CIS_100_CLIENT}}
+    WHERE {VIEW_CLIENT_FILTER_CONDITION}
 """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(

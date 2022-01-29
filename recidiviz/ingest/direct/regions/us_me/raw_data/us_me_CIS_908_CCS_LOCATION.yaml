@@ -35,17 +35,23 @@ columns:
       - value: 11
         description: Dispositions - locations include Federal, Puerto Rico, and Other County
       - value: 12
-        description: Transport - Values include Federal, Puerto Rico, and Other County
+        description: Transport - Values include US Marshal, Federal, Puerto Rico, and Other Country
       - value: 13
         description: Maine Counties
       - value: 14
         description: Values include "Locked" and "Deceased"
       - value: 15
-        description: Juvenile supervision offices
+        description: Juvenile Probation Office
       - value: 16
         description: Re-entry centers
+      - value: 19
+        description: Transfer - U.S Marshal, Federal, Oxford County S.O.
+      - value: 20
+        description: Investigation - Governor's Report, Court, Compact
       - value: 21
-        description: Courts or government offices
+        description: Trust Fund Payee - Courts or government offices
+      - value: 22
+        description: Multi-Location - Any facility
   - name : Cis_9083_9085_Area_Cd
   - name : Cis_9083_9086_Fund_Cd
   - name : Cis_9083_9087_Oper_Cd
