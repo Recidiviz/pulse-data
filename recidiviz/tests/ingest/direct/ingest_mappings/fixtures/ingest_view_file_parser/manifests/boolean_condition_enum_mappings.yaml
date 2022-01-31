@@ -24,4 +24,15 @@ output:
                 FakeGender.MALE:
                   - MA
                   - M
+        - $else_if:
+            $in:
+              $value: GENDER
+              $options:
+                - $literal("F")
+          $then:
+            $enum_mapping:
+              $raw_text: GENDER
+              $mappings:
+                FakeGender.FEMALE:
+                  - F
         - $else: $literal_enum(FakeGender.FEMALE)

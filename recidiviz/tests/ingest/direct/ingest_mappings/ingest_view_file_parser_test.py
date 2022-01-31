@@ -1592,6 +1592,7 @@ class IngestViewFileParserTest(unittest.TestCase):
             FakePerson(
                 fake_state_code="US_XX",
                 gender=FakeGender.FEMALE,
+                gender_raw_text="F",
                 external_ids=[
                     FakePersonExternalId(
                         fake_state_code="US_XX", external_id="1", id_type="ID_TYPE"
