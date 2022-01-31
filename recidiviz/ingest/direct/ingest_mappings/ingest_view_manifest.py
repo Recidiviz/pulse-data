@@ -80,6 +80,14 @@ class ManifestNode(Generic[ManifestNodeT]):
         """
 
     @abc.abstractmethod
+    def additional_field_manifests(self, field_name: str) -> Dict[str, "ManifestNode"]:
+        """Allows additional fields to be set as a side effect of this manifest.
+
+        The primary use case for this is to allow enum manifests to additionally set the
+        raw text field that corresponds to the enum field that they hydrate.
+        """
+
+    @abc.abstractmethod
     def build_from_row(self, row: Dict[str, str]) -> Optional[ManifestNodeT]:
         """Should be implemented by subclasses to return a recursively hydrated node
         in the entity tree, parsed out of the input row.
@@ -123,6 +131,9 @@ class EntityTreeManifest(ManifestNode[EntityT]):
     @property
     def result_type(self) -> Type[EntityT]:
         return self.entity_cls
+
+    def additional_field_manifests(self, field_name: str) -> Dict[str, "ManifestNode"]:
+        return {}
 
     def build_from_row(self, row: Dict[str, str]) -> Optional[EntityT]:
         """Builds a recursively hydrated entity from the given input row."""
@@ -184,6 +195,7 @@ class EntityTreeManifestFactory:
                     error_message += " Did you mean to set the 'external_id' field?"
                 raise ValueError(error_message)
 
+            field_manifest: ManifestNode
             if field_type is BuildableAttrFieldType.LIST:
                 child_manifests: List[
                     Union[ExpandableListItemManifest, ManifestNode[Entity]]
@@ -208,7 +220,7 @@ class EntityTreeManifestFactory:
                         raise ValueError(
                             f"Unexpected child_manifest type: [{type(child_manifest)}]"
                         )
-                field_manifests[field_name] = ListRelationshipFieldManifest(
+                field_manifest = ListRelationshipFieldManifest(
                     child_manifests=child_manifests
                 )
             elif field_type is BuildableAttrFieldType.FORWARD_REF:
@@ -218,7 +230,7 @@ class EntityTreeManifestFactory:
                         f"Child class type unexpectedly null for field [{field_name}] "
                         f"on [{entity_cls.__name__}]."
                     )
-                field_manifests[field_name] = build_manifest_from_raw_typed(
+                field_manifest = build_manifest_from_raw_typed(
                     raw_field_manifest=raw_fields_manifest.pop_dict(field_name),
                     delegate=delegate,
                     result_type=delegate.get_entity_cls(child_entity_cls_name),
@@ -231,7 +243,7 @@ class EntityTreeManifestFactory:
                         f"[{entity_cls}]."
                     )
 
-                field_manifest = build_manifest_from_raw(
+                field_manifest = build_manifest_from_raw_typed(
                     raw_field_manifest=pop_raw_flat_field_manifest(
                         field_name, raw_fields_manifest
                     ),
@@ -240,35 +252,12 @@ class EntityTreeManifestFactory:
                     result_type=object,
                     enum_cls=enum_cls,
                 )
-                field_manifests[field_name] = field_manifest
-
-                if isinstance(field_manifest, EnumMappingManifest):
-                    field_manifests[
-                        EnumMappingManifest.raw_text_field_name(field_name)
-                    ] = field_manifest.raw_text_field_manifest
-                elif isinstance(field_manifest, EnumLiteralFieldManifest):
-                    # Do not hydrate raw text for enum literals
-                    pass
-                elif isinstance(field_manifest, BooleanConditionManifest):
-                    # Generate a new BooleanConditionManifest that will determine
-                    # which raw text to use.
-                    field_manifests[
-                        EnumMappingManifest.raw_text_field_name(field_name)
-                    ] = BooleanConditionManifest(
-                        condition_manifest=field_manifest.condition_manifest,
-                        then_manifest=cls._get_inner_raw_text_manifest(
-                            field_manifest.then_manifest
-                        ),
-                        else_manifest=cls._get_inner_raw_text_manifest(
-                            field_manifest.else_manifest
-                        )
-                        if field_manifest.else_manifest
-                        else None,
-                    )
-                else:
+                if not issubclass(field_manifest.result_type, EnumParser):
                     raise ValueError(
-                        f"Unexpected field_manifest type: [{type(field_manifest)}]"
+                        f"Unexpected result type for enum manifest: "
+                        f"[{field_manifest.result_type}]"
                     )
+
             elif field_type in (
                 # These are flat fields and should be parsed into a ManifestNode[str],
                 # since all values will be converted from string -> real value in the
@@ -283,12 +272,12 @@ class EntityTreeManifestFactory:
                         f"of their corresponding enum fields. Found direct mapping "
                         f"for field [{field_name}]."
                     )
-                field_manifests[field_name] = build_str_manifest_from_raw(
+                field_manifest = build_str_manifest_from_raw(
                     pop_raw_flat_field_manifest(field_name, raw_fields_manifest),
                     delegate,
                 )
             elif field_type is BuildableAttrFieldType.BOOLEAN:
-                field_manifests[field_name] = build_manifest_from_raw_typed(
+                field_manifest = build_manifest_from_raw_typed(
                     pop_raw_flat_field_manifest(field_name, raw_fields_manifest),
                     delegate,
                     bool,
@@ -297,6 +286,33 @@ class EntityTreeManifestFactory:
                 raise ValueError(
                     f"Unexpected field type [{field_type}] for field [{field_name}]"
                 )
+
+            if field_name in field_manifests:
+                raise ValueError(
+                    f"Field [{field_name}] already has a manifest "
+                    f"defined. This field likely is automatically generated via another"
+                    f"field manifest (e.g. the raw text for an enum mapping) and should"
+                    f"not be manually defined in the YAML mappings file."
+                )
+
+            field_manifests[field_name] = field_manifest
+
+            for (
+                additional_field_name,
+                additional_manifest,
+            ) in field_manifest.additional_field_manifests(field_name).items():
+                cls._validate_additional_field_manifest(
+                    entity_cls=entity_cls,
+                    additional_field_name=additional_field_name,
+                    additional_manifest=additional_manifest,
+                )
+                if additional_field_name in field_manifests:
+                    raise ValueError(
+                        f"Field [{additional_field_name}] already has a manifest "
+                        f"defined. This field should not be specified manually in the"
+                        f"YAML mappings file."
+                    )
+                field_manifests[additional_field_name] = additional_manifest
 
         if len(raw_fields_manifest):
             raise ValueError(
@@ -324,6 +340,42 @@ class EntityTreeManifestFactory:
             filter_predicate=union_filter_predicate,
         )
 
+    @staticmethod
+    def _validate_additional_field_manifest(
+        *,
+        entity_cls: Type[EntityT],
+        additional_field_name: str,
+        additional_manifest: ManifestNode,
+    ) -> None:
+        """Validates that the manifest for the provided additional field is valid."""
+        if additional_manifest.additional_field_manifests(additional_field_name):
+            raise ValueError(
+                f"Manifest for additional field [{additional_field_name}] should not "
+                f"also define additional field manifests."
+            )
+
+        additional_field_type = attr_field_type_for_field_name(
+            entity_cls, additional_field_name
+        )
+
+        expected_result_type: Type
+        if additional_field_type == BuildableAttrFieldType.STRING:
+            expected_result_type = str
+        elif additional_field_type == BuildableAttrFieldType.ENUM:
+            expected_result_type = EnumParser
+        elif additional_field_type == BuildableAttrFieldType.BOOLEAN:
+            expected_result_type = bool
+        else:
+            raise ValueError(
+                f"No support for additional fields with type [{additional_field_type}]"
+            )
+
+        if not issubclass(additional_manifest.result_type, expected_result_type):
+            raise ValueError(
+                f"Unexpected result type for enum manifest: "
+                f"[{additional_manifest.result_type}]. Expected: [{expected_result_type}]"
+            )
+
     # TODO(#8905): Consider using more general logic to build a filter predicate, like
     #  building a @required field annotation for fields that must be hydrated, otherwise
     #  the whole entity is filtered out.
@@ -347,22 +399,6 @@ class EntityTreeManifestFactory:
             return enum_entity_filter_predicate
         return None
 
-    @staticmethod
-    def _get_inner_raw_text_manifest(manifest: ManifestNode) -> ManifestNode[str]:
-        """For a given enum ManifestNode, returns the manifest node used to generate the
-        corresponding raw text for that enum type.
-        """
-        if not issubclass(manifest.result_type, EnumParser):
-            raise ValueError(
-                "Cannot get raw text manifest for a non-enum type ManifestNode."
-            )
-        if isinstance(manifest, EnumMappingManifest):
-            return manifest.raw_text_field_manifest
-        if isinstance(manifest, EnumLiteralFieldManifest):
-            return StringLiteralFieldManifest(literal_value=None)
-
-        raise ValueError(f"Unexpected enum manifest type [{type(manifest)}]")
-
 
 @attr.s(kw_only=True)
 class SplitCommaSeparatedListManifest(ManifestNode[List[str]]):
@@ -378,6 +414,9 @@ class SplitCommaSeparatedListManifest(ManifestNode[List[str]]):
     @property
     def result_type(self) -> Type[List[str]]:
         return List[str]
+
+    def additional_field_manifests(self, field_name: str) -> Dict[str, "ManifestNode"]:
+        return {}
 
     def build_from_row(self, row: Dict[str, str]) -> List[str]:
         column_value = row[self.column_name]
@@ -406,6 +445,9 @@ class SplitJSONListManifest(ManifestNode[List[str]]):
     @property
     def result_type(self) -> Type[List[str]]:
         return List[str]
+
+    def additional_field_manifests(self, field_name: str) -> Dict[str, "ManifestNode"]:
+        return {}
 
     def build_from_row(self, row: Dict[str, str]) -> List[str]:
         column_value = row[self.column_name]
@@ -445,6 +487,9 @@ class ExpandableListItemManifest(ManifestNode[List[Entity]]):
     @property
     def result_type(self) -> Type[List[Entity]]:
         return List[Entity]
+
+    def additional_field_manifests(self, field_name: str) -> Dict[str, "ManifestNode"]:
+        return {}
 
     def build_from_row(self, row: Dict[str, str]) -> List[Entity]:
         values = self.values_manifest.build_from_row(row)
@@ -515,6 +560,9 @@ class ListRelationshipFieldManifest(ManifestNode[List[Entity]]):
     def result_type(self) -> Type[List[Entity]]:
         return List[Entity]
 
+    def additional_field_manifests(self, field_name: str) -> Dict[str, "ManifestNode"]:
+        return {}
+
     def build_from_row(self, row: Dict[str, str]) -> List[Entity]:
         child_entities = []
         for child_manifest in self.child_manifests:
@@ -546,6 +594,9 @@ class DirectMappingFieldManifest(ManifestNode[str]):
     def result_type(self) -> Type[str]:
         return str
 
+    def additional_field_manifests(self, field_name: str) -> Dict[str, "ManifestNode"]:
+        return {}
+
     def build_from_row(self, row: Dict[str, str]) -> str:
         return row[self.mapped_column]
 
@@ -568,11 +619,18 @@ class StringLiteralFieldManifest(ManifestNode[str]):
     def result_type(self) -> Type[str]:
         return str
 
+    def additional_field_manifests(self, field_name: str) -> Dict[str, "ManifestNode"]:
+        return {}
+
     def build_from_row(self, row: Dict[str, str]) -> Optional[str]:
         return self.literal_value
 
     def columns_referenced(self) -> Set[str]:
         return set()
+
+
+def _raw_text_field_name(enum_field_name: str) -> str:
+    return f"{enum_field_name}{EnumEntity.RAW_TEXT_FIELD_SUFFIX}"
 
 
 @attr.s(kw_only=True)
@@ -590,6 +648,15 @@ class EnumLiteralFieldManifest(ManifestNode[LiteralEnumParser]):
     @property
     def result_type(self) -> Type[LiteralEnumParser]:
         return LiteralEnumParser
+
+    def additional_field_manifests(self, field_name: str) -> Dict[str, "ManifestNode"]:
+        # While this is effectively a no-op, it allows us to enforce that nobody
+        # sets the associated raw text field manually.
+        return {
+            _raw_text_field_name(field_name): StringLiteralFieldManifest(
+                literal_value=None
+            )
+        }
 
     def build_from_row(self, row: Dict[str, str]) -> LiteralEnumParser:
         return LiteralEnumParser(self.enum_value)
@@ -656,6 +723,9 @@ class EnumMappingManifest(ManifestNode[StrictEnumParser]):
     def result_type(self) -> Type[StrictEnumParser]:
         return StrictEnumParser
 
+    def additional_field_manifests(self, field_name: str) -> Dict[str, "ManifestNode"]:
+        return {_raw_text_field_name(field_name): self.raw_text_field_manifest}
+
     def build_from_row(self, row: Dict[str, str]) -> StrictEnumParser:
         return StrictEnumParser(
             raw_text=self.raw_text_field_manifest.build_from_row(row),
@@ -665,10 +735,6 @@ class EnumMappingManifest(ManifestNode[StrictEnumParser]):
 
     def columns_referenced(self) -> Set[str]:
         return self.raw_text_field_manifest.columns_referenced()
-
-    @classmethod
-    def raw_text_field_name(cls, enum_field_name: str) -> str:
-        return f"{enum_field_name}{EnumEntity.RAW_TEXT_FIELD_SUFFIX}"
 
     @classmethod
     def from_raw_manifest(
@@ -829,6 +895,9 @@ class CustomFunctionManifest(ManifestNode[ManifestNodeT]):
     def result_type(self) -> Type[ManifestNodeT]:
         return self.function_return_type
 
+    def additional_field_manifests(self, field_name: str) -> Dict[str, "ManifestNode"]:
+        return {}
+
     def build_from_row(self, row: Dict[str, str]) -> Optional[ManifestNodeT]:
         kwargs = {
             key: manifest.build_from_row(row)
@@ -910,6 +979,9 @@ class SerializedJSONDictFieldManifest(ManifestNode[str]):
     def result_type(self) -> Type[str]:
         return str
 
+    def additional_field_manifests(self, field_name: str) -> Dict[str, "ManifestNode"]:
+        return {}
+
     def build_from_row(self, row: Dict[str, str]) -> Optional[str]:
         result_dict = {
             key: manifest.build_from_row(row)
@@ -947,6 +1019,9 @@ class JSONExtractKeyManifest(ManifestNode[str]):
     @property
     def result_type(self) -> Type[str]:
         return str
+
+    def additional_field_manifests(self, field_name: str) -> Dict[str, "ManifestNode"]:
+        return {}
 
     def build_from_row(self, row: Dict[str, str]) -> str:
         json_str = self.json_manifest.build_from_row(row)
@@ -1014,6 +1089,9 @@ class ConcatenatedStringsManifest(ManifestNode[str]):
     @property
     def result_type(self) -> Type[str]:
         return str
+
+    def additional_field_manifests(self, field_name: str) -> Dict[str, "ManifestNode"]:
+        return {}
 
     def build_from_row(self, row: Dict[str, str]) -> str:
         unfiltered_values = [
@@ -1093,6 +1171,9 @@ class PhysicalAddressManifest(ManifestNode[str]):
     @property
     def result_type(self) -> Type[str]:
         return str
+
+    def additional_field_manifests(self, field_name: str) -> Dict[str, "ManifestNode"]:
+        return {}
 
     def build_from_row(self, row: Dict[str, str]) -> str:
         state_and_zip_parts = [
@@ -1185,6 +1266,9 @@ class PersonNameManifest(ManifestNode[str]):
     def result_type(self) -> Type[str]:
         return str
 
+    def additional_field_manifests(self, field_name: str) -> Dict[str, "ManifestNode"]:
+        return {}
+
     def build_from_row(self, row: Dict[str, str]) -> Optional[str]:
         return self.name_json_manifest.build_from_row(row)
 
@@ -1240,6 +1324,9 @@ class ContainsConditionManifest(ManifestNode[bool]):
     def result_type(self) -> Type[bool]:
         return bool
 
+    def additional_field_manifests(self, field_name: str) -> Dict[str, "ManifestNode"]:
+        return {}
+
     def build_from_row(self, row: Dict[str, str]) -> bool:
         value = self.value_manifest.build_from_row(row)
         options = {m.build_from_row(row) for m in self.options_manifests}
@@ -1285,6 +1372,9 @@ class IsNullConditionManifest(ManifestNode[bool]):
     def result_type(self) -> Type[bool]:
         return bool
 
+    def additional_field_manifests(self, field_name: str) -> Dict[str, "ManifestNode"]:
+        return {}
+
     def build_from_row(self, row: Dict[str, str]) -> bool:
         value = self.value_manifest.build_from_row(row)
         return not bool(value)
@@ -1327,6 +1417,9 @@ class EqualsConditionManifest(ManifestNode[bool]):
     @property
     def result_type(self) -> Type[bool]:
         return bool
+
+    def additional_field_manifests(self, field_name: str) -> Dict[str, "ManifestNode"]:
+        return {}
 
     def build_from_row(self, row: Dict[str, str]) -> bool:
         first_value = self.value_manifests[0].build_from_row(row)
@@ -1377,6 +1470,9 @@ class AndConditionManifest(ManifestNode[bool]):
     def result_type(self) -> Type[bool]:
         return bool
 
+    def additional_field_manifests(self, field_name: str) -> Dict[str, "ManifestNode"]:
+        return {}
+
     def build_from_row(self, row: Dict[str, str]) -> bool:
         return all(
             value_manifest.build_from_row(row)
@@ -1425,6 +1521,9 @@ class OrConditionManifest(ManifestNode[bool]):
     def result_type(self) -> Type[bool]:
         return bool
 
+    def additional_field_manifests(self, field_name: str) -> Dict[str, "ManifestNode"]:
+        return {}
+
     def build_from_row(self, row: Dict[str, str]) -> bool:
         return any(
             value_manifest.build_from_row(row)
@@ -1464,6 +1563,9 @@ class InvertConditionManifest(ManifestNode[bool]):
     def result_type(self) -> Type[bool]:
         return bool
 
+    def additional_field_manifests(self, field_name: str) -> Dict[str, "ManifestNode"]:
+        return {}
+
     def build_from_row(self, row: Dict[str, str]) -> bool:
         return not self.condition_manifest.build_from_row(row)
 
@@ -1485,6 +1587,9 @@ class BooleanLiteralManifest(ManifestNode[bool]):
     @property
     def result_type(self) -> Type[bool]:
         return bool
+
+    def additional_field_manifests(self, field_name: str) -> Dict[str, "ManifestNode"]:
+        return {}
 
     def build_from_row(self, row: Dict[str, str]) -> bool:
         return self.value
@@ -1528,6 +1633,43 @@ class BooleanConditionManifest(ManifestNode[ManifestNodeT]):
     @property
     def result_type(self) -> Type[ManifestNodeT]:
         return self.then_manifest.result_type
+
+    def additional_field_manifests(self, field_name: str) -> Dict[str, "ManifestNode"]:
+        # Get the additional fields set by each branch
+        then_manifests = self.then_manifest.additional_field_manifests(field_name)
+        else_manifests = (
+            self.else_manifest.additional_field_manifests(field_name)
+            if self.else_manifest
+            else {}
+        )
+
+        additional_manifests: Dict[str, ManifestNode] = {}
+        # Zip them together by field name, creating a new condition for each one.
+        for additional_field_name in then_manifests.keys() | else_manifests.keys():
+            then_manifest = then_manifests.get(additional_field_name)
+            else_manifest = else_manifests.get(additional_field_name)
+
+            if then_manifest:
+                boolean_manifest = BooleanConditionManifest(
+                    condition_manifest=self.condition_manifest,
+                    then_manifest=then_manifest,
+                    else_manifest=else_manifest,
+                )
+            elif else_manifest:
+                boolean_manifest = BooleanConditionManifest(
+                    condition_manifest=InvertConditionManifest(
+                        condition_manifest=self.condition_manifest
+                    ),
+                    then_manifest=else_manifest,
+                    else_manifest=then_manifest,
+                )
+            else:
+                raise ValueError(
+                    "Expected one of then_manifest and else_manifest to be nonnull."
+                )
+
+            additional_manifests[additional_field_name] = boolean_manifest
+        return additional_manifests
 
     def build_from_row(self, row: Dict[str, str]) -> Optional[ManifestNodeT]:
         condition = self.condition_manifest.build_from_row(row)
