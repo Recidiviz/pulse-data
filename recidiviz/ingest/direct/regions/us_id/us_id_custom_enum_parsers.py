@@ -22,9 +22,6 @@ my_enum_field:
     $raw_text: MY_CSV_COL
     $custom_parser: us_id_custom_enum_parsers.<function name>
 """
-import functools
-from typing import Set
-
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentDischargeReason,
     StateProgramAssignmentParticipationStatus,
@@ -32,24 +29,19 @@ from recidiviz.common.constants.state.state_program_assignment import (
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactMethod,
 )
-from recidiviz.common.text_analysis import (
-    TextAnalyzer,
-    TextEntity,
-    TextMatchingConfiguration,
+from recidiviz.common.constants.state.state_supervision_violation_response import (
+    StateSupervisionViolationResponseDecision,
 )
+from recidiviz.ingest.direct.regions.us_id.us_id_custom_parsers import _match_note_title
 from recidiviz.ingest.direct.regions.us_id.us_id_text_analysis_configuration import (
     UsIdTextEntity,
 )
 
-TEXT_ANALYZER = TextAnalyzer(
-    configuration=TextMatchingConfiguration(
-        stop_words_to_remove={"in", "out"},
-        text_entities=[UsIdTextEntity.ANY_TREATMENT, UsIdTextEntity.TREATMENT_COMPLETE],
-    )
-)
 
-
-def participation_status_from_agnt_note_title(
+# Custom Enum parsers needed for us_id_agnt_case_updt
+# TODO(#10784): Remove in favor of participation_status_from_agnt_note_title when the
+# ingest rerun completes.
+def participation_status_from_agnt_note_title_legacy(
     raw_text: str,
 ) -> StateProgramAssignmentParticipationStatus:
     """Sets the participation based on the treatment entities matched."""
@@ -64,6 +56,24 @@ def participation_status_from_agnt_note_title(
     return StateProgramAssignmentParticipationStatus.EXTERNAL_UNKNOWN
 
 
+def participation_status_from_agnt_note_title(
+    raw_text: str,
+) -> StateProgramAssignmentParticipationStatus:
+    """Sets the participation based on the treatment entities matched."""
+    matched_entities = _match_note_title(raw_text)
+    if (
+        UsIdTextEntity.ANY_TREATMENT in matched_entities
+        and UsIdTextEntity.TREATMENT_COMPLETE in matched_entities
+    ):
+        return StateProgramAssignmentParticipationStatus.DISCHARGED
+    if UsIdTextEntity.ANY_TREATMENT in matched_entities:
+        return StateProgramAssignmentParticipationStatus.IN_PROGRESS
+    raise ValueError(
+        f"Unexpected matched entities: {matched_entities} for StateProgramAssignmentParticipationStatus"
+    )
+
+
+# TODO(#10784): Remove when the ingest rerun completes to switch to agnt_case_updt.
 def discharge_reason_from_agnt_note_title(
     raw_text: str,
 ) -> StateProgramAssignmentDischargeReason:
@@ -77,10 +87,23 @@ def discharge_reason_from_agnt_note_title(
     )
 
 
-@functools.lru_cache(maxsize=128)
-def _match_note_title(agnt_note_title: str) -> Set[TextEntity]:
-    """Returns the entities that the agnt_note_title matches to."""
-    return TEXT_ANALYZER.extract_entities(agnt_note_title)
+def violation_response_decision_from_agnt_note_title(
+    raw_text: str,
+) -> StateSupervisionViolationResponseDecision:
+    """Sets the violation response decision based on certain entity matches."""
+    matched_entities = _match_note_title(raw_text)
+    if UsIdTextEntity.REVOCATION_INCLUDE in matched_entities:
+        raise ValueError("Unexpected received REVOCATION_INCLUDE in matched entities")
+    if UsIdTextEntity.AGENTS_WARNING in matched_entities:
+        return StateSupervisionViolationResponseDecision.WARNING
+    if (
+        UsIdTextEntity.REVOCATION in matched_entities
+        and UsIdTextEntity.REVOCATION_INCLUDE not in matched_entities
+    ):
+        return StateSupervisionViolationResponseDecision.REVOCATION
+    raise ValueError(
+        f"Unexpected matched entities: {matched_entities} for StateSupervisionViolationResponseDecision"
+    )
 
 
 # Custom Enum Parsers needed for us_id_sprvsn_cntc_v3
