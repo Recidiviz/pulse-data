@@ -25,18 +25,27 @@ my_flat_field:
             arg_2: <expression>
 """
 import functools
+from typing import Set
 
-from recidiviz.ingest.direct.regions.us_id.us_id_custom_enum_parsers import (
-    TEXT_ANALYZER,
-    _match_note_title,
+from recidiviz.common.text_analysis import (
+    TextAnalyzer,
+    TextEntity,
+    TextMatchingConfiguration,
 )
 from recidiviz.ingest.direct.regions.us_id.us_id_text_analysis_configuration import (
     UsIdTextEntity,
 )
 
+TEXT_ANALYZER = TextAnalyzer(
+    configuration=TextMatchingConfiguration(
+        stop_words_to_remove={"in", "out"},
+        text_entities=list(UsIdTextEntity),
+    )
+)
+
 
 @functools.lru_cache(maxsize=128)
-def is_program_start(agnt_note_title: str) -> bool:
+def records_program_start(agnt_note_title: str) -> bool:
     """Returns whether a program is started by looking for treatment but not completion
     in the matched entities."""
     matched_entities = _match_note_title(agnt_note_title)
@@ -47,7 +56,7 @@ def is_program_start(agnt_note_title: str) -> bool:
 
 
 @functools.lru_cache(maxsize=128)
-def is_program_discharge(agnt_note_title: str) -> bool:
+def records_program_discharge(agnt_note_title: str) -> bool:
     """Returns whether treatment completion is the matched entity."""
     matched_entities = _match_note_title(agnt_note_title)
     return (
@@ -57,5 +66,52 @@ def is_program_discharge(agnt_note_title: str) -> bool:
 
 
 @functools.lru_cache(maxsize=128)
-def cleaned_agnt_note_title(agnt_note_title: str) -> str:
-    return TEXT_ANALYZER.normalize_text(agnt_note_title)
+def records_violation(agnt_note_title: str) -> bool:
+    """Returns whether the agnt_note_title indicates a violation should be ingested."""
+    matched_entities = _match_note_title(agnt_note_title)
+    return (
+        UsIdTextEntity.VIOLATION in matched_entities
+        or UsIdTextEntity.AGENTS_WARNING in matched_entities
+        or UsIdTextEntity.REVOCATION in matched_entities
+        or UsIdTextEntity.ABSCONSION in matched_entities
+    ) and UsIdTextEntity.REVOCATION_INCLUDE not in matched_entities
+
+
+@functools.lru_cache(maxsize=128)
+def records_violation_response_decision(agnt_note_title: str) -> bool:
+    """Returns whether the agnt_note_title indicates a violation response decision
+    should be ingested."""
+    matched_entities = _match_note_title(agnt_note_title)
+    return (
+        UsIdTextEntity.AGENTS_WARNING in matched_entities
+        or UsIdTextEntity.REVOCATION in matched_entities
+    ) and UsIdTextEntity.REVOCATION_INCLUDE not in matched_entities
+
+
+@functools.lru_cache(maxsize=128)
+def records_absconsion(agnt_note_title: str) -> bool:
+    """Returns whether the agnt_note_title indicates an absconsion."""
+    matched_entities = _match_note_title(agnt_note_title)
+    return UsIdTextEntity.ABSCONSION in matched_entities
+
+
+@functools.lru_cache(maxsize=128)
+def records_temporary_custody_admission(agnt_note_title: str) -> bool:
+    """Returns whether the agnt_note_title indicates an temporary custody admission should be
+    ingested."""
+    matched_entities = _match_note_title(agnt_note_title)
+    return UsIdTextEntity.IN_CUSTODY in matched_entities
+
+
+@functools.lru_cache(maxsize=128)
+def records_new_investigation_period(agnt_note_title: str) -> bool:
+    """Returns whether the agnt_note_title indicates a new investigation period should be
+    ingested."""
+    matched_entities = _match_note_title(agnt_note_title)
+    return UsIdTextEntity.NEW_INVESTIGATION in matched_entities
+
+
+@functools.lru_cache(maxsize=128)
+def _match_note_title(agnt_note_title: str) -> Set[TextEntity]:
+    """Returns the entities that the agnt_note_title matches to."""
+    return TEXT_ANALYZER.extract_entities(agnt_note_title)

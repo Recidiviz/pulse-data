@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2021 Recidiviz, Inc.
+# Copyright (C) 2022 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,8 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Query for case notes, from which treatment program assignments will be parsed."""
-# TODO(#10784): Remove treatment_agnt_case_updt once rerun has been completed.
+"""Query for case notes, from which treatment program assignments,
+certain violations, and supervision/incarceration-related events will be parsed."""
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
     DirectIngestPreProcessedIngestViewBuilder,
 )
@@ -34,7 +34,7 @@ VIEW_QUERY_TEMPLATE = """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     region="us_id",
-    ingest_view_name="treatment_agnt_case_updt",
+    ingest_view_name="agnt_case_updt",
     view_query_template=VIEW_QUERY_TEMPLATE,
     order_by_cols="ofndr_num, create_dt",
 )

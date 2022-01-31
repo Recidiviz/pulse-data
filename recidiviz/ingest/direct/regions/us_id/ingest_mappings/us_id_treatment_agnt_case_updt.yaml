@@ -9,6 +9,7 @@ input_columns:
 unused_columns: []
 output:
   # TODO(#10381): Support file-level variables for reused expressions
+  # TODO(#10784): Remove treatment_agnt_case_updt once rerun has been completed.
   StatePerson:
     external_ids:
       - StatePersonExternalId:
@@ -28,7 +29,7 @@ output:
           participation_status:              
             $enum_mapping:
               $raw_text: agnt_note_title
-              $custom_parser: us_id_custom_enum_parsers.participation_status_from_agnt_note_title
+              $custom_parser: us_id_custom_enum_parsers.participation_status_from_agnt_note_title_legacy
           discharge_reason:
             $enum_mapping:
               $raw_text: agnt_note_title
@@ -37,7 +38,7 @@ output:
             $conditional:
               - $if:
                   $custom:
-                    $function: us_id_custom_parsers.is_program_start
+                    $function: us_id_custom_parsers.records_program_start
                     $args:
                       agnt_note_title: agnt_note_title
                 $then: create_dt
@@ -45,7 +46,7 @@ output:
             $conditional:
               - $if:
                   $custom:
-                    $function: us_id_custom_parsers.is_program_start
+                    $function: us_id_custom_parsers.records_program_start
                     $args:
                       agnt_note_title: agnt_note_title
                 $then: create_dt
@@ -53,7 +54,7 @@ output:
             $conditional:
               - $if:
                   $custom:
-                    $function: us_id_custom_parsers.is_program_discharge
+                    $function: us_id_custom_parsers.records_program_discharge
                     $args:
                       agnt_note_title: agnt_note_title
                 $then: create_dt

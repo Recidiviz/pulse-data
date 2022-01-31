@@ -140,6 +140,7 @@ from recidiviz.ingest.direct.state_shared_row_posthooks import (
     gen_label_single_external_id_hook,
     gen_rationalize_race_and_ethnicity,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.models.ingest_info import (
     IngestObject,
     StateAgent,
@@ -558,6 +559,13 @@ class UsIdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             "sprvsn_cntc_v3",
             "treatment_agnt_case_updt",
         ]
+
+        # TODO(#10784): Remove treatment_agnt_case_updt once rerun has been completed.
+        if self.ingest_instance == DirectIngestInstance.SECONDARY:
+            shared_file_tags[
+                shared_file_tags.index("treatment_agnt_case_updt")
+            ] = "agnt_case_updt"
+
         return shared_file_tags
 
     @classmethod

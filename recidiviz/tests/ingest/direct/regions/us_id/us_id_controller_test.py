@@ -74,6 +74,7 @@ from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
 from recidiviz.common.constants.state.state_supervision_violation_response import (
+    StateSupervisionViolationResponseDecidingBodyType,
     StateSupervisionViolationResponseDecision,
     StateSupervisionViolationResponseType,
 )
@@ -2292,79 +2293,181 @@ class TestUsIdController(BaseDirectIngestControllerTests):
         self.assert_expected_db_people(expected_people)
 
         #################################################################
-        # treatment_agnt_case_updt
+        # agnt_case_updt
         #################################################################
         # Arrange
         pa_1_1 = entities.StateProgramAssignment.new_with_defaults(
-            external_id="1111-150",
+            external_id="1111-150-FUZZY_MATCHED",
             state_code=_STATE_CODE_UPPER,
             referring_agent=po_1,
             participation_status=StateProgramAssignmentParticipationStatus.IN_PROGRESS,
             participation_status_raw_text="TREATMENT",
-            discharge_reason=StateProgramAssignmentDischargeReason.EXTERNAL_UNKNOWN,
-            discharge_reason_raw_text="TREATMENT",
-            referral_date=datetime.date(2020, 3, 1),
             start_date=datetime.date(2020, 3, 1),
             person=person_1,
         )
 
         pa_1_2 = entities.StateProgramAssignment.new_with_defaults(
-            external_id="1111-162",
+            external_id="1111-162-FUZZY_MATCHED",
             state_code=_STATE_CODE_UPPER,
             referring_agent=po_1,
             participation_status=StateProgramAssignmentParticipationStatus.DISCHARGED,
             participation_status_raw_text="TREATMENT COMPLETION",
             discharge_reason=StateProgramAssignmentDischargeReason.COMPLETED,
-            discharge_reason_raw_text="TREATMENT COMPLETION",
             discharge_date=datetime.date(2020, 4, 1),
             person=person_1,
         )
         person_1.program_assignments = [pa_1_1, pa_1_2]
 
+        sv_1111_6 = entities.StateSupervisionViolation.new_with_defaults(
+            external_id="1111-168-FUZZY_MATCHED",
+            state_code=_STATE_CODE_UPPER,
+            violation_date=datetime.date(2020, 5, 1),
+            person=person_1,
+        )
+        svr_1111_6 = entities.StateSupervisionViolationResponse.new_with_defaults(
+            external_id="1111-168-FUZZY_MATCHED",
+            state_code="US_ID",
+            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+            response_date=datetime.date(2020, 5, 1),
+            deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.SUPERVISION_OFFICER,
+            decision_agents=[po_1],
+            person=person_1,
+            supervision_violation=sv_1111_6,
+        )
+        sv_1111_6.supervision_violation_responses.append(svr_1111_6)
+        person_1.supervision_violations.append(sv_1111_6)
+
         pa_3_1 = entities.StateProgramAssignment.new_with_defaults(
-            external_id="3333-170",
+            external_id="3333-170-FUZZY_MATCHED",
             state_code=_STATE_CODE_UPPER,
             referring_agent=po_3,
             participation_status=StateProgramAssignmentParticipationStatus.IN_PROGRESS,
             participation_status_raw_text="TX",
-            discharge_reason=StateProgramAssignmentDischargeReason.EXTERNAL_UNKNOWN,
-            discharge_reason_raw_text="TX",
-            referral_date=datetime.date(2020, 6, 1),
             start_date=datetime.date(2020, 6, 1),
             person=person_3,
         )
-        pa_3_2 = entities.StateProgramAssignment.new_with_defaults(
-            external_id="3333-180",
+
+        sv_3333_8 = entities.StateSupervisionViolation.new_with_defaults(
+            external_id="3333-173-FUZZY_MATCHED",
             state_code=_STATE_CODE_UPPER,
-            referring_agent=po_3,
-            participation_status=StateProgramAssignmentParticipationStatus.EXTERNAL_UNKNOWN,
-            participation_status_raw_text="COMPLETE OTHER",
-            discharge_reason=StateProgramAssignmentDischargeReason.EXTERNAL_UNKNOWN,
-            discharge_reason_raw_text="COMPLETE OTHER",
-            referral_date=None,
-            start_date=None,
+            violation_date=datetime.date(2020, 9, 1),
             person=person_3,
         )
+        svt_3333_8 = entities.StateSupervisionViolationTypeEntry.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            violation_type=StateSupervisionViolationType.ABSCONDED,
+            person=person_3,
+            supervision_violation=sv_3333_8,
+        )
+        svr_3333_8 = entities.StateSupervisionViolationResponse.new_with_defaults(
+            external_id="3333-173-FUZZY_MATCHED",
+            state_code=_STATE_CODE_UPPER,
+            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+            response_date=datetime.date(2020, 9, 1),
+            deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.SUPERVISION_OFFICER,
+            decision_agents=[po_3],
+            supervision_violation=sv_3333_8,
+            person=person_3,
+        )
+        sv_3333_8.supervision_violation_types = [svt_3333_8]
+        sv_3333_8.supervision_violation_responses = [svr_3333_8]
 
-        person_3.program_assignments = [pa_3_1, pa_3_2]
+        person_3.supervision_violations.append(sv_3333_8)
+
+        person_3.program_assignments = [pa_3_1]
 
         pa_4_1 = entities.StateProgramAssignment.new_with_defaults(
-            external_id="4444-175",
+            external_id="4444-175-FUZZY_MATCHED",
             state_code=_STATE_CODE_UPPER,
             referring_agent=po_4,
             participation_status=StateProgramAssignmentParticipationStatus.IN_PROGRESS,
             participation_status_raw_text="SO TREATMENT",
-            discharge_reason=StateProgramAssignmentDischargeReason.EXTERNAL_UNKNOWN,
-            discharge_reason_raw_text="SO TREATMENT",
-            referral_date=datetime.date(2021, 11, 17),
             start_date=datetime.date(2021, 11, 17),
             person=person_4,
         )
 
+        sv_4444_1 = entities.StateSupervisionViolation.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            external_id="4444-177-FUZZY_MATCHED",
+            violation_date=datetime.date(2021, 12, 1),
+            person=person_4,
+        )
+        svr_4444_1 = entities.StateSupervisionViolationResponse.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            external_id="4444-177-FUZZY_MATCHED",
+            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+            response_date=datetime.date(2021, 12, 1),
+            deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.SUPERVISION_OFFICER,
+            decision_agents=[po_4],
+            supervision_violation=sv_4444_1,
+            person=person_4,
+        )
+        svrd_4444_1 = (
+            entities.StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                decision=StateSupervisionViolationResponseDecision.REVOCATION,
+                decision_raw_text="REVOKE",
+                supervision_violation_response=svr_4444_1,
+                person=person_4,
+            )
+        )
+        sv_4444_1.supervision_violation_responses = [svr_4444_1]
+        svr_4444_1.supervision_violation_response_decisions = [svrd_4444_1]
+
+        sv_4444_2 = entities.StateSupervisionViolation.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            external_id="4444-193-FUZZY_MATCHED",
+            violation_date=datetime.date(2022, 1, 4),
+            person=person_4,
+        )
+        svr_4444_2 = entities.StateSupervisionViolationResponse.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            external_id="4444-193-FUZZY_MATCHED",
+            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+            response_date=datetime.date(2022, 1, 4),
+            deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.SUPERVISION_OFFICER,
+            decision_agents=[po_4],
+            supervision_violation=sv_4444_2,
+            person=person_4,
+        )
+        svrd_4444_2 = (
+            entities.StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                decision=StateSupervisionViolationResponseDecision.WARNING,
+                decision_raw_text="AW",
+                supervision_violation_response=svr_4444_2,
+                person=person_4,
+            )
+        )
+        sv_4444_2.supervision_violation_responses = [svr_4444_2]
+        svr_4444_2.supervision_violation_response_decisions = [svrd_4444_2]
+
+        sp_4444_1 = entities.StateSupervisionPeriod.new_with_defaults(
+            external_id="4444-194-FUZZY_MATCHED",
+            state_code=_STATE_CODE_UPPER,
+            supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,
+            admission_reason=StateSupervisionPeriodAdmissionReason.INVESTIGATION,
+            start_date=datetime.date(2022, 1, 7),
+            supervising_officer=po_4,
+            person=person_4,
+        )
+
+        ip_4444_1 = entities.StateIncarcerationPeriod.new_with_defaults(
+            external_id="4444-195-FUZZY_MATCHED",
+            state_code=_STATE_CODE_UPPER,
+            admission_date=datetime.date(2022, 1, 9),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            person=person_4,
+        )
+
+        person_4.supervision_violations += [sv_4444_1, sv_4444_2]
         person_4.program_assignments = [pa_4_1]
+        person_4.supervision_periods.append(sp_4444_1)
+        person_4.incarceration_periods.append(ip_4444_1)
 
         # Act
-        self._run_ingest_job_for_filename("treatment_agnt_case_updt.csv")
+        self._run_ingest_job_for_filename("agnt_case_updt.csv")
 
         # Assert
         self.assert_expected_db_people(expected_people)

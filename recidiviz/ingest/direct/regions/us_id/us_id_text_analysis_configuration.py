@@ -17,6 +17,8 @@
 """Ingest-level text matching utilities for US_ID.
 
 Note: If new flags or new fuzzy matchers are added, you must do an ingest rerun."""
+from thefuzz import fuzz
+
 from recidiviz.common.text_analysis import (
     RegexFuzzyMatcher,
     ScoringFuzzyMatcher,
@@ -28,6 +30,47 @@ class UsIdTextEntity(TextEntity):
     """Flags for indicators based on free text matching for US_ID."""
 
     # WARNING: IF YOU EDIT THESE VALUES, YOU MUST DO AN INGEST RERUN FOR AFFECTED REGIONS
+    VIOLATION = [
+        RegexFuzzyMatcher(search_regex=".*violat.*"),
+        RegexFuzzyMatcher(search_regex=".*voilat.*"),
+        ScoringFuzzyMatcher(search_term="pv"),
+        ScoringFuzzyMatcher(search_term="rov"),
+        ScoringFuzzyMatcher(search_term="report of violation"),
+    ]
+    ABSCONSION = [
+        ScoringFuzzyMatcher(
+            search_term="abscond", matching_function=fuzz.partial_ratio
+        ),
+        ScoringFuzzyMatcher(search_term="absconsion"),
+    ]
+    IN_CUSTODY = [
+        ScoringFuzzyMatcher(search_term="in custody"),
+        ScoringFuzzyMatcher(search_term="arrest", matching_function=fuzz.partial_ratio),
+    ]
+    AGENTS_WARNING = [
+        ScoringFuzzyMatcher(search_term="aw"),
+        ScoringFuzzyMatcher(search_term="agents warrant"),
+        ScoringFuzzyMatcher(search_term="cw"),
+        ScoringFuzzyMatcher(search_term="bw"),
+        ScoringFuzzyMatcher(search_term="commission warrant"),
+        ScoringFuzzyMatcher(search_term="bench warrant"),
+        ScoringFuzzyMatcher(search_term="warrant"),
+    ]
+    REVOCATION = [
+        RegexFuzzyMatcher(search_regex=".*revok.*"),
+        RegexFuzzyMatcher(search_regex=".*revoc.*"),
+        ScoringFuzzyMatcher(search_term="rx"),
+    ]
+    REVOCATION_INCLUDE = [
+        ScoringFuzzyMatcher(search_term="internet"),
+        ScoringFuzzyMatcher(search_term="minor consent form"),
+        ScoringFuzzyMatcher(search_term="relationship app"),
+    ]
+    NEW_INVESTIGATION = [
+        ScoringFuzzyMatcher(search_term="psi"),
+        ScoringFuzzyMatcher(search_term="file_review"),
+        ScoringFuzzyMatcher(search_term="activation"),
+    ]
     ANY_TREATMENT = [
         ScoringFuzzyMatcher(search_term="tx"),
         ScoringFuzzyMatcher(search_term="treatment"),
