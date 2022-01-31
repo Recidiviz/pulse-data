@@ -25,10 +25,9 @@ from unittest import mock
 import sqlalchemy
 from parameterized import parameterized
 
+from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.ingest.direct.types.direct_ingest_instance import (
-    DirectIngestInstance,
-)
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config import (
     CloudSqlToBQConfig,
 )
@@ -269,12 +268,14 @@ county_columns_to_exclude:
                 msg_prefix=f"Excluded columsn for {k}",
             )
 
-    def test_bq_schema_for_table(self) -> None:
+    def test_schema_for_sqlalchemy_table(self) -> None:
+        """Assert that we will be able to manage all tables in BigQuery created by the
+        CloudSQL to BQ refresh."""
         for schema_type in self.enabled_schema_types:
             config = CloudSqlToBQConfig.for_schema_type(schema_type)
             for table in config.get_tables_to_export():
                 # Assert that all column types are supported for this table
-                _ = CloudSqlToBQConfig.bq_schema_for_table(table)
+                _ = BigQueryClientImpl.schema_for_sqlalchemy_table(table)
 
     def assertListsDistinctAndEqual(
         self, l1: List[str], l2: List[str], msg_prefix: str

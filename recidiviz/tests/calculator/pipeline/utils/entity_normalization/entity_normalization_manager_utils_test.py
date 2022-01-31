@@ -25,11 +25,11 @@ from unittest import mock
 from recidiviz.calculator.pipeline.utils.entity_normalization import (
     entity_normalization_manager_utils,
 )
+from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager import (
+    EntityNormalizationManager,
+)
 from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager_utils import (
     entity_normalization_managers_for_calculations,
-)
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
-    EntityNormalizationManager,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_incarceration_delegate import (
     UsXxIncarcerationDelegate,

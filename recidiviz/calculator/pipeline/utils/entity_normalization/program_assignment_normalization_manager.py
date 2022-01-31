@@ -21,7 +21,7 @@ import datetime
 from copy import deepcopy
 from typing import List, Type
 
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
+from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager import (
     EntityNormalizationManager,
 )
 from recidiviz.persistence.entity.base_entity import Entity

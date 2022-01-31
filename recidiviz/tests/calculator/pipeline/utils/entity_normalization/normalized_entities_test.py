@@ -18,6 +18,11 @@
 import unittest
 from typing import List, Set, Type
 
+import attr
+
+from recidiviz.calculator.pipeline.utils.beam_utils.extractor_utils import (
+    entity_class_can_be_hydrated_in_pipelines,
+)
 from recidiviz.calculator.pipeline.utils.entity_normalization import normalized_entities
 from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager_utils import (
     NORMALIZATION_MANAGERS,
@@ -27,16 +32,17 @@ from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entitie
     NormalizedStateSupervisionCaseTypeEntry,
     NormalizedStateSupervisionPeriod,
     NormalizedStateSupervisionViolationResponse,
-)
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
-    entity_class_can_be_hydrated_in_pipelines,
     get_entity_class_names_excluded_from_normalization,
 )
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
+    fields_unique_to_normalized_class,
+)
+from recidiviz.common.attr_mixins import get_ref_fields_with_reference_class_names
+from recidiviz.common.attr_utils import is_flat_field
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import (
     get_all_entity_classes_in_module,
     get_entity_class_in_module_with_name,
-    get_ref_fields_with_reference_class_names,
 )
 from recidiviz.persistence.entity.state import entities as state_entities
 
@@ -52,7 +58,6 @@ class TestNormalizedEntities(unittest.TestCase):
             entity_class
             for entity_class in get_all_entity_classes_in_module(normalized_entities)
             if issubclass(entity_class, NormalizedStateEntity)
-            and entity_class != NormalizedStateEntity
         ]
 
         self.normalized_entity_bases = {
@@ -142,6 +147,23 @@ class TestNormalizedEntities(unittest.TestCase):
     def test_ref_is_unset(self):
         # Assert that this does not fail when case_type_entries is unset
         _ = NormalizedStateSupervisionPeriod(state_code=STATE_CODE, sequence_num=1)
+
+    def test_new_fields_are_all_flat_fields(self):
+        """Tests that all attributes added to NormalizedStateEntity classes are flat
+        fields."""
+        for entity_cls in self.normalized_entity_classes:
+            unique_fields = fields_unique_to_normalized_class(entity_cls)
+
+            for field, attribute in attr.fields_dict(entity_cls).items():
+                if field not in unique_fields:
+                    continue
+
+                if not is_flat_field(attribute):
+                    raise ValueError(
+                        "Only flat fields are supported as additional fields on "
+                        f"NormalizedStateEntities. Found: {attribute} in field "
+                        f"{field}."
+                    )
 
 
 def classes_in_normalized_entity_subtree(
