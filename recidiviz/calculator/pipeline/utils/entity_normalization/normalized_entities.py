@@ -19,16 +19,18 @@ from typing import Any, Callable, List, Optional, Type
 
 import attr
 
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
-    get_entity_class_names_excluded_from_normalization,
+from recidiviz.calculator.pipeline.utils.beam_utils.extractor_utils import (
+    get_entity_class_names_excluded_from_pipelines,
+)
+from recidiviz.common.attr_mixins import (
+    BuildableAttr,
+    get_ref_fields_with_reference_class_names,
 )
 from recidiviz.common.attr_utils import is_list
 from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.entity_utils import (
-    get_ref_fields_with_reference_class_names,
-)
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
+    StatePerson,
     StateProgramAssignment,
     StateSupervisionCaseTypeEntry,
     StateSupervisionPeriod,
@@ -40,9 +42,14 @@ from recidiviz.persistence.entity.state.entities import (
 )
 
 
-class NormalizedStateEntity:
+class NormalizedStateEntity(BuildableAttr):
     """Models an entity in state/entities.py that has been normalized and is prepared
     to be used in calculations."""
+
+    @classmethod
+    def base_class_name(cls) -> str:
+        """The name of the base state entity that this normalized entity extends."""
+        return cls.__base__.__name__
 
 
 def is_normalized_entity_validator(
@@ -65,6 +72,16 @@ def is_normalized_entity_validator(
             f"class must store the Normalized version of the entity. "
             f"Found: {value.__class__.__name__}."
         )
+
+
+def get_entity_class_names_excluded_from_normalization() -> List[str]:
+    """Returns the names of all entity classes that are never modified by
+    normalization.
+
+    We never normalize the StatePerson entity, and classes that are excluded from
+    pipelines cannot be normalized.
+    """
+    return [StatePerson.__name__] + get_entity_class_names_excluded_from_pipelines()
 
 
 def add_normalized_entity_validator_to_ref_fields(

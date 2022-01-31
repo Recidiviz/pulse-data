@@ -20,7 +20,7 @@
 import datetime
 import inspect
 from enum import Enum
-from typing import Any, Callable, Optional, Type, Union
+from typing import Any, Callable, List, Optional, Type, Union
 
 import attr
 
@@ -306,5 +306,41 @@ def get_non_flat_attribute_class_name(attribute: attr.Attribute) -> Optional[str
 
     if _is_forward_ref(attr_type):
         return _get_type_name_from_type(attr_type)
+
+    return None
+
+
+def get_forward_ref_class_name(attribute: attr.Attribute) -> Optional[str]:
+    """Returns the the inner class name for a type that is either List[<type>] or
+    Optional[<type>], if the attribute stores a reference to another type.
+
+    Returns None if the attribute type does not match either format, or if the
+    attribute does not store a reference to another type.
+    """
+    attr_type = attribute.type
+
+    if not attr_type:
+        raise ValueError(f"Unexpected None type for attribute [{attribute}]")
+
+    if _is_list(attr_type):
+        list_elem_type = attr_type.__args__[0]  # type: ignore
+        if _is_forward_ref(list_elem_type):
+            return list_elem_type.__forward_arg__
+
+    if _is_union(attr_type):
+        type_names: List[str] = []
+
+        for t in attr_type.__args__:
+            if _is_forward_ref(t):
+                type_names.append(t.__forward_arg__)
+
+        if len(type_names) > 1:
+            raise ValueError(f"Multiple nonnull types found: {type_names}")
+        if not type_names:
+            return None
+        return type_names[0]
+
+    if _is_forward_ref(attr_type):
+        return attr_type.__forward_arg__
 
     return None

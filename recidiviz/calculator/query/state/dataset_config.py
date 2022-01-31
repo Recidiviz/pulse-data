@@ -17,6 +17,8 @@
 """Various BigQuery datasets."""
 
 # Where the actual, final dashboard views live
+from recidiviz.common.constants.states import StateCode
+
 DASHBOARD_VIEWS_DATASET: str = "dashboard_views"
 
 # Where the metrics that Dataflow jobs produce live
@@ -80,3 +82,8 @@ SENDGRID_EMAIL_DATA_DATASET: str = "sendgrid_email_data"
 
 # Where US_TN raw data lives
 US_TN_RAW_DATASET: str = "us_tn_raw_data_up_to_date_views"
+
+
+def normalized_state_dataset_for_state_code(state_code: StateCode) -> str:
+    """Where the output of state-specific entity normalization pipelines is stored."""
+    return f"{state_code.value.lower()}_normalized_state"

@@ -24,7 +24,7 @@ from typing import Dict, List, Optional, Set, Type
 
 import attr
 
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
+from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager import (
     EntityNormalizationManager,
 )
 from recidiviz.common.constants.state.state_supervision_violation import (

@@ -27,6 +27,7 @@ from concurrent import futures
 from typing import Any, Callable, Dict, Iterator, List, Optional, Sequence
 
 import pytz
+import sqlalchemy
 from google.api_core.future.polling import PollingFuture
 from google.cloud import bigquery, exceptions
 from google.cloud.bigquery_datatransfer import (
@@ -39,6 +40,7 @@ from google.cloud.bigquery_datatransfer import (
 from google.protobuf import timestamp_pb2
 from more_itertools import one
 
+from recidiviz.big_query.big_query_utils import schema_column_type_for_sqlalchemy_column
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.big_query.export.export_query_config import ExportQueryConfig
 from recidiviz.utils import metadata
@@ -87,7 +89,6 @@ class BigQueryClient:
     DEFAULT_REGION = "US"
 
     @property
-    @abc.abstractmethod
     def project_id(self) -> str:
         """The Google Cloud project id for this client."""
 
@@ -646,6 +647,7 @@ class BigQueryClient:
         dataset copy is inexplicably different than for copies between regions.
         """
 
+    @abc.abstractmethod
     def copy_dataset_tables(
         self,
         source_dataset_id: str,
@@ -656,6 +658,7 @@ class BigQueryClient:
         exist, we will create one.
         """
 
+    @abc.abstractmethod
     def backup_dataset_tables_if_dataset_exists(
         self, dataset_id: str
     ) -> Optional[bigquery.DatasetReference]:
@@ -664,6 +667,7 @@ class BigQueryClient:
         `state` might backup to `state_backup_2021_05_06`.
         """
 
+    @abc.abstractmethod
     def update_datasets_to_match_reference_schema(
         self, reference_dataset_id: str, stale_schema_dataset_ids: List[str]
     ) -> None:
@@ -676,6 +680,16 @@ class BigQueryClient:
         Disclaimer: Use with caution! This will delete data.
         """
 
+    @staticmethod
+    @abc.abstractmethod
+    def schema_for_sqlalchemy_table(
+        table: sqlalchemy.Table, add_state_code_field: bool = False
+    ) -> List[bigquery.SchemaField]:
+        """Returns the necessary BigQuery schema for storing the contents of the
+        table in BigQuery, which is a list of SchemaField objects containing the
+        column name and value type for each column in the table."""
+
+    @abc.abstractmethod
     def wait_for_big_query_jobs(self, jobs: Sequence[PollingFuture]) -> List[Any]:
         """Waits for a list of jobs to complete. These can by any of the async job types
         the BQ client returns, e.g. QueryJob, CopyJob, LoadJob, etc.
@@ -1720,3 +1734,25 @@ class BigQueryClientImpl(BigQueryClient):
                     table_id,
                     desired_schema_fields=reference_table_schemas[table_id],
                 )
+
+    @classmethod
+    def schema_for_sqlalchemy_table(
+        cls, table: sqlalchemy.Table, add_state_code_field: bool = False
+    ) -> List[bigquery.SchemaField]:
+        columns_for_table = [
+            bigquery.SchemaField(
+                col.name, schema_column_type_for_sqlalchemy_column(col), mode="NULLABLE"
+            )
+            for col in table.columns
+        ]
+
+        if add_state_code_field:
+            columns_for_table.append(
+                bigquery.SchemaField(
+                    "state_code",
+                    bigquery.enums.SqlTypeNames.STRING.value,
+                    mode="NULLABLE",
+                )
+            )
+
+        return columns_for_table

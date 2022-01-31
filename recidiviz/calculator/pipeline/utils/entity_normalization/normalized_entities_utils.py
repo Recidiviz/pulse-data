@@ -15,59 +15,96 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Utils for working with NormalizedStateEntity objects."""
-import abc
-from functools import lru_cache
-from typing import List, Type
+from typing import List, Set, Type
 
+import attr
+from google.cloud import bigquery
+
+from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.big_query.big_query_utils import schema_field_for_attribute
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+    NormalizedStateEntity,
+    NormalizedStateIncarcerationPeriod,
+    NormalizedStateProgramAssignment,
+    NormalizedStateSupervisionCaseTypeEntry,
+    NormalizedStateSupervisionPeriod,
+    NormalizedStateSupervisionViolatedConditionEntry,
+    NormalizedStateSupervisionViolation,
+    NormalizedStateSupervisionViolationResponse,
+    NormalizedStateSupervisionViolationResponseDecisionEntry,
+    NormalizedStateSupervisionViolationTypeEntry,
+)
+from recidiviz.common.attr_mixins import BuildableAttr
+from recidiviz.common.attr_utils import is_flat_field
 from recidiviz.persistence.database import schema_utils
-from recidiviz.persistence.database.base_schema import StateBase
-from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.entity_utils import get_all_entity_classes_in_module
-from recidiviz.persistence.entity.state import entities as state_entities
+from recidiviz.persistence.database.schema_utils import (
+    get_state_table_classes,
+    get_table_class_by_name,
+)
+
+# All entity classes that have Normalized versions
+NORMALIZED_ENTITY_CLASSES: List[Type[NormalizedStateEntity]] = [
+    NormalizedStateIncarcerationPeriod,
+    NormalizedStateProgramAssignment,
+    NormalizedStateSupervisionPeriod,
+    NormalizedStateSupervisionCaseTypeEntry,
+    NormalizedStateSupervisionViolationResponse,
+    NormalizedStateSupervisionViolationResponseDecisionEntry,
+    NormalizedStateSupervisionViolation,
+    NormalizedStateSupervisionViolationTypeEntry,
+    NormalizedStateSupervisionViolatedConditionEntry,
+]
 
 
-class EntityNormalizationManager(metaclass=abc.ABCMeta):
-    """Base class for a class that manages the normalization of state entities."""
+def fields_unique_to_normalized_class(
+    entity_cls: Type[NormalizedStateEntity],
+) -> Set[str]:
+    """Returns the names of the fields that are unique to the NormalizedStateEntity
+    and are not on the base state Entity class."""
+    normalized_class_fields_dict = attr.fields_dict(entity_cls)
+    base_class: Type[BuildableAttr] = entity_cls.__base__
+    base_class_fields_dict = attr.fields_dict(base_class)
 
-    @staticmethod
-    @abc.abstractmethod
-    def normalized_entity_classes() -> List[Type[Entity]]:
-        """Must be implemented by subclasses. Defines all entities that are
-        normalized by this normalization manager."""
-
-
-def entity_class_can_be_hydrated_in_pipelines(entity_class: Type[Entity]) -> bool:
-    """Returns whether the given |entity_class| can be hydrated in a Dataflow
-    pipeline. An entity class must have a column with the class id of the
-    unifying class (which is currently StatePerson for all pipelines) in order to be
-    hydrated in a Dataflow pipeline."""
-    schema_class: Type[StateBase] = schema_utils.get_state_database_entity_with_name(
-        entity_class.__name__
+    return set(normalized_class_fields_dict.keys()).difference(
+        set(base_class_fields_dict.keys())
     )
 
-    # If the class's corresponding table does not have the person_id
-    # field then we will never bring an entity of this type into
-    # pipelines
-    return hasattr(schema_class, state_entities.StatePerson.get_class_id_name())
 
+def bq_schema_for_normalized_state_entity(
+    entity_cls: Type[NormalizedStateEntity],
+) -> List[bigquery.SchemaField]:
+    """Returns the necessary BigQuery schema for the NormalizedStateEntity, which is
+    a list of SchemaField objects containing the column name and value type for
+    each attribute on the NormalizedStateEntity."""
+    unique_fields_on_normalized_class = fields_unique_to_normalized_class(entity_cls)
 
-@lru_cache(maxsize=None)
-def _get_entity_class_names_excluded_from_pipelines() -> List[str]:
-    """Returns the names of all entity classes that cannot be hydrated in pipelines."""
-    return [
-        entity_cls.__name__
-        for entity_cls in get_all_entity_classes_in_module(state_entities)
-        if not entity_class_can_be_hydrated_in_pipelines(entity_cls)
-    ]
+    schema_fields_for_additional_fields: List[bigquery.SchemaField] = []
 
+    for field, attribute in attr.fields_dict(entity_cls).items():
+        if field not in unique_fields_on_normalized_class:
+            continue
 
-def get_entity_class_names_excluded_from_normalization() -> List[str]:
-    """Returns the names of all entity classes that are never modified by
-    normalization.
+        if not is_flat_field(attribute):
+            raise ValueError(
+                "Only flat fields are supported as additional fields on "
+                f"NormalizedStateEntities. Found: {attribute} in field "
+                f"{field}."
+            )
 
-    We never normalize the StatePerson entity, and classes that are excluded from
-    pipelines cannot be normalized.
-    """
-    return [
-        state_entities.StatePerson.__name__
-    ] + _get_entity_class_names_excluded_from_pipelines()
+        schema_fields_for_additional_fields.append(
+            schema_field_for_attribute(field_name=field, attribute=attribute)
+        )
+
+    base_class: Type[BuildableAttr] = entity_cls.__base__
+    base_schema_class = schema_utils.get_state_database_entity_with_name(
+        base_class.__name__
+    )
+
+    return (
+        BigQueryClientImpl.schema_for_sqlalchemy_table(
+            get_table_class_by_name(
+                base_schema_class.__tablename__, list(get_state_table_classes())
+            )
+        )
+        + schema_fields_for_additional_fields
+    )

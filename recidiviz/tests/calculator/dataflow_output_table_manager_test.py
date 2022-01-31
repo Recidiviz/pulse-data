@@ -15,8 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests the dataflow_output_table_manager."""
+import os
 import unittest
-from typing import cast
+from typing import List, cast
 from unittest import mock
 
 from google.cloud import bigquery
@@ -33,10 +34,17 @@ from recidiviz.calculator.pipeline.recidivism.metrics import (
     ReincarcerationRecidivismRateMetric,
 )
 from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric
+from recidiviz.common.constants.states import StateCode
+
+FAKE_PRODUCTION_TEMPLATES_PATH = os.path.join(
+    os.path.dirname(__file__),
+    "fake_production_calculation_pipeline_templates.yaml",
+)
 
 
 class DataflowMetricTableManagerTest(unittest.TestCase):
-    """Tests for dataflow_output_table_manager.py."""
+    """Tests the update_dataflow_metric_tables_schemas function in
+    dataflow_output_table_manager.py."""
 
     def setUp(self) -> None:
 
@@ -152,3 +160,97 @@ class DataflowMetricTableManagerTest(unittest.TestCase):
             metric_type_from_class = metric_instance.metric_type
 
             self.assertEqual(metric_type_from_class, metric_type)
+
+
+class NormalizedStateTableManagerTest(unittest.TestCase):
+    """Tests for dataflow_output_table_manager.py."""
+
+    def setUp(self) -> None:
+
+        self.project_id = "fake-recidiviz-project"
+        self.mock_view_dataset_name = "my_views_dataset"
+        self.mock_dataset = bigquery.dataset.DatasetReference(
+            self.project_id, self.mock_view_dataset_name
+        )
+
+        self.dataflow_config_patcher = mock.patch(
+            "recidiviz.calculator.dataflow_output_table_manager.dataflow_config"
+        )
+        self.mock_dataflow_config = self.dataflow_config_patcher.start()
+
+        self.mock_production_template_yaml = FAKE_PRODUCTION_TEMPLATES_PATH
+        self.mock_dataflow_config.PRODUCTION_TEMPLATES_PATH = (
+            self.mock_production_template_yaml
+        )
+
+        self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
+        self.project_id_patcher.start().return_value = self.project_id
+        self.project_number_patcher = patch("recidiviz.utils.metadata.project_number")
+        self.project_number_patcher.start().return_value = "123456789"
+
+        self.bq_client_patcher = mock.patch(
+            "recidiviz.calculator.dataflow_output_table_manager.BigQueryClientImpl"
+        )
+        self.mock_client = self.bq_client_patcher.start().return_value
+
+        self.mock_client.dataset_ref_for_id.return_value = self.mock_dataset
+        self.mock_client.project_id.return_value = self.project_id
+
+    def tearDown(self) -> None:
+        self.bq_client_patcher.stop()
+        self.project_id_patcher.stop()
+        self.project_number_patcher.stop()
+
+    def test_update_normalized_state_schemas_create_table(self) -> None:
+        """Test that update_normalized_state_schema calls the client to create a
+        new table when the table does not yet exist."""
+        self.mock_client.table_exists.return_value = False
+
+        dataflow_output_table_manager.update_normalized_state_schema(
+            state_code=StateCode.US_XX
+        )
+
+        self.mock_client.create_table_with_schema.assert_called()
+        self.mock_client.update_schema.assert_not_called()
+
+    def test_update_normalized_state_schemas_update_table(self) -> None:
+        """Test that update_normalized_state_schema calls the client to update a
+        table when the table already exists."""
+        self.mock_client.table_exists.return_value = True
+
+        dataflow_output_table_manager.update_normalized_state_schema(
+            state_code=StateCode.US_XX
+        )
+
+        self.mock_client.update_schema.assert_called()
+        self.mock_client.create_table_with_schema.assert_not_called()
+
+    # pylint: disable=protected-access
+    def test_get_all_state_specific_normalized_state_datasets(self) -> None:
+        dataset_ids: List[str] = []
+        for state_code in dataflow_output_table_manager._get_pipeline_enabled_states():
+            dataset_ids.append(
+                dataflow_output_table_manager.get_state_specific_normalized_state_dataset_for_state(
+                    state_code
+                )
+            )
+
+        expected_dataset_ids = ["us_xx_normalized_state", "us_yy_normalized_state"]
+
+        self.assertCountEqual(expected_dataset_ids, dataset_ids)
+
+    def test_get_all_state_specific_normalized_state_datasets_with_prefix(self) -> None:
+        dataset_ids: List[str] = []
+        for state_code in dataflow_output_table_manager._get_pipeline_enabled_states():
+            dataset_ids.append(
+                dataflow_output_table_manager.get_state_specific_normalized_state_dataset_for_state(
+                    state_code, normalized_dataset_prefix="test_prefix"
+                )
+            )
+
+        expected_dataset_ids = [
+            "test_prefix_us_xx_normalized_state",
+            "test_prefix_us_yy_normalized_state",
+        ]
+
+        self.assertCountEqual(expected_dataset_ids, dataset_ids)

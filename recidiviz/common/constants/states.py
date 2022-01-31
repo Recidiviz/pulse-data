@@ -140,6 +140,7 @@ class _RealStateCode(_SharedStateCode):
 
 TEST_STATE_CODE = "US_XX"
 TEST_STATE_CODE_DOCS = "US_WW"
+TEST_STATE_CODE_2 = "US_YY"
 
 """
     US_XX serves as a generic placeholder state for any state that is to be ingested and
@@ -158,6 +159,23 @@ TEST_STATE_INFO = {
             "fips": "99",
             "name": "Test State",
             "abbr": "XX",
+            "is_territory": False,
+            "is_obsolete": False,
+            "is_contiguous": False,
+            "is_continental": True,
+            "statehood_year": 9999,
+            "capital": "Test",
+            "capital_tz": "America/Test",
+            "ap_abbr": "Test",
+            "time_zones": ["America/Test", "America/Test"],
+            "name_metaphone": "TEST",
+        }
+    ),
+    TEST_STATE_CODE_2: us.states.State(
+        **{
+            "fips": "77",
+            "name": "Test State 2",
+            "abbr": "YY",
             "is_territory": False,
             "is_obsolete": False,
             "is_contiguous": False,
@@ -251,6 +269,7 @@ class _FakeStateCode(_SharedStateCode):
     # Test codes
     US_WW = TEST_STATE_CODE_DOCS
     US_XX = TEST_STATE_CODE
+    US_YY = TEST_STATE_CODE_2
 
     @classmethod
     def _inner_get_state(cls, state_code: str) -> Optional[us.states.State]:
@@ -337,6 +356,7 @@ if typing.TYPE_CHECKING:
         # Test codes
         US_WW = TEST_STATE_CODE_DOCS
         US_XX = TEST_STATE_CODE
+        US_YY = TEST_STATE_CODE_2
 
         @classmethod
         def _inner_get_state(cls, state_code: str) -> Optional[us.states.State]:

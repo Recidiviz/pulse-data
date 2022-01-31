@@ -215,6 +215,7 @@ def main() -> int:
             valid_module_prefixes=make_module_matcher(
                 {
                     "recidiviz.big_query.big_query_view",
+                    "recidiviz.big_query.big_query_utils",
                     "recidiviz.calculator",
                     "recidiviz.common",
                     # TODO(#6795): Get rid of this dependency
