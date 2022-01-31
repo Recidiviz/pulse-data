@@ -404,11 +404,13 @@ class CachedClassStructureReferenceTests(unittest.TestCase):
                     attribute,
                     BuildableAttrFieldType.ENUM,
                     enum_cls,
+                    None,
                 )
             elif "date" in attribute.name:
                 expected_attr_field_type_ref[name] = CachedAttributeInfo(
                     attribute,
                     BuildableAttrFieldType.DATE,
+                    None,
                     None,
                 )
             elif "bool" in attribute.name:
@@ -416,17 +418,20 @@ class CachedClassStructureReferenceTests(unittest.TestCase):
                     attribute,
                     BuildableAttrFieldType.BOOLEAN,
                     None,
+                    None,
                 )
             elif "forward_ref" in attribute.name:
                 expected_attr_field_type_ref[name] = CachedAttributeInfo(
                     attribute,
                     BuildableAttrFieldType.FORWARD_REF,
                     None,
+                    "FakeBuildableAttr",
                 )
             elif "list" in attribute.name:
                 expected_attr_field_type_ref[name] = CachedAttributeInfo(
                     attribute,
                     BuildableAttrFieldType.LIST,
+                    None,
                     None,
                 )
             elif "required" in attribute.name:
@@ -434,11 +439,13 @@ class CachedClassStructureReferenceTests(unittest.TestCase):
                     attribute,
                     BuildableAttrFieldType.STRING,
                     None,
+                    None,
                 )
             else:
                 expected_attr_field_type_ref[name] = CachedAttributeInfo(
                     attribute,
                     BuildableAttrFieldType.OTHER,
+                    None,
                     None,
                 )
 

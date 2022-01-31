@@ -24,7 +24,7 @@ from typing import List, Optional, Type
 
 import attr
 
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
+from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager import (
     EntityNormalizationManager,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_supervision_period_index import (

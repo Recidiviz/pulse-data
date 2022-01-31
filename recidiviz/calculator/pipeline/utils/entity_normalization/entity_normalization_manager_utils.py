@@ -18,11 +18,11 @@
 import datetime
 from typing import List, Optional, Tuple, Type, Union
 
+from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager import (
+    EntityNormalizationManager,
+)
 from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_period_normalization_manager import (
     IncarcerationPeriodNormalizationManager,
-)
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
-    EntityNormalizationManager,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_supervision_period_index import (
     NormalizedSupervisionPeriodIndex,

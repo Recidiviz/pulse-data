@@ -916,7 +916,7 @@ def get_non_flat_property_class_name(
     if not isinstance(obj, Entity) and not isinstance(obj, list):
         raise TypeError(f"Unexpected type [{type(obj)}]")
 
-    if is_property_flat_field(obj, property_name):
+    if _is_property_flat_field(obj, property_name):
         return None
 
     parent_cls = obj.__class__
@@ -970,7 +970,7 @@ def is_property_forward_ref(obj: Union[list, Entity], property_name: str) -> boo
 
 # TODO(#1886): We should not consider objects which are not ForwardRefs, but are properly typed to an entity cls
 #  as a flat field
-def is_property_flat_field(obj: Union[list, Entity], property_name: str) -> bool:
+def _is_property_flat_field(obj: Union[list, Entity], property_name: str) -> bool:
     """Returns true if the attribute corresponding to |property_name| on the
     given object is a flat field (not a List, attr class, or ForwardRef)."""
 
@@ -985,33 +985,3 @@ def is_property_flat_field(obj: Union[list, Entity], property_name: str) -> bool
         )
 
     return is_flat_field(attribute)
-
-
-# TODO(#10723): Delete this in favor of the existing utils in attr_mixins.py
-def get_ref_fields_with_reference_class_names(
-    entity_cls: Type[Entity], class_names_to_ignore: Optional[List[str]] = None
-) -> Dict[str, str]:
-    """Returns a dictionary mapping each field on the class that references another
-    entity to the entity class name referenced in the attribute."""
-    class_names_to_ignore = class_names_to_ignore or []
-
-    fields_to_classes: Dict[str, str] = {}
-
-    for field, attribute in attr.fields_dict(entity_cls).items():
-        if is_flat_field(attribute):
-            # This attribute is not a reference to another Entity
-            continue
-
-        ref_name = get_non_flat_attribute_class_name(attribute)
-        if not ref_name:
-            raise ValueError(
-                "Expected class name of reference in non-flat attribute "
-                f"{attribute}. Found none."
-            )
-
-        if ref_name in class_names_to_ignore:
-            continue
-
-        fields_to_classes[field] = ref_name
-
-    return fields_to_classes

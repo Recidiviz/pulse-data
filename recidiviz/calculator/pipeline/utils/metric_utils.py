@@ -24,16 +24,8 @@ from typing import Any, Dict, Generic, List, Optional, Type, TypeVar
 import attr
 from google.cloud import bigquery
 
+from recidiviz.big_query.big_query_utils import schema_field_for_attribute
 from recidiviz.common.attr_mixins import BuildableAttr
-from recidiviz.common.attr_utils import (
-    is_bool,
-    is_date,
-    is_enum,
-    is_float,
-    is_int,
-    is_list,
-    is_str,
-)
 from recidiviz.common.constants.person_characteristics import Gender
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType
 
@@ -89,35 +81,19 @@ class RecidivizMetric(Generic[RecidivizMetricTypeT], BuildableAttr):
 
     @classmethod
     def bq_schema_for_metric_table(cls) -> List[bigquery.SchemaField]:
-        """Returns the necessary BigQuery schema for the RecidivizMetric, which is a list of SchemaField objects
-        containing the column name and value type for each attribute on the RecidivizMetric."""
-
-        def schema_type_for_attribute(attribute: Any) -> str:
-            # Race and ethnicity fields are the only ones that support list form. These
-            # are converted to comma-separated lists stored as strings in BigQuery.
-            if is_enum(attribute) or is_list(attribute) or is_str(attribute):
-                return bigquery.enums.SqlTypeNames.STRING.value
-            if is_int(attribute):
-                return bigquery.enums.SqlTypeNames.INTEGER.value
-            if is_float(attribute):
-                return bigquery.enums.SqlTypeNames.FLOAT.value
-            if is_date(attribute):
-                return bigquery.enums.SqlTypeNames.DATE.value
-            if is_bool(attribute):
-                return bigquery.enums.SqlTypeNames.BOOLEAN.value
-            raise ValueError(f"Unhandled attribute type for attribute: {attribute}")
-
+        """Returns the necessary BigQuery schema for the RecidivizMetric, which is a
+        list of SchemaField objects containing the column name and value type for
+        each attribute on the RecidivizMetric."""
         return [
-            bigquery.SchemaField(
-                field, schema_type_for_attribute(attribute), mode="NULLABLE"
-            )
+            schema_field_for_attribute(field_name=field, attribute=attribute)
             for field, attribute in attr.fields_dict(cls).items()
         ]
 
     @classmethod
     @abc.abstractmethod
     def get_description(cls) -> str:
-        """Should be implemented by metric subclasses to return a description of the metric."""
+        """Should be implemented by metric subclasses to return a description of the
+        metric."""
 
 
 @attr.s

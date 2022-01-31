@@ -148,8 +148,8 @@ function pre_deploy_configure_infrastructure {
         run_cmd pipenv run python -m recidiviz.persistence.database.bq_refresh.big_query_table_manager --project_id ${PROJECT}
     fi
 
-    # Update the Dataflow metric table schemas and update all BigQuery views.
-    echo "Updating the BigQuery Dataflow metric table schemas to match the metric classes"
+    # Update the Dataflow output table schemas and update all BigQuery views.
+    echo "Updating the BigQuery Dataflow output table schemas to match the corresponding classes"
     verify_hash $COMMIT_HASH
     run_cmd pipenv run python -m recidiviz.calculator.dataflow_output_table_manager --project_id ${PROJECT}
 

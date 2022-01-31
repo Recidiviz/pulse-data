@@ -17,6 +17,8 @@
 """A fake implementation of BigQueryClient for use in direct ingest tests."""
 from typing import Any, Callable, Dict, Iterator, List, Optional, Sequence
 
+import sqlalchemy
+from google.api_core.future.polling import PollingFuture
 from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_client import (
@@ -283,5 +285,29 @@ class FakeDirectIngestBigQueryClient(BigQueryClient):
         source_dataset_id: str,
         destination_dataset_id: str,
         timeout_sec: float = DEFAULT_CROSS_REGION_COPY_TIMEOUT_SEC,
+    ) -> None:
+        raise ValueError("Must be implemented for use in tests.")
+
+    def backup_dataset_tables_if_dataset_exists(
+        self, dataset_id: str
+    ) -> Optional[bigquery.DatasetReference]:
+        raise ValueError("Must be implemented for use in tests.")
+
+    def update_datasets_to_match_reference_schema(
+        self, reference_dataset_id: str, stale_schema_dataset_ids: List[str]
+    ) -> None:
+        raise ValueError("Must be implemented for use in tests.")
+
+    @staticmethod
+    def schema_for_sqlalchemy_table(
+        table: sqlalchemy.Table, add_state_code_field: bool = False
+    ) -> List[bigquery.SchemaField]:
+        raise ValueError("Must be implemented for use in tests.")
+
+    def wait_for_big_query_jobs(self, jobs: Sequence[PollingFuture]) -> List[Any]:
+        raise ValueError("Must be implemented for use in tests.")
+
+    def copy_dataset_tables(
+        self, source_dataset_id: str, destination_dataset_id: str
     ) -> None:
         raise ValueError("Must be implemented for use in tests.")

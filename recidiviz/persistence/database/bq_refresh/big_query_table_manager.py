@@ -60,7 +60,7 @@ def update_bq_tables_schemas_for_schema_type(schema_type: SchemaType) -> None:
             schema_type_to_schema_base(schema_type)
         ) and is_association_table(table.name)
 
-        schema_for_table = export_config.bq_schema_for_table(
+        schema_for_table = BigQueryClientImpl.schema_for_sqlalchemy_table(
             table, add_state_code_field=add_state_code_field
         )
 

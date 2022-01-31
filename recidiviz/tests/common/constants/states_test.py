@@ -45,13 +45,14 @@ class TestStates(unittest.TestCase):
     def test_hasStates_in_test(self) -> None:
         self.mock_in_test.return_value = True
 
-        # There are 53 states because we are in tests, so US_XX and US_WW are valid
-        # values.
-        self.assertEqual(53, len(states.StateCode))
+        # There are 54 states because we are in tests, so US_WW, US_XX, and US_YY are
+        # valid values.
+        self.assertEqual(54, len(states.StateCode))
         self.assertEqual("US_AK", list(states.StateCode)[0].value)
-        self.assertEqual("US_WY", list(states.StateCode)[-3].value)
-        self.assertEqual("US_WW", list(states.StateCode)[-2].value)
-        self.assertEqual("US_XX", list(states.StateCode)[-1].value)
+        self.assertEqual("US_WY", list(states.StateCode)[-4].value)
+        self.assertEqual("US_WW", list(states.StateCode)[-3].value)
+        self.assertEqual("US_XX", list(states.StateCode)[-2].value)
+        self.assertEqual("US_YY", list(states.StateCode)[-1].value)
 
     def test_getState(self) -> None:
         self.assertEqual(us.states.AK, states.StateCode.US_AK.get_state())
