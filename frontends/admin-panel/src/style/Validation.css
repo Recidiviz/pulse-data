@@ -24,6 +24,20 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
   cursor: pointer;
 }
 
+.validation-anchor-link > .ant-anchor-link-active > .ant-anchor-link-title {
+  color: black;
+}
+
+.validation-anchor-link:hover
+  > .ant-anchor-link-active
+  > .ant-anchor-link-title {
+  color: #1890ff;
+}
+
+.validation-anchor-link-child > .ant-anchor-link {
+  padding: 5px 0 5px 32px;
+}
+
 .ant-table-tbody > tr.validation-table-row > td.ant-table-cell {
   padding: 0px;
 }

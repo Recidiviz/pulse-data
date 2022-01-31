@@ -244,26 +244,40 @@ const ValidationStatusView = (): JSX.Element => {
       />
       <Title level={3}>Table of Contents</Title>
       <Anchor affix={false}>
-        <Anchor.Link href="#failures" title="Failure Summary">
+        <div>
+          <Anchor.Link
+            className="validation-anchor-link"
+            href="#summary-failures"
+            title="Failure Summary"
+          />
+        </div>
+        <div className="validation-anchor-link-child validation-anchor-link">
           <Anchor.Link href="#hard-failures" title="Hard Failures" />
+        </div>
+        <div className="validation-anchor-link-child validation-anchor-link">
           <Anchor.Link href="#soft-failures" title="Soft Failures" />
-        </Anchor.Link>
-        <Anchor.Link href="#full-results" title="Full Results">
-          {loading ? (
-            <Spin />
-          ) : (
-            categoryIds.map((categoryId) => {
-              return (
+        </div>
+
+        <div className="validation-anchor-link">
+          <Anchor.Link href="#full-results" title="Full Results" />
+        </div>
+        {loading ? (
+          <Spin />
+        ) : (
+          categoryIds.map((categoryId) => {
+            return (
+              <div className="validation-anchor-link-child validation-anchor-link">
                 <Anchor.Link
                   href={`#${categoryId}`}
                   title={readableNameForCategoryId(categoryId)}
                 />
-              );
-            })
-          )}
-        </Anchor.Link>
+              </div>
+            );
+          })
+        )}
       </Anchor>
-      <Title id="failures" level={1}>
+
+      <Title id="summary-failures" level={1}>
         Failure Summary
       </Title>
       <Title id="hard-failures" level={2}>
