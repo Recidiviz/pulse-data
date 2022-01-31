@@ -22,7 +22,6 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
 )
-from recidiviz.utils import environment
 
 
 class UsMeController(BaseDirectIngestController):
@@ -36,6 +35,4 @@ class UsMeController(BaseDirectIngestController):
         super().__init__(ingest_bucket_path)
 
     def get_file_tag_rank_list(self) -> List[str]:
-        return ["CLIENT"] + (
-            ["CURRENT_STATUS_incarceration_periods"] if not environment.in_gcp() else []
-        )
+        return ["CLIENT", "CURRENT_STATUS_incarceration_periods"]
