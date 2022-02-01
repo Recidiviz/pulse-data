@@ -188,7 +188,7 @@ def add_age_groups(age_field: str = "age") -> str:
                 WHEN {age_field} >= 50 and {age_field} <= 54 THEN "50-54"
                 WHEN {age_field} >= 55 and {age_field} <= 59 THEN "55-59"
                 WHEN {age_field} >= 60 THEN "60+"
-                WHEN {age_field} is null THEN NULL
+                WHEN {age_field} is null THEN "UNKNOWN"
             end as age_group,
     """
 
@@ -258,3 +258,19 @@ def first_known_location(location_expr: str) -> str:
     return f"""IF(CONTAINS_SUBSTR(SPLIT({location_expr},"|")[OFFSET(0)], "UNKNOWN"),
         SPLIT({location_expr},"|")[OFFSET(1)],
         SPLIT({location_expr},"|")[OFFSET(0)])"""
+
+
+def create_buckets_with_cap(bucket_expr: str, max_value: int) -> str:
+    """Given a positive integer value and an expression that evaluates to a positive integer,
+    returns a case statement that returns the expression value cast to a string if less than
+    the max value and returns f'{max_value}+' otherwise."""
+
+    return f"IF({bucket_expr} < {max_value}, CAST({bucket_expr} AS STRING), '{max_value}+')"
+
+
+def convert_days_to_years(day_expr: str) -> str:
+    """Given a sql expression that resolves to a number of days, returns an expression
+    that transforms it into an approximate number of years."""
+
+    # 365.256 days in a year
+    return f"CAST(FLOOR({day_expr}/365.256) AS INT64)"

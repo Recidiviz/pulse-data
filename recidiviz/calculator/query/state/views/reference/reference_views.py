@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2019 Recidiviz, Inc.
+# Copyright (C) 2022 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -56,6 +56,9 @@ from recidiviz.calculator.query.state.views.reference.incarceration_location_ids
 )
 from recidiviz.calculator.query.state.views.reference.incarceration_period_judicial_district_association import (
     INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.reference.liberty_to_prison_transitions import (
+    LIBERTY_TO_PRISON_TRANSITIONS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.reference.overdue_discharge_alert_exclusions import (
     OVERDUE_DISCHARGE_ALERT_EXCLUSIONS_VIEW_BUILDER,
@@ -140,6 +143,7 @@ REFERENCE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     SINGLE_DAY_INCARCERATION_POPULATION_FOR_SPOTLIGHT_VIEW_BUILDER,
     SINGLE_DAY_SUPERVISION_POPULATION_FOR_SPOTLIGHT_VIEW_BUILDER,
     AGENT_EXTERNAL_ID_TO_FULL_NAMES_VIEW_BUILDER,
+    LIBERTY_TO_PRISON_TRANSITIONS_VIEW_BUILDER,
     SUPERVISION_TO_LIBERTY_TRANSITIONS_VIEW_BUILDER,
     SUPERVISION_TO_PRISON_TRANSITIONS_VIEW_BUILDER,
     PRISON_TO_SUPERVISION_TRANSITIONS_VIEW_BUILDER,
