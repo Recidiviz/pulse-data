@@ -20,7 +20,7 @@
 import datetime
 import inspect
 from enum import Enum
-from typing import Any, Callable, List, Optional, Type, Union
+from typing import Any, Callable, Optional, Type, Union
 
 import attr
 
@@ -276,71 +276,51 @@ def _is_type_is_union(
 def _get_type_name_from_type(attr_type: Type) -> str:
     if _is_forward_ref(attr_type):
         return attr_type.__forward_arg__
-    return attr_type.__name__
+    if hasattr(attr_type, "__name__"):
+        return attr_type.__name__
+    if hasattr(attr_type, "_name"):
+        # This is the way to access the inner type on a List class
+        return attr_type._name  # pylint: disable=protected-access
+    raise ValueError(f"Cannot parse type name for type: {attr_type}")
 
 
 def get_non_flat_attribute_class_name(attribute: attr.Attribute) -> Optional[str]:
     """Returns the the inner class name for a type that is either List[<type>] or
     Optional[<type>], or None if the attribute type does not match either format.
-    """
-    attr_type = attribute.type
 
-    if not attr_type:
+    If something is a nested List or Optional type, returns the innermost type if it
+    is an object reference type.
+
+    Examples:
+        List[str] -> None
+        List[List[str]] -> None
+        List["StatePerson"] -> "StatePerson"
+        Optional[List["StatePerson"]] -> "StatePerson"
+        Optional["StatePerson"] -> "StatePerson"
+    """
+
+    if not attribute.type:
         raise ValueError(f"Unexpected None type for attribute [{attribute}]")
 
-    if _is_list(attr_type):
-        list_elem_type = attr_type.__args__[0]  # type: ignore
-        return _get_type_name_from_type(list_elem_type)
+    attr_type: Type[Any] = attribute.type
 
-    if _is_union(attr_type):
-        type_names = [
-            _get_type_name_from_type(t) for t in attr_type.__args__
-        ]  # type: ignore
+    while True:
+        if _is_forward_ref(attr_type):
+            return attr_type.__forward_arg__
+        if _is_list(attr_type):
+            attr_type = attr_type.__args__[0]  # type: ignore
+            continue
 
-        type_names = [t for t in type_names if t != "NoneType"]
-        if len(type_names) > 1:
-            raise ValueError(f"Multiple nonnull types found: {type_names}")
-        if not type_names:
-            raise ValueError("Expected at least one nonnull type")
-        return type_names[0]
+        if _is_union(attr_type):
+            inner_types = [
+                t
+                for t in attr_type.__args__
+                if _get_type_name_from_type(t) not in {"NoneType"}
+            ]
+            if len(inner_types) > 1:
+                raise ValueError(f"Multiple nonnull types found: {inner_types}")
+            attr_type = inner_types[0]
+            continue
 
-    if _is_forward_ref(attr_type):
-        return _get_type_name_from_type(attr_type)
-
-    return None
-
-
-def get_forward_ref_class_name(attribute: attr.Attribute) -> Optional[str]:
-    """Returns the the inner class name for a type that is either List[<type>] or
-    Optional[<type>], if the attribute stores a reference to another type.
-
-    Returns None if the attribute type does not match either format, or if the
-    attribute does not store a reference to another type.
-    """
-    attr_type = attribute.type
-
-    if not attr_type:
-        raise ValueError(f"Unexpected None type for attribute [{attribute}]")
-
-    if _is_list(attr_type):
-        list_elem_type = attr_type.__args__[0]  # type: ignore
-        if _is_forward_ref(list_elem_type):
-            return list_elem_type.__forward_arg__
-
-    if _is_union(attr_type):
-        type_names: List[str] = []
-
-        for t in attr_type.__args__:
-            if _is_forward_ref(t):
-                type_names.append(t.__forward_arg__)
-
-        if len(type_names) > 1:
-            raise ValueError(f"Multiple nonnull types found: {type_names}")
-        if not type_names:
-            return None
-        return type_names[0]
-
-    if _is_forward_ref(attr_type):
-        return attr_type.__forward_arg__
-
+        break
     return None

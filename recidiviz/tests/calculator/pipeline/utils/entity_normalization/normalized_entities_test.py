@@ -37,7 +37,7 @@ from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entitie
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
     fields_unique_to_normalized_class,
 )
-from recidiviz.common.attr_mixins import get_ref_fields_with_reference_class_names
+from recidiviz.common.attr_mixins import attr_field_referenced_cls_name_for_field_name
 from recidiviz.common.attr_utils import is_flat_field
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import (
@@ -192,9 +192,13 @@ def classes_in_normalized_entity_subtree(
 
     while unexplored_nodes:
         node_entity_class = unexplored_nodes.pop()
-        for related_class_name in get_ref_fields_with_reference_class_names(
-            node_entity_class, class_names_to_ignore=class_names_to_ignore
-        ).values():
+        for field in attr.fields_dict(node_entity_class):
+            related_class_name = attr_field_referenced_cls_name_for_field_name(
+                node_entity_class, field
+            )
+            if not related_class_name or related_class_name in class_names_to_ignore:
+                continue
+
             related_class = get_entity_class_in_module_with_name(
                 state_entities, related_class_name
             )

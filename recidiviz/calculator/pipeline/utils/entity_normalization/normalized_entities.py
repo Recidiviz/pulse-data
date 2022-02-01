@@ -15,18 +15,15 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Classes for the entities that we normalize."""
-from typing import Any, Callable, List, Optional, Type
+from typing import Any, Callable, Dict, List, Optional, Type
 
 import attr
 
 from recidiviz.calculator.pipeline.utils.beam_utils.extractor_utils import (
     get_entity_class_names_excluded_from_pipelines,
 )
-from recidiviz.common.attr_mixins import (
-    BuildableAttr,
-    get_ref_fields_with_reference_class_names,
-)
-from recidiviz.common.attr_utils import is_list
+from recidiviz.common.attr_mixins import BuildableAttr
+from recidiviz.common.attr_utils import get_non_flat_attribute_class_name, is_list
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
@@ -84,6 +81,22 @@ def get_entity_class_names_excluded_from_normalization() -> List[str]:
     return [StatePerson.__name__] + get_entity_class_names_excluded_from_pipelines()
 
 
+def _get_ref_fields_with_reference_class_names(
+    cls: Type, class_names_to_ignore: Optional[List[str]] = None
+) -> Dict[str, str]:
+    """Returns a dictionary mapping each field on the class that is a forward ref to
+    the class name referenced in the attribute."""
+    class_names_to_ignore = class_names_to_ignore or []
+
+    return_value: Dict[str, str] = {}
+    for field, attribute in attr.fields_dict(cls).items():
+        referenced_cls_name = get_non_flat_attribute_class_name(attribute)
+        if referenced_cls_name and referenced_cls_name not in class_names_to_ignore:
+            return_value[field] = referenced_cls_name
+
+    return return_value
+
+
 def add_normalized_entity_validator_to_ref_fields(
     normalized_class: Type, fields: List[attr.Attribute]
 ) -> List[attr.Attribute]:
@@ -104,7 +117,7 @@ def add_normalized_entity_validator_to_ref_fields(
             f"Normalized class [{normalized_class}] does not inherit from Entity."
         )
 
-    ref_field_names = get_ref_fields_with_reference_class_names(
+    ref_field_names = _get_ref_fields_with_reference_class_names(
         normalized_class,
         class_names_to_ignore=get_entity_class_names_excluded_from_normalization(),
     )

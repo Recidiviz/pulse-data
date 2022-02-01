@@ -62,20 +62,13 @@ def create_or_update_normalized_state_sandbox(
 
     sandbox_dataset_ref = bq_client.dataset_ref_for_id(sandbox_dataset_id)
     if bq_client.dataset_exists(sandbox_dataset_ref) and not allow_overwrite:
-        if __name__ == "__main__":
-            logging.error(
-                "Dataset %s already exists in project %s. To overwrite, "
-                "set --allow_overwrite.",
-                sandbox_dataset_id,
-                bq_client.project_id,
-            )
-            sys.exit(1)
-        else:
-            raise ValueError(
-                f"{sandbox_dataset_id} already exists in project "
-                f"{bq_client.project_id}. Cannot create a normalized state sandbox "
-                f"in an existing dataset."
-            )
+        logging.error(
+            "Dataset %s already exists in project %s. To overwrite, "
+            "set --allow_overwrite.",
+            sandbox_dataset_id,
+            bq_client.project_id,
+        )
+        sys.exit(1)
 
     bq_client.create_dataset_if_necessary(
         sandbox_dataset_ref, TEMP_DATAFLOW_DATASET_DEFAULT_TABLE_EXPIRATION_MS
@@ -134,8 +127,6 @@ if __name__ == "__main__":
     known_args, _ = parse_arguments(sys.argv)
 
     state = StateCode(known_args.state_code)
-
-    print(state)
 
     with local_project_id_override(known_args.project_id):
         create_or_update_normalized_state_sandbox(
