@@ -934,40 +934,6 @@ def get_non_flat_property_class_name(
     return property_class_name
 
 
-def is_property_list(obj: Union[list, Entity], property_name: str) -> bool:
-    """Returns true if the attribute corresponding to |property_name| on the
-    given object is a List type."""
-
-    if not isinstance(obj, Entity) and not isinstance(obj, list):
-        raise TypeError(f"Unexpected type [{type(obj)}]")
-
-    attribute = attr.fields_dict(obj.__class__).get(property_name)
-
-    if not attribute:
-        raise ValueError(
-            f"Unexpected None attribute for property_name [{property_name}] on obj [{obj}]"
-        )
-
-    return is_list(attribute)
-
-
-def is_property_forward_ref(obj: Union[list, Entity], property_name: str) -> bool:
-    """Returns true if the attribute corresponding to |property_name| on the
-    given object is a ForwardRef type."""
-
-    if not isinstance(obj, Entity) and not isinstance(obj, list):
-        raise TypeError(f"Unexpected type [{type(obj)}]")
-
-    attribute = attr.fields_dict(obj.__class__).get(property_name)
-
-    if not attribute:
-        raise ValueError(
-            f"Unexpected None attribute for property_name [{property_name}] on obj [{obj}]"
-        )
-
-    return is_forward_ref(attribute)
-
-
 # TODO(#1886): We should not consider objects which are not ForwardRefs, but are properly typed to an entity cls
 #  as a flat field
 def _is_property_flat_field(obj: Union[list, Entity], property_name: str) -> bool:

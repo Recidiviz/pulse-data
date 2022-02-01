@@ -20,7 +20,7 @@ from typing import List, Set, Type
 import attr
 from google.cloud import bigquery
 
-from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.big_query.big_query_utils import schema_field_for_attribute
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
     NormalizedStateEntity,
@@ -34,7 +34,10 @@ from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entitie
     NormalizedStateSupervisionViolationResponseDecisionEntry,
     NormalizedStateSupervisionViolationTypeEntry,
 )
-from recidiviz.common.attr_mixins import BuildableAttr
+from recidiviz.common.attr_mixins import (
+    BuildableAttr,
+    attr_field_attribute_for_field_name,
+)
 from recidiviz.common.attr_utils import is_flat_field
 from recidiviz.persistence.database import schema_utils
 from recidiviz.persistence.database.schema_utils import (
@@ -80,9 +83,8 @@ def bq_schema_for_normalized_state_entity(
 
     schema_fields_for_additional_fields: List[bigquery.SchemaField] = []
 
-    for field, attribute in attr.fields_dict(entity_cls).items():
-        if field not in unique_fields_on_normalized_class:
-            continue
+    for field in unique_fields_on_normalized_class:
+        attribute = attr_field_attribute_for_field_name(entity_cls, field)
 
         if not is_flat_field(attribute):
             raise ValueError(
@@ -101,7 +103,7 @@ def bq_schema_for_normalized_state_entity(
     )
 
     return (
-        BigQueryClientImpl.schema_for_sqlalchemy_table(
+        BigQueryClient.schema_for_sqlalchemy_table(
             get_table_class_by_name(
                 base_schema_class.__tablename__, list(get_state_table_classes())
             )
