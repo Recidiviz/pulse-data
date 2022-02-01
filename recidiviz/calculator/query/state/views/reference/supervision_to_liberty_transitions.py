@@ -32,6 +32,7 @@ SUPERVISION_TO_LIBERTY_TRANSITIONS_DESCRIPTION = (
 )
 
 SUPERVISION_TO_LIBERTY_TRANSITIONS_QUERY_TEMPLATE = """
+    /*{description}*/
     SELECT
         state_code,
         person_id,
