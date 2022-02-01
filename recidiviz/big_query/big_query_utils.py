@@ -14,10 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Helper functions for creating BigQuery views."""
+"""Helper functions for creating BigQuery views and manipulating BigQuery contents"""
 import datetime
 import logging
 import string
+from typing import Any, Dict
 
 import attr
 from google.cloud import bigquery
@@ -136,3 +137,13 @@ def _remove_non_printable_characters(column_name: str) -> str:
             column_name.__repr__(),
         )
     return fixed_column
+
+
+def transform_dict_to_bigquery_row(data_point: Dict[str, Any]) -> bigquery.table.Row:
+    """Transforms a dictionary back to a BigQuery row."""
+    values = []
+    indices = {}
+    for idx, (key, value) in enumerate(data_point.items()):
+        values.append(value)
+        indices[key] = idx
+    return bigquery.table.Row(values, indices)

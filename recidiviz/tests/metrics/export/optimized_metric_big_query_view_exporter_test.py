@@ -24,6 +24,7 @@ from google.cloud import bigquery
 from mock import call, create_autospec, patch
 
 from recidiviz.big_query.big_query_client import BigQueryClient
+from recidiviz.big_query.big_query_utils import transform_dict_to_bigquery_row
 from recidiviz.big_query.export.export_query_config import ExportBigQueryViewConfig
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
 from recidiviz.metrics.export import optimized_metric_big_query_view_exporter
@@ -454,7 +455,9 @@ class ConvertQueryResultsTest(unittest.TestCase):
         mock_bq_client.dataset_ref_for_id.return_value = mock_dataset_ref
         mock_bq_client.get_table.return_value = table
 
-        all_rows = _transform_dicts_to_bq_row(_DATA_POINTS)
+        all_rows = [
+            transform_dict_to_bigquery_row(data_point) for data_point in _DATA_POINTS
+        ]
 
         mock_query_job = create_autospec(bigquery.QueryJob)
         mock_query_job.result.side_effect = [
@@ -465,13 +468,15 @@ class ConvertQueryResultsTest(unittest.TestCase):
         def fake_paged_process_fn(
             query_job: bigquery.QueryJob,
             _page_size: int,
-            process_fn: Callable[[bigquery.table.Row], None],
+            process_page_fn: Callable[[List[bigquery.table.Row]], None],
         ) -> None:
+            rows: List[bigquery.table.Row] = []
             for row in query_job.result(
                 max_results=optimized_metric_big_query_view_exporter.QUERY_PAGE_SIZE,
                 start_index=0,
             ):
-                process_fn(row)
+                rows.append(row)
+            process_page_fn(rows)
 
         mock_bq_client.paged_read_and_process.side_effect = fake_paged_process_fn
         mock_validator = create_autospec(OptimizedMetricBigQueryViewExportValidator)
@@ -544,16 +549,3 @@ class TestInitializeDimensionManifest(unittest.TestCase):
                     # Makes sure that all of the dimensions are the full dimension column
                     # string, and that the dimensions haven't been split into chars
                     self.assertNotIn("_", dimension_manifest_keys)
-
-
-def _transform_dicts_to_bq_row(data_points: List[Dict]) -> List[bigquery.table.Row]:
-    rows: List[bigquery.table.Row] = []
-    for data_point in data_points:
-        values = []
-        indices = {}
-        for key, value in data_point.items():
-            values.append(value)
-            indices[key] = len(values) - 1
-        rows.append(bigquery.table.Row(values, indices))
-
-    return rows
