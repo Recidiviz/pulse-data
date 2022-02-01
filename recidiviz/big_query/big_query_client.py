@@ -314,7 +314,7 @@ class BigQueryClient:
         self,
         query_job: bigquery.QueryJob,
         page_size: int,
-        process_fn: Callable[[bigquery.table.Row], None],
+        process_page_fn: Callable[[List[bigquery.table.Row]], None],
     ) -> None:
         """Reads the given result set from the given query job in pages to limit how many rows are read into memory at
         any given time, processing the results of each row with the given callable.
@@ -322,7 +322,7 @@ class BigQueryClient:
         Args:
             query_job: the query job from which to process results.
             page_size: the maximum number of rows to read in at a time.
-            process_fn: a callable function which takes in one row from the result set and performs some operation.
+            process_page_fn: a callable function which takes in the paged rows and performs some operation.
         """
 
     @abc.abstractmethod
@@ -385,6 +385,7 @@ class BigQueryClient:
         source_data_filter_clause: Optional[str] = None,
         hydrate_missing_columns_with_null: bool = False,
         allow_field_additions: bool = False,
+        write_disposition: bigquery.WriteDisposition = bigquery.WriteDisposition.WRITE_APPEND,
     ) -> bigquery.QueryJob:
         """Inserts rows from the source table into the destination table. May include an optional filter clause
         to only insert a subset of rows into the destination table.
@@ -403,6 +404,8 @@ class BigQueryClient:
                 schema in the source table does not exactly match the destination table. Defaults to False. If this is
                 False, the request will fail if the destination table is missing columns that the source table/query
                 has.
+            write_disposition: Indicates whether BigQuery should overwrite the table completely (WRITE_TRUNCATE) or
+                adds to the table with new rows (WRITE_APPEND). By default, WRITE_APPEND is used.
 
         Returns:
             A QueryJob which will contain the results once the query is complete.
@@ -980,10 +983,11 @@ class BigQueryClientImpl(BigQueryClient):
         self,
         query_job: bigquery.QueryJob,
         page_size: int,
-        process_fn: Callable[[bigquery.table.Row], None],
+        process_page_fn: Callable[[List[bigquery.table.Row]], None],
     ) -> None:
         logging.debug(
-            "Querying for first page of results to perform %s...", process_fn.__name__
+            "Querying for first page of results to perform %s...",
+            process_page_fn.__name__,
         )
 
         start_index = 0
@@ -992,27 +996,30 @@ class BigQueryClientImpl(BigQueryClient):
             page_rows: bigquery.table.RowIterator = query_job.result(
                 max_results=page_size, start_index=start_index
             )
-            logging.debug(
+            logging.info(
                 "Retrieved result set from query page of size [%d] starting at index [%d]",
                 page_size,
                 start_index,
             )
 
-            rows_processed = 0
+            num_rows_read = 0
+            processed_rows: List[bigquery.table.Row] = []
             for row in page_rows:
-                process_fn(row)
-                rows_processed += 1
+                num_rows_read += 1
+                processed_rows.append(row)
 
-            logging.debug(
+            logging.info(
                 "Processed [%d] rows from query page starting at index [%d]",
-                rows_processed,
+                num_rows_read,
                 start_index,
             )
-            if rows_processed == 0:
+            if num_rows_read == 0:
                 break
 
-            start_index += rows_processed
-            logging.debug("Processed [%d] rows...", start_index)
+            process_page_fn(processed_rows)
+
+            start_index += num_rows_read
+            logging.info("Processed [%d] rows...", start_index)
 
     def copy_view(
         self,
@@ -1207,6 +1214,7 @@ class BigQueryClientImpl(BigQueryClient):
         source_data_filter_clause: Optional[str] = None,
         hydrate_missing_columns_with_null: bool = False,
         allow_field_additions: bool = False,
+        write_disposition: bigquery.WriteDisposition = bigquery.WriteDisposition.WRITE_APPEND,
     ) -> bigquery.QueryJob:
 
         return self._insert_into_table_from_table_async(
@@ -1217,7 +1225,7 @@ class BigQueryClientImpl(BigQueryClient):
             source_data_filter_clause=source_data_filter_clause,
             hydrate_missing_columns_with_null=hydrate_missing_columns_with_null,
             allow_field_additions=allow_field_additions,
-            write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
+            write_disposition=write_disposition,
         )
 
     def load_into_table_from_cloud_storage_async(

@@ -36,6 +36,9 @@ from recidiviz.backup.backup_manager import backup_manager_blueprint
 from recidiviz.calculator.calculation_data_storage_manager import (
     calculation_data_storage_manager_blueprint,
 )
+from recidiviz.calculator.supplemental.supplemental_dataset_manager import (
+    supplemental_dataset_manager_blueprint,
+)
 from recidiviz.case_triage.ops_routes import case_triage_ops_blueprint
 from recidiviz.ingest.aggregate.parse import aggregate_parse_blueprint
 from recidiviz.ingest.aggregate.scrape_aggregate_reports import (
@@ -91,6 +94,7 @@ default_blueprints_with_url_prefixes: List[Tuple[Blueprint, str]] = [
     (export_blueprint, "/export"),
     (justice_counts_control, "/justice_counts"),
     (validation_manager_blueprint, "/validation_manager"),
+    (supplemental_dataset_manager_blueprint, "/supplemental_dataset"),
 ]
 
 
