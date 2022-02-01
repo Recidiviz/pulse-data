@@ -41,9 +41,7 @@ PATHWAYS_SUPERVISION_LOCATION_NAME_MAP_QUERY_TEMPLATE = """
         CASE state_code
             WHEN "US_ID" THEN INITCAP(level_2_supervision_location_name)
             WHEN "US_ME" THEN INITCAP(level_1_supervision_location_name)
-            WHEN "US_ND" THEN IF(ENDS_WITH(level_1_supervision_location_name, "OFFICE"),
-                INITCAP(level_1_supervision_location_name),
-                CONCAT(INITCAP(level_1_supervision_location_name), " Office"))
+            WHEN "US_ND" THEN INITCAP(level_1_supervision_location_name)
             WHEN "US_TN" THEN INITCAP(level_2_supervision_location_name)
             ELSE INITCAP(level_1_supervision_location_name)
         END AS location_name,
