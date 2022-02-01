@@ -156,7 +156,7 @@ class FakeDirectIngestBigQueryClient(BigQueryClient):
         self,
         query_job: bigquery.QueryJob,
         page_size: int,
-        process_fn: Callable[[bigquery.table.Row], None],
+        process_page_fn: Callable[[List[bigquery.table.Row]], None],
     ) -> None:
         raise ValueError("Must be implemented for use in tests.")
 
@@ -188,6 +188,7 @@ class FakeDirectIngestBigQueryClient(BigQueryClient):
         source_data_filter_clause: Optional[str] = None,
         hydrate_missing_columns_with_null: bool = False,
         allow_field_additions: bool = False,
+        write_disposition: bigquery.WriteDisposition = bigquery.WriteDisposition.WRITE_APPEND,
     ) -> bigquery.QueryJob:
         raise ValueError("Must be implemented for use in tests.")
 

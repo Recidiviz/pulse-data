@@ -32,6 +32,7 @@ from recidiviz.calculator.query.state.dataset_config import (
     STATE_BASE_DATASET,
     STATIC_REFERENCE_TABLES_DATASET,
 )
+from recidiviz.calculator.supplemental.dataset_config import SUPPLEMENTAL_DATA_DATASET
 from recidiviz.case_triage.views.dataset_config import CASE_TRIAGE_FEDERATED_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.datasets.static_data.config import EXTERNAL_REFERENCE_DATASET
@@ -64,6 +65,7 @@ OTHER_SOURCE_TABLE_DATASETS = {
     STATE_BASE_DATASET,
     STATIC_REFERENCE_TABLES_DATASET,
     VERA_DATASET,
+    SUPPLEMENTAL_DATA_DATASET,
 }
 
 # These datasets should only contain tables that provide the source data for our view graph.
@@ -104,6 +106,7 @@ OTHER_SOURCE_TABLE_DATASETS_TO_DESCRIPTIONS = {
     " postgres database.",
     STATIC_REFERENCE_TABLES_DATASET: "Reference tables used by various views in BigQuery."
     " May need to be updated manually for new states.",
+    SUPPLEMENTAL_DATA_DATASET: "Stores datasets generated not by traditional ingest or calc pipelines in BigQuery.",
     VERA_DATASET: "Stores data calculated outside of our codebase by Vera. Used only by Vera.",
 }
 

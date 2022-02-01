@@ -31,7 +31,7 @@ import io
 import json
 import logging
 from concurrent import futures
-from typing import List, Dict, Tuple, Set, Any, Callable, Union, Sequence
+from typing import Any, Callable, Dict, List, Sequence, Set, Tuple, Union
 
 import attr
 from google.cloud import bigquery, storage
@@ -39,7 +39,6 @@ from google.cloud import bigquery, storage
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.big_query.export.big_query_view_exporter import BigQueryViewExporter
 from recidiviz.big_query.export.export_query_config import ExportBigQueryViewConfig
-
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.metrics.export.optimized_metric_big_query_view_export_validator import (
     OptimizedMetricBigQueryViewExportValidator,
@@ -322,12 +321,13 @@ def _initialize_dimension_manifest(
 
 def _gen_assemble_manifest(
     dimension_values_by_key: Dict[str, Set[str]]
-) -> Callable[[bigquery.table.Row], None]:
+) -> Callable[[List[bigquery.table.Row]], None]:
     """Generates and returns a function which will take a given result set row from BigQuery and update the given
     mapping of dimension keys to sets of possible values."""
 
-    def _assemble_by_row(row: bigquery.table.Row) -> None:
-        add_to_dimension_manifest(dict(row), dimension_values_by_key)
+    def _assemble_by_row(rows: List[bigquery.table.Row]) -> None:
+        for row in rows:
+            add_to_dimension_manifest(dict(row), dimension_values_by_key)
 
     return _assemble_by_row
 
@@ -367,10 +367,13 @@ def _gen_place_in_compact_matrix(
     data_values: List[List[Any]],
     value_keys: List[str],
     dimension_manifest: List[Tuple[str, List[str]]],
-) -> Callable[[bigquery.table.Row], None]:
-    def _place_by_row(row: bigquery.table.Row) -> None:
-        data_point = dict(row)
-        place_in_compact_matrix(data_point, data_values, value_keys, dimension_manifest)
+) -> Callable[[List[bigquery.table.Row]], None]:
+    def _place_by_row(rows: List[bigquery.table.Row]) -> None:
+        for row in rows:
+            data_point = dict(row)
+            place_in_compact_matrix(
+                data_point, data_values, value_keys, dimension_manifest
+            )
 
     return _place_by_row
 

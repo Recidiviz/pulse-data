@@ -59,6 +59,7 @@ US_ID_CASE_UPDATE_INFO_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=US_ID_CASE_UPDATE_INFO_QUERY_TEMPLATE,
     description=US_ID_CASE_UPDATE_INFO_DESCRIPTION,
     base_dataset=dataset_config.STATE_BASE_DATASET,
+    should_materialize=True,
 )
 
 if __name__ == "__main__":

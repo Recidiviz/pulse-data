@@ -15,10 +15,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for BigQueryClientImpl"""
-# pylint: disable=protected-access
 import datetime
 import random
 import unittest
+
+# pylint: disable=protected-access
 from concurrent import futures
 from typing import Iterator, List
 from unittest import mock
@@ -962,8 +963,9 @@ class BigQueryClientImplTest(unittest.TestCase):
 
         processed_results = []
 
-        def _process_fn(row: bigquery.table.Row) -> None:
-            processed_results.append(dict(row))
+        def _process_fn(rows: List[bigquery.table.Row]) -> None:
+            for row in rows:
+                processed_results.append(dict(row))
 
         self.bq_client.paged_read_and_process(mock_query_job, 1, _process_fn)
 
@@ -993,8 +995,9 @@ class BigQueryClientImplTest(unittest.TestCase):
 
         processed_results = []
 
-        def _process_fn(row: bigquery.table.Row) -> None:
-            processed_results.append(dict(row))
+        def _process_fn(rows: List[bigquery.table.Row]) -> None:
+            for row in rows:
+                processed_results.append(dict(row))
 
         self.bq_client.paged_read_and_process(mock_query_job, 10, _process_fn)
 
@@ -1031,8 +1034,9 @@ class BigQueryClientImplTest(unittest.TestCase):
 
         processed_results = []
 
-        def _process_fn(row: bigquery.table.Row) -> None:
-            processed_results.append(dict(row))
+        def _process_fn(rows: List[bigquery.table.Row]) -> None:
+            for row in rows:
+                processed_results.append(dict(row))
 
         self.bq_client.paged_read_and_process(mock_query_job, 2, _process_fn)
 
