@@ -401,52 +401,52 @@ class CachedClassStructureReferenceTests(unittest.TestCase):
                 enum_cls = FakeEnum
 
                 expected_attr_field_type_ref[name] = CachedAttributeInfo(
-                    attribute,
-                    BuildableAttrFieldType.ENUM,
-                    enum_cls,
-                    None,
+                    attribute=attribute,
+                    field_type=BuildableAttrFieldType.ENUM,
+                    enum_cls=enum_cls,
+                    referenced_cls_name=None,
                 )
             elif "date" in attribute.name:
                 expected_attr_field_type_ref[name] = CachedAttributeInfo(
-                    attribute,
-                    BuildableAttrFieldType.DATE,
-                    None,
-                    None,
+                    attribute=attribute,
+                    field_type=BuildableAttrFieldType.DATE,
+                    enum_cls=None,
+                    referenced_cls_name=None,
                 )
             elif "bool" in attribute.name:
                 expected_attr_field_type_ref[name] = CachedAttributeInfo(
-                    attribute,
-                    BuildableAttrFieldType.BOOLEAN,
-                    None,
-                    None,
+                    attribute=attribute,
+                    field_type=BuildableAttrFieldType.BOOLEAN,
+                    enum_cls=None,
+                    referenced_cls_name=None,
                 )
             elif "forward_ref" in attribute.name:
                 expected_attr_field_type_ref[name] = CachedAttributeInfo(
-                    attribute,
-                    BuildableAttrFieldType.FORWARD_REF,
-                    None,
-                    "FakeBuildableAttr",
+                    attribute=attribute,
+                    field_type=BuildableAttrFieldType.FORWARD_REF,
+                    enum_cls=None,
+                    referenced_cls_name="FakeBuildableAttr",
                 )
             elif "list" in attribute.name:
                 expected_attr_field_type_ref[name] = CachedAttributeInfo(
-                    attribute,
-                    BuildableAttrFieldType.LIST,
-                    None,
-                    None,
+                    attribute=attribute,
+                    field_type=BuildableAttrFieldType.LIST,
+                    enum_cls=None,
+                    referenced_cls_name=None,
                 )
             elif "required" in attribute.name:
                 expected_attr_field_type_ref[name] = CachedAttributeInfo(
-                    attribute,
-                    BuildableAttrFieldType.STRING,
-                    None,
-                    None,
+                    attribute=attribute,
+                    field_type=BuildableAttrFieldType.STRING,
+                    enum_cls=None,
+                    referenced_cls_name=None,
                 )
             else:
                 expected_attr_field_type_ref[name] = CachedAttributeInfo(
-                    attribute,
-                    BuildableAttrFieldType.OTHER,
-                    None,
-                    None,
+                    attribute=attribute,
+                    field_type=BuildableAttrFieldType.OTHER,
+                    enum_cls=None,
+                    referenced_cls_name=None,
                 )
 
         attr_field_type_ref = _attribute_field_type_reference_for_class(

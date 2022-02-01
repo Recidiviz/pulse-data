@@ -683,14 +683,30 @@ class BigQueryClient:
         Disclaimer: Use with caution! This will delete data.
         """
 
-    @staticmethod
-    @abc.abstractmethod
+    @classmethod
     def schema_for_sqlalchemy_table(
-        table: sqlalchemy.Table, add_state_code_field: bool = False
+        cls, table: sqlalchemy.Table, add_state_code_field: bool = False
     ) -> List[bigquery.SchemaField]:
         """Returns the necessary BigQuery schema for storing the contents of the
         table in BigQuery, which is a list of SchemaField objects containing the
         column name and value type for each column in the table."""
+        columns_for_table = [
+            bigquery.SchemaField(
+                col.name, schema_column_type_for_sqlalchemy_column(col), mode="NULLABLE"
+            )
+            for col in table.columns
+        ]
+
+        if add_state_code_field:
+            columns_for_table.append(
+                bigquery.SchemaField(
+                    "state_code",
+                    bigquery.enums.SqlTypeNames.STRING.value,
+                    mode="NULLABLE",
+                )
+            )
+
+        return columns_for_table
 
     @abc.abstractmethod
     def wait_for_big_query_jobs(self, jobs: Sequence[PollingFuture]) -> List[Any]:
@@ -1119,7 +1135,7 @@ class BigQueryClientImpl(BigQueryClient):
         query = f"SELECT {select_columns} FROM `{self.project_id}.{source_dataset_id}.{source_table_id}`"
 
         if source_data_filter_clause:
-            self.validate_source_data_filter_clause(source_data_filter_clause)
+            self._validate_source_data_filter_clause(source_data_filter_clause)
             query = f"{query} {source_data_filter_clause}"
 
         logging.info(
@@ -1139,7 +1155,7 @@ class BigQueryClientImpl(BigQueryClient):
         )
 
     @staticmethod
-    def validate_source_data_filter_clause(filter_clause: str) -> None:
+    def _validate_source_data_filter_clause(filter_clause: str) -> None:
         if not filter_clause.startswith("WHERE"):
             raise ValueError(
                 f"Found filter clause [{filter_clause}] that does not begin with WHERE"
@@ -1742,25 +1758,3 @@ class BigQueryClientImpl(BigQueryClient):
                     table_id,
                     desired_schema_fields=reference_table_schemas[table_id],
                 )
-
-    @classmethod
-    def schema_for_sqlalchemy_table(
-        cls, table: sqlalchemy.Table, add_state_code_field: bool = False
-    ) -> List[bigquery.SchemaField]:
-        columns_for_table = [
-            bigquery.SchemaField(
-                col.name, schema_column_type_for_sqlalchemy_column(col), mode="NULLABLE"
-            )
-            for col in table.columns
-        ]
-
-        if add_state_code_field:
-            columns_for_table.append(
-                bigquery.SchemaField(
-                    "state_code",
-                    bigquery.enums.SqlTypeNames.STRING.value,
-                    mode="NULLABLE",
-                )
-            )
-
-        return columns_for_table
