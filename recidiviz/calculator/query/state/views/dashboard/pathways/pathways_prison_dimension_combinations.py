@@ -15,6 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Helper view providing all possible combinations of dimension values. Useful for building exhaustive views."""
+from typing import Dict, List, Union
+
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_constant_dimensions import (
@@ -34,6 +36,22 @@ PATHWAYS_PRISON_DIMENSION_COMBINATIONS_VIEW_NAME = (
 )
 
 PATHWAYS_PRISON_DIMENSION_COMBINATIONS_DESCRIPTION = "Helper view providing all possible combinations of incarceration dimension values. Useful for building exhaustive views."
+
+# for dimensions that have constant values across all states, we need a series of unnest statements
+prison_constant_dimensions: Dict[str, Union[List[int], List[str]]] = {
+    "admission_reason": [
+        "REVOCATION",
+        "NEW_ADMISSION",
+        "RETURN_FROM_ESCAPE",
+        "EXTERNAL_UNKNOWN",
+        "TRANSFER",
+        "TRANSFER_FROM_OTHER_JURISDICTION",
+        "INTERNAL_UNKNOWN",
+        "ADMITTED_IN_ERROR",
+        "STATUS_CHANGE",
+        "ALL",
+    ],
+}
 
 PATHWAYS_PRISON_DIMENSION_COMBINATIONS_QUERY_TEMPLATE = """
     /*{description}*/
@@ -76,7 +94,9 @@ PATHWAYS_PRISON_DIMENSION_COMBINATIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=PATHWAYS_PRISON_DIMENSION_COMBINATIONS_QUERY_TEMPLATE,
     description=PATHWAYS_PRISON_DIMENSION_COMBINATIONS_DESCRIPTION,
     dashboard_views_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,
-    constant_dimensions=",".join(get_constant_dimensions_unnested({})),
+    constant_dimensions=",".join(
+        get_constant_dimensions_unnested(prison_constant_dimensions)
+    ),
     enabled_states=str(ENABLED_STATES),
     state_specific_joins=" ".join(state_specific_joins),
 )
