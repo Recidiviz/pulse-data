@@ -24,6 +24,9 @@ from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
     ENABLED_STATES,
 )
+from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_supervision_dimension_combinations import (
+    PATHWAYS_SUPERVISION_DIMENSION_COMBINATIONS_VIEW_NAME,
+)
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -44,25 +47,45 @@ SUPERVISION_POPULATION_TIME_SERIES_VIEW_QUERY_TEMPLATE = """
             month,
             IFNULL(location_name, level_1_supervision_location_external_id) AS district,
             supervision_level,
-            person_id,
+            COUNT(DISTINCT person_id) AS person_count
         FROM `{project_id}.{metrics_dataset}.most_recent_supervision_population_metrics_materialized` metrics
         LEFT JOIN `{project_id}.{dashboards_dataset}.pathways_supervision_location_name_map` name_map
             ON metrics.state_code = name_map.state_code
             AND metrics.level_1_supervision_location_external_id = name_map.location_id
         WHERE date_of_supervision >= DATE_TRUNC(DATE_SUB(CURRENT_DATE("US/Eastern"), INTERVAL 5 YEAR), MONTH)
+        group by 1,2,3,4,5
+    ), full_time_series as (
+        SELECT
+            state_code,
+            year,
+            month,
+            district,
+            supervision_level,
+            IFNULL(person_count, 0) AS person_count
+        FROM mapped_district_names
+        FULL OUTER JOIN
+        (
+            SELECT DISTINCT
+                state_code,
+                year,
+                month,
+                district,
+                supervision_level
+            FROM `{project_id}.{dashboard_views_dataset}.{dimension_combination_view}`
+        ) USING (state_code, year, month, district, supervision_level)
     )
-
     SELECT
         state_code,
         year,
         month,
         district,
         supervision_level,
-        COUNT(DISTINCT person_id) AS person_count,
-    FROM mapped_district_names,
+        SUM(person_count) AS person_count,
+    FROM full_time_series,
     UNNEST([district, "ALL"]) AS district,
     UNNEST([supervision_level, "ALL"]) AS supervision_level
     {filter_to_enabled_states}
+    AND DATE(year, month, 1) <= CURRENT_DATE('US/Eastern')
     GROUP BY 1, 2, 3, 4, 5
     ORDER BY year, month
     """
@@ -78,6 +101,8 @@ SUPERVISION_POPULATION_TIME_SERIES_VIEW_BUILDER = MetricBigQueryViewBuilder(
     filter_to_enabled_states=filter_to_enabled_states(
         state_code_column="state_code", enabled_states=ENABLED_STATES
     ),
+    dashboard_views_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,
+    dimension_combination_view=PATHWAYS_SUPERVISION_DIMENSION_COMBINATIONS_VIEW_NAME,
 )
 
 if __name__ == "__main__":
