@@ -21,3 +21,9 @@ module "state-specific-scratch-dataset" {
   dataset_id  =  "${lower(var.state_code)}_scratch"
   description = "State-specific scratch space dataset that can be used to save one-off queries related to ${upper(var.state_code)} data. May provide a temporary staging ground for some ingest external validation data."
 }
+
+module "state-specific-validation-dataset" {
+  source      = "../big_query_dataset"
+  dataset_id  = "${lower(var.state_code)}_validation"
+  description = "State-specific validation dataset for external data."
+}
