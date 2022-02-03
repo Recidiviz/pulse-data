@@ -33,6 +33,11 @@ function terraform_import {
     $RESOURCE_ADDR $RESOURCE_ID
 }
 
+function terraform_rm {
+    RESOURCE_ADDR=$1
+    terraform -chdir=./recidiviz/tools/deploy/terraform state rm $RESOURCE_ADDR
+}
+
 function terraform_mv {
   OLD_RESOURCE_ADDR=$1
   UPDATED_RESOURCE_ADDR=$2
