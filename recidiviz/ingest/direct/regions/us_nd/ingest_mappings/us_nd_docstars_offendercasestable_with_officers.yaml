@@ -246,6 +246,7 @@ output:
                   - "15"  # Terminated - Released from Custody
                   - "16"  # Terminated - CCC
                   - "17"  # Terminated - Returned to Original State-Violation
+                  - "29"  # Early Termination
                 StateSupervisionPeriodTerminationReason.EXPIRATION:
                   - "4"   # Terminated - Expiration (Susp. Sentence)
                   - "7"   # Terminated - Expiration (Parole)
@@ -264,7 +265,6 @@ output:
                   - "26"  # Deferred Prosecution
                   - "27"  # Post-Conviction Supervision
                   - "28"  # Closed with Active FTA
-                  - "29"  # Early Termination
                   - "30"  # No Conditions Imposed
                 StateSupervisionPeriodTerminationReason.REVOCATION:
                   - "9"  # Terminated - Revocation
