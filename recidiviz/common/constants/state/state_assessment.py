@@ -81,6 +81,7 @@ class StateAssessmentType(EntityEnum, metaclass=EntityEnumMeta):
     PSA = state_enum_strings.state_assessment_type_psa
     SORAC = state_enum_strings.state_assessment_type_sorac
     STATIC_99 = state_enum_strings.state_assessment_type_static_99
+    STRONG_R = state_enum_strings.state_assessment_type_strong_r
     TCU_DRUG_SCREEN = state_enum_strings.state_assessment_type_tcu_drug_screen
 
     @staticmethod
@@ -137,6 +138,7 @@ _STATE_ASSESSMENT_TYPE_MAP = {
     "PSA": StateAssessmentType.PSA,
     "SORAC": StateAssessmentType.SORAC,
     "STATIC 99": StateAssessmentType.STATIC_99,
+    "STRONG R": StateAssessmentType.STRONG_R,
     "TCU": StateAssessmentType.TCU_DRUG_SCREEN,
     "TCU DRUG SCREEN": StateAssessmentType.TCU_DRUG_SCREEN,
     "INTERNAL UNKNOWN": StateAssessmentType.INTERNAL_UNKNOWN,
