@@ -63,6 +63,7 @@ state_assessment_type_pa_rst = "PA_RST"
 state_assessment_type_psa = "PSA"
 state_assessment_type_sorac = "SORAC"
 state_assessment_type_static_99 = "STATIC_99"
+state_assessment_type_strong_r = "STRONG_R"
 state_assessment_type_tcu_drug_screen = "TCU_DRUG_SCREEN"
 
 state_assessment_level_low = "LOW"
