@@ -43,7 +43,7 @@ SELECT
     gender,
     supervision_type,
     age_group,
-    prioritized_race_or_ethnicity AS race,
+    race,
     district,
     COUNT(1) as event_count,
 FROM
