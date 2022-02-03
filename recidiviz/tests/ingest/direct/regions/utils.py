@@ -19,6 +19,11 @@ import datetime
 from typing import List, Optional
 
 from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
+from recidiviz.common.constants.state.state_assessment import (
+    StateAssessmentClass,
+    StateAssessmentLevel,
+    StateAssessmentType,
+)
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
@@ -226,3 +231,35 @@ def add_supervision_period_to_person(
     )
 
     person.supervision_periods.append(supervision_period)
+
+
+def add_assessment_to_person(
+    person: entities.StatePerson,
+    state_code: str,
+    external_id: str,
+    assessment_class: Optional[StateAssessmentClass],
+    assessment_type: Optional[StateAssessmentType],
+    assessment_date: datetime.date,
+    assessment_score: Optional[int],
+    assessment_level: Optional[StateAssessmentLevel],
+    assessment_level_raw_text: Optional[str],
+    assessment_metadata: Optional[str],
+    conducting_agent: Optional[entities.StateAgent],
+) -> None:
+    """Append an assessment to the person (updates the person entity in place)."""
+
+    assessment = entities.StateAssessment.new_with_defaults(
+        external_id=external_id,
+        state_code=state_code,
+        assessment_class=assessment_class,
+        assessment_type=assessment_type,
+        assessment_date=assessment_date,
+        assessment_score=assessment_score,
+        assessment_level=assessment_level,
+        assessment_level_raw_text=assessment_level_raw_text,
+        assessment_metadata=assessment_metadata,
+        conducting_agent=conducting_agent,
+        person=person,
+    )
+
+    person.assessments.append(assessment)

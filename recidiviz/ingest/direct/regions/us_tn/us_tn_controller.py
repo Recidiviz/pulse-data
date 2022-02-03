@@ -44,6 +44,7 @@ class UsTnController(BaseDirectIngestController):
                     "OffenderName",
                     "OffenderMovementIncarcerationPeriod",
                     "AssignedStaffSupervisionPeriod",
+                    "VantagePointAssessments",
                 ]
             )
         return tags

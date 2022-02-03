@@ -1,0 +1,3 @@
+OffenderID,AssessmentID,ConductingStaffID,AssessmentDate,RiskLevel,FriendsNeedLevel,AttitudeBehaviorNeedLevel,AggressionNeedLevel,MentalHealthNeedLevel,AlcoholDrugNeedLevel,ResidentNeedLevel,FamilyNeedLevel,EmploymentNeedLevel,EducationNeedLevel
+00000002,201,ABCDEF01,2015-08-14,LOW,HIGH,LOW,LOW,MOD,LOW,LOW,HIGH,LOW,MOD
+00000002,202,ABCDEF01,2015-10-14,LOW,MOD,LOW,LOW,LOW,LOW,LOW,MOD,LOW,MOD

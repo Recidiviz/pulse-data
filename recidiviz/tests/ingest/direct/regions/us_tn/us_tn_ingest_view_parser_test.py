@@ -22,6 +22,11 @@ import unittest
 from recidiviz.common.constants.person_characteristics import Ethnicity, Gender, Race
 from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_agent import StateAgentType
+from recidiviz.common.constants.state.state_assessment import (
+    StateAssessmentClass,
+    StateAssessmentLevel,
+    StateAssessmentType,
+)
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
@@ -36,6 +41,7 @@ from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHand
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.entity.state.entities import (
     StateAgent,
+    StateAssessment,
     StateIncarcerationPeriod,
     StatePerson,
     StatePersonEthnicity,
@@ -495,3 +501,59 @@ class UsTnIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
         self._parse_enum_manifest_test(
             "AssignedStaffSupervisionPeriod_TerminationReasons", enum_parser_manifest
         )
+
+    def test_parse_VantagePointAssessments(self) -> None:
+        expected_output = [
+            StatePerson(
+                state_code="US_TN",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_TN", external_id="00000002", id_type="US_TN_DOC"
+                    )
+                ],
+                assessments=[
+                    StateAssessment(
+                        state_code="US_TN",
+                        external_id="00000002-201",
+                        assessment_date=datetime.date(2015, 8, 14),
+                        assessment_class=StateAssessmentClass.RISK,
+                        assessment_type=StateAssessmentType.STRONG_R,
+                        assessment_level=StateAssessmentLevel.LOW,
+                        assessment_level_raw_text="LOW",
+                        assessment_metadata='{"AGGRESSION_NEED_LEVEL": "LOW", "ALCOHOL_DRUG_NEED_LEVEL": "LOW", "ATTITUDE_BEHAVIOR_NEED_LEVEL": "LOW", "EDUCATION_NEED_LEVEL": "MOD", "EMPLOYMENT_NEED_LEVEL": "LOW", "FAMILY_NEED_LEVEL": "HIGH", "FRIENDS_NEED_LEVEL": "HIGH", "MENTAL_HEALTH_NEED_LEVEL": "MOD", "RESIDENT_NEED_LEVEL": "LOW"}',
+                        conducting_agent=StateAgent(
+                            external_id="ABCDEF01",
+                            state_code="US_TN",
+                            agent_type=StateAgentType.PRESENT_WITHOUT_INFO,
+                        ),
+                    ),
+                ],
+            ),
+            StatePerson(
+                state_code="US_TN",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_TN", external_id="00000002", id_type="US_TN_DOC"
+                    )
+                ],
+                assessments=[
+                    StateAssessment(
+                        state_code="US_TN",
+                        external_id="00000002-202",
+                        assessment_date=datetime.date(2015, 10, 14),
+                        assessment_class=StateAssessmentClass.RISK,
+                        assessment_type=StateAssessmentType.STRONG_R,
+                        assessment_level=StateAssessmentLevel.LOW,
+                        assessment_level_raw_text="LOW",
+                        assessment_metadata='{"AGGRESSION_NEED_LEVEL": "LOW", "ALCOHOL_DRUG_NEED_LEVEL": "LOW", "ATTITUDE_BEHAVIOR_NEED_LEVEL": "LOW", "EDUCATION_NEED_LEVEL": "MOD", "EMPLOYMENT_NEED_LEVEL": "LOW", "FAMILY_NEED_LEVEL": "MOD", "FRIENDS_NEED_LEVEL": "MOD", "MENTAL_HEALTH_NEED_LEVEL": "LOW", "RESIDENT_NEED_LEVEL": "LOW"}',
+                        conducting_agent=StateAgent(
+                            external_id="ABCDEF01",
+                            state_code="US_TN",
+                            agent_type=StateAgentType.PRESENT_WITHOUT_INFO,
+                        ),
+                    ),
+                ],
+            ),
+        ]
+
+        self._run_parse_ingest_view_test("VantagePointAssessments", expected_output)

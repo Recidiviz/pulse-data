@@ -22,6 +22,11 @@ from recidiviz.common.constants.person_characteristics import Ethnicity, Gender,
 from recidiviz.common.constants.state.external_id_types import US_TN_DOC
 from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_agent import StateAgentType
+from recidiviz.common.constants.state.state_assessment import (
+    StateAssessmentClass,
+    StateAssessmentLevel,
+    StateAssessmentType,
+)
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
@@ -41,6 +46,7 @@ from recidiviz.tests.ingest.direct.regions.base_direct_ingest_controller_tests i
     BaseDirectIngestControllerTests,
 )
 from recidiviz.tests.ingest.direct.regions.utils import (
+    add_assessment_to_person,
     add_incarceration_period_to_person,
     add_supervision_period_to_person,
     build_state_person_entity,
@@ -284,6 +290,44 @@ class TestUsTnController(BaseDirectIngestControllerTests):
 
         # Act
         self._run_ingest_job_for_filename("AssignedStaffSupervisionPeriod")
+
+        # Assert
+        self.assert_expected_db_people(expected_people)
+
+        ######################################
+        # VantagePointAssessments
+        ######################################
+
+        add_assessment_to_person(
+            person=person_2,
+            state_code=_STATE_CODE_UPPER,
+            external_id="00000002-201",
+            assessment_class=StateAssessmentClass.RISK,
+            assessment_type=StateAssessmentType.STRONG_R,
+            assessment_date=datetime.date(year=2015, month=8, day=14),
+            assessment_score=None,
+            assessment_level=StateAssessmentLevel.LOW,
+            assessment_level_raw_text="LOW",
+            assessment_metadata='{"AGGRESSION_NEED_LEVEL": "LOW", "ALCOHOL_DRUG_NEED_LEVEL": "LOW", "ATTITUDE_BEHAVIOR_NEED_LEVEL": "LOW", "EDUCATION_NEED_LEVEL": "MOD", "EMPLOYMENT_NEED_LEVEL": "LOW", "FAMILY_NEED_LEVEL": "HIGH", "FRIENDS_NEED_LEVEL": "HIGH", "MENTAL_HEALTH_NEED_LEVEL": "MOD", "RESIDENT_NEED_LEVEL": "LOW"}',
+            conducting_agent=shared_supervising_officer,
+        )
+
+        add_assessment_to_person(
+            person=person_2,
+            state_code=_STATE_CODE_UPPER,
+            external_id="00000002-202",
+            assessment_class=StateAssessmentClass.RISK,
+            assessment_type=StateAssessmentType.STRONG_R,
+            assessment_date=datetime.date(year=2015, month=10, day=14),
+            assessment_score=None,
+            assessment_level=StateAssessmentLevel.LOW,
+            assessment_level_raw_text="LOW",
+            assessment_metadata='{"AGGRESSION_NEED_LEVEL": "LOW", "ALCOHOL_DRUG_NEED_LEVEL": "LOW", "ATTITUDE_BEHAVIOR_NEED_LEVEL": "LOW", "EDUCATION_NEED_LEVEL": "MOD", "EMPLOYMENT_NEED_LEVEL": "LOW", "FAMILY_NEED_LEVEL": "MOD", "FRIENDS_NEED_LEVEL": "MOD", "MENTAL_HEALTH_NEED_LEVEL": "LOW", "RESIDENT_NEED_LEVEL": "LOW"}',
+            conducting_agent=shared_supervising_officer,
+        )
+
+        # Act
+        self._run_ingest_job_for_filename("VantagePointAssessments")
 
         # Assert
         self.assert_expected_db_people(expected_people)

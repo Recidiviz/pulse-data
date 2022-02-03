@@ -1,0 +1,65 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_VantagePointAssessments` to corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - OffenderID
+  - AssessmentID
+  - ConductingStaffID
+  - AssessmentDate
+  - RiskLevel
+  - FriendsNeedLevel
+  - AttitudeBehaviorNeedLevel
+  - AggressionNeedLevel
+  - MentalHealthNeedLevel
+  - AlcoholDrugNeedLevel
+  - ResidentNeedLevel
+  - FamilyNeedLevel
+  - EmploymentNeedLevel
+  - EducationNeedLevel
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OffenderID
+          id_type: $literal("US_TN_DOC")
+    assessments:
+      - StateAssessment:
+          external_id:
+            $concat:
+              $values:
+                - OffenderID
+                - AssessmentID
+          assessment_class: $literal_enum(StateAssessmentClass.RISK)
+          assessment_type: $literal_enum(StateAssessmentType.STRONG_R)
+          assessment_date: AssessmentDate
+          assessment_level:
+            $enum_mapping:
+              $raw_text: RiskLevel
+              $mappings:
+                StateAssessmentLevel.LOW:
+                  - LOW
+                StateAssessmentLevel.MODERATE:
+                  - MOD
+                StateAssessmentLevel.HIGH:
+                  - HD    # High Drug Felony Risk
+                  - HP    # High Property Felony Risk
+                  - HV    # High Violent Felony Risk
+                  - HVPD  # High Violent, Property, and Drug Felony Risk
+          assessment_metadata:
+            $json_dict:
+              friends_need_level: FriendsNeedLevel
+              attitude_behavior_need_level: AttitudeBehaviorNeedLevel
+              aggression_need_level: AggressionNeedLevel
+              mental_health_need_level: MentalHealthNeedLevel
+              alcohol_drug_need_level: AlcoholDrugNeedLevel
+              resident_need_level: ResidentNeedLevel
+              family_need_level: FamilyNeedLevel
+              employment_need_level: EmploymentNeedLevel
+              education_need_level: EducationNeedLevel
+          conducting_agent:
+            StateAgent:
+              external_id: ConductingStaffID
+
+

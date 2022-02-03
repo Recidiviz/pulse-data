@@ -10,10 +10,10 @@ columns:
       This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: AssessmentID
     description: |-
-      This is a unique identifier assigned to a particular assessment taken by a particular person.
+      This is a unique identifier assigned to a particular STRONG-R assessment taken by a particular person.
   - name: AssignedStaffID
     description: |-
-      This is a unique identifier assigned to the staff member who was initially assigned to conduct the assessment.
+      This is a unique identifier assigned to the staff member who assigned the assessment to the person.
   - name: SiteID
     description: |-
       This identifies an organizational/location entity where the assessment took place. Sites may include institutions, staff agencies, hospitals, etc.
@@ -32,10 +32,10 @@ columns:
       This is a unique identifier assigned to the particular staff member who conducted the assessment.
   - name: AssessmentTitle
     description: |-
-      "TODO(#7424): Update with definition."
+      Code which indicates the type of STRONG-R assessment being taken by the person.
     known_values:
       - value: SR
-        description: "TODO(#7424): Update with definition."
+        description: STRONG-R Risk Assessment
   - name: AssignedDate
     is_datetime: True
     description: |-
@@ -45,20 +45,20 @@ columns:
       The overall assessed risk level.
     known_values:
       - value: HD
-        description: "TODO(#7424): Update with definition."
+        description: High Drug Felony Risk
       - value: HP
-        description: "TODO(#7424): Update with definition."
+        description: High Property Felony Risk
       - value: HV
-        description: "TODO(#7424): Update with definition."
+        description: High Violent Felony Risk
       - value: HVPD
-        description: "TODO(#7424): Update with definition."
+        description: Criminally Diverse (High Violent, Property, and Drug Felony Risk)
       - value: LOW
         description: Low
       - value: MOD
         description: Moderate
   - name: FriendsNeedLevel
     description: |-
-      The assessed level to which support from friends is needed.
+      STRONG-R Friends Need Level Score
     known_values:
       - value: HIGH
         description: High
@@ -68,7 +68,7 @@ columns:
         description: Moderate
   - name: AttitudeBehaviorNeedLevel
     description: |-
-      The assessed level to which support is needed with attitudes and behaviors.
+      STRONG-R Attitudes and Behaviors Need Level Score
     known_values:
       - value: HIGH
         description: High
@@ -78,7 +78,7 @@ columns:
         description: Moderate
   - name: AggressionNeedLevel
     description: |-
-      The assessed level to which support is needed in addressing aggression.
+      STRONG-R Aggression Need Level Score
     known_values:
       - value: HIGH
         description: High
@@ -88,7 +88,7 @@ columns:
         description: Moderate
   - name: MentalHealthNeedLevel
     description: |-
-      The assessed level to which mental health support is needed.
+      STRONG-R Mental Health Need Level Score
     known_values:
       - value: HIGH
         description: High
@@ -98,7 +98,7 @@ columns:
         description: Moderate
   - name: AlcoholDrugNeedLevel
     description: |-
-      The assessed level to which support is needed with alcohol and drugs.
+      STRONG-R Alcohol and Drugs Need Level Score
     known_values:
       - value: HIGH
         description: High
@@ -108,7 +108,7 @@ columns:
         description: Moderate
   - name: ResidentNeedLevel
     description: |-
-      The assessed level to which support is needed with securing a place of residence.
+      STRONG-R Residential Need Level Score
     known_values:
       - value: HIGH
         description: High
@@ -118,7 +118,7 @@ columns:
         description: Moderate
   - name: FamilyNeedLevel
     description: |-
-      The assessed level to which support from family is needed.
+      STRONG-R Family Need Level Score
     known_values:
       - value: HIGH
         description: High
@@ -128,7 +128,7 @@ columns:
         description: Moderate
   - name: EmploymentNeedLevel
     description: |-
-      The assessed level to which support is needed with securing employment.
+      STRONG-R Employment Need Level Score
     known_values:
       - value: HIGH
         description: High
@@ -138,7 +138,7 @@ columns:
         description: Moderate
   - name: EducationNeedLevel
     description: |-
-      The assessed level to which support is needed with securing educational assistance.
+      STRONG-R Education Need Level Score
     known_values:
       - value: HIGH
         description: High

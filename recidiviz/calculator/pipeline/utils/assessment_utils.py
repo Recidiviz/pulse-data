@@ -136,6 +136,9 @@ def assessment_score_bucket(
         ]:
             if assessment_level:
                 return assessment_level.value
+        elif assessment_type == StateAssessmentType.STRONG_R:
+            if assessment_level:
+                return assessment_level.value
         elif assessment_type in [
             StateAssessmentType.INTERNAL_UNKNOWN,
             StateAssessmentType.ASI,
