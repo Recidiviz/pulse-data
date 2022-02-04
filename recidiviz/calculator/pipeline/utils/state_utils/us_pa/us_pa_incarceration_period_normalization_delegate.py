@@ -20,7 +20,6 @@ calculations."""
 import datetime
 from typing import List, Optional, Set
 
-import attr
 from dateutil.relativedelta import relativedelta
 
 from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_period_normalization_manager import (
@@ -43,6 +42,7 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
     StateSupervisionViolationResponseDecidingBodyType,
     StateSupervisionViolationResponseType,
 )
+from recidiviz.persistence.entity.entity_utils import deep_entity_update
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
     StateSupervisionViolationResponse,
@@ -120,7 +120,7 @@ class UsPaIncarcerationNormalizationDelegate(
             and incarceration_period.admission_reason
             != StateIncarcerationPeriodAdmissionReason.TRANSFER
         ):
-            incarceration_period = attr.evolve(
+            incarceration_period = deep_entity_update(
                 incarceration_period,
                 admission_reason=StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
             )

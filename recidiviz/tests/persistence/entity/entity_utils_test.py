@@ -35,6 +35,9 @@ from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactLocation,
 )
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionPeriodSupervisionType,
+)
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
@@ -55,6 +58,7 @@ from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
     EntityFieldType,
     SchemaEdgeDirectionChecker,
+    deep_entity_update,
     is_placeholder,
     is_reference_only_entity,
     is_standalone_class,
@@ -64,8 +68,11 @@ from recidiviz.persistence.entity.state.entities import (
     StateCharge,
     StateIncarcerationSentence,
     StatePerson,
+    StateSupervisionCaseTypeEntry,
+    StateSupervisionPeriod,
     StateSupervisionSentence,
     StateSupervisionViolation,
+    StateSupervisionViolationResponse,
 )
 from recidiviz.tests.persistence.database.schema.state.schema_test_utils import (
     generate_incarceration_sentence,
@@ -872,3 +879,232 @@ class TestEntityUtils(TestCase):
             for entity in HAS_MEANINGFUL_DATA_ENTITIES[db_entity_cls]:
                 self.assertIsInstance(entity, db_entity_cls)
                 self.assertFalse(is_reference_only_entity(entity, field_index))
+
+
+class TestBidirectionalUpdates(TestCase):
+    """Tests the deep_entity_update function."""
+
+    def test_build_new_entity_with_bidirectionally_updated_attributes(self):
+        sp = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=123,
+            external_id="123",
+            state_code=_STATE_CODE,
+        )
+
+        new_case_type_entries = [
+            StateSupervisionCaseTypeEntry.new_with_defaults(
+                supervision_case_type_entry_id=123,
+                state_code=_STATE_CODE,
+                case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
+            ),
+            StateSupervisionCaseTypeEntry.new_with_defaults(
+                supervision_case_type_entry_id=456,
+                state_code=_STATE_CODE,
+                case_type=StateSupervisionCaseType.ALCOHOL_DRUG,
+            ),
+        ]
+
+        updated_entity = deep_entity_update(
+            original_entity=sp, case_type_entries=new_case_type_entries
+        )
+
+        updated_case_type_entries = [attr.evolve(c) for c in new_case_type_entries]
+
+        expected_sp = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=123,
+            external_id="123",
+            state_code=_STATE_CODE,
+            case_type_entries=updated_case_type_entries,
+        )
+
+        for c in updated_case_type_entries:
+            c.supervision_period = expected_sp
+
+        self.assertEqual(expected_sp, updated_entity)
+
+    def test_build_new_entity_with_bidirectionally_updated_attributes_flat_fields_only(
+        self,
+    ):
+        sp = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=123,
+            external_id="123",
+            state_code=_STATE_CODE,
+        )
+
+        updated_entity = deep_entity_update(
+            original_entity=sp,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+        )
+
+        expected_sp = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=123,
+            external_id="123",
+            state_code=_STATE_CODE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+        )
+
+        self.assertEqual(expected_sp, updated_entity)
+
+    def test_build_new_entity_with_bidirectionally_updated_attributes_flat_and_refs(
+        self,
+    ):
+        """Tests when there are related entities on the entity, but the only attribute
+        being updated is a flat field."""
+        sp = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=123,
+            external_id="123",
+            state_code=_STATE_CODE,
+            case_type_entries=[
+                StateSupervisionCaseTypeEntry.new_with_defaults(
+                    supervision_case_type_entry_id=123,
+                    state_code=_STATE_CODE,
+                    case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
+                ),
+                StateSupervisionCaseTypeEntry.new_with_defaults(
+                    supervision_case_type_entry_id=456,
+                    state_code=_STATE_CODE,
+                    case_type=StateSupervisionCaseType.ALCOHOL_DRUG,
+                ),
+            ],
+        )
+
+        for c in sp.case_type_entries:
+            c.supervision_period = sp
+
+        updated_entity = deep_entity_update(
+            original_entity=sp,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+        )
+
+        expected_sp = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=123,
+            external_id="123",
+            state_code=_STATE_CODE,
+            case_type_entries=[
+                StateSupervisionCaseTypeEntry.new_with_defaults(
+                    supervision_case_type_entry_id=123,
+                    state_code=_STATE_CODE,
+                    case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
+                ),
+                StateSupervisionCaseTypeEntry.new_with_defaults(
+                    supervision_case_type_entry_id=456,
+                    state_code=_STATE_CODE,
+                    case_type=StateSupervisionCaseType.ALCOHOL_DRUG,
+                ),
+            ],
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+        )
+
+        for c in expected_sp.case_type_entries:
+            c.supervision_period = expected_sp
+
+        self.assertEqual(expected_sp, updated_entity)
+
+    def test_build_new_entity_with_bidirectionally_updated_attributes_add_to_list(self):
+        supervision_violation = StateSupervisionViolation.new_with_defaults(
+            supervision_violation_id=123,
+            external_id="123",
+            state_code=_STATE_CODE,
+        )
+
+        ssvr = StateSupervisionViolationResponse.new_with_defaults(
+            state_code=_STATE_CODE,
+            external_id="456",
+            supervision_violation_response_id=456,
+            supervision_violation=supervision_violation,
+            response_date=datetime.date(2008, 12, 1),
+        )
+
+        supervision_violation.supervision_violation_responses = [ssvr]
+
+        supervision_violation_2 = StateSupervisionViolation.new_with_defaults(
+            supervision_violation_id=123,
+            external_id="123",
+            state_code=_STATE_CODE,
+        )
+
+        ssvr_2 = StateSupervisionViolationResponse.new_with_defaults(
+            state_code=_STATE_CODE,
+            external_id="789",
+            supervision_violation_response_id=789,
+            supervision_violation=supervision_violation_2,
+            response_date=datetime.date(2010, 1, 5),
+        )
+
+        supervision_violation_2.supervision_violation_responses = [ssvr_2]
+
+        # Setting supervision_violation_2 as the violation on ssvr
+        updated_entity = deep_entity_update(
+            original_entity=ssvr, supervision_violation=supervision_violation_2
+        )
+
+        copy_of_violation_2 = attr.evolve(supervision_violation_2)
+
+        expected_updated_ssvr = StateSupervisionViolationResponse.new_with_defaults(
+            state_code=_STATE_CODE,
+            external_id="456",
+            supervision_violation_response_id=456,
+            supervision_violation=copy_of_violation_2,
+            response_date=datetime.date(2008, 12, 1),
+        )
+
+        # The updated version of copy_of_violation_2 now has references to both
+        # responses
+        copy_of_violation_2.supervision_violation_responses = [
+            ssvr_2,
+            expected_updated_ssvr,
+        ]
+
+        self.assertEqual(expected_updated_ssvr, updated_entity)
+
+    def test_build_new_entity_with_bidirectionally_updated_attributes_replace_in_list(
+        self,
+    ):
+        supervision_violation = StateSupervisionViolation.new_with_defaults(
+            supervision_violation_id=123,
+            external_id="123",
+            state_code=_STATE_CODE,
+        )
+
+        ssvr = StateSupervisionViolationResponse.new_with_defaults(
+            state_code=_STATE_CODE,
+            external_id="456",
+            supervision_violation_response_id=456,
+            supervision_violation=supervision_violation,
+            response_date=datetime.date(2008, 12, 1),
+        )
+
+        supervision_violation.supervision_violation_responses = [ssvr]
+
+        new_violation = StateSupervisionViolation.new_with_defaults(
+            supervision_violation_id=123,
+            external_id="123",
+            state_code=_STATE_CODE,
+        )
+
+        # Setting new_violation as the violation on ssvr, and adding a new
+        # response_subtype
+        updated_entity = deep_entity_update(
+            original_entity=ssvr,
+            supervision_violation=new_violation,
+            response_subtype="SUBTYPE",
+        )
+
+        copy_of_new_violation = attr.evolve(new_violation)
+
+        expected_updated_ssvr = StateSupervisionViolationResponse.new_with_defaults(
+            state_code=_STATE_CODE,
+            external_id="456",
+            supervision_violation_response_id=456,
+            supervision_violation=copy_of_new_violation,
+            response_date=datetime.date(2008, 12, 1),
+            response_subtype="SUBTYPE",
+        )
+
+        # The updated version of copy_of_violation_2 only references the new version
+        # of ssvr
+        copy_of_new_violation.supervision_violation_responses = [
+            expected_updated_ssvr,
+        ]
+
+        self.assertEqual(expected_updated_ssvr, updated_entity)

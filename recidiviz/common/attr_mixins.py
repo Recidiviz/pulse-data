@@ -20,6 +20,7 @@ from enum import Enum
 from typing import Any, Callable, Dict, Optional, Set, Type, TypeVar
 
 import attr
+from more_itertools import one
 
 from recidiviz.common.attr_utils import (
     get_enum_cls,
@@ -123,6 +124,36 @@ def attr_field_enum_cls_for_field_name(
     matching the given |field_name|. Returns None if the field is not an enum.
     """
     return _attribute_field_type_reference_for_class(cls)[field_name].enum_cls
+
+
+def attr_field_name_storing_referenced_cls_name(
+    base_cls: Type, referenced_cls_name: str
+) -> Optional[str]:
+    """Returns the name of the field on the |base_cls| that stores a reference to a
+    class with the name |referenced_cls_name|, if one exists.
+
+    Returns None if there are no fields on the |base_cls| storing a reference to a
+    |referenced_cls_name| class. Raises an error if there exists more than one field
+    storing the class.
+    """
+    fields_storing_referenced_cls = [
+        field
+        for field, info in _attribute_field_type_reference_for_class(base_cls).items()
+        if info.referenced_cls_name and info.referenced_cls_name == referenced_cls_name
+    ]
+
+    if not fields_storing_referenced_cls:
+        # There are no fields on the base_cls that store a type with the name matching
+        # the |referenced_cls_name|
+        return None
+
+    if len(fields_storing_referenced_cls) > 1:
+        raise ValueError(
+            f"Class {base_cls} stores more than one reference to class "
+            f"{referenced_cls_name}."
+        )
+
+    return one(fields_storing_referenced_cls)
 
 
 def attr_field_referenced_cls_name_for_field_name(

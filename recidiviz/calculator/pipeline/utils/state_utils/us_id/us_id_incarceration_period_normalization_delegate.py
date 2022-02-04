@@ -19,8 +19,6 @@ StateIncarcerationPeriod entities so that they are ready to be used in pipeline
 calculations."""
 from typing import List, Optional
 
-import attr
-
 from recidiviz.calculator.pipeline.utils.commitment_from_supervision_utils import (
     SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT,
 )
@@ -46,6 +44,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
 )
+from recidiviz.persistence.entity.entity_utils import deep_entity_update
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 
 
@@ -149,7 +148,7 @@ def _us_id_normalize_period_if_commitment_from_supervision(
             # The most recent supervision period was of type INVESTIGATION,
             # so this is actually a NEW_ADMISSION and not a commitment from
             # supervision
-            return attr.evolve(
+            return deep_entity_update(
                 incarceration_period,
                 admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             )
@@ -159,7 +158,7 @@ def _us_id_normalize_period_if_commitment_from_supervision(
             == StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON
         ):
             # Admissions from supervision for treatment are sanction admissions
-            return attr.evolve(
+            return deep_entity_update(
                 incarceration_period,
                 admission_reason=StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
             )
@@ -174,17 +173,18 @@ def _us_id_normalize_period_if_commitment_from_supervision(
                 == StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
             ):
                 # Coming in to prison from an unknown supervision type.
-                return attr.evolve(
+                return deep_entity_update(
                     incarceration_period,
                     admission_reason=StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
                 )
 
-            return attr.evolve(
+            return deep_entity_update(
                 incarceration_period,
                 admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
             )
+
         # We are unable to classify this ADMITTED_FROM_SUPERVISION
-        return attr.evolve(
+        return deep_entity_update(
             incarceration_period,
             admission_reason=StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
         )
@@ -224,14 +224,14 @@ def _us_id_normalize_period_if_commitment_from_supervision(
                 purpose_for_incarceration
                 == StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON
             ):
-                return attr.evolve(
+                return deep_entity_update(
                     incarceration_period,
                     admission_reason=StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
                 )
 
             # This is a transfer from a parole board hold to general
             # incarceration, which indicates a parole revocation
-            return attr.evolve(
+            return deep_entity_update(
                 incarceration_period,
                 admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
             )

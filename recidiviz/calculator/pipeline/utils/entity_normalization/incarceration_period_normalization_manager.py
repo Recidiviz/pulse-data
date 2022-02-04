@@ -54,6 +54,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
+    deep_entity_update,
     is_placeholder,
 )
 from recidiviz.persistence.entity.state.entities import (
@@ -722,13 +723,13 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
 
             if next_ip and cls._is_status_change_edge(ip, next_ip):
                 # Update the release_reason on the IP to STATUS_CHANGE
-                incarceration_periods[index] = attr.evolve(
+                incarceration_periods[index] = deep_entity_update(
                     ip,
                     release_reason=StateIncarcerationPeriodReleaseReason.STATUS_CHANGE,
                 )
 
                 # Update the admission_reason on the next IP to STATUS_CHANGE
-                incarceration_periods[index + 1] = attr.evolve(
+                incarceration_periods[index + 1] = deep_entity_update(
                     next_ip,
                     admission_reason=StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE,
                 )
@@ -883,12 +884,12 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
 
             if updated_previous_ip_release_reason and previous_ip:
                 # Update previous period
-                updated_periods[-1] = attr.evolve(
+                updated_periods[-1] = deep_entity_update(
                     previous_ip, release_reason=updated_previous_ip_release_reason
                 )
 
             # Update the period with expected values
-            updated_ip = attr.evolve(
+            updated_ip = deep_entity_update(
                 ip,
                 admission_reason=(updated_admission_reason or ip.admission_reason),
                 specialized_purpose_for_incarceration=(
@@ -956,7 +957,7 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
                 # Set the purpose_for_incarceration from the pfi_info onto the period,
                 # if set. Default to GENERAL for any unset purpose_for_incarceration
                 # values at this point in normalization.
-                updated_ip = attr.evolve(
+                updated_ip = deep_entity_update(
                     updated_ip,
                     specialized_purpose_for_incarceration=(
                         pfi_info.purpose_for_incarceration
@@ -971,7 +972,7 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
                     # Any commitment from supervision for SHOCK_INCARCERATION or
                     # TREATMENT_IN_PRISON should actually be classified as a
                     # SANCTION_ADMISSION
-                    updated_ip = attr.evolve(
+                    updated_ip = deep_entity_update(
                         updated_ip,
                         admission_reason=StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
                     )
@@ -1019,7 +1020,7 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
             if not pfi_override and not ip.specialized_purpose_for_incarceration:
                 pfi_override = StateSpecializedPurposeForIncarceration.GENERAL
 
-            updated_ip = attr.evolve(
+            updated_ip = deep_entity_update(
                 ip,
                 specialized_purpose_for_incarceration=(
                     pfi_override or ip.specialized_purpose_for_incarceration
