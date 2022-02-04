@@ -1,0 +1,192 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_IncarcerationAndSupervisionSentences` to
+#  corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - OffenderID
+  - ConvictionCounty
+  - CaseYear
+  - CaseNumber
+  - CountNumber
+  - SentencedTo
+  - SuspendedToProbation
+  - SentenceStatus
+  - MostRecentSentenceAction
+  - SentenceEffectiveDate
+  - SentenceImposeDate
+  - EarliestPossibleReleaseDate
+  - FullExpirationDate
+  - ExpirationDate
+  - CalculatedMinimumSentenceDays
+  - CalculatedMaximumSentenceDays
+  - PretrialJailCredits
+  - LifeDeathHabitual
+  - ConsecutiveConvictionCounty
+  - ConsecutiveCaseYear
+  - ConsecutiveCaseNumber
+  - ConsecutiveCountNumber
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OffenderID
+          id_type: $literal("US_TN_DOC")
+    incarceration_sentences:
+      - $conditional:
+          - $if:
+              $custom:
+                $function: us_tn_custom_parsers.is_incarceration_sentence
+                $args:
+                  sentence_status: SentenceStatus
+                  suspended_to_probation: SuspendedToProbation
+                  sentenced_to: SentencedTo
+            $then:
+              StateIncarcerationSentence:
+                # TODO(#10381): external_id could be a shared variable with supervision sentence.
+                external_id:
+                  $concat:
+                    $values:
+                      - OffenderID
+                      - ConvictionCounty
+                      - CaseYear
+                      - CaseNumber
+                      - CountNumber
+                status:
+                  $enum_mapping:
+                    $raw_text:
+                      $concat:
+                        $values:
+                          - MostRecentSentenceAction
+                          - SentenceStatus
+                    # TODO(#10923): Remove custom parser once multiple columns can be used to determine enum value.
+                    $custom_parser: us_tn_custom_parsers.parse_sentence_status
+                incarceration_type:
+                  $enum_mapping:
+                    $raw_text: SentencedTo
+                    $mappings:
+                      StateIncarcerationType.COUNTY_JAIL:
+                        - LJ  # Local Jail
+                        - WK  # Workhouse
+                      StateIncarcerationType.STATE_PRISON:
+                        - TD  # TDOC
+                start_date: SentenceEffectiveDate
+                date_imposed: SentenceImposeDate
+                projected_min_release_date: EarliestPossibleReleaseDate
+                projected_max_release_date: FullExpirationDate
+                completion_date: ExpirationDate
+                county_code: ConvictionCounty
+                min_length_days: CalculatedMinimumSentenceDays
+                max_length_days: CalculatedMaximumSentenceDays
+                is_capital_punishment:
+                  $equal:
+                    - LifeDeathHabitual
+                    - $literal("D")  # Death Sentence
+                is_life:
+                  $in:
+                    $value: LifeDeathHabitual
+                    $options:
+                      - $literal("L")  # Life Sentence
+                      - $literal("W")  # Life sentence without parole
+                      - $literal("H")  # Habitual (equivalent to life sentence)
+                sentence_metadata:
+                  $conditional:
+                    - $if:
+                        # We only want to pull in a consecutive sentence id if there is a consecutive case
+                        # number present.
+                        $not_null: ConsecutiveCaseNumber
+                      $then:
+                        $json_dict:
+                          # The id of the sentence that this sentence is consecutive to, if applicable.
+                          consecutive_sentence_id:
+                            $concat:
+                              $values:
+                                - OffenderID
+                                - $conditional:
+                                    - $if:
+                                        $is_null: ConsecutiveConvictionCounty
+                                      $then: ConvictionCounty
+                                    - $else: ConsecutiveConvictionCounty
+                                - $conditional:
+                                    - $if:
+                                        $equal:
+                                          - ConsecutiveCaseYear
+                                          - $literal("0")
+                                      $then: CaseYear
+                                    - $else: ConsecutiveCaseYear
+                                - ConsecutiveCaseNumber
+                                - ConsecutiveCountNumber
+                initial_time_served_days: PretrialJailCredits
+    supervision_sentences:
+      - $conditional:
+          - $if:
+              $custom:
+                $function: us_tn_custom_parsers.is_supervision_sentence
+                $args:
+                  sentence_status: SentenceStatus
+                  suspended_to_probation: SuspendedToProbation
+                  sentenced_to: SentencedTo
+            $then:
+              StateSupervisionSentence:
+                # TODO(#10381): external_id could be a shared variable with incarceration sentence.
+                external_id:
+                  $concat:
+                    $values:
+                      - OffenderID
+                      - ConvictionCounty
+                      - CaseYear
+                      - CaseNumber
+                      - CountNumber
+                status:
+                  $enum_mapping:
+                    $raw_text:
+                      $concat:
+                        $values:
+                          - MostRecentSentenceAction
+                          - SentenceStatus
+                    # TODO(#10923): Remove custom parser once multiple columns can be used to determine enum value.
+                    $custom_parser: us_tn_custom_parsers.parse_sentence_status
+                start_date: SentenceEffectiveDate
+                date_imposed: SentenceImposeDate
+                projected_completion_date: FullExpirationDate
+                completion_date: ExpirationDate
+                county_code: ConvictionCounty
+                min_length_days: CalculatedMinimumSentenceDays
+                max_length_days: CalculatedMaximumSentenceDays
+                supervision_type:
+                  $enum_mapping:
+                    $raw_text:
+                      $concat:
+                        $values:
+                          - SentenceStatus
+                          - SuspendedToProbation
+                          - SentencedTo
+                    # TODO(#10923): Remove custom parser once multiple columns can be used to determine enum value.
+                    $custom_parser: us_tn_custom_parsers.parse_supervision_type
+                sentence_metadata:
+                  $conditional:
+                    - $if:
+                        # We only want to pull in a consecutive sentence id if there is a consecutive case
+                        # number present.
+                        $not_null: ConsecutiveCaseNumber
+                      $then:
+                        $json_dict:
+                          # The id of the sentence that this sentence is consecutive to, if applicable.
+                          consecutive_sentence_id:
+                                  $concat:
+                                    $values:
+                                      - OffenderID
+                                      - $conditional:
+                                          - $if:
+                                              $is_null: ConsecutiveConvictionCounty
+                                            $then: ConvictionCounty
+                                          - $else: ConsecutiveConvictionCounty
+                                      - $conditional:
+                                          - $if:
+                                              $equal:
+                                                - ConsecutiveCaseYear
+                                                - $literal("0")
+                                            $then: CaseYear
+                                          - $else: ConsecutiveCaseYear
+                                      - ConsecutiveCaseNumber
+                                      - ConsecutiveCountNumber
