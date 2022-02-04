@@ -71,6 +71,7 @@ SESSION_SUPERVISION_STARTS_TO_DATAFLOW_DISAGGREGATED_QUERY_TEMPLATE = """
         start_date AS date,
         sessions.session_id,
         dataflow.start_reason AS dataflow_reason,
+        dataflow.start_reason_raw_text AS dataflow_reason_raw_text,
         CASE WHEN sessions.person_id IS NOT NULL THEN 1 ELSE 0 END as session_transition,
         COALESCE(dataflow.dataflow_event, 0) AS dataflow_event,
         CASE WHEN dataflow.dataflow_event = 1 AND sessions.person_id IS NOT NULL THEN 1 ELSE 0 END AS event_in_both,
