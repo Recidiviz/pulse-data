@@ -48,6 +48,7 @@ SUPERVISION_TO_LIBERTY_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = """
             gender,
             age_group,
             supervision_type,
+            IFNULL(supervision_level, "EXTERNAL_UNKNOWN") AS supervision_level,
             district_id,
             prioritized_race_or_ethnicity AS race,
             {binned_time_periods} AS time_period,
@@ -71,6 +72,7 @@ SUPERVISION_TO_LIBERTY_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = """
         age_group,
         race,
         supervision_type,
+        supervision_level,
         IFNULL(location_name, district_id) AS district,
         length_of_stay,
         COUNT(1) AS event_count,
@@ -79,6 +81,7 @@ SUPERVISION_TO_LIBERTY_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = """
     UNNEST([race, 'ALL']) AS race,
     UNNEST([age_group, 'ALL']) AS age_group,
     UNNEST([supervision_type, 'ALL']) AS supervision_type,
+    UNNEST([supervision_level, 'ALL']) AS supervision_level,
     UNNEST([district_id, 'ALL']) AS district_id,
     UNNEST([length_of_stay, 'ALL']) AS length_of_stay
     LEFT JOIN get_last_updated
@@ -86,7 +89,7 @@ SUPERVISION_TO_LIBERTY_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = """
     LEFT JOIN `{project_id}.{dashboards_dataset}.pathways_supervision_location_name_map` locations
         ON district_id = location_id
         AND transitions.state_code = locations.state_code
-    GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9
+    GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
 """
 
 SUPERVISION_TO_LIBERTY_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER = MetricBigQueryViewBuilder(

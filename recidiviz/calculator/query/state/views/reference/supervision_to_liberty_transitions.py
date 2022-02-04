@@ -41,6 +41,7 @@ SUPERVISION_TO_LIBERTY_TRANSITIONS_QUERY_TEMPLATE = """
         prioritized_race_or_ethnicity,
         {first_known_location} AS district_id,
         IF(compartment_level_2 = 'DUAL', 'PAROLE', compartment_level_2) AS supervision_type,
+        SPLIT(correctional_level_end, "|")[OFFSET(0)] AS supervision_level,
         gender,
         supervising_officer_external_id_end as supervising_officer,
         supervision_start_date,

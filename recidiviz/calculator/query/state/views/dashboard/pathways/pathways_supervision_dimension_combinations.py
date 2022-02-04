@@ -31,7 +31,15 @@ from recidiviz.utils.metadata import local_project_id_override
 
 # for dimensions that have constant values across all states, we need a series of unnest statements
 supervision_constant_dimensions: Dict[str, Union[List[int], List[str]]] = {
-    "supervision_level": ["ALL"],
+    "supervision_level": [
+        "MEDIUM",
+        "INTERSTATE_COMPACT",
+        "MAXIMUM",
+        "DIVERSION",
+        "EXTERNAL_UNKNOWN",
+        "MINIMUM",
+        "ALL",
+    ],
     # TODO(#10742): implement violation fields
     "most_severe_violation": ["ALL"],
     "number_of_violations": ["ALL"],

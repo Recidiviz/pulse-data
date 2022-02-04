@@ -44,7 +44,7 @@ SELECT
     age_group,
     race,
     district,
-    "ALL" AS supervision_level,
+    IFNULL(supervision_level, "EXTERNAL_UNKNOWN") AS supervision_level,
     "ALL" AS most_severe_violation,
     "ALL" AS number_of_violations,
     COUNT(1) as event_count
@@ -52,6 +52,7 @@ FROM
     `{project_id}.{reference_dataset}.supervision_to_prison_transitions` transitions,
     UNNEST ([gender, 'ALL']) AS gender,
     UNNEST ([supervision_type, 'ALL']) AS supervision_type,
+    UNNEST ([supervision_level, 'ALL']) AS supervision_level,
     UNNEST ([age_group, 'ALL']) AS age_group,
     UNNEST ([prioritized_race_or_ethnicity, "ALL"]) AS race
 LEFT JOIN `{project_id}.{dashboard_views_dataset}.pathways_supervision_location_name_map` location

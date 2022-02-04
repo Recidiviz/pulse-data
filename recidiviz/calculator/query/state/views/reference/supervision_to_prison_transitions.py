@@ -37,6 +37,7 @@ SUPERVISION_TO_PRISON_TRANSITIONS_QUERY_TEMPLATE = """
         sessions.person_id,
         sessions.end_date AS transition_date,
         IF(sessions.compartment_level_2 = 'DUAL', 'PAROLE', sessions.compartment_level_2) AS supervision_type,
+        SPLIT(sessions.correctional_level_end, "|")[OFFSET(0)] AS supervision_level,
         sessions.age_end AS age,
         {age_group}
         sessions.gender,
