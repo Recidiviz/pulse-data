@@ -99,29 +99,29 @@ DEPENDENCY_TREE_SCRIPT_TEMPLATE = """This dependency tree is too large to displa
 
 BQ_LINK_TEMPLATE = """https://console.cloud.google.com/bigquery?pli=1&p={project}&page=table&project={project}&d={dataset_id}&t={table_id}"""
 
-VIEW_DOCS_TEMPLATE = """##{view_dataset_id}.{view_table_id}
+VIEW_DOCS_TEMPLATE = """## {view_dataset_id}.{view_table_id}
 {description}
 
-####View schema in Big Query
+#### View schema in Big Query
 This view may not be deployed to all environments yet.<br/>
 [**Staging**]({staging_link})
 <br/>
 [**Production**]({prod_link})
 <br/>
 
-####Dependency Trees
+#### Dependency Trees
 
-#####Parentage
+##### Parentage
 {parent_tree}
 
-#####Descendants
+##### Descendants
 {child_tree}
 """
 
-METRIC_DOCS_TEMPLATE = """##{metric_name}
+METRIC_DOCS_TEMPLATE = """## {metric_name}
 {description}
 
-####Metric attributes
+#### Metric attributes
 Attributes specific to the `{metric_name}`:
 
 {metric_attributes}
@@ -130,18 +130,18 @@ Attributes on all metrics:
 
 {common_attributes}
 
-####Metric tables in BigQuery
+#### Metric tables in BigQuery
 
 * [**Staging**]({staging_link})
 <br/>
 * [**Production**]({prod_link})
 <br/>
 
-####Calculation Cadences
+#### Calculation Cadences
 
 {metrics_cadence_table}
 
-####Dependent Views
+#### Dependent Views
 
 If you are interested in what views rely on this metric, please run the following script(s) in your shell:
 
@@ -312,8 +312,7 @@ class CalculationDocumentationGenerator:
         )
 
     def _get_dataflow_pipeline_enabled_states(self) -> Set[StateCode]:
-        """Returns the set of StateCodes for all states present in our production calc
-        pipeline template."""
+        """Returns the set of StateCodes for all states present in our calculation_pipeline_templates.yaml."""
         states = {
             pipeline.peek("state_code", str).upper()
             for pipeline in self.incremental_pipelines
@@ -495,7 +494,7 @@ class CalculationDocumentationGenerator:
         )
 
         return (
-            "##SHIPPED STATES\n"
+            "## SHIPPED STATES\n"
             + shipped_states_str
             + "\n\n## STATES IN DEVELOPMENT\n"
             + development_states_str
@@ -519,7 +518,7 @@ class CalculationDocumentationGenerator:
         datasets_to_keys = self._get_keys_by_dataset(dag_keys)
         views_str = ""
         for dataset, keys in datasets_to_keys.items():
-            views_str += f"####{dataset}\n"
+            views_str += f"#### {dataset}\n"
             views_str += (
                 f"_{VIEW_SOURCE_TABLE_DATASETS_TO_DESCRIPTIONS[dataset]}_\n"
                 if source_tables_section
@@ -541,7 +540,7 @@ class CalculationDocumentationGenerator:
 
     def _get_views_str_for_product(self, view_keys: Set[DagKey]) -> str:
         """Returns the string containing the VIEWS section of the product markdown."""
-        views_header = "##VIEWS\n\n"
+        views_header = "## VIEWS\n\n"
         if not view_keys:
             return views_header + "*This product does not use any BigQuery views.*\n\n"
         return views_header + self._get_dataset_headers_to_views_str(view_keys)
@@ -549,7 +548,7 @@ class CalculationDocumentationGenerator:
     def _get_source_tables_str_for_product(self, source_keys: Set[DagKey]) -> str:
         """Returns the string containing the SOURCE TABLES section of the product markdown."""
         source_tables_header = (
-            "##SOURCE TABLES\n"
+            "## SOURCE TABLES\n"
             "_Reference views that are used by other views. Some need to be updated manually._\n\n"
         )
         if not source_keys:
@@ -565,7 +564,7 @@ class CalculationDocumentationGenerator:
         """Builds the Metrics string for the product markdown file. Creates a table of
         necessary metric types and whether a state calculates those metrics"""
         metrics_header = (
-            "##METRICS\n_All metrics required to support this product and"
+            "## METRICS\n_All metrics required to support this product and"
             " whether or not each state regularly calculates the metric._"
             "\n\n** DISCLAIMER **\nThe presence of all required metrics"
             " for a state does not guarantee that this product is ready to"
@@ -661,7 +660,7 @@ class CalculationDocumentationGenerator:
         """Returns a string containing all relevant information for a given product
         including name, views used, source tables, and required metrics."""
 
-        documentation = f"#{product.name.upper()}\n"
+        documentation = f"# {product.name.upper()}\n"
         documentation += product.description + "\n"
 
         documentation += self._get_shipped_states_str(product)
@@ -795,18 +794,18 @@ class CalculationDocumentationGenerator:
 
     def _get_state_information(self, state_code: StateCode, state_name: str) -> str:
         """Returns string contents for the state markdown."""
-        documentation = f"#{state_name}\n\n"
+        documentation = f"# {state_name}\n\n"
 
         # Products section
-        documentation += "##Shipped Products\n\n"
+        documentation += "## Shipped Products\n\n"
         documentation += self.products_list_for_env(
             state_code, GCPEnvironment.PRODUCTION
         )
-        documentation += "\n\n##Products in Development\n\n"
+        documentation += "\n\n## Products in Development\n\n"
         documentation += self.products_list_for_env(state_code, GCPEnvironment.STAGING)
 
         # Metrics section
-        documentation += "\n\n##Regularly Calculated Metrics\n\n"
+        documentation += "\n\n## Regularly Calculated Metrics\n\n"
 
         documentation += self._get_metrics_table_for_state(state_name)
 
