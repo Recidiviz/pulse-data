@@ -100,6 +100,7 @@ class ExtractDataForPipeline(beam.PTransform):
     def __init__(
         self,
         state_code: str,
+        project_id: str,
         dataset: str,
         reference_dataset: str,
         required_entity_classes: List[Type[Entity]],
@@ -111,7 +112,8 @@ class ExtractDataForPipeline(beam.PTransform):
 
         Arguments:
             state_code: The state code to filter all results by
-            dataset: The name of the dataset to read from BigQuery.
+            project_id: The project_id of the BigQuery project to query from.
+            dataset: The name of the dataset_id to read from BigQuery.
             required_entity_classes: The list of required entity classes for the
                 pipeline. Must not contain any duplicates of any entities.
             unifying_class: The Entity type whose id should be used to connect the
@@ -126,6 +128,7 @@ class ExtractDataForPipeline(beam.PTransform):
         super().__init__()
 
         self._state_code = state_code
+        self._project_id = project_id
 
         if not dataset:
             raise ValueError("No valid data source passed to the pipeline.")
@@ -296,6 +299,7 @@ class ExtractDataForPipeline(beam.PTransform):
                 f"{root_entity_class.__name__} to "
                 f"{related_entity_class.__name__} relationship."
                 >> _ExtractAssociationValues(
+                    project_id=self._project_id,
                     dataset=self._dataset,
                     root_entity_class=root_entity_class,
                     related_entity_class=related_entity_class,
@@ -319,6 +323,7 @@ class ExtractDataForPipeline(beam.PTransform):
             pipeline | f"Extract {entity_class.__name__} "
             f"instances"
             >> _ExtractAllEntitiesOfType(
+                project_id=self._project_id,
                 dataset=self._dataset,
                 entity_class=entity_class,
                 unifying_id_field=self._unifying_id_field,
@@ -389,6 +394,7 @@ class ExtractDataForPipeline(beam.PTransform):
             reference_data[
                 table_id
             ] = input_or_inputs | f"Load {table_id}" >> ImportTableAsKVTuples(
+                project_id=self._project_id,
                 dataset_id=self._reference_dataset,
                 table_id=table_id,
                 table_key=self._unifying_id_field,
@@ -711,6 +717,7 @@ class _ExtractEntityBase(beam.PTransform):
 
     def __init__(
         self,
+        project_id: str,
         dataset: str,
         entity_class: Type[Entity],
         unifying_id_field: str,
@@ -718,6 +725,7 @@ class _ExtractEntityBase(beam.PTransform):
         state_code: str,
     ):
         super().__init__()
+        self._project_id = project_id
         self._dataset = dataset
 
         self._unifying_id_field = unifying_id_field
@@ -768,6 +776,7 @@ class _ExtractEntityBase(beam.PTransform):
         )
 
         entity_query = select_query(
+            project_id=self._project_id,
             dataset=self._dataset,
             table=self._entity_table_name,
             state_code_filter=self._state_code,
@@ -810,6 +819,7 @@ class _ExtractAllEntitiesOfType(_ExtractEntityBase):
 
     def __init__(
         self,
+        project_id: str,
         dataset: str,
         entity_class: Type[Entity],
         unifying_id_field: str,
@@ -817,6 +827,7 @@ class _ExtractAllEntitiesOfType(_ExtractEntityBase):
         state_code: str,
     ):
         super().__init__(
+            project_id,
             dataset,
             entity_class,
             unifying_id_field,
@@ -847,6 +858,7 @@ class ImportTable(beam.PTransform):
 
     def __init__(
         self,
+        project_id: str,
         dataset_id: str,
         table_id: str,
         state_code_filter: str,
@@ -854,6 +866,7 @@ class ImportTable(beam.PTransform):
         unifying_id_filter_set: Optional[Set[int]] = None,
     ):
         super().__init__()
+        self.project_id = project_id
         self.dataset_id = dataset_id
         self.table_id = table_id
         self.state_code_filter = state_code_filter
@@ -864,6 +877,7 @@ class ImportTable(beam.PTransform):
     def expand(self, pipeline: Pipeline):
         # Bring in the table from BigQuery
         table_query = select_query(
+            project_id=self.project_id,
             dataset=self.dataset_id,
             table=self.table_id,
             state_code_filter=self.state_code_filter,
@@ -889,6 +903,7 @@ class ImportTableAsKVTuples(beam.PTransform):
 
     def __init__(
         self,
+        project_id: str,
         dataset_id: str,
         table_id: str,
         table_key: str,
@@ -897,6 +912,7 @@ class ImportTableAsKVTuples(beam.PTransform):
         unifying_id_filter_set: Optional[Set[int]] = None,
     ):
         super().__init__()
+        self.project_id = project_id
         self.dataset_id = dataset_id
         self.table_id = table_id
         self.table_key = table_key
@@ -911,6 +927,7 @@ class ImportTableAsKVTuples(beam.PTransform):
             pipeline
             | f"Read {self.dataset_id}.{self.table_id} from BigQuery"
             >> ImportTable(
+                project_id=self.project_id,
                 dataset_id=self.dataset_id,
                 table_id=self.table_id,
                 state_code_filter=self.state_code_filter,
@@ -935,6 +952,7 @@ class _ExtractAssociationValues(_ExtractEntityBase):
 
     def __init__(
         self,
+        project_id: str,
         dataset: str,
         root_entity_class: Type[Entity],
         related_entity_class: Type[Entity],
@@ -969,6 +987,7 @@ class _ExtractAssociationValues(_ExtractEntityBase):
         self._related_id_field = related_id_field
 
         super().__init__(
+            project_id,
             dataset,
             self._entity_class_for_query,
             unifying_id_field,
@@ -1032,7 +1051,8 @@ class _ExtractAssociationValues(_ExtractEntityBase):
                 f"{self._entity_class.get_entity_name()}.{self._unifying_id_field} as {UNIFYING_ID_KEY}, "
                 f"{self._association_table}.{self._root_id_field}, "
                 f"{self._association_table}.{self._related_id_field} "
-                f"FROM `{self._dataset}.{self._association_table}` {self._association_table} "
+                f"FROM `{self._project_id}.{self._dataset}.{self._association_table}`"
+                f" {self._association_table} "
                 f"JOIN ({self._get_entities_table_sql_query()}) {self._entity_class.get_entity_name()} "
                 f"ON {self._entity_class.get_entity_name()}.{self._entity_id_field} = "
                 f"{self._association_table}.{self._root_id_field}"

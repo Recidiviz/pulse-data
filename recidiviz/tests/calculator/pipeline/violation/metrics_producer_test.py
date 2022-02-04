@@ -77,7 +77,7 @@ class TestProduceViolationMetrics(unittest.TestCase):
 
         self.person.ethnicities = [self.ethnicity]
         self.metric_producer = metric_producer.ViolationMetricProducer()
-        self.pipeline_config = pipeline.ViolationPipeline().pipeline_config
+        self.pipeline_config = pipeline.ViolationPipelineRunDelegate.pipeline_config()
 
     @freeze_time("2030-11-02")
     def test_produce_violation_metrics(self) -> None:

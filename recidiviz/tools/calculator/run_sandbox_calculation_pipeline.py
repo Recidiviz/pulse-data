@@ -61,11 +61,7 @@ from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DAT
 from recidiviz.tools.deploy.build_dataflow_source_distribution import (
     build_source_distribution,
 )
-from recidiviz.tools.pipeline_launch_util import (
-    get_pipeline,
-    load_all_pipelines,
-    run_pipeline,
-)
+from recidiviz.tools.pipeline_launch_util import load_all_pipelines, run_pipeline
 
 
 def parse_run_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
@@ -183,9 +179,7 @@ def run_sandbox_calculation_pipeline() -> None:
         sys.argv
     )
 
-    pipeline_to_run = get_pipeline(pipeline_module_name)
-
-    run_pipeline(pipeline_to_run, pipeline_arguments)
+    run_pipeline(pipeline_module_name, pipeline_arguments)
 
 
 if __name__ == "__main__":

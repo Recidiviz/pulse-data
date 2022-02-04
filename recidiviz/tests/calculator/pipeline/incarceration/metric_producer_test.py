@@ -80,7 +80,9 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
 
     def setUp(self) -> None:
         self.metric_producer = metric_producer.IncarcerationMetricProducer()
-        self.pipeline_config = pipeline.IncarcerationPipeline().pipeline_config
+        self.pipeline_config = (
+            pipeline.IncarcerationPipelineRunDelegate.pipeline_config()
+        )
 
     def test_produce_incarceration_metrics(self) -> None:
         person = StatePerson.new_with_defaults(

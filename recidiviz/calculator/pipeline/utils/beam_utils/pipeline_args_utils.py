@@ -18,87 +18,7 @@
 import argparse
 from typing import List, Optional
 
-from apache_beam.options.pipeline_options import PipelineOptions
-
-from recidiviz.calculator.pipeline.utils.execution_utils import (
-    calculation_end_month_arg,
-    calculation_month_count_arg,
-)
-from recidiviz.calculator.query.state.dataset_config import (
-    DATAFLOW_METRICS_DATASET,
-    REFERENCE_VIEWS_DATASET,
-    STATE_BASE_DATASET,
-    STATIC_REFERENCE_TABLES_DATASET,
-)
-
-
-def add_shared_pipeline_arguments(
-    parser: argparse.ArgumentParser, include_calculation_limit_args: bool = False
-) -> None:
-    """Adds argument configs to the |parser| for shared pipeline args that do not get passed through to Apache Beam."""
-
-    parser.add_argument(
-        "--data_input",
-        type=str,
-        help="BigQuery dataset to query.",
-        default=STATE_BASE_DATASET,
-    )
-
-    parser.add_argument(
-        "--reference_view_input",
-        type=str,
-        help="BigQuery reference view dataset to query.",
-        default=REFERENCE_VIEWS_DATASET,
-    )
-
-    parser.add_argument(
-        "--static_reference_input",
-        type=str,
-        help="BigQuery static reference table dataset to query.",
-        default=STATIC_REFERENCE_TABLES_DATASET,
-    )
-
-    parser.add_argument(
-        "--state_code",
-        dest="state_code",
-        type=str,
-        help="The state_code to include in the calculations.",
-    )
-
-    parser.add_argument(
-        "--output",
-        type=str,
-        help="Output dataset to write results to.",
-        default=DATAFLOW_METRICS_DATASET,
-    )
-
-    parser.add_argument(
-        "--person_filter_ids",
-        type=int,
-        nargs="+",
-        help="An optional list of DB person_id values. When present, the pipeline will only calculate "
-        "metrics for these people and will not output to BQ.",
-    )
-
-    if include_calculation_limit_args:
-        # Only for pipelines that may receive these arguments
-        parser.add_argument(
-            "--calculation_end_month",
-            dest="calculation_end_month",
-            type=calculation_end_month_arg,
-            help="The year and month, formatted in YYYY-MM, specifying the last month for which metrics"
-            " should be calculated. If unset, defaults to the current month. Cannot be a month in"
-            " the future.",
-        )
-
-        parser.add_argument(
-            "--calculation_month_count",
-            dest="calculation_month_count",
-            type=calculation_month_count_arg,
-            help="The number of months (including this one) to limit the monthly calculation output to."
-            " If set to -1, does not limit the calculations.",
-            default=1,
-        )
+from apache_beam.options.pipeline_options import PipelineOptions, SetupOptions
 
 
 def _add_base_apache_beam_args(parser: argparse.ArgumentParser) -> None:
@@ -342,7 +262,7 @@ def _get_parsed_full_apache_beam_args(
     return parsed_args
 
 
-def _derive_apache_beam_pipeline_args(argv: List[str]) -> List[str]:
+def derive_apache_beam_pipeline_args(argv: List[str]) -> List[str]:
     """Apache Beam pipelines require that we generate a PipelineOptions object using command-line arguments in the same
     format they come in when you look at sys.argv. This is convenient if you're ok passing in all the arguments
     separately from the command line. However, many of the argument values can be derived from other args. In order to
@@ -386,4 +306,7 @@ def _derive_apache_beam_pipeline_args(argv: List[str]) -> List[str]:
 def get_apache_beam_pipeline_options_from_args(argv: List[str]) -> PipelineOptions:
     """Generates a PipelineOptions object from a list of command-line args, adding any missing args that can be derived
     from those passed in."""
-    return PipelineOptions(_derive_apache_beam_pipeline_args(argv))
+    pipeline_options = PipelineOptions(derive_apache_beam_pipeline_args(argv))
+    pipeline_options.view_as(SetupOptions).save_main_session = True
+
+    return pipeline_options

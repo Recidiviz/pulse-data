@@ -56,7 +56,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
 
     def setUp(self) -> None:
         self.metric_producer = metric_producer.ProgramMetricProducer()
-        self.pipeline_config = pipeline.ProgramPipeline().pipeline_config
+        self.pipeline_config = pipeline.ProgramPipelineRunDelegate.pipeline_config()
 
     @freeze_time("2030-11-02")
     def test_produce_program_metrics(self) -> None:

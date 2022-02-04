@@ -83,7 +83,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
     def setUp(self) -> None:
         self.metric_producer = metric_producer.SupervisionMetricProducer()
         self.identifier = identifier.SupervisionIdentifier()
-        self.pipeline_config = pipeline.SupervisionPipeline().pipeline_config
+        self.pipeline_config = pipeline.SupervisionPipelineRunDelegate.pipeline_config()
         self.supervision_delegate_patcher = mock.patch(
             "recidiviz.calculator.pipeline.supervision.metric_producer.get_state_specific_supervision_delegate"
         )

@@ -20,7 +20,12 @@ for details on how to launch a local run.
 
 from __future__ import absolute_import
 
-from recidiviz.calculator.pipeline.base_pipeline import BasePipeline, PipelineConfig
+from recidiviz.calculator.pipeline.base_identifier import BaseIdentifier
+from recidiviz.calculator.pipeline.base_metric_producer import BaseMetricProducer
+from recidiviz.calculator.pipeline.base_pipeline import PipelineConfig
+from recidiviz.calculator.pipeline.calculation_pipeline import (
+    CalculationPipelineRunDelegate,
+)
 from recidiviz.calculator.pipeline.incarceration import identifier, metric_producer
 from recidiviz.calculator.pipeline.pipeline_type import PipelineType
 from recidiviz.calculator.query.state.views.reference.incarceration_period_judicial_district_association import (
@@ -39,14 +44,13 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.state import entities
 
 
-class IncarcerationPipeline(BasePipeline):
+class IncarcerationPipelineRunDelegate(CalculationPipelineRunDelegate):
     """Defines the incarceration calculation pipeline."""
 
-    def __init__(self) -> None:
-        self.pipeline_config = PipelineConfig(
+    @classmethod
+    def pipeline_config(cls) -> PipelineConfig:
+        return PipelineConfig(
             pipeline_type=PipelineType.INCARCERATION,
-            identifier=identifier.IncarcerationIdentifier(),
-            metric_producer=metric_producer.IncarcerationMetricProducer(),
             required_entities=[
                 entities.StatePerson,
                 entities.StatePersonRace,
@@ -75,4 +79,15 @@ class IncarcerationPipeline(BasePipeline):
                 StateCode.US_MO: [US_MO_SENTENCE_STATUSES_VIEW_NAME]
             },
         )
-        self.include_calculation_limit_args = True
+
+    @classmethod
+    def identifier(cls) -> BaseIdentifier:
+        return identifier.IncarcerationIdentifier()
+
+    @classmethod
+    def metric_producer(cls) -> BaseMetricProducer:
+        return metric_producer.IncarcerationMetricProducer()
+
+    @classmethod
+    def include_calculation_limit_args(cls) -> bool:
+        return True
