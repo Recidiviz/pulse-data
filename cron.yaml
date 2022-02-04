@@ -341,7 +341,7 @@ cron:
 
   - description: "[Supplemental Data] Generate supplemental data table us_id_case_note_matched_entities"
     url: /supplemental_dataset/handle_supplemental_dataset_generation?region=us_id&table_id=us_id_case_note_matched_entities
-    schedule: every day 15:00
+    schedule: every day 18:00
     timezone: America/Los_Angeles
     retry_parameters:
       min_backoff_seconds: 30
