@@ -1,0 +1,18 @@
+manifest_language: 1.0.0
+input_columns:
+  - PERSONNAME
+  - SSN
+unused_columns: []
+variables:
+  - should_include_ssn:
+      $custom:
+        $function: fake_custom_conditionals.should_include_ssn
+        $args:
+          ssn: SSN
+output:
+  FakePerson:
+    name: PERSONNAME
+    ssn:
+      $conditional:
+        - $if: $variable(should_include_ssn)
+          $then: SSN

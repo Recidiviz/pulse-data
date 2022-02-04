@@ -30,46 +30,6 @@ from recidiviz.common.constants.state.state_supervision_sentence import (
 )
 
 
-def is_incarceration_sentence(
-    sentence_status: str, suspended_to_probation: str, sentenced_to: str
-) -> bool:
-    """
-    Returns whether we should categorize the sentence as an incarceration sentence.
-    """
-    # TODO(#10381) Replace once we can store a condition as a variable.
-    # AC indicates an active incarceration sentence.
-    return sentence_status == "AC" or (
-        sentence_status == "IN"  # Inactive sentence
-        and suspended_to_probation
-        != "S"  # If set to `S`, then that means that this is a probation sentence,
-        # regardless of what value is in sentenced_to.
-        and sentenced_to
-        in (
-            "TD",  # TDOC (Tennessee Department of Corrections)
-            "LJ",  # Local Jail
-            "WK",  # Workhouse (jail for short sentences)
-        )
-    )
-
-
-def is_supervision_sentence(
-    sentence_status: str, suspended_to_probation: str, sentenced_to: str
-) -> bool:
-    """
-    Returns whether we should categorize the sentence as a supervision sentence.
-    """
-    # TODO(#10381) Replace once we can store a condition as a variable.
-    return sentence_status in ("CC", "PB") or (  # Community corrections and Probation
-        sentence_status == "IN"  # Inactive sentence
-        and (
-            suspended_to_probation
-            == "S"  # If set to `S`, then that means that this is a probation sentence,
-            # regardless of what value is in sentenced_to.
-            or sentenced_to == "CC"  # Community corrections
-        )
-    )
-
-
 def parse_supervision_type(raw_text: str) -> StateSupervisionSentenceSupervisionType:
     """
     Returns the supervision type of a supervision sentence.

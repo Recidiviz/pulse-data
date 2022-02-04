@@ -965,9 +965,8 @@ class IngestViewFileParserTest(unittest.TestCase):
         # Act
         with self.assertRaisesRegex(
             ValueError,
-            r"Unexpected return type for function \[flip_black_and_white\] in module "
-            r"\[[a-z_\.]+\]. Expected \[<enum 'FakeGender'>\], found "
-            r"\[<enum 'FakeRace'>\]",
+            r"Unexpected return type for function \[fake_custom_enum_parsers.flip_black_and_white\]. "
+            r"Expected \[<enum 'FakeGender'>\], found \[<enum 'FakeRace'>\]",
         ):
             _ = self._run_parse_manifest_for_tag("enum_custom_parser_bad_return_type")
 
@@ -976,7 +975,7 @@ class IngestViewFileParserTest(unittest.TestCase):
         with self.assertRaisesRegex(
             ValueError,
             r"Found extra, unexpected arguments for function "
-            r"\[enum_parser_bad_arg_name\] in module \[[a-z_\.]+\]: {'bad_arg'}",
+            r"\[fake_custom_enum_parsers.enum_parser_bad_arg_name\] in module \[[a-z_\.]+\]: {'bad_arg'}",
         ):
             _ = self._run_parse_manifest_for_tag("enum_custom_parser_bad_arg_name")
 
@@ -985,7 +984,7 @@ class IngestViewFileParserTest(unittest.TestCase):
         with self.assertRaisesRegex(
             ValueError,
             r"Found extra, unexpected arguments for function "
-            r"\[enum_parser_extra_arg\] in module \[[a-z_\.]+\]: {'another_arg'}",
+            r"\[fake_custom_enum_parsers.enum_parser_extra_arg\] in module \[[a-z_\.]+\]: {'another_arg'}",
         ):
             _ = self._run_parse_manifest_for_tag("enum_custom_parser_extra_arg")
 
@@ -993,7 +992,7 @@ class IngestViewFileParserTest(unittest.TestCase):
         # Act
         with self.assertRaisesRegex(
             ValueError,
-            r"Missing expected arguments for function \[enum_parser_missing_arg\] "
+            r"Missing expected arguments for function \[fake_custom_enum_parsers.enum_parser_missing_arg\] "
             r"in module \[[a-z_\.]+\]: {'raw_text'}",
         ):
             _ = self._run_parse_manifest_for_tag("enum_custom_parser_missing_arg")
@@ -1003,7 +1002,7 @@ class IngestViewFileParserTest(unittest.TestCase):
         with self.assertRaisesRegex(
             ValueError,
             r"Unexpected type for argument \[raw_text\] in function "
-            r"\[enum_parser_bad_arg_type\] in module \[[a-z_\.]+\]. Expected "
+            r"\[fake_custom_enum_parsers.enum_parser_bad_arg_type\] in module \[[a-z_\.]+\]. Expected "
             r"\[<class 'str'>], found \[<class 'bool'>\].",
         ):
             _ = self._run_parse_manifest_for_tag("enum_custom_parser_bad_arg_type")
@@ -2010,6 +2009,85 @@ class IngestViewFileParserTest(unittest.TestCase):
 
         # Assert
         self.assertEqual(expected_output, parsed_output)
+
+    def test_simple_variables(self) -> None:
+        # Arrange
+        expected_output = [
+            FakePerson(
+                fake_state_code="US_XX",
+                name="ANNA ROSE",
+                birthdate=datetime.date(1962, 1, 29),
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                name="HANNAH ROSE",
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                name="JULIA",
+            ),
+        ]
+
+        # Act
+        parsed_output = self._run_parse_for_tag("simple_variables")
+
+        # Assert
+        self.assertEqual(expected_output, parsed_output)
+
+    def test_chained_variables(self) -> None:
+        # Arrange
+        expected_output = [
+            FakePerson(
+                fake_state_code="US_XX",
+                name="ANNA ROSE",
+                birthdate=datetime.date(1962, 1, 29),
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                name="HANNAH ROSE",
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                name="JULIA",
+            ),
+        ]
+
+        # Act
+        parsed_output = self._run_parse_for_tag("chained_variables")
+
+        # Assert
+        self.assertEqual(expected_output, parsed_output)
+
+    def test_custom_function_variable(self) -> None:
+        # Arrange
+        expected_output = [
+            FakePerson(fake_state_code="US_XX", name="ALBERT", ssn=None),
+            FakePerson(fake_state_code="US_XX", name="BERTHA", ssn=123456789),
+            FakePerson(fake_state_code="US_XX", name="CHARLES", ssn=987654321),
+        ]
+
+        # Act
+        parsed_output = self._run_parse_for_tag("custom_function_variable")
+
+        # Assert
+        self.assertEqual(expected_output, parsed_output)
+
+    # We do not currently have support for enum variables.
+    def test_enum_variable(self) -> None:
+        # Act
+        with self.assertRaisesRegex(
+            jsonschema.exceptions.ValidationError,
+            r"'\$enum_mapping' was unexpected",
+        ):
+            _ = self._run_parse_for_tag("enum_variable")
+
+    def test_bad_variable_type_throws(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Unexpected manifest node type: \[<class 'bool'>\]\. "
+            r"Expected result_type: \[<class 'str'>\]\.",
+        ):
+            _ = self._run_parse_for_tag("bad_variable_type")
 
     def test_nested_foreach(self) -> None:
         with self.assertRaisesRegex(

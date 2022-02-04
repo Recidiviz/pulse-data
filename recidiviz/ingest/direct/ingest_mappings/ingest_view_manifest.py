@@ -93,11 +93,53 @@ class ManifestNode(Generic[ManifestNodeT]):
         in the entity tree, parsed out of the input row.
         """
 
-    @abc.abstractmethod
     def columns_referenced(self) -> Set[str]:
-        """Should be implemented by subclasses to set of columns that this node
-        references.
+        """Returns a set of columns that this node references. Must be overridden by
+        subclasses that do not have child nodes.
         """
+        children = self.child_manifest_nodes()
+        if not children:
+            raise ValueError(
+                f"Must override columns_referenced() for class [{self.__class__}] "
+                f"which has no children."
+            )
+
+        return {col for child in children for col in child.columns_referenced()}
+
+    def variables_referenced(self) -> Set[str]:
+        """Returns a set of columns that this node references. Should not be overridden
+        by subclasses other than the VariableManifestNode
+        """
+        children = self.child_manifest_nodes()
+        return {var for child in children for var in child.variables_referenced()}
+
+    @abc.abstractmethod
+    def child_manifest_nodes(self) -> List["ManifestNode"]:
+        """Should be implemented by subclasses to return a list of child ManifestNodes
+        that this node references.
+        """
+
+
+@attr.s(kw_only=True)
+class VariableManifestNode(ManifestNode[ManifestNodeT]):
+    variable_name: str = attr.ib()
+    value_manifest: ManifestNode[ManifestNodeT] = attr.ib()
+
+    @property
+    def result_type(self) -> Type[ManifestNodeT]:
+        return self.value_manifest.result_type
+
+    def additional_field_manifests(self, field_name: str) -> Dict[str, "ManifestNode"]:
+        return self.value_manifest.additional_field_manifests(field_name)
+
+    def build_from_row(self, row: Dict[str, str]) -> Optional[ManifestNodeT]:
+        return self.value_manifest.build_from_row(row)
+
+    def child_manifest_nodes(self) -> List["ManifestNode"]:
+        return [self.value_manifest]
+
+    def variables_referenced(self) -> Set[str]:
+        return super().variables_referenced() | {self.variable_name}
 
 
 @attr.s(kw_only=True)
@@ -154,12 +196,8 @@ class EntityTreeManifest(ManifestNode[EntityT]):
 
         return entity
 
-    def columns_referenced(self) -> Set[str]:
-        return {
-            col
-            for manifest in self.field_manifests.values()
-            for col in manifest.columns_referenced()
-        }
+    def child_manifest_nodes(self) -> List["ManifestNode"]:
+        return list(self.field_manifests.values())
 
 
 class EntityTreeManifestFactory:
@@ -171,6 +209,7 @@ class EntityTreeManifestFactory:
         *,
         raw_fields_manifest: YAMLDict,
         delegate: IngestViewFileParserDelegate,
+        variable_manifests: Dict[str, VariableManifestNode],
         entity_cls: Type[EntityT],
     ) -> "EntityTreeManifest":
         """Returns a single, recursively hydrated entity tree manifest, which can be
@@ -210,7 +249,10 @@ class EntityTreeManifestFactory:
                     child_manifest = build_manifest_from_raw(
                         raw_field_manifest=raw_child_manifest,
                         delegate=delegate,
-                        result_type=delegate.get_entity_cls(child_entity_cls_name),
+                        variable_manifests=variable_manifests,
+                        expected_result_type=delegate.get_entity_cls(
+                            child_entity_cls_name
+                        ),
                     )
                     if isinstance(child_manifest, ExpandableListItemManifest):
                         child_manifests.append(child_manifest)
@@ -233,7 +275,8 @@ class EntityTreeManifestFactory:
                 field_manifest = build_manifest_from_raw_typed(
                     raw_field_manifest=raw_fields_manifest.pop_dict(field_name),
                     delegate=delegate,
-                    result_type=delegate.get_entity_cls(child_entity_cls_name),
+                    variable_manifests=variable_manifests,
+                    expected_result_type=delegate.get_entity_cls(child_entity_cls_name),
                 )
             elif field_type is BuildableAttrFieldType.ENUM:
                 enum_cls = attr_field_enum_cls_for_field_name(entity_cls, field_name)
@@ -248,16 +291,10 @@ class EntityTreeManifestFactory:
                         field_name, raw_fields_manifest
                     ),
                     delegate=delegate,
-                    # We check the result type below
-                    result_type=object,
+                    variable_manifests=variable_manifests,
+                    expected_result_type=EnumParser,
                     enum_cls=enum_cls,
                 )
-                if not issubclass(field_manifest.result_type, EnumParser):
-                    raise ValueError(
-                        f"Unexpected result type for enum manifest: "
-                        f"[{field_manifest.result_type}]"
-                    )
-
             elif field_type in (
                 # These are flat fields and should be parsed into a ManifestNode[str],
                 # since all values will be converted from string -> real value in the
@@ -275,12 +312,16 @@ class EntityTreeManifestFactory:
                 field_manifest = build_str_manifest_from_raw(
                     pop_raw_flat_field_manifest(field_name, raw_fields_manifest),
                     delegate,
+                    variable_manifests=variable_manifests,
                 )
             elif field_type is BuildableAttrFieldType.BOOLEAN:
                 field_manifest = build_manifest_from_raw_typed(
-                    pop_raw_flat_field_manifest(field_name, raw_fields_manifest),
-                    delegate,
-                    bool,
+                    raw_field_manifest=pop_raw_flat_field_manifest(
+                        field_name, raw_fields_manifest
+                    ),
+                    delegate=delegate,
+                    variable_manifests=variable_manifests,
+                    expected_result_type=bool,
                 )
             else:
                 raise ValueError(
@@ -427,6 +468,9 @@ class SplitCommaSeparatedListManifest(ManifestNode[List[str]]):
         #  delimiter to be configurable.
         return column_value.split(self.DEFAULT_LIST_VALUE_DELIMITER)
 
+    def child_manifest_nodes(self) -> List["ManifestNode"]:
+        return []
+
     def columns_referenced(self) -> Set[str]:
         return {self.column_name}
 
@@ -455,6 +499,9 @@ class SplitJSONListManifest(ManifestNode[List[str]]):
             return []
 
         return [json.dumps(item) for item in json.loads(column_value)]
+
+    def child_manifest_nodes(self) -> List["ManifestNode"]:
+        return []
 
     def columns_referenced(self) -> Set[str]:
         return {self.column_name}
@@ -510,14 +557,14 @@ class ExpandableListItemManifest(ManifestNode[List[Entity]]):
                 result.append(entity)
         return result
 
+    def child_manifest_nodes(self) -> List["ManifestNode"]:
+        return [self.values_manifest, self.child_entity_manifest]
+
     def columns_referenced(self) -> Set[str]:
         return {
-            *self.values_manifest.columns_referenced(),
-            *{
-                c
-                for c in self.child_entity_manifest.columns_referenced()
-                if c != self.FOREACH_LOOP_VALUE_NAME
-            },
+            col
+            for col in super().columns_referenced()
+            if col != self.FOREACH_LOOP_VALUE_NAME
         }
 
     @classmethod
@@ -526,6 +573,7 @@ class ExpandableListItemManifest(ManifestNode[List[Entity]]):
         *,
         raw_function_manifest: YAMLDict,
         delegate: IngestViewFileParserDelegate,
+        variable_manifests: Dict[str, VariableManifestNode],
     ) -> "ExpandableListItemManifest":
         return ExpandableListItemManifest(
             values_manifest=build_iterable_manifest_from_raw(
@@ -539,8 +587,9 @@ class ExpandableListItemManifest(ManifestNode[List[Entity]]):
                     ExpandableListItemManifest.FOREACH_ITEM_RESULT_ARG_KEY,
                     raw_function_manifest,
                 ),
+                variable_manifests=variable_manifests,
                 delegate=delegate,
-                result_type=Entity,
+                expected_result_type=Entity,
             ),
         )
 
@@ -574,12 +623,8 @@ class ListRelationshipFieldManifest(ManifestNode[List[Entity]]):
                     child_entities.append(child_entity)
         return child_entities
 
-    def columns_referenced(self) -> Set[str]:
-        return {
-            col
-            for manifest in self.child_manifests
-            for col in manifest.columns_referenced()
-        }
+    def child_manifest_nodes(self) -> List["ManifestNode"]:
+        return self.child_manifests
 
 
 @attr.s(kw_only=True)
@@ -599,6 +644,9 @@ class DirectMappingFieldManifest(ManifestNode[str]):
 
     def build_from_row(self, row: Dict[str, str]) -> str:
         return row[self.mapped_column]
+
+    def child_manifest_nodes(self) -> List["ManifestNode"]:
+        return []
 
     def columns_referenced(self) -> Set[str]:
         return {self.mapped_column}
@@ -624,6 +672,9 @@ class StringLiteralFieldManifest(ManifestNode[str]):
 
     def build_from_row(self, row: Dict[str, str]) -> Optional[str]:
         return self.literal_value
+
+    def child_manifest_nodes(self) -> List["ManifestNode"]:
+        return []
 
     def columns_referenced(self) -> Set[str]:
         return set()
@@ -660,6 +711,9 @@ class EnumLiteralFieldManifest(ManifestNode[LiteralEnumParser]):
 
     def build_from_row(self, row: Dict[str, str]) -> LiteralEnumParser:
         return LiteralEnumParser(self.enum_value)
+
+    def child_manifest_nodes(self) -> List["ManifestNode"]:
+        return []
 
     def columns_referenced(self) -> Set[str]:
         return set()
@@ -733,8 +787,8 @@ class EnumMappingManifest(ManifestNode[StrictEnumParser]):
             enum_overrides=self.enum_overrides,
         )
 
-    def columns_referenced(self) -> Set[str]:
-        return self.raw_text_field_manifest.columns_referenced()
+    def child_manifest_nodes(self) -> List["ManifestNode"]:
+        return [self.raw_text_field_manifest]
 
     @classmethod
     def from_raw_manifest(
@@ -743,6 +797,7 @@ class EnumMappingManifest(ManifestNode[StrictEnumParser]):
         enum_cls: Type[Enum],
         field_enum_mappings_manifest: YAMLDict,
         delegate: IngestViewFileParserDelegate,
+        variable_manifests: Dict[str, VariableManifestNode],
     ) -> "EnumMappingManifest":
         """Factory method for building an enum field manifest."""
 
@@ -751,6 +806,7 @@ class EnumMappingManifest(ManifestNode[StrictEnumParser]):
                 EnumMappingManifest.RAW_TEXT_KEY, field_enum_mappings_manifest
             ),
             delegate,
+            variable_manifests=variable_manifests,
         )
 
         enum_overrides = cls._build_field_enum_overrides(
@@ -850,13 +906,14 @@ class EnumMappingManifest(ManifestNode[StrictEnumParser]):
                     )
 
         if custom_parser_function_reference:
-            enum_overrides_builder.add_mapper_fn(
-                fn_registry.get_custom_python_function(
-                    custom_parser_function_reference,
-                    {cls.CUSTOM_PARSER_RAW_TEXT_ARG_NAME: str},
-                    enum_cls,
-                ),
+            fn, nonnull_return_type = fn_registry.get_custom_python_function(
+                custom_parser_function_reference,
+                {cls.CUSTOM_PARSER_RAW_TEXT_ARG_NAME: str},
                 enum_cls,
+            )
+            enum_overrides_builder.add_mapper_fn(
+                fn,
+                nonnull_return_type,
             )
 
         if ignores_list is not None:
@@ -884,12 +941,12 @@ class CustomFunctionManifest(ManifestNode[ManifestNodeT]):
     CUSTOM_FUNCTION_REFERENCE_KEY = "$function"
     CUSTOM_FUNCTION_ARGS_KEY = "$args"
 
-    function_return_type: Type[ManifestNodeT] = attr.ib()
-
     # Note: We should be able to type this better with ParamSpec when we update to
     # Python 3.10.
     function: Callable[..., Optional[ManifestNodeT]] = attr.ib()
     kwarg_manifests: Dict[str, ManifestNode[Any]] = attr.ib()
+
+    function_return_type: Type[ManifestNodeT] = attr.ib()
 
     @property
     def result_type(self) -> Type[ManifestNodeT]:
@@ -905,12 +962,8 @@ class CustomFunctionManifest(ManifestNode[ManifestNodeT]):
         }
         return self.function(**kwargs)
 
-    def columns_referenced(self) -> Set[str]:
-        return {
-            col
-            for manifest in self.kwarg_manifests.values()
-            for col in manifest.columns_referenced()
-        }
+    def child_manifest_nodes(self) -> List["ManifestNode"]:
+        return list(self.kwarg_manifests.values())
 
     @classmethod
     def from_raw_manifest(
@@ -918,7 +971,8 @@ class CustomFunctionManifest(ManifestNode[ManifestNodeT]):
         *,
         raw_function_manifest: YAMLDict,
         delegate: IngestViewFileParserDelegate,
-        return_type: Type[ManifestNodeT],
+        variable_manifests: Dict[str, VariableManifestNode],
+        expected_return_type: Type[ManifestNodeT],
     ) -> "CustomFunctionManifest[ManifestNodeT]":
         """Builds a CustomParserManifest node from the provide raw manifest. Verifies
         that the function signature matches what is expected from the provided args.
@@ -934,11 +988,17 @@ class CustomFunctionManifest(ManifestNode[ManifestNodeT]):
         for arg, raw_manifest in raw_args_manifests.items():
             if isinstance(raw_manifest, str):
                 kwarg_manifests[arg] = build_manifest_from_raw(
-                    raw_manifest, delegate, object
+                    raw_field_manifest=raw_manifest,
+                    delegate=delegate,
+                    variable_manifests=variable_manifests,
+                    expected_result_type=object,
                 )
             elif isinstance(raw_manifest, dict):
                 kwarg_manifests[arg] = build_manifest_from_raw(
-                    YAMLDict(raw_manifest), delegate, object
+                    raw_field_manifest=YAMLDict(raw_manifest),
+                    delegate=delegate,
+                    variable_manifests=variable_manifests,
+                    expected_result_type=object,
                 )
             else:
                 raise ValueError(
@@ -946,16 +1006,15 @@ class CustomFunctionManifest(ManifestNode[ManifestNodeT]):
                     f"[{type(raw_manifest)}]"
                 )
 
+        function_registry = delegate.get_custom_function_registry()
+        function, nonnull_return_type = function_registry.get_custom_python_function(
+            custom_parser_function_reference,
+            {arg: manifest.result_type for arg, manifest in kwarg_manifests.items()},
+            expected_return_type,
+        )
         return CustomFunctionManifest(
-            function_return_type=return_type,
-            function=delegate.get_custom_function_registry().get_custom_python_function(
-                custom_parser_function_reference,
-                {
-                    arg: manifest.result_type
-                    for arg, manifest in kwarg_manifests.items()
-                },
-                return_type,
-            ),
+            function=function,
+            function_return_type=nonnull_return_type,
             kwarg_manifests=kwarg_manifests,
         )
 
@@ -993,12 +1052,8 @@ class SerializedJSONDictFieldManifest(ManifestNode[str]):
                 return None
         return json.dumps(result_dict, sort_keys=True)
 
-    def columns_referenced(self) -> Set[str]:
-        return {
-            col
-            for manifest in self.key_to_manifest_map.values()
-            for col in manifest.columns_referenced()
-        }
+    def child_manifest_nodes(self) -> List["ManifestNode"]:
+        return list(self.key_to_manifest_map.values())
 
 
 @attr.s(kw_only=True)
@@ -1030,8 +1085,8 @@ class JSONExtractKeyManifest(ManifestNode[str]):
         json_dict = json.loads(json_str)
         return json_dict[self.json_key]
 
-    def columns_referenced(self) -> Set[str]:
-        return self.json_manifest.columns_referenced()
+    def child_manifest_nodes(self) -> List["ManifestNode"]:
+        return [self.json_manifest]
 
     @classmethod
     def from_raw_manifest(
@@ -1039,6 +1094,7 @@ class JSONExtractKeyManifest(ManifestNode[str]):
         *,
         raw_function_manifest: YAMLDict,
         delegate: IngestViewFileParserDelegate,
+        variable_manifests: Dict[str, VariableManifestNode],
     ) -> "JSONExtractKeyManifest":
         return JSONExtractKeyManifest(
             json_manifest=build_str_manifest_from_raw(
@@ -1046,6 +1102,7 @@ class JSONExtractKeyManifest(ManifestNode[str]):
                     cls.JSON_STRING_ARG_KEY, raw_function_manifest
                 ),
                 delegate,
+                variable_manifests=variable_manifests,
             ),
             json_key=raw_function_manifest.pop(cls.JSON_KEY_ARG_KEY, str),
         )
@@ -1108,12 +1165,16 @@ class ConcatenatedStringsManifest(ManifestNode[str]):
 
         return self.separator.join(values)
 
+    def child_manifest_nodes(self) -> List["ManifestNode"]:
+        return self.value_manifests
+
     @classmethod
     def from_raw_manifest(
         cls,
         *,
         raw_function_manifest: YAMLDict,
         delegate: IngestViewFileParserDelegate,
+        variable_manifests: Dict[str, VariableManifestNode],
     ) -> "ConcatenatedStringsManifest":
         raw_concat_manifests = pop_raw_manifest_nodes_list(
             raw_function_manifest, cls.VALUES_ARG_KEY
@@ -1125,18 +1186,13 @@ class ConcatenatedStringsManifest(ManifestNode[str]):
         return ConcatenatedStringsManifest(
             separator=(separator if separator is not None else cls.DEFAULT_SEPARATOR),
             value_manifests=[
-                build_str_manifest_from_raw(raw_manifest, delegate)
+                build_str_manifest_from_raw(
+                    raw_manifest, delegate, variable_manifests=variable_manifests
+                )
                 for raw_manifest in raw_concat_manifests
             ],
             include_nulls=(include_nulls if include_nulls is not None else True),
         )
-
-    def columns_referenced(self) -> Set[str]:
-        return {
-            col
-            for manifest in self.value_manifests
-            for col in manifest.columns_referenced()
-        }
 
 
 @attr.s(kw_only=True)
@@ -1189,18 +1245,22 @@ class PhysicalAddressManifest(ManifestNode[str]):
 
         return ", ".join([s for s in address_parts if s])
 
-    def columns_referenced(self) -> Set[str]:
-        return {
-            *self.address_1_manifest.columns_referenced(),
-            *self.address_2_manifest.columns_referenced(),
-            *self.city_manifest.columns_referenced(),
-            *self.state_manifest.columns_referenced(),
-            *self.zip_manifest.columns_referenced(),
-        }
+    def child_manifest_nodes(self) -> List["ManifestNode"]:
+        return [
+            self.address_1_manifest,
+            self.address_2_manifest,
+            self.city_manifest,
+            self.state_manifest,
+            self.zip_manifest,
+        ]
 
     @classmethod
     def from_raw_manifest(
-        cls, *, raw_function_manifest: YAMLDict, delegate: IngestViewFileParserDelegate
+        cls,
+        *,
+        raw_function_manifest: YAMLDict,
+        delegate: IngestViewFileParserDelegate,
+        variable_manifests: Dict[str, VariableManifestNode],
     ) -> "PhysicalAddressManifest":
         raw_address_2_manifest = pop_raw_flat_field_manifest_optional(
             cls.ADDRESS_2_KEY, raw_function_manifest
@@ -1209,23 +1269,29 @@ class PhysicalAddressManifest(ManifestNode[str]):
             address_1_manifest=build_str_manifest_from_raw(
                 pop_raw_flat_field_manifest(cls.ADDRESS_1_KEY, raw_function_manifest),
                 delegate,
+                variable_manifests=variable_manifests,
             ),
             address_2_manifest=build_str_manifest_from_raw(
-                raw_address_2_manifest, delegate
+                raw_address_2_manifest,
+                delegate,
+                variable_manifests=variable_manifests,
             )
             if raw_address_2_manifest
             else StringLiteralFieldManifest(literal_value=""),
             city_manifest=build_str_manifest_from_raw(
                 pop_raw_flat_field_manifest(cls.CITY_KEY, raw_function_manifest),
                 delegate,
+                variable_manifests=variable_manifests,
             ),
             state_manifest=build_str_manifest_from_raw(
                 pop_raw_flat_field_manifest(cls.STATE_KEY, raw_function_manifest),
                 delegate,
+                variable_manifests=variable_manifests,
             ),
             zip_manifest=build_str_manifest_from_raw(
                 pop_raw_flat_field_manifest(cls.ZIP_KEY, raw_function_manifest),
                 delegate,
+                variable_manifests=variable_manifests,
             ),
         )
 
@@ -1272,9 +1338,16 @@ class PersonNameManifest(ManifestNode[str]):
     def build_from_row(self, row: Dict[str, str]) -> Optional[str]:
         return self.name_json_manifest.build_from_row(row)
 
+    def child_manifest_nodes(self) -> List["ManifestNode"]:
+        return [self.name_json_manifest]
+
     @classmethod
     def from_raw_manifest(
-        cls, *, raw_function_manifest: YAMLDict, delegate: IngestViewFileParserDelegate
+        cls,
+        *,
+        raw_function_manifest: YAMLDict,
+        delegate: IngestViewFileParserDelegate,
+        variable_manifests: Dict[str, VariableManifestNode],
     ) -> "PersonNameManifest":
         name_parts_to_manifest: Dict[str, ManifestNode[str]] = {}
         for manifest_key, is_required in cls.NAME_MANIFEST_KEYS.items():
@@ -1288,7 +1361,9 @@ class PersonNameManifest(ManifestNode[str]):
                 raise ValueError(f"Missing manifest for required key: {manifest_key}.")
 
             name_parts_to_manifest[json_key] = (
-                build_str_manifest_from_raw(raw_manifest, delegate)
+                build_str_manifest_from_raw(
+                    raw_manifest, delegate, variable_manifests=variable_manifests
+                )
                 if raw_manifest
                 else StringLiteralFieldManifest(literal_value="")
             )
@@ -1298,9 +1373,6 @@ class PersonNameManifest(ManifestNode[str]):
                 key_to_manifest_map=name_parts_to_manifest, drop_all_empty=True
             )
         )
-
-    def columns_referenced(self) -> Set[str]:
-        return self.name_json_manifest.columns_referenced()
 
 
 @attr.s(kw_only=True)
@@ -1333,11 +1405,8 @@ class ContainsConditionManifest(ManifestNode[bool]):
 
         return value in options
 
-    def columns_referenced(self) -> Set[str]:
-        return {
-            *self.value_manifest.columns_referenced(),
-            *{col for m in self.options_manifests for col in m.columns_referenced()},
-        }
+    def child_manifest_nodes(self) -> List["ManifestNode"]:
+        return [self.value_manifest, *self.options_manifests]
 
     @classmethod
     def from_raw_manifest(
@@ -1345,14 +1414,20 @@ class ContainsConditionManifest(ManifestNode[bool]):
         *,
         raw_function_manifest: YAMLDict,
         delegate: IngestViewFileParserDelegate,
+        variable_manifests: Dict[str, VariableManifestNode],
     ) -> "ContainsConditionManifest":
         return ContainsConditionManifest(
             value_manifest=build_str_manifest_from_raw(
                 pop_raw_flat_field_manifest(cls.VALUE_ARG_KEY, raw_function_manifest),
                 delegate,
+                variable_manifests=variable_manifests,
             ),
             options_manifests=[
-                build_str_manifest_from_raw(raw_manifest, delegate)
+                build_str_manifest_from_raw(
+                    raw_manifest,
+                    delegate,
+                    variable_manifests=variable_manifests,
+                )
                 for raw_manifest in raw_function_manifest.pop(cls.OPTIONS_ARG_KEY, list)
             ],
         )
@@ -1379,8 +1454,8 @@ class IsNullConditionManifest(ManifestNode[bool]):
         value = self.value_manifest.build_from_row(row)
         return not bool(value)
 
-    def columns_referenced(self) -> Set[str]:
-        return self.value_manifest.columns_referenced()
+    def child_manifest_nodes(self) -> List["ManifestNode"]:
+        return [self.value_manifest]
 
     @classmethod
     def from_raw_manifest(
@@ -1388,9 +1463,12 @@ class IsNullConditionManifest(ManifestNode[bool]):
         *,
         raw_function_manifest: Union[str, YAMLDict],
         delegate: IngestViewFileParserDelegate,
+        variable_manifests: Dict[str, VariableManifestNode],
     ) -> "IsNullConditionManifest":
         return IsNullConditionManifest(
-            value_manifest=build_str_manifest_from_raw(raw_function_manifest, delegate),
+            value_manifest=build_str_manifest_from_raw(
+                raw_function_manifest, delegate, variable_manifests=variable_manifests
+            ),
         )
 
 
@@ -1428,8 +1506,8 @@ class EqualsConditionManifest(ManifestNode[bool]):
             for value_manifest in self.value_manifests[1:]
         )
 
-    def columns_referenced(self) -> Set[str]:
-        return {c for m in self.value_manifests for c in m.columns_referenced()}
+    def child_manifest_nodes(self) -> List["ManifestNode"]:
+        return self.value_manifests
 
     @classmethod
     def from_raw_manifest(
@@ -1437,10 +1515,16 @@ class EqualsConditionManifest(ManifestNode[bool]):
         *,
         raw_value_manifests: List[Union[str, YAMLDict]],
         delegate: IngestViewFileParserDelegate,
+        variable_manifests: Dict[str, VariableManifestNode],
     ) -> "EqualsConditionManifest":
         return EqualsConditionManifest(
             value_manifests=[
-                build_manifest_from_raw(raw_value_manifest, delegate, object)
+                build_manifest_from_raw(
+                    raw_field_manifest=raw_value_manifest,
+                    delegate=delegate,
+                    variable_manifests=variable_manifests,
+                    expected_result_type=object,
+                )
                 for raw_value_manifest in raw_value_manifests
             ],
         )
@@ -1479,19 +1563,25 @@ class AndConditionManifest(ManifestNode[bool]):
             for value_manifest in self.condition_manifests
         )
 
-    def columns_referenced(self) -> Set[str]:
-        return {c for m in self.condition_manifests for c in m.columns_referenced()}
+    def child_manifest_nodes(self) -> List["ManifestNode"]:
+        return self.condition_manifests
 
     @classmethod
     def from_raw_manifest(
         cls,
         *,
-        raw_condition_manifests: List[YAMLDict],
+        raw_condition_manifests: List[Union[str, YAMLDict]],
         delegate: IngestViewFileParserDelegate,
+        variable_manifests: Dict[str, VariableManifestNode],
     ) -> "AndConditionManifest":
         return AndConditionManifest(
             condition_manifests=[
-                build_manifest_from_raw_typed(raw_condition_manifest, delegate, bool)
+                build_manifest_from_raw_typed(
+                    raw_condition_manifest,
+                    delegate,
+                    variable_manifests=variable_manifests,
+                    expected_result_type=bool,
+                )
                 for raw_condition_manifest in raw_condition_manifests
             ],
         )
@@ -1530,19 +1620,25 @@ class OrConditionManifest(ManifestNode[bool]):
             for value_manifest in self.condition_manifests
         )
 
-    def columns_referenced(self) -> Set[str]:
-        return {c for m in self.condition_manifests for c in m.columns_referenced()}
+    def child_manifest_nodes(self) -> List["ManifestNode"]:
+        return self.condition_manifests
 
     @classmethod
     def from_raw_manifest(
         cls,
         *,
-        raw_condition_manifests: List[YAMLDict],
+        raw_condition_manifests: List[Union[str, YAMLDict]],
         delegate: IngestViewFileParserDelegate,
+        variable_manifests: Dict[str, VariableManifestNode],
     ) -> "OrConditionManifest":
         return OrConditionManifest(
             condition_manifests=[
-                build_manifest_from_raw_typed(raw_condition_manifest, delegate, bool)
+                build_manifest_from_raw_typed(
+                    raw_condition_manifest,
+                    delegate,
+                    variable_manifests=variable_manifests,
+                    expected_result_type=bool,
+                )
                 for raw_condition_manifest in raw_condition_manifests
             ],
         )
@@ -1569,8 +1665,8 @@ class InvertConditionManifest(ManifestNode[bool]):
     def build_from_row(self, row: Dict[str, str]) -> bool:
         return not self.condition_manifest.build_from_row(row)
 
-    def columns_referenced(self) -> Set[str]:
-        return self.condition_manifest.columns_referenced()
+    def child_manifest_nodes(self) -> List["ManifestNode"]:
+        return [self.condition_manifest]
 
 
 @attr.s(kw_only=True)
@@ -1593,6 +1689,9 @@ class BooleanLiteralManifest(ManifestNode[bool]):
 
     def build_from_row(self, row: Dict[str, str]) -> bool:
         return self.value
+
+    def child_manifest_nodes(self) -> List["ManifestNode"]:
+        return []
 
     def columns_referenced(self) -> Set[str]:
         return set()
@@ -1684,12 +1783,11 @@ class BooleanConditionManifest(ManifestNode[ManifestNodeT]):
 
         return self.else_manifest.build_from_row(row)
 
-    def columns_referenced(self) -> Set[str]:
-        return {
-            *self.condition_manifest.columns_referenced(),
-            *self.then_manifest.columns_referenced(),
-            *(self.else_manifest.columns_referenced() if self.else_manifest else set()),
-        }
+    def child_manifest_nodes(self) -> List["ManifestNode"]:
+        manifests: List[ManifestNode] = [self.condition_manifest, self.then_manifest]
+        if self.else_manifest:
+            manifests.append(self.else_manifest)
+        return manifests
 
 
 class BooleanConditionManifestFactory:
@@ -1701,7 +1799,8 @@ class BooleanConditionManifestFactory:
         *,
         raw_condition_manifests: List[YAMLDict],
         delegate: IngestViewFileParserDelegate,
-        result_type: Type[ManifestNodeT],
+        variable_manifests: Dict[str, VariableManifestNode],
+        expected_result_type: Type[ManifestNodeT],
         enum_cls: Optional[Type[Enum]],
     ) -> "BooleanConditionManifest[ManifestNodeT]":
         """Builds a BooleanConditionManifest from the provided raw manifest."""
@@ -1730,7 +1829,11 @@ class BooleanConditionManifestFactory:
                         "Found only $else condition in $conditional statement."
                     )
                 else_manifest = build_manifest_from_raw_typed(
-                    else_manifest_raw, delegate, result_type, enum_cls
+                    else_manifest_raw,
+                    delegate,
+                    variable_manifests=variable_manifests,
+                    expected_result_type=expected_result_type,
+                    enum_cls=enum_cls,
                 )
                 continue
 
@@ -1746,7 +1849,10 @@ class BooleanConditionManifestFactory:
                 )
 
             condition_manifest = build_manifest_from_raw_typed(
-                condition_manifest_raw, delegate, bool
+                condition_manifest_raw,
+                delegate,
+                variable_manifests=variable_manifests,
+                expected_result_type=bool,
             )
 
             then_manifest = build_manifest_from_raw_typed(
@@ -1754,8 +1860,9 @@ class BooleanConditionManifestFactory:
                     BooleanConditionManifest.THEN_ARG_KEY, raw_condition_manifest
                 ),
                 delegate,
-                result_type,
-                enum_cls,
+                variable_manifests=variable_manifests,
+                expected_result_type=expected_result_type,
+                enum_cls=enum_cls,
             )
             highest_level_boolean_manifest = BooleanConditionManifest(
                 condition_manifest=condition_manifest,
@@ -1801,10 +1908,17 @@ def pop_raw_flat_field_manifest(
 
 
 def build_str_manifest_from_raw(
-    raw_field_manifest: Union[str, YAMLDict], delegate: IngestViewFileParserDelegate
+    raw_field_manifest: Union[str, YAMLDict],
+    delegate: IngestViewFileParserDelegate,
+    variable_manifests: Dict[str, VariableManifestNode],
 ) -> ManifestNode[str]:
     """Builds a ManifestNode[str] from the provided raw manifest."""
-    return build_manifest_from_raw_typed(raw_field_manifest, delegate, str)
+    return build_manifest_from_raw_typed(
+        raw_field_manifest,
+        delegate,
+        variable_manifests=variable_manifests,
+        expected_result_type=str,
+    )
 
 
 def build_iterable_manifest_from_raw(
@@ -1832,24 +1946,34 @@ def build_iterable_manifest_from_raw(
 def build_manifest_from_raw_typed(
     raw_field_manifest: Union[str, YAMLDict],
     delegate: IngestViewFileParserDelegate,
-    result_type: Type[ManifestNodeT],
+    variable_manifests: Dict[str, VariableManifestNode],
+    expected_result_type: Type[ManifestNodeT],
     enum_cls: Optional[Type[Enum]] = None,
 ) -> ManifestNode[ManifestNodeT]:
     manifest = build_manifest_from_raw(
-        raw_field_manifest, delegate, result_type, enum_cls
+        raw_field_manifest=raw_field_manifest,
+        delegate=delegate,
+        variable_manifests=variable_manifests,
+        expected_result_type=expected_result_type,
+        enum_cls=enum_cls,
     )
-    if not issubclass(manifest.result_type, result_type):
+    if not issubclass(manifest.result_type, expected_result_type):
         raise ValueError(
             f"Unexpected manifest node type: [{manifest.result_type}]. "
-            f"Expected result_type: [{result_type}]."
+            f"Expected result_type: [{expected_result_type}]."
         )
     return manifest
 
 
+VARIABLE_EXPRESSION_REGEX = re.compile(r"\$variable\(([a-z][a-z_]+)\)")
+
+
 def build_manifest_from_raw(
+    *,
     raw_field_manifest: Union[str, YAMLDict],
     delegate: IngestViewFileParserDelegate,
-    result_type: Type[ManifestNodeT],
+    variable_manifests: Dict[str, VariableManifestNode],
+    expected_result_type: Type[ManifestNodeT],
     enum_cls: Optional[Type[Enum]] = None,
 ) -> ManifestNode:
     """Builds a ManifestNode from the provided raw manifest."""
@@ -1877,6 +2001,12 @@ def build_manifest_from_raw(
             return EnumLiteralFieldManifest.from_raw_manifest(
                 enum_cls=enum_cls, raw_manifest=raw_field_manifest
             )
+
+        match = re.match(VARIABLE_EXPRESSION_REGEX, raw_field_manifest)
+        if match:
+            variable_name = match.group(1)
+            return variable_manifests[variable_name]
+
         return DirectMappingFieldManifest(mapped_column=raw_field_manifest)
 
     if isinstance(raw_field_manifest, YAMLDict):
@@ -1893,6 +2023,7 @@ def build_manifest_from_raw(
                     manifest_node_name
                 ),
                 delegate=delegate,
+                variable_manifests=variable_manifests,
             )
 
         if manifest_node_name == SerializedJSONDictFieldManifest.JSON_DICT_KEY:
@@ -1902,6 +2033,7 @@ def build_manifest_from_raw(
                     key: build_str_manifest_from_raw(
                         pop_raw_flat_field_manifest(key, function_arguments),
                         delegate=delegate,
+                        variable_manifests=variable_manifests,
                     )
                     for key in function_arguments.keys()
                 }
@@ -1910,21 +2042,25 @@ def build_manifest_from_raw(
             return JSONExtractKeyManifest.from_raw_manifest(
                 raw_function_manifest=raw_field_manifest.pop_dict(manifest_node_name),
                 delegate=delegate,
+                variable_manifests=variable_manifests,
             )
         if manifest_node_name == ConcatenatedStringsManifest.CONCATENATE_KEY:
             return ConcatenatedStringsManifest.from_raw_manifest(
                 raw_function_manifest=raw_field_manifest.pop_dict(manifest_node_name),
                 delegate=delegate,
+                variable_manifests=variable_manifests,
             )
         if manifest_node_name == PersonNameManifest.PERSON_NAME_KEY:
             return PersonNameManifest.from_raw_manifest(
                 raw_function_manifest=raw_field_manifest.pop_dict(manifest_node_name),
                 delegate=delegate,
+                variable_manifests=variable_manifests,
             )
         if manifest_node_name == PhysicalAddressManifest.PHYSICAL_ADDRESS_KEY:
             return PhysicalAddressManifest.from_raw_manifest(
                 raw_function_manifest=raw_field_manifest.pop_dict(manifest_node_name),
                 delegate=delegate,
+                variable_manifests=variable_manifests,
             )
         if manifest_node_name == BooleanConditionManifest.BOOLEAN_CONDITION_KEY:
             return BooleanConditionManifestFactory.from_raw_manifest(
@@ -1932,19 +2068,22 @@ def build_manifest_from_raw(
                     manifest_node_name
                 ),
                 delegate=delegate,
-                result_type=result_type,
+                variable_manifests=variable_manifests,
+                expected_result_type=expected_result_type,
                 enum_cls=enum_cls,
             )
         if manifest_node_name == CustomFunctionManifest.CUSTOM_FUNCTION_KEY:
             return CustomFunctionManifest.from_raw_manifest(
                 raw_function_manifest=raw_field_manifest.pop_dict(manifest_node_name),
                 delegate=delegate,
-                return_type=result_type,
+                variable_manifests=variable_manifests,
+                expected_return_type=expected_result_type,
             )
         if manifest_node_name == ContainsConditionManifest.IN_CONDITION_KEY:
             return ContainsConditionManifest.from_raw_manifest(
                 raw_function_manifest=raw_field_manifest.pop_dict(manifest_node_name),
                 delegate=delegate,
+                variable_manifests=variable_manifests,
             )
         if manifest_node_name == InvertConditionManifest.NOT_IN_CONDITION_KEY:
             return InvertConditionManifest(
@@ -1953,6 +2092,7 @@ def build_manifest_from_raw(
                         manifest_node_name
                     ),
                     delegate=delegate,
+                    variable_manifests=variable_manifests,
                 )
             )
         if manifest_node_name == IsNullConditionManifest.IS_NULL_CONDITION_KEY:
@@ -1961,6 +2101,7 @@ def build_manifest_from_raw(
                     manifest_node_name, raw_field_manifest
                 ),
                 delegate=delegate,
+                variable_manifests=variable_manifests,
             )
         if manifest_node_name == InvertConditionManifest.NOT_NULL_CONDITION_KEY:
             return InvertConditionManifest(
@@ -1969,21 +2110,24 @@ def build_manifest_from_raw(
                         manifest_node_name, raw_field_manifest
                     ),
                     delegate=delegate,
+                    variable_manifests=variable_manifests,
                 )
             )
         if manifest_node_name == AndConditionManifest.AND_CONDITION_KEY:
             return AndConditionManifest.from_raw_manifest(
-                raw_condition_manifests=raw_field_manifest.pop_dicts(
-                    manifest_node_name
+                raw_condition_manifests=pop_raw_manifest_nodes_list(
+                    raw_field_manifest, manifest_node_name
                 ),
                 delegate=delegate,
+                variable_manifests=variable_manifests,
             )
         if manifest_node_name == OrConditionManifest.OR_CONDITION_KEY:
             return OrConditionManifest.from_raw_manifest(
-                raw_condition_manifests=raw_field_manifest.pop_dicts(
-                    manifest_node_name
+                raw_condition_manifests=pop_raw_manifest_nodes_list(
+                    raw_field_manifest, manifest_node_name
                 ),
                 delegate=delegate,
+                variable_manifests=variable_manifests,
             )
         if manifest_node_name == EqualsConditionManifest.EQUALS_CONDITION_KEY:
             return EqualsConditionManifest.from_raw_manifest(
@@ -1991,6 +2135,7 @@ def build_manifest_from_raw(
                     raw_field_manifest, manifest_node_name
                 ),
                 delegate=delegate,
+                variable_manifests=variable_manifests,
             )
         if manifest_node_name == BooleanLiteralManifest.ENV_PROPERTY_KEY:
             return BooleanLiteralManifest.for_env_property(
@@ -2003,12 +2148,14 @@ def build_manifest_from_raw(
             return ExpandableListItemManifest.from_raw_manifest(
                 raw_function_manifest=raw_field_manifest.pop_dict(manifest_node_name),
                 delegate=delegate,
+                variable_manifests=variable_manifests,
             )
-        if issubclass(result_type, Entity):
+        if issubclass(expected_result_type, Entity):
             entity_cls = delegate.get_entity_cls(entity_cls_name=manifest_node_name)
             return EntityTreeManifestFactory.from_raw_manifest(
                 raw_fields_manifest=raw_field_manifest.pop_dict(manifest_node_name),
                 delegate=delegate,
+                variable_manifests=variable_manifests,
                 entity_cls=entity_cls,
             )
         raise ValueError(
