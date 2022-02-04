@@ -270,30 +270,30 @@ class CalculationDocumentationGeneratorTest(unittest.TestCase):
                 documentation = self.docs_generator._get_product_information(  # pylint: disable=W0212
                     product
                 )
-                expected_docs = """#TEST PRODUCT
+                expected_docs = """# TEST PRODUCT
 Test Product description
-##SHIPPED STATES
+## SHIPPED STATES
   - [Test State](../../states/test_state.md)
 
 ## STATES IN DEVELOPMENT
   - [Test State](../../states/test_state.md)
 
-##VIEWS
+## VIEWS
 
-####dataset_1
+#### dataset_1
   - [table_1](../../views/dataset_1/table_1.md) <br/>
   - [table_2](../../views/dataset_1/table_2.md) <br/>
   - [table_3](../../views/dataset_1/table_3.md) <br/>
 
-##SOURCE TABLES
+## SOURCE TABLES
 _Reference views that are used by other views. Some need to be updated manually._
 
-####state
+#### state
 _Ingested state data. This dataset is a copy of the state postgres database._
   - table_1 ([BQ Staging](https://console.cloud.google.com/bigquery?pli=1&p=recidiviz-staging&page=table&project=recidiviz-staging&d=state&t=table_1)) ([BQ Prod](https://console.cloud.google.com/bigquery?pli=1&p=recidiviz-123&page=table&project=recidiviz-123&d=state&t=table_1)) <br/>
   - table_2 ([BQ Staging](https://console.cloud.google.com/bigquery?pli=1&p=recidiviz-staging&page=table&project=recidiviz-staging&d=state&t=table_2)) ([BQ Prod](https://console.cloud.google.com/bigquery?pli=1&p=recidiviz-123&page=table&project=recidiviz-123&d=state&t=table_2)) <br/>
 
-##METRICS
+## METRICS
 _All metrics required to support this product and whether or not each state regularly calculates the metric._
 
 ** DISCLAIMER **
@@ -330,17 +330,17 @@ The presence of all required metrics for a state does not guarantee that this pr
             for state_code in self.mock_product_states
         }
         for state_code in self.mock_product_states:
-            expected_docs = """#Missouri
+            expected_docs = """# Missouri
 
-##Shipped Products
+## Shipped Products
 
   - [Test Product](../products/test_product/test_product_summary.md)
 
-##Products in Development
+## Products in Development
 
   - [Test Product Without Exports](../products/test_product_without_exports/test_product_without_exports_summary.md)
 
-##Regularly Calculated Metrics
+## Regularly Calculated Metrics
 
 |                                      **Metric**                                      |**Number of Months Calculated**|**Calculation Frequency**|
 |--------------------------------------------------------------------------------------|------------------------------:|-------------------------|
@@ -363,24 +363,24 @@ The presence of all required metrics for a state does not guarantee that this pr
         docs = self.docs_generator._get_view_information(  # pylint: disable=W0212
             dag_key
         )
-        expected_documentation_string = """##dataset_1.table_1
+        expected_documentation_string = """## dataset_1.table_1
 table_1 description
 
-####View schema in Big Query
+#### View schema in Big Query
 This view may not be deployed to all environments yet.<br/>
 [**Staging**](https://console.cloud.google.com/bigquery?pli=1&p=recidiviz-staging&page=table&project=recidiviz-staging&d=dataset_1&t=table_1)
 <br/>
 [**Production**](https://console.cloud.google.com/bigquery?pli=1&p=recidiviz-123&page=table&project=recidiviz-123&d=dataset_1&t=table_1)
 <br/>
 
-####Dependency Trees
+#### Dependency Trees
 
-#####Parentage
+##### Parentage
 [dataset_1.table_1](../dataset_1/table_1.md) <br/>
 |--state.source_table ([BQ Staging](https://console.cloud.google.com/bigquery?pli=1&p=recidiviz-staging&page=table&project=recidiviz-staging&d=state&t=source_table)) ([BQ Prod](https://console.cloud.google.com/bigquery?pli=1&p=recidiviz-123&page=table&project=recidiviz-123&d=state&t=source_table)) <br/>
 
 
-#####Descendants
+##### Descendants
 [dataset_1.table_1](../dataset_1/table_1.md) <br/>
 |--[dataset_3.table_3](../dataset_3/table_3.md) <br/>
 |----[dataset_4.table_4](../dataset_4/table_4.md) <br/>
@@ -405,10 +405,10 @@ This view may not be deployed to all environments yet.<br/>
             IncarcerationAdmissionMetric
         )
         description = IncarcerationAdmissionMetric.get_description()
-        expected_documentation_string = f"""##IncarcerationAdmissionMetric
+        expected_documentation_string = f"""## IncarcerationAdmissionMetric
 {description}
 
-####Metric attributes
+#### Metric attributes
 Attributes specific to the `IncarcerationAdmissionMetric`:
 
 |         **Attribute Name**          |**Type**|            **Enum Class**             |
@@ -442,14 +442,14 @@ Attributes on all metrics:
 |metric_type                  |STRING  |RecidivizMetricType|
 
 
-####Metric tables in BigQuery
+#### Metric tables in BigQuery
 
 * [**Staging**](https://console.cloud.google.com/bigquery?pli=1&p=recidiviz-staging&page=table&project=recidiviz-staging&d=dataflow_metrics&t=incarceration_admission_metrics)
 <br/>
 * [**Production**](https://console.cloud.google.com/bigquery?pli=1&p=recidiviz-123&page=table&project=recidiviz-123&d=dataflow_metrics&t=incarceration_admission_metrics)
 <br/>
 
-####Calculation Cadences
+#### Calculation Cadences
 
 |             **State**              |**Number of Months Calculated**|**Calculation Frequency**|
 |------------------------------------|------------------------------:|-------------------------|
@@ -457,7 +457,7 @@ Attributes on all metrics:
 |[Missouri](../../states/missouri.md)|                            240|triggered by code changes|
 
 
-####Dependent Views
+#### Dependent Views
 
 If you are interested in what views rely on this metric, please run the following script(s) in your shell:
 
