@@ -164,7 +164,8 @@ class TestExtractDataForPipeline(unittest.TestCase):
         entity_person.races = entity_races
         entity_person.assessments = [entity_assessment]
 
-        dataset = "recidiviz-123.state"
+        project = "project"
+        dataset = "state"
 
         with patch(
             "recidiviz.calculator.pipeline.utils.beam_utils.extractor_utils.ReadFromBigQuery",
@@ -176,6 +177,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
 
             output = test_pipeline | extractor_utils.ExtractDataForPipeline(
                 state_code=schema_person.state_code,
+                project_id=project,
                 dataset=dataset,
                 required_entity_classes=[
                     entities.StatePerson,
@@ -324,7 +326,8 @@ class TestExtractDataForPipeline(unittest.TestCase):
         for entity in all_non_person_entities:
             setattr(entity, "person", None)
 
-        dataset = "recidiviz-123.state"
+        project = "project"
+        dataset = "state"
 
         with patch(
             "recidiviz.calculator.pipeline.utils.beam_utils.extractor_utils.ReadFromBigQuery",
@@ -336,6 +339,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
 
             output = test_pipeline | extractor_utils.ExtractDataForPipeline(
                 state_code=entity_person.state_code,
+                project_id=project,
                 dataset=dataset,
                 required_entity_classes=[
                     entities.StatePerson,
@@ -453,7 +457,8 @@ class TestExtractDataForPipeline(unittest.TestCase):
         entity_races = entity_converter.convert_all([schema_race_1, schema_race_2])
         entity_assessment = entity_converter.convert(schema_assessment)
 
-        dataset = "recidiviz-123.state"
+        project = "project"
+        dataset = "state"
 
         with patch(
             "recidiviz.calculator.pipeline.utils.beam_utils.extractor_utils.ReadFromBigQuery",
@@ -465,6 +470,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
 
             output = test_pipeline | extractor_utils.ExtractDataForPipeline(
                 state_code="US_XX",
+                project_id=project,
                 dataset=dataset,
                 required_entity_classes=[
                     entities.StatePersonRace,
@@ -577,7 +583,8 @@ class TestExtractDataForPipeline(unittest.TestCase):
         entity_sentence.charges = entity_charges
         entity_person.supervision_sentences = [entity_sentence]
 
-        dataset = "recidiviz-123.state"
+        project = "project"
+        dataset = "state"
 
         with patch(
             "recidiviz.calculator.pipeline.utils.beam_utils.extractor_utils.ReadFromBigQuery",
@@ -589,6 +596,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
 
             output = test_pipeline | extractor_utils.ExtractDataForPipeline(
                 state_code=entity_person.state_code,
+                project_id=project,
                 dataset=dataset,
                 required_entity_classes=[
                     entities.StatePerson,
@@ -727,7 +735,8 @@ class TestExtractDataForPipeline(unittest.TestCase):
         entity_person.races = entity_races
         entity_person.assessments = [entity_assessment]
 
-        dataset = "recidiviz-123.state"
+        project = "project"
+        dataset = "state"
 
         with patch(
             "recidiviz.calculator.pipeline.utils.beam_utils.extractor_utils.ReadFromBigQuery",
@@ -739,6 +748,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
 
             output = test_pipeline | extractor_utils.ExtractDataForPipeline(
                 state_code=schema_person.state_code,
+                project_id=project,
                 dataset=dataset,
                 required_entity_classes=[
                     entities.StatePerson,
@@ -895,7 +905,8 @@ class TestExtractDataForPipeline(unittest.TestCase):
         entity_sentence.charges = entity_charges
         entity_person.supervision_sentences = [entity_sentence]
 
-        dataset = "recidiviz-123.state"
+        project = "project"
+        dataset = "state"
 
         with patch(
             "recidiviz.calculator.pipeline.utils.beam_utils.extractor_utils.ReadFromBigQuery",
@@ -907,6 +918,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
 
             output = test_pipeline | extractor_utils.ExtractDataForPipeline(
                 state_code=entity_person.state_code,
+                project_id=project,
                 dataset=dataset,
                 required_entity_classes=[
                     entities.StatePerson,
@@ -1075,7 +1087,8 @@ class TestExtractAssociationValues(unittest.TestCase):
             association_table_name: charge_sentence_association_table,
         }
 
-        dataset = "recidiviz-123.state"
+        project = "project"
+        dataset = "state"
 
         with patch(
             "recidiviz.calculator.pipeline.utils.beam_utils.extractor_utils.ReadFromBigQuery",
@@ -1089,6 +1102,7 @@ class TestExtractAssociationValues(unittest.TestCase):
                 test_pipeline
                 | "Extract association table entities"
                 >> extractor_utils._ExtractAssociationValues(
+                    project_id=project,
                     dataset=dataset,
                     root_entity_class=entities.StateIncarcerationSentence,
                     related_entity_class=entities.StateCharge,
@@ -1136,7 +1150,8 @@ class TestExtractAllEntitiesOfType(unittest.TestCase):
             entities, "StatePerson"
         )
 
-        dataset = "recidiviz-123.state"
+        project = "project"
+        dataset = "state"
         with patch(
             "recidiviz.calculator.pipeline.utils.beam_utils.extractor_utils.ReadFromBigQuery",
             self.fake_bq_source_factory.create_fake_bq_source_constructor(
@@ -1149,6 +1164,7 @@ class TestExtractAllEntitiesOfType(unittest.TestCase):
                 test_pipeline
                 | "Extract StatePerson Entity"
                 >> extractor_utils._ExtractAllEntitiesOfType(
+                    project_id=project,
                     dataset=dataset,
                     entity_class=entity_class,
                     unifying_id_field=entity_class.get_class_id_name(),
@@ -1179,7 +1195,8 @@ class TestExtractAllEntitiesOfType(unittest.TestCase):
             entities, "StatePerson"
         )
 
-        dataset = "recidiviz-123.state"
+        project = "project"
+        dataset = "state"
         with patch(
             "recidiviz.calculator.pipeline.utils.beam_utils.extractor_utils.ReadFromBigQuery",
             self.fake_bq_source_factory.create_fake_bq_source_constructor(
@@ -1192,6 +1209,7 @@ class TestExtractAllEntitiesOfType(unittest.TestCase):
                 test_pipeline
                 | "Extract StatePerson Entity"
                 >> extractor_utils._ExtractAllEntitiesOfType(
+                    project_id=project,
                     dataset=dataset,
                     entity_class=entity_class,
                     unifying_id_field="XX",

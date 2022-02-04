@@ -42,11 +42,7 @@ from recidiviz.tools.deploy.dataflow_template_helpers import (
     PipelineConfig,
     load_pipeline_config_yaml,
 )
-from recidiviz.tools.pipeline_launch_util import (
-    get_pipeline,
-    load_all_pipelines,
-    run_pipeline,
-)
+from recidiviz.tools.pipeline_launch_util import load_all_pipelines, run_pipeline
 
 
 def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
@@ -130,9 +126,9 @@ def deploy_pipeline_template_to_project() -> None:
     )
 
     load_all_pipelines()
-    pipeline = get_pipeline(pipeline_to_deploy_config["pipeline"])
+    pipeline_module_name = pipeline_to_deploy_config["pipeline"]
     # Runs the pipeline with the arguments needed for deployment
-    run_pipeline(pipeline, pipeline_args)
+    run_pipeline(pipeline_module_name, pipeline_args)
 
 
 if __name__ == "__main__":

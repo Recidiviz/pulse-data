@@ -16,33 +16,68 @@
 # =============================================================================
 """Unittests for helpers in pipeline_args_utils.py."""
 import unittest
-from argparse import Namespace
+from typing import List
 
-from recidiviz.calculator.pipeline.incarceration.pipeline import IncarcerationPipeline
+import attr
+from apache_beam.options.pipeline_options import PipelineOptions
+
+from recidiviz.calculator.dataflow_config import DATAFLOW_TABLES_TO_METRIC_TYPES
+from recidiviz.calculator.pipeline.base_pipeline import BasePipeline
+from recidiviz.calculator.pipeline.calculation_pipeline import (
+    CalculationPipelineJobArgs,
+)
+from recidiviz.calculator.pipeline.incarceration.pipeline import (
+    IncarcerationPipelineRunDelegate,
+)
 from recidiviz.calculator.pipeline.utils.beam_utils.pipeline_args_utils import (
-    get_apache_beam_pipeline_options_from_args,
+    derive_apache_beam_pipeline_args,
 )
 
 
 class TestPipelineArgsUtils(unittest.TestCase):
     """Unittests for helpers in pipeline_args_utils.py."""
 
-    DEFAULT_INCARCERATION_PIPELINE_ARGS = Namespace(
+    ALL_METRICS = {
+        metric: True
+        for table, metric in DATAFLOW_TABLES_TO_METRIC_TYPES.items()
+        if "incarceration" in table
+    }
+
+    default_beam_args: List[str] = [
+        "--project",
+        "recidiviz-staging",
+        "--job_name",
+        "incarceration-args-test",
+    ]
+
+    pipeline_options = PipelineOptions(
+        derive_apache_beam_pipeline_args(default_beam_args)
+    )
+
+    DEFAULT_INCARCERATION_PIPELINE_ARGS = CalculationPipelineJobArgs(
+        state_code="US_XX",
+        project_id="recidiviz-staging",
+        input_dataset="state",
+        output_dataset="dataflow_metrics",
+        metric_inclusions=ALL_METRICS,
+        person_id_filter_set=None,
+        reference_dataset="reference_views",
+        static_reference_dataset="static_reference_tables",
         calculation_month_count=1,
         calculation_end_month=None,
-        data_input="state",
-        output="dataflow_metrics",
-        metric_types={"ALL"},
-        person_filter_ids=None,
-        reference_view_input="reference_views",
-        static_reference_input="static_reference_tables",
-        state_code=None,
+        job_name="incarceration-args-test",
+        region="us-west1",
+        # These are dummy beam pipeline options just to properly instantiate this
+        # class. The equality of expected beam pipeline options are all tested
+        # separately from the rest of the attributes on the CalculationPipelineJobArgs.
+        apache_beam_pipeline_options=pipeline_options,
     )
 
     DEFAULT_APACHE_BEAM_OPTIONS_DICT = {
         "runner": "DataflowRunner",
         "project": "recidiviz-staging",
         "job_name": "incarceration-args-test",
+        "save_main_session": True,
         # This location holds execution files necessary for running each pipeline and is
         # only updated when templates are deployed.
         "staging_location": "gs://recidiviz-staging-dataflow-templates/staging/",
@@ -59,7 +94,21 @@ class TestPipelineArgsUtils(unittest.TestCase):
         "disk_size_gb": 50,
     }
 
-    TEST_PIPELINE = IncarcerationPipeline()
+    def _assert_pipeline_args_equal_exclude_beam_options(
+        self,
+        expected_pipeline_args: CalculationPipelineJobArgs,
+        actual_pipeline_args: CalculationPipelineJobArgs,
+    ):
+        """Asserts that every field except for the apache_beam_pipeline_options on
+        the expected CalculationPipelineJobArgs matches the actual
+        CalculationPipelineJobArgs."""
+        for field in attr.fields_dict(expected_pipeline_args.__class__).keys():
+            if field == "apache_beam_pipeline_options":
+                continue
+            self.assertEqual(
+                getattr(expected_pipeline_args, field),
+                getattr(actual_pipeline_args, field),
+            )
 
     def test_minimal_incarceration_pipeline_args(self) -> None:
         # Arrange
@@ -70,17 +119,21 @@ class TestPipelineArgsUtils(unittest.TestCase):
             "recidiviz-staging",
             "--extra_package",
             "dist/recidiviz-calculation-pipelines.tar.gz",
+            "--state_code",
+            "US_XX",
         ]
 
         # Act
-        (
-            incarceration_pipeline_args,
-            apache_beam_args,
-        ) = self.TEST_PIPELINE.get_arg_parser().parse_known_args(argv)
-        pipeline_options = get_apache_beam_pipeline_options_from_args(apache_beam_args)
+        pipeline = BasePipeline(
+            pipeline_run_delegate=IncarcerationPipelineRunDelegate.build_from_args(argv)
+        )
+        incarceration_pipeline_args = pipeline.pipeline_run_delegate.pipeline_job_args
+        pipeline_options = (
+            pipeline.pipeline_run_delegate.pipeline_job_args.apache_beam_pipeline_options
+        )
 
         # Assert
-        self.assertEqual(
+        self._assert_pipeline_args_equal_exclude_beam_options(
             incarceration_pipeline_args, self.DEFAULT_INCARCERATION_PIPELINE_ARGS
         )
         self.assertEqual(
@@ -98,16 +151,20 @@ class TestPipelineArgsUtils(unittest.TestCase):
             "--save_as_template",
             "--extra_package",
             "dist/recidiviz-calculation-pipelines.tar.gz",
+            "--state_code",
+            "US_XX",
         ]
         # Act
-        (
-            incarceration_pipeline_args,
-            apache_beam_args,
-        ) = self.TEST_PIPELINE.get_arg_parser().parse_known_args(argv)
-        pipeline_options = get_apache_beam_pipeline_options_from_args(apache_beam_args)
+        pipeline = BasePipeline(
+            pipeline_run_delegate=IncarcerationPipelineRunDelegate.build_from_args(argv)
+        )
+        incarceration_pipeline_args = pipeline.pipeline_run_delegate.pipeline_job_args
+        pipeline_options = (
+            pipeline.pipeline_run_delegate.pipeline_job_args.apache_beam_pipeline_options
+        )
 
         # Assert
-        self.assertEqual(
+        self._assert_pipeline_args_equal_exclude_beam_options(
             incarceration_pipeline_args, self.DEFAULT_INCARCERATION_PIPELINE_ARGS
         )
 
@@ -126,6 +183,8 @@ class TestPipelineArgsUtils(unittest.TestCase):
         argv = [
             "--job_name",
             "incarceration-args-test",
+            "--state_code",
+            "US_XX",
             "--runner",
             "DirectRunner",
             "--project",
@@ -149,26 +208,27 @@ class TestPipelineArgsUtils(unittest.TestCase):
         ]
 
         # Act
-        (
-            incarceration_pipeline_args,
-            apache_beam_args,
-        ) = self.TEST_PIPELINE.get_arg_parser().parse_known_args(argv)
-        pipeline_options = get_apache_beam_pipeline_options_from_args(apache_beam_args)
-
-        # Assert
-        expected_incarceration_pipeline_args = Namespace(
-            calculation_month_count=6,
-            calculation_end_month="2009-07",
-            data_input="county",
-            output="dataflow_metrics_2",
-            metric_types={"ALL"},
-            person_filter_ids=None,
-            reference_view_input="reference_views_2",
-            static_reference_input="static_reference_2",
-            state_code=None,
+        pipeline = BasePipeline(
+            pipeline_run_delegate=IncarcerationPipelineRunDelegate.build_from_args(argv)
+        )
+        incarceration_pipeline_args = pipeline.pipeline_run_delegate.pipeline_job_args
+        pipeline_options = (
+            pipeline.pipeline_run_delegate.pipeline_job_args.apache_beam_pipeline_options
         )
 
-        self.assertEqual(
+        # Assert
+        expected_incarceration_pipeline_args = attr.evolve(
+            self.DEFAULT_INCARCERATION_PIPELINE_ARGS,
+            calculation_month_count=6,
+            calculation_end_month="2009-07",
+            input_dataset="county",
+            output_dataset="dataflow_metrics_2",
+            reference_dataset="reference_views_2",
+            static_reference_dataset="static_reference_2",
+            region="us-central1",
+        )
+
+        self._assert_pipeline_args_equal_exclude_beam_options(
             incarceration_pipeline_args, expected_incarceration_pipeline_args
         )
 
@@ -193,6 +253,7 @@ class TestPipelineArgsUtils(unittest.TestCase):
             ],
             "extra_packages": ["dist/recidiviz-calculation-pipelines.tar.gz"],
             "disk_size_gb": 50,
+            "save_main_session": True,
         }
 
         self.assertEqual(
@@ -205,6 +266,8 @@ class TestPipelineArgsUtils(unittest.TestCase):
         argv = [
             "--job_name",
             "incarceration-args-test",
+            "--state_code",
+            "US_XX",
             "--project",
             "recidiviz-staging",
             "--person_filter_ids",
@@ -216,25 +279,26 @@ class TestPipelineArgsUtils(unittest.TestCase):
         ]
 
         # Act
-        (
-            incarceration_pipeline_args,
-            apache_beam_args,
-        ) = self.TEST_PIPELINE.get_arg_parser().parse_known_args(argv)
-        pipeline_options = get_apache_beam_pipeline_options_from_args(apache_beam_args)
+        pipeline = BasePipeline(
+            pipeline_run_delegate=IncarcerationPipelineRunDelegate.build_from_args(argv)
+        )
+        incarceration_pipeline_args = pipeline.pipeline_run_delegate.pipeline_job_args
+        pipeline_options = (
+            pipeline.pipeline_run_delegate.pipeline_job_args.apache_beam_pipeline_options
+        )
 
         # Assert
-
-        expected_incarceration_pipeline_args = Namespace(
-            **self.DEFAULT_INCARCERATION_PIPELINE_ARGS.__dict__
+        expected_incarceration_pipeline_args = attr.evolve(
+            self.DEFAULT_INCARCERATION_PIPELINE_ARGS,
+            person_id_filter_set={685253, 12345, 99999},
         )
-        expected_incarceration_pipeline_args.person_filter_ids = [685253, 12345, 99999]
 
-        self.assertEqual(
+        self._assert_pipeline_args_equal_exclude_beam_options(
             incarceration_pipeline_args, expected_incarceration_pipeline_args
         )
         self.assertEqual(
-            pipeline_options.get_all_options(drop_default=True),
             self.DEFAULT_APACHE_BEAM_OPTIONS_DICT,
+            pipeline_options.get_all_options(drop_default=True),
         )
 
     def test_incarceration_pipeline_args_additional_bad_arg(self) -> None:
@@ -242,6 +306,8 @@ class TestPipelineArgsUtils(unittest.TestCase):
         argv = [
             "--job_name",
             "incarceration-args-test",
+            "--state_code",
+            "US_XX",
             "--runner",
             "DirectRunner",
             "--project",
@@ -262,13 +328,12 @@ class TestPipelineArgsUtils(unittest.TestCase):
         ]
 
         # Act
-        (
-            _incarceration_pipeline_args,
-            apache_beam_args,
-        ) = self.TEST_PIPELINE.get_arg_parser().parse_known_args(argv)
-
         with self.assertRaises(SystemExit) as e:
-            _ = get_apache_beam_pipeline_options_from_args(apache_beam_args)
+            _ = BasePipeline(
+                pipeline_run_delegate=IncarcerationPipelineRunDelegate.build_from_args(
+                    argv
+                )
+            )
         self.assertEqual(2, e.exception.code)
 
     def test_incarceration_pipeline_args_missing_arg(self) -> None:
@@ -276,6 +341,8 @@ class TestPipelineArgsUtils(unittest.TestCase):
         argv = [
             "--job_name",
             "incarceration-args-test",
+            "--state_code",
+            "US_XX",
             "--runner",
             "DirectRunner",
             # project arg omitted here
@@ -296,11 +363,10 @@ class TestPipelineArgsUtils(unittest.TestCase):
         ]
 
         # Act
-        (
-            _incarceration_pipeline_args,
-            apache_beam_args,
-        ) = self.TEST_PIPELINE.get_arg_parser().parse_known_args(argv)
-
         with self.assertRaises(SystemExit) as e:
-            _ = get_apache_beam_pipeline_options_from_args(apache_beam_args)
+            _ = BasePipeline(
+                pipeline_run_delegate=IncarcerationPipelineRunDelegate.build_from_args(
+                    argv
+                )
+            )
         self.assertEqual(2, e.exception.code)

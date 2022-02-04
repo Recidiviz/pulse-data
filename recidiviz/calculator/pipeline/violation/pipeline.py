@@ -17,20 +17,24 @@
 """The violations calculation pipeline. See recidiviz/tools/run_sandbox_calculation_pipeline.py
 for details on how to launch a local run.
 """
-from recidiviz.calculator.pipeline.base_pipeline import BasePipeline, PipelineConfig
+from recidiviz.calculator.pipeline.base_identifier import BaseIdentifier
+from recidiviz.calculator.pipeline.base_metric_producer import BaseMetricProducer
+from recidiviz.calculator.pipeline.base_pipeline import PipelineConfig
+from recidiviz.calculator.pipeline.calculation_pipeline import (
+    CalculationPipelineRunDelegate,
+)
 from recidiviz.calculator.pipeline.pipeline_type import PipelineType
 from recidiviz.calculator.pipeline.violation import identifier, metric_producer
 from recidiviz.persistence.entity.state import entities
 
 
-class ViolationPipeline(BasePipeline):
+class ViolationPipelineRunDelegate(CalculationPipelineRunDelegate):
     """Defines the violation calculation pipeline."""
 
-    def __init__(self) -> None:
-        self.pipeline_config = PipelineConfig(
+    @classmethod
+    def pipeline_config(cls) -> PipelineConfig:
+        return PipelineConfig(
             pipeline_type=PipelineType.VIOLATION,
-            identifier=identifier.ViolationIdentifier(),
-            metric_producer=metric_producer.ViolationMetricProducer(),
             required_entities=[
                 entities.StatePerson,
                 entities.StatePersonRace,
@@ -44,4 +48,15 @@ class ViolationPipeline(BasePipeline):
             required_reference_tables=[],
             state_specific_required_reference_tables={},
         )
-        self.include_calculation_limit_args = True
+
+    @classmethod
+    def identifier(cls) -> BaseIdentifier:
+        return identifier.ViolationIdentifier()
+
+    @classmethod
+    def metric_producer(cls) -> BaseMetricProducer:
+        return metric_producer.ViolationMetricProducer()
+
+    @classmethod
+    def include_calculation_limit_args(cls) -> bool:
+        return True

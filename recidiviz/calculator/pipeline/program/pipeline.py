@@ -17,8 +17,12 @@
 """The program calculation pipeline. See recidiviz/tools/run_sandbox_calculation_pipeline.py
 for details on how to launch a local run.
 """
-
-from recidiviz.calculator.pipeline.base_pipeline import BasePipeline, PipelineConfig
+from recidiviz.calculator.pipeline.base_identifier import BaseIdentifier
+from recidiviz.calculator.pipeline.base_metric_producer import BaseMetricProducer
+from recidiviz.calculator.pipeline.base_pipeline import PipelineConfig
+from recidiviz.calculator.pipeline.calculation_pipeline import (
+    CalculationPipelineRunDelegate,
+)
 from recidiviz.calculator.pipeline.pipeline_type import PipelineType
 from recidiviz.calculator.pipeline.program import identifier, metric_producer
 from recidiviz.calculator.query.state.views.reference.supervision_period_to_agent_association import (
@@ -27,14 +31,13 @@ from recidiviz.calculator.query.state.views.reference.supervision_period_to_agen
 from recidiviz.persistence.entity.state import entities
 
 
-class ProgramPipeline(BasePipeline):
+class ProgramPipelineRunDelegate(CalculationPipelineRunDelegate):
     """Defines the program calculation pipeline."""
 
-    def __init__(self) -> None:
-        self.pipeline_config = PipelineConfig(
+    @classmethod
+    def pipeline_config(cls) -> PipelineConfig:
+        return PipelineConfig(
             pipeline_type=PipelineType.PROGRAM,
-            identifier=identifier.ProgramIdentifier(),
-            metric_producer=metric_producer.ProgramMetricProducer(),
             required_entities=[
                 entities.StatePerson,
                 entities.StatePersonRace,
@@ -48,4 +51,15 @@ class ProgramPipeline(BasePipeline):
             ],
             state_specific_required_reference_tables={},
         )
-        self.include_calculation_limit_args = True
+
+    @classmethod
+    def identifier(cls) -> BaseIdentifier:
+        return identifier.ProgramIdentifier()
+
+    @classmethod
+    def metric_producer(cls) -> BaseMetricProducer:
+        return metric_producer.ProgramMetricProducer()
+
+    @classmethod
+    def include_calculation_limit_args(cls) -> bool:
+        return True

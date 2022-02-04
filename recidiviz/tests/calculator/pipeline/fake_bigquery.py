@@ -53,7 +53,7 @@ DataDictQueryFn = Callable[
 # Example query:
 # SELECT * FROM `recidiviz-staging.state.state_person` WHERE state_code IN ('US_XX') AND person_id IN (123, 456)
 ENTITY_TABLE_QUERY_REGEX = re.compile(
-    r"SELECT ([A-Za-z_\ \,\*]+) FROM `([a-z\d\-]+\.[a-z_]+)\.([a-z_]+)` "
+    r"SELECT ([A-Za-z_\ \,\*]+) FROM `[a-z\d\-]+\.([a-z_]+)\.([a-z_]+)` "
     r"WHERE state_code IN \(\'([\w\d]+)\'\)( AND ([a-z_]+) IN \(([\'\w\d ,]+)\))?"
 )
 
@@ -70,8 +70,8 @@ ENTITY_TABLE_QUERY_REGEX = re.compile(
 #   = state_incarceration_incident_outcome.incarceration_incident_id
 ASSOCIATION_VALUES_QUERY_REGEX = re.compile(
     r"SELECT ([a-z_]+\.[a-z_]+) as unifying_id, ([a-z_]+\.[a-z_]+), ([a-z_]+\.[a-z_]+) "
-    r"FROM `([a-z\d\-]+\.[a-z_]+)\.([a-z_]+)` ([a-z_]+) "
-    r"JOIN \(SELECT \* FROM `([a-z\d\-]+\.[a-z_]+)\.([a-z_]+)` "
+    r"FROM `[a-z\d\-]+\.([a-z_]+)\.([a-z_]+)` ([a-z_]+) "
+    r"JOIN \(SELECT \* FROM `[a-z\d\-]+\.([a-z_]+)\.([a-z_]+)` "
     r"WHERE state_code IN \(\'([\w\d]+)\'\)( AND ([a-z_]+) IN \(([\'\w\d ,]+)\))?\) ([a-z_]+) "
     r"ON ([a-z_]+\.[a-z_]+) = ([a-z_]+\.[a-z_]+)"
 )

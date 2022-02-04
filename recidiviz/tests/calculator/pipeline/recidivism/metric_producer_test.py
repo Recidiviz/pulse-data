@@ -323,7 +323,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
 
     def setUp(self) -> None:
         self.metric_producer = metric_producer.RecidivismMetricProducer()
-        self.pipeline_config = pipeline.RecidivismPipeline().pipeline_config
+        self.pipeline_config = pipeline.RecidivismPipelineRunDelegate.pipeline_config()
 
     @staticmethod
     def expected_metric_counts(

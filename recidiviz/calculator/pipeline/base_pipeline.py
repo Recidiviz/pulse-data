@@ -14,426 +14,260 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Abstract class for all calculation pipelines."""
+"""Abstract class for all pipelines that operate on state entities."""
 import abc
 import argparse
-import datetime
 import logging
-from typing import (
-    Any,
-    Dict,
-    Generator,
-    Iterable,
-    List,
-    Optional,
-    Set,
-    Tuple,
-    Type,
-    Union,
-)
+from typing import Dict, Generic, List, Optional, Set, Type, TypeVar
 
 import apache_beam as beam
 import attr
-from apache_beam.options.pipeline_options import PipelineOptions, SetupOptions
-from apache_beam.pvalue import AsList
-from apache_beam.runners.pipeline_context import PipelineContext
-from apache_beam.typehints.decorators import with_input_types, with_output_types
+from apache_beam.options.pipeline_options import PipelineOptions
+from apache_beam.pvalue import PBegin
 
-from recidiviz.calculator.dataflow_config import (
-    DATAFLOW_METRICS_TO_TABLES,
-    DATAFLOW_TABLES_TO_METRIC_TYPES,
-)
-from recidiviz.calculator.pipeline.base_identifier import BaseIdentifier
-from recidiviz.calculator.pipeline.base_metric_producer import BaseMetricProducer
 from recidiviz.calculator.pipeline.pipeline_type import PipelineType
-from recidiviz.calculator.pipeline.utils.beam_utils.bigquery_io_utils import (
-    RecidivizMetricWritableDict,
-    WriteAppendToBigQuery,
-)
 from recidiviz.calculator.pipeline.utils.beam_utils.entity_hydration_utils import (
     ConvertEntitiesToStateSpecificTypes,
 )
 from recidiviz.calculator.pipeline.utils.beam_utils.extractor_utils import (
     ExtractDataForPipeline,
-    ImportTable,
-)
-from recidiviz.calculator.pipeline.utils.beam_utils.person_utils import (
-    PERSON_EVENTS_KEY,
-    PERSON_METADATA_KEY,
-    BuildPersonMetadata,
-    ExtractPersonEventsMetadata,
 )
 from recidiviz.calculator.pipeline.utils.beam_utils.pipeline_args_utils import (
-    add_shared_pipeline_arguments,
+    get_apache_beam_pipeline_options_from_args,
 )
-from recidiviz.calculator.pipeline.utils.event_utils import IdentifierEvent
-from recidiviz.calculator.pipeline.utils.execution_utils import (
-    get_job_id,
-    person_and_kwargs_for_identifier,
-)
-from recidiviz.calculator.pipeline.utils.metric_utils import (
-    PersonMetadata,
-    RecidivizMetric,
-    RecidivizMetricType,
-)
-from recidiviz.calculator.query.state.state_specific_query_strings import (
-    STATE_RACE_ETHNICITY_POPULATION_TABLE_NAME,
+from recidiviz.calculator.query.state.dataset_config import (
+    REFERENCE_VIEWS_DATASET,
+    STATE_BASE_DATASET,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state import entities
-from recidiviz.utils import environment
-
-# Cached job_id value
-_job_id = None
 
 
-def job_id(pipeline_options: Dict[str, str]) -> str:
-    global _job_id
-    if not _job_id:
-        _job_id = get_job_id(pipeline_options)
-    return _job_id
+@attr.s(frozen=True)
+class PipelineJobArgs:
+    """Stores information about the arguments provided to trigger the pipeline job
+    being run."""
 
+    # The state_code of the current pipeline
+    state_code: str = attr.ib()
 
-@environment.test_only
-def clear_job_id() -> None:
-    global _job_id
-    _job_id = None
+    # The project the pipeline is running in
+    project_id: str = attr.ib()
+
+    # Which dataset to query from for the data input
+    input_dataset: str = attr.ib()
+
+    # Which dataset in BigQuery to write output
+    output_dataset: str = attr.ib()
+
+    # Which dataset to query from for the reference views
+    reference_dataset: str = attr.ib()
+
+    # Options needed to create an apache-beam pipeline
+    apache_beam_pipeline_options: PipelineOptions = attr.ib()
+
+    # An optional set of person_ids. When present, the pipeline will only operate on
+    # data for these people and will not produce any output. Should be used for
+    # debugging purposes only.
+    person_id_filter_set: Optional[Set[int]] = attr.ib()
 
 
 @attr.s(frozen=True)
 class PipelineConfig:
-    """Configuration needed for a calculation pipeline."""
+    """Configuration needed for a calculation pipeline. This configuration is unique
+    to each pipeline type, and is consistent for all pipeline jobs of the same
+    |pipeline_type|."""
 
-    # The type of the pipeline, usually matches the top-level package and is used to identify which pipeline to run in sandbox runs
+    # The type of the pipeline, usually matches the top-level package and is used to
+    # identify which pipeline to run in sandbox runs
     pipeline_type: PipelineType = attr.ib()
 
-    # The identifier used to identify specific events for metrics
-    identifier: BaseIdentifier = attr.ib()
-
-    # The metric producer transforming events to metrics
-    metric_producer: BaseMetricProducer = attr.ib()
-
+    # The list of entities required for the pipeline
     required_entities: List[Type[Entity]] = attr.ib()
 
+    # The list of reference tables required for the pipeline
     required_reference_tables: List[str] = attr.ib()
 
+    # A dictionary mapping state codes to the names of state-specific tables required
+    # to run pipelines in the state
     state_specific_required_reference_tables: Dict[StateCode, List[str]] = attr.ib()
 
 
-@with_input_types(
-    beam.typehints.Tuple[
-        entities.StatePerson,
-        Union[Dict[int, IdentifierEvent], List[IdentifierEvent]],
-        PersonMetadata,
-    ],
-    beam.typehints.Optional[PipelineConfig],
-    beam.typehints.Dict[RecidivizMetricType, bool],
-    beam.typehints.Dict[str, Any],
-    beam.typehints.Optional[str],
-    beam.typehints.Optional[int],
-)
-@with_output_types(RecidivizMetric)
-class ProduceMetrics(beam.DoFn):
-    """A DoFn that produces metrics given a StatePerson, metadata and associated events."""
-
-    # pylint: disable=arguments-differ
-    def process(
-        self,
-        element: Tuple[
-            entities.StatePerson,
-            Union[Dict[int, IdentifierEvent], List[IdentifierEvent]],
-            PersonMetadata,
-        ],
-        pipeline_config: PipelineConfig,
-        metric_inclusions: Dict[RecidivizMetricType, bool],
-        pipeline_options: Dict[str, str],
-        calculation_end_month: Optional[str] = None,
-        calculation_month_count: int = -1,
-    ) -> Generator[RecidivizMetric, None, None]:
-        """Produces various metrics.
-        Sends the metric_producer the StatePerson entity and their corresponding events for mapping all metrics.
-        Args:
-            element: Dictionary containing the person, events, and person_metadata
-            calculation_end_month: The year and month of the last month for which metrics should be calculated.
-            calculation_month_count: The number of months to limit the monthly calculation output to.
-            metric_inclusions: A dictionary where the keys are each metric type, and the values are boolean
-                values for whether or not to include that metric type in the calculations
-            pipeline_options: A dictionary storing configuration details for the pipeline.
-        Yields:
-            Each metric."""
-        person, events, person_metadata = element
-
-        pipeline_job_id = job_id(pipeline_options)
-
-        metrics = pipeline_config.metric_producer.produce_metrics(
-            person=person,
-            identifier_events=events,
-            metric_inclusions=metric_inclusions,
-            person_metadata=person_metadata,
-            pipeline_type=pipeline_config.pipeline_type,
-            pipeline_job_id=pipeline_job_id,
-            calculation_end_month=calculation_end_month,
-            calculation_month_count=calculation_month_count,
-        )
-
-        for metric in metrics:
-            yield metric
-
-    def to_runner_api_parameter(
-        self, _unused_context: PipelineContext
-    ) -> Tuple[str, Any]:
-        pass
+PipelineJobArgsT = TypeVar("PipelineJobArgsT", bound=PipelineJobArgs)
+PipelineRunDelegateT = TypeVar("PipelineRunDelegateT", bound="PipelineRunDelegate")
 
 
-@with_input_types(
-    beam.typehints.Tuple[
-        entities.StatePerson,
-        Union[Dict[int, IdentifierEvent], List[IdentifierEvent]],
-        PersonMetadata,
-    ],
-)
-@with_output_types(RecidivizMetric)
-class GetMetrics(beam.PTransform):
-    """A PTransform that transforms a StatePerson and their corresponding events to corresponding metrics."""
+class PipelineRunDelegate(Generic[PipelineJobArgsT]):
+    """Base delegate interface required for running a pipeline."""
 
     def __init__(
         self,
-        pipeline_options: Dict[str, str],
-        pipeline_config: PipelineConfig,
-        metric_types_to_include: Set[str],
-        calculation_month_count: int = -1,
-        calculation_end_month: Optional[str] = None,
+        pipeline_job_args: PipelineJobArgsT,
     ) -> None:
-        super().__init__()
-        self._pipeline_config = pipeline_config
-        self._pipeline_options = pipeline_options
-        self._calculation_end_month = calculation_end_month
-        self._calculation_month_count = calculation_month_count
+        self.pipeline_job_args = pipeline_job_args
+        self._validate_pipeline_config()
 
-        month_count_string = (
-            str(calculation_month_count) if calculation_month_count != -1 else "all"
-        )
-        end_month_string = (
-            calculation_end_month if calculation_end_month else "the current month"
-        )
-        logging.info(
-            "Producing metric output for %s month(s) up to %s",
-            month_count_string,
-            end_month_string,
-        )
+    ##### VALIDATION #####
+    @abc.abstractmethod
+    def _validate_pipeline_config(self) -> None:
+        """Validates the contents of the PipelineConfig."""
 
-        self._metric_inclusions: Dict[RecidivizMetricType, bool] = {}
+    ##### FACTORY #####
+    @classmethod
+    def build_from_args(
+        cls: Type[PipelineRunDelegateT],
+        argv: List[str],
+    ) -> PipelineRunDelegateT:
+        """Builds a PipelineRunDelegate from the provided arguments."""
+        parser = argparse.ArgumentParser()
+        cls.add_pipeline_job_args_to_parser(parser)
 
-        for (
-            metric_option
-        ) in pipeline_config.metric_producer.metric_class.metric_type_cls:
-            if (
-                metric_option.value in metric_types_to_include
-                or "ALL" in metric_types_to_include
-            ):
-                self._metric_inclusions[metric_option] = True
-                logging.info("Producing %s metrics", metric_option.value)
-            else:
-                self._metric_inclusions[metric_option] = False
+        pipeline_job_args = cls._build_pipeline_job_args(parser, argv)
 
-    def expand(self, input_or_inputs: List[Any]) -> List[RecidivizMetric]:
-        metrics = input_or_inputs | "Produce Metrics" >> beam.ParDo(
-            ProduceMetrics(),
-            self._pipeline_config,
-            self._metric_inclusions,
-            self._pipeline_options,
-            self._calculation_end_month,
-            self._calculation_month_count,
+        return cls(
+            pipeline_job_args=pipeline_job_args,
         )
 
-        return metrics
+    @classmethod
+    def add_pipeline_job_args_to_parser(
+        cls,
+        parser: argparse.ArgumentParser,
+    ) -> None:
+        """Adds argument configs to the |parser| for base pipeline args."""
+        parser.add_argument(
+            "--state_code",
+            dest="state_code",
+            required=True,
+            type=str,
+            help="The state_code to include in the calculations.",
+        )
 
+        parser.add_argument(
+            "--data_input",
+            type=str,
+            help="BigQuery dataset to query.",
+            default=STATE_BASE_DATASET,
+        )
 
-@with_input_types(
-    beam.typehints.Tuple[int, Dict[str, Iterable[Any]]],
-    beam.typehints.Optional[BaseIdentifier],
-)
-@with_output_types(
-    beam.typehints.Tuple[
-        Optional[int],
-        beam.typehints.Tuple[entities.StatePerson, List[IdentifierEvent]],
-    ]
-)
-class ClassifyEvents(beam.DoFn):
-    """Classifies an event according to multiple types of measurement."""
+        parser.add_argument(
+            "--output",
+            type=str,
+            help="Output dataset to write results to.",
+            default=cls.default_output_dataset(),
+        )
 
-    # pylint: disable=arguments-differ
-    def process(
-        self, element: Tuple[int, Dict[str, Iterable[Any]]], identifier: BaseIdentifier
-    ) -> Generator[
-        Tuple[Optional[int], Tuple[entities.StatePerson, List[IdentifierEvent]]],
-        None,
-        None,
-    ]:
-        """Identifies various events relevant to calculations."""
-        _, person_entities = element
+        parser.add_argument(
+            "--reference_view_input",
+            type=str,
+            help="BigQuery reference view dataset to query.",
+            default=REFERENCE_VIEWS_DATASET,
+        )
 
-        person, kwargs = person_and_kwargs_for_identifier(person_entities)
+        parser.add_argument(
+            "--person_filter_ids",
+            type=int,
+            nargs="+",
+            help="An optional list of DB person_id values. When present, the pipeline "
+            "will only calculate metrics for these people and will not output to BQ.",
+        )
 
-        events = identifier.find_events(person, kwargs)
+    @classmethod
+    @abc.abstractmethod
+    def _build_pipeline_job_args(
+        cls,
+        parser: argparse.ArgumentParser,
+        argv: List[str],
+    ) -> PipelineJobArgsT:
+        """Builds the PipelineJobArgs object from the provided args."""
 
-        if not events:
-            logging.info(
-                "No valid events for person with id: %d. Excluding them from the calculations.",
-                person.person_id,
-            )
+    @classmethod
+    def _get_base_pipeline_job_args(
+        cls,
+        parser: argparse.ArgumentParser,
+        argv: List[str],
+    ) -> PipelineJobArgs:
+        (
+            known_args,
+            remaining_args,
+        ) = parser.parse_known_args(argv)
+        apache_beam_pipeline_options = get_apache_beam_pipeline_options_from_args(
+            remaining_args
+        )
+
+        if person_filter_ids := known_args.person_filter_ids:
+            person_id_filter_set = {int(person_id) for person_id in person_filter_ids}
         else:
-            yield person.person_id, (person, events)
+            person_id_filter_set = None
 
-    def to_runner_api_parameter(
-        self, _unused_context: PipelineContext
-    ) -> Tuple[str, Any]:
-        pass
+        return PipelineJobArgs(
+            state_code=known_args.state_code,
+            project_id=apache_beam_pipeline_options.get_all_options()["project"],
+            input_dataset=known_args.data_input,
+            output_dataset=known_args.output,
+            reference_dataset=known_args.reference_view_input,
+            apache_beam_pipeline_options=apache_beam_pipeline_options,
+            person_id_filter_set=person_id_filter_set,
+        )
+
+    @classmethod
+    @abc.abstractmethod
+    def default_output_dataset(cls) -> str:
+        """The default output dataset for the pipeline job. Must be implemented by
+        subclasses."""
+
+    ##### STATIC / CLASS CONFIGURATION #####
+
+    @classmethod
+    @abc.abstractmethod
+    def pipeline_config(cls) -> PipelineConfig:
+        """Static pipeline configuration for this pipeline that remains the same for
+        all pipeline runs.
+        """
+
+    #### PIPELINE RUNTIME IMPLEMENTATION ####
+
+    @abc.abstractmethod
+    def run_data_transforms(
+        self, p: PBegin, pipeline_data: beam.Pipeline
+    ) -> beam.Pipeline:
+        """Runs the data transforms of the pipeline."""
+
+    @abc.abstractmethod
+    def write_output(self, pipeline: beam.Pipeline) -> None:
+        """Write the output to the output_dataset."""
 
 
 @attr.s
-class BasePipeline(abc.ABC):
-    """A base class defining a calculation pipeline."""
+class BasePipeline:
+    """A base class defining a pipeline."""
 
-    pipeline_config: PipelineConfig = attr.ib()
-    include_calculation_limit_args: bool = attr.ib(default=False)
+    pipeline_run_delegate: PipelineRunDelegate = attr.ib()
 
-    @property
-    def _metric_type_values(self) -> List[str]:
-        return [
-            metric_type.value
-            for metric_type in self.pipeline_config.metric_producer.metric_class.metric_type_cls
-        ]
-
-    @property
-    def _metric_subclasses(self) -> Set[Type[RecidivizMetric]]:
-        subclasses = set()
-        path = [self.pipeline_config.metric_producer.metric_class]
-        while path:
-            parent = path.pop()
-            for child in parent.__subclasses__():
-                if child not in subclasses:
-                    subclasses.add(child)
-                    path.append(child)
-        return subclasses
-
-    def get_arg_parser(self) -> argparse.ArgumentParser:
-        parser = argparse.ArgumentParser()
-
-        add_shared_pipeline_arguments(parser, self.include_calculation_limit_args)
-
-        metric_type_options: List[str] = self._metric_type_values
-        metric_type_options.append("ALL")
-
-        parser.add_argument(
-            "--metric_types",
-            dest="metric_types",
-            type=str,
-            nargs="+",
-            choices=metric_type_options,
-            help="A list of the types of metric to calculate.",
-            default={"ALL"},
-        )
-
-        return parser
-
-    def write_to_metrics(
-        self, metrics_output_pipeline: beam.Pipeline, output: str
-    ) -> None:
-        """Takes the output from metrics_output_pipeline and writes it into a beam.pvalue.TaggedOutput
-        dictionary-like object. This is then written to appropriate BigQuery tables under the appropriate
-        Dataflow metrics table and namespace.
-
-        Each metric type is a tag in the TaggedOutput and is accessed individually to be written to a
-        separate table in BigQuery."""
-        writable_metrics = (
-            metrics_output_pipeline
-            | "Convert to dict to be written to BQ"
-            >> beam.ParDo(RecidivizMetricWritableDict()).with_outputs(
-                *self._metric_type_values
-            )
-        )
-
-        for metric_subclass in self._metric_subclasses:
-            table_id = DATAFLOW_METRICS_TO_TABLES[metric_subclass]
-            metric_type = DATAFLOW_TABLES_TO_METRIC_TYPES[table_id]
-            _ = writable_metrics.__getattr__(
-                metric_type.value
-            ) | f"Write {metric_type.value} metrics to BQ table: {table_id}" >> WriteAppendToBigQuery(
-                output_table=table_id, output_dataset=output
-            )
-
-    def _validate_pipeline_config(self) -> None:
-        """Validates the contents of the PipelineConfig."""
-        # All of these entities are required for all pipelines
-        default_entities: Set[Type[Entity]] = {
-            entities.StatePerson,
-            entities.StatePersonRace,
-            entities.StatePersonEthnicity,
-        }
-
-        if self.pipeline_config.required_entities:
-            missing_default_entities = default_entities.difference(
-                set(self.pipeline_config.required_entities)
-            )
-            if missing_default_entities:
-                raise ValueError(
-                    "PipelineConfig.required_entities must include the "
-                    f"following default entity types: ["
-                    f"{default_entities}]. Missing: {missing_default_entities}"
-                )
-
-    def run(
-        self,
-        apache_beam_pipeline_options: PipelineOptions,
-        data_input: str,
-        reference_view_input: str,
-        static_reference_input: str,
-        output: str,
-        metric_types: List[str],
-        state_code: str,
-        person_filter_ids: Optional[List[int]],
-        calculation_month_count: int = -1,
-        calculation_end_month: Optional[str] = None,
-    ) -> None:
+    def run(self) -> None:
         """Runs the designated pipeline."""
-        self._validate_pipeline_config()
-
-        # Workaround to load SQLAlchemy objects at start of pipeline. This is necessary because the BuildRootEntity
-        # function tries to access attributes of relationship properties on the SQLAlchemy room_schema_class before they
-        # have been loaded. However, if *any* SQLAlchemy objects have been instantiated, then the relationship properties
-        # are loaded and their attributes can be successfully accessed.
+        # Workaround to load SQLAlchemy objects at start of pipeline. This is
+        # necessary because the BuildRootEntity function tries to access attributes
+        # of relationship properties on the SQLAlchemy room_schema_class before they
+        # have been loaded. However, if *any* SQLAlchemy objects have been instantiated,
+        # then the relationship properties are loaded and their attributes can be
+        # successfully accessed.
         _ = schema.StatePerson()
 
-        apache_beam_pipeline_options.view_as(SetupOptions).save_main_session = True
+        pipeline_job_args = self.pipeline_run_delegate.pipeline_job_args
+        state_code = pipeline_job_args.state_code
+        person_id_filter_set = pipeline_job_args.person_id_filter_set
 
-        # Get pipeline job details
-        all_pipeline_options = apache_beam_pipeline_options.get_all_options()
-        project_id = all_pipeline_options["project"]
-
-        if project_id is None:
-            raise ValueError(
-                f"No project set in pipeline options: {all_pipeline_options}"
-            )
-
-        if state_code is None:
-            raise ValueError("No state_code set for pipeline")
-
-        input_dataset = project_id + "." + data_input
-        reference_dataset = project_id + "." + reference_view_input
-        static_reference_dataset = project_id + "." + static_reference_input
-
-        person_id_filter_set = set(person_filter_ids) if person_filter_ids else None
-
-        with beam.Pipeline(options=apache_beam_pipeline_options) as p:
+        with beam.Pipeline(
+            options=self.pipeline_run_delegate.pipeline_job_args.apache_beam_pipeline_options
+        ) as p:
             required_reference_tables = (
-                self.pipeline_config.required_reference_tables.copy()
+                self.pipeline_run_delegate.pipeline_config().required_reference_tables.copy()
             )
 
             required_reference_tables.extend(
-                self.pipeline_config.state_specific_required_reference_tables.get(
+                self.pipeline_run_delegate.pipeline_config().state_specific_required_reference_tables.get(
                     StateCode(state_code.upper()), []
                 )
             )
@@ -441,9 +275,10 @@ class BasePipeline(abc.ABC):
             # Get all required entities and reference data
             pipeline_data = p | "Load required data" >> ExtractDataForPipeline(
                 state_code=state_code,
-                dataset=input_dataset,
-                reference_dataset=reference_dataset,
-                required_entity_classes=self.pipeline_config.required_entities,
+                project_id=pipeline_job_args.project_id,
+                dataset=pipeline_job_args.input_dataset,
+                reference_dataset=pipeline_job_args.reference_dataset,
+                required_entity_classes=self.pipeline_run_delegate.pipeline_config().required_entities,
                 required_reference_tables=required_reference_tables,
                 unifying_class=entities.StatePerson,
                 unifying_id_field_filter_set=person_id_filter_set,
@@ -456,58 +291,14 @@ class BasePipeline(abc.ABC):
                 >> beam.ParDo(ConvertEntitiesToStateSpecificTypes())
             )
 
-            person_events = pipeline_data | "Get Events" >> beam.ParDo(
-                ClassifyEvents(), identifier=self.pipeline_config.identifier
-            )
-
-            state_race_ethnicity_population_counts = (
-                p
-                | "Load state_race_ethnicity_population_counts"
-                >> ImportTable(
-                    dataset_id=static_reference_dataset,
-                    table_id=STATE_RACE_ETHNICITY_POPULATION_TABLE_NAME,
-                    state_code_filter=state_code,
-                )
-            )
-
-            person_metadata = (
-                pipeline_data
-                | "Build the person_metadata dictionary"
-                >> beam.ParDo(
-                    BuildPersonMetadata(),
-                    state_race_ethnicity_population_counts=AsList(
-                        state_race_ethnicity_population_counts
-                    ),
-                )
-            )
-
-            person_events_with_metadata = (
-                {PERSON_EVENTS_KEY: person_events, PERSON_METADATA_KEY: person_metadata}
-                | "Group events with person-level metadata" >> beam.CoGroupByKey()
-                | "Organize StatePerson, PersonMetadata and events for calculations"
-                >> beam.ParDo(ExtractPersonEventsMetadata())
-            )
-
-            # Get the type of metric to calculate
-            metric_types_set = set(metric_types)
-
-            # Add timestamp for local jobs
-            job_timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H_%M_%S.%f")
-            all_pipeline_options["job_timestamp"] = job_timestamp
-
-            # Get metrics
-            metrics = person_events_with_metadata | "Get Metrics" >> GetMetrics(
-                pipeline_options=all_pipeline_options,
-                pipeline_config=self.pipeline_config,
-                metric_types_to_include=metric_types_set,
-                calculation_end_month=calculation_end_month,
-                calculation_month_count=calculation_month_count,
+            pipeline_output = self.pipeline_run_delegate.run_data_transforms(
+                p, pipeline_data
             )
 
             if person_id_filter_set:
                 logging.warning(
-                    "Non-empty person filter set - returning before writing metrics."
+                    "Non-empty person filter set - returning before writing output."
                 )
                 return
 
-            self.write_to_metrics(metrics, output)
+            self.pipeline_run_delegate.write_output(pipeline_output)

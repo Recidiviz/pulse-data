@@ -17,7 +17,12 @@
 """The supervision calculation pipeline. See recidiviz/tools/run_sandbox_calculation_pipeline.py
 for details on how to launch a local run.
 """
-from recidiviz.calculator.pipeline.base_pipeline import BasePipeline, PipelineConfig
+from recidiviz.calculator.pipeline.base_identifier import BaseIdentifier
+from recidiviz.calculator.pipeline.base_metric_producer import BaseMetricProducer
+from recidiviz.calculator.pipeline.base_pipeline import PipelineConfig
+from recidiviz.calculator.pipeline.calculation_pipeline import (
+    CalculationPipelineRunDelegate,
+)
 from recidiviz.calculator.pipeline.pipeline_type import PipelineType
 from recidiviz.calculator.pipeline.supervision import identifier, metric_producer
 from recidiviz.calculator.query.state.views.reference.supervision_period_judicial_district_association import (
@@ -33,14 +38,13 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.state import entities
 
 
-class SupervisionPipeline(BasePipeline):
+class SupervisionPipelineRunDelegate(CalculationPipelineRunDelegate):
     """Defines the supervision calculation pipeline."""
 
-    def __init__(self) -> None:
-        self.pipeline_config = PipelineConfig(
+    @classmethod
+    def pipeline_config(cls) -> PipelineConfig:
+        return PipelineConfig(
             pipeline_type=PipelineType.SUPERVISION,
-            identifier=identifier.SupervisionIdentifier(),
-            metric_producer=metric_producer.SupervisionMetricProducer(),
             required_entities=[
                 entities.StatePerson,
                 entities.StatePersonRace,
@@ -69,4 +73,15 @@ class SupervisionPipeline(BasePipeline):
                 StateCode.US_MO: [US_MO_SENTENCE_STATUSES_VIEW_NAME]
             },
         )
-        self.include_calculation_limit_args = True
+
+    @classmethod
+    def identifier(cls) -> BaseIdentifier:
+        return identifier.SupervisionIdentifier()
+
+    @classmethod
+    def metric_producer(cls) -> BaseMetricProducer:
+        return metric_producer.SupervisionMetricProducer()
+
+    @classmethod
+    def include_calculation_limit_args(cls) -> bool:
+        return True

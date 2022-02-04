@@ -17,13 +17,9 @@
 """Tests for utils/execution_utils.py."""
 # pylint: disable=protected-access
 import argparse
-import datetime
-import random
-import string
 import unittest
 from typing import Any, Dict, Iterable
 
-from apache_beam.options.pipeline_options import PipelineOptions
 from freezegun import freeze_time
 
 from recidiviz.calculator.pipeline.utils import execution_utils
@@ -34,80 +30,6 @@ from recidiviz.calculator.pipeline.utils.execution_utils import (
     select_query,
 )
 from recidiviz.persistence.entity.state.entities import StateAssessment, StatePerson
-
-
-class TestGetJobID(unittest.TestCase):
-    """Tests the function that gets the job id for a given pipeline."""
-
-    def test_get_job_id_local_job(self) -> None:
-        """Tests getting the job_id from given pipeline options."""
-
-        args = ["--runner", "DirectRunner"]
-
-        pipeline_options = PipelineOptions(args).get_all_options()
-
-        job_timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H_%M_%S.%f")
-        pipeline_options["job_timestamp"] = job_timestamp
-
-        job_id = execution_utils.get_job_id(pipeline_options)
-
-        assert job_id == job_timestamp + "_local_job"
-
-    def test_get_job_id_missing_timestamp_local_job(self) -> None:
-        """Tests getting the job_id when a job_timestamp is not provided for
-        a locally running job.
-        """
-
-        args = ["--runner", "DirectRunner"]
-
-        pipeline_options = PipelineOptions(args).get_all_options()
-
-        with self.assertRaisesRegex(
-            ValueError, "^Must provide a job_timestamp for local jobs.$"
-        ):
-            _ = execution_utils.get_job_id(pipeline_options)
-
-    def test_get_job_id_no_project_invalid(self) -> None:
-        """Tests getting the job_id when there is no provided project."""
-
-        job_name = "".join(random.choice(string.ascii_lowercase) for _ in range(10))
-
-        args = ["--runner", "DataflowRunner", "--job_name", job_name, "--region", "xxx"]
-
-        pipeline_options = PipelineOptions(args).get_all_options()
-
-        with self.assertRaisesRegex(
-            ValueError, "No project provided in pipeline options:"
-        ):
-            _ = execution_utils.get_job_id(pipeline_options)
-
-    def test_get_job_id_region_is_none(self) -> None:
-        """Tests getting the job_id when there is no region provided.
-
-        Note: here we are setting region as None instead of omitting it because
-        PipelineOptions has a default value for the region.
-        """
-
-        args = ["--runner", "DataflowRunner", "--project", "xxx", "--region", None]
-
-        pipeline_options = PipelineOptions(args).get_all_options()
-
-        with self.assertRaisesRegex(
-            ValueError, "No region provided in pipeline options:"
-        ):
-            _ = execution_utils.get_job_id(pipeline_options)
-
-    def test_get_job_id_no_job_name_provided(self) -> None:
-        """Tests getting the job_id when there is no job_name provided."""
-
-        args = ["--runner", "DataflowRunner", "--project", "xxx", "--region", "uswest1"]
-
-        pipeline_options = PipelineOptions(args).get_all_options()
-
-        with self.assertRaisesRegex(
-            ValueError, "No job_name provided in pipeline options:"
-        ):
-            _ = execution_utils.get_job_id(pipeline_options)
 
 
 class TestCalculationEndMonthArg(unittest.TestCase):
@@ -214,7 +136,8 @@ class TestSelectAllQuery(unittest.TestCase):
     """Tests for the select_all_by_person_query AND select_query functions."""
 
     def setUp(self) -> None:
-        self.dataset = "project-id.my_dataset"
+        self.project_id = "project-id"
+        self.dataset = "my_dataset"
         self.table_id = "TABLE_WHERE_DATA_IS"
 
     def test_select_all_with_state_code_filter_only(self) -> None:
@@ -223,6 +146,7 @@ class TestSelectAllQuery(unittest.TestCase):
         self.assertEqual(
             expected_query,
             select_all_by_person_query(
+                self.project_id,
                 self.dataset,
                 self.table_id,
                 state_code_filter="US_XX",
@@ -233,6 +157,7 @@ class TestSelectAllQuery(unittest.TestCase):
         self.assertEqual(
             expected_query,
             select_query(
+                self.project_id,
                 self.dataset,
                 self.table_id,
                 state_code_filter="US_XX",
@@ -250,6 +175,7 @@ class TestSelectAllQuery(unittest.TestCase):
         self.assertEqual(
             expected_query,
             select_all_by_person_query(
+                self.project_id,
                 self.dataset,
                 self.table_id,
                 state_code_filter="US_XX",
@@ -264,6 +190,7 @@ class TestSelectAllQuery(unittest.TestCase):
         self.assertEqual(
             expected_query,
             select_query(
+                self.project_id,
                 self.dataset,
                 self.table_id,
                 state_code_filter="US_XX",
