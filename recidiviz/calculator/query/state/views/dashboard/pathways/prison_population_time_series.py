@@ -52,6 +52,7 @@ PRISON_POPULATION_TIME_SERIES_QUERY_TEMPLATE = """
             ON pop.state_code = name_map.state_code
             AND pop.facility = name_map.location_id
         WHERE date_of_stay >= DATE_TRUNC(DATE_SUB(CURRENT_DATE("US/Eastern"), INTERVAL 5 YEAR), MONTH)
+        and date_of_stay = DATE(year, month, 1)
         GROUP BY 1, 2, 3, 4, 5, 6, 7
     ), full_time_series as (
         SELECT
