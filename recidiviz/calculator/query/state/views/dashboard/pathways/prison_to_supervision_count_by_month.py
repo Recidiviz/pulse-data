@@ -49,7 +49,7 @@ aggregate_query = """
     LEFT JOIN `{project_id}.{dashboard_views_dataset}.pathways_incarceration_location_name_map` location
         ON transitions.state_code = location.state_code 
         AND transitions.level_1_location_external_id = location.location_id,
-    UNNEST ([IFNULL(location_name, level_1_location_external_id), "ALL"]) AS facility
+        UNNEST ([IFNULL(location_id, level_1_location_external_id), "ALL"]) AS facility
     GROUP BY 1, 2, 3, 4, 5, 6
 """
 
