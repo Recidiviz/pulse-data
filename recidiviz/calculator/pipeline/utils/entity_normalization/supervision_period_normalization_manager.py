@@ -22,8 +22,6 @@ import logging
 from copy import deepcopy
 from typing import List, Optional, Type
 
-import attr
-
 from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager import (
     EntityNormalizationManager,
 )
@@ -40,6 +38,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
+    deep_entity_update,
     is_placeholder,
 )
 from recidiviz.persistence.entity.state.entities import (
@@ -336,7 +335,7 @@ class SupervisionPeriodNormalizationManager(EntityNormalizationManager):
                 )
 
             updated_periods.append(
-                attr.evolve(
+                deep_entity_update(
                     sp,
                     termination_date=(updated_termination_date or sp.termination_date),
                     termination_reason=(

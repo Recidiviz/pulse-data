@@ -18,11 +18,10 @@
 
 from typing import List
 
-import attr
-
 from recidiviz.calculator.pipeline.utils.entity_normalization.program_assignment_normalization_manager import (
     StateSpecificProgramAssignmentNormalizationDelegate,
 )
+from recidiviz.persistence.entity.entity_utils import deep_entity_update
 from recidiviz.persistence.entity.state.entities import StateProgramAssignment
 
 
@@ -48,7 +47,7 @@ class UsIdProgramAssignmentNormalizationDelegate(
             ):
                 current_assignment = program_assignments[idx]
                 next_assignment = program_assignments[idx + 1]
-                merged_assignment = attr.evolve(
+                merged_assignment = deep_entity_update(
                     current_assignment,
                     discharge_date=next_assignment.discharge_date,
                     discharge_reason=next_assignment.discharge_reason,
