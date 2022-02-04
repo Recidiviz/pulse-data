@@ -32,10 +32,14 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
 )
+from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
+)
+from recidiviz.common.constants.state.state_supervision_sentence import (
+    StateSupervisionSentenceSupervisionType,
 )
 from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
 from recidiviz.persistence.database.schema_utils import SchemaType
@@ -43,11 +47,13 @@ from recidiviz.persistence.entity.state.entities import (
     StateAgent,
     StateAssessment,
     StateIncarcerationPeriod,
+    StateIncarcerationSentence,
     StatePerson,
     StatePersonEthnicity,
     StatePersonExternalId,
     StatePersonRace,
     StateSupervisionPeriod,
+    StateSupervisionSentence,
 )
 from recidiviz.tests.ingest.direct.fixture_util import direct_ingest_fixture_path
 from recidiviz.tests.ingest.direct.regions.state_ingest_view_parser_test_base import (
@@ -476,6 +482,89 @@ class UsTnIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
 
         self._run_parse_ingest_view_test(
             "AssignedStaffSupervisionPeriod", expected_output
+        )
+
+    def test_parse_IncarcerationAndSupervisionSentences(self) -> None:
+        expected_output = [
+            StatePerson(
+                state_code="US_TN",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_TN", external_id="00000002", id_type="US_TN_DOC"
+                    )
+                ],
+                incarceration_sentences=[
+                    StateIncarcerationSentence(
+                        external_id="00000002-088-2021-S51773-13",
+                        state_code="US_TN",
+                        status=StateSentenceStatus.SUSPENDED,
+                        status_raw_text="RLSD-AC",
+                        incarceration_type=StateIncarcerationType.STATE_PRISON,
+                        incarceration_type_raw_text="TD",
+                        date_imposed=datetime.date(2021, 5, 25),
+                        start_date=datetime.date(2008, 8, 12),
+                        projected_max_release_date=datetime.date(2021, 6, 1),
+                        completion_date=datetime.date(2026, 11, 7),
+                        county_code="088",
+                        max_length_days=730,
+                        is_life=False,
+                        is_capital_punishment=False,
+                        initial_time_served_days=0,
+                    )
+                ],
+            ),
+            StatePerson(
+                state_code="US_TN",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_TN", external_id="00000003", id_type="US_TN_DOC"
+                    )
+                ],
+                supervision_sentences=[
+                    StateSupervisionSentence(
+                        external_id="00000003-013-2011-9577-0",
+                        state_code="US_TN",
+                        status=StateSentenceStatus.SERVING,
+                        status_raw_text="NONE-PB",
+                        supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
+                        supervision_type_raw_text="PB-S-TD",
+                        date_imposed=datetime.date(2011, 7, 5),
+                        start_date=datetime.date(2011, 7, 5),
+                        projected_completion_date=datetime.date(2015, 7, 5),
+                        completion_date=datetime.date(2015, 7, 5),
+                        min_length_days=100,
+                        county_code="013",
+                    )
+                ],
+            ),
+            StatePerson(
+                state_code="US_TN",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_TN", external_id="00000003", id_type="US_TN_DOC"
+                    )
+                ],
+                # This sentence is consecutive to person 3's sentence above.
+                supervision_sentences=[
+                    StateSupervisionSentence(
+                        external_id="00000003-013-2011-9577-1",
+                        state_code="US_TN",
+                        status=StateSentenceStatus.SERVING,
+                        status_raw_text="VOJO-CC",
+                        supervision_type=StateSupervisionSentenceSupervisionType.COMMUNITY_CORRECTIONS,
+                        supervision_type_raw_text="CC-NONE-TD",
+                        date_imposed=datetime.date(2015, 7, 5),
+                        start_date=datetime.date(2015, 7, 5),
+                        projected_completion_date=datetime.date(2020, 7, 5),
+                        completion_date=datetime.date(2020, 11, 5),
+                        county_code="013",
+                        sentence_metadata='{"CONSECUTIVE_SENTENCE_ID": "00000003-013-2011-9577-0"}',
+                    )
+                ],
+            ),
+        ]
+        self._run_parse_ingest_view_test(
+            "IncarcerationAndSupervisionSentences", expected_output
         )
 
     def test_parse_AssignedStaffSupervisionPeriod_AdmissionReasons(self) -> None:

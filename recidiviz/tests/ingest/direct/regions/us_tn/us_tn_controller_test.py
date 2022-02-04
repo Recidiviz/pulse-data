@@ -27,14 +27,19 @@ from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentLevel,
     StateAssessmentType,
 )
+from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
 )
+from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
+)
+from recidiviz.common.constants.state.state_supervision_sentence import (
+    StateSupervisionSentenceSupervisionType,
 )
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
@@ -48,7 +53,9 @@ from recidiviz.tests.ingest.direct.regions.base_direct_ingest_controller_tests i
 from recidiviz.tests.ingest.direct.regions.utils import (
     add_assessment_to_person,
     add_incarceration_period_to_person,
+    add_incarceration_sentence_to_person,
     add_supervision_period_to_person,
+    add_supervision_sentence_to_person,
     build_state_person_entity,
 )
 
@@ -328,6 +335,68 @@ class TestUsTnController(BaseDirectIngestControllerTests):
 
         # Act
         self._run_ingest_job_for_filename("VantagePointAssessments")
+
+        # Assert
+        self.assert_expected_db_people(expected_people)
+
+        ######################################
+        # IncarcerationAndSupervisionSentences
+        ######################################
+
+        add_incarceration_sentence_to_person(
+            person=person_2,
+            external_id="00000002-088-2021-S51773-13",
+            state_code="US_TN",
+            status=StateSentenceStatus.SUSPENDED,
+            status_raw_text="RLSD-AC",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            incarceration_type_raw_text="TD",
+            date_imposed=datetime.date(2021, 5, 25),
+            start_date=datetime.date(2008, 8, 12),
+            projected_max_release_date=datetime.date(2021, 6, 1),
+            completion_date=datetime.date(2026, 11, 7),
+            county_code="088",
+            max_length_days=730,
+            initial_time_served_days=0,
+        )
+
+        add_supervision_sentence_to_person(
+            person=person_3,
+            external_id="00000003-013-2011-9577-0",
+            state_code="US_TN",
+            status=StateSentenceStatus.SERVING,
+            status_raw_text="NONE-PB",
+            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
+            supervision_type_raw_text="PB-S-TD",
+            date_imposed=datetime.date(2011, 7, 5),
+            start_date=datetime.date(2011, 7, 5),
+            projected_completion_date=datetime.date(2015, 7, 5),
+            completion_date=datetime.date(2015, 7, 5),
+            min_length_days=100,
+            county_code="013",
+        )
+
+        add_supervision_sentence_to_person(
+            person=person_3,
+            external_id="00000003-013-2011-9577-1",
+            state_code="US_TN",
+            status=StateSentenceStatus.SERVING,
+            status_raw_text="VOJO-CC",
+            supervision_type=StateSupervisionSentenceSupervisionType.COMMUNITY_CORRECTIONS,
+            supervision_type_raw_text="CC-NONE-TD",
+            date_imposed=datetime.date(2015, 7, 5),
+            start_date=datetime.date(2015, 7, 5),
+            projected_completion_date=datetime.date(2020, 7, 5),
+            completion_date=datetime.date(2020, 11, 5),
+            county_code="013",
+            sentence_metadata='{"CONSECUTIVE_SENTENCE_ID": "00000003-013-2011-9577-0"}',
+        )
+
+        # Only person 2 and 3 have supervision and/or incarceration sentences
+        expected_people = [person_1, person_2, person_3, person_4]
+
+        # Act
+        self._run_ingest_job_for_filename("IncarcerationAndSupervisionSentences")
 
         # Assert
         self.assert_expected_db_people(expected_people)
