@@ -25,6 +25,9 @@ from typing import Dict, List, Optional, Set, Type
 from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager import (
     EntityNormalizationManager,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_delegate import (
+    StateSpecificDelegate,
+)
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
@@ -39,7 +42,7 @@ from recidiviz.persistence.entity.state.entities import (
 )
 
 
-class StateSpecificViolationResponseNormalizationDelegate:
+class StateSpecificViolationResponseNormalizationDelegate(StateSpecificDelegate):
     """Interface for state-specific decisions involved in normalization violation
     responses for calculations."""
 

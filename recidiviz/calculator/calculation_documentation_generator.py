@@ -43,18 +43,20 @@ from recidiviz.calculator.dataflow_config import (
     DATAFLOW_TABLES_TO_METRIC_TYPES,
     PRODUCTION_TEMPLATES_PATH,
 )
-from recidiviz.calculator.pipeline.incarceration.metrics import IncarcerationMetric
-from recidiviz.calculator.pipeline.program.metrics import ProgramMetric
-from recidiviz.calculator.pipeline.recidivism.metrics import (
+from recidiviz.calculator.pipeline.metrics.incarceration.metrics import (
+    IncarcerationMetric,
+)
+from recidiviz.calculator.pipeline.metrics.program.metrics import ProgramMetric
+from recidiviz.calculator.pipeline.metrics.recidivism.metrics import (
     ReincarcerationRecidivismMetric,
 )
-from recidiviz.calculator.pipeline.supervision.metrics import SupervisionMetric
+from recidiviz.calculator.pipeline.metrics.supervision.metrics import SupervisionMetric
+from recidiviz.calculator.pipeline.metrics.violation.metrics import ViolationMetric
 from recidiviz.calculator.pipeline.utils.metric_utils import (
     PersonLevelMetric,
     RecidivizMetric,
     RecidivizMetricType,
 )
-from recidiviz.calculator.pipeline.violation.metrics import ViolationMetric
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_DATASET,
     DATAFLOW_METRICS_MATERIALIZED_DATASET,

@@ -17,7 +17,9 @@
 """US_ID implementation of the supervision delegate"""
 from typing import List, Optional, Tuple
 
-from recidiviz.calculator.pipeline.supervision.events import SupervisionPopulationEvent
+from recidiviz.calculator.pipeline.metrics.supervision.events import (
+    SupervisionPopulationEvent,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_delegate import (
     StateSpecificSupervisionDelegate,
 )

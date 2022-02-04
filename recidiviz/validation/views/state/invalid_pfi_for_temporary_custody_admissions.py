@@ -22,7 +22,7 @@ Existence of any rows indicates a bug in IP pre-processing logic.
 """
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.pipeline.incarceration.metrics import (
+from recidiviz.calculator.pipeline.metrics.incarceration.metrics import (
     IncarcerationAdmissionMetric,
 )
 from recidiviz.calculator.query.state import dataset_config as state_dataset_config

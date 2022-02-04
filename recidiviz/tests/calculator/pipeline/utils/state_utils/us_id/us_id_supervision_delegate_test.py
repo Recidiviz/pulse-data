@@ -21,7 +21,9 @@ from typing import Optional
 
 from parameterized import parameterized
 
-from recidiviz.calculator.pipeline.supervision.events import SupervisionPopulationEvent
+from recidiviz.calculator.pipeline.metrics.supervision.events import (
+    SupervisionPopulationEvent,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_delegate import (
     UsIdSupervisionDelegate,
 )

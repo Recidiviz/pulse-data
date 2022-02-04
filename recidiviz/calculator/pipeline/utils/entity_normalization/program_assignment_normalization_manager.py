@@ -24,11 +24,14 @@ from typing import List, Type
 from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager import (
     EntityNormalizationManager,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_delegate import (
+    StateSpecificDelegate,
+)
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state.entities import StateProgramAssignment
 
 
-class StateSpecificProgramAssignmentNormalizationDelegate:
+class StateSpecificProgramAssignmentNormalizationDelegate(StateSpecificDelegate):
     """Interface for state-specific decisions involved in normalization program assignments
     for calculations."""
 

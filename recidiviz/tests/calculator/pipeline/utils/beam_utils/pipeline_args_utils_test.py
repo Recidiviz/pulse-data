@@ -23,10 +23,10 @@ from apache_beam.options.pipeline_options import PipelineOptions
 
 from recidiviz.calculator.dataflow_config import DATAFLOW_TABLES_TO_METRIC_TYPES
 from recidiviz.calculator.pipeline.base_pipeline import BasePipeline
-from recidiviz.calculator.pipeline.calculation_pipeline import (
-    CalculationPipelineJobArgs,
+from recidiviz.calculator.pipeline.metrics.base_metric_pipeline import (
+    MetricPipelineJobArgs,
 )
-from recidiviz.calculator.pipeline.incarceration.pipeline import (
+from recidiviz.calculator.pipeline.metrics.incarceration.pipeline import (
     IncarcerationPipelineRunDelegate,
 )
 from recidiviz.calculator.pipeline.utils.beam_utils.pipeline_args_utils import (
@@ -54,7 +54,7 @@ class TestPipelineArgsUtils(unittest.TestCase):
         derive_apache_beam_pipeline_args(default_beam_args)
     )
 
-    DEFAULT_INCARCERATION_PIPELINE_ARGS = CalculationPipelineJobArgs(
+    DEFAULT_INCARCERATION_PIPELINE_ARGS = MetricPipelineJobArgs(
         state_code="US_XX",
         project_id="recidiviz-staging",
         input_dataset="state",
@@ -96,12 +96,12 @@ class TestPipelineArgsUtils(unittest.TestCase):
 
     def _assert_pipeline_args_equal_exclude_beam_options(
         self,
-        expected_pipeline_args: CalculationPipelineJobArgs,
-        actual_pipeline_args: CalculationPipelineJobArgs,
+        expected_pipeline_args: MetricPipelineJobArgs,
+        actual_pipeline_args: MetricPipelineJobArgs,
     ):
         """Asserts that every field except for the apache_beam_pipeline_options on
         the expected CalculationPipelineJobArgs matches the actual
-        CalculationPipelineJobArgs."""
+        MetricPipelineJobArgs."""
         for field in attr.fields_dict(expected_pipeline_args.__class__).keys():
             if field == "apache_beam_pipeline_options":
                 continue

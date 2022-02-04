@@ -28,6 +28,9 @@ from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalizati
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_supervision_period_index import (
     NormalizedSupervisionPeriodIndex,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_delegate import (
+    StateSpecificDelegate,
+)
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
     standard_date_sort_for_supervision_periods,
 )
@@ -51,7 +54,7 @@ from recidiviz.persistence.entity.state.entities import (
 
 
 # pylint: disable=unused-argument
-class StateSpecificSupervisionNormalizationDelegate(abc.ABC):
+class StateSpecificSupervisionNormalizationDelegate(abc.ABC, StateSpecificDelegate):
     """Interface for state-specific decisions involved in normalization
     supervision periods for calculations."""
 

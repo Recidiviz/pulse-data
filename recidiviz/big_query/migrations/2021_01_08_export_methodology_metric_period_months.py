@@ -37,7 +37,7 @@ from recidiviz.calculator.dataflow_config import (
     DATAFLOW_METRICS_COLD_STORAGE_DATASET,
     DATAFLOW_METRICS_TO_TABLES,
 )
-from recidiviz.calculator.pipeline.recidivism.metrics import (
+from recidiviz.calculator.pipeline.metrics.recidivism.metrics import (
     ReincarcerationRecidivismRateMetric,
 )
 from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET

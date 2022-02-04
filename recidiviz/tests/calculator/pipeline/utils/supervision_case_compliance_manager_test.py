@@ -22,7 +22,7 @@ from datetime import date
 from dateutil.relativedelta import relativedelta
 from mock import MagicMock, patch
 
-from recidiviz.calculator.pipeline.supervision.supervision_case_compliance import (
+from recidiviz.calculator.pipeline.metrics.supervision.supervision_case_compliance import (
     SupervisionCaseCompliance,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_compliance import (
