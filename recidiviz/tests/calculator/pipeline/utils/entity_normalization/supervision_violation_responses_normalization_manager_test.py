@@ -128,6 +128,7 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
         # Arrange
         supervision_violation = StateSupervisionViolation.new_with_defaults(
             state_code=self.state_code,
+            supervision_violation_id=123,
             supervision_violated_conditions=[
                 StateSupervisionViolatedConditionEntry.new_with_defaults(
                     state_code=self.state_code, condition="LAW"
@@ -138,11 +139,19 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
         supervision_violation_response = (
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code=self.state_code,
+                supervision_violation_response_id=456,
                 response_type=StateSupervisionViolationResponseType.CITATION,
                 supervision_violation=supervision_violation,
                 response_date=datetime.date(2022, 1, 4),
             )
         )
+
+        # Hydrate bidirectional relationships
+        for condition in supervision_violation.supervision_violated_conditions:
+            condition.supervision_violation = supervision_violation
+        supervision_violation.supervision_violation_responses = [
+            supervision_violation_response
+        ]
 
         vr_copy = attr.evolve(supervision_violation_response)
 
@@ -160,6 +169,7 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
         # Arrange
         supervision_violation = StateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123,
+            external_id="123",
             state_code=self.state_code,
             supervision_violation_types=[
                 StateSupervisionViolationTypeEntry.new_with_defaults(
@@ -171,6 +181,7 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
 
         ssvr = StateSupervisionViolationResponse.new_with_defaults(
             state_code=self.state_code,
+            external_id="123",
             supervision_violation_response_id=123,
             supervision_violation=supervision_violation,
             response_date=datetime.date(2008, 12, 1),
@@ -178,7 +189,8 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
         )
 
         other_supervision_violation = StateSupervisionViolation.new_with_defaults(
-            supervision_violation_id=123,
+            supervision_violation_id=456,
+            external_id="456",
             state_code=self.state_code,
             supervision_violation_types=[
                 StateSupervisionViolationTypeEntry.new_with_defaults(
@@ -190,11 +202,22 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
 
         other_ssvr = StateSupervisionViolationResponse.new_with_defaults(
             state_code=self.state_code,
-            supervision_violation_response_id=123,
+            external_id="456",
+            supervision_violation_response_id=456,
             supervision_violation=other_supervision_violation,
             response_date=datetime.date(2008, 12, 25),
             response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
         )
+
+        # Hydrate bidirectional relationships
+        for violation in [
+            supervision_violation,
+            other_supervision_violation,
+        ]:
+            for type_entry in violation.supervision_violation_types:
+                type_entry.supervision_violation = violation
+        supervision_violation.supervision_violation_responses = [ssvr]
+        other_supervision_violation.supervision_violation_responses = [other_ssvr]
 
         violation_responses = [other_ssvr, ssvr]
 
@@ -229,3 +252,27 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
 
         # Assert
         self.assertEqual([vr_copy], normalized_responses)
+
+
+def hydrate_bidirectional_relationships_on_expected_response(
+    expected_response: StateSupervisionViolationResponse,
+) -> None:
+    """Hydrates all bi-directional relationships in the
+    StateSupervisionViolationResponse subtree. For use in tests that need the full
+    entity graph to be connected."""
+    if expected_response.supervision_violation:
+        for (
+            type_entry
+        ) in expected_response.supervision_violation.supervision_violation_types:
+            type_entry.supervision_violation = expected_response.supervision_violation
+        for (
+            condition
+        ) in expected_response.supervision_violation.supervision_violated_conditions:
+            condition.supervision_violation = expected_response.supervision_violation
+
+        expected_response.supervision_violation.supervision_violation_responses = [
+            expected_response
+        ]
+
+    for decision in expected_response.supervision_violation_response_decisions:
+        decision.supervision_violation_response = expected_response

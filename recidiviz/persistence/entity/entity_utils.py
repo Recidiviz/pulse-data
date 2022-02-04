@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Utils for working with Entity classes or various |entities| modules."""
-
+import importlib
 import inspect
 import json
 import logging
@@ -23,10 +23,16 @@ from collections import defaultdict
 from enum import Enum, auto
 from functools import lru_cache
 from types import ModuleType
-from typing import Dict, Iterable, List, Optional, Sequence, Set, Type, Union, cast
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Type, Union, cast
 
 import attr
 
+from recidiviz.common.attr_mixins import (
+    BuildableAttrFieldType,
+    attr_field_name_storing_referenced_cls_name,
+    attr_field_referenced_cls_name_for_field_name,
+    attr_field_type_for_field_name,
+)
 from recidiviz.common.attr_utils import (
     get_non_flat_attribute_class_name,
     is_flat_field,
@@ -44,7 +50,7 @@ from recidiviz.persistence.entity.base_entity import (
 )
 from recidiviz.persistence.entity.core_entity import CoreEntity
 from recidiviz.persistence.entity.county import entities as county_entities
-from recidiviz.persistence.entity.entity_deserialize import EntityFactory
+from recidiviz.persistence.entity.entity_deserialize import EntityFactory, EntityT
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state.entities import StatePersonExternalId
@@ -951,3 +957,113 @@ def _is_property_flat_field(obj: Union[list, Entity], property_name: str) -> boo
         )
 
     return is_flat_field(attribute)
+
+
+def _update_reverse_references_on_related_entities(
+    updated_entity: EntityT,
+    new_related_entities: List[EntityT],
+    reverse_relationship_field: str,
+    reverse_relationship_field_type: BuildableAttrFieldType,
+) -> None:
+    """For each of the entities in the |new_related_entities| list, updates the value
+    stored in the |reverse_relationship_field| to point to the |updated_entity|.
+
+    If the attribute stored in the |reverse_relationship_field| is a list, replaces
+    the reference to the original entity in the list with the |updated_entity|.
+    """
+    if reverse_relationship_field_type == BuildableAttrFieldType.FORWARD_REF:
+        # If the reverse relationship field is a forward ref, set the updated entity
+        # directly as the value.
+        for new_related_entity in new_related_entities:
+            new_related_entity.set_field(reverse_relationship_field, updated_entity)
+        return
+
+    if reverse_relationship_field_type != BuildableAttrFieldType.LIST:
+        raise ValueError(
+            f"Unexpected reverse_relationship_field_type: [{reverse_relationship_field_type}]"
+        )
+
+    for new_related_entity in new_related_entities:
+        reverse_relationship_list = new_related_entity.get_field(
+            reverse_relationship_field
+        )
+
+        if updated_entity not in reverse_relationship_list:
+            # Add the updated entity to the list since it is not already present
+            reverse_relationship_list.append(updated_entity)
+
+
+@lru_cache(maxsize=None)
+def _module_for_module_name(module_name: str) -> ModuleType:
+    """Returns the module with the module name."""
+    return importlib.import_module(module_name)
+
+
+def deep_entity_update(
+    original_entity: EntityT, **updated_attribute_kwargs: Any
+) -> EntityT:
+    """Updates the |original_entity| with all of the updated attributes provided in
+    the |updated_attribute_kwargs| mapping. For any attribute in the
+    updated_attribute_kwargs that is a reference to another entity (or entities),
+    updates the reverse references on those entities to point to the new, updated
+    version of the |original_entity|.
+
+    Returns the new version of the entity.
+    """
+    entity_type = type(original_entity)
+    # Make a deep copy of the entity and its related entities
+    updated_entity = original_entity
+
+    for field, updated_value in updated_attribute_kwargs.items():
+        # Update the value stored in the field on the entity
+        updated_entity.set_field(field, updated_value)
+
+        related_class_name = attr_field_referenced_cls_name_for_field_name(
+            entity_type, field
+        )
+
+        if not related_class_name:
+            # This field doesn't store a related entity class, no need to update reverse
+            # references
+            continue
+
+        if not updated_value:
+            # There is nothing being set in this field, so no need to update the
+            # reverse references.
+            continue
+
+        related_class = get_entity_class_in_module_with_name(
+            entities_module=_module_for_module_name(
+                original_entity.__class__.__module__
+            ),
+            class_name=related_class_name,
+        )
+
+        reverse_relationship_field = attr_field_name_storing_referenced_cls_name(
+            base_cls=related_class, referenced_cls_name=entity_type.__name__
+        )
+
+        if not reverse_relationship_field:
+            # Not a bi-directional relationship
+            continue
+
+        reverse_relationship_field_type = attr_field_type_for_field_name(
+            related_class, reverse_relationship_field
+        )
+
+        new_related_entities: List[EntityT]
+        if isinstance(updated_value, list):
+            new_related_entities = updated_value
+        else:
+            new_related_entities = [updated_value]
+
+        # This relationship is bidirectional, so we will update the reference
+        # on all related entities to point to the new updated_entity
+        _update_reverse_references_on_related_entities(
+            new_related_entities=new_related_entities,
+            reverse_relationship_field=reverse_relationship_field,
+            reverse_relationship_field_type=reverse_relationship_field_type,
+            updated_entity=updated_entity,
+        )
+
+    return updated_entity

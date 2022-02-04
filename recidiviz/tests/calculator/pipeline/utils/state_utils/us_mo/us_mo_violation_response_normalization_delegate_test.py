@@ -43,6 +43,9 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionViolationResponse,
     StateSupervisionViolationTypeEntry,
 )
+from recidiviz.tests.calculator.pipeline.utils.entity_normalization.supervision_violation_responses_normalization_manager_test import (
+    hydrate_bidirectional_relationships_on_expected_response,
+)
 
 
 class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
@@ -107,6 +110,9 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
             ),
         )
 
+        # Hydrate bidirectional relationships
+        hydrate_bidirectional_relationships_on_expected_response(expected_response)
+
         # Act
         updated_responses = self._normalized_violation_responses_for_calculations(
             violation_responses=[supervision_violation_response]
@@ -144,6 +150,9 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
             ),
         )
 
+        # Hydrate bidirectional relationships
+        hydrate_bidirectional_relationships_on_expected_response(expected_response)
+
         # Act
         updated_responses = self._normalized_violation_responses_for_calculations(
             violation_responses=[supervision_violation_response]
@@ -172,12 +181,15 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
             )
         )
 
-        expected_response = attr.evolve(supervision_violation_response)
-
         # Act
         updated_responses = self._normalized_violation_responses_for_calculations(
             violation_responses=[supervision_violation_response]
         )
+
+        expected_response = attr.evolve(supervision_violation_response)
+
+        # Hydrate bidirectional relationships
+        hydrate_bidirectional_relationships_on_expected_response(expected_response)
 
         # Assert
         self.assertEqual([expected_response], updated_responses)

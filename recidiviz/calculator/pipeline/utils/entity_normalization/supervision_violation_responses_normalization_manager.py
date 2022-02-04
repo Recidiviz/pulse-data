@@ -22,8 +22,6 @@ from collections import defaultdict
 from copy import deepcopy
 from typing import Dict, List, Optional, Set, Type
 
-import attr
-
 from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager import (
     EntityNormalizationManager,
 )
@@ -31,6 +29,7 @@ from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
 from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.entity_utils import deep_entity_update
 from recidiviz.persistence.entity.state.entities import (
     StateSupervisionViolatedConditionEntry,
     StateSupervisionViolation,
@@ -161,16 +160,25 @@ class ViolationResponseNormalizationManager(EntityNormalizationManager):
             datetime.date, StateSupervisionViolationResponse
         ] = {}
         for response_date, responses in bucketed_responses_by_date.items():
-            updated_response = responses[0]
+            base_response_to_update = responses[0]
+            base_violation = StateSupervisionViolation(
+                state_code=base_response_to_update.state_code,
+            )
             seen_violation_types: Set[StateSupervisionViolationType] = set()
             deduped_violation_type_entries: List[
                 StateSupervisionViolationTypeEntry
             ] = []
+            id_for_violation: Optional[int] = None
             for response in responses:
                 if response.supervision_violation is None:
                     # If this response has no violation then there is no information
                     # we need from it
                     continue
+
+                id_for_violation = (
+                    id_for_violation
+                    or response.supervision_violation.supervision_violation_id
+                )
                 for (
                     violation_type_entry
                 ) in response.supervision_violation.supervision_violation_types:
@@ -180,10 +188,21 @@ class ViolationResponseNormalizationManager(EntityNormalizationManager):
                         deduped_violation_type_entries.append(violation_type_entry)
                         seen_violation_types.add(violation_type_entry.violation_type)
 
-            updated_response.supervision_violation = attr.evolve(
-                updated_response.supervision_violation,
-                supervision_violation_types=list(deduped_violation_type_entries),
+            if not id_for_violation:
+                raise ValueError(
+                    "Found responses with no related StateSupervisionViolation with a "
+                    f"valid supervision_violation_id: {responses}."
+                )
+
+            updated_response = deep_entity_update(
+                base_response_to_update,
+                supervision_violation=deep_entity_update(
+                    base_violation,
+                    supervision_violation_id=id_for_violation,
+                    supervision_violation_types=list(deduped_violation_type_entries),
+                ),
             )
+
             deduped_responses_by_date[response_date] = updated_response
 
         return list(deduped_responses_by_date.values())
@@ -225,15 +244,14 @@ class ViolationResponseNormalizationManager(EntityNormalizationManager):
                         self.delegate.update_condition(response, condition)
                     )
 
-                updated_supervision_violation = attr.evolve(
+                updated_supervision_violation = deep_entity_update(
                     supervision_violation,
                     supervision_violation_types=updated_violation_types,
                     supervision_violated_conditions=updated_conditions,
                 )
 
-            updated_response = attr.evolve(
-                response,
-                supervision_violation=updated_supervision_violation,
+            updated_response = deep_entity_update(
+                response, supervision_violation=updated_supervision_violation
             )
 
             updated_responses.append(updated_response)

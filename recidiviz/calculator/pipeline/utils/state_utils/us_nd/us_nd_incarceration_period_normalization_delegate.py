@@ -19,8 +19,6 @@ StateIncarcerationPeriod entities so that they are ready to be used in pipeline
 calculations."""
 from typing import Dict, List, Optional
 
-import attr
-
 from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_period_normalization_manager import (
     StateSpecificIncarcerationNormalizationDelegate,
 )
@@ -45,6 +43,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
+from recidiviz.persistence.entity.entity_utils import deep_entity_update
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
     StateSupervisionPeriod,
@@ -136,7 +135,7 @@ class UsNdIncarcerationNormalizationDelegate(
             # consecutively within 2 days after a period in a state prison. If a
             # significant period of time (>2 days) has passed after a state prison
             # stay, then it can be considered a valid temporary custody hold.
-            return attr.evolve(
+            return deep_entity_update(
                 incarceration_period,
                 custodial_authority=StateCustodialAuthority.STATE_PRISON,
                 specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
@@ -352,11 +351,9 @@ def _updated_ip_after_revoked_sp(
     else:
         admission_reason_prefix = PAROLE_REVOCATION_NORMALIZED_PREFIX
 
-    return attr.evolve(
+    return deep_entity_update(
         incarceration_period,
         admission_reason=admission_reason,
-        # If there is an existing admission reason raw text, prefix it.
-        # Otherwise, leave it as empty.
         admission_reason_raw_text=f"{admission_reason_prefix}-{incarceration_period.admission_reason_raw_text}"
         if incarceration_period.admission_reason_raw_text
         else None,
@@ -406,11 +403,9 @@ def _update_ip_after_temp_custody(
         else:
             admission_reason_prefix = PAROLE_REVOCATION_NORMALIZED_PREFIX
 
-    return attr.evolve(
+    return deep_entity_update(
         incarceration_period,
         admission_reason=temp_custody_ip_admission_reason,
-        # If there is a admission_reason_prefix, add it as prefix.
-        # Otherwise, leave it as the existing admission_reason_raw_text.
         admission_reason_raw_text=f"{admission_reason_prefix}-{incarceration_period.admission_reason_raw_text}"
         if admission_reason_prefix
         else incarceration_period.admission_reason_raw_text,

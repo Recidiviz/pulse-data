@@ -39,6 +39,9 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionViolationResponse,
     StateSupervisionViolationTypeEntry,
 )
+from recidiviz.tests.calculator.pipeline.utils.entity_normalization.supervision_violation_responses_normalization_manager_test import (
+    hydrate_bidirectional_relationships_on_expected_response,
+)
 
 
 class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
@@ -48,7 +51,7 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
     UsNdViolationResponseNormalizationDelegate is provided."""
 
     def setUp(self) -> None:
-        self.state_code = "US_MO"
+        self.state_code = "US_ND"
         self.delegate = UsNdViolationResponseNormalizationDelegate()
 
     def _normalized_violation_responses_for_calculations(
@@ -106,6 +109,9 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
         expected_response = attr.evolve(
             ssvr,
         )
+
+        # Hydrate bidirectional relationships
+        hydrate_bidirectional_relationships_on_expected_response(expected_response)
 
         # Act
         updated_responses = self._normalized_violation_responses_for_calculations(
@@ -173,6 +179,9 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
             ),
         )
 
+        # Hydrate bidirectional relationships
+        hydrate_bidirectional_relationships_on_expected_response(expected_response)
+
         # Act
         updated_responses = self._normalized_violation_responses_for_calculations(
             violation_responses=[ssvr, duplicate_ssvr]
@@ -223,6 +232,10 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
         )
 
         ssvr_copies = [attr.evolve(ssvr), attr.evolve(other_ssvr)]
+
+        # Hydrate bidirectional relationships
+        for expected_response in ssvr_copies:
+            hydrate_bidirectional_relationships_on_expected_response(expected_response)
 
         # Act
         updated_responses = self._normalized_violation_responses_for_calculations(
