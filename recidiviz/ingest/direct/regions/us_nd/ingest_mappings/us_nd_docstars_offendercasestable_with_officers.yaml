@@ -62,6 +62,13 @@ unused_columns:
   - RECORDCRDATE
   - RecDate
   - CHANGE_DATE_REASON
+variables:
+  - is_rev_new_off:
+      $in:
+        $value: REV_NOFF_YN
+        $options:
+          - $literal("-1")
+          - $literal("(1)")
 output:
   StatePerson:
     external_ids:
@@ -81,12 +88,7 @@ output:
                 external_id: CASE_NUMBER
                 is_violent:
                   $conditional:
-                    - $if:
-                        $in:
-                          $value: REV_NOFF_YN
-                          $options:
-                            - $literal("-1")
-                            - $literal("(1)")
+                    - $if: $variable(is_rev_new_off)
                       $then:
                         $custom:
                           $function: us_nd_custom_parsers.are_new_offenses_violent
@@ -96,12 +98,7 @@ output:
                             new_offense_3_ncic: NEW_OFF3
                 supervision_violation_types:
                   - $conditional:
-                    - $if:
-                        $in:
-                          $value: REV_NOFF_YN
-                          $options:
-                            - $literal("-1")
-                            - $literal("(1)")
+                    - $if: $variable(is_rev_new_off)
                       $then:
                         StateSupervisionViolationTypeEntry:
                           violation_type: $literal_enum(StateSupervisionViolationType.LAW)

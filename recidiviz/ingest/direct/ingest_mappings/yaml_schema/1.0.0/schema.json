@@ -26,6 +26,26 @@
       },
       "uniqueItems": true
     },
+    "variables": {
+      "description": "A list of named expressions whose values can be referenced in the `output` section using the $variable operator.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "patternProperties": {
+          "^[a-z][a-z_]+$": {
+            "anyOf": [
+              {
+                "$ref": "boolean_expressions/index.json"
+              },
+              {
+                "$ref": "string_expressions/index.json"
+              }
+            ]
+          }
+        }
+      },
+      "uniqueItems": true
+    },
     "output": {
       "description": "The entity tree to generate for each row in the input file.",
       "$ref": "entity_expressions/entity_tree.json"

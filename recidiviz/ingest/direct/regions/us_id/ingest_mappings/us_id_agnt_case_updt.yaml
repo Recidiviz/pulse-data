@@ -7,8 +7,18 @@ input_columns:
 - create_dt
 - agnt_note_title
 unused_columns: []
+variables:
+  - records_program_start:
+      $custom:
+        $function: us_id_custom_parsers.records_program_start
+        $args:
+          agnt_note_title: agnt_note_title
+  - records_program_discharge:
+      $custom:
+        $function: us_id_custom_parsers.records_program_discharge
+        $args:
+          agnt_note_title: agnt_note_title
 output:
-  # TODO(#10381): Support file-level variables for reused expressions
   StatePerson:
     external_ids:
       - StatePersonExternalId:
@@ -18,14 +28,8 @@ output:
       - $conditional:
         - $if:
             $or:
-              - $custom:
-                  $function: us_id_custom_parsers.records_program_start
-                  $args:
-                    agnt_note_title: agnt_note_title
-              - $custom:
-                  $function: us_id_custom_parsers.records_program_discharge
-                  $args:
-                    agnt_note_title: agnt_note_title
+              - $variable(records_program_start)
+              - $variable(records_program_discharge)
           $then:
             StateProgramAssignment:
               referring_agent:
@@ -44,27 +48,15 @@ output:
                   $custom_parser: us_id_custom_enum_parsers.participation_status_from_agnt_note_title
               discharge_reason:
                 $conditional:
-                  - $if:
-                      $custom:
-                        $function: us_id_custom_parsers.records_program_discharge
-                        $args:
-                          agnt_note_title: agnt_note_title
+                  - $if: $variable(records_program_discharge)
                     $then: $literal_enum(StateProgramAssignmentDischargeReason.COMPLETED)
               start_date:
                 $conditional:
-                  - $if:
-                      $custom:
-                        $function: us_id_custom_parsers.records_program_start
-                        $args:
-                          agnt_note_title: agnt_note_title
+                  - $if: $variable(records_program_start)
                     $then: create_dt
               discharge_date:
                 $conditional:
-                  - $if:
-                      $custom:
-                        $function: us_id_custom_parsers.records_program_discharge
-                        $args:
-                          agnt_note_title: agnt_note_title
+                  - $if: $variable(records_program_discharge)
                     $then: create_dt
     supervision_violations:
       - $conditional:

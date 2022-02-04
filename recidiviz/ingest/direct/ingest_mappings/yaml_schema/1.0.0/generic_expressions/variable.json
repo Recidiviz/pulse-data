@@ -1,0 +1,52 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "title": "Variable",
+  "description": "Expression that evaluates to the the value of a variable that was previously computed in the 'variables' section of the manifest.",
+  "type": "string",
+  "pattern": "^\\$variable\\(([a-z][a-z_]+)\\)$",
+  "examples": [
+    "$variable(my_value)"
+  ],
+  "#contextualized_examples": [
+    {
+      "manifest_language": "1.0.0",
+      "input_columns": [
+        "DOC_NUM",
+        "FIRST",
+        "FIRST_2",
+        "LAST"
+      ],
+      "unused_columns": [],
+      "variables": [
+        {
+          "my_value": {
+            "$concat": {
+              "$values": [
+                "FIRST",
+                "FIRST_2"
+              ]
+            }
+          }
+        }
+      ],
+      "output": {
+        "StatePerson": {
+          "external_ids": [
+            {
+              "StatePersonExternalId": {
+                "external_id": "DOC_NUM",
+                "id_type": "$literal(\"US_XX_DOC\")"
+              }
+            }
+          ],
+          "full_name": {
+            "$person_name": {
+              "$given_names": "$variable(my_value)",
+              "$surname": "LAST"
+            }
+          }
+        }
+      }
+    }
+  ]
+}

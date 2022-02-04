@@ -31,6 +31,9 @@
     },
     {
       "$ref": "../generic_expressions/custom_function.json"
+    },
+    {
+      "$ref": "../generic_expressions/variable.json"
     }
   ]
 }

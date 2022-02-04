@@ -33,6 +33,8 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_file_parser_delegate im
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest import (
     EntityTreeManifest,
     EntityTreeManifestFactory,
+    VariableManifestNode,
+    build_manifest_from_raw_typed,
 )
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.utils.yaml_dict import YAMLDict
@@ -135,12 +137,31 @@ class IngestViewFileParser:
         input_columns = manifest_dict.pop("input_columns", list)
         unused_columns = manifest_dict.pop("unused_columns", list)
 
+        raw_variable_manifests = manifest_dict.pop_dicts_optional("variables")
+        variable_manifests: Dict[str, VariableManifestNode] = {}
+        if raw_variable_manifests:
+            for raw_variable_manifest in raw_variable_manifests:
+                variable_name = one(raw_variable_manifest.keys())
+                variable_manifest = VariableManifestNode(
+                    variable_name=variable_name,
+                    value_manifest=build_manifest_from_raw_typed(
+                        raw_field_manifest=raw_variable_manifest.pop_dict(
+                            variable_name
+                        ),
+                        delegate=self.delegate,
+                        variable_manifests=variable_manifests,
+                        expected_result_type=object,
+                    ),
+                )
+                variable_manifests[variable_name] = variable_manifest
+
         raw_entity_manifest = manifest_dict.pop_dict("output")
         entity_cls_name = one(raw_entity_manifest.keys())
         entity_cls = self.delegate.get_entity_cls(entity_cls_name=entity_cls_name)
         output_manifest = EntityTreeManifestFactory.from_raw_manifest(
             raw_fields_manifest=raw_entity_manifest.pop_dict(entity_cls_name),
             delegate=self.delegate,
+            variable_manifests=variable_manifests,
             entity_cls=entity_cls,
         )
 
@@ -153,6 +174,11 @@ class IngestViewFileParser:
             input_columns_list=input_columns,
             unused_columns_list=unused_columns,
             referenced_columns=output_manifest.columns_referenced(),
+        )
+
+        self._validate_variables(
+            input_variables=set(variable_manifests.keys()),
+            referenced_variables=output_manifest.variables_referenced(),
         )
 
         return output_manifest, set(input_columns)
@@ -220,4 +246,18 @@ class IngestViewFileParser:
                 f"Found columns listed in |input_columns| that are not referenced "
                 f"in |output| or listed in |unused_columns|: "
                 f"{unreferenced_columns}"
+            )
+
+    @staticmethod
+    def _validate_variables(
+        input_variables: Set[str], referenced_variables: Set[str]
+    ) -> None:
+        """Checks for variables that are defined but not used."""
+
+        unreferenced_variables = input_variables.difference(referenced_variables)
+
+        if unreferenced_variables:
+            raise ValueError(
+                f"Found variables listed in |variables| that are not referenced "
+                f"in |output|: {unreferenced_variables}"
             )
