@@ -53,6 +53,7 @@ SUPERVISION_POPULATION_TIME_SERIES_VIEW_QUERY_TEMPLATE = """
             ON metrics.state_code = name_map.state_code
             AND metrics.level_1_supervision_location_external_id = name_map.location_id
         WHERE date_of_supervision >= DATE_TRUNC(DATE_SUB(CURRENT_DATE("US/Eastern"), INTERVAL 5 YEAR), MONTH)
+        and date_of_stay = DATE(year, month, 1)
         group by 1,2,3,4,5
     ), full_time_series as (
         SELECT
