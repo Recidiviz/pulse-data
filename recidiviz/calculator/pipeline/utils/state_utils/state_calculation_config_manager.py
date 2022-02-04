@@ -16,7 +16,9 @@
 # =============================================================================
 """Manages state-specific methodology decisions made throughout the calculation pipelines."""
 from datetime import date
-from typing import List, Optional
+from typing import Dict, List, Optional, Set, Type
+
+import attr
 
 from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_period_normalization_manager import (
     StateSpecificIncarcerationNormalizationDelegate,
@@ -35,6 +37,9 @@ from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_violat
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_commitment_from_supervision_delegate import (
     StateSpecificCommitmentFromSupervisionDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_delegate import (
+    StateSpecificDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_incarceration_delegate import (
     StateSpecificIncarcerationDelegate,
@@ -213,6 +218,73 @@ from recidiviz.persistence.entity.state.entities import (
 )
 
 
+@attr.s(frozen=True)
+class StateSpecificDelegateContainer:
+    """Stores all state-specific delegates required for running pipelines."""
+
+    state_code: StateCode = attr.ib()
+
+    ip_normalization_delegate: StateSpecificIncarcerationNormalizationDelegate = (
+        attr.ib()
+    )
+    sp_normalization_delegate: StateSpecificSupervisionNormalizationDelegate = attr.ib()
+    program_assignment_normalization_delegate: StateSpecificProgramAssignmentNormalizationDelegate = (
+        attr.ib()
+    )
+    violation_response_normalization_delegate: StateSpecificViolationResponseNormalizationDelegate = (
+        attr.ib()
+    )
+    commitment_from_supervision_delegate: StateSpecificCommitmentFromSupervisionDelegate = (
+        attr.ib()
+    )
+
+    violation_delegate: StateSpecificViolationDelegate = attr.ib()
+    incarceration_delegate: StateSpecificIncarcerationDelegate = attr.ib()
+    supervision_delegate: StateSpecificSupervisionDelegate = attr.ib()
+
+
+def get_required_state_specific_delegates(
+    state_code: str,
+    required_delegates: Set[Type[StateSpecificDelegate]],
+) -> Dict[str, StateSpecificDelegate]:
+    """Returns a dictionary where the keys are the names of all of the delegates
+    listed in |required_delegates|, and the values are the state-specific
+    implementation of that delegate."""
+    all_delegates_for_state = get_all_state_specific_delegates(state_code)
+
+    return {
+        delegate.__class__.__base__.__name__: delegate
+        for delegate in all_delegates_for_state.__dict__.values()
+        if delegate.__class__.__base__ in required_delegates
+    }
+
+
+def get_all_state_specific_delegates(
+    state_code: str,
+) -> StateSpecificDelegateContainer:
+    return StateSpecificDelegateContainer(
+        state_code=StateCode(state_code),
+        ip_normalization_delegate=_get_state_specific_incarceration_period_normalization_delegate(
+            state_code
+        ),
+        sp_normalization_delegate=_get_state_specific_supervision_period_normalization_delegate(
+            state_code
+        ),
+        program_assignment_normalization_delegate=_get_state_specific_program_assignment_normalization_delegate(
+            state_code
+        ),
+        violation_response_normalization_delegate=_get_state_specific_violation_response_normalization_delegate(
+            state_code
+        ),
+        commitment_from_supervision_delegate=_get_state_specific_commitment_from_supervision_delegate(
+            state_code
+        ),
+        violation_delegate=_get_state_specific_violation_delegate(state_code),
+        incarceration_delegate=_get_state_specific_incarceration_delegate(state_code),
+        supervision_delegate=get_state_specific_supervision_delegate(state_code),
+    )
+
+
 def get_state_specific_case_compliance_manager(
     person: StatePerson,
     supervision_period: StateSupervisionPeriod,
@@ -272,7 +344,7 @@ def get_state_specific_case_compliance_manager(
     return None
 
 
-def get_state_specific_incarceration_period_normalization_delegate(
+def _get_state_specific_incarceration_period_normalization_delegate(
     state_code: str,
 ) -> StateSpecificIncarcerationNormalizationDelegate:
     """Returns the type of IncarcerationNormalizationDelegate that should be used for
@@ -293,7 +365,7 @@ def get_state_specific_incarceration_period_normalization_delegate(
     raise ValueError(f"Unexpected state code [{state_code}]")
 
 
-def get_state_specific_supervision_period_normalization_delegate(
+def _get_state_specific_supervision_period_normalization_delegate(
     state_code: str,
 ) -> StateSpecificSupervisionNormalizationDelegate:
     """Returns the type of SupervisionNormalizationDelegate that should be used for
@@ -314,7 +386,7 @@ def get_state_specific_supervision_period_normalization_delegate(
     raise ValueError(f"Unexpected state code [{state_code}]")
 
 
-def get_state_specific_program_assignment_normalization_delegate(
+def _get_state_specific_program_assignment_normalization_delegate(
     state_code: str,
 ) -> StateSpecificProgramAssignmentNormalizationDelegate:
     """Returns the type of ProgramAssignmentNormalizationDelegate that should be used for
@@ -335,7 +407,7 @@ def get_state_specific_program_assignment_normalization_delegate(
     raise ValueError(f"Unexpected state code [{state_code}]")
 
 
-def get_state_specific_commitment_from_supervision_delegate(
+def _get_state_specific_commitment_from_supervision_delegate(
     state_code: str,
 ) -> StateSpecificCommitmentFromSupervisionDelegate:
     """Returns the type of StateSpecificCommitmentFromSupervisionDelegate that should be used for
@@ -356,7 +428,7 @@ def get_state_specific_commitment_from_supervision_delegate(
     raise ValueError(f"Unexpected state code [{state_code}]")
 
 
-def get_state_specific_violation_delegate(
+def _get_state_specific_violation_delegate(
     state_code: str,
 ) -> StateSpecificViolationDelegate:
     """Returns the type of StateSpecificViolationDelegate that should be used for
@@ -377,7 +449,7 @@ def get_state_specific_violation_delegate(
     raise ValueError(f"Unexpected state code [{state_code}]")
 
 
-def get_state_specific_violation_response_normalization_delegate(
+def _get_state_specific_violation_response_normalization_delegate(
     state_code: str,
 ) -> StateSpecificViolationResponseNormalizationDelegate:
     """Returns the type of StateSpecificViolationResponseNormalizationDelegate that should be used for
@@ -398,7 +470,7 @@ def get_state_specific_violation_response_normalization_delegate(
     raise ValueError(f"Unexpected state code [{state_code}]")
 
 
-def get_state_specific_incarceration_delegate(
+def _get_state_specific_incarceration_delegate(
     state_code: str,
 ) -> StateSpecificIncarcerationDelegate:
     """Returns the type of StateSpecificIncarcerationDelegate that should be used for
@@ -419,6 +491,8 @@ def get_state_specific_incarceration_delegate(
     raise ValueError(f"Unexpected state code [{state_code}]")
 
 
+# TODO(#10891): Make this a private method once it's no longer being called from
+#  outside of this file
 def get_state_specific_supervision_delegate(
     state_code: str,
 ) -> StateSpecificSupervisionDelegate:

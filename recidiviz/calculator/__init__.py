@@ -22,4 +22,4 @@ This includes infrastructure, logic, and models for calculating various criminal
 justice metrics from ingested records and persisting those metrics.
 """
 
-from recidiviz.calculator.pipeline import recidivism
+from recidiviz.calculator.pipeline.metrics import recidivism

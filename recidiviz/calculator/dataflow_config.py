@@ -18,24 +18,24 @@
 import os
 from typing import Dict, Type
 
-from recidiviz.calculator.pipeline.incarceration.metrics import (
+from recidiviz.calculator.pipeline.metrics.incarceration.metrics import (
     IncarcerationAdmissionMetric,
     IncarcerationCommitmentFromSupervisionMetric,
     IncarcerationMetricType,
     IncarcerationPopulationMetric,
     IncarcerationReleaseMetric,
 )
-from recidiviz.calculator.pipeline.program.metrics import (
+from recidiviz.calculator.pipeline.metrics.program.metrics import (
     ProgramMetricType,
     ProgramParticipationMetric,
     ProgramReferralMetric,
 )
-from recidiviz.calculator.pipeline.recidivism.metrics import (
+from recidiviz.calculator.pipeline.metrics.recidivism.metrics import (
     ReincarcerationRecidivismCountMetric,
     ReincarcerationRecidivismMetricType,
     ReincarcerationRecidivismRateMetric,
 )
-from recidiviz.calculator.pipeline.supervision.metrics import (
+from recidiviz.calculator.pipeline.metrics.supervision.metrics import (
     SupervisionCaseComplianceMetric,
     SupervisionDowngradeMetric,
     SupervisionMetricType,
@@ -45,13 +45,13 @@ from recidiviz.calculator.pipeline.supervision.metrics import (
     SupervisionSuccessMetric,
     SupervisionTerminationMetric,
 )
+from recidiviz.calculator.pipeline.metrics.violation.metrics import (
+    ViolationMetricType,
+    ViolationWithResponseMetric,
+)
 from recidiviz.calculator.pipeline.utils.metric_utils import (
     RecidivizMetric,
     RecidivizMetricType,
-)
-from recidiviz.calculator.pipeline.violation.metrics import (
-    ViolationMetricType,
-    ViolationWithResponseMetric,
 )
 
 STAGING_ONLY_TEMPLATES_PATH = os.path.join(

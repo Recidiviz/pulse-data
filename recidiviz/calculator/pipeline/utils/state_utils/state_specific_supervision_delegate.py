@@ -22,7 +22,12 @@ import abc
 from datetime import date
 from typing import Any, Dict, List, Optional, Tuple
 
-from recidiviz.calculator.pipeline.supervision.events import SupervisionPopulationEvent
+from recidiviz.calculator.pipeline.metrics.supervision.events import (
+    SupervisionPopulationEvent,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_delegate import (
+    StateSpecificDelegate,
+)
 from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentClass,
     StateAssessmentLevel,
@@ -40,7 +45,7 @@ from recidiviz.persistence.entity.state.entities import (
 )
 
 
-class StateSpecificSupervisionDelegate(abc.ABC):
+class StateSpecificSupervisionDelegate(abc.ABC, StateSpecificDelegate):
     """Interface for state-specific decisions involved in categorizing various attributes of supervision."""
 
     def supervision_types_mutually_exclusive(self) -> bool:

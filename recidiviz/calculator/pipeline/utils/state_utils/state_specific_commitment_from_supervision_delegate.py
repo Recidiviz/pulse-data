@@ -23,6 +23,9 @@ from typing import List, Optional, Set
 
 from dateutil.relativedelta import relativedelta
 
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_delegate import (
+    StateSpecificDelegate,
+)
 from recidiviz.calculator.pipeline.utils.violation_response_utils import (
     violation_responses_in_window,
 )
@@ -42,7 +45,7 @@ from recidiviz.persistence.entity.state.entities import (
 )
 
 
-class StateSpecificCommitmentFromSupervisionDelegate(abc.ABC):
+class StateSpecificCommitmentFromSupervisionDelegate(abc.ABC, StateSpecificDelegate):
     """Interface for state-specific decisions involved in categorizing various
     attributes of commitment from supervision admissions."""
 

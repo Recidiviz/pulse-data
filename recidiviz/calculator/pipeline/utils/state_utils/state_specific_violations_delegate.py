@@ -20,6 +20,9 @@ violations."""
 import abc
 from typing import List, Tuple
 
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_delegate import (
+    StateSpecificDelegate,
+)
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseType,
 )
@@ -40,7 +43,7 @@ DEFAULT_VIOLATION_TYPE_SEVERITY_ORDER: List[StateSupervisionViolationType] = [
 ]
 
 
-class StateSpecificViolationDelegate(abc.ABC):
+class StateSpecificViolationDelegate(abc.ABC, StateSpecificDelegate):
     """Interface for state-specific decisions involved in categorizing various
     attributes of violations."""
 

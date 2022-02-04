@@ -18,7 +18,7 @@
 import unittest
 from typing import List, Type
 
-from recidiviz.calculator.pipeline.incarceration.metrics import (
+from recidiviz.calculator.pipeline.metrics.incarceration.metrics import (
     IncarcerationAdmissionMetric,
     IncarcerationCommitmentFromSupervisionMetric,
     IncarcerationPopulationMetric,

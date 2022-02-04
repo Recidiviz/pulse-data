@@ -21,7 +21,7 @@ from google.cloud import bigquery
 from google.cloud.bigquery import SchemaField
 
 from recidiviz.calculator.dataflow_config import DATAFLOW_METRICS_TO_TABLES
-from recidiviz.calculator.pipeline.incarceration.metrics import (
+from recidiviz.calculator.pipeline.metrics.incarceration.metrics import (
     IncarcerationAdmissionMetric,
     IncarcerationCommitmentFromSupervisionMetric,
     IncarcerationMetric,
@@ -29,17 +29,17 @@ from recidiviz.calculator.pipeline.incarceration.metrics import (
     IncarcerationPopulationMetric,
     IncarcerationReleaseMetric,
 )
-from recidiviz.calculator.pipeline.program.metrics import (
+from recidiviz.calculator.pipeline.metrics.program.metrics import (
     ProgramMetricType,
     ProgramParticipationMetric,
     ProgramReferralMetric,
 )
-from recidiviz.calculator.pipeline.recidivism.metrics import (
+from recidiviz.calculator.pipeline.metrics.recidivism.metrics import (
     ReincarcerationRecidivismCountMetric,
     ReincarcerationRecidivismMetricType,
     ReincarcerationRecidivismRateMetric,
 )
-from recidiviz.calculator.pipeline.supervision.metrics import (
+from recidiviz.calculator.pipeline.metrics.supervision.metrics import (
     SupervisionCaseComplianceMetric,
     SupervisionDowngradeMetric,
     SupervisionMetricType,

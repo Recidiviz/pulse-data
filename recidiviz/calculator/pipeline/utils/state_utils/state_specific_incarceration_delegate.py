@@ -19,11 +19,14 @@ for state-specific decisions involved in categorizing various attributes of
 incarceration."""
 import abc
 
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_delegate import (
+    StateSpecificDelegate,
+)
 from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 
 
-class StateSpecificIncarcerationDelegate(abc.ABC):
+class StateSpecificIncarcerationDelegate(abc.ABC, StateSpecificDelegate):
     """Interface for state-specific decisions involved in categorizing various attributes of incarceration."""
 
     def is_period_included_in_state_population(  # pylint: disable=unused-argument

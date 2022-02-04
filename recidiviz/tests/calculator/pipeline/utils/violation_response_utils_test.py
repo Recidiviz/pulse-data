@@ -19,8 +19,6 @@ import datetime
 import unittest
 from typing import List
 
-import mock
-
 from recidiviz.calculator.pipeline.utils import violation_response_utils
 from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager_utils import (
     normalized_violation_responses_for_calculations,
@@ -342,18 +340,6 @@ class TestPrepareViolationResponsesForCalculation(unittest.TestCase):
 
     def setUp(self) -> None:
         self.delegate = UsXxViolationDelegate()
-        self.violation_normalization_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager_utils.get_state_specific_violation_response_normalization_delegate"
-        )
-        self.mock_violation_normalization_delegate = (
-            self.violation_normalization_delegate_patcher.start()
-        )
-        self.mock_violation_normalization_delegate.return_value = (
-            UsXxViolationResponseNormalizationDelegate()
-        )
-
-    def tearDown(self) -> None:
-        self.violation_normalization_delegate_patcher.stop()
 
     def test_prepare_violation_responses_for_calculation_preserves_order_post_filtering(
         self,
@@ -394,7 +380,8 @@ class TestPrepareViolationResponsesForCalculation(unittest.TestCase):
         sorted_filtered_violations = filter_violation_responses_for_violation_history(
             violation_delegate=self.delegate,
             violation_responses=normalized_violation_responses_for_calculations(
-                violation_responses=violation_responses, state_code=state_code
+                violation_response_normalization_delegate=UsXxViolationResponseNormalizationDelegate(),
+                violation_responses=violation_responses,
             ),
             include_follow_up_responses=False,
         )
