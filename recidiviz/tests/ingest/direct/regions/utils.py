@@ -30,10 +30,14 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodReleaseReason,
     StateSpecializedPurposeForIncarceration,
 )
+from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
+)
+from recidiviz.common.constants.state.state_supervision_sentence import (
+    StateSupervisionSentenceSupervisionType,
 )
 from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
@@ -263,3 +267,91 @@ def add_assessment_to_person(
     )
 
     person.assessments.append(assessment)
+
+
+def add_supervision_sentence_to_person(
+    person: entities.StatePerson,
+    state_code: str,
+    external_id: str,
+    county_code: str,
+    status: StateSentenceStatus,
+    status_raw_text: str,
+    supervision_type: StateSupervisionSentenceSupervisionType,
+    supervision_type_raw_text: str,
+    date_imposed: Optional[datetime.date] = None,
+    start_date: Optional[datetime.date] = None,
+    projected_completion_date: Optional[datetime.date] = None,
+    completion_date: Optional[datetime.date] = None,
+    min_length_days: Optional[int] = None,
+    max_length_days: Optional[int] = None,
+    sentence_metadata: Optional[str] = None,
+) -> None:
+    """Append a supervision sentence to the person (updates the person entity in place)."""
+
+    supervision_sentence = entities.StateSupervisionSentence.new_with_defaults(
+        external_id=external_id,
+        state_code=state_code,
+        status=status,
+        status_raw_text=status_raw_text,
+        supervision_type=supervision_type,
+        supervision_type_raw_text=supervision_type_raw_text,
+        date_imposed=date_imposed,
+        start_date=start_date,
+        projected_completion_date=projected_completion_date,
+        completion_date=completion_date,
+        county_code=county_code,
+        min_length_days=min_length_days,
+        max_length_days=max_length_days,
+        sentence_metadata=sentence_metadata,
+        person=person,
+    )
+
+    person.supervision_sentences.append(supervision_sentence)
+
+
+def add_incarceration_sentence_to_person(
+    person: entities.StatePerson,
+    state_code: str,
+    external_id: str,
+    status: StateSentenceStatus,
+    status_raw_text: str,
+    incarceration_type: StateIncarcerationType,
+    incarceration_type_raw_text: str,
+    county_code: str,
+    date_imposed: Optional[datetime.date] = None,
+    start_date: Optional[datetime.date] = None,
+    projected_min_release_date: Optional[datetime.date] = None,
+    projected_max_release_date: Optional[datetime.date] = None,
+    completion_date: Optional[datetime.date] = None,
+    initial_time_served_days: Optional[int] = None,
+    min_length_days: Optional[int] = None,
+    max_length_days: Optional[int] = None,
+    is_life: Optional[bool] = False,
+    is_capital_punishment: Optional[bool] = False,
+    sentence_metadata: Optional[str] = None,
+) -> None:
+    """Append an incarceration sentence to the person (updates the person entity in place)."""
+
+    incarceration_sentence = entities.StateIncarcerationSentence.new_with_defaults(
+        external_id=external_id,
+        state_code=state_code,
+        status=status,
+        status_raw_text=status_raw_text,
+        incarceration_type=incarceration_type,
+        incarceration_type_raw_text=incarceration_type_raw_text,
+        date_imposed=date_imposed,
+        start_date=start_date,
+        projected_min_release_date=projected_min_release_date,
+        projected_max_release_date=projected_max_release_date,
+        completion_date=completion_date,
+        county_code=county_code,
+        min_length_days=min_length_days,
+        max_length_days=max_length_days,
+        is_life=is_life,
+        is_capital_punishment=is_capital_punishment,
+        initial_time_served_days=initial_time_served_days,
+        sentence_metadata=sentence_metadata,
+        person=person,
+    )
+
+    person.incarceration_sentences.append(incarceration_sentence)
