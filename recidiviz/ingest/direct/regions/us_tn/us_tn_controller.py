@@ -45,12 +45,7 @@ class UsTnController(BaseDirectIngestController):
                     "OffenderMovementIncarcerationPeriod",
                     "AssignedStaffSupervisionPeriod",
                     "VantagePointAssessments",
-                ]
-            )
-        if not environment.in_gcp():
-            tags.extend(
-                [
-                    "IncarcerationAndSupervisionSentences",
+                    "SentencesChargesAndCourtCases",
                 ]
             )
         return tags

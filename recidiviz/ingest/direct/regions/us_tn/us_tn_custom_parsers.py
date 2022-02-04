@@ -39,7 +39,6 @@ def parse_supervision_type(raw_text: str) -> StateSupervisionSentenceSupervision
     if suspended_to_probation == "S" or sentence_status == "PB":
         return StateSupervisionSentenceSupervisionType.PROBATION
     if sentence_status == "CC" or (sentence_status == "IN" and sentenced_to == "CC"):
-        # CAROLE: I think we need a community corrections enum here too.
         return StateSupervisionSentenceSupervisionType.COMMUNITY_CORRECTIONS
 
     return StateSupervisionSentenceSupervisionType.EXTERNAL_UNKNOWN
