@@ -1,5 +1,5 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
-# This file associates the columns outputted from the query in `view_IncarcerationAndSupervisionSentences` to
+# This file associates the columns outputted from the query in `view_SentencesChargesAndCourtCases` to
 #  corresponding Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
@@ -25,6 +25,17 @@ input_columns:
   - ConsecutiveCaseYear
   - ConsecutiveCaseNumber
   - ConsecutiveCountNumber
+  - OffenseDate
+  - PleaDate
+  - ChargeOffense
+  - CrimeType
+  - ConvictionClass
+  - Verdict
+  - JudgeName
+  - JudicialDistrict
+  - OffenseDescription
+  - AssaultiveOffenseFlag
+  - SexOffenderFlag
 unused_columns: []
 variables:
   - is_incarceration_sentence:
@@ -93,6 +104,14 @@ variables:
                         - $else: ConsecutiveCaseYear
                     - ConsecutiveCaseNumber
                     - ConsecutiveCountNumber
+  - is_violent:
+      $equal:
+        - AssaultiveOffenseFlag
+        - $literal("Y")
+  - is_sex_offense:
+      $equal:
+        - SexOffenderFlag
+        - $literal("Y")
 output:
   StatePerson:
     external_ids:
@@ -144,6 +163,40 @@ output:
                       - $literal("H")  # Habitual (equivalent to life sentence)
                 sentence_metadata: $variable(sentence_metadata)
                 initial_time_served_days: PretrialJailCredits
+                charges:
+                  - StateCharge:
+                      external_id: $variable(sentence_external_id)
+                      status: $literal_enum(ChargeStatus.SENTENCED)
+                      offense_date: OffenseDate
+                      date_charged: PleaDate
+                      county_code: ConvictionCounty
+                      statute: ChargeOffense
+                      description: OffenseDescription
+                      classification_type:
+                        $enum_mapping:
+                          $raw_text: CrimeType
+                          $mappings:
+                            StateChargeClassificationType.FELONY:
+                              - F
+                            StateChargeClassificationType.MISDEMEANOR:
+                              - M
+                      classification_subtype: ConvictionClass
+                      is_violent: $variable(is_violent)
+                      is_sex_offense: $variable(is_sex_offense)
+                      charging_entity: Verdict
+                      court_case:
+                        StateCourtCase:
+                          external_id: $variable(sentence_external_id)
+                          date_convicted: SentenceImposeDate
+                          county_code: ConvictionCounty
+                          judicial_district_code: JudicialDistrict
+                          judge:
+                            StateAgent:
+                              agent_type: $literal_enum(StateAgentType.JUDGE)
+                              full_name:
+                                $json_dict:
+                                  full_name: JudgeName
+
     supervision_sentences:
       - $conditional:
           - $if: $variable(is_supervision_sentence)
@@ -177,3 +230,36 @@ output:
                     # TODO(#10923): Remove custom parser once multiple columns can be used to determine enum value.
                     $custom_parser: us_tn_custom_parsers.parse_supervision_type
                 sentence_metadata: $variable(sentence_metadata)
+                charges:
+                  - StateCharge:
+                      external_id: $variable(sentence_external_id)
+                      status: $literal_enum(ChargeStatus.SENTENCED)
+                      offense_date: OffenseDate
+                      date_charged: PleaDate
+                      county_code: ConvictionCounty
+                      statute: ChargeOffense
+                      description: OffenseDescription
+                      classification_type:
+                        $enum_mapping:
+                          $raw_text: CrimeType
+                          $mappings:
+                            StateChargeClassificationType.FELONY:
+                              - F
+                            StateChargeClassificationType.MISDEMEANOR:
+                              - M
+                      classification_subtype: ConvictionClass
+                      is_violent: $variable(is_violent)
+                      is_sex_offense: $variable(is_sex_offense)
+                      charging_entity: Verdict
+                      court_case:
+                        StateCourtCase:
+                          external_id: $variable(sentence_external_id)
+                          date_convicted: SentenceImposeDate
+                          county_code: ConvictionCounty
+                          judicial_district_code: JudicialDistrict
+                          judge:
+                            StateAgent:
+                              agent_type: $literal_enum(StateAgentType.JUDGE)
+                              full_name:
+                                $json_dict:
+                                  full_name: JudgeName

@@ -14,9 +14,11 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
-"""This query pulls in from a number of different sentencing tables in TN to produce one row per sentence. It
-includes both supervision and incarceration sentences, as well as pulls in external identifiers other sentences the
-sentence may be consecutive to.
+"""This query pulls in from a number of different sentencing, statute, and charge tables in TN to produce one row per
+sentence, charge, and court case. It includes both supervision and incarceration sentences, and pulls in external
+identifiers other sentences the sentence may be consecutive to. It also creates a single charge object for each
+sentence row, as well as a single court case with a single agent (judge).
+
 """
 
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
@@ -63,6 +65,18 @@ SELECT
     Sentence.ConsecutiveCaseYear,
     Sentence.ConsecutiveCaseNumber,
     Sentence.ConsecutiveCountNumber,
+    -- For Charges and Court Cases
+    JOCharge.OffenseDate,
+    JOCharge.PleaDate,
+    JOCharge.ChargeOffense,
+    JOCharge.CrimeType,
+    JOCharge.ConvictionClass,
+    JOCharge.Verdict,
+    JOMiscellaneous.JudgeName,
+    JOIdentification.JudicialDistrict,
+    OffenderStatute.OffenseDescription,
+    OffenderStatute.AssaultiveOffenseFlag,
+    OffenderStatute.SexOffenderFlag,
 FROM {Sentence} Sentence
 LEFT JOIN order_sentence_actions_by_date_per_sentence
 USING (OffenderID, ConvictionCounty, CaseYear, CaseNumber, CountNumber)
@@ -72,13 +86,19 @@ LEFT JOIN {JOCharge} JOCharge
 USING (OffenderID, ConvictionCounty, CaseYear, CaseNumber, CountNumber)
 LEFT JOIN  {SentenceMiscellaneous} SentenceMisc
 USING (OffenderID, ConvictionCounty, CaseYear, CaseNumber, CountNumber)
+LEFT JOIN {JOMiscellaneous} JOMiscellaneous
+USING (OffenderID, ConvictionCounty, CaseYear, CaseNumber, CountNumber)
+LEFT JOIN {JOIdentification} JOIdentification
+USING (OffenderID, ConvictionCounty, CaseYear, CaseNumber, CountNumber)
+LEFT JOIN {OffenderStatute} OffenderStatute
+ON JOCharge.ChargeOffense = OffenderStatute.Offense
 """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     region="us_tn",
-    ingest_view_name="IncarcerationAndSupervisionSentences",
+    ingest_view_name="SentencesChargesAndCourtCases",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="OffenderID ASC",
+    order_by_cols="OffenderID ASC, ConvictionCounty ASC, CaseYear ASC, CaseNumber ASC, CountNumber ASC",
 )
 
 if __name__ == "__main__":

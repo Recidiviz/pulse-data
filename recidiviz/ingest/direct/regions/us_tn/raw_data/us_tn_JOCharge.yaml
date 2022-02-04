@@ -13,7 +13,7 @@ columns:
       This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: ConvictionCounty
     description: |-
-      The county in which a person  commits the offense for a judgment order.
+      The county in which a person commits the offense for a judgment order.
   - name: CaseYear
     description: |-
       The year assigned to a sentence for a particular county. It will generally be the current year at assignment.
@@ -28,7 +28,7 @@ columns:
       The offender's plea regarding an infraction related to a disciplinary or a sentence.
   - name: Verdict
     description: |-
-      The abbreviation of the verdict of a person  for a judgment order.
+      The abbreviation of the verdict of a person for a judgment order.
     known_values:
       - value: B
         description: Bench
@@ -36,10 +36,10 @@ columns:
         description: Jury
   - name: ChargeOffense
     description: |-
-      The code for the offense that a person  is originally charged.
+      The code for the offense that a person is originally charged.
   - name: OffenseCounty
     description: |-
-      The county in which a person  commits the offense for a judgment order.
+      The county in which a person commits the offense for a judgment order.
   - name: AmendedChargeOffense
     description: |-
       The code for the amended charge of an offender.
@@ -64,7 +64,7 @@ columns:
         description: Least serious offense.
   - name: IndictmentClass
     description: |-
-      Felony class code for the offense that a person  is indicted.
+      Felony class code for the offense that a person is indicted.
     known_values:
       - value: 1
         description: First degree murder.
@@ -97,7 +97,7 @@ columns:
   - name: SentenceImposedDate
     is_datetime: True
     description: |-
-      The date that an offender's sentence is to begin as specified by the judge on the judgment order.  This date less any pretrial credits provides the sentence effective date.
+      The date that an offender's sentence is to begin as specified by the judge on the judgment order. This date less any pretrial credits provides the sentence effective date.
   - name: SentenceLaw
     description: |-
       This code will be used to post the correct sentence law when inputting the judgment order in TOMIS.
@@ -114,10 +114,10 @@ columns:
         description: CLASS X
   - name: SentenceOffenderType
     description: |-
-      An abbreviation used for one of the types of offenders as desig- nated on the offender's judgement order.  Also the range percent used to calculate an offender's RED date will be tied to the person type for a particular sentence law.
+      An abbreviation used for one of the types of offenders as designated on the offender's judgement order. Also the range percent used to calculate an offender's RED date will be tied to the person type for a particular sentence law.
     known_values:
       - value: 60
-        description: "TODO(#7424): Update with definition."
+        description: SIXTY PERCENT
       - value: 70
         description: SEVENTY PERCENT
       - value: 75
@@ -167,7 +167,7 @@ columns:
       Code to indicate that an offender's sentence for a particular judgment order has been suspended to probation.
   - name: SplitConfinementBalanceType
     description: |-
-      The location that a person  is to serve the rest of a split confinement.
+      The location that a person is to serve the rest of a split confinement.
     known_values:
       - value: CC
         description: COMMUNITY CORRECTION
@@ -191,10 +191,10 @@ columns:
         description: "YES - Is for rape of a child"
   - name: RepeatViolentOffenderFlag
     description: |-
-      Indicator that tells if a person  is a repeat violent offender.
+      Indicator that tells if a person is a repeat violent offender.
     known_values:
       - value: N
-        description: "NO - Is not a repet violent offender"
+        description: "NO - Is not a repeat violent offender"
       - value: Y
         description: "YES - Is a repeat violent offender"
   - name: SchoolZoneFlag
@@ -263,4 +263,4 @@ columns:
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
   - name: LastUpdateDate
     description: |-
-      This element will be associated with each record in each DB2 table in TOMIS.  It is the timestamp of the last time this record was updated.
+      This element will be associated with each record in each DB2 table in TOMIS. It is the timestamp of the last time this record was updated.

@@ -19,6 +19,7 @@ import csv
 import datetime
 import unittest
 
+from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.person_characteristics import Ethnicity, Gender, Race
 from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_agent import StateAgentType
@@ -26,6 +27,11 @@ from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentClass,
     StateAssessmentLevel,
     StateAssessmentType,
+)
+from recidiviz.common.constants.state.state_charge import StateChargeClassificationType
+from recidiviz.common.constants.state.state_court_case import (
+    StateCourtCaseStatus,
+    StateCourtType,
 )
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
@@ -46,6 +52,8 @@ from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.entity.state.entities import (
     StateAgent,
     StateAssessment,
+    StateCharge,
+    StateCourtCase,
     StateIncarcerationPeriod,
     StateIncarcerationSentence,
     StatePerson,
@@ -484,7 +492,7 @@ class UsTnIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
             "AssignedStaffSupervisionPeriod", expected_output
         )
 
-    def test_parse_IncarcerationAndSupervisionSentences(self) -> None:
+    def test_parse_SentencesChargesAndCourtCases(self) -> None:
         expected_output = [
             StatePerson(
                 state_code="US_TN",
@@ -510,6 +518,38 @@ class UsTnIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         is_life=False,
                         is_capital_punishment=False,
                         initial_time_served_days=0,
+                        charges=[
+                            StateCharge(
+                                external_id="00000002-088-2021-S51773-13",
+                                state_code="US_TN",
+                                status=ChargeStatus.SENTENCED,
+                                offense_date=datetime.date(2021, 3, 15),
+                                date_charged=datetime.date(2021, 5, 24),
+                                county_code="088",
+                                statute="3371",
+                                description="SOL KIDNAPPING",
+                                classification_type=StateChargeClassificationType.FELONY,
+                                classification_type_raw_text="F",
+                                classification_subtype="E",
+                                is_violent=True,
+                                is_sex_offense=False,
+                                charging_entity="J",
+                                court_case=StateCourtCase(
+                                    external_id="00000002-088-2021-S51773-13",
+                                    state_code="US_TN",
+                                    status=StateCourtCaseStatus.PRESENT_WITHOUT_INFO,
+                                    court_type=StateCourtType.PRESENT_WITHOUT_INFO,
+                                    date_convicted=datetime.date(2021, 5, 25),
+                                    county_code="088",
+                                    judicial_district_code="007",
+                                    judge=StateAgent(
+                                        agent_type=StateAgentType.JUDGE,
+                                        state_code="US_TN",
+                                        full_name='{"full_name": "BOB ROSS"}',
+                                    ),
+                                ),
+                            ),
+                        ],
                     )
                 ],
             ),
@@ -534,6 +574,38 @@ class UsTnIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         completion_date=datetime.date(2015, 7, 5),
                         min_length_days=100,
                         county_code="013",
+                        charges=[
+                            StateCharge(
+                                external_id="00000003-013-2011-9577-0",
+                                state_code="US_TN",
+                                status=ChargeStatus.SENTENCED,
+                                offense_date=datetime.date(2011, 6, 14),
+                                date_charged=datetime.date(2011, 7, 3),
+                                county_code="013",
+                                statute="8039",
+                                description="DUI, 4TH OFFENSE & SUBSEQUENT",
+                                classification_type=StateChargeClassificationType.FELONY,
+                                classification_type_raw_text="F",
+                                classification_subtype="E",
+                                is_violent=False,
+                                is_sex_offense=False,
+                                charging_entity="B",
+                                court_case=StateCourtCase(
+                                    external_id="00000003-013-2011-9577-0",
+                                    state_code="US_TN",
+                                    status=StateCourtCaseStatus.PRESENT_WITHOUT_INFO,
+                                    court_type=StateCourtType.PRESENT_WITHOUT_INFO,
+                                    date_convicted=datetime.date(2011, 7, 5),
+                                    county_code="013",
+                                    judicial_district_code="006",
+                                    judge=StateAgent(
+                                        agent_type=StateAgentType.JUDGE,
+                                        state_code="US_TN",
+                                        full_name='{"full_name": "ROSS"}',
+                                    ),
+                                ),
+                            ),
+                        ],
                     )
                 ],
             ),
@@ -559,12 +631,43 @@ class UsTnIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         completion_date=datetime.date(2020, 11, 5),
                         county_code="013",
                         sentence_metadata='{"CONSECUTIVE_SENTENCE_ID": "00000003-013-2011-9577-0"}',
+                        charges=[
+                            StateCharge(
+                                external_id="00000003-013-2011-9577-1",
+                                state_code="US_TN",
+                                status=ChargeStatus.SENTENCED,
+                                offense_date=datetime.date(2015, 5, 27),
+                                date_charged=datetime.date(2015, 7, 1),
+                                county_code="013",
+                                statute="3699",
+                                description="ATTEMPT TO COMMIT FELONY/SEX OFFENSE",
+                                classification_type=StateChargeClassificationType.FELONY,
+                                classification_type_raw_text="F",
+                                is_violent=True,
+                                is_sex_offense=True,
+                                charging_entity="B",
+                                court_case=StateCourtCase(
+                                    external_id="00000003-013-2011-9577-1",
+                                    state_code="US_TN",
+                                    status=StateCourtCaseStatus.PRESENT_WITHOUT_INFO,
+                                    court_type=StateCourtType.PRESENT_WITHOUT_INFO,
+                                    date_convicted=datetime.date(2015, 7, 5),
+                                    county_code="013",
+                                    judicial_district_code="007",
+                                    judge=StateAgent(
+                                        agent_type=StateAgentType.JUDGE,
+                                        state_code="US_TN",
+                                        full_name='{"full_name": "BOB ROSS"}',
+                                    ),
+                                ),
+                            ),
+                        ],
                     )
                 ],
             ),
         ]
         self._run_parse_ingest_view_test(
-            "IncarcerationAndSupervisionSentences", expected_output
+            "SentencesChargesAndCourtCases", expected_output
         )
 
     def test_parse_AssignedStaffSupervisionPeriod_AdmissionReasons(self) -> None:

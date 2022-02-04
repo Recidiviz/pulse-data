@@ -18,6 +18,7 @@
 import datetime
 from typing import Type
 
+from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.person_characteristics import Ethnicity, Gender, Race
 from recidiviz.common.constants.state.external_id_types import US_TN_DOC
 from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
@@ -26,6 +27,11 @@ from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentClass,
     StateAssessmentLevel,
     StateAssessmentType,
+)
+from recidiviz.common.constants.state.state_charge import StateChargeClassificationType
+from recidiviz.common.constants.state.state_court_case import (
+    StateCourtCaseStatus,
+    StateCourtType,
 )
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
@@ -340,10 +346,10 @@ class TestUsTnController(BaseDirectIngestControllerTests):
         self.assert_expected_db_people(expected_people)
 
         ######################################
-        # IncarcerationAndSupervisionSentences
+        # SentencesChargesAndCourtCases
         ######################################
 
-        add_incarceration_sentence_to_person(
+        person_2_incarceration_sentence = add_incarceration_sentence_to_person(
             person=person_2,
             external_id="00000002-088-2021-S51773-13",
             state_code="US_TN",
@@ -360,7 +366,46 @@ class TestUsTnController(BaseDirectIngestControllerTests):
             initial_time_served_days=0,
         )
 
-        add_supervision_sentence_to_person(
+        person_2_charge = entities.StateCharge(
+            external_id="00000002-088-2021-S51773-13",
+            state_code="US_TN",
+            status=ChargeStatus.SENTENCED,
+            offense_date=datetime.date(2021, 3, 15),
+            date_charged=datetime.date(2021, 5, 24),
+            county_code="088",
+            statute="3371",
+            description="SOL KIDNAPPING",
+            classification_type=StateChargeClassificationType.FELONY,
+            classification_type_raw_text="F",
+            classification_subtype="E",
+            is_violent=True,
+            is_sex_offense=False,
+            charging_entity="J",
+            person=person_2,
+            incarceration_sentences=[person_2_incarceration_sentence],
+        )
+
+        person_2_charge_court_case = entities.StateCourtCase(
+            external_id="00000002-088-2021-S51773-13",
+            state_code="US_TN",
+            status=StateCourtCaseStatus.PRESENT_WITHOUT_INFO,
+            court_type=StateCourtType.PRESENT_WITHOUT_INFO,
+            date_convicted=datetime.date(2021, 5, 25),
+            county_code="088",
+            judicial_district_code="007",
+            person=person_2,
+            charges=[person_2_charge],
+            judge=entities.StateAgent(
+                agent_type=StateAgentType.JUDGE,
+                state_code="US_TN",
+                full_name='{"full_name": "BOB ROSS"}',
+            ),
+        )
+
+        person_2_charge.court_case = person_2_charge_court_case
+        person_2_incarceration_sentence.charges = [person_2_charge]
+
+        person_3_supervision_sentence_1 = add_supervision_sentence_to_person(
             person=person_3,
             external_id="00000003-013-2011-9577-0",
             state_code="US_TN",
@@ -376,7 +421,46 @@ class TestUsTnController(BaseDirectIngestControllerTests):
             county_code="013",
         )
 
-        add_supervision_sentence_to_person(
+        person_3_charge_1 = entities.StateCharge(
+            external_id="00000003-013-2011-9577-0",
+            state_code="US_TN",
+            status=ChargeStatus.SENTENCED,
+            offense_date=datetime.date(2011, 6, 14),
+            date_charged=datetime.date(2011, 7, 3),
+            county_code="013",
+            statute="8039",
+            description="DUI, 4TH OFFENSE & SUBSEQUENT",
+            classification_type=StateChargeClassificationType.FELONY,
+            classification_type_raw_text="F",
+            classification_subtype="E",
+            is_violent=False,
+            is_sex_offense=False,
+            charging_entity="B",
+            person=person_3,
+            supervision_sentences=[person_3_supervision_sentence_1],
+        )
+
+        person_3_charge_1_court_case = entities.StateCourtCase(
+            external_id="00000003-013-2011-9577-0",
+            state_code="US_TN",
+            status=StateCourtCaseStatus.PRESENT_WITHOUT_INFO,
+            court_type=StateCourtType.PRESENT_WITHOUT_INFO,
+            date_convicted=datetime.date(2011, 7, 5),
+            county_code="013",
+            judicial_district_code="006",
+            person=person_3,
+            charges=[person_3_charge_1],
+            judge=entities.StateAgent(
+                agent_type=StateAgentType.JUDGE,
+                state_code="US_TN",
+                full_name='{"full_name": "ROSS"}',
+            ),
+        )
+
+        person_3_charge_1.court_case = person_3_charge_1_court_case
+        person_3_supervision_sentence_1.charges = [person_3_charge_1]
+
+        person_3_supervision_sentence_2 = add_supervision_sentence_to_person(
             person=person_3,
             external_id="00000003-013-2011-9577-1",
             state_code="US_TN",
@@ -392,11 +476,49 @@ class TestUsTnController(BaseDirectIngestControllerTests):
             sentence_metadata='{"CONSECUTIVE_SENTENCE_ID": "00000003-013-2011-9577-0"}',
         )
 
+        person_3_charge_2 = entities.StateCharge(
+            external_id="00000003-013-2011-9577-1",
+            state_code="US_TN",
+            status=ChargeStatus.SENTENCED,
+            offense_date=datetime.date(2015, 5, 27),
+            date_charged=datetime.date(2015, 7, 1),
+            county_code="013",
+            statute="3699",
+            description="ATTEMPT TO COMMIT FELONY/SEX OFFENSE",
+            classification_type=StateChargeClassificationType.FELONY,
+            classification_type_raw_text="F",
+            is_violent=True,
+            is_sex_offense=True,
+            charging_entity="B",
+            person=person_3,
+            supervision_sentences=[person_3_supervision_sentence_2],
+        )
+
+        person_3_charge_2_court_case = entities.StateCourtCase(
+            external_id="00000003-013-2011-9577-1",
+            state_code="US_TN",
+            status=StateCourtCaseStatus.PRESENT_WITHOUT_INFO,
+            court_type=StateCourtType.PRESENT_WITHOUT_INFO,
+            date_convicted=datetime.date(2015, 7, 5),
+            county_code="013",
+            judicial_district_code="007",
+            person=person_3,
+            charges=[person_3_charge_2],
+            judge=entities.StateAgent(
+                agent_type=StateAgentType.JUDGE,
+                state_code="US_TN",
+                full_name='{"full_name": "BOB ROSS"}',
+            ),
+        )
+
+        person_3_charge_2.court_case = person_3_charge_2_court_case
+        person_3_supervision_sentence_2.charges = [person_3_charge_2]
+
         # Only person 2 and 3 have supervision and/or incarceration sentences
         expected_people = [person_1, person_2, person_3, person_4]
 
         # Act
-        self._run_ingest_job_for_filename("IncarcerationAndSupervisionSentences")
+        self._run_ingest_job_for_filename("SentencesChargesAndCourtCases")
 
         # Assert
         self.assert_expected_db_people(expected_people)
