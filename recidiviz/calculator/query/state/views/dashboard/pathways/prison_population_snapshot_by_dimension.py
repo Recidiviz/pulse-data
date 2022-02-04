@@ -65,7 +65,7 @@ PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = """
             metrics.state_code,
             gender,
             admission_reason AS legal_status,
-            IFNULL(location_name, metrics.facility) AS facility,
+            IFNULL(location_id, metrics.facility) AS facility,
             {add_age_groups}
             length_of_stay,
             COUNT(DISTINCT person_id) as person_count

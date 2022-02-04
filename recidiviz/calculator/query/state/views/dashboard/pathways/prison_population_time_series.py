@@ -44,7 +44,7 @@ PRISON_POPULATION_TIME_SERIES_QUERY_TEMPLATE = """
             month,
             gender,
             admission_reason,
-            IFNULL(location_name, pop.facility) AS facility,
+            IFNULL(location_id, pop.facility) AS facility,
             {add_age_groups}
             COUNT(DISTINCT person_id) AS person_count
         FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_metrics_included_in_state_population_materialized` pop

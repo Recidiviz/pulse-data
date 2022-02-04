@@ -47,7 +47,7 @@ PRISON_POPULATION_SNAPSHOT_PERSON_LEVEL_QUERY_TEMPLATE = """
         get_last_updated.last_updated,
         pop.gender,
         admission_reason as legal_status,
-        IFNULL(location_name, pop.facility) AS facility,
+        IFNULL(location_id, pop.facility) AS facility,
         {add_age_groups}
         pop.age,
         person_external_id AS state_id,
