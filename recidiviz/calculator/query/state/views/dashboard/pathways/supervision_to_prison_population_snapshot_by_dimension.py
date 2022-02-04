@@ -52,7 +52,7 @@ SUPERVISION_TO_PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = """
             SELECT
                 person_id,
                 transition_date,
-                DATE_DIFF(CURRENT_DATE('US/Eastern'), supervision_start_date, MONTH) AS length_of_stay_months,
+                DATE_DIFF(transition_date, supervision_start_date, MONTH) AS length_of_stay_months,
             FROM `{project_id}.{reference_dataset}.supervision_to_prison_transitions`
         )
     )
