@@ -41,7 +41,7 @@ COMPARTMENT_SESSION_START_REASONS_QUERY_TEMPLATE = """
     INCARCERATION_COMMITMENT_FROM_SUPERVISION metric is also brought in to gather 
     some additional details on incarceration admissions that qualify as commitments 
     from supervision.
-    
+
     A person should in theory not be able to have a supervision start and an 
     incarceration admission on the same day. However, this does happen and is NOT deduped in 
     this view, but is instead handled by the join with sessions (join is done based on person_id, start_date, and 
@@ -53,6 +53,7 @@ COMPARTMENT_SESSION_START_REASONS_QUERY_TEMPLATE = """
         admission_date as start_date,
         state_code,
         COALESCE(admission_reason, 'INTERNAL_UNKNOWN') AS start_reason,
+        adm.admission_reason_raw_text AS start_reason_raw_text,
         most_severe_violation_type AS start_sub_reason,
         'INCARCERATION' as compartment_level_1,
         adm.metric_type AS metric_source,
@@ -75,6 +76,7 @@ COMPARTMENT_SESSION_START_REASONS_QUERY_TEMPLATE = """
         start_date,
         state_code,
         COALESCE(admission_reason, 'INTERNAL_UNKNOWN') AS start_reason,
+        CAST(NULL AS STRING) AS start_reason_raw_text,
         CAST(NULL AS STRING) AS start_sub_reason,
         'SUPERVISION' as compartment_level_1,
         metric_type AS metric_source,
