@@ -70,6 +70,7 @@ SESSION_SUPERVISION_TERMINATIONS_TO_DATAFLOW_DISAGGREGATED_QUERY_TEMPLATE = """
         end_date AS date,
         sessions.session_id,
         dataflow.end_reason AS dataflow_reason,
+        dataflow.end_reason_raw_text AS dataflow_reason_raw_text,
         CASE WHEN sessions.person_id IS NOT NULL THEN 1 ELSE 0 END as session_transition,
         COALESCE(dataflow.dataflow_event, 0) AS dataflow_event,
         CASE WHEN dataflow.dataflow_event = 1 AND sessions.person_id IS NOT NULL THEN 1 ELSE 0 END AS event_in_both,

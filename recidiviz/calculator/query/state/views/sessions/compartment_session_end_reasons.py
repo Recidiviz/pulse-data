@@ -44,6 +44,7 @@ COMPARTMENT_SESSION_END_REASONS_QUERY_TEMPLATE = """
         release_date AS release_termination_date,
         DATE_SUB(release_date, INTERVAL 1 DAY) AS end_date,
         COALESCE(release_reason, 'INTERNAL_UNKNOWN') AS end_reason,
+        m.release_reason_raw_text AS end_reason_raw_text,
         'INCARCERATION' AS compartment_level_1,
         metric_type AS metric_source,
         ROW_NUMBER() OVER(PARTITION BY person_id, release_date ORDER BY COALESCE(priority, 999)) AS rn
@@ -58,6 +59,7 @@ COMPARTMENT_SESSION_END_REASONS_QUERY_TEMPLATE = """
         termination_date AS release_termination_date,
         DATE_SUB(termination_date, INTERVAL 1 DAY) AS end_date,
         COALESCE(termination_reason, 'INTERNAL_UNKNOWN') AS end_reason,
+        CAST(NULL AS STRING) AS end_reason_raw_text,
         'SUPERVISION' AS compartment_level_1,
         metric_type AS metric_source,
         ROW_NUMBER() OVER(PARTITION BY person_id, termination_date ORDER BY COALESCE(priority, 999)) AS rn
