@@ -184,6 +184,9 @@ state_sentence_status_vacated = "VACATED"
 
 # state_supervision_sentence.py
 state_supervision_sentence_supervision_type_civil_commitment = "CIVIL_COMMITMENT"
+state_supervision_sentence_supervision_type_community_corrections = (
+    "COMMUNITY_CORRECTIONS"
+)
 state_supervision_sentence_supervision_type_halfway_house = "HALFWAY_HOUSE"
 state_supervision_sentence_supervision_type_parole = "PAROLE"
 state_supervision_sentence_supervision_type_post_confinement = "POST_CONFINEMENT"

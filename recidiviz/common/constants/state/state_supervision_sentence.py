@@ -31,6 +31,10 @@ class StateSupervisionSentenceSupervisionType(EntityEnum, metaclass=EntityEnumMe
     CIVIL_COMMITMENT = (
         state_enum_strings.state_supervision_sentence_supervision_type_civil_commitment
     )
+    # Sentenced to community based supervision and treatment services.
+    COMMUNITY_CORRECTIONS = (
+        state_enum_strings.state_supervision_sentence_supervision_type_community_corrections
+    )
     INTERNAL_UNKNOWN = enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
     HALFWAY_HOUSE = (
@@ -52,6 +56,7 @@ class StateSupervisionSentenceSupervisionType(EntityEnum, metaclass=EntityEnumMe
 
 _SUPERVISION_TYPE_MAP = {
     "CIVIL COMMITMENT": StateSupervisionSentenceSupervisionType.CIVIL_COMMITMENT,
+    "COMMUNITY CORRECTIONS": StateSupervisionSentenceSupervisionType.COMMUNITY_CORRECTIONS,
     "CC": StateSupervisionSentenceSupervisionType.CIVIL_COMMITMENT,
     "EXTERNAL UNKNOWN": StateSupervisionSentenceSupervisionType.EXTERNAL_UNKNOWN,
     "INTERNAL UNKNOWN": StateSupervisionSentenceSupervisionType.INTERNAL_UNKNOWN,
