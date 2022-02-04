@@ -7,6 +7,9 @@
     },
     {
       "$ref": "custom_function.json"
+    },
+    {
+      "$ref": "variable.json"
     }
   ]
 }

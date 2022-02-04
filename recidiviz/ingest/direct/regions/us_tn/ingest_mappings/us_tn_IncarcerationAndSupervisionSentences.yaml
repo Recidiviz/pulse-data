@@ -26,6 +26,73 @@ input_columns:
   - ConsecutiveCaseNumber
   - ConsecutiveCountNumber
 unused_columns: []
+variables:
+  - is_incarceration_sentence:
+      $or:
+        # AC indicates an active incarceration sentence.
+        - $equal: [SentenceStatus, $literal("AC")]
+        - $and:
+          - $equal: [SentenceStatus, $literal("IN")] # Inactive sentence
+          # If set to `S`, then that means that this is a probation sentence,
+          # regardless of what value is in sentenced_to.
+          - $not_in:
+              $value: SuspendedToProbation
+              $options: [$literal("S")]
+          - $in:
+              $value: SentencedTo
+              $options:
+                - $literal("TD")  # TDOC (Tennessee Department of Corrections)
+                - $literal("LJ")  # Local Jail
+                - $literal("WK")  # Workhouse (jail for short sentences)
+  - is_supervision_sentence:
+      $or:
+        - $in:
+            $value: SentenceStatus
+            $options:
+              - $literal("CC")  # Community corrections
+              - $literal("PB")  # Probation
+        - $and:
+          - $equal: [SentenceStatus, $literal("IN")] # Inactive sentence
+          - $or:
+            # If set to `S`, then that means that this is a probation sentence,
+            # regardless of what value is in sentenced_to.
+            - $equal: [SuspendedToProbation, $literal("S")]
+            - $equal: [SentencedTo, $literal("CC")] # Community corrections
+  - sentence_external_id:
+      $concat:
+        $values:
+          - OffenderID
+          - ConvictionCounty
+          - CaseYear
+          - CaseNumber
+          - CountNumber
+  - sentence_metadata:
+      $conditional:
+        - $if:
+            # We only want to pull in a consecutive sentence id if there is a consecutive case
+            # number present.
+            $not_null: ConsecutiveCaseNumber
+          $then:
+            $json_dict:
+              # The id of the sentence that this sentence is consecutive to, if applicable.
+              consecutive_sentence_id:
+                $concat:
+                  $values:
+                    - OffenderID
+                    - $conditional:
+                        - $if:
+                            $is_null: ConsecutiveConvictionCounty
+                          $then: ConvictionCounty
+                        - $else: ConsecutiveConvictionCounty
+                    - $conditional:
+                        - $if:
+                            $equal:
+                              - ConsecutiveCaseYear
+                              - $literal("0")
+                          $then: CaseYear
+                        - $else: ConsecutiveCaseYear
+                    - ConsecutiveCaseNumber
+                    - ConsecutiveCountNumber
 output:
   StatePerson:
     external_ids:
@@ -34,24 +101,10 @@ output:
           id_type: $literal("US_TN_DOC")
     incarceration_sentences:
       - $conditional:
-          - $if:
-              $custom:
-                $function: us_tn_custom_parsers.is_incarceration_sentence
-                $args:
-                  sentence_status: SentenceStatus
-                  suspended_to_probation: SuspendedToProbation
-                  sentenced_to: SentencedTo
+          - $if: $variable(is_incarceration_sentence)
             $then:
               StateIncarcerationSentence:
-                # TODO(#10381): external_id could be a shared variable with supervision sentence.
-                external_id:
-                  $concat:
-                    $values:
-                      - OffenderID
-                      - ConvictionCounty
-                      - CaseYear
-                      - CaseNumber
-                      - CountNumber
+                external_id: $variable(sentence_external_id)
                 status:
                   $enum_mapping:
                     $raw_text:
@@ -89,54 +142,14 @@ output:
                       - $literal("L")  # Life Sentence
                       - $literal("W")  # Life sentence without parole
                       - $literal("H")  # Habitual (equivalent to life sentence)
-                sentence_metadata:
-                  $conditional:
-                    - $if:
-                        # We only want to pull in a consecutive sentence id if there is a consecutive case
-                        # number present.
-                        $not_null: ConsecutiveCaseNumber
-                      $then:
-                        $json_dict:
-                          # The id of the sentence that this sentence is consecutive to, if applicable.
-                          consecutive_sentence_id:
-                            $concat:
-                              $values:
-                                - OffenderID
-                                - $conditional:
-                                    - $if:
-                                        $is_null: ConsecutiveConvictionCounty
-                                      $then: ConvictionCounty
-                                    - $else: ConsecutiveConvictionCounty
-                                - $conditional:
-                                    - $if:
-                                        $equal:
-                                          - ConsecutiveCaseYear
-                                          - $literal("0")
-                                      $then: CaseYear
-                                    - $else: ConsecutiveCaseYear
-                                - ConsecutiveCaseNumber
-                                - ConsecutiveCountNumber
+                sentence_metadata: $variable(sentence_metadata)
                 initial_time_served_days: PretrialJailCredits
     supervision_sentences:
       - $conditional:
-          - $if:
-              $custom:
-                $function: us_tn_custom_parsers.is_supervision_sentence
-                $args:
-                  sentence_status: SentenceStatus
-                  suspended_to_probation: SuspendedToProbation
-                  sentenced_to: SentencedTo
+          - $if: $variable(is_supervision_sentence)
             $then:
               StateSupervisionSentence:
-                # TODO(#10381): external_id could be a shared variable with incarceration sentence.
-                external_id:
-                  $concat:
-                    $values:
-                      - OffenderID
-                      - ConvictionCounty
-                      - CaseYear
-                      - CaseNumber
-                      - CountNumber
+                external_id: $variable(sentence_external_id)
                 status:
                   $enum_mapping:
                     $raw_text:
@@ -163,30 +176,4 @@ output:
                           - SentencedTo
                     # TODO(#10923): Remove custom parser once multiple columns can be used to determine enum value.
                     $custom_parser: us_tn_custom_parsers.parse_supervision_type
-                sentence_metadata:
-                  $conditional:
-                    - $if:
-                        # We only want to pull in a consecutive sentence id if there is a consecutive case
-                        # number present.
-                        $not_null: ConsecutiveCaseNumber
-                      $then:
-                        $json_dict:
-                          # The id of the sentence that this sentence is consecutive to, if applicable.
-                          consecutive_sentence_id:
-                                  $concat:
-                                    $values:
-                                      - OffenderID
-                                      - $conditional:
-                                          - $if:
-                                              $is_null: ConsecutiveConvictionCounty
-                                            $then: ConvictionCounty
-                                          - $else: ConsecutiveConvictionCounty
-                                      - $conditional:
-                                          - $if:
-                                              $equal:
-                                                - ConsecutiveCaseYear
-                                                - $literal("0")
-                                            $then: CaseYear
-                                          - $else: ConsecutiveCaseYear
-                                      - ConsecutiveCaseNumber
-                                      - ConsecutiveCountNumber
+                sentence_metadata: $variable(sentence_metadata)

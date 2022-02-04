@@ -8,7 +8,6 @@ input_columns:
 - agnt_note_title
 unused_columns: []
 output:
-  # TODO(#10381): Support file-level variables for reused expressions
   # TODO(#10784): Remove treatment_agnt_case_updt once rerun has been completed.
   StatePerson:
     external_ids:
