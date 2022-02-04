@@ -20,7 +20,6 @@ To generate the BQ view, run:
 python -m recidiviz.calculator.query.state.views.dashboard.pathways.liberty_to_prison_population_snapshot_by_dimension
 """
 from recidiviz.calculator.query.bq_utils import (
-    add_age_groups,
     convert_days_to_years,
     create_buckets_with_cap,
     get_binned_time_period_months,
@@ -47,8 +46,8 @@ LIBERTY_TO_PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = """
         SELECT
             state_code,
             gender,
-            {add_age_groups}
-            INITCAP(REPLACE(intake_district, "_", " ")) AS judicial_district,
+            age_group,
+            intake_district AS judicial_district,
             prioritized_race_or_ethnicity AS race,
             {binned_time_periods} AS time_period,
             {length_of_stay} AS prior_length_of_incarceration,
@@ -96,7 +95,6 @@ LIBERTY_TO_PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER = MetricBigQuery
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     binned_time_periods=get_binned_time_period_months("transition_date"),
     get_pathways_incarceration_last_updated_date=get_pathways_incarceration_last_updated_date(),
-    add_age_groups=add_age_groups("age"),
     length_of_stay=create_buckets_with_cap(
         convert_days_to_years("prior_length_of_incarceration"), 11
     ),
