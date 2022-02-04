@@ -124,12 +124,27 @@ PATHWAYS_SUPERVISION_DIMENSION_COMBINATIONS_QUERY_TEMPLATE = """
             "ALL" as district,
         FROM UNNEST({enabled_states}) as state_code
     )
+    , judicial_districts AS (
+        SELECT DISTINCT
+            state_code,
+            intake_district AS judicial_district,
+        FROM `{project_id}.{reference_views_dataset}.liberty_to_prison_transitions`
+
+        UNION ALL
+
+        SELECT
+            state_code,
+            "ALL" as judicial_district,
+        FROM UNNEST({enabled_states}) as state_code
+    )
     , state_specific_dimensions AS (
         SELECT
             state_code,
             district,
+            judicial_district,
             {state_specific_dimension_names},
         FROM districts
+        FULL OUTER JOIN judicial_districts USING (state_code)
         {state_specific_joins}
     )
 
@@ -145,6 +160,7 @@ PATHWAYS_SUPERVISION_DIMENSION_COMBINATIONS_VIEW_BUILDER = SimpleBigQueryViewBui
     view_query_template=PATHWAYS_SUPERVISION_DIMENSION_COMBINATIONS_QUERY_TEMPLATE,
     description=PATHWAYS_SUPERVISION_DIMENSION_COMBINATIONS_DESCRIPTION,
     dashboard_views_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     constant_dimensions=",".join(
         get_constant_dimensions_unnested(supervision_constant_dimensions)
     ),

@@ -17,6 +17,7 @@
 """People who have transitioned from liberty to prison by date of incarceration."""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.bq_utils import add_age_groups
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
     ENABLED_STATES,
@@ -38,6 +39,7 @@ LIBERTY_TO_PRISON_TRANSITIONS_QUERY_TEMPLATE = """
             compartment.person_id,
             compartment.start_date AS transition_date,
             age_start AS age,
+            {age_group}
             gender,
             prioritized_race_or_ethnicity,
             IFNULL(judicial_district_code_start, 'UNKNOWN') AS intake_district,
@@ -66,6 +68,7 @@ LIBERTY_TO_PRISON_TRANSITIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=LIBERTY_TO_PRISON_TRANSITIONS_VIEW_NAME,
     view_query_template=LIBERTY_TO_PRISON_TRANSITIONS_QUERY_TEMPLATE,
     description=LIBERTY_TO_PRISON_TRANSITIONS_DESCRIPTION,
+    age_group=add_age_groups("age_start"),
     sessions_dataset=dataset_config.SESSIONS_DATASET,
     enabled_states=str(tuple(ENABLED_STATES)),
 )
