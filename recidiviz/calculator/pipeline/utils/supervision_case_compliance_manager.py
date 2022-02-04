@@ -25,7 +25,7 @@ from typing import Callable, List, Optional
 import numpy as np
 from dateutil.relativedelta import relativedelta
 
-from recidiviz.calculator.pipeline.supervision.supervision_case_compliance import (
+from recidiviz.calculator.pipeline.metrics.supervision.supervision_case_compliance import (
     SupervisionCaseCompliance,
 )
 from recidiviz.calculator.pipeline.utils.assessment_utils import (

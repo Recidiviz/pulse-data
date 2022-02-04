@@ -22,8 +22,8 @@ from apache_beam.testing.test_pipeline import TestPipeline
 from mock import patch
 
 from recidiviz.calculator.pipeline.base_pipeline import BasePipeline
-from recidiviz.calculator.pipeline.calculation_pipeline import (
-    CalculationPipelineRunDelegate,
+from recidiviz.calculator.pipeline.metrics.base_metric_pipeline import (
+    MetricPipelineRunDelegate,
 )
 from recidiviz.persistence.database import schema_utils
 from recidiviz.persistence.database.base_schema import StateBase
@@ -34,7 +34,7 @@ from recidiviz.tests.calculator.pipeline.fake_bigquery import (
 
 
 def run_test_pipeline(
-    run_delegate: Type[CalculationPipelineRunDelegate],
+    run_delegate: Type[MetricPipelineRunDelegate],
     state_code: str,
     project_id: str,
     dataset_id: str,
@@ -113,7 +113,7 @@ def run_test_pipeline(
             read_from_bq_constructor,
         ):
             with patch(
-                "recidiviz.calculator.pipeline.calculation_pipeline"
+                "recidiviz.calculator.pipeline.metrics.base_metric_pipeline"
                 ".WriteAppendToBigQuery",
                 write_to_bq_constructor,
             ):
@@ -122,7 +122,7 @@ def run_test_pipeline(
                     pipeline_constructor,
                 ):
                     with patch(
-                        "recidiviz.calculator.pipeline.calculation_pipeline.job_id",
+                        "recidiviz.calculator.pipeline.metrics.base_metric_pipeline.job_id",
                         get_job_id,
                     ):
                         pipeline = BasePipeline(

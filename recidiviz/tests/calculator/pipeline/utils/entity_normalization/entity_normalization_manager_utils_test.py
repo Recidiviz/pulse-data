@@ -20,7 +20,6 @@ import datetime
 import inspect
 import unittest
 from typing import Dict, Set, Type
-from unittest import mock
 
 from recidiviz.calculator.pipeline.utils.entity_normalization import (
     entity_normalization_manager_utils,
@@ -29,10 +28,7 @@ from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalizati
     EntityNormalizationManager,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager_utils import (
-    entity_normalization_managers_for_calculations,
-)
-from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_incarceration_delegate import (
-    UsXxIncarcerationDelegate,
+    entity_normalization_managers_for_periods,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_incarceration_period_normalization_delegate import (
     UsXxIncarcerationNormalizationDelegate,
@@ -60,6 +56,9 @@ from recidiviz.persistence.entity.state.entities import (
 from recidiviz.tests.calculator.pipeline.utils.entity_normalization.normalized_entities_test import (
     classes_in_normalized_entity_subtree,
 )
+from recidiviz.tests.calculator.pipeline.utils.state_utils.state_calculation_config_manager_test import (
+    STATE_DELEGATES_FOR_TESTS,
+)
 
 
 class TestIncarcerationNormalizationDelegate(UsXxIncarcerationNormalizationDelegate):
@@ -76,46 +75,12 @@ class TestSupervisionNormalizationDelegate(UsXxSupervisionNormalizationDelegate)
 
 
 class TestNormalizationManagersForCalculations(unittest.TestCase):
-    """Tests the entity_normalization_managers_for_calculations function."""
+    """Tests the entity_normalization_managers_for_periods function."""
 
     def setUp(self) -> None:
-        self.incarceration_normalization_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager_utils"
-            ".get_state_specific_incarceration_period_normalization_delegate"
-        )
-        self.mock_incarceration_normalization_delegate = (
-            self.incarceration_normalization_delegate_patcher.start()
-        )
-        self.mock_incarceration_normalization_delegate.return_value = (
-            UsXxIncarcerationNormalizationDelegate()
-        )
-        self.supervision_normalization_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager_utils"
-            ".get_state_specific_supervision_period_normalization_delegate"
-        )
-        self.normalization_incarceration_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager_utils"
-            ".get_state_specific_incarceration_delegate"
-        )
-        self.mock_incarceration_delegate = (
-            self.normalization_incarceration_delegate_patcher.start()
-        )
-        self.mock_incarceration_delegate.return_value = UsXxIncarcerationDelegate()
-        self.mock_supervision_normalization_delegate = (
-            self.supervision_normalization_delegate_patcher.start()
-        )
-        self.mock_supervision_normalization_delegate.return_value = (
-            UsXxSupervisionNormalizationDelegate()
-        )
         self.field_index = CoreEntityFieldIndex()
 
-    def tearDown(self) -> None:
-        self.incarceration_normalization_delegate_patcher.stop()
-        self.supervision_normalization_delegate_patcher.stop()
-        self.normalization_incarceration_delegate_patcher.stop()
-
     def test_normalization_managers_for_calculations(self) -> None:
-        state_code = "US_XX"
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
@@ -141,8 +106,10 @@ class TestNormalizationManagersForCalculations(unittest.TestCase):
         (
             ip_normalization_manager,
             sp_normalization_manager,
-        ) = entity_normalization_managers_for_calculations(
-            state_code=state_code,
+        ) = entity_normalization_managers_for_periods(
+            ip_normalization_delegate=STATE_DELEGATES_FOR_TESTS.ip_normalization_delegate,
+            sp_normalization_delegate=STATE_DELEGATES_FOR_TESTS.sp_normalization_delegate,
+            incarceration_delegate=STATE_DELEGATES_FOR_TESTS.incarceration_delegate,
             incarceration_periods=[incarceration_period],
             supervision_periods=[supervision_period],
             normalized_violation_responses=None,
@@ -166,7 +133,6 @@ class TestNormalizationManagersForCalculations(unittest.TestCase):
         )
 
     def test_normalization_managers_for_calculations_no_sps(self) -> None:
-        state_code = "US_XX"
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
             external_id="ip1",
@@ -182,8 +148,10 @@ class TestNormalizationManagersForCalculations(unittest.TestCase):
         (
             ip_normalization_manager,
             sp_normalization_manager,
-        ) = entity_normalization_managers_for_calculations(
-            state_code=state_code,
+        ) = entity_normalization_managers_for_periods(
+            ip_normalization_delegate=STATE_DELEGATES_FOR_TESTS.ip_normalization_delegate,
+            sp_normalization_delegate=STATE_DELEGATES_FOR_TESTS.sp_normalization_delegate,
+            incarceration_delegate=STATE_DELEGATES_FOR_TESTS.incarceration_delegate,
             incarceration_periods=[incarceration_period],
             supervision_periods=None,
             normalized_violation_responses=None,
@@ -205,10 +173,6 @@ class TestNormalizationManagersForCalculations(unittest.TestCase):
     def test_normalization_managers_for_calculations_no_sps_state_requires(
         self,
     ) -> None:
-        self.mock_incarceration_normalization_delegate.return_value = (
-            TestIncarcerationNormalizationDelegate()
-        )
-        state_code = "US_XX"
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
             external_id="ip1",
@@ -223,8 +187,10 @@ class TestNormalizationManagersForCalculations(unittest.TestCase):
         with self.assertRaises(ValueError):
             # Assert an error is raised if the supervision_periods arg is None for a
             # state that relies on supervision periods for IP pre-processing
-            (_, _,) = entity_normalization_managers_for_calculations(
-                state_code=state_code,
+            (_, _,) = entity_normalization_managers_for_periods(
+                ip_normalization_delegate=TestIncarcerationNormalizationDelegate(),
+                sp_normalization_delegate=STATE_DELEGATES_FOR_TESTS.sp_normalization_delegate,
+                incarceration_delegate=STATE_DELEGATES_FOR_TESTS.incarceration_delegate,
                 incarceration_periods=[incarceration_period],
                 supervision_periods=None,
                 normalized_violation_responses=[],
@@ -236,10 +202,6 @@ class TestNormalizationManagersForCalculations(unittest.TestCase):
     def test_normalization_managers_for_calculations_no_violation_responses_state_requires(
         self,
     ) -> None:
-        self.mock_incarceration_normalization_delegate.return_value = (
-            TestIncarcerationNormalizationDelegate()
-        )
-        state_code = "US_XX"
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
             external_id="ip1",
@@ -254,8 +216,10 @@ class TestNormalizationManagersForCalculations(unittest.TestCase):
         with self.assertRaises(ValueError):
             # Assert an error is raised if the violation_responses arg is None for a
             # state that relies on violation responses for IP pre-processing
-            (_, _,) = entity_normalization_managers_for_calculations(
-                state_code=state_code,
+            (_, _,) = entity_normalization_managers_for_periods(
+                ip_normalization_delegate=TestIncarcerationNormalizationDelegate(),
+                sp_normalization_delegate=STATE_DELEGATES_FOR_TESTS.sp_normalization_delegate,
+                incarceration_delegate=STATE_DELEGATES_FOR_TESTS.incarceration_delegate,
                 incarceration_periods=[incarceration_period],
                 supervision_periods=[],
                 normalized_violation_responses=None,
@@ -267,10 +231,6 @@ class TestNormalizationManagersForCalculations(unittest.TestCase):
     def test_normalization_managers_for_calculations_no_sentences_state_requires(
         self,
     ) -> None:
-        self.mock_supervision_normalization_delegate.return_value = (
-            TestSupervisionNormalizationDelegate()
-        )
-        state_code = "US_XX"
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
@@ -285,8 +245,10 @@ class TestNormalizationManagersForCalculations(unittest.TestCase):
         with self.assertRaises(ValueError):
             # Assert an error is raised if either sentences arg is None for a state
             # that relies on sentences for SP pre-processing
-            (_, _) = entity_normalization_managers_for_calculations(
-                state_code=state_code,
+            (_, _) = entity_normalization_managers_for_periods(
+                ip_normalization_delegate=STATE_DELEGATES_FOR_TESTS.ip_normalization_delegate,
+                sp_normalization_delegate=TestSupervisionNormalizationDelegate(),
+                incarceration_delegate=STATE_DELEGATES_FOR_TESTS.incarceration_delegate,
                 incarceration_periods=[],
                 supervision_periods=[supervision_period],
                 normalized_violation_responses=None,
@@ -296,7 +258,6 @@ class TestNormalizationManagersForCalculations(unittest.TestCase):
             )
 
     def test_normalization_managers_for_calculations_no_ips(self) -> None:
-        state_code = "US_XX"
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
@@ -310,8 +271,10 @@ class TestNormalizationManagersForCalculations(unittest.TestCase):
         (
             ip_normalization_manager,
             sp_normalization_manager,
-        ) = entity_normalization_managers_for_calculations(
-            state_code=state_code,
+        ) = entity_normalization_managers_for_periods(
+            ip_normalization_delegate=STATE_DELEGATES_FOR_TESTS.ip_normalization_delegate,
+            sp_normalization_delegate=STATE_DELEGATES_FOR_TESTS.sp_normalization_delegate,
+            incarceration_delegate=STATE_DELEGATES_FOR_TESTS.incarceration_delegate,
             incarceration_periods=None,
             supervision_periods=[supervision_period],
             normalized_violation_responses=None,
@@ -328,13 +291,14 @@ class TestNormalizationManagersForCalculations(unittest.TestCase):
         )
 
     def test_normalization_managers_for_calculations_empty_lists(self) -> None:
-        state_code = "US_XX"
 
         (
             ip_normalization_manager,
             sp_normalization_manager,
-        ) = entity_normalization_managers_for_calculations(
-            state_code=state_code,
+        ) = entity_normalization_managers_for_periods(
+            ip_normalization_delegate=STATE_DELEGATES_FOR_TESTS.ip_normalization_delegate,
+            sp_normalization_delegate=STATE_DELEGATES_FOR_TESTS.sp_normalization_delegate,
+            incarceration_delegate=STATE_DELEGATES_FOR_TESTS.incarceration_delegate,
             incarceration_periods=[],
             supervision_periods=[],
             normalized_violation_responses=[],

@@ -38,6 +38,9 @@ from recidiviz.calculator.pipeline.utils.incarceration_period_utils import (
     periods_are_temporally_adjacent,
     standard_date_sort_for_incarceration_periods,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_delegate import (
+    StateSpecificDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_incarceration_delegate import (
     StateSpecificIncarcerationDelegate,
 )
@@ -91,7 +94,7 @@ class PurposeForIncarcerationInfo:
     purpose_for_incarceration_subtype: Optional[str] = attr.ib(default=None)
 
 
-class StateSpecificIncarcerationNormalizationDelegate:
+class StateSpecificIncarcerationNormalizationDelegate(StateSpecificDelegate):
     """Interface for state-specific decisions involved in normalizing
     incarceration periods for calculations."""
 

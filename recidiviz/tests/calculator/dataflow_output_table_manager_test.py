@@ -30,7 +30,7 @@ from recidiviz.calculator.dataflow_config import (
     DATAFLOW_TABLES_TO_METRIC_TYPES,
     METRIC_CLUSTERING_FIELDS,
 )
-from recidiviz.calculator.pipeline.recidivism.metrics import (
+from recidiviz.calculator.pipeline.metrics.recidivism.metrics import (
     ReincarcerationRecidivismRateMetric,
 )
 from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric

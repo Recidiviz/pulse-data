@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""A class for caching information about a set of supervision periods for use in the calculation pipelines."""
+"""A class for caching information about a set of supervision periods for use in the metric calculation pipelines."""
 
 from collections import defaultdict
 from datetime import date
@@ -34,7 +34,7 @@ from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
 @attr.s
 class NormalizedSupervisionPeriodIndex:
     """A class for caching information about a set of normalized supervision periods
-    for use in the calculation pipelines.
+    for use in the metric calculation pipelines.
     """
 
     supervision_periods: List[StateSupervisionPeriod] = attr.ib()

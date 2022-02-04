@@ -22,7 +22,9 @@ import importlib
 import pkgutil
 from typing import List
 
-from recidiviz.calculator import pipeline as pipeline_top_level
+# TODO(#10724): Update this to incorporate the normalization pipelines once that
+#  package exists
+from recidiviz.calculator.pipeline import metrics as pipeline_top_level
 from recidiviz.calculator.pipeline.base_pipeline import (
     BasePipeline,
     PipelineRunDelegate,
@@ -30,7 +32,7 @@ from recidiviz.calculator.pipeline.base_pipeline import (
 
 
 def load_all_pipelines() -> None:
-    """Loads all subclasses of CalculationPipelineRunDelegate."""
+    """Loads all subclasses of MetricPipelineRunDelegate."""
     for _, name, _ in pkgutil.walk_packages(pipeline_top_level.__path__):  # type: ignore
         full_name = f"{pipeline_top_level.__name__}.{name}.pipeline"
         try:

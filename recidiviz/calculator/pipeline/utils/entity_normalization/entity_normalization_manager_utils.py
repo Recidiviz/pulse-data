@@ -23,28 +23,28 @@ from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalizati
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_period_normalization_manager import (
     IncarcerationPeriodNormalizationManager,
+    StateSpecificIncarcerationNormalizationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_supervision_period_index import (
     NormalizedSupervisionPeriodIndex,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.program_assignment_normalization_manager import (
     ProgramAssignmentNormalizationManager,
+    StateSpecificProgramAssignmentNormalizationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_period_normalization_manager import (
+    StateSpecificSupervisionNormalizationDelegate,
     SupervisionPeriodNormalizationManager,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_violation_responses_normalization_manager import (
+    StateSpecificViolationResponseNormalizationDelegate,
     ViolationResponseNormalizationManager,
 )
 from recidiviz.calculator.pipeline.utils.period_utils import (
     find_earliest_date_of_period_ending_in_death,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
-    get_state_specific_incarceration_delegate,
-    get_state_specific_incarceration_period_normalization_delegate,
-    get_state_specific_program_assignment_normalization_delegate,
-    get_state_specific_supervision_period_normalization_delegate,
-    get_state_specific_violation_response_normalization_delegate,
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_incarceration_delegate import (
+    StateSpecificIncarcerationDelegate,
 )
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.state.entities import (
@@ -65,8 +65,10 @@ NORMALIZATION_MANAGERS: List[Type[EntityNormalizationManager]] = [
 ]
 
 
-def entity_normalization_managers_for_calculations(
-    state_code: str,
+def entity_normalization_managers_for_periods(
+    ip_normalization_delegate: StateSpecificIncarcerationNormalizationDelegate,
+    sp_normalization_delegate: StateSpecificSupervisionNormalizationDelegate,
+    incarceration_delegate: StateSpecificIncarcerationDelegate,
     incarceration_periods: Optional[List[StateIncarcerationPeriod]],
     supervision_periods: Optional[List[StateSupervisionPeriod]],
     normalized_violation_responses: Optional[List[StateSupervisionViolationResponse]],
@@ -85,30 +87,18 @@ def entity_normalization_managers_for_calculations(
     entities for some states. Tread carefully if you are implementing any changes to
     SP normalization that may create circular dependencies between these processes.
     """
-    state_ip_normalization_manager_delegate = (
-        get_state_specific_incarceration_period_normalization_delegate(state_code)
-    )
-    state_sp_normalization_manager_delegate = (
-        get_state_specific_supervision_period_normalization_delegate(state_code)
-    )
-    state_incarceration_delegate = get_state_specific_incarceration_delegate(state_code)
-
     if supervision_periods is None:
-        if (
-            state_ip_normalization_manager_delegate.normalization_relies_on_supervision_periods()
-        ):
+        if ip_normalization_delegate.normalization_relies_on_supervision_periods():
             raise ValueError(
-                f"IP normalization for {state_code} relies on "
+                "IP normalization for this state relies on "
                 "StateSupervisionPeriod entities. This pipeline must provide "
                 "supervision_periods to be run on this state."
             )
 
     if normalized_violation_responses is None:
-        if (
-            state_ip_normalization_manager_delegate.normalization_relies_on_violation_responses()
-        ):
+        if ip_normalization_delegate.normalization_relies_on_violation_responses():
             raise ValueError(
-                f"IP normalization for {state_code} relies on "
+                "IP normalization for this state relies on "
                 "StateSupervisionViolationResponse entities. This pipeline must "
                 "provide violation_responses to be run on this state."
             )
@@ -116,19 +106,17 @@ def entity_normalization_managers_for_calculations(
     if supervision_periods is not None and (
         incarceration_sentences is None or supervision_sentences is None
     ):
-        if state_sp_normalization_manager_delegate.normalization_relies_on_sentences():
+        if sp_normalization_delegate.normalization_relies_on_sentences():
             raise ValueError(
-                f"SP normalization for {state_code} relies on "
+                "SP normalization for this state relies on "
                 "StateIncarcerationSentence and StateSupevisionSentence entities."
                 "This pipeline must provide sentences to be run on this state."
             )
 
     if supervision_periods is not None and incarceration_periods is None:
-        if (
-            state_sp_normalization_manager_delegate.normalization_relies_on_incarceration_periods()
-        ):
+        if sp_normalization_delegate.normalization_relies_on_incarceration_periods():
             raise ValueError(
-                f"SP normalization for {state_code} relies on StateIncarcerationPeriod entities."
+                "SP normalization for this state relies on StateIncarcerationPeriod entities."
                 "This pipeline must provide incarceration periods to be run on this state."
             )
 
@@ -149,7 +137,7 @@ def entity_normalization_managers_for_calculations(
     if supervision_periods is not None:
         sp_normalization_manager = SupervisionPeriodNormalizationManager(
             supervision_periods=supervision_periods,
-            delegate=state_sp_normalization_manager_delegate,
+            delegate=sp_normalization_delegate,
             earliest_death_date=earliest_death_date,
             incarceration_sentences=incarceration_sentences,
             supervision_sentences=supervision_sentences,
@@ -163,8 +151,8 @@ def entity_normalization_managers_for_calculations(
     ip_normalization_manager = (
         IncarcerationPeriodNormalizationManager(
             incarceration_periods=incarceration_periods,
-            normalization_delegate=state_ip_normalization_manager_delegate,
-            incarceration_delegate=state_incarceration_delegate,
+            normalization_delegate=ip_normalization_delegate,
+            incarceration_delegate=incarceration_delegate,
             normalized_supervision_period_index=supervision_period_index,
             violation_responses=normalized_violation_responses,
             earliest_death_date=earliest_death_date,
@@ -178,27 +166,26 @@ def entity_normalization_managers_for_calculations(
 
 
 def normalized_violation_responses_for_calculations(
-    state_code: str,
+    violation_response_normalization_delegate: StateSpecificViolationResponseNormalizationDelegate,
     violation_responses: List[StateSupervisionViolationResponse],
 ) -> List[StateSupervisionViolationResponse]:
     """Instantiates the violation response manager and its appropriate delegate. Then
     returns normalized violation responses."""
-
-    delegate = get_state_specific_violation_response_normalization_delegate(state_code)
     violation_response_manager = ViolationResponseNormalizationManager(
-        violation_responses, delegate
+        violation_responses,
+        violation_response_normalization_delegate,
     )
     return violation_response_manager.normalized_violation_responses_for_calculations()
 
 
 def normalized_program_assignments_for_calculations(
-    state_code: str, program_assignments: List[StateProgramAssignment]
+    program_assignment_normalization_delegate: StateSpecificProgramAssignmentNormalizationDelegate,
+    program_assignments: List[StateProgramAssignment],
 ) -> List[StateProgramAssignment]:
     """Instantiates the program assignment manager and its appropriate delegate. Then
     returns normalized program assignments."""
-
-    delegate = get_state_specific_program_assignment_normalization_delegate(state_code)
     program_assignment_manager = ProgramAssignmentNormalizationManager(
-        program_assignments, delegate
+        program_assignments,
+        program_assignment_normalization_delegate,
     )
     return program_assignment_manager.normalized_program_assignments_for_calculations()

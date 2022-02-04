@@ -33,14 +33,14 @@ from recidiviz.calculator.calculation_documentation_generator import (
     StateMetricInfo,
     generate_calculation_documentation,
 )
-from recidiviz.calculator.pipeline.incarceration.metrics import (
+from recidiviz.calculator.pipeline.metrics.incarceration.metrics import (
     IncarcerationAdmissionMetric,
 )
-from recidiviz.calculator.pipeline.program.metrics import ProgramReferralMetric
-from recidiviz.calculator.pipeline.recidivism.metrics import (
+from recidiviz.calculator.pipeline.metrics.program.metrics import ProgramReferralMetric
+from recidiviz.calculator.pipeline.metrics.recidivism.metrics import (
     ReincarcerationRecidivismCountMetric,
 )
-from recidiviz.calculator.pipeline.supervision.metrics import (
+from recidiviz.calculator.pipeline.metrics.supervision.metrics import (
     SupervisionCaseComplianceMetric,
     SupervisionStartMetric,
 )

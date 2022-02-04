@@ -20,7 +20,9 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from dateutil.relativedelta import relativedelta
 
-from recidiviz.calculator.pipeline.supervision.events import SupervisionPopulationEvent
+from recidiviz.calculator.pipeline.metrics.supervision.events import (
+    SupervisionPopulationEvent,
+)
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_supervision_period_index import (
     NormalizedSupervisionPeriodIndex,
 )

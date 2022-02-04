@@ -32,13 +32,19 @@ from typing import Dict, Iterable, List, Optional, Set
 import attr
 import pygtrie
 
-from recidiviz.calculator.pipeline.incarceration import (
+from recidiviz.calculator.pipeline.metrics.incarceration import (
     pipeline as incarceration_pipeline,
 )
-from recidiviz.calculator.pipeline.program import pipeline as program_pipeline
-from recidiviz.calculator.pipeline.recidivism import pipeline as recidivism_pipeline
-from recidiviz.calculator.pipeline.supervision import pipeline as supervision_pipeline
-from recidiviz.calculator.pipeline.violation import pipeline as violation_pipeline
+from recidiviz.calculator.pipeline.metrics.program import pipeline as program_pipeline
+from recidiviz.calculator.pipeline.metrics.recidivism import (
+    pipeline as recidivism_pipeline,
+)
+from recidiviz.calculator.pipeline.metrics.supervision import (
+    pipeline as supervision_pipeline,
+)
+from recidiviz.calculator.pipeline.metrics.violation import (
+    pipeline as violation_pipeline,
+)
 from recidiviz.vendor.modulefinder import modulefinder
 
 PIPELINES = {

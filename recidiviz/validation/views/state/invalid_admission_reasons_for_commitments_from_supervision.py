@@ -23,7 +23,7 @@ classifies admissions as commitments from supervision.
 from typing import List
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.pipeline.incarceration.metrics import (
+from recidiviz.calculator.pipeline.metrics.incarceration.metrics import (
     IncarcerationCommitmentFromSupervisionMetric,
 )
 from recidiviz.calculator.query.state import dataset_config as state_dataset_config

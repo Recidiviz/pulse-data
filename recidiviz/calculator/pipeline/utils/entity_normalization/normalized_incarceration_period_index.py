@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """A class for caching information about a set of incarceration periods that are ready
-for use in the calculation pipelines."""
+for use in the metric calculation pipelines."""
 
 from collections import defaultdict
 from datetime import date
@@ -40,7 +40,7 @@ from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 @attr.s
 class NormalizedIncarcerationPeriodIndex:
     """A class for caching information about a set of normalized incarceration
-    periods for use in the calculation pipelines.
+    periods for use in the metric calculation pipelines.
     """
 
     incarceration_periods: List[StateIncarcerationPeriod] = attr.ib()
