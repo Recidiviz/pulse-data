@@ -15,14 +15,16 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Helper that runs a test version of the pipeline in the provided module."""
-import datetime
-from typing import Any, Callable, Dict, List, Optional, Set, Type
+from typing import Callable, Dict, List, Optional, Set, Type
 
 from apache_beam.options.pipeline_options import PipelineOptions
 from apache_beam.testing.test_pipeline import TestPipeline
 from mock import patch
 
 from recidiviz.calculator.pipeline.base_pipeline import BasePipeline
+from recidiviz.calculator.pipeline.calculation_pipeline import (
+    CalculationPipelineRunDelegate,
+)
 from recidiviz.persistence.database import schema_utils
 from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.tests.calculator.pipeline.fake_bigquery import (
@@ -31,20 +33,11 @@ from recidiviz.tests.calculator.pipeline.fake_bigquery import (
 )
 
 
-def test_pipeline_options() -> Dict[str, str]:
-    """Returns a dictionary of PipelineOptions augmented with the local job_timestamp
-    for the job_id of the test runs."""
-    all_pipeline_options = PipelineOptions().get_all_options()
-
-    job_timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H_%M_%S.%f")
-    all_pipeline_options["job_timestamp"] = job_timestamp
-    return all_pipeline_options
-
-
 def run_test_pipeline(
-    pipeline: BasePipeline,
+    run_delegate: Type[CalculationPipelineRunDelegate],
     state_code: str,
-    dataset: str,
+    project_id: str,
+    dataset_id: str,
     read_from_bq_constructor: Callable[[str], FakeReadFromBigQuery],
     write_to_bq_constructor: Callable[[str, str], FakeWriteToBigQuery],
     include_calculation_limit_args: bool = True,
@@ -53,8 +46,6 @@ def run_test_pipeline(
 ) -> None:
     """Runs a test version of the pipeline in the provided module with BQ I/O mocked out."""
 
-    project_id, dataset_id = dataset.split(".")
-
     def pipeline_constructor(options: PipelineOptions) -> TestPipeline:
         non_default_options = options.get_all_options(drop_default=True)
         expected_non_default_options = {
@@ -62,19 +53,55 @@ def run_test_pipeline(
             "save_main_session": True,
         }
 
-        if not expected_non_default_options == non_default_options:
-            raise ValueError(
-                f"Expected non-default options [{expected_non_default_options}] do not match actual "
-                f"non-default options [{non_default_options}]"
-            )
+        for option in expected_non_default_options:
+            if option not in non_default_options.keys():
+                raise ValueError(
+                    f"Expected non-default option [{option}] not found in"
+                    f"non-default options [{non_default_options}]"
+                )
         return TestPipeline()
 
-    calculation_limit_args: Dict[str, Any] = {}
+    def get_job_id(project_id: str, region: str, job_name: str) -> str:
+        return f"{project_id}-{region}-{job_name}"
+
+    pipeline_args: List[str] = [
+        "--project",
+        project_id,
+        "--data_input",
+        dataset_id,
+        "--reference_view_input",
+        dataset_id,
+        "--static_reference_input",
+        dataset_id,
+        "--output",
+        dataset_id,
+        "--state_code",
+        state_code,
+        "--job_name",
+        "test_job",
+    ]
+
+    if unifying_id_field_filter_set:
+        pipeline_args.extend(
+            [
+                "--person_filter_ids",
+                (
+                    ", ".join(
+                        [str(id_value) for id_value in unifying_id_field_filter_set]
+                    )
+                ),
+            ]
+        )
+
     if include_calculation_limit_args:
-        calculation_limit_args = {
-            "calculation_end_month": None,
-            "calculation_month_count": -1,
-        }
+        pipeline_args.extend(["--calculation_month_count", "-1"])
+
+    pipeline_args.append("--metric_types")
+    if metric_types_filter:
+        for metric in metric_types_filter:
+            pipeline_args.append(metric)
+    else:
+        pipeline_args.append("ALL")
 
     with patch(
         "recidiviz.calculator.pipeline.utils.beam_utils.extractor_utils.ReadFromBigQuery",
@@ -86,34 +113,24 @@ def run_test_pipeline(
             read_from_bq_constructor,
         ):
             with patch(
-                "recidiviz.calculator.pipeline.base_pipeline.WriteAppendToBigQuery",
+                "recidiviz.calculator.pipeline.calculation_pipeline"
+                ".WriteAppendToBigQuery",
                 write_to_bq_constructor,
             ):
                 with patch(
                     "recidiviz.calculator.pipeline.base_pipeline.beam.Pipeline",
                     pipeline_constructor,
                 ):
-                    metric_types = (
-                        list(metric_types_filter) if metric_types_filter else ["ALL"]
-                    )
-                    person_filter_ids = (
-                        list(unifying_id_field_filter_set)
-                        if unifying_id_field_filter_set
-                        else None
-                    )
-                    pipeline.run(  # type: ignore[attr-defined]
-                        apache_beam_pipeline_options=PipelineOptions(
-                            project=project_id
-                        ),
-                        data_input=dataset_id,
-                        reference_view_input=dataset_id,
-                        static_reference_input=dataset_id,
-                        output=dataset,
-                        metric_types=metric_types,
-                        state_code=state_code,
-                        person_filter_ids=person_filter_ids,
-                        **calculation_limit_args,
-                    )
+                    with patch(
+                        "recidiviz.calculator.pipeline.calculation_pipeline.job_id",
+                        get_job_id,
+                    ):
+                        pipeline = BasePipeline(
+                            pipeline_run_delegate=run_delegate.build_from_args(
+                                pipeline_args
+                            )
+                        )
+                        pipeline.run()
 
 
 def default_data_dict_for_root_schema_classes(

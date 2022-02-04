@@ -21,14 +21,23 @@ from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 from unittest import mock
 
 import apache_beam as beam
+from apache_beam.options.pipeline_options import PipelineOptions
 from apache_beam.testing.test_pipeline import TestPipeline
 from apache_beam.testing.util import BeamAssertException, assert_that, equal_to
 
-from recidiviz.calculator.pipeline.base_pipeline import ClassifyEvents, ProduceMetrics
+from recidiviz.calculator.pipeline.calculation_pipeline import (
+    CalculationPipelineJobArgs,
+    ClassifyEvents,
+    ProduceMetrics,
+)
+from recidiviz.calculator.pipeline.pipeline_type import PipelineType
 from recidiviz.calculator.pipeline.utils.beam_utils.person_utils import (
     PERSON_EVENTS_KEY,
     PERSON_METADATA_KEY,
     ExtractPersonEventsMetadata,
+)
+from recidiviz.calculator.pipeline.utils.beam_utils.pipeline_args_utils import (
+    derive_apache_beam_pipeline_args,
 )
 from recidiviz.calculator.pipeline.utils.metric_utils import PersonMetadata
 from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_violation_response_normalization_delegate import (
@@ -39,11 +48,16 @@ from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_viola
 )
 from recidiviz.calculator.pipeline.violation.events import ViolationWithResponseEvent
 from recidiviz.calculator.pipeline.violation.identifier import ViolationIdentifier
+from recidiviz.calculator.pipeline.violation.metric_producer import (
+    ViolationMetricProducer,
+)
 from recidiviz.calculator.pipeline.violation.metrics import (
     ViolationMetric,
     ViolationMetricType,
 )
-from recidiviz.calculator.pipeline.violation.pipeline import ViolationPipeline
+from recidiviz.calculator.pipeline.violation.pipeline import (
+    ViolationPipelineRunDelegate,
+)
 from recidiviz.common.constants.person_characteristics import Ethnicity, Gender, Race
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
@@ -66,7 +80,6 @@ from recidiviz.tests.calculator.pipeline.fake_bigquery import (
 from recidiviz.tests.calculator.pipeline.utils.run_pipeline_test_utils import (
     default_data_dict_for_root_schema_classes,
     run_test_pipeline,
-    test_pipeline_options,
 )
 
 ALL_METRIC_INCLUSIONS_DICT = {metric_type: True for metric_type in ViolationMetricType}
@@ -210,13 +223,15 @@ class TestViolationPipeline(unittest.TestCase):
 
     def run_test_pipeline(
         self,
-        dataset: str,
         data_dict: DataTablesDict,
         expected_metric_types: Set[ViolationMetricType],
         unifying_id_field_filter_set: Optional[Set[int]] = None,
         metric_types_filter: Optional[Set[str]] = None,
     ) -> None:
         """Runs a test version of the violation pipeline."""
+        project = "project"
+        dataset = "dataset"
+
         read_from_bq_constructor = (
             self.fake_bq_source_factory.create_fake_bq_source_constructor(
                 dataset, data_dict
@@ -228,9 +243,10 @@ class TestViolationPipeline(unittest.TestCase):
             )
         )
         run_test_pipeline(
-            pipeline=ViolationPipeline(),
+            run_delegate=ViolationPipelineRunDelegate,
             state_code="US_XX",
-            dataset=dataset,
+            project_id=project,
+            dataset_id=dataset,
             read_from_bq_constructor=read_from_bq_constructor,
             write_to_bq_constructor=write_to_bq_constructor,
             unifying_id_field_filter_set=unifying_id_field_filter_set,
@@ -238,15 +254,13 @@ class TestViolationPipeline(unittest.TestCase):
         )
 
     def testViolationPipeline(self) -> None:
-        """Tests the violaitons pipeline."""
+        """Tests the violation pipeline."""
         data_dict = self.build_data_dict(
             fake_person_id=12345, fake_supervision_violation_id=23456
         )
 
-        dataset = "recidiviz-123.state"
-
         self.run_test_pipeline(
-            dataset, data_dict, expected_metric_types={ViolationMetricType.VIOLATION}
+            data_dict, expected_metric_types={ViolationMetricType.VIOLATION}
         )
 
     def testViolationPipelineWithFilterSet(self) -> None:
@@ -255,10 +269,7 @@ class TestViolationPipeline(unittest.TestCase):
             fake_person_id=12345, fake_supervision_violation_id=23456
         )
 
-        dataset = "recidiviz-123.state"
-
         self.run_test_pipeline(
-            dataset,
             data_dict,
             expected_metric_types={ViolationMetricType.VIOLATION},
             unifying_id_field_filter_set={12345},
@@ -276,13 +287,7 @@ class TestViolationPipeline(unittest.TestCase):
             schema.StateSupervisionViolationResponseDecisionEntry.__tablename__
         ] = []
 
-        dataset = "recidiviz-123.state"
-
-        self.run_test_pipeline(
-            dataset,
-            data_dict,
-            expected_metric_types=set(),
-        )
+        self.run_test_pipeline(data_dict, expected_metric_types=set())
 
 
 class TestClassifyViolationEvents(unittest.TestCase):
@@ -450,7 +455,42 @@ class TestProduceViolationMetrics(unittest.TestCase):
         self.fake_supervision_violation_id = 23456
 
         self.person_metadata = PersonMetadata(prioritized_race_or_ethnicity="ASIAN")
-        self.pipeline_config = ViolationPipeline().pipeline_config
+
+        self.job_id_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.calculation_pipeline.job_id"
+        )
+        self.mock_job_id = self.job_id_patcher.start()
+        self.mock_job_id.return_value = "job_id"
+
+        self.metric_producer = ViolationMetricProducer()
+        self.pipeline_type = PipelineType.VIOLATION
+
+        default_beam_args: List[str] = [
+            "--project",
+            "project",
+            "--job_name",
+            "test",
+        ]
+
+        beam_pipeline_options = PipelineOptions(
+            derive_apache_beam_pipeline_args(default_beam_args)
+        )
+
+        self.pipeline_job_args = CalculationPipelineJobArgs(
+            state_code="US_XX",
+            project_id="project",
+            input_dataset="dataset_id",
+            reference_dataset="dataset_id",
+            static_reference_dataset="dataset_id",
+            output_dataset="dataset_id",
+            metric_inclusions=ALL_METRIC_INCLUSIONS_DICT,
+            region="region",
+            job_name="job",
+            person_id_filter_set=None,
+            calculation_end_month=None,
+            calculation_month_count=-1,
+            apache_beam_pipeline_options=beam_pipeline_options,
+        )
 
     def testProduceViolationMetrics(self) -> None:
         """Tests the ProduceViolationMetrics DoFn."""
@@ -496,11 +536,9 @@ class TestProduceViolationMetrics(unittest.TestCase):
             | "Produce Violation Metrics"
             >> beam.ParDo(
                 ProduceMetrics(),
-                self.pipeline_config,
-                ALL_METRIC_INCLUSIONS_DICT,
-                test_pipeline_options(),
-                None,
-                -1,
+                self.pipeline_job_args,
+                self.metric_producer,
+                self.pipeline_type,
             )
         )
 
@@ -524,11 +562,9 @@ class TestProduceViolationMetrics(unittest.TestCase):
             | "Produce ViolationMetrics"
             >> beam.ParDo(
                 ProduceMetrics(),
-                self.pipeline_config,
-                ALL_METRIC_INCLUSIONS_DICT,
-                test_pipeline_options(),
-                None,
-                -1,
+                self.pipeline_job_args,
+                self.metric_producer,
+                self.pipeline_type,
             )
         )
 

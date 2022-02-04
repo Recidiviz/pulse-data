@@ -29,7 +29,7 @@ from recidiviz.common.date import year_and_month_for_today
 from recidiviz.persistence.entity.state.entities import StatePerson
 
 
-def get_job_id(pipeline_options: Dict[str, str]) -> str:
+def get_job_id(project_id: str, region: str, job_name: str) -> str:
     """Captures the job_id of the pipeline job specified by the given options.
 
     For local jobs, generates a job_id using the given job_timestamp. For jobs
@@ -38,86 +38,54 @@ def get_job_id(pipeline_options: Dict[str, str]) -> str:
     with the same job name running on Dataflow at a time.
 
     Args:
-        pipeline_options: Dictionary containing details about the pipeline.
+        project_id: The project the job is being run in
+        region: The region the job is being run in
+        job_name: The name of the running job
 
     Returns:
         The job_id string of the current pipeline job.
 
     """
-    runner = pipeline_options.get("runner")
+    try:
+        logging.info("Looking for job_id on Dataflow.")
 
-    if runner == "DataflowRunner":
-        # Job is running on Dataflow. Get job_id.
-        project = pipeline_options.get("project")
-        region = pipeline_options.get("region")
-        job_name = pipeline_options.get("job_name")
+        service_name = "dataflow"
+        dataflow_api_version = "v1b3"
+        credentials = GoogleCredentials.get_application_default()
 
-        if not project:
-            raise ValueError(
-                "No project provided in pipeline options: " f"{pipeline_options}"
+        dataflow = build(
+            serviceName=service_name,
+            version=dataflow_api_version,
+            credentials=credentials,
+        )
+
+        result = (
+            dataflow.projects()
+            .locations()
+            .jobs()
+            .list(
+                projectId=project_id,
+                location=region,
             )
-        if not region:
-            raise ValueError(
-                "No region provided in pipeline options: " f"{pipeline_options}"
-            )
-        if not job_name:
-            raise ValueError(
-                "No job_name provided in pipeline options: " f"{pipeline_options}"
-            )
+            .execute()
+        )
 
-        try:
-            logging.info("Looking for job_id on Dataflow.")
+        pipeline_job_id = "none"
 
-            service_name = "dataflow"
-            dataflow_api_version = "v1b3"
-            credentials = GoogleCredentials.get_application_default()
+        for job in result["jobs"]:
+            if job["name"] == job_name:
+                if job["currentState"] == "JOB_STATE_RUNNING":
+                    pipeline_job_id = job["id"]
+                break
 
-            dataflow = build(
-                serviceName=service_name,
-                version=dataflow_api_version,
-                credentials=credentials,
-            )
+        if pipeline_job_id == "none":
+            msg = f"Could not find currently running job with the name: {job_name}."
+            logging.error(msg)
+            raise LookupError(msg)
 
-            result = (
-                dataflow.projects()
-                .locations()
-                .jobs()
-                .list(
-                    projectId=project,
-                    location=region,
-                )
-                .execute()
-            )
-
-            pipeline_job_id = "none"
-
-            for job in result["jobs"]:
-                if job["name"] == job_name:
-                    if job["currentState"] == "JOB_STATE_RUNNING":
-                        pipeline_job_id = job["id"]
-                    break
-
-            if pipeline_job_id == "none":
-                msg = (
-                    "Could not find currently running job with the "
-                    f"name: {job_name}."
-                )
-                logging.error(msg)
-                raise LookupError(msg)
-
-        except Exception as e:
-            logging.error("Error retrieving Job ID")
-            raise LookupError(e) from e
-
-    else:
-        # Job is running locally. Generate id from the timestamp.
-        pipeline_job_id = "_local_job"
-        job_timestamp = pipeline_options.get("job_timestamp")
-
-        if not job_timestamp:
-            raise ValueError("Must provide a job_timestamp for local jobs.")
-
-        pipeline_job_id = job_timestamp + pipeline_job_id
+    except Exception as e:
+        logging.error("Error retrieving Job ID")
+        raise LookupError(e) from e
 
     return pipeline_job_id
 
@@ -211,17 +179,19 @@ def person_and_kwargs_for_identifier(
 
 
 def select_all_by_person_query(
+    project_id: str,
     dataset: str,
     table: str,
     state_code_filter: str,
     person_id_filter_set: Optional[Set[int]],
 ) -> str:
     return select_query(
-        dataset, table, state_code_filter, "person_id", person_id_filter_set
+        project_id, dataset, table, state_code_filter, "person_id", person_id_filter_set
     )
 
 
 def select_query(
+    project_id: str,
     dataset: str,
     table: str,
     state_code_filter: str,
@@ -239,7 +209,8 @@ def select_query(
         columns_to_include = ["*"]
 
     entity_query = (
-        f"SELECT {', '.join(columns_to_include)} FROM `{dataset}.{table}` WHERE "
+        f"SELECT {', '.join(columns_to_include)} FROM "
+        f"`{project_id}.{dataset}.{table}` WHERE "
         f"state_code IN ('{state_code_filter}')"
     )
 

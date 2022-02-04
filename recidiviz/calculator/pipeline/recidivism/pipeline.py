@@ -20,7 +20,12 @@ for details on how to launch a local run.
 
 from __future__ import absolute_import
 
-from recidiviz.calculator.pipeline.base_pipeline import BasePipeline, PipelineConfig
+from recidiviz.calculator.pipeline.base_identifier import BaseIdentifier
+from recidiviz.calculator.pipeline.base_metric_producer import BaseMetricProducer
+from recidiviz.calculator.pipeline.base_pipeline import PipelineConfig
+from recidiviz.calculator.pipeline.calculation_pipeline import (
+    CalculationPipelineRunDelegate,
+)
 from recidiviz.calculator.pipeline.pipeline_type import PipelineType
 from recidiviz.calculator.pipeline.recidivism import identifier, metric_producer
 from recidiviz.calculator.query.state.views.reference.persons_to_recent_county_of_residence import (
@@ -29,14 +34,13 @@ from recidiviz.calculator.query.state.views.reference.persons_to_recent_county_o
 from recidiviz.persistence.entity.state import entities
 
 
-class RecidivismPipeline(BasePipeline):
+class RecidivismPipelineRunDelegate(CalculationPipelineRunDelegate):
     """Defines the recidivism calculation pipeline."""
 
-    def __init__(self) -> None:
-        self.pipeline_config = PipelineConfig(
+    @classmethod
+    def pipeline_config(cls) -> PipelineConfig:
+        return PipelineConfig(
             pipeline_type=PipelineType.RECIDIVISM,
-            identifier=identifier.RecidivismIdentifier(),
-            metric_producer=metric_producer.RecidivismMetricProducer(),
             required_entities=[
                 entities.StatePerson,
                 entities.StatePersonRace,
@@ -48,4 +52,15 @@ class RecidivismPipeline(BasePipeline):
             required_reference_tables=[PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME],
             state_specific_required_reference_tables={},
         )
-        self.include_calculation_limit_args = False
+
+    @classmethod
+    def identifier(cls) -> BaseIdentifier:
+        return identifier.RecidivismIdentifier()
+
+    @classmethod
+    def metric_producer(cls) -> BaseMetricProducer:
+        return metric_producer.RecidivismMetricProducer()
+
+    @classmethod
+    def include_calculation_limit_args(cls) -> bool:
+        return False

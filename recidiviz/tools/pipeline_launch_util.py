@@ -23,14 +23,14 @@ import pkgutil
 from typing import List
 
 from recidiviz.calculator import pipeline as pipeline_top_level
-from recidiviz.calculator.pipeline.base_pipeline import BasePipeline
-from recidiviz.calculator.pipeline.utils.beam_utils.pipeline_args_utils import (
-    get_apache_beam_pipeline_options_from_args,
+from recidiviz.calculator.pipeline.base_pipeline import (
+    BasePipeline,
+    PipelineRunDelegate,
 )
 
 
 def load_all_pipelines() -> None:
-    """Loads all subclasses of BasePipeline."""
+    """Loads all subclasses of CalculationPipelineRunDelegate."""
     for _, name, _ in pkgutil.walk_packages(pipeline_top_level.__path__):  # type: ignore
         full_name = f"{pipeline_top_level.__name__}.{name}.pipeline"
         try:
@@ -39,21 +39,15 @@ def load_all_pipelines() -> None:
             continue
 
 
-def get_pipeline(pipeline: str) -> BasePipeline:
-    """Returns the calculation pipeline module corresponding to the given pipeline type."""
-    for subclass in BasePipeline.__subclasses__():
-        instance = subclass()  # type: ignore
-        if instance.pipeline_config.pipeline_type.value.lower() == pipeline:
-            return instance
+def _delegate_cls_for_pipeline_name(pipeline_name: str) -> PipelineRunDelegate:
+    pipeline_module = f"{pipeline_top_level.__name__}.{pipeline_name}.pipeline"
+    delegate_name = f"{pipeline_name.capitalize()}PipelineRunDelegate"
 
-    raise ValueError(f"Unexpected pipeline {pipeline}")
+    return getattr(importlib.import_module(pipeline_module), delegate_name)
 
 
-def run_pipeline(pipeline: BasePipeline, argv: List[str]) -> None:
+def run_pipeline(pipeline_name: str, argv: List[str]) -> None:
     """Runs the given pipeline_module with the arguments contained in argv."""
-    known_args, remaining_args = pipeline.get_arg_parser().parse_known_args(argv)
-    apache_beam_pipeline_options = get_apache_beam_pipeline_options_from_args(
-        remaining_args
-    )
-
-    pipeline.run(apache_beam_pipeline_options, **vars(known_args))
+    delegate_cls = _delegate_cls_for_pipeline_name(pipeline_name)
+    pipeline = BasePipeline(pipeline_run_delegate=delegate_cls.build_from_args(argv))
+    pipeline.run()
