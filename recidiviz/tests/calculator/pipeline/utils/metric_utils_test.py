@@ -52,7 +52,7 @@ from recidiviz.calculator.pipeline.metrics.supervision.metrics import (
 from recidiviz.calculator.pipeline.utils.metric_utils import (
     json_serializable_metric_key,
 )
-from recidiviz.common.constants.person_characteristics import Gender
+from recidiviz.common.constants.shared_enums.person_characteristics import Gender
 
 
 class TestJsonSerializableMetricKey(unittest.TestCase):

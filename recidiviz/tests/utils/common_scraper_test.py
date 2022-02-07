@@ -23,7 +23,7 @@ import yaml
 from lxml import html
 from mock import patch
 
-from recidiviz.common.constants.person_characteristics import (
+from recidiviz.common.constants.shared_enums.person_characteristics import (
     ETHNICITY_MAP,
     Ethnicity,
     Race,

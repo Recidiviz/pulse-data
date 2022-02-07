@@ -25,7 +25,10 @@ from more_itertools import one
 from recidiviz.calculator.pipeline.utils.event_utils import IdentifierEvent
 from recidiviz.calculator.pipeline.utils.metric_utils import PersonMetadata
 from recidiviz.common.attr_mixins import BuildableAttr
-from recidiviz.common.constants.person_characteristics import Ethnicity, Race
+from recidiviz.common.constants.shared_enums.person_characteristics import (
+    Ethnicity,
+    Race,
+)
 from recidiviz.persistence.entity.state.entities import StatePerson
 
 PERSON_EVENTS_KEY = "PERSON_EVENTS"

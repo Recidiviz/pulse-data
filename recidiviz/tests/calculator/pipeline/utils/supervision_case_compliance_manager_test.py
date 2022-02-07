@@ -42,7 +42,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_com
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_delegate import (
     UsNdSupervisionDelegate,
 )
-from recidiviz.common.constants.person_characteristics import Gender
+from recidiviz.common.constants.shared_enums.person_characteristics import Gender
 from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentLevel,
     StateAssessmentType,

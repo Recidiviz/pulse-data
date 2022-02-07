@@ -20,11 +20,11 @@ data parsing, i.e. both scrapers and direct ingest controllers.
 
 from typing import Optional, cast
 
-from recidiviz.common.constants.bond import BondStatus, BondType
-from recidiviz.common.constants.charge import ChargeStatus
+from recidiviz.common.constants.county.bond import BondStatus, BondType
 from recidiviz.common.constants.county.charge import ChargeClass
 from recidiviz.common.constants.enum_overrides import EnumOverrides
-from recidiviz.common.constants.person_characteristics import (
+from recidiviz.common.constants.shared_enums.charge import ChargeStatus
+from recidiviz.common.constants.shared_enums.person_characteristics import (
     ETHNICITY_MAP,
     Ethnicity,
     Race,

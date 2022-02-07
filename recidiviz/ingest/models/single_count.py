@@ -21,7 +21,11 @@ from typing import Optional
 
 import attr
 
-from recidiviz.common.constants.person_characteristics import Ethnicity, Gender, Race
+from recidiviz.common.constants.shared_enums.person_characteristics import (
+    Ethnicity,
+    Gender,
+    Race,
+)
 from recidiviz.ingest.models.model_utils import date_converter_or_today
 
 

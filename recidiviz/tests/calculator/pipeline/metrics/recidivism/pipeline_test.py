@@ -67,7 +67,7 @@ from recidiviz.calculator.pipeline.utils.beam_utils.pipeline_args_utils import (
     derive_apache_beam_pipeline_args,
 )
 from recidiviz.calculator.pipeline.utils.metric_utils import PersonMetadata
-from recidiviz.common.constants.person_characteristics import (
+from recidiviz.common.constants.shared_enums.person_characteristics import (
     Ethnicity,
     Gender,
     Race,

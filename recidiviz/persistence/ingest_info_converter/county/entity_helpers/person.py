@@ -19,7 +19,11 @@
 import re
 from typing import Optional
 
-from recidiviz.common.constants.person_characteristics import Ethnicity, Gender, Race
+from recidiviz.common.constants.shared_enums.person_characteristics import (
+    Ethnicity,
+    Gender,
+    Race,
+)
 from recidiviz.common.str_field_utils import normalize
 from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
     fn,

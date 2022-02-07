@@ -40,7 +40,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_del
 )
 
 # pylint: disable=protected-access
-from recidiviz.common.constants.person_characteristics import Gender
+from recidiviz.common.constants.shared_enums.person_characteristics import Gender
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_supervision_contact import (

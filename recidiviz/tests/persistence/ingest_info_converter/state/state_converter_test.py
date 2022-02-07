@@ -19,8 +19,11 @@ import datetime
 import unittest
 from typing import List
 
-from recidiviz.common.constants.charge import ChargeStatus
-from recidiviz.common.constants.person_characteristics import Ethnicity, Race
+from recidiviz.common.constants.shared_enums.charge import ChargeStatus
+from recidiviz.common.constants.shared_enums.person_characteristics import (
+    Ethnicity,
+    Race,
+)
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import StateAssessmentClass
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType

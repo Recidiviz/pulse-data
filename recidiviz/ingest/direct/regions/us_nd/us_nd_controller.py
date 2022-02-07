@@ -21,9 +21,9 @@ from typing import Dict, List, Optional, Tuple, cast
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
 from recidiviz.common import ncic
-from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.enum_overrides import EnumOverrides
-from recidiviz.common.constants.person_characteristics import Ethnicity
+from recidiviz.common.constants.shared_enums.charge import ChargeStatus
+from recidiviz.common.constants.shared_enums.person_characteristics import Ethnicity
 from recidiviz.common.constants.state.external_id_types import (
     US_ND_ELITE,
     US_ND_ELITE_BOOKING,

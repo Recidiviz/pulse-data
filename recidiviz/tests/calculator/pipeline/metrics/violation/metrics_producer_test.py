@@ -33,7 +33,11 @@ from recidiviz.calculator.pipeline.metrics.violation.metrics import (
     ViolationMetricType,
 )
 from recidiviz.calculator.pipeline.utils.metric_utils import PersonMetadata
-from recidiviz.common.constants.person_characteristics import Ethnicity, Gender, Race
+from recidiviz.common.constants.shared_enums.person_characteristics import (
+    Ethnicity,
+    Gender,
+    Race,
+)
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )

@@ -22,11 +22,11 @@ from typing import List
 
 import attr
 
-from recidiviz.common.constants.bond import BondStatus, BondType
-from recidiviz.common.constants.charge import ChargeStatus
+from recidiviz.common.constants.county.bond import BondStatus, BondType
 from recidiviz.common.constants.county.booking import CustodyStatus
 from recidiviz.common.constants.county.hold import HoldStatus
 from recidiviz.common.constants.county.sentence import SentenceStatus
+from recidiviz.common.constants.shared_enums.charge import ChargeStatus
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo
 from recidiviz.persistence.entity.county import entities as county_entities

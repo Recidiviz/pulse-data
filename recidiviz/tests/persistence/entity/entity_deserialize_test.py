@@ -26,7 +26,7 @@ from recidiviz.common.constants.defaulting_and_normalizing_enum_parser import (
 )
 from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.constants.enum_parser import EnumParser, EnumParsingError
-from recidiviz.common.constants.person_characteristics import Race
+from recidiviz.common.constants.shared_enums.person_characteristics import Race
 from recidiviz.common.constants.strict_enum_parser import StrictEnumParser
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_deserialize import (

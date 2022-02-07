@@ -24,7 +24,11 @@ from recidiviz.common.constants.entity_enum import (
     EnumParsingError,
 )
 from recidiviz.common.constants.enum_overrides import EnumOverrides
-from recidiviz.common.constants.person_characteristics import Ethnicity, Gender, Race
+from recidiviz.common.constants.shared_enums.person_characteristics import (
+    Ethnicity,
+    Gender,
+    Race,
+)
 from recidiviz.common.constants.strict_enum_parser import StrictEnumParser
 
 

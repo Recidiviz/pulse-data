@@ -20,7 +20,10 @@ from recidiviz.common.constants.defaulting_and_normalizing_enum_parser import (
     DefaultingAndNormalizingEnumParser,
 )
 from recidiviz.common.constants.enum_overrides import EnumOverrides
-from recidiviz.common.constants.person_characteristics import Gender, ResidencyStatus
+from recidiviz.common.constants.shared_enums.person_characteristics import (
+    Gender,
+    ResidencyStatus,
+)
 from recidiviz.common.constants.strict_enum_parser import StrictEnumParser
 from recidiviz.common.ingest_metadata import LegacyStateAndJailsIngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import StatePerson

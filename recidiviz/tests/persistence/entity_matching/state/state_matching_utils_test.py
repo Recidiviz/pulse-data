@@ -17,8 +17,8 @@
 """Tests for state_matching_utils.py"""
 import datetime
 
-from recidiviz.common.constants.charge import ChargeStatus
-from recidiviz.common.constants.person_characteristics import Gender
+from recidiviz.common.constants.shared_enums.charge import ChargeStatus
+from recidiviz.common.constants.shared_enums.person_characteristics import Gender
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,

@@ -17,10 +17,9 @@
 """Tests for CountyHistoricalSnapshotUpdater"""
 
 import datetime
-from typing import Dict, Type, Optional
+from typing import Dict, Optional, Type
 
-from recidiviz.common.constants.bond import BondStatus, BondType
-from recidiviz.common.constants.charge import ChargeStatus
+from recidiviz.common.constants.county.bond import BondStatus, BondType
 from recidiviz.common.constants.county.booking import (
     AdmissionReason,
     Classification,
@@ -30,7 +29,8 @@ from recidiviz.common.constants.county.booking import (
 from recidiviz.common.constants.county.charge import ChargeClass, ChargeDegree
 from recidiviz.common.constants.county.hold import HoldStatus
 from recidiviz.common.constants.county.sentence import SentenceStatus
-from recidiviz.common.constants.person_characteristics import (
+from recidiviz.common.constants.shared_enums.charge import ChargeStatus
+from recidiviz.common.constants.shared_enums.person_characteristics import (
     Ethnicity,
     Gender,
     Race,

@@ -30,7 +30,7 @@ import sqlalchemy
 from mock import Mock, patch
 from opencensus.stats.measurement_map import MeasurementMap
 
-from recidiviz.common.constants.person_characteristics import Gender, Race
+from recidiviz.common.constants.shared_enums.person_characteristics import Gender, Race
 from recidiviz.common.constants.state.state_assessment import StateAssessmentClass
 from recidiviz.common.constants.state.state_person_alias import StatePersonAliasType
 from recidiviz.common.constants.state.state_program_assignment import (

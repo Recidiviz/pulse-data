@@ -73,7 +73,7 @@ from recidiviz.calculator.pipeline.utils.supervision_case_compliance_manager imp
 from recidiviz.calculator.pipeline.utils.supervision_level_policy import (
     SupervisionLevelPolicy,
 )
-from recidiviz.common.constants.person_characteristics import Gender
+from recidiviz.common.constants.shared_enums.person_characteristics import Gender
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactLocation,

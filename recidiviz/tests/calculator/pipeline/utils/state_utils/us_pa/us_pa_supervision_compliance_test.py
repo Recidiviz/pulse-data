@@ -33,7 +33,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_supervision_com
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_supervision_delegate import (
     UsPaSupervisionDelegate,
 )
-from recidiviz.common.constants.person_characteristics import Gender
+from recidiviz.common.constants.shared_enums.person_characteristics import Gender
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType
 
 # pylint: disable=protected-access
