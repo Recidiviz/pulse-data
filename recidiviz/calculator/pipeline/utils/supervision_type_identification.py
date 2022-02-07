@@ -85,6 +85,12 @@ def sentence_supervision_type_to_supervision_periods_supervision_type(
         return StateSupervisionPeriodSupervisionType.PROBATION
     if (
         sentence_supervision_type
+        == StateSupervisionSentenceSupervisionType.COMMUNITY_CORRECTIONS
+    ):
+        # TODO(#9421): update mapping, when community centers are standardized.
+        return StateSupervisionPeriodSupervisionType.COMMUNITY_CONFINEMENT
+    if (
+        sentence_supervision_type
         == StateSupervisionSentenceSupervisionType.EXTERNAL_UNKNOWN
     ):
         return StateSupervisionPeriodSupervisionType.EXTERNAL_UNKNOWN

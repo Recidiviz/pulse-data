@@ -142,6 +142,9 @@ output:
                         - WK  # Workhouse
                       StateIncarcerationType.STATE_PRISON:
                         - TD  # TDOC
+                      StateIncarcerationType.EXTERNAL_UNKNOWN:
+                        # TODO(#11015): Change to `INTERNAL_UNKNOWN` once it exists.
+                        - CC  # There are only 41 instances
                 start_date: SentenceEffectiveDate
                 date_imposed: SentenceImposeDate
                 projected_min_release_date: EarliestPossibleReleaseDate
