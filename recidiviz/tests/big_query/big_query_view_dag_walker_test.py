@@ -22,11 +22,15 @@ import re
 import threading
 import time
 import unittest
-from typing import Dict, Set
+from typing import Dict, List, Set, Tuple
 from unittest.mock import patch
 
 from recidiviz.big_query.big_query_table_checker import BigQueryTableChecker
-from recidiviz.big_query.big_query_view import BigQueryAddress, BigQueryView
+from recidiviz.big_query.big_query_view import (
+    BigQueryAddress,
+    BigQueryView,
+    BigQueryViewBuilder,
+)
 from recidiviz.big_query.big_query_view_dag_walker import (
     BigQueryViewDagNode,
     BigQueryViewDagWalker,
@@ -35,6 +39,7 @@ from recidiviz.big_query.big_query_view_dag_walker import (
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import (
     DirectIngestRegionRawFileConfig,
 )
+from recidiviz.utils.environment import GCP_PROJECTS
 from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
 from recidiviz.view_registry.deployed_views import all_deployed_view_builders
 
@@ -227,6 +232,69 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
 
         result = walker.process_dag(process_check_parents)
         self.assertEqual(len(self.all_views), len(result))
+
+    def test_children_match_parent_projects_to_deploy(self) -> None:
+        """Checks that if any parents have the projects_to_deploy field set, all
+        children have equal or more restrictive projects.
+        """
+        builders_by_address: Dict[Tuple[str, str], BigQueryViewBuilder] = {
+            (b.dataset_id, b.view_id): b for b in all_deployed_view_builders()
+        }
+
+        walker = BigQueryViewDagWalker(self.all_views)
+
+        failing_views: Dict[BigQueryViewBuilder, Set[str]] = {}
+
+        def process_check_using_materialized(
+            view: BigQueryView, parent_results: Dict[BigQueryView, Set[str]]
+        ) -> Set[str]:
+            view_builder = builders_by_address[
+                (view.address.dataset_id, view.address.table_id)
+            ]
+
+            parent_constraints: List[Set[str]] = [
+                parent_projects_to_deploy
+                for parent_projects_to_deploy in parent_results.values()
+                if parent_projects_to_deploy is not None
+            ]
+            view_projects_to_deploy = (
+                view_builder.projects_to_deploy
+                if view_builder.projects_to_deploy is not None
+                else {*GCP_PROJECTS}
+            )
+            if not parent_constraints:
+                # If the parents have no constraints, constraints are just those on
+                # this view.
+                return view_projects_to_deploy
+
+            # This view can only be deployed to all the projects that its parents allow
+            expected_projects_to_deploy = set.intersection(*parent_constraints)
+
+            extra_projects = view_projects_to_deploy - expected_projects_to_deploy
+
+            if extra_projects:
+                failing_views[view_builder] = expected_projects_to_deploy
+
+            return expected_projects_to_deploy.intersection(view_projects_to_deploy)
+
+        result = walker.process_dag(process_check_using_materialized)
+        self.assertEqual(len(self.all_views), len(result))
+
+        if failing_views:
+
+            error_message_rows = []
+            for view_builder, expected in failing_views.items():
+                error_message_rows.append(
+                    f"\t{view_builder.dataset_id}.{view_builder.view_id} - "
+                    f"allowed projects: {expected}"
+                )
+
+            error_message_rows_str = "\n".join(error_message_rows)
+            error_message = f"""
+The following views have less restrictive projects_to_deploy than their parents:
+{error_message_rows_str}
+"""
+            raise ValueError(error_message)
 
     def test_dag_returns_parent_results(self) -> None:
         walker = BigQueryViewDagWalker(self.all_views)
