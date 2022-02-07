@@ -102,7 +102,14 @@ DASHBOARD_USER_RESTRICTIONS_QUERY_TEMPLATE = """
             TO_JSON_STRING(STRUCT(
                 community_projections,
                 facilities_projections,
-                community_practices
+                community_practices,
+                system_libertyToPrison,
+                system_prison,
+                system_prisonToSupervision,
+                system_supervision,
+                system_supervisionToLiberty,
+                system_supervisionToPrison,
+                operations
             )) AS routes
         FROM
             `{project_id}.{static_reference_dataset_id}.us_nd_leadership_users` leadership
