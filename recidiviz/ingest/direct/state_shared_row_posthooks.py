@@ -26,7 +26,7 @@ from typing import Callable, Dict, List, Optional, Type, Union
 
 import attr
 
-from recidiviz.common.constants.person_characteristics import Ethnicity
+from recidiviz.common.constants.shared_enums.person_characteristics import Ethnicity
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_person_alias import StatePersonAliasType
 from recidiviz.ingest.direct.direct_ingest_controller_utils import create_if_not_exists

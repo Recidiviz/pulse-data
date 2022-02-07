@@ -17,7 +17,7 @@
 """Converts an ingest_info proto Bond to a persistence entity."""
 from typing import Optional, cast
 
-from recidiviz.common.constants.bond import BondStatus, BondType
+from recidiviz.common.constants.county.bond import BondStatus, BondType
 from recidiviz.common.ingest_metadata import LegacyStateAndJailsIngestMetadata
 from recidiviz.common.str_field_utils import normalize
 from recidiviz.persistence.entity.county import entities

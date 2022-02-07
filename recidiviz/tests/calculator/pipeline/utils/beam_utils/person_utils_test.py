@@ -24,7 +24,11 @@ from recidiviz.calculator.pipeline.utils.beam_utils.person_utils import (
     _determine_prioritized_race_or_ethnicity,
 )
 from recidiviz.calculator.pipeline.utils.metric_utils import PersonMetadata
-from recidiviz.common.constants.person_characteristics import Ethnicity, Gender, Race
+from recidiviz.common.constants.shared_enums.person_characteristics import (
+    Ethnicity,
+    Gender,
+    Race,
+)
 from recidiviz.persistence.entity.state.entities import (
     StatePerson,
     StatePersonEthnicity,

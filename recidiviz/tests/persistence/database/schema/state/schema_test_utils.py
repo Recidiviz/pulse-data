@@ -17,7 +17,7 @@
 """Helper methods to generate schema objects with required fields
 prepopulated.
 """
-from recidiviz.common.constants.charge import ChargeStatus
+from recidiviz.common.constants.shared_enums.charge import ChargeStatus
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_court_case import StateCourtCaseStatus
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType

@@ -20,30 +20,29 @@ Note: These classes mirror the SQL Alchemy ORM objects but are kept separate.
 This allows these persistence layer objects additional flexibility that the SQL
 Alchemy ORM objects can't provide.
 """
+import datetime
 from typing import List, Optional
 
-import datetime
 import attr
 
 from recidiviz.common.attr_mixins import BuildableAttr, DefaultableAttr
-from recidiviz.common.constants.bond import BondType, BondStatus
+from recidiviz.common.constants.county.bond import BondStatus, BondType
 from recidiviz.common.constants.county.booking import (
-    ReleaseReason,
-    CustodyStatus,
-    Classification,
     AdmissionReason,
+    Classification,
+    CustodyStatus,
+    ReleaseReason,
 )
-from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.county.charge import ChargeClass, ChargeDegree
 from recidiviz.common.constants.county.hold import HoldStatus
-from recidiviz.common.constants.person_characteristics import (
-    Race,
+from recidiviz.common.constants.county.sentence import SentenceStatus
+from recidiviz.common.constants.shared_enums.charge import ChargeStatus
+from recidiviz.common.constants.shared_enums.person_characteristics import (
     Ethnicity,
     Gender,
+    Race,
     ResidencyStatus,
 )
-from recidiviz.common.constants.county.sentence import SentenceStatus
-
 from recidiviz.persistence.entity.base_entity import ExternalIdEntity
 
 

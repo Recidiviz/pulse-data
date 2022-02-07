@@ -19,7 +19,7 @@
 import unittest
 from datetime import date
 
-from recidiviz.common.constants.charge import ChargeStatus
+from recidiviz.common.constants.shared_enums.charge import ChargeStatus
 from recidiviz.common.constants.state.state_charge import StateChargeClassificationType
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities

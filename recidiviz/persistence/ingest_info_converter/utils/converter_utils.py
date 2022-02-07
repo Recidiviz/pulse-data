@@ -23,13 +23,13 @@ import locale
 from typing import Optional, Tuple
 
 from recidiviz.common import common_utils
-from recidiviz.common.constants.bond import (
+from recidiviz.common.constants.county.bond import (
     BOND_STATUS_MAP,
     BOND_TYPE_MAP,
     BondStatus,
     BondType,
 )
-from recidiviz.common.constants.person_characteristics import (
+from recidiviz.common.constants.shared_enums.person_characteristics import (
     RESIDENCY_STATUS_SUBSTRING_MAP,
     ResidencyStatus,
 )

@@ -28,8 +28,8 @@ import attr
 
 from recidiviz.common import attr_validators
 from recidiviz.common.attr_mixins import BuildableAttr, DefaultableAttr
-from recidiviz.common.constants.charge import ChargeStatus
-from recidiviz.common.constants.person_characteristics import (
+from recidiviz.common.constants.shared_enums.charge import ChargeStatus
+from recidiviz.common.constants.shared_enums.person_characteristics import (
     Ethnicity,
     Gender,
     Race,
@@ -101,10 +101,6 @@ from recidiviz.persistence.entity.base_entity import (
     Entity,
     EnumEntity,
     ExternalIdEntity,
-)
-from recidiviz.persistence.entity.state.entity_deprecation_utils import (  # pylint: disable=unused-import
-    validate_deprecated_entity_field_for_states,
-    validate_deprecated_entity_for_states,
 )
 
 # **** Entity Types for convenience *****:

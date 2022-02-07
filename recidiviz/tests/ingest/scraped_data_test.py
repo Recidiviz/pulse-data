@@ -17,7 +17,7 @@
 """Tests for scraped_data"""
 from unittest import TestCase
 
-from recidiviz.common.constants.person_characteristics import Race
+from recidiviz.common.constants.shared_enums.person_characteristics import Race
 from recidiviz.ingest.models.ingest_info import IngestInfo, Person
 from recidiviz.ingest.scrape.errors import ScraperError
 from recidiviz.ingest.scrape.task_params import ScrapedData, SingleCount

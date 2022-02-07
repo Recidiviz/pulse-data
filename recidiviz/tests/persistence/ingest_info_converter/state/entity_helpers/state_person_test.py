@@ -20,7 +20,10 @@
 import unittest
 from datetime import date, datetime
 
-from recidiviz.common.constants.person_characteristics import Gender, ResidencyStatus
+from recidiviz.common.constants.shared_enums.person_characteristics import (
+    Gender,
+    ResidencyStatus,
+)
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state.deserialize_entity_factories import (

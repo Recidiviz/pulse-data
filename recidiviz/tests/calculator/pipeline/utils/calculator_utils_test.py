@@ -23,7 +23,7 @@ import mock
 from recidiviz.calculator.pipeline.utils import calculator_utils
 from recidiviz.calculator.pipeline.utils.calculator_utils import person_characteristics
 from recidiviz.calculator.pipeline.utils.metric_utils import PersonMetadata
-from recidiviz.common.constants.person_characteristics import Gender
+from recidiviz.common.constants.shared_enums.person_characteristics import Gender
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.state.entities import (
     StatePerson,

@@ -23,7 +23,9 @@ my_enum_field:
     $custom_parser: us_pa_custom_enum_parsers.<function name>
 """
 
-from recidiviz.common.constants.person_characteristics import ResidencyStatus
+from recidiviz.common.constants.shared_enums.person_characteristics import (
+    ResidencyStatus,
+)
 
 
 def residency_status_from_address(raw_text: str) -> ResidencyStatus:

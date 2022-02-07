@@ -24,7 +24,11 @@ from recidiviz.common.constants.enum_overrides import (
     EnumMapperFn,
     EnumOverrides,
 )
-from recidiviz.common.constants.person_characteristics import Ethnicity, Gender, Race
+from recidiviz.common.constants.shared_enums.person_characteristics import (
+    Ethnicity,
+    Gender,
+    Race,
+)
 from recidiviz.common.constants.standard_enum_overrides import (
     get_standard_enum_overrides,
 )

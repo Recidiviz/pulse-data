@@ -20,7 +20,7 @@ from datetime import date, datetime
 
 from mock import Mock, patch
 
-from recidiviz.common.constants.person_characteristics import (
+from recidiviz.common.constants.shared_enums.person_characteristics import (
     Ethnicity,
     Gender,
     Race,

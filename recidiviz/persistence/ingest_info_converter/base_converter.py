@@ -25,7 +25,9 @@ from typing import Generic, List
 import attr
 
 from recidiviz.common.constants.entity_enum import EnumParsingError
-from recidiviz.common.constants.person_characteristics import PROTECTED_CLASSES
+from recidiviz.common.constants.shared_enums.person_characteristics import (
+    PROTECTED_CLASSES,
+)
 from recidiviz.common.ingest_metadata import LegacyStateAndJailsIngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo
 from recidiviz.persistence.entity.entities import EntityPersonType

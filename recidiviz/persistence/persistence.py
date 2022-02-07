@@ -25,11 +25,11 @@ from opencensus.stats import aggregation, measure, view
 from opencensus.stats.measurement_map import MeasurementMap
 from psycopg2.errorcodes import SERIALIZATION_FAILURE
 
-from recidiviz.common.constants.bond import BondStatus
-from recidiviz.common.constants.charge import ChargeStatus
+from recidiviz.common.constants.county.bond import BondStatus
 from recidiviz.common.constants.county.booking import CustodyStatus
 from recidiviz.common.constants.county.hold import HoldStatus
 from recidiviz.common.constants.county.sentence import SentenceStatus
+from recidiviz.common.constants.shared_enums.charge import ChargeStatus
 from recidiviz.common.ingest_metadata import (
     IngestMetadata,
     LegacyStateAndJailsIngestMetadata,

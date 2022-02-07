@@ -24,7 +24,11 @@ from mock import Mock, patch
 from more_itertools import one
 
 from recidiviz.common import str_field_utils
-from recidiviz.common.constants.person_characteristics import Ethnicity, Gender, Race
+from recidiviz.common.constants.shared_enums.person_characteristics import (
+    Ethnicity,
+    Gender,
+    Race,
+)
 from recidiviz.ingest.aggregate.single_count import store_single_count_blueprint
 from recidiviz.persistence.database.schema.aggregate.schema import SingleCountAggregate
 from recidiviz.persistence.database.schema_utils import SchemaType
