@@ -18,7 +18,11 @@
 import datetime
 from typing import Type
 
-from recidiviz.common.constants.person_characteristics import Ethnicity, Gender, Race
+from recidiviz.common.constants.shared_enums.person_characteristics import (
+    Ethnicity,
+    Gender,
+    Race,
+)
 from recidiviz.common.constants.state.external_id_types import US_ME_DOC
 from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_incarceration_period import (

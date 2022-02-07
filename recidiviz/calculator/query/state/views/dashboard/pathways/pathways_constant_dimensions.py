@@ -21,7 +21,10 @@ from typing import Dict, List, Union
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
     ENABLED_STATES,
 )
-from recidiviz.common.constants.person_characteristics import Ethnicity, Race
+from recidiviz.common.constants.shared_enums.person_characteristics import (
+    Ethnicity,
+    Race,
+)
 
 # for dimensions that have constant values across all states, we need a series of unnest statements
 shared_constant_dimensions: Dict[str, Union[List[int], List[str]]] = {

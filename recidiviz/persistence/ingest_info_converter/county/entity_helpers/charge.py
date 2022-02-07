@@ -15,8 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Converts an ingest_info proto Charge to a persistence entity."""
-from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.county.charge import ChargeClass, ChargeDegree
+from recidiviz.common.constants.shared_enums.charge import ChargeStatus
 from recidiviz.common.ingest_metadata import LegacyStateAndJailsIngestMetadata
 from recidiviz.common.str_field_utils import (
     normalize,

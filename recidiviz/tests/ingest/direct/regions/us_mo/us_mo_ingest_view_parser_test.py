@@ -18,7 +18,11 @@
 import unittest
 from datetime import date
 
-from recidiviz.common.constants.person_characteristics import Ethnicity, Gender, Race
+from recidiviz.common.constants.shared_enums.person_characteristics import (
+    Ethnicity,
+    Gender,
+    Race,
+)
 from recidiviz.common.constants.state.state_person_alias import StatePersonAliasType
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema_utils import SchemaType

@@ -20,7 +20,7 @@ from typing import Dict, Optional, Tuple
 
 import attr
 
-from recidiviz.common.constants.person_characteristics import Gender
+from recidiviz.common.constants.shared_enums.person_characteristics import Gender
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
 )

@@ -16,10 +16,10 @@
 # ============================================================================
 """Converts an ingest_info proto StateCharge to a persistence entity."""
 from recidiviz.common import common_utils
-from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.defaulting_and_normalizing_enum_parser import (
     DefaultingAndNormalizingEnumParser,
 )
+from recidiviz.common.constants.shared_enums.charge import ChargeStatus
 from recidiviz.common.constants.state.state_charge import StateChargeClassificationType
 from recidiviz.common.ingest_metadata import LegacyStateAndJailsIngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import StateCharge

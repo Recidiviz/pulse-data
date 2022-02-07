@@ -23,7 +23,7 @@ from unittest import TestCase
 import attr
 from dateutil.relativedelta import relativedelta
 
-from recidiviz.common.constants.bond import BondStatus, BondType
+from recidiviz.common.constants.county.bond import BondStatus, BondType
 from recidiviz.common.constants.county.booking import CustodyStatus
 from recidiviz.persistence.entity.county import entities
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex

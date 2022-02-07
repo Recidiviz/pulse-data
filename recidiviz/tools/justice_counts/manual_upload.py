@@ -72,7 +72,7 @@ from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.common import fips
-from recidiviz.common.constants import person_characteristics, states
+from recidiviz.common.constants import states
 from recidiviz.common.constants.entity_enum import (
     EntityEnum,
     EntityEnumMeta,
@@ -80,6 +80,7 @@ from recidiviz.common.constants.entity_enum import (
     EnumParsingError,
 )
 from recidiviz.common.constants.enum_overrides import EnumOverrides
+from recidiviz.common.constants.shared_enums import person_characteristics
 from recidiviz.common.date import (
     DateRange,
     NonNegativeDateRange,

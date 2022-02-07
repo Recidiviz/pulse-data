@@ -25,7 +25,8 @@ from unittest import TestCase
 import sqlalchemy
 
 import recidiviz.common.constants.county.charge
-from recidiviz.common.constants import bond, charge, person_characteristics
+from recidiviz.common.constants.county import bond
+from recidiviz.common.constants.shared_enums import charge, person_characteristics
 from recidiviz.persistence.database.schema import shared_enums
 from recidiviz.persistence.database.schema.aggregate import schema as aggregate_schema
 from recidiviz.persistence.database.schema.county import schema as county_schema

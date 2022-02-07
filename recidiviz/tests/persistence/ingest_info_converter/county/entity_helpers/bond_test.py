@@ -19,7 +19,7 @@ import unittest
 
 import attr
 
-from recidiviz.common.constants.bond import BondStatus, BondType
+from recidiviz.common.constants.county.bond import BondStatus, BondType
 from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.county import entities

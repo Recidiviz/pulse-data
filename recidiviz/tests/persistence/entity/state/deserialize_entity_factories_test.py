@@ -21,13 +21,13 @@ from typing import Set, Type, Union
 
 from parameterized import parameterized
 
-from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.defaulting_and_normalizing_enum_parser import (
     DefaultingAndNormalizingEnumParser,
 )
 from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.constants.enum_parser import EnumParser
-from recidiviz.common.constants.person_characteristics import (
+from recidiviz.common.constants.shared_enums.charge import ChargeStatus
+from recidiviz.common.constants.shared_enums.person_characteristics import (
     Ethnicity,
     Gender,
     Race,

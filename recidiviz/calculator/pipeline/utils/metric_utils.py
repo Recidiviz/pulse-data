@@ -26,7 +26,7 @@ from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_utils import schema_field_for_attribute
 from recidiviz.common.attr_mixins import BuildableAttr
-from recidiviz.common.constants.person_characteristics import Gender
+from recidiviz.common.constants.shared_enums.person_characteristics import Gender
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType
 
 

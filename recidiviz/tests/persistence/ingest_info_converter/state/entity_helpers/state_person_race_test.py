@@ -18,7 +18,7 @@
 
 import unittest
 
-from recidiviz.common.constants.person_characteristics import Race
+from recidiviz.common.constants.shared_enums.person_characteristics import Race
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.ingest_info_converter.state.entity_helpers import (
