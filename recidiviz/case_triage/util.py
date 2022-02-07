@@ -23,6 +23,8 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 from redis import Redis
+from redis.backoff import ConstantBackoff
+from redis.retry import Retry
 
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
@@ -80,6 +82,18 @@ def get_rate_limit_storage_uri() -> str:
     return "memory://"
 
 
+REDIS_RETRY_MAX_RETRIES = 3
+
+REDIS_RETRY_BACKOFF_SECONDS = 0.01
+
+REDIS_RETRY_SUPPORTED_ERRORS = (
+    ConnectionError,
+    ConnectionResetError,
+    TimeoutError,
+    socket.timeout,
+)
+
+
 def get_redis_connection_options() -> Dict[Any, Any]:
     """
     Returns options to keep the Redis connection alive during prolonged periods of inactivity
@@ -104,6 +118,12 @@ def get_redis_connection_options() -> Dict[Any, Any]:
         "health_check_interval": 30,
         "socket_keepalive": True,
         "socket_keepalive_options": socket_keepalive_options,
+        "retry_on_error": REDIS_RETRY_SUPPORTED_ERRORS,
+        "retry": Retry(
+            backoff=ConstantBackoff(backoff=REDIS_RETRY_BACKOFF_SECONDS),
+            retries=REDIS_RETRY_MAX_RETRIES,
+            supported_errors=REDIS_RETRY_SUPPORTED_ERRORS,
+        ),
     }
 
 
