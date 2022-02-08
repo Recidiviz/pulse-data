@@ -16,9 +16,13 @@
 # =============================================================================
 
 """Custom configuration for how pytest should run."""
+import os
+from typing import List
 
 import pytest
-from mock import patch
+from _pytest.config import Config
+from _pytest.config.argparsing import Parser
+from _pytest.mark import deselect_by_mark
 
 import recidiviz
 
@@ -26,7 +30,7 @@ import recidiviz
 pytest_plugins = ("recidiviz.tests.fixtures",)
 
 
-def pytest_configure(config) -> None:
+def pytest_configure(config: Config) -> None:
     recidiviz.called_from_test = True
     config.addinivalue_line(
         "markers", "uses_db: for tests that spin up a new database."
@@ -37,7 +41,7 @@ def pytest_unconfigure() -> None:
     del recidiviz.called_from_test
 
 
-def pytest_addoption(parser) -> None:
+def pytest_addoption(parser: Parser) -> None:
     parser.addoption("--test-set", type=str, choices=["parallel", "not-parallel"])
 
     parser.addoption(
@@ -45,6 +49,20 @@ def pytest_addoption(parser) -> None:
         "--with-emulator",
         action="store_true",
         help="run tests that require the datastore emulator.",
+    )
+
+    group = parser.getgroup("split your tests into evenly sized suites")
+    group.addoption(
+        "--suite-count",
+        dest="suite_count",
+        type=int,
+        help="The total number of suites to split",
+    )
+    group.addoption(
+        "--suite",
+        dest="suite",
+        type=int,
+        help="The suite to be executed",
     )
 
 
@@ -55,14 +73,6 @@ def pytest_runtest_setup(item: pytest.Item) -> None:
         if "emulator" not in item.fixturenames:
             pytest.skip("requires datastore emulator")
     else:
-        # For tests without the emulator, prevent them from trying to create google cloud clients.
-        item.google_auth_patcher = patch("google.auth.default")
-        mock_google_auth = item.google_auth_patcher.start()
-        mock_google_auth.side_effect = AssertionError(
-            "Unit test may not instantiate a Google client. Please mock the appropriate client class inside this test "
-            " (e.g. `patch('google.cloud.bigquery.Client')`)."
-        )
-
         if "emulator" in item.fixturenames:
             pytest.skip("requires datastore emulator")
 
@@ -76,6 +86,36 @@ def pytest_runtest_setup(item: pytest.Item) -> None:
             )
 
 
-def pytest_runtest_teardown(item: pytest.Item) -> None:
-    if hasattr(item, "google_auth_patcher") and item.google_auth_patcher is not None:
-        item.google_auth_patcher.stop()
+def get_suite(
+    items: List[pytest.Item], suite_count: int, suite_id: int
+) -> List[pytest.Item]:
+    """Get the items from the passed in suite based on suite count."""
+    if not 1 <= suite_id <= suite_count:
+        raise ValueError(
+            f"Invalid suite id (suite_count={suite_count}, suite_id={suite_id})"
+        )
+
+    start = suite_id - 1
+    return items[start : len(items) : suite_count]
+
+
+def pytest_collection_modifyitems(config: Config, items: List[pytest.Item]) -> None:
+    """Hook for selecting which tests should be executed
+    Selects the tests for specified suite if using the `--suite` and `--suite-count` options
+    """
+    suite_count = config.getoption("suite_count")
+    suite_id = config.getoption("suite")
+
+    if not suite_count or not suite_id:
+        return
+
+    deselect_by_mark(items, config)
+
+    items[:] = get_suite(items, suite_count, suite_id)
+
+
+def get_worker_id() -> int:
+    """Retrieves the worker number from the appropriate environment variable
+    https://github.com/pytest-dev/pytest-xdist#identifying-the-worker-process-during-a-test
+    """
+    return int(os.environ.get("PYTEST_XDIST_WORKER", "gw0")[2:])

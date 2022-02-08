@@ -22,7 +22,10 @@ from time import sleep, time
 from typing import Any, Dict, List, Optional, Tuple
 
 import pytest
+import requests
 import yaml
+
+from conftest import get_worker_id
 
 EMULATOR_STARTUP_TIMEOUT_SEC = 30
 
@@ -94,13 +97,6 @@ def _start_emulators() -> Tuple[subprocess.Popen, subprocess.Popen]:
     return datastore_emulator, pubsub_emulator
 
 
-def get_worker_id() -> int:
-    """Retrieves the worker number from the appropriate environment variable
-    https://github.com/pytest-dev/pytest-xdist#identifying-the-worker-process-during-a-test
-    """
-    return int(os.environ.get("PYTEST_XDIST_WORKER", "gw0")[2:])
-
-
 def _get_datastore_emulator_port() -> int:
     """Returns the port that the datastore emulator should bind to
     The emulator's default port is 8081"""
@@ -140,11 +136,18 @@ def _get_emulator_env_paths() -> List[str]:
 
 
 def _emulators_started() -> bool:
-    for emulator_env_path in _get_emulator_env_paths():
-        if not os.path.exists(emulator_env_path):
-            return False
+    try:
+        responses = [
+            requests.get(f"http://localhost:{port}")
+            for port in [_get_datastore_emulator_port(), _get_pubsub_emulator_port()]
+        ]
 
-    return True
+        return all(
+            response.status_code == 200 and response.content.strip() == b"Ok"
+            for response in responses
+        )
+    except requests.exceptions.ConnectionError:
+        return False
 
 
 def _write_emulator_environs() -> Dict[str, Optional[str]]:
