@@ -22,6 +22,43 @@ columns:
     description: |-
       Part of primary key, ID for the class section
   - name: omp_exit_typ_cd
+    description: |-
+      Code that describes why the client exited the course (can include successful completion)
+    known_values:
+      - value: 1
+        description: COMPLETED PROGRAM
+      - value: 2
+        description: ADVANCED HIGHER
+      - value: 3
+        description: VOLUNTARY DROP
+      - value: 4
+        description: BEHAVIORAL DROP
+      - value: 5
+        description: CUSTODY/SECURITY DROP
+      - value: 6
+        description: NEEDS PRE-REQUISITE
+      - value: 7
+        description: FACILITY TRANSFER
+      - value: 8
+        description: FAILED
+      - value: 9
+        description: OTHER
+      - value: 10
+        description: COMPLETE
+      - value: 11
+        description: ENROLLMENT ERROR
+      - value: 12
+        description: MEDICAL EXIT
+      - value: 13
+        description: (No description given)
+      - value: 14
+        description: SCHEDULE CONFLICT
+      - value: 15
+        description: CLASS TRANSFER
+      - value: 16
+        description: TOPPED TIME (release/discharge)
+      - value: 17
+        description: UNABLE TO COMPLETE
   - name: enroll_by_usr_id
     description: |-
       ID of the user who enrolled this client in the class
