@@ -18,7 +18,7 @@
 
 Run the following command to execute from the command-line:
 
-    python -m recidiviz.tools.deploy.deploy_all_pipeline_templates --templates_to_deploy production --project_id recidiviz-staging
+    python -m recidiviz.tools.deploy.deploy_all_pipeline_templates --project_id recidiviz-staging
 """
 import argparse
 import logging
@@ -28,13 +28,12 @@ import sys
 from typing import List, Tuple
 
 import recidiviz
+from recidiviz.calculator.dataflow_config import PIPELINE_CONFIG_YAML_PATH
 from recidiviz.tools.deploy.build_dataflow_source_distribution import (
     build_source_distribution,
 )
-from recidiviz.tools.deploy.dataflow_template_helpers import (
-    PIPELINE_CONFIG_YAML_PATHS,
-    load_pipeline_config_yaml,
-)
+from recidiviz.tools.deploy.dataflow_template_helpers import load_pipeline_config_yaml
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.future_executor import FutureExecutor
 
 RECIDIVIZ_ROOT = os.path.abspath(os.path.join(recidiviz.__file__, "../.."))
@@ -102,7 +101,7 @@ class DeployPipelineFailedError(ValueError):
 
 
 def deploy_pipeline_templates(template_yaml_path: str, project_id: str) -> None:
-    """Deploys all pipelines listed in the given config yaml to templates in the given project."""
+    """Deploys all pipelines listed in the given config yaml to the given project."""
     logging.info("Deploying pipeline templates to %s", project_id)
 
     pipeline_config_yaml = load_pipeline_config_yaml(template_yaml_path)
@@ -115,6 +114,7 @@ def deploy_pipeline_templates(template_yaml_path: str, project_id: str) -> None:
             "job_name": pipeline["job_name"],
         }
         for pipeline in pipeline_config_yaml.all_pipelines
+        if project_id == GCP_PROJECT_STAGING or not pipeline.get("staging_only")
     ]
 
     try:
@@ -135,14 +135,6 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
-        "--templates_to_deploy",
-        dest="templates_to_deploy",
-        type=str,
-        choices=PIPELINE_CONFIG_YAML_PATHS.keys(),
-        required=True,
-    )
-
-    parser.add_argument(
         "--project_id",
         dest="project_id",
         type=str,
@@ -154,21 +146,13 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
 
 
 def deploy_pipeline_templates_to_project() -> None:
-    """Deploys either prod or staging pipelines to the project given by the --project_id argument."""
+    """Deploys pipelines to the project given by the --project_id argument. Whether the pipeline is deployed to
+    staging or production is determined by the `staging_only` attribute in the pipeline config."""
     known_args, _ = parse_arguments(sys.argv)
 
-    template_yaml_path = PIPELINE_CONFIG_YAML_PATHS.get(known_args.templates_to_deploy)
-
-    if template_yaml_path:
-        deploy_pipeline_templates(
-            template_yaml_path=template_yaml_path, project_id=known_args.project_id
-        )
-    else:
-        # Bad arg should be caught by the arg parser before we get here
-        raise ValueError(
-            f"No template yaml file corresponding to --templates_to_deploy="
-            f"{known_args.templates_to_deploy}"
-        )
+    deploy_pipeline_templates(
+        template_yaml_path=PIPELINE_CONFIG_YAML_PATH, project_id=known_args.project_id
+    )
 
 
 if __name__ == "__main__":

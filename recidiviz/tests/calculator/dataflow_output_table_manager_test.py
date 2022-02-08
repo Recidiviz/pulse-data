@@ -36,9 +36,9 @@ from recidiviz.calculator.pipeline.metrics.recidivism.metrics import (
 from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric
 from recidiviz.common.constants.states import StateCode
 
-FAKE_PRODUCTION_TEMPLATES_PATH = os.path.join(
+FAKE_PIPELINE_CONFIG_YAML_PATH = os.path.join(
     os.path.dirname(__file__),
-    "fake_production_calculation_pipeline_templates.yaml",
+    "fake_calculation_pipeline_templates.yaml",
 )
 
 
@@ -178,9 +178,9 @@ class NormalizedStateTableManagerTest(unittest.TestCase):
         )
         self.mock_dataflow_config = self.dataflow_config_patcher.start()
 
-        self.mock_production_template_yaml = FAKE_PRODUCTION_TEMPLATES_PATH
-        self.mock_dataflow_config.PRODUCTION_TEMPLATES_PATH = (
-            self.mock_production_template_yaml
+        self.mock_pipeline_template_path = FAKE_PIPELINE_CONFIG_YAML_PATH
+        self.mock_dataflow_config.PIPELINE_CONFIG_YAML_PATH = (
+            self.mock_pipeline_template_path
         )
 
         self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")

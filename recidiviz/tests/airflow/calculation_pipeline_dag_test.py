@@ -46,7 +46,7 @@ dag_folder = "recidiviz/airflow/dag"
     "os.environ",
     {
         "GCP_PROJECT_ID": "recidiviz-testing",
-        "CONFIG_FILE": "recidiviz/calculator/pipeline/production_calculation_pipeline_templates.yaml",
+        "CONFIG_FILE": "recidiviz/calculator/pipeline/calculation_pipeline_templates.yaml",
     },
 )
 @patch(
@@ -64,10 +64,9 @@ class TestDagIntegrity(unittest.TestCase):
         # TODO(#5101): Un-comment and re-enable tests below once we can include apache-airflow in our Pipfile dependencies
         # dagbag = DagBag(dag_folder=dag_folder, include_examples=False)
         # self.assertEqual(
-        #     len(dagbag.import_errors), 0,
-        #     'There should be no DAG failures. Got: {}'.format(
-        #         dagbag.import_errors
-        #     )
+        #     len(dagbag.import_errors),
+        #     0,
+        #     "There should be no DAG failures. Got: {}".format(dagbag.import_errors),
         # )
 
     @unittest.skip(

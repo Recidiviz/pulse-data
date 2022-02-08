@@ -26,6 +26,8 @@ from typing import Any, Dict
 from airflow import models
 from airflow.contrib.operators.pubsub_operator import PubSubPublishOperator
 
+GCP_PROJECT_STAGING = "recidiviz-staging"
+
 try:
     from recidiviz_dataflow_operator import (  # type: ignore
         RecidivizDataflowTemplateOperator,
@@ -124,18 +126,20 @@ with models.DAG(
 
         state_code = pipeline.pop("state_code", str)
         pipeline_name = pipeline.pop("job_name", str)
+        staging_only = pipeline.pop_optional("staging_only", bool)
 
-        calculation_pipeline = RecidivizDataflowTemplateOperator(
-            task_id=pipeline_name,
-            template=f"gs://{project_id}-dataflow-templates/templates/{pipeline_name}",
-            job_name=pipeline_name,
-            dataflow_default_options=dataflow_default_args,
-        )
-        # This >> ensures that all the calculation pipelines will run before the Pub / Sub message
-        # is published saying the pipelines are done.
-        calculation_pipeline >> state_trigger_export_operators[state_code]
-        if state_code in CASE_TRIAGE_STATES:
-            calculation_pipeline >> case_triage_export
+        if project_id == GCP_PROJECT_STAGING or not staging_only:
+            calculation_pipeline = RecidivizDataflowTemplateOperator(
+                task_id=pipeline_name,
+                template=f"gs://{project_id}-dataflow-templates/templates/{pipeline_name}",
+                job_name=pipeline_name,
+                dataflow_default_options=dataflow_default_args,
+            )
+            # This >> ensures that all the calculation pipelines will run before the Pub / Sub message
+            # is published saying the pipelines are done.
+            calculation_pipeline >> state_trigger_export_operators[state_code]
+            if state_code in CASE_TRIAGE_STATES:
+                calculation_pipeline >> case_triage_export
 
     # These exports don't depend on pipeline output.
     _ = trigger_export_operator("COVID_DASHBOARD")
@@ -167,10 +171,12 @@ with models.DAG(
 
         state_code = pipeline.pop("state_code", str)
         pipeline_name = pipeline.pop("job_name", str)
+        staging_only = pipeline.pop_optional("staging_only", bool)
 
-        calculation_pipeline = RecidivizDataflowTemplateOperator(
-            task_id=pipeline_name,
-            template=f"gs://{project_id}-dataflow-templates/templates/{pipeline_name}",
-            job_name=pipeline_name,
-            dataflow_default_options=dataflow_default_args,
-        )
+        if project_id == GCP_PROJECT_STAGING or not staging_only:
+            calculation_pipeline = RecidivizDataflowTemplateOperator(
+                task_id=pipeline_name,
+                template=f"gs://{project_id}-dataflow-templates/templates/{pipeline_name}",
+                job_name=pipeline_name,
+                dataflow_default_options=dataflow_default_args,
+            )

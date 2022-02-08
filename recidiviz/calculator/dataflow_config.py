@@ -54,16 +54,10 @@ from recidiviz.calculator.pipeline.utils.metric_utils import (
     RecidivizMetricType,
 )
 
-STAGING_ONLY_TEMPLATES_PATH = os.path.join(
+PIPELINE_CONFIG_YAML_PATH = os.path.join(
     os.path.dirname(__file__),
     "pipeline",
-    "staging_only_calculation_pipeline_templates.yaml",
-)
-
-PRODUCTION_TEMPLATES_PATH = os.path.join(
-    os.path.dirname(__file__),
-    "pipeline",
-    "production_calculation_pipeline_templates.yaml",
+    "calculation_pipeline_templates.yaml",
 )
 
 # Pipelines that are always run for all dates.
