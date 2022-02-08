@@ -32,7 +32,6 @@ REGIONS = ["us_ny", "us_va"]
 
 
 @pytest.mark.usefixtures("emulator")
-@pytest.mark.emulator
 class TestDocket:
     """Tests for the methods related to population of items in the docket."""
 

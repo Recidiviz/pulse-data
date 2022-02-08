@@ -25,6 +25,7 @@ from typing import Dict, Optional
 from sqlalchemy.engine import URL
 from sqlalchemy.orm.session import close_all_sessions
 
+from conftest import get_worker_id
 from recidiviz.persistence.database.base_schema import (
     CaseTriageBase,
     JailsBase,
@@ -265,10 +266,6 @@ def use_on_disk_postgresql_database(database_key: SQLAlchemyDatabaseKey) -> None
     )
     # Auto-generate all tables that exist in our schema in this database
     database_key.declarative_meta.metadata.create_all(engine)
-
-
-def get_worker_id() -> int:
-    return int(os.environ.get("PYTEST_XDIST_WORKER", "gw0")[2:])
 
 
 def get_on_disk_postgres_port() -> int:

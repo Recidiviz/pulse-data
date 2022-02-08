@@ -20,6 +20,7 @@ from typing import (
     Callable,
     Generic,
     Iterable,
+    List,
     Literal,
     Optional,
     Pattern,
@@ -85,7 +86,10 @@ def raises(
 ) -> ExceptionInfo[E]: ...
 def approx(expected: float) -> ApproxBase: ...
 
-class Config: ...
+class Config:
+    def getoption(
+        self, name: str, default: Optional[str] = None, skip: Optional[bool] = False
+    ) -> str: ...
 
 class FixtureFunctionMarker:
     def __call__(self, function: FixtureFunction) -> FixtureFunction: ...
@@ -102,3 +106,10 @@ class RaisesContext(Generic[E]):
         exc_val: Optional[BaseException],
         exc_tb: Optional[TracebackType],
     ) -> bool: ...
+
+def skip(reason: str = None) -> None: ...
+
+class Item:
+    config: Config
+    fixturenames: List[str]
+    def get_closest_marker(self, name: str, default: Optional[Any] = None) -> Any: ...

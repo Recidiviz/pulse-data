@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2018 Recidiviz, Inc.
+# Copyright (C) 2022 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,6 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Top-level recidiviz package."""
+from typing import Any
 
-called_from_test = False
+
+class Config:
+    def getoption(self, name: str, default: Any = None, skip: bool = False) -> Any:
+        ...
+
+    def addinivalue_line(self, name: str, line: str) -> None:
+        ...
