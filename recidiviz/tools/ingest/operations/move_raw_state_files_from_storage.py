@@ -52,9 +52,6 @@ from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
     to_normalized_unprocessed_file_path_from_normalized_path,
 )
-from recidiviz.ingest.direct.types.direct_ingest_instance import (
-    DirectIngestInstance,
-)
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsDirectIngestFileType,
     gcsfs_direct_ingest_bucket_for_region,
@@ -63,6 +60,7 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
     get_direct_ingest_queues_for_state,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.tools.gsutil_shell_helpers import (
     gsutil_get_storage_subdirs_containing_file_types,
     gsutil_ls,
@@ -246,7 +244,7 @@ class MoveFilesFromStorageController:
 
     def queue_console_url(self, queue_name: str) -> str:
         """Returns the url to the GCP console page for a queue with a given name."""
-        return f"https://console.cloud.google.com/cloudtasks/queue/{queue_name}?project={self.project_id}"
+        return f"https://console.cloud.google.com/cloudtasks/queue/us-east1/{queue_name}?project={self.project_id}"
 
     def do_post_request(self, url: str) -> None:
         """Executes a googleapis.com curl POST request with the given url."""
