@@ -1,7 +1,7 @@
 # Details of production-ready pipeline jobs to deploy to templates. These templates will be deployed both to staging and
 # production buckets.
 #
-#  If you want to deploy a pipeline just to stage, add it to staging_only_calculation_pipeline_templates.yaml
+#  If you want to deploy a pipeline just to stage, add the `staging_only: True` attribute to the pipeline
 
 # List of pipelines with their necessary details
 

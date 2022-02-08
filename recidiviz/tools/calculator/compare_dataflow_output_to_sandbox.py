@@ -18,14 +18,14 @@
 sandbox Dataflow dataset. (For creating a sandbox Dataflow output dataset, see the
 create_or_update_dataflow_metrics_sandbox script.) This script should be used when you have run a test pipeline in your
 sandbox dataset that has the same month and metric_type parameters as a job listed in the
-production_calculation_pipeline_templates.yaml file.
+calculation_pipeline_templates.yaml file.
 
-This script compares Dataflow output for all metric_types defined in the production_calculation_pipeline_templates.yaml
-for the given job_name_to_compare.
+This script compares Dataflow output for all metric_types defined in the calculation_pipeline_templates.yaml for the
+given job_name_to_compare.
 
 Say that we have updated the logic that determines the supervision_type column for various supervision metrics for the
 state US_XX. We want to be able to evaluate the output impact of making this change. First, we will go to the
-production_calculation_pipeline_templates file to determine which the parameters of the supervision pipeline that is
+calculation_pipeline_templates.yaml file to determine which the parameters of the supervision pipeline that is
 regularly run for US_XX. We will then run a test pipeline from our development branch with the same parameters as this
 regular job, with the output directed to the sandbox Dataflow dataset. (For help running in-development Dataflow jobs,
 see go/dataflow-dev.) Once this pipeline has completed, we would run this script with the following parameters to
@@ -100,7 +100,7 @@ from recidiviz.big_query.view_update_manager import (
 from recidiviz.calculator.dataflow_config import (
     DATAFLOW_METRICS_TO_TABLES,
     DATAFLOW_TABLES_TO_METRIC_TYPES,
-    PRODUCTION_TEMPLATES_PATH,
+    PIPELINE_CONFIG_YAML_PATH,
 )
 from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric
 from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET
@@ -205,7 +205,7 @@ def compare_dataflow_output_to_sandbox(
 
     query_jobs: List[Tuple[QueryJob, str]] = []
 
-    pipelines = YAMLDict.from_path(PRODUCTION_TEMPLATES_PATH).pop_dicts(
+    pipelines = YAMLDict.from_path(PIPELINE_CONFIG_YAML_PATH).pop_dicts(
         "incremental_pipelines"
     )
 

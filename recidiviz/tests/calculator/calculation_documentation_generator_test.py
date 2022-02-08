@@ -68,7 +68,11 @@ class CalculationDocumentationGeneratorTest(unittest.TestCase):
             path=self.mock_config_path
         ).products
         self.mock_product_states = {StateCode("US_MO")}
-        self.mock_pipeline_states = {StateCode("US_MO"), StateCode("US_PA")}
+        self.mock_pipeline_states = {
+            StateCode("US_MO"),
+            StateCode("US_PA"),
+            StateCode("US_ME"),
+        }
         view_1 = BigQueryView(
             dataset_id="dataset_1",
             view_id="table_1",
@@ -128,17 +132,32 @@ class CalculationDocumentationGeneratorTest(unittest.TestCase):
         self.docs_generator.metric_calculations_by_state = {
             "Pennsylvania": [
                 PipelineMetricInfo(
-                    name="PROGRAM_REFERRAL", month_count=36, frequency="daily"
+                    name="PROGRAM_REFERRAL",
+                    month_count=36,
+                    frequency="daily",
+                    staging_only=False,
                 )
             ],
             "Missouri": [
                 PipelineMetricInfo(
-                    name="INCARCERATION_ADMISSION", month_count=24, frequency="daily"
+                    name="INCARCERATION_ADMISSION",
+                    month_count=24,
+                    frequency="daily",
+                    staging_only=False,
                 ),
                 PipelineMetricInfo(
                     name="INCARCERATION_ADMISSION",
                     month_count=240,
                     frequency="triggered by code changes",
+                    staging_only=False,
+                ),
+            ],
+            "Maine": [
+                PipelineMetricInfo(
+                    name="INCARCERATION_ADMISSION",
+                    month_count=24,
+                    frequency="daily",
+                    staging_only=True,
                 ),
             ],
         }
@@ -194,6 +213,7 @@ class CalculationDocumentationGeneratorTest(unittest.TestCase):
 
         expected_header_str = "## Calculation Catalog\n\n"
         expected_states_str = """- States
+  - [Maine](calculation/states/maine.md)
   - [Missouri](calculation/states/missouri.md)
   - [Pennsylvania](calculation/states/pennsylvania.md)"""
         expected_products_str = """\n- Products
@@ -299,9 +319,9 @@ _All metrics required to support this product and whether or not each state regu
 ** DISCLAIMER **
 The presence of all required metrics for a state does not guarantee that this product is ready to launch in that state.
 
-|                                       **Metric**                                        |**US_MO**|**US_PA**|
-|-----------------------------------------------------------------------------------------|---------|---------|
-|[INCARCERATION_ADMISSION](../../metrics/incarceration/incarceration_admission_metrics.md)|X        |         |
+|                                       **Metric**                                        |       **US_ME**        |      **US_MO**      |**US_PA**|
+|-----------------------------------------------------------------------------------------|------------------------|---------------------|---------|
+|[INCARCERATION_ADMISSION](../../metrics/incarceration/incarceration_admission_metrics.md)|24 months (staging_only)|24 months 240 months |         |
 """
                 self.assertEqual(expected_docs, documentation)
 
@@ -313,12 +333,16 @@ The presence of all required metrics for a state does not guarantee that this pr
         mock_metric_calculations.return_value = {
             "Missouri": [
                 PipelineMetricInfo(
-                    name="INCARCERATION_ADMISSION", month_count=24, frequency="daily"
+                    name="INCARCERATION_ADMISSION",
+                    month_count=24,
+                    frequency="daily",
+                    staging_only=False,
                 ),
                 PipelineMetricInfo(
                     name="INCARCERATION_ADMISSION",
                     month_count=240,
                     frequency="triggered by code changes",
+                    staging_only=False,
                 ),
             ]
         }
@@ -392,11 +416,17 @@ This view may not be deployed to all environments yet.<br/>
     def test_get_metric_information(self) -> None:
         self.docs_generator.state_metric_calculations_by_metric = {
             "INCARCERATION_ADMISSION": [
-                StateMetricInfo(name="Missouri", month_count=24, frequency="daily"),
+                StateMetricInfo(
+                    name="Missouri",
+                    month_count=24,
+                    frequency="daily",
+                    staging_only=True,
+                ),
                 StateMetricInfo(
                     name="Missouri",
                     month_count=240,
                     frequency="triggered by code changes",
+                    staging_only=False,
                 ),
             ]
         }
@@ -451,10 +481,10 @@ Attributes on all metrics:
 
 #### Calculation Cadences
 
-|             **State**              |**Number of Months Calculated**|**Calculation Frequency**|
-|------------------------------------|------------------------------:|-------------------------|
-|[Missouri](../../states/missouri.md)|                             24|daily                    |
-|[Missouri](../../states/missouri.md)|                            240|triggered by code changes|
+|             **State**              |**Number of Months Calculated**|**Calculation Frequency**|**Staging Only**|
+|------------------------------------|------------------------------:|-------------------------|----------------|
+|[Missouri](../../states/missouri.md)|                             24|daily                    |X               |
+|[Missouri](../../states/missouri.md)|                            240|triggered by code changes|                |
 
 
 #### Dependent Views

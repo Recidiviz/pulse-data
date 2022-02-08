@@ -41,7 +41,7 @@ from recidiviz.big_query.view_update_manager import build_views_to_update
 from recidiviz.calculator.dataflow_config import (
     DATAFLOW_METRICS_TO_TABLES,
     DATAFLOW_TABLES_TO_METRIC_TYPES,
-    PRODUCTION_TEMPLATES_PATH,
+    PIPELINE_CONFIG_YAML_PATH,
 )
 from recidiviz.calculator.pipeline.metrics.incarceration.metrics import (
     IncarcerationMetric,
@@ -173,6 +173,8 @@ class PipelineMetricInfo:
     month_count: Optional[int] = attr.ib(validator=attr_validators.is_opt_int)
     # Frequency of calculation
     frequency: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    # Whether the calculation is only being run in staging
+    staging_only: Optional[bool] = attr.ib(validator=attr_validators.is_opt_bool)
 
 
 @attr.s
@@ -185,6 +187,8 @@ class StateMetricInfo:
     month_count: Optional[int] = attr.ib(validator=attr_validators.is_opt_int)
     # Frequency of calculation
     frequency: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    # Whether the calculation is only being run in staging
+    staging_only: Optional[bool] = attr.ib(validator=attr_validators.is_opt_bool)
 
 
 class CalculationDocumentationGenerator:
@@ -217,7 +221,7 @@ class CalculationDocumentationGenerator:
                 override_should_build_predicate=True,
             )
         )
-        self.prod_templates_yaml = YAMLDict.from_path(PRODUCTION_TEMPLATES_PATH)
+        self.prod_templates_yaml = YAMLDict.from_path(PIPELINE_CONFIG_YAML_PATH)
 
         self.incremental_pipelines = self.prod_templates_yaml.pop_dicts(
             "incremental_pipelines"
@@ -246,6 +250,7 @@ class CalculationDocumentationGenerator:
                         name=state_name,
                         month_count=metric_info.month_count,
                         frequency=metric_info.frequency,
+                        staging_only=metric_info.staging_only,
                     )
                 )
 
@@ -590,15 +595,7 @@ class CalculationDocumentationGenerator:
                 f"[{DATAFLOW_TABLES_TO_METRIC_TYPES[metric_key.table_id].value}](../../metrics/{self.generic_types_by_metric_name[metric_key.table_id].lower()}/{metric_key.table_id}.md)"
             ]
             + [
-                "X"
-                if DATAFLOW_TABLES_TO_METRIC_TYPES[metric_key.table_id].value
-                in [
-                    metric.name
-                    for metric in self.metric_calculations_by_state[
-                        str(state_code.get_state())
-                    ]
-                ]
-                else ""
+                self._get_metric_supported_text_per_state(metric_key, state_code)
                 for state_code in state_codes
             ]
             for metric_key in sorted(metric_keys, key=lambda dag_key: dag_key.table_id)
@@ -608,6 +605,22 @@ class CalculationDocumentationGenerator:
             headers=headers, value_matrix=table_matrix, margin=0
         )
         return metrics_header + writer.dumps()
+
+    def _get_metric_supported_text_per_state(
+        self, metric_key: DagKey, state_code: StateCode
+    ) -> str:
+        metrics = self.metric_calculations_by_state[str(state_code.get_state())]
+        state_metrics = []
+        for metric in metrics:
+            if (
+                metric.name
+                == DATAFLOW_TABLES_TO_METRIC_TYPES[metric_key.table_id].value
+            ):
+                state_metrics.append(metric)
+        state_metric_texts = ""
+        for metric in state_metrics:
+            state_metric_texts += f"{metric.month_count} months {'(staging_only)' if metric and metric.staging_only else ''}"
+        return state_metric_texts
 
     @staticmethod
     def _get_all_config_view_addresses_for_product(
@@ -750,6 +763,7 @@ class CalculationDocumentationGenerator:
                             "calculation_month_count", int
                         ),
                         frequency=frequency,
+                        staging_only=pipeline.peek_optional("staging_only", bool),
                     )
                     for metric in pipeline.peek("metric_types", str).split()
                 ],
@@ -1054,12 +1068,14 @@ class CalculationDocumentationGenerator:
             "**State**",
             "**Number of Months Calculated**",
             "**Calculation Frequency**",
+            "**Staging Only**",
         ]
         state_info_table_matrix = [
             [
                 f"[{state_info.name}](../../states/{self._normalize_string_for_path(state_info.name)}.md)",
                 state_info.month_count if state_info.month_count else "N/A",
                 state_info.frequency,
+                "X" if state_info.staging_only else "",
             ]
             for state_info in state_infos_list
         ]

@@ -16,20 +16,10 @@
 # =============================================================================
 """ Shared helpers for the dataflow deployment tools """
 import logging
-from typing import List, TypedDict
+from typing import List, Optional, TypedDict
 
 import attr
 import yaml
-
-from recidiviz.calculator.dataflow_config import (
-    PRODUCTION_TEMPLATES_PATH,
-    STAGING_ONLY_TEMPLATES_PATH,
-)
-
-PIPELINE_CONFIG_YAML_PATHS = {
-    "production": PRODUCTION_TEMPLATES_PATH,
-    "staging": STAGING_ONLY_TEMPLATES_PATH,
-}
 
 
 class PipelineConfig(TypedDict):
@@ -38,6 +28,7 @@ class PipelineConfig(TypedDict):
     state_code: str
     metric_types: str
     region: str
+    staging_only: Optional[bool]
 
 
 @attr.s(auto_attribs=True)

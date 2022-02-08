@@ -41,6 +41,8 @@ from recidiviz.utils.string import StrictStringFormatter
 from recidiviz.view_registry.namespaces import BigQueryViewNamespace
 
 
+# TODO(#11034): Add a test to make sure products launched in production have the required calc metrics enabled
+# in production.
 class TestProductConfig(unittest.TestCase):
     """Tests the functionality of the ProductConfig class."""
 
