@@ -3,8 +3,102 @@ name: CI Tests
 on: push
 
 jobs:
-  lint:
-    name: Lint
+  bandit:
+    name: Bandit
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Cancel previous runs
+        if: ${{ github.ref != 'refs/heads/main' }}
+        uses: styfle/cancel-workflow-action@0.6.0
+        with:
+          access_token: ${{ github.token }}
+      - uses: actions/checkout@v2
+      - name: Python Setup
+        uses: ./.github/actions/python-setup
+      - name: Bandit
+        run: pipenv run bandit --ini .bandit -r -b bandit/bandit-baseline.json -x tests
+
+  black:
+    name: Black
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cancel previous runs
+        if: ${{ github.ref != 'refs/heads/main' }}
+        uses: styfle/cancel-workflow-action@0.6.0
+        with:
+          access_token: ${{ github.token }}
+      - uses: actions/checkout@v2
+      - name: Python Setup
+        uses: ./.github/actions/python-setup
+      - name: Black
+        run: pipenv run black . --check
+
+  check-if-pipenv-locked:
+      name: Check if Pipenv is locked
+      runs-on: ubuntu-latest
+      steps:
+        - name: Cancel previous runs
+          if: ${{ github.ref != 'refs/heads/main' }}
+          uses: styfle/cancel-workflow-action@0.6.0
+          with:
+            access_token: ${{ github.token }}
+        - uses: actions/checkout@v2
+        - name: Python Setup
+          uses: ./.github/actions/python-setup
+        - name: Check pipenv is locked
+          run: pipenv run python -m recidiviz.tools.is_pipenv_locked
+
+
+  mypy:
+    name: Mypy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cancel previous runs
+        if: ${{ github.ref != 'refs/heads/main' }}
+        uses: styfle/cancel-workflow-action@0.6.0
+        with:
+          access_token: ${{ github.token }}
+      - uses: actions/checkout@v2
+      - name: Python Setup
+        uses: ./.github/actions/python-setup
+      - name: Mypy check
+        run: pipenv run mypy recidiviz
+
+  pylint:
+    name: Pylint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cancel previous runs
+        if: ${{ github.ref != 'refs/heads/main' }}
+        uses: styfle/cancel-workflow-action@0.6.0
+        with:
+          access_token: ${{ github.token }}
+      - uses: actions/checkout@v2
+      - name: Python Setup
+        uses: ./.github/actions/python-setup
+      - name: Pylint
+        run: pipenv run ./recidiviz/tools/travis/run_pylint.sh
+
+  terraform-validation:
+    name: Terraform Validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cancel previous runs
+        if: ${{ github.ref != 'refs/heads/main' }}
+        uses: styfle/cancel-workflow-action@0.6.0
+        with:
+          access_token: ${{ github.token }}
+      - uses: actions/checkout@v2
+      - uses: hashicorp/setup-terraform@v1
+      - name: Validate terraform
+        run: |
+          terraform -chdir=recidiviz/tools/deploy/terraform init -backend=false
+          terraform -chdir=recidiviz/tools/deploy/terraform validate
+
+
+  validate-source-modifications:
+    name: Validate source modifications
     runs-on: ubuntu-latest
     steps:
       - name: Cancel previous runs
@@ -19,15 +113,8 @@ jobs:
           # is guaranteed to be able to find the common ancestor with the base branch.
           # See https://github.com/actions/checkout#readme
           fetch-depth: 0
-      - uses: ./.github/actions/python-setup
-      - uses: hashicorp/setup-terraform@v1
-      - name: Validate terraform
-        run: |
-          terraform -chdir=recidiviz/tools/deploy/terraform init -backend=false
-          terraform -chdir=recidiviz/tools/deploy/terraform validate
-      - name: Fetch origin/main
-        # Needed for origin/main object lookups to succeed.
-        run: git fetch origin main
+      - name: Python Setup
+        uses: ./.github/actions/python-setup
       - name: Set merge_base
         run: |
           echo "merge_base=$(git merge-base origin/main HEAD)" >> $GITHUB_ENV
@@ -46,18 +133,38 @@ jobs:
       #     # Pass extra_args to only run on changed files. The default is '--all-files'.
       #     # TODO(#6234): Remove once PA files can be generated again.
       #     extra_args: --from-ref ${{ env.merge_base }} --to-ref HEAD
-      - name: Check pipenv is locked
-        run: pipenv run python -m recidiviz.tools.is_pipenv_locked
-      - name: Mypy check
-        run: pipenv run mypy recidiviz
-      - name: Pylint
-        run: pipenv run ./recidiviz/tools/travis/run_pylint.sh
-      - name: Black
-        run: pipenv run black . --check
-      - name: Bandit
-        run: pipenv run bandit --ini .bandit -r -b bandit/bandit-baseline.json -x tests
+
+  validate-source-visibility:
+    name: Validate source visibility
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cancel previous runs
+        if: ${{ github.ref != 'refs/heads/main' }}
+        uses: styfle/cancel-workflow-action@0.6.0
+        with:
+          access_token: ${{ github.token }}
+      - uses: actions/checkout@v2
+      - name: Python Setup
+        uses: ./.github/actions/python-setup
       - name: Validate source visibility
         run: pipenv run python -m recidiviz.tools.validate_source_visibility
+
+  frontend-tests:
+    name: Frontend tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cancel previous runs
+        if: ${{ github.ref != 'refs/heads/main' }}
+        uses: styfle/cancel-workflow-action@0.6.0
+        with:
+          access_token: ${{ github.token }}
+      - uses: actions/checkout@v2
+        with:
+          # This clones the repo and checks out the SHA that triggered this action.
+          # We set fetch-depth 0 to fetch all branches and history so that merge-base
+          # is guaranteed to be able to find the common ancestor with the base branch.
+          # See https://github.com/actions/checkout#readme
+          fetch-depth: 0
       - name: Yarn caching
         uses: actions/cache@v2
         id: yarn-caching
@@ -89,6 +196,11 @@ jobs:
   unit-tests:
     name: Base unit tests
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [1,2,3,4]
+        suite-count: [4]
     steps:
       - name: Cancel previous runs
         if: ${{ github.ref != 'refs/heads/main' }}
@@ -96,13 +208,25 @@ jobs:
         with:
           access_token: ${{ github.token }}
       - uses: actions/checkout@v2
-      - uses: ./.github/actions/python-setup
+      - name: Python Setup
+        uses: ./.github/actions/python-setup
       - name: Run unit tests in parallel
-        run: pipenv run pytest recidiviz -n auto --test-set parallel
+        run: |
+          pipenv run pytest recidiviz/tests \
+            -n auto \
+            -m 'not uses_db and not emulator and not isolated' \
+            --suite-count ${{matrix.suite-count}} \
+            --suite=${{ matrix.suite }} \
+            --durations=25
 
   db-tests:
     name: Database tests
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [1,2,3,4]
+        suite-count: [4]
     steps:
       - name: Cancel previous runs
         if: ${{ github.ref != 'refs/heads/main' }}
@@ -110,7 +234,8 @@ jobs:
         with:
           access_token: ${{ github.token }}
       - uses: actions/checkout@v2
-      - uses: ./.github/actions/python-setup
+      - name: Python Setup
+        uses: ./.github/actions/python-setup
       # Postgres caching strategy adapted from https://raymii.org/s/articles/Github_Actions_cpp_boost_cmake_speedup.html
       - name: Cache postgres
         uses: actions/cache@v2
@@ -121,6 +246,7 @@ jobs:
       - name: Install postgres
         env:
           CACHE_HIT: ${{steps.cache-postgres.outputs.cache-hit}}
+        shell: bash
         run: |
           if [[ "$CACHE_HIT" == 'true' ]]; then
             sudo cp --force --recursive ~/postgres/* /
@@ -138,12 +264,25 @@ jobs:
           fi
           echo "/usr/lib/postgresql/13/bin" >> $GITHUB_PATH
           sudo chown -R $USER /var/run/postgresql
+
       - name: Run db tests
-        run: pipenv run pytest recidiviz --test-set not-parallel -m 'uses_db'
+        run: |
+          pipenv run pytest recidiviz/tests \
+            -n auto \
+            -m 'uses_db' \
+            --suite-count ${{matrix.suite-count}} \
+            --suite=${{ matrix.suite }} \
+            --durations=25
+
 
   emulator-tests:
     name: Emulator tests
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [ 1, 2, 3 ]
+        suite-count: [3]
     steps:
       - name: Cancel previous runs
         if: ${{ github.ref != 'refs/heads/main' }}
@@ -151,7 +290,8 @@ jobs:
         with:
           access_token: ${{ github.token }}
       - uses: actions/checkout@v2
-      - uses: ./.github/actions/python-setup
+      - name: Python Setup
+        uses: ./.github/actions/python-setup
       # GCP caching strategy adapted from https://raymii.org/s/articles/Github_Actions_cpp_boost_cmake_speedup.html
       - name: GCP caching
         uses: actions/cache@v2
@@ -185,4 +325,11 @@ jobs:
             dpkg -L google-cloud-sdk-pubsub-emulator | while IFS= read -r f; do if test -f $f; then echo $f; fi; done | xargs cp --parents --target-directory ~/gcp/pubsub
           fi
       - name: Run emulator tests
-        run: pipenv run pytest recidiviz --test-set not-parallel -m 'not uses_db' --with-emulator
+        run: |
+          pipenv run pytest recidiviz/tests \
+            -n auto \
+            --suite-count ${{matrix.suite-count}} \
+            --suite=${{ matrix.suite }} \
+            --with-emulator \
+            --durations=25
+
