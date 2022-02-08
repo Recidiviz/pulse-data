@@ -32,9 +32,9 @@ from recidiviz.calculator.calculation_data_storage_manager import (
     calculation_data_storage_manager_blueprint,
 )
 
-FAKE_PRODUCTION_TEMPLATES_PATH = os.path.join(
+FAKE_PIPELINE_CONFIG_YAML_PATH = os.path.join(
     os.path.dirname(__file__),
-    "fake_production_calculation_pipeline_templates.yaml",
+    "fake_calculation_pipeline_templates.yaml",
 )
 
 
@@ -122,10 +122,13 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
             self.fake_dataflow_tables_to_metric_types
         )
 
-        self.mock_production_template_yaml = FAKE_PRODUCTION_TEMPLATES_PATH
-        self.mock_always_unbounded_date_pipelines = ["pipeline_no_limit"]
+        self.mock_production_template_yaml = FAKE_PIPELINE_CONFIG_YAML_PATH
+        self.mock_always_unbounded_date_pipelines = [
+            "pipeline_no_limit",
+            "pipeline_staging_only",
+        ]
 
-        self.mock_dataflow_config.PRODUCTION_TEMPLATES_PATH = (
+        self.mock_dataflow_config.PIPELINE_CONFIG_YAML_PATH = (
             self.mock_production_template_yaml
         )
         self.mock_dataflow_config.ALWAYS_UNBOUNDED_DATE_PIPELINES = (

@@ -1,9 +1,0 @@
-# Details of pipeline jobs to deploy to templates that are only ready for stage deployment. These templates will not be
-# deployed to prod.
-#
-#  If you want to deploy a pipeline just to production, add it to production_calculation_pipeline_templates.yaml
-
-# List of pipelines with their necessary details
-
-incremental_pipelines: []
-historical_pipelines: []

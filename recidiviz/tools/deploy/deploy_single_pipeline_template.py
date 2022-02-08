@@ -18,9 +18,8 @@
 Functions for deploying a single calculation pipeline.
 The contents of this Python interpreter session are pickled and re-hydrated into the Dataflow worker process.
 
-The script finds and deploys a template that are defined in our configs:
-- recidiviz/calculator/pipeline/staging_only_calculation_pipelines.yaml
-- recidiviz/calculator/pipeline/production_calculation_pipelines.yaml
+The script finds and deploys a pipeline template defined in our config:
+- recidiviz/calculator/pipeline/calculation_pipeline_templates.yaml
 
 For example, to deploy the `us-id-historical-incarceration-calculations-240` template:
 
@@ -34,11 +33,11 @@ import logging
 import sys
 from typing import List, Optional, Tuple
 
+from recidiviz.calculator.dataflow_config import PIPELINE_CONFIG_YAML_PATH
 from recidiviz.tools.deploy.build_dataflow_source_distribution import (
     build_source_distribution,
 )
 from recidiviz.tools.deploy.dataflow_template_helpers import (
-    PIPELINE_CONFIG_YAML_PATHS,
     PipelineConfig,
     load_pipeline_config_yaml,
 )
@@ -105,18 +104,17 @@ def build_arguments_for_pipeline(
 
 
 def find_pipeline_with_job_name(job_name: str) -> PipelineConfig:
-    for template_yaml_path in PIPELINE_CONFIG_YAML_PATHS.values():
-        pipeline_config_yaml = load_pipeline_config_yaml(template_yaml_path)
+    pipeline_config_yaml = load_pipeline_config_yaml(PIPELINE_CONFIG_YAML_PATH)
 
-        for pipeline in pipeline_config_yaml.all_pipelines:
-            if pipeline["job_name"] == job_name:
-                return pipeline
+    for pipeline in pipeline_config_yaml.all_pipelines:
+        if pipeline["job_name"] == job_name:
+            return pipeline
 
     raise ValueError(f"Can not find a configured pipeline with the name {job_name}")
 
 
 def deploy_pipeline_template_to_project() -> None:
-    """ Finds an runs a pipeline with the specified arguments"""
+    """ Finds and runs a pipeline with the specified arguments"""
     known_args, _ = parse_arguments(sys.argv)
 
     pipeline_to_deploy_config = find_pipeline_with_job_name(known_args.job_name)

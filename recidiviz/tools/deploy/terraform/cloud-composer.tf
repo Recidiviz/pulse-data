@@ -46,7 +46,7 @@ resource "google_composer_environment" "default" {
         "webserver-web_server_name" = "orchestration"
       }
       env_variables = {
-        "CONFIG_FILE" = "/home/airflow/gcs/dags/production_calculation_pipeline_templates.yaml"
+        "CONFIG_FILE" = "/home/airflow/gcs/dags/calculation_pipeline_templates.yaml"
         # TODO(#4900): I think we get 'GCP_PROJECT' by default, so we can probably clean this up.
         "GCP_PROJECT_ID" = var.project_id
       }
@@ -88,9 +88,9 @@ resource "google_storage_bucket_object" "dags_archive" {
 }
 
 resource "google_storage_bucket_object" "pipeline_templates" {
-  name   = "dags/production_calculation_pipeline_templates.yaml"
+  name   = "dags/calculation_pipeline_templates.yaml"
   bucket = local.composer_dag_bucket
-  source = "${local.recidiviz_root}/calculator/pipeline/production_calculation_pipeline_templates.yaml"
+  source = "${local.recidiviz_root}/calculator/pipeline/calculation_pipeline_templates.yaml"
 }
 
 resource "google_storage_bucket_object" "cloud_function_utils" {

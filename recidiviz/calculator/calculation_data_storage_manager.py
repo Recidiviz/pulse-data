@@ -122,7 +122,7 @@ def _get_month_range_for_metric_and_state() -> Dict[str, Dict[str, int]]:
         for table, metric_type in dataflow_config.DATAFLOW_TABLES_TO_METRIC_TYPES.items()
     }
 
-    all_pipelines = YAMLDict.from_path(dataflow_config.PRODUCTION_TEMPLATES_PATH)
+    all_pipelines = YAMLDict.from_path(dataflow_config.PIPELINE_CONFIG_YAML_PATH)
     incremental_pipelines = all_pipelines.pop_dicts("incremental_pipelines")
     historical_pipelines = all_pipelines.pop_dicts("historical_pipelines")
 
@@ -218,7 +218,7 @@ def move_old_dataflow_metrics_to_cold_storage(dry_run: bool = False) -> None:
     metric table at once. All other output is moved to cold storage, unless it is the
     most recent job_id for a metric in a state where that metric is regularly calculated,
     and where the year and month of the output falls into the window of what is regularly
-    calculated for that metric and state. See the production_calculation_pipeline_templates.yaml
+    calculated for that metric and state. See the calculation_pipeline_templates.yaml
     file for a list of regularly scheduled calculations.
 
     If a metric has been entirely decommissioned, handles the deletion of the corresponding table.

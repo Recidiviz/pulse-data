@@ -18,7 +18,7 @@
 occasions when it is necessary to trigger a single Dataflow job without triggering the entire
 calculation pipeline DAG.
 
-For a list of deployed templates, see production_calculation_pipeline_templates.yaml.
+For a list of deployed templates, see calculation_pipeline_templates.yaml.
 
 usage: python -m recidiviz.tools.calculator.trigger_deployed_pipeline_template \
         --project_id [PROJECT_ID] \
@@ -34,7 +34,7 @@ from typing import Any, Dict, List, Tuple
 from googleapiclient.discovery import build
 from oauth2client.client import GoogleCredentials
 
-from recidiviz.calculator.dataflow_config import PRODUCTION_TEMPLATES_PATH
+from recidiviz.calculator.dataflow_config import PIPELINE_CONFIG_YAML_PATH
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.yaml_dict import YAMLDict
 
@@ -89,12 +89,12 @@ def _trigger_dataflow_job_from_template(
 
 
 def _pipeline_regions_by_job_name() -> Dict[str, str]:
-    """Parses the production_calculation_pipeline_templates.yaml config file to determine
-    which region a pipeline should be run in."""
-    incremental_pipelines = YAMLDict.from_path(PRODUCTION_TEMPLATES_PATH).pop_dicts(
+    """Parses the calculation_pipeline_templates.yaml config file to determine which region a pipeline should be
+    run in."""
+    incremental_pipelines = YAMLDict.from_path(PIPELINE_CONFIG_YAML_PATH).pop_dicts(
         "incremental_pipelines"
     )
-    historical_pipelines = YAMLDict.from_path(PRODUCTION_TEMPLATES_PATH).pop_dicts(
+    historical_pipelines = YAMLDict.from_path(PIPELINE_CONFIG_YAML_PATH).pop_dicts(
         "historical_pipelines"
     )
 
@@ -132,7 +132,7 @@ def trigger_dataflow_template() -> None:
     if not location:
         # This should never happen
         raise ValueError(
-            f"No defined region in {PRODUCTION_TEMPLATES_PATH} for job_name {job_name}."
+            f"No defined region in {PIPELINE_CONFIG_YAML_PATH} for job_name {job_name}."
         )
 
     response = _trigger_dataflow_job_from_template(

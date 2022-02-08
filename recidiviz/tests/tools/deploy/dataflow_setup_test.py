@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests the pulse-data/recidiviz/tools/deploy/dataflow_template_setup.py file that specifies required packages
+"""Tests the pulse-data/recidiviz/tools/deploy/dataflow_setup.py file that specifies required packages
 for the Dataflow VM workers. """
 import json
 import os
@@ -44,7 +44,7 @@ class TestSetupFilePinnedDependencies(unittest.TestCase):
         for dependency in pinned_dependencies:
             pipfile_dependency = pipfile_version_for_dependency(dependency)
 
-            with open(SETUP_PATH, "r") as setup_file:
+            with open(SETUP_PATH, "r", encoding="utf-8") as setup_file:
                 for line in setup_file:
                     if dependency in line:
                         # Remove whitespace, quotation marks, and commas
@@ -71,7 +71,7 @@ class TestSetupFilePinnedDependencies(unittest.TestCase):
 
         pipfile_dependency = pipfile_version_for_dependency(dependency)
 
-        with open(SETUP_PATH, "r") as setup_file:
+        with open(SETUP_PATH, "r", encoding="utf-8") as setup_file:
             for line in setup_file:
                 if dependency in line:
                     # Remove whitespace, quotation marks, and commas
@@ -89,7 +89,7 @@ def pipfile_version_for_dependency(dependency: str) -> str:
     """
     pipfile_version = None
 
-    with open(PIPFILE_LOCK_PATH) as pipfile_lock_json:
+    with open(PIPFILE_LOCK_PATH, encoding="utf-8") as pipfile_lock_json:
         pipfile_data = json.load(pipfile_lock_json)
 
         if pipfile_data:

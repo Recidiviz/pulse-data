@@ -101,10 +101,12 @@ def _get_pipeline_enabled_states() -> Set[StateCode]:
     """Returns all states that have scheduled pipelines that run."""
     pipeline_states: Set[StateCode] = set()
 
-    prod_templates_yaml = YAMLDict.from_path(dataflow_config.PRODUCTION_TEMPLATES_PATH)
+    pipeline_templates_yaml = YAMLDict.from_path(
+        dataflow_config.PIPELINE_CONFIG_YAML_PATH
+    )
 
-    incremental_pipelines = prod_templates_yaml.pop_dicts("incremental_pipelines")
-    historical_pipelines = prod_templates_yaml.pop_dicts("historical_pipelines")
+    incremental_pipelines = pipeline_templates_yaml.pop_dicts("incremental_pipelines")
+    historical_pipelines = pipeline_templates_yaml.pop_dicts("historical_pipelines")
 
     for pipeline in incremental_pipelines:
         pipeline_states.add(StateCode(pipeline.peek("state_code", str)))

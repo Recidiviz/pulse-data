@@ -157,14 +157,8 @@ function pre_deploy_configure_infrastructure {
     verify_hash $COMMIT_HASH
     run_cmd pipenv run python -m recidiviz.tools.deploy.deploy_views --project_id ${PROJECT}
 
-    # Deploy pipeline templates.
-    if [[ ${PROJECT} == 'recidiviz-staging' ]]; then
-        echo "Deploying stage-only calculation pipelines to templates in ${PROJECT}."
-        deploy_pipeline_templates ${PROJECT} staging || exit_on_fail
-    fi
-
-    echo "Deploying prod-ready calculation pipelines to templates in ${PROJECT}."
-    deploy_pipeline_templates ${PROJECT} production || exit_on_fail
+    echo "Deploying calculation pipelines to templates in ${PROJECT}."
+    deploy_pipeline_templates ${PROJECT} || exit_on_fail
 }
 
 function check_running_in_pipenv_shell {
@@ -294,11 +288,10 @@ function reconfigure_terraform_backend {
 
 function deploy_pipeline_templates {
     PROJECT_ID=$1
-    TEMPLATES_TO_DEPLOY=$2
     while true
     do
         verify_hash $COMMIT_HASH
-        pipenv run python -m recidiviz.tools.deploy.deploy_all_pipeline_templates --project_id ${PROJECT_ID} --templates_to_deploy ${TEMPLATES_TO_DEPLOY}
+        pipenv run python -m recidiviz.tools.deploy.deploy_all_pipeline_templates --project_id ${PROJECT_ID}
         return_code=$?
 
         if [[ $return_code -eq 0 ]]; then

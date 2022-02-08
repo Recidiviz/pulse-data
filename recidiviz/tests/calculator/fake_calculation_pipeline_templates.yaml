@@ -1,4 +1,4 @@
-# Mock file to test utils that reference the production_calculation_pipeline_templates.yaml
+# Mock file to test utils that reference the calculation_pipeline_templates.yaml
 # file
 
 incremental_pipelines:
@@ -24,6 +24,15 @@ incremental_pipelines:
     calculation_month_count: 24
     metric_types: METRIC_2 METRIC_3
     region: us-east1
+
+  # Daily US_YY calculations
+  - pipeline: pipeline_staging_only
+    job_name: us-yy-pipeline_staging_only-calculations-36
+    state_code: US_YY
+    calculation_month_count: 36
+    metric_types: METRIC_3
+    region: us-east1
+    staging_only: True
 
 
 historical_pipelines:
