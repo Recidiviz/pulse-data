@@ -202,7 +202,12 @@ def execute_validation(
         # Emit metrics for all hard and total failures
         _emit_opencensus_failure_events(
             failed_to_run_validations,
-            failed_hard_validations,
+            # Skip dev mode failures when emitting metrics
+            [
+                result
+                for result in failed_hard_validations
+                if not result.result_details.is_dev_mode
+            ],
         )
     # Log results to console
     _log_results(
@@ -221,13 +226,24 @@ def _log_results(
     failed_soft_validations: List[DataValidationJobResult],
     failed_hard_validations: List[DataValidationJobResult],
 ) -> None:
+    """Writes summary of failed validations, including dev mode, to output logs."""
+    total_failed_validations = (
+        len(failed_hard_validations)
+        + len(failed_to_run_validations)
+        + len(failed_soft_validations)
+    )
+    dev_mode_failures = [
+        result
+        for result in failed_soft_validations + failed_hard_validations
+        if result.result_details.is_dev_mode
+    ]
     if failed_hard_validations or failed_soft_validations or failed_to_run_validations:
         logging.error(
-            "Found a total of [%s] failure(s). There were [%s] soft failure(s), [%s] hard failure(s), "
-            "and [%s] that failed to run entirely. Emitting results...",
-            len(failed_hard_validations)
-            + len(failed_to_run_validations)
-            + len(failed_soft_validations),
+            "Found a total of [%d] failure(s), plus [%d] dev mode failure(s). "
+            "In total, there were [%d] soft failure(s), [%d] hard failure(s), "
+            "and [%d] that failed to run entirely. Emitting results...",
+            total_failed_validations - len(dev_mode_failures),
+            len(dev_mode_failures),
             len(failed_soft_validations),
             len(failed_hard_validations),
             len(failed_to_run_validations),

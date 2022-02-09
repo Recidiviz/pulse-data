@@ -83,6 +83,7 @@ class ExistenceDataValidationCheck(DataValidationCheck):
 
         return attr.evolve(
             self,
+            dev_mode=region_config.dev_mode,
             hard_num_allowed_rows=hard_num_allowed_rows,
             soft_num_allowed_rows=soft_num_allowed_rows,
         )
@@ -97,9 +98,15 @@ class ExistenceValidationResultDetails(DataValidationJobResultDetails):
     hard_num_allowed_rows: int = attr.ib()
     soft_num_allowed_rows: int = attr.ib()
 
+    dev_mode: bool = attr.ib(default=False)
+
     @property
     def has_data(self) -> bool:
         return True
+
+    @property
+    def is_dev_mode(self) -> bool:
+        return self.dev_mode
 
     @property
     def error_amount(self) -> float:
@@ -158,6 +165,7 @@ class ExistenceValidationChecker(ValidationChecker[ExistenceDataValidationCheck]
             validation_job=validation_job,
             result_details=ExistenceValidationResultDetails(
                 num_invalid_rows=more_itertools.ilen(query_job),
+                dev_mode=validation_job.validation.dev_mode,
                 hard_num_allowed_rows=validation_job.validation.hard_num_allowed_rows,
                 soft_num_allowed_rows=validation_job.validation.soft_num_allowed_rows,
             ),

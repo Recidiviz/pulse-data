@@ -158,6 +158,7 @@ class SamenessDataValidationCheck(DataValidationCheck):
 
         return attr.evolve(
             self,
+            dev_mode=region_config.dev_mode,
             hard_max_allowed_error=hard_max_allowed_error,
             soft_max_allowed_error=soft_max_allowed_error,
         )
@@ -182,6 +183,8 @@ class SamenessPerViewValidationResultDetails(DataValidationJobResultDetails):
     hard_max_allowed_error: float = attr.ib()
     soft_max_allowed_error: float = attr.ib()
 
+    dev_mode: bool = attr.ib(default=False)
+
     # This field is not used directly in checking for failures but provides additional
     # context for analyzing results.
     #
@@ -199,6 +202,10 @@ class SamenessPerViewValidationResultDetails(DataValidationJobResultDetails):
     @property
     def has_data(self) -> bool:
         return self.total_num_rows > 0
+
+    @property
+    def is_dev_mode(self) -> bool:
+        return self.dev_mode
 
     @property
     def error_amount(self) -> float:
@@ -226,7 +233,9 @@ class SamenessPerViewValidationResultDetails(DataValidationJobResultDetails):
 
     def validation_result_status(self) -> ValidationResultStatus:
         return validate_result_status(
-            self.error_rate, self.soft_max_allowed_error, self.hard_max_allowed_error
+            self.error_rate,
+            self.soft_max_allowed_error,
+            self.hard_max_allowed_error,
         )
 
     def failure_description(self) -> Optional[str]:
@@ -262,9 +271,15 @@ class SamenessPerRowValidationResultDetails(DataValidationJobResultDetails):
     hard_max_allowed_error: float = attr.ib()
     soft_max_allowed_error: float = attr.ib()
 
+    dev_mode: bool = attr.ib(default=False)
+
     @property
     def has_data(self) -> bool:
         return True
+
+    @property
+    def is_dev_mode(self) -> bool:
+        return self.dev_mode
 
     @property
     def error_amount(self) -> float:
@@ -322,7 +337,9 @@ class SamenessPerRowValidationResultDetails(DataValidationJobResultDetails):
                 f"highest_error should not be null since failed_rows is not null. failed_rows: {self.failed_rows}"
             )
         return validate_result_status(
-            self.highest_error, self.soft_max_allowed_error, self.hard_max_allowed_error
+            self.highest_error,
+            self.soft_max_allowed_error,
+            self.hard_max_allowed_error,
         )
 
     def failure_description(self) -> Optional[str]:
@@ -462,6 +479,7 @@ class SamenessValidationChecker(ValidationChecker[SamenessDataValidationCheck]):
 
         return SamenessPerRowValidationResultDetails(
             failed_rows=failed_rows,
+            dev_mode=validation.dev_mode,
             hard_max_allowed_error=validation.hard_max_allowed_error,
             soft_max_allowed_error=validation.soft_max_allowed_error,
         )
@@ -520,6 +538,7 @@ class SamenessValidationChecker(ValidationChecker[SamenessDataValidationCheck]):
         return SamenessPerViewValidationResultDetails(
             num_error_rows=num_errors,
             total_num_rows=num_rows,
+            dev_mode=validation.dev_mode,
             hard_max_allowed_error=validation.hard_max_allowed_error,
             soft_max_allowed_error=validation.soft_max_allowed_error,
             non_null_counts_per_column_per_partition=list(
