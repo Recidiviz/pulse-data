@@ -24,13 +24,6 @@ from typing import List
 
 from recidiviz.ingest.direct import regions as regions_module
 from recidiviz.ingest.direct import templates as ingest_templates_module
-from recidiviz.ingest.direct.direct_ingest_files_generator import (
-    DEFAULT_WORKING_DIR,
-    DOCS_DIR_NAME,
-    DOCS_DIR_PATH,
-    REGIONS_DIR_PATH,
-    DirectIngestFilesGenerator,
-)
 from recidiviz.ingest.direct.direct_ingest_region_utils import (
     get_existing_region_dir_names,
 )
@@ -40,6 +33,13 @@ from recidiviz.persistence.entity_matching import (
 from recidiviz.tests.ingest.direct import templates as test_templates_module
 from recidiviz.tests.ingest.direct.regions.direct_ingest_region_structure_test import (
     DirectIngestRegionDirStructureBase,
+)
+from recidiviz.tools.ingest.development.region_files_generator import (
+    DEFAULT_WORKING_DIR,
+    DOCS_DIR_NAME,
+    DOCS_DIR_PATH,
+    REGIONS_DIR_PATH,
+    RegionFilesGenerator,
 )
 
 GENERIC_REGION_CODE = "us_xx"
@@ -56,9 +56,7 @@ INGEST_TEST_TEMPLATES_DIR_PATH = os.path.dirname(
 
 
 @unittest.skipIf(os.environ.get("TRAVIS") == "true", "docs/ does not exist in Travis")
-class DirectIngestFilesGeneratorTest(
-    DirectIngestRegionDirStructureBase, unittest.TestCase
-):
+class RegionFilesGeneratorTest(DirectIngestRegionDirStructureBase, unittest.TestCase):
     """Tests for DirectIngestFilesGenerator."""
 
     def setUp(self) -> None:
@@ -68,7 +66,7 @@ class DirectIngestFilesGeneratorTest(
 
         super().setUp()
         test_region_code = "us_xx"
-        self.files_generator = DirectIngestFilesGenerator(
+        self.files_generator = RegionFilesGenerator(
             test_region_code,
             curr_directory=self.temp_dir,
             docs_directory=os.path.join(self.temp_dir, DOCS_DIR_NAME),
@@ -133,5 +131,5 @@ class DirectIngestFilesGeneratorTest(
 
     def test_generate_all_new_files_for_existing_state(self) -> None:
         with self.assertRaises(FileExistsError):
-            files_generator = DirectIngestFilesGenerator("us_nd")
+            files_generator = RegionFilesGenerator("us_nd")
             files_generator.generate_all_new_dirs_and_files()

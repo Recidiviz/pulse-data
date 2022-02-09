@@ -87,6 +87,7 @@ class ValidationConfigTest(unittest.TestCase):
         }
         expected_config = ValidationRegionConfig(
             region_code="US_XX",
+            dev_mode=False,
             exclusions=expected_exclusions,
             max_allowed_error_overrides=expected_max_allowed_error_overrides,
             num_allowed_rows_overrides=expected_num_allowed_rows_overrides,
