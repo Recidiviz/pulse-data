@@ -3,16 +3,20 @@ name: CI Tests
 on: push
 
 jobs:
-  bandit:
-    name: Bandit
+  cancel-previous-runs:
+    name: Cancel previous runs
     runs-on: ubuntu-latest
     steps:
-
       - name: Cancel previous runs
         if: ${{ github.ref != 'refs/heads/main' }}
         uses: styfle/cancel-workflow-action@0.6.0
         with:
           access_token: ${{ github.token }}
+
+  bandit:
+    name: Bandit
+    runs-on: ubuntu-latest
+    steps:
       - uses: actions/checkout@v2
       - name: Python Setup
         uses: ./.github/actions/python-setup
@@ -23,11 +27,6 @@ jobs:
     name: Black
     runs-on: ubuntu-latest
     steps:
-      - name: Cancel previous runs
-        if: ${{ github.ref != 'refs/heads/main' }}
-        uses: styfle/cancel-workflow-action@0.6.0
-        with:
-          access_token: ${{ github.token }}
       - uses: actions/checkout@v2
       - name: Python Setup
         uses: ./.github/actions/python-setup
@@ -38,11 +37,6 @@ jobs:
       name: Check if Pipenv is locked
       runs-on: ubuntu-latest
       steps:
-        - name: Cancel previous runs
-          if: ${{ github.ref != 'refs/heads/main' }}
-          uses: styfle/cancel-workflow-action@0.6.0
-          with:
-            access_token: ${{ github.token }}
         - uses: actions/checkout@v2
         - name: Python Setup
           uses: ./.github/actions/python-setup
@@ -54,11 +48,6 @@ jobs:
     name: Mypy
     runs-on: ubuntu-latest
     steps:
-      - name: Cancel previous runs
-        if: ${{ github.ref != 'refs/heads/main' }}
-        uses: styfle/cancel-workflow-action@0.6.0
-        with:
-          access_token: ${{ github.token }}
       - uses: actions/checkout@v2
       - name: Python Setup
         uses: ./.github/actions/python-setup
@@ -69,11 +58,6 @@ jobs:
     name: Pylint
     runs-on: ubuntu-latest
     steps:
-      - name: Cancel previous runs
-        if: ${{ github.ref != 'refs/heads/main' }}
-        uses: styfle/cancel-workflow-action@0.6.0
-        with:
-          access_token: ${{ github.token }}
       - uses: actions/checkout@v2
       - name: Python Setup
         uses: ./.github/actions/python-setup
@@ -84,11 +68,6 @@ jobs:
     name: Terraform Validation
     runs-on: ubuntu-latest
     steps:
-      - name: Cancel previous runs
-        if: ${{ github.ref != 'refs/heads/main' }}
-        uses: styfle/cancel-workflow-action@0.6.0
-        with:
-          access_token: ${{ github.token }}
       - uses: actions/checkout@v2
       - uses: hashicorp/setup-terraform@v1
       - name: Validate terraform
@@ -101,11 +80,6 @@ jobs:
     name: Validate source modifications
     runs-on: ubuntu-latest
     steps:
-      - name: Cancel previous runs
-        if: ${{ github.ref != 'refs/heads/main' }}
-        uses: styfle/cancel-workflow-action@0.6.0
-        with:
-          access_token: ${{ github.token }}
       - uses: actions/checkout@v2
         with:
           # This clones the repo and checks out the SHA that triggered this action.
@@ -138,11 +112,6 @@ jobs:
     name: Validate source visibility
     runs-on: ubuntu-latest
     steps:
-      - name: Cancel previous runs
-        if: ${{ github.ref != 'refs/heads/main' }}
-        uses: styfle/cancel-workflow-action@0.6.0
-        with:
-          access_token: ${{ github.token }}
       - uses: actions/checkout@v2
       - name: Python Setup
         uses: ./.github/actions/python-setup
@@ -153,11 +122,6 @@ jobs:
     name: Frontend tests
     runs-on: ubuntu-latest
     steps:
-      - name: Cancel previous runs
-        if: ${{ github.ref != 'refs/heads/main' }}
-        uses: styfle/cancel-workflow-action@0.6.0
-        with:
-          access_token: ${{ github.token }}
       - uses: actions/checkout@v2
         with:
           # This clones the repo and checks out the SHA that triggered this action.
@@ -202,11 +166,6 @@ jobs:
         suite: [1,2,3,4]
         suite-count: [4]
     steps:
-      - name: Cancel previous runs
-        if: ${{ github.ref != 'refs/heads/main' }}
-        uses: styfle/cancel-workflow-action@0.6.0
-        with:
-          access_token: ${{ github.token }}
       - uses: actions/checkout@v2
       - name: Python Setup
         uses: ./.github/actions/python-setup
@@ -228,11 +187,6 @@ jobs:
         suite: [1,2,3,4]
         suite-count: [4]
     steps:
-      - name: Cancel previous runs
-        if: ${{ github.ref != 'refs/heads/main' }}
-        uses: styfle/cancel-workflow-action@0.6.0
-        with:
-          access_token: ${{ github.token }}
       - uses: actions/checkout@v2
       - name: Python Setup
         uses: ./.github/actions/python-setup
@@ -284,11 +238,6 @@ jobs:
         suite: [ 1, 2, 3 ]
         suite-count: [3]
     steps:
-      - name: Cancel previous runs
-        if: ${{ github.ref != 'refs/heads/main' }}
-        uses: styfle/cancel-workflow-action@0.6.0
-        with:
-          access_token: ${{ github.token }}
       - uses: actions/checkout@v2
       - name: Python Setup
         uses: ./.github/actions/python-setup
