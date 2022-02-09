@@ -892,7 +892,8 @@ class TestCaseTriageAPIRoutes(TestCase):
             auth_store.case_triage_admin_users = ["not-found-admin@not-recidiviz.org"]
             with self.test_client.session_transaction() as sess:  # type: ignore
                 sess["user_info"] = {"email": "not-found-admin@not-recidiviz.org"}
-            g.user_context = UserContext.base_context_for_email(
+            # TODO(PyCQA/pylint#5317): Remove ignore fixed by PyCQA/pylint#5457
+            g.user_context = UserContext.base_context_for_email(  # pylint: disable=assigning-non-slot
                 "not-found-admin@not-recidiviz.org", auth_store
             )
             g.user_context.jwt_claims[
@@ -924,7 +925,8 @@ class TestCaseTriageAPIRoutes(TestCase):
         with self.test_app.test_request_context():
             with self.test_client.session_transaction() as sess:  # type: ignore
                 sess["user_info"] = {"email": "admin@not-recidiviz.org"}
-            g.user_context = UserContext.base_context_for_email(
+            # TODO(PyCQA/pylint#5317): Remove ignore fixed by PyCQA/pylint#5457
+            g.user_context = UserContext.base_context_for_email(  # pylint: disable=assigning-non-slot
                 "admin@not-recidiviz.org", auth_store
             )
             # Perform initial impersonation
@@ -1007,7 +1009,10 @@ class TestUserImpersonation(TestCase):
             # impersonation didn't happen at all.
             with self.test_client.session_transaction() as sess:  # type: ignore
                 sess["user_info"] = {"email": self.non_admin_email}
-            g.user_context = UserContext(self.non_admin_email, self.auth_store)
+            # TODO(PyCQA/pylint#5317): Remove ignore fixed by PyCQA/pylint#5457
+            g.user_context = UserContext(  # pylint: disable=assigning-non-slot
+                self.non_admin_email, self.auth_store
+            )
             g.user_context.jwt_claims[
                 REGISTRATION_DATE_CLAIM
             ] = "2021-01-08T22:02:17.863Z"
@@ -1018,7 +1023,10 @@ class TestUserImpersonation(TestCase):
             # impersonation didn't happen at all and that key is no longer in the session.
             with self.test_client.session_transaction() as sess:  # type: ignore
                 sess["user_info"] = {"email": self.non_admin_email}
-            g.user_context = UserContext(self.non_admin_email, self.auth_store)
+            # TODO(PyCQA/pylint#5317): Remove ignore fixed by PyCQA/pylint#5457
+            g.user_context = UserContext(  # pylint: disable=assigning-non-slot
+                self.non_admin_email, self.auth_store
+            )
             g.user_context.jwt_claims[
                 REGISTRATION_DATE_CLAIM
             ] = "2021-01-08T22:02:17.863Z"
@@ -1069,7 +1077,10 @@ class TestUserImpersonation(TestCase):
             self.auth_store.case_triage_admin_users = [self.admin_email]
             with self.test_client.session_transaction() as sess:  # type: ignore
                 sess["user_info"] = {"email": self.admin_email}
-            g.user_context = UserContext(self.admin_email, self.auth_store)
+            # TODO(PyCQA/pylint#5317): Remove ignore fixed by PyCQA/pylint#5457
+            g.user_context = UserContext(  # pylint: disable=assigning-non-slot
+                self.admin_email, self.auth_store
+            )
             g.user_context.jwt_claims[
                 REGISTRATION_DATE_CLAIM
             ] = "2021-01-08T22:02:17.863Z"
@@ -1120,7 +1131,10 @@ class TestUserImpersonation(TestCase):
             self.auth_store.case_triage_admin_users = [self.admin_email]
             with self.test_client.session_transaction() as sess:  # type: ignore
                 sess["user_info"] = {"email": self.admin_email}
-            g.user_context = UserContext(self.admin_email, self.auth_store)
+            # TODO(PyCQA/pylint#5317): Remove ignore fixed by PyCQA/pylint#5457
+            g.user_context = UserContext(  # pylint: disable=assigning-non-slot
+                self.admin_email, self.auth_store
+            )
             # Perform initial impersonation
             self.test_client.get(
                 f"/api/bootstrap?{IMPERSONATED_EMAIL_KEY}={parse.quote(hash_email(self.non_admin_email))}"
