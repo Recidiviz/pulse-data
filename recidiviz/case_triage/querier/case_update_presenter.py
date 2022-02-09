@@ -34,14 +34,14 @@ from recidiviz.persistence.database.schema.case_triage.schema import (
 
 
 class CaseUpdateStatus(enum.Enum):
-    """ CaseUpdate status """
+    """CaseUpdate status"""
 
     IN_PROGRESS = "IN_PROGRESS"
     UPDATED_IN_CIS = "UPDATED_IN_CIS"
 
 
 class CaseUpdatePresenter:
-    """ Presenter for a CaseUpdate """
+    """Presenter for a CaseUpdate"""
 
     def __init__(self, etl_client: ETLClient, case_update: CaseUpdate):
         self.etl_client = etl_client

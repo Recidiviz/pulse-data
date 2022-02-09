@@ -41,6 +41,7 @@ _Scope = Literal["session", "package", "module", "class", "function"]
 FixtureFunction = TypeVar("FixtureFunction", bound=Callable[..., object])
 
 E = TypeVar("E", bound=BaseException)
+
 @overload
 def fixture(
     fixture_function: FixtureFunction,

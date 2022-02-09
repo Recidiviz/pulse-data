@@ -22,13 +22,13 @@ import pandas as pd
 from pandas.core.dtypes.common import is_numeric_dtype
 
 from recidiviz.admin_panel.data_discovery.types import (
-    DataFramesByFileType,
     ConfigsByFileType,
+    DataFramesByFileType,
 )
 
 
 def highlight_changes(series: pd.Series) -> List[str]:
-    """ Bolds the font for cells whose value has changed since the previous row"""
+    """Bolds the font for cells whose value has changed since the previous row"""
     has_changed = (series.notna()) & (series.shift() != series)
     return [
         "color: #012322; font-weight: bold;" if v else "color: rgba(53,83,98,0.85);"
@@ -37,12 +37,12 @@ def highlight_changes(series: pd.Series) -> List[str]:
 
 
 def center_null(series: pd.Series) -> List[str]:
-    """" Center aligns null values """
+    """ " Center aligns null values"""
     return ["text-align: center;" if v else "" for v in series.isna()]
 
 
 def align_text(series: pd.Series) -> List[str]:
-    """ Right align numeric data; Left align text data"""
+    """Right align numeric data; Left align text data"""
     return [
         "text-align: right;" if is_numeric_dtype(series) else "text-align: left"
         for v in series
@@ -53,7 +53,7 @@ def build_report(
     dataframes: DataFramesByFileType,
     configs: ConfigsByFileType,
 ) -> str:
-    """ Build and open an HTML report of discovered data """
+    """Build and open an HTML report of discovered data"""
     file_contents = """<style>
         #report { font-family: 'Andale Mono', monospace; overflow: scroll; }
         #report h2 { border-bottom: 1px solid #000;} 

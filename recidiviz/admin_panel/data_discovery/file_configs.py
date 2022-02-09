@@ -34,7 +34,7 @@ from recidiviz.utils.regions import get_region
 
 @attr.s
 class DataDiscoveryStandardizedFileConfig:
-    """ Shared interface describing both raw file / ingest view metadata"""
+    """Shared interface describing both raw file / ingest view metadata"""
 
     file_tag: str = attr.ib()
     columns: List[str] = attr.ib()

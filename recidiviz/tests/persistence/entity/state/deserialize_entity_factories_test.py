@@ -104,7 +104,7 @@ class TestDeserializeEntityFactories(unittest.TestCase):
     """Tests for deserialize_entity_factories.py."""
 
     def test_factories_defined_for_all_classes(self) -> None:
-        """Tests that an entity factory has been added for every entity. """
+        """Tests that an entity factory has been added for every entity."""
         factory_classes = get_all_entity_factory_classes_in_module(
             deserialize_entity_factories
         )

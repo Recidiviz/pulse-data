@@ -20,6 +20,7 @@ apache-beam = {extras = ["gcp", "test"],version = "==2.34.0"}
 fakeredis = "*"
 freezegun = "*"
 ipdb = "*"
+jupyter = "*"
 pytest-alembic = "*"
 pipenv = "*"
 pygit2 = "*"
@@ -32,7 +33,7 @@ gspread = "*"
 pytablewriter = "*"
 # Note: Update the `black` version in `.pre-commit-config.yaml` whenever this is updated.
 # If we remove the restriction, then add `pre-commit autoupdate` to the Pipenv Github action to keep them in sync.
-black = "==20.8b1"
+black = "==22.1.0"
 pre-commit = "*"
 # TODO(#4287): Unpin/remove explicit dependency once the latest version of
 #  google-api-core supports protobuf version >= 3.18.0 (might be resolved by upgrading
@@ -43,7 +44,6 @@ rope = "*"
 "ruamel.yaml" = "*"
 types-beautifulsoup4 = "*"
 types-dateparser = "*"
-types-flask = "*"
 types-freezegun = "*"
 types-html5lib = "*"
 types-httplib2 = "*"
@@ -61,7 +61,6 @@ types-PyYAML = "*"
 msal = "*"
 
 [packages]
-jupyter = "*"
 callee = "*"
 "html5lib" = "*"
 numpy = "*"
@@ -74,7 +73,13 @@ lxml = "*"
 opencensus = ">=0.7.0"
 opencensus-context = "*"
 opencensus-correlation = "*"
-opencensus-ext-flask = "*"
+# TODO(census-instrumentation/opencensus-python#1072): Move to current version once this
+# is merged.
+# Context: Opencensus arbitrarily limits us to less than Flask 2, which now is quite old
+# and was holding back a lot of dependencies. An open PR shows that all of their tests
+# pass on Flask 2, so we include their package with that PR for now to unblock our
+# upgrade.
+opencensus-ext-flask = {ref = "93dbd9043d6a367ab9866dd8ae28aebcc45baf2d",git = "https://github.com/census-instrumentation/opencensus-python.git", editable = true, subdirectory = "contrib/opencensus-ext-flask"}
 opencensus-ext-google-cloud-clientlibs = "*"
 opencensus-ext-grpc = "*"
 opencensus-ext-requests = "*"
@@ -85,9 +90,8 @@ opencensus-ext-stackdriver = "*"
 # TODO(#9157): Unpin alembic -- blocked by sqlalchemy/alembic#900 and sqlalchemy/alembic#903
 alembic = "==1.6.5"
 sqlalchemy = ">=1.4.25"
-flask = "*"
-# TODO(census-instrumentation/opencensus-python#1022): Unpin once opencensus-ext-flask supports flask 2
-Flask-Limiter = "<2.0.0"
+flask = ">=2.0.0"
+Flask-Limiter = "*"
 Flask-SQLAlchemy-Session = "*"
 Flask-WTF = "*"
 iteration-utilities = "*"

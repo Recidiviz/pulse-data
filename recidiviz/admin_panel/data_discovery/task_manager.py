@@ -25,8 +25,8 @@ import requests
 from recidiviz.admin_panel.data_discovery.discovery import DataDiscoveryArgs
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.google_cloud.cloud_task_queue_manager import (
-    CloudTaskQueueManager,
     CloudTaskQueueInfo,
+    CloudTaskQueueManager,
 )
 from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import (
     ADMIN_PANEL_DATA_DISCOVERY_QUEUE,
@@ -73,11 +73,11 @@ def build_cache_ingest_file_as_parquet_task(
 
 
 class AbstractAdminPanelDataDiscoveryCloudTaskManager:
-    """ Abstract base class for AdminPanelDataDiscoveryCloudTaskManager """
+    """Abstract base class for AdminPanelDataDiscoveryCloudTaskManager"""
 
     @abc.abstractmethod
     def create_discovery_task(self, data_discovery_args: DataDiscoveryArgs) -> None:
-        """ Create a data discovery task """
+        """Create a data discovery task"""
 
     @abc.abstractmethod
     def create_cache_ingest_file_as_parquet_task(
@@ -88,7 +88,7 @@ class AbstractAdminPanelDataDiscoveryCloudTaskManager:
         quoting: int,
         custom_line_terminator: Optional[str],
     ) -> None:
-        """ Create a cache ingest file as parquet task """
+        """Create a cache ingest file as parquet task"""
 
 
 class AdminPanelDataDiscoveryCloudTaskManager(
@@ -125,7 +125,7 @@ class AdminPanelDataDiscoveryCloudTaskManager(
 class DevelopmentAdminPanelDataDiscoveryCloudTaskManager(
     AbstractAdminPanelDataDiscoveryCloudTaskManager
 ):
-    """ Class for running data discovery cloud tasks locally """
+    """Class for running data discovery cloud tasks locally"""
 
     @environment.local_only
     def create_discovery_task(self, data_discovery_args: DataDiscoveryArgs) -> None:

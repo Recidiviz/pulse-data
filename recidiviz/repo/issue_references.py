@@ -69,7 +69,7 @@ class CodeReference:
         return f"{self.filepath}:{self.line_number}"
 
 
-TODO_REGEX = fr"TODO\({GithubIssue.ISSUE_REGEX}\)"
+TODO_REGEX = rf"TODO\({GithubIssue.ISSUE_REGEX}\)"
 
 
 def _read_todo_lines_from_codebase() -> List[str]:

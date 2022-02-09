@@ -284,7 +284,7 @@ def build_gcsfs_controller_for_tests(
     can_start_ingest: bool = True,
     regions_module: ModuleType = fake_regions_module,
 ) -> BaseDirectIngestController:
-    """Builds an instance of |controller_cls| for use in tests with several internal classes mocked properly. """
+    """Builds an instance of |controller_cls| for use in tests with several internal classes mocked properly."""
     fake_fs = FakeGCSFileSystem()
 
     def mock_build_fs() -> FakeGCSFileSystem:

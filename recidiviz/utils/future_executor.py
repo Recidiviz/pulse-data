@@ -29,19 +29,19 @@ from recidiviz.utils import structured_logging
 
 @attr.s(frozen=True)
 class FutureExecutorProgress:
-    """ Data class for future execution progress"""
+    """Data class for future execution progress"""
 
     running: int = attr.ib()
     completed: int = attr.ib()
     total: int = attr.ib()
 
     def format(self) -> str:
-        """ Format to progress string """
+        """Format to progress string"""
         return f"{self.running} running - {self.completed} / {self.total}"
 
 
 class FutureExecutor:
-    """ Given a list of task futures, exposes a progress generator, and the results of futures """
+    """Given a list of task futures, exposes a progress generator, and the results of futures"""
 
     PROGRESS_TIMEOUT = 120  # 2 minutes
 
@@ -89,7 +89,7 @@ class FutureExecutor:
     def build(
         func: Callable, kwargs_list: List[Dict], max_workers: Optional[int] = None
     ) -> Generator["FutureExecutor", None, None]:
-        """ Creates a ThreadPoolExecutor and corresponding FutureExecutor """
+        """Creates a ThreadPoolExecutor and corresponding FutureExecutor"""
         with futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
             future_execution = FutureExecutor(
                 [

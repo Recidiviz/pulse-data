@@ -19,7 +19,7 @@ import json
 import os
 import uuid
 from datetime import date
-from typing import List, Any, TypedDict, Literal
+from typing import Any, List, Literal, TypedDict
 
 import attr
 
@@ -28,13 +28,11 @@ from recidiviz.admin_panel.data_discovery.utils import get_data_discovery_cache
 from recidiviz.cloud_memorystore.redis_communicator import RedisCommunicator
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
 from recidiviz.common.ingest_metadata import SystemLevel
-from recidiviz.ingest.direct.types.direct_ingest_instance import (
-    DirectIngestInstance,
-)
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsDirectIngestFileType,
     gcsfs_direct_ingest_storage_directory_path_for_region,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils.environment import in_gcp
 
 
@@ -50,7 +48,7 @@ class ConditionGroup(TypedDict):
 
 @attr.s
 class DataDiscoveryArgs:
-    """ Arguments data class for the data discovery tool """
+    """Arguments data class for the data discovery tool"""
 
     # Direct ingest region code
     region_code: str = attr.ib()
@@ -88,7 +86,7 @@ class DataDiscoveryArgs:
 
     @property
     def search_paths(self) -> List[str]:
-        """ Returns the search paths to use when listing GCS file entries """
+        """Returns the search paths to use when listing GCS file entries"""
         return [
             os.path.join(
                 self.region_code.lower(), str(GcsfsDirectIngestFileType.RAW_DATA.value)
@@ -101,16 +99,16 @@ class DataDiscoveryArgs:
 
     @property
     def state_files_cache_key(self) -> str:
-        """ Returns the cache key for a state's GCS files """
+        """Returns the cache key for a state's GCS files"""
         return f"files-list-{self.region_code}"
 
 
 class DataDiscoveryArgsFactory:
-    """ Factory for creating/reading DataDiscoveryArgs to/from Redis"""
+    """Factory for creating/reading DataDiscoveryArgs to/from Redis"""
 
     @classmethod
     def create(cls, **kwargs: Any) -> DataDiscoveryArgs:
-        """ Factory method for DataDiscoveryArgs. Persists JSON serialized DataDiscoveryArgs to redis """
+        """Factory method for DataDiscoveryArgs. Persists JSON serialized DataDiscoveryArgs to redis"""
         cache = get_data_discovery_cache()
         communicator = RedisCommunicator.create(cache, max_messages=25)
 
@@ -127,7 +125,7 @@ class DataDiscoveryArgsFactory:
 
     @classmethod
     def fetch(cls, discovery_id: str) -> DataDiscoveryArgs:
-        """ Factory method for retrieving existing DataDiscoveryArgs"""
+        """Factory method for retrieving existing DataDiscoveryArgs"""
         cache = get_data_discovery_cache()
         serialized_arguments = cache.get(discovery_id)
 

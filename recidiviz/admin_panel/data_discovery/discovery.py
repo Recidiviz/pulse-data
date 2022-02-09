@@ -20,49 +20,47 @@ Data discovery tool for raw data files and ingest views.
 import logging
 from collections import defaultdict
 from io import BytesIO
-from typing import List, Tuple, Optional, Literal
+from typing import List, Literal, Optional, Tuple
 
 import pandas as pd
 import pyarrow
 import pyarrow.parquet as pq
 
 from recidiviz.admin_panel.data_discovery.arguments import (
+    ConditionGroup,
     DataDiscoveryArgs,
     DataDiscoveryArgsFactory,
-    ConditionGroup,
 )
 from recidiviz.admin_panel.data_discovery.cache_ingest_file_as_parquet import (
     SingleIngestFileParquetCache,
 )
 from recidiviz.admin_panel.data_discovery.file_configs import (
-    get_raw_data_configs,
     get_ingest_view_configs,
+    get_raw_data_configs,
 )
 from recidiviz.admin_panel.data_discovery.report_builder import build_report
 from recidiviz.admin_panel.data_discovery.task_manager import (
+    AbstractAdminPanelDataDiscoveryCloudTaskManager,
     AdminPanelDataDiscoveryCloudTaskManager,
     DevelopmentAdminPanelDataDiscoveryCloudTaskManager,
-    AbstractAdminPanelDataDiscoveryCloudTaskManager,
 )
 from recidiviz.admin_panel.data_discovery.types import (
     ConfigsByFileType,
-    FilesByFileType,
-    DataFramesByFileType,
     DataDiscoveryTTL,
+    DataFramesByFileType,
+    FilesByFileType,
 )
 from recidiviz.admin_panel.data_discovery.utils import (
     get_data_discovery_cache,
     get_data_discovery_communicator,
 )
-from recidiviz.cloud_memorystore.redis_communicator import (
-    MessageKind,
-)
-from recidiviz.cloud_memorystore.utils import await_redis_keys, RedisKeyTimeoutError
+from recidiviz.cloud_memorystore.redis_communicator import MessageKind
+from recidiviz.cloud_memorystore.utils import RedisKeyTimeoutError, await_redis_keys
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
-    filename_parts_from_path,
     GcsfsDirectIngestFileType,
+    filename_parts_from_path,
 )
 from recidiviz.ingest.direct.errors import DirectIngestError, DirectIngestErrorType
 from recidiviz.utils.environment import in_gcp
@@ -87,7 +85,7 @@ def list_object_thread_task(bucket_name: str, prefix: str) -> List[str]:
 
 
 def get_direct_ingest_storage_paths(args: DataDiscoveryArgs) -> List[str]:
-    """ Returns the list of ingest file paths in GCS """
+    """Returns the list of ingest file paths in GCS"""
     cache = get_data_discovery_cache()
 
     if cache.exists(args.state_files_cache_key):
@@ -126,7 +124,7 @@ def collect_file_paths(
     configs: ConfigsByFileType,
     gcs_files: List[str],
 ) -> FilesByFileType:
-    """ Given a set of configs configs, filter the listed GCS files to only those that match our search filters """
+    """Given a set of configs configs, filter the listed GCS files to only those that match our search filters"""
     collected_files = defaultdict(list)
 
     for found_file in gcs_files:
@@ -178,7 +176,7 @@ def create_cache_ingest_file_as_parquet_task(
 def prepare_cache(
     args: DataDiscoveryArgs, files_by_type: FilesByFileType, configs: ConfigsByFileType
 ) -> None:
-    """ Given a set of files, download them from GCS to our cache directory """
+    """Given a set of files, download them from GCS to our cache directory"""
     communicator = get_data_discovery_communicator(args.communication_channel_uuid)
 
     cache = get_data_discovery_cache()
@@ -237,7 +235,7 @@ PyArrowConditionGroup = List[PyArrowCondition]
 def get_filters(
     parquet: BytesIO, condition_groups: List[ConditionGroup]
 ) -> Optional[List[PyArrowConditionGroup]]:
-    """ Given a dataframe and list of conditions, filter the dataframe using a boolean OR """
+    """Given a dataframe and list of conditions, filter the dataframe using a boolean OR"""
     schema = pq.read_schema(parquet)
 
     filters: List[PyArrowConditionGroup] = []
@@ -276,7 +274,7 @@ def load_dataframe(
     gcs_file: GcsfsFilePath,
     condition_groups: List[ConditionGroup],
 ) -> Tuple[GcsfsDirectIngestFileType, str, pd.DataFrame]:
-    """ Returns the dataframe's identifiers as well as the dataframe itself"""
+    """Returns the dataframe's identifiers as well as the dataframe itself"""
     try:
         dataframe = pd.DataFrame()
         parquet_cache = SingleIngestFileParquetCache(
@@ -308,7 +306,7 @@ def load_dataframe(
 def load_dataframes(
     data_discovery_args: DataDiscoveryArgs, files_by_type: FilesByFileType
 ) -> DataFramesByFileType:
-    """ Given a set of files and configs, load the data into dataframes in parallel """
+    """Given a set of files and configs, load the data into dataframes in parallel"""
     dataframes: DataFramesByFileType = defaultdict(lambda: defaultdict(pd.DataFrame))
     load_dataframe_args = []
 

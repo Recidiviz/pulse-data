@@ -21,7 +21,7 @@ import logging
 import time
 import uuid
 from datetime import datetime, timedelta
-from typing import Generator, Optional, Any, Dict
+from typing import Any, Dict, Generator, Optional
 from uuid import UUID
 
 import attr
@@ -29,7 +29,7 @@ import redis
 
 
 class MessageKind(enum.Enum):
-    """ MessageKind enum, used for determining when to open/update/close communication channels """
+    """MessageKind enum, used for determining when to open/update/close communication channels"""
 
     UPDATE = "update"
     CLOSE = "close"
@@ -37,7 +37,7 @@ class MessageKind(enum.Enum):
 
 @attr.s
 class RedisCommunicatorMessage:
-    """ Dataclass for RedisCommunicator messages """
+    """Dataclass for RedisCommunicator messages"""
 
     # The cursor can be passed to `RedisCommunicator.listen()` to query for the next message
     cursor: int = attr.ib()
@@ -45,14 +45,14 @@ class RedisCommunicatorMessage:
     kind: MessageKind = attr.ib(default=MessageKind.UPDATE)
 
     def to_json(self) -> Dict[str, Any]:
-        """ Converts the message to json"""
+        """Converts the message to json"""
         message = attr.asdict(self)
         message["kind"] = self.kind.value
         return message
 
     @staticmethod
     def from_json(json_string: Optional[bytes]) -> Optional["RedisCommunicatorMessage"]:
-        """ Builds a message from JSON """
+        """Builds a message from JSON"""
         if not json_string:
             return None
 
@@ -96,12 +96,12 @@ class RedisCommunicator:
         self.max_messages = self.options["max_messages"]
 
     def increment_cursor(self) -> int:
-        """ Increments the cursor """
+        """Increments the cursor"""
         return self.cache.incr(self.cursor_cache_key)
 
     @property
     def latest_message(self) -> Optional[RedisCommunicatorMessage]:
-        """ Returns the latest message if it exists, otherwise None """
+        """Returns the latest message if it exists, otherwise None"""
         try:
             # Get the message with the highest cursor
             messages = self.cache.zrange(self.channel_cache_key, -1, -1)
@@ -116,7 +116,7 @@ class RedisCommunicator:
 
     @property
     def closed(self) -> bool:
-        """ Returns whether the communication channel has been closed"""
+        """Returns whether the communication channel has been closed"""
         return (
             self.latest_message is not None
             and self.latest_message.kind == MessageKind.CLOSE
@@ -184,24 +184,24 @@ class RedisCommunicator:
 
     @classmethod
     def build_channel_cache_key(cls, channel_uuid: UUID) -> str:
-        """ Builds the cache key for the channel """
+        """Builds the cache key for the channel"""
         return f"communication-channel-{str(channel_uuid)}"
 
     @classmethod
     def build_cursor_cache_key(cls, channel_uuid: UUID) -> str:
-        """ Builds the cache key for the cursor """
+        """Builds the cache key for the cursor"""
         return f"communication-cursor-{str(channel_uuid)}"
 
     @classmethod
     def build_options_cache_key(cls, channel_uuid: UUID) -> str:
-        """ Builds the cache key for the channel options """
+        """Builds the cache key for the channel options"""
         return f"communication-options-{str(channel_uuid)}"
 
     @classmethod
     def create(
         cls, cache: redis.Redis, *, max_messages: Optional[int] = None
     ) -> "RedisCommunicator":
-        """ Builds a new communication channel """
+        """Builds a new communication channel"""
         while True:
             channel_uuid = uuid.uuid4()
             channel_cache_key = cls.build_channel_cache_key(channel_uuid)

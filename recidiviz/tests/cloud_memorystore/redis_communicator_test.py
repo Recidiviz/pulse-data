@@ -24,8 +24,8 @@ from unittest.mock import MagicMock
 import fakeredis
 
 from recidiviz.cloud_memorystore.redis_communicator import (
-    RedisCommunicator,
     MessageKind,
+    RedisCommunicator,
     RedisCommunicatorMessage,
 )
 
@@ -116,7 +116,7 @@ class TestRedisCommunicator(TestCase):
         )
 
     def test_listen_expiry(self) -> None:
-        """ Channels are closed automatically if no new messages are added within the expiry """
+        """Channels are closed automatically if no new messages are added within the expiry"""
 
         def expire_cache() -> None:
             time.sleep(0.5)

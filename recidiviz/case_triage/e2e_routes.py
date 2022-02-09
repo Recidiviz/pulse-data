@@ -115,7 +115,7 @@ def _setup_suite() -> Tuple[str, int]:
 @e2e_blueprint.route("/teardown_scenario", methods=["GET"])
 @local_only
 def _teardown() -> Tuple[str, int]:
-    """ Truncates tables that are modified by our E2E tests"""
+    """Truncates tables that are modified by our E2E tests"""
     database = os.environ[SQLALCHEMY_DB_NAME]
 
     if database != TEST_CASE_TRIAGE_DATABASE:

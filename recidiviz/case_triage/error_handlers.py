@@ -72,7 +72,7 @@ def handle_missing_required_claim_error(error: MissingRequiredClaimError) -> Res
 
 
 def register_error_handlers(app: Flask) -> None:
-    """ Registers error handlers """
+    """Registers error handlers"""
     app.errorhandler(CSRFError)(handle_csrf_error)
     app.errorhandler(ValidationError)(handle_validation_error)
     app.errorhandler(NoCaseloadException)(handle_no_caseload_error)

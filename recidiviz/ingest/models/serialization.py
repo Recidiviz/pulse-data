@@ -529,7 +529,7 @@ def convert_ingest_info_to_proto(
 def convert_proto_to_ingest_info(
     proto: ingest_info_pb2.IngestInfo,
 ) -> ingest_info.IngestInfo:
-    """Populates an `IngestInfo` python object from the given proto """
+    """Populates an `IngestInfo` python object from the given proto"""
 
     person_map: Dict[str, ingest_info.Person] = dict(
         _proto_to_py(person, ingest_info.Person, "person_id") for person in proto.people
@@ -1042,16 +1042,13 @@ def _is_program_id(source, field):
     """StateProgramAssignment has normal fields 'program_id' and 'location_id'
     which should be copied between types unlike other fields ending in 'id'.
     """
-    return (
-        isinstance(
-            source,
-            (
-                ingest_info.StateProgramAssignment,
-                ingest_info_pb2.StateProgramAssignment,
-            ),
-        )
-        and field in ("program_id", "program_location_id")
-    )
+    return isinstance(
+        source,
+        (
+            ingest_info.StateProgramAssignment,
+            ingest_info_pb2.StateProgramAssignment,
+        ),
+    ) and field in ("program_id", "program_location_id")
 
 
 def _is_state_person_external_id(source, field):
