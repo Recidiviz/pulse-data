@@ -28,7 +28,9 @@ from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.state_specific_query_strings import (
     get_pathways_incarceration_last_updated_date,
 )
-from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
+from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_metric_big_query_view import (
+    PathwaysMetricBigQueryViewBuilder,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -37,7 +39,7 @@ LIBERTY_TO_PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_NAME = (
 )
 
 LIBERTY_TO_PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_DESCRIPTION = (
-    """Supervision to liberty population snapshot by dimension"""
+    """Admissions to prison from liberty population snapshot by dimension"""
 )
 
 LIBERTY_TO_PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = """
@@ -77,14 +79,13 @@ LIBERTY_TO_PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = """
     GROUP BY 1, 2, 3, 4, 5, 6, 7, 8
 """
 
-LIBERTY_TO_PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER = MetricBigQueryViewBuilder(
+LIBERTY_TO_PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER = PathwaysMetricBigQueryViewBuilder(
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=LIBERTY_TO_PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_NAME,
     view_query_template=LIBERTY_TO_PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE,
     description=LIBERTY_TO_PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_DESCRIPTION,
     dimensions=(
         "state_code",
-        "last_updated",
         "time_period",
         "gender",
         "age_group",

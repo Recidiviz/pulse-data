@@ -17,13 +17,15 @@
 """Prison to supervision count by month"""
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import DASHBOARD_VIEWS_DATASET
+from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_metric_big_query_view import (
+    PathwaysMetricBigQueryViewBuilder,
+)
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_prison_dimension_combinations import (
     PATHWAYS_PRISON_DIMENSION_COMBINATIONS_VIEW_NAME,
 )
 from recidiviz.calculator.query.state.views.dashboard.pathways.transition_template import (
     transition_monthly_aggregate_template,
 )
-from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -67,7 +69,7 @@ PRISON_TO_SUPERVISION_COUNT_BY_MONTH_QUERY_TEMPLATE = (
     )
 )
 
-PRISON_TO_SUPERVISION_COUNT_BY_MONTH_VIEW_BUILDER = MetricBigQueryViewBuilder(
+PRISON_TO_SUPERVISION_COUNT_BY_MONTH_VIEW_BUILDER = PathwaysMetricBigQueryViewBuilder(
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=PRISON_TO_SUPERVISION_COUNT_BY_MONTH_NAME,
     view_query_template=PRISON_TO_SUPERVISION_COUNT_BY_MONTH_QUERY_TEMPLATE,

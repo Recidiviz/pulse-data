@@ -27,7 +27,9 @@ from recidiviz.calculator.query.state.state_specific_query_strings import (
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
     ENABLED_STATES,
 )
-from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
+from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_metric_big_query_view import (
+    PathwaysMetricBigQueryViewBuilder,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -61,14 +63,13 @@ PRISON_POPULATION_SNAPSHOT_PERSON_LEVEL_QUERY_TEMPLATE = """
     {filter_to_enabled_states}
 """
 
-PRISON_POPULATION_SNAPSHOT_PERSON_LEVEL_VIEW_BUILDER = MetricBigQueryViewBuilder(
+PRISON_POPULATION_SNAPSHOT_PERSON_LEVEL_VIEW_BUILDER = PathwaysMetricBigQueryViewBuilder(
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=PRISON_POPULATION_SNAPSHOT_PERSON_LEVEL_VIEW_NAME,
     view_query_template=PRISON_POPULATION_SNAPSHOT_PERSON_LEVEL_QUERY_TEMPLATE,
     description=PRISON_POPULATION_SNAPSHOT_PERSON_LEVEL_DESCRIPTION,
     dimensions=(
         "state_code",
-        "last_updated",
         "gender",
         "legal_status",
         "facility",
