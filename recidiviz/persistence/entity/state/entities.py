@@ -600,6 +600,9 @@ class StateSupervisionSentence(ExternalIdEntity, BuildableAttr, DefaultableAttr)
     sentence_metadata: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_str
     )
+    conditions: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
 
     #   - Who
 
@@ -706,6 +709,9 @@ class StateIncarcerationSentence(ExternalIdEntity, BuildableAttr, DefaultableAtt
     )
 
     sentence_metadata: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+    conditions: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_str
     )
 
