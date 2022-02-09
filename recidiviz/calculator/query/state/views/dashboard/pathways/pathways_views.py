@@ -27,6 +27,9 @@ from recidiviz.calculator.query.state.views.dashboard.pathways.liberty_to_prison
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_incarceration_location_name_map import (
     PATHWAYS_INCARCERATION_LOCATION_NAME_MAP_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_metric_big_query_view import (
+    PathwaysMetricBigQueryViewBuilder,
+)
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_prison_dimension_combinations import (
     PATHWAYS_PRISON_DIMENSION_COMBINATIONS_VIEW_BUILDER,
 )
@@ -72,9 +75,8 @@ from recidiviz.calculator.query.state.views.dashboard.pathways.supervision_to_pr
 from recidiviz.calculator.query.state.views.dashboard.pathways.supervision_to_prison_population_snapshot_by_dimension import (
     SUPERVISION_TO_PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER,
 )
-from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 
-PATHWAYS_VIEW_BUILDERS: List[MetricBigQueryViewBuilder] = [
+PATHWAYS_VIEW_BUILDERS: List[PathwaysMetricBigQueryViewBuilder] = [
     LIBERTY_TO_PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER,
     LIBERTY_TO_PRISON_COUNT_BY_MONTH_VIEW_BUILDER,
     PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER,

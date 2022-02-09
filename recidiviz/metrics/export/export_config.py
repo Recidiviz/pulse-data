@@ -509,8 +509,10 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
     ),
     # Unified Product - Prison and Supervision Population Projections
     ExportViewCollectionConfig(
-        view_builders_to_export=POPULATION_PROJECTION_VIEW_BUILDERS
-        + PATHWAYS_VIEW_BUILDERS,
+        view_builders_to_export=[
+            *POPULATION_PROJECTION_VIEW_BUILDERS,
+            *PATHWAYS_VIEW_BUILDERS,
+        ],
         output_directory_uri_template=DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI,
         export_name="PATHWAYS",
         bq_view_namespace=BigQueryViewNamespace.STATE,
