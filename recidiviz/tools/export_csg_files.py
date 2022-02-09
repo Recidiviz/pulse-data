@@ -59,6 +59,7 @@ SESSIONS_FIELDS_TO_SERIALIZE: Dict[str, List[str]] = {
         "classification_type",
         "description",
         "offense_type",
+        "offense_type_short",
         "ncic_code",
     ],
     "violations_sessions": [
@@ -112,11 +113,12 @@ def export_csg_files(
         for config in export_configs:
             logging.info("%s", config)
     else:
-        client.export_query_results_to_cloud_storage(export_configs, True)
-
-    # delete temp dataset
-    if not dry_run:
-        client.delete_dataset(TEMP_DATASET_NAME)
+        try:
+            client.export_query_results_to_cloud_storage(export_configs, True)
+        except Exception as e:
+            logging.error("Failed to export data: %s", e)
+        finally:
+            client.delete_dataset(TEMP_DATASET_NAME)
 
 
 def generate_metric_export_configs(
@@ -191,8 +193,7 @@ def generate_metric_export_configs(
         `{project_id}.dataflow_metrics_materialized.most_recent_incarceration_commitment_from_supervision_metrics_included_in_state_population`
       WHERE
         state_code = '{state_code.upper()}'
-        AND year >= {start_date.year}
-        AND month >= {start_date.month}
+        AND Date(year, month, 1) >= Date({start_date.year}, {start_date.month}, 1)
       ORDER BY
         year,
         month
