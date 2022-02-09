@@ -27,6 +27,7 @@ import {
   Typography,
 } from "antd";
 import { ColumnsType, ColumnType } from "antd/es/table";
+import classNames from "classnames";
 import { History } from "history";
 import * as React from "react";
 import { useHistory } from "react-router-dom";
@@ -388,19 +389,32 @@ const columnTypeForState = (
   };
 };
 
-const renderRecordStatus = (record: ValidationStatusRecord) => {
+const renderRecordStatus = (record: ValidationStatusRecord | undefined) => {
   const status = getRecordStatus(record);
-  const className = getClassNameForRecordStatus(status);
+  const statusClassName = getClassNameForRecordStatus(status);
   const text = getTextForRecordStatus(status);
   const body =
     text +
     (status > RecordStatus.NEED_DATA
       ? ` (${formatStatusAmount(
-          record.getErrorAmount(),
-          record.getIsPercentage()
+          record?.getErrorAmount(),
+          record?.getIsPercentage()
         )})`
       : "");
-  return <div className={className}>{body}</div>;
+  return (
+    <div
+      className={classNames(statusClassName, {
+        "dev-mode": !record?.getDevMode(),
+      })}
+    >
+      {body}
+      {record?.getDevMode() && (
+        <div>
+          <em>Dev Mode</em>
+        </div>
+      )}
+    </div>
+  );
 };
 
 const handleClickToDetails = (
@@ -422,7 +436,7 @@ const getListOfFailureRecords = (
   return records
     .filter(
       (record: ValidationStatusRecord) =>
-        record.getResultStatus() === failureType
+        record?.getDevMode() && record.getResultStatus() === failureType
     )
     .sort((a, b) => {
       if (a.getName() === b.getName()) {

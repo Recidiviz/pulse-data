@@ -62,7 +62,7 @@ export const formatStatusAmount = (
 };
 
 export const getRecordStatus = (
-  record: ValidationStatusRecord
+  record: ValidationStatusRecord | undefined
 ): RecordStatus => {
   if (record === undefined) {
     return RecordStatus.NO_RESULT;
