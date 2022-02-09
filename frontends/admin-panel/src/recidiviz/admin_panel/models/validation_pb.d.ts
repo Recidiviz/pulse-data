@@ -203,6 +203,11 @@ export class ValidationStatusRecord extends jspb.Message {
   getHasData(): boolean | undefined;
   setHasData(value: boolean): void;
 
+  hasDevMode(): boolean;
+  clearDevMode(): void;
+  getDevMode(): boolean | undefined;
+  setDevMode(value: boolean): void;
+
   hasHardFailureAmount(): boolean;
   clearHardFailureAmount(): void;
   getHardFailureAmount(): number | undefined;
@@ -280,6 +285,7 @@ export namespace ValidationStatusRecord {
     stateCode?: string,
     didRun?: boolean,
     hasData?: boolean,
+    devMode?: boolean,
     hardFailureAmount?: number,
     softFailureAmount?: number,
     resultStatus?: ValidationStatusRecord.ValidationResultStatusMap[keyof ValidationStatusRecord.ValidationResultStatusMap],

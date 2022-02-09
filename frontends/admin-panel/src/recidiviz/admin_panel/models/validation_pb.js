@@ -1376,6 +1376,7 @@ proto.recidiviz.admin_panel.models.ValidationStatusRecord.toObject = function(in
     stateCode: (f = jspb.Message.getField(msg, 7)) == null ? undefined : f,
     didRun: (f = jspb.Message.getBooleanField(msg, 8)) == null ? undefined : f,
     hasData: (f = jspb.Message.getBooleanField(msg, 9)) == null ? undefined : f,
+    devMode: (f = jspb.Message.getBooleanField(msg, 21)) == null ? undefined : f,
     hardFailureAmount: (f = jspb.Message.getOptionalFloatingPointField(msg, 10)) == null ? undefined : f,
     softFailureAmount: (f = jspb.Message.getOptionalFloatingPointField(msg, 11)) == null ? undefined : f,
     resultStatus: (f = jspb.Message.getField(msg, 12)) == null ? undefined : f,
@@ -1459,6 +1460,10 @@ proto.recidiviz.admin_panel.models.ValidationStatusRecord.deserializeBinaryFromR
     case 9:
       var value = /** @type {boolean} */ (reader.readBool());
       msg.setHasData(value);
+      break;
+    case 21:
+      var value = /** @type {boolean} */ (reader.readBool());
+      msg.setDevMode(value);
       break;
     case 10:
       var value = /** @type {number} */ (reader.readFloat());
@@ -1598,6 +1603,13 @@ proto.recidiviz.admin_panel.models.ValidationStatusRecord.serializeBinaryToWrite
   if (f != null) {
     writer.writeBool(
       9,
+      f
+    );
+  }
+  f = /** @type {boolean} */ (jspb.Message.getField(message, 21));
+  if (f != null) {
+    writer.writeBool(
+      21,
       f
     );
   }
@@ -2027,6 +2039,42 @@ proto.recidiviz.admin_panel.models.ValidationStatusRecord.prototype.clearHasData
  */
 proto.recidiviz.admin_panel.models.ValidationStatusRecord.prototype.hasHasData = function() {
   return jspb.Message.getField(this, 9) != null;
+};
+
+
+/**
+ * optional bool dev_mode = 21;
+ * @return {boolean}
+ */
+proto.recidiviz.admin_panel.models.ValidationStatusRecord.prototype.getDevMode = function() {
+  return /** @type {boolean} */ (jspb.Message.getBooleanFieldWithDefault(this, 21, false));
+};
+
+
+/**
+ * @param {boolean} value
+ * @return {!proto.recidiviz.admin_panel.models.ValidationStatusRecord} returns this
+ */
+proto.recidiviz.admin_panel.models.ValidationStatusRecord.prototype.setDevMode = function(value) {
+  return jspb.Message.setField(this, 21, value);
+};
+
+
+/**
+ * Clears the field making it undefined.
+ * @return {!proto.recidiviz.admin_panel.models.ValidationStatusRecord} returns this
+ */
+proto.recidiviz.admin_panel.models.ValidationStatusRecord.prototype.clearDevMode = function() {
+  return jspb.Message.setField(this, 21, undefined);
+};
+
+
+/**
+ * Returns whether this field is set.
+ * @return {boolean}
+ */
+proto.recidiviz.admin_panel.models.ValidationStatusRecord.prototype.hasDevMode = function() {
+  return jspb.Message.getField(this, 21) != null;
 };
 
 

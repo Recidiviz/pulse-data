@@ -65,6 +65,9 @@ class DataValidationCheck(BuildableAttr):
     # A suffix to add to the end of the view name to generate the validation_name.
     validation_name_suffix: Optional[str] = attr.ib(default=None)
 
+    # If this run should be declared a success regardless of the thresholds.
+    dev_mode: bool = attr.ib(default=False)
+
     @property
     def validation_name(self) -> str:
         return self.view_builder.view_id + (
@@ -126,6 +129,11 @@ class DataValidationJobResultDetails(abc.ABC):
 
     @property
     @abc.abstractmethod
+    def is_dev_mode(self) -> bool:
+        """Whether or not this was a dry run of the validation, where the threshold is not applied"""
+
+    @property
+    @abc.abstractmethod
     def error_amount(self) -> float:
         """Returns the amount of error"""
 
@@ -173,6 +181,7 @@ class DataValidationJobResult:
         return (
             f"DataValidationJobResult["
             f"\n\tvalidation_result_status: {self.validation_result_status},"
+            f"\n\tdev_mode: {self.result_details.is_dev_mode},"
             f"\n\tfailure_description: {self.result_details.failure_description()},"
             f"\n\tvalidation["
             f"\n\t\tregion_code: {self.validation_job.region_code},"
