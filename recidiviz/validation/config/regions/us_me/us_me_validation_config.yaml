@@ -1,0 +1,8 @@
+# Configuration for which validations to run for region US_ME.
+
+region_code: US_ME
+# TODO(#10889): Enable validations for US_ME.
+dev_mode: True
+exclusions: []
+max_allowed_error_overrides: []
+num_allowed_rows_overrides: []

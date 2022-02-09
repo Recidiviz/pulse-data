@@ -220,6 +220,10 @@ class ValidationRegionConfig:
 
     region_code: str = attr.ib()
 
+    # If a region is in dev_mode then the validations will run but failures will not be
+    # raised as errors (e.g. in opencensus alerts or the admin panel summary).
+    dev_mode: bool = attr.ib()
+
     # Information about validations that should not run for this region, indexed by validation_name.
     exclusions: Dict[str, ValidationExclusion] = attr.ib()
 
@@ -236,6 +240,7 @@ class ValidationRegionConfig:
 
         file_contents = YAMLDict.from_path(yaml_path)
         region_code = file_contents.pop("region_code", str)
+        dev_mode = file_contents.pop_optional("dev_mode", bool) or False
         exclusions = {}
         for exclusion_dict in file_contents.pop_dicts("exclusions"):
             validation_name = exclusion_dict.pop("validation_name", str)
@@ -311,6 +316,7 @@ class ValidationRegionConfig:
 
         return ValidationRegionConfig(
             region_code=region_code,
+            dev_mode=dev_mode,
             exclusions=exclusions,
             max_allowed_error_overrides=max_allowed_error_overrides,
             num_allowed_rows_overrides=num_allowed_rows_overrides,
