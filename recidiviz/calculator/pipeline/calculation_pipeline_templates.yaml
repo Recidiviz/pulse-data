@@ -1,7 +1,10 @@
 # Details of production-ready pipeline jobs to deploy to templates. These templates will be deployed both to staging and
 # production buckets.
 #
-#  If you want to deploy a pipeline just to stage, add the `staging_only: True` attribute to the pipeline
+# If you want to deploy a pipeline just to stage, add the `staging_only: True` attribute to the pipeline
+
+# When adding a new template, visit go/dataflow-region-cpu-usage-metrics and go/dataflow-region-quotas
+# to determine which region has the most capacity for a new pipeline.
 
 # List of pipelines with their necessary details
 
@@ -113,6 +116,14 @@ incremental_pipelines:
     calculation_month_count: 36
     region: us-central1
 
+# Daily US_ME calculations
+  - pipeline: incarceration
+    job_name: us-me-incarceration-calculations-36
+    state_code: US_ME
+    metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_POPULATION INCARCERATION_RELEASE
+    calculation_month_count: 36
+    region: us-west3
+    staging_only: True
 
 historical_pipelines:
   - pipeline: incarceration
@@ -205,3 +216,10 @@ historical_pipelines:
     calculation_month_count: 240
     metric_types: PROGRAM_PARTICIPATION PROGRAM_REFERRAL
     region: us-east1
+  - pipeline: incarceration
+    job_name: us-me-historical-incarceration-calculations-240
+    state_code: US_ME
+    calculation_month_count: 240
+    metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_POPULATION INCARCERATION_RELEASE
+    region: us-west3
+    staging_only: True
