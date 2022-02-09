@@ -1641,6 +1641,16 @@ class _StateSupervisionSentenceSharedColumns(_ReferencesStatePersonSharedColumns
         " understanding of a particular sentence. It can be provided in any "
         "format, but will be transformed into JSON prior to persistence.",
     )
+    # This field can contain an arbitrarily long list of conditions, so we do not restrict the length of the string like
+    # we do for most other String fields.
+    conditions = Column(
+        Text,
+        comment="The conditions of this supervision sentence which the person must follow "
+        "to avoid a disciplinary response. If this field is empty, there may still be"
+        " applicable conditions that apply to someone's current term of supervision/incarceration - "
+        "either inherited from another ongoing sentence or the current supervision term."
+        " (See conditions on StateSupervisionPeriod).",
+    )
 
 
 class StateSupervisionSentence(StateBase, _StateSupervisionSentenceSharedColumns):
@@ -1813,6 +1823,16 @@ class _StateIncarcerationSentenceSharedColumns(
         comment="Arbitrary JSON-formatted metadata relevant to a fine"
         " understanding of a particular sentence. It can be provided in any "
         "format, but will be transformed into JSON prior to persistence.",
+    )
+    # This field can contain an arbitrarily long list of conditions, so we do not restrict the length of the string like
+    # we do for most other String fields.
+    conditions = Column(
+        Text,
+        comment="The conditions of this incarceration sentence which the person must follow "
+        "to avoid a disciplinary response. If this field is empty, there may still be"
+        " applicable conditions that apply to someone's current term of supervision/incarceration - "
+        "either inherited from another ongoing sentence or the current supervision term."
+        " (See conditions on StateSupervisionPeriod).",
     )
 
 
@@ -2149,12 +2169,14 @@ class _StateSupervisionPeriodSharedColumns(_ReferencesStatePersonSharedColumns):
         comment="The raw text value of the supervision period's " "supervision level.",
     )
 
-    # This field can contain an arbitrarily long list of conditions, so we do not restrict the length of the length like
+    # This field can contain an arbitrarily long list of conditions, so we do not restrict the length of the string like
     # we do for most other String fields.
     conditions = Column(
         Text,
-        comment="The conditions of this period of supervision which the person must follow "
-        "to avoid a disciplinary response.",
+        comment="The conditions of this period of supervision which the person must follow"
+        "to avoid a disciplinary response. If this is empty, there may still be applicable "
+        "conditions that apply to the whole term of the sentence. "
+        "(See conditions on StateSupervisionSentence/StateIncarcerationSentence)",
     )
     custodial_authority = Column(
         state_custodial_authority,
