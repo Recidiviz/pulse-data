@@ -102,3 +102,5 @@ products:
         environment: production
       - state_code: US_ND
         environment: staging
+      - state_code: US_TN
+        environment: staging
