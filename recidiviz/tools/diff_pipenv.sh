@@ -10,14 +10,16 @@ source ${BASH_SOURCE_DIR}/script_base.sh
 # from the lock file:
 # - Remove the ';' and any markers that follow it
 # - Remove any extras from the package name, e.g. '[gcp]'
-# - Remove any lines starting with a comment ('#') or the pypi line ('-')
+# - Remove any lines starting with a comment ('#')
+# - Remove the pypi line ('-i https://pypi.org/simple')
 # - Remove any blank lines
 # - Remove pip / setuptools, since they'll always be installed but aren't always in the Pipfile.lock
 # - Sort, in case the above transformations affected the sort order
 expected=$(pipenv lock -r --dev \
     | cut -d';' -f1 \
     | sed 's/\[.*\]//' \
-    | sed '/^[-#]/d' \
+    | sed '/^#/d' \
+    | sed '/^-i /d' \
     | sed '/^$/d' \
     | sed '/^pip/d' \
     | sed '/^setuptools/d' \
