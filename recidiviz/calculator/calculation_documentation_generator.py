@@ -646,7 +646,7 @@ class CalculationDocumentationGenerator:
         return all_config_view_addresses
 
     def _get_all_parent_keys_for_product(self, product: ProductConfig) -> Set[DagKey]:
-        """Returns a set containing a DagKey for every view that this product relies upon. """
+        """Returns a set containing a DagKey for every view that this product relies upon."""
         all_config_view_addresses = self._get_all_config_view_addresses_for_product(
             product
         )

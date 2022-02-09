@@ -23,13 +23,13 @@ from recidiviz.persistence.database.schema.case_triage.schema import OfficerMeta
 
 
 class OfficerMetadataInterface:
-    """ Utility methods for interacting with `OfficerMetadata` records """
+    """Utility methods for interacting with `OfficerMetadata` records"""
 
     @classmethod
     def get_officer_metadata(
         cls, session: Session, state_code: str, officer_external_id: str
     ) -> OfficerMetadata:
-        """ Fetches an `OfficerMetadata` record """
+        """Fetches an `OfficerMetadata` record"""
         default_metadata = OfficerMetadata(
             state_code=state_code,
             officer_external_id=officer_external_id,
@@ -56,7 +56,7 @@ class OfficerMetadataInterface:
         officer_external_id: str,
         has_seen_onboarding: bool,
     ) -> None:
-        """ Upserts the `OfficerMetadata` record """
+        """Upserts the `OfficerMetadata` record"""
         values = {"has_seen_onboarding": has_seen_onboarding}
         insert_statement = (
             insert(OfficerMetadata)

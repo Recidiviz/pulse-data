@@ -246,7 +246,7 @@ class SchemaType(enum.Enum):
 
     @property
     def is_multi_db_schema(self) -> bool:
-        """Returns True if this schema is segmented into multiple databases """
+        """Returns True if this schema is segmented into multiple databases"""
         return self is SchemaType.STATE
 
 

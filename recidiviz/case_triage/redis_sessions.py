@@ -29,7 +29,7 @@ from werkzeug.datastructures import CallbackDict
 
 
 class RedisSession(CallbackDict, SessionMixin):
-    """ The RedisSession object is returned when referencing `flask.session` """
+    """The RedisSession object is returned when referencing `flask.session`"""
 
     session_id: str
 
@@ -56,7 +56,7 @@ class SessionCannotBeFetchedError(ValueError):
 
 
 class RedisSessionFactory:
-    """ Contains functionality for storing sessions in Redis """
+    """Contains functionality for storing sessions in Redis"""
 
     def __init__(self, redis: Redis):
         self.redis = redis
@@ -98,7 +98,7 @@ class RedisSessionFactory:
 
 
 class RedisSessionInterface(SessionInterface):
-    """ Contains orchestration for storing sessions in Redis and sending session cookies"""
+    """Contains orchestration for storing sessions in Redis and sending session cookies"""
 
     pickle_based = True
 
@@ -109,7 +109,7 @@ class RedisSessionInterface(SessionInterface):
     def _build_cookie_options(
         self, app: Flask, session: RedisSession
     ) -> Dict[str, Any]:
-        """ Builds the appropriate options for the session cookie, as dictated by our superclass """
+        """Builds the appropriate options for the session cookie, as dictated by our superclass"""
         return {
             "expires": self.get_expiration_time(app, session),
             "httponly": self.get_cookie_httponly(app),
@@ -152,7 +152,7 @@ class RedisSessionInterface(SessionInterface):
     def save_session(
         self, app: Flask, session: RedisSession, response: Response
     ) -> None:
-        """ Persists the session to Redis and sends the appropriate cookie headers to the client """
+        """Persists the session to Redis and sends the appropriate cookie headers to the client"""
         if not app.secret_key:
             raise ValueError("The Flask app must be configured with a secret_key")
 

@@ -127,7 +127,7 @@ def get_test_validations() -> List[DataValidationJob]:
 
 @attr.s(frozen=True, kw_only=True)
 class FakeValidationResultDetails(DataValidationJobResultDetails):
-    """ Fake implementation of DataValidationJobResultDetails"""
+    """Fake implementation of DataValidationJobResultDetails"""
 
     validation_status: ValidationResultStatus = attr.ib()
     dev_mode: bool = attr.ib(default=False)

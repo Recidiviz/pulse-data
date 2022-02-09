@@ -21,11 +21,13 @@ from opencensus.trace.tracers import ContextTracer
 
 class _AsyncRuntimeContext:
     tracer: ContextTracer
+
     class Slot:
         contextvar: ContextVar
         def get(self) -> Any: ...
         def clear(self) -> None: ...
         def set(self, _value: Any) -> None: ...
+
     def with_current_context(self, func: Callable) -> Callable: ...
 
 RuntimeContext: _AsyncRuntimeContext

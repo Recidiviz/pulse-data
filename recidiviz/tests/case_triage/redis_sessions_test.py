@@ -87,7 +87,7 @@ class TestRedisSessionInterface(TestCase):
         return self.parse_session_cookie()
 
     def test_no_session_cookie(self) -> None:
-        """ When no session cookie is provided, the server assigns a session to the user"""
+        """When no session cookie is provided, the server assigns a session to the user"""
         first_session_cookie = self.modify_session()
 
         # The session persists across requests
@@ -98,7 +98,7 @@ class TestRedisSessionInterface(TestCase):
         )
 
     def test_session_cookie_expiration(self) -> None:
-        """ When an expired session cookie is provided, the server re-assigns a new session to the user"""
+        """When an expired session cookie is provided, the server re-assigns a new session to the user"""
         first_session_cookie = self.modify_session()
         cache_key = RedisSessionFactory.build_session_cache_key(
             first_session_cookie.session_id
@@ -113,7 +113,7 @@ class TestRedisSessionInterface(TestCase):
         )
 
     def test_expired_cookie_replay(self) -> None:
-        """ If an expired cookie is sent to the server, the server issues the client a new session"""
+        """If an expired cookie is sent to the server, the server issues the client a new session"""
         with freezegun.freeze_time(datetime(year=2021, month=1, day=1)):
             first_session_cookie = self.modify_session()
 
@@ -148,7 +148,7 @@ class TestRedisSessionInterface(TestCase):
 
         self.assertIsNotNone(session_cookie)
         self.assertEqual(session_cookie["max-age"], "0")
-        self.assertEqual("Thu, 01-Jan-1970 00:00:00 GMT", session_cookie["expires"])
+        self.assertEqual("Thu, 01 Jan 1970 00:00:00 GMT", session_cookie["expires"])
         self.assertEqual(session_cookie.value, "")
 
         # A new session is assigned on a subsequent request
@@ -158,7 +158,7 @@ class TestRedisSessionInterface(TestCase):
         )
 
     def test_transition_from_cookie_session_to_redis_session(self) -> None:
-        """ When a legacy client sends a cookie-based session, it is dropped, and a new redis-based session is sent """
+        """When a legacy client sends a cookie-based session, it is dropped, and a new redis-based session is sent"""
         legacy_interface = SecureCookieSessionInterface()
         legacy_signer = legacy_interface.get_signing_serializer(test_app)
         with freezegun.freeze_time(datetime(2021, 10, 1)):

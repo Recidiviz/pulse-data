@@ -222,21 +222,15 @@ class SupervisionMetricProducer(
                 and event.supervision_level_downgrade_occurred
             )
         if metric_type == SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION:
-            return (
-                isinstance(
-                    event,
-                    (SupervisionPopulationEvent,),
-                )
-                and supervision_period_is_out_of_state(event, supervision_delegate)
-            )
+            return isinstance(
+                event,
+                (SupervisionPopulationEvent,),
+            ) and supervision_period_is_out_of_state(event, supervision_delegate)
         if metric_type == SupervisionMetricType.SUPERVISION_POPULATION:
-            return (
-                isinstance(
-                    event,
-                    (SupervisionPopulationEvent,),
-                )
-                and not supervision_period_is_out_of_state(event, supervision_delegate)
-            )
+            return isinstance(
+                event,
+                (SupervisionPopulationEvent,),
+            ) and not supervision_period_is_out_of_state(event, supervision_delegate)
         if metric_type in (
             SupervisionMetricType.SUPERVISION_START,
             SupervisionMetricType.SUPERVISION_SUCCESS,

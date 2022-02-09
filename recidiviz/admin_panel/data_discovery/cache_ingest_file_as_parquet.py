@@ -49,17 +49,17 @@ class SingleIngestFileParquetCache:
         return f"{file.uri()}.pq"
 
     def clear(self) -> None:
-        """ Removes the entry from the cache """
+        """Removes the entry from the cache"""
         self.cache.delete(self.cache_key)
         self.cache.delete(self.staged_cache_key)
 
     def add_chunk(self, df: pandas.DataFrame) -> None:
-        """ Serializes a dataframe to parquet format; pushes to redis """
+        """Serializes a dataframe to parquet format; pushes to redis"""
         self.cache.rpush(self.staged_cache_key, df.to_parquet(compression="GZIP"))
         self.cache.expire(self.staged_cache_key, self.expiry)
 
     def move_staged_files_to_completed(self) -> None:
-        """ Once a file has been fully cached, we can move it to the main cache key"""
+        """Once a file has been fully cached, we can move it to the main cache key"""
         self.cache.rename(self.staged_cache_key, self.cache_key)
 
     def get_parquet_files(self) -> Generator[BytesIO, None, None]:
@@ -77,7 +77,7 @@ class SingleIngestFileParquetCache:
 
 
 class CacheIngestFileAsParquetDelegate(GcsfsCsvReaderDelegate):
-    """ GcsfsCsvReaderDelegate for streaming reads to Redis"""
+    """GcsfsCsvReaderDelegate for streaming reads to Redis"""
 
     def __init__(
         self, parquet_cache: SingleIngestFileParquetCache, path: GcsfsFilePath
@@ -88,7 +88,7 @@ class CacheIngestFileAsParquetDelegate(GcsfsCsvReaderDelegate):
         self.parquet_cache.clear()
 
     def on_dataframe(self, encoding: str, chunk_num: int, df: pd.DataFrame) -> bool:
-        """ For each chunked dataframe, append the processing date column, and push to Redis """
+        """For each chunked dataframe, append the processing date column, and push to Redis"""
         df["ingest_processing_date"] = self.file_parts.utc_upload_datetime.strftime(
             "%D"
         )

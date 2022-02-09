@@ -174,7 +174,7 @@ class DirectIngestIngestFileMetadataManager:
     def mark_ingest_view_exported(
         self, metadata_entity: DirectIngestIngestFileMetadata
     ) -> None:
-        """Commits the current time as the export_time for the given ingest file. """
+        """Commits the current time as the export_time for the given ingest file."""
 
     @abc.abstractmethod
     def get_ingest_view_metadata_for_most_recent_valid_job(

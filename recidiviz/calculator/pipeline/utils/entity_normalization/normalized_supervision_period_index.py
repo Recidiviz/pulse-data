@@ -141,7 +141,7 @@ class NormalizedSupervisionPeriodIndex:
     def get_most_recent_previous_supervision_period(
         self, current_supervision_period: StateSupervisionPeriod
     ) -> Optional[StateSupervisionPeriod]:
-        """ Given a current supervision period, return the most recent previous supervision period, if present."""
+        """Given a current supervision period, return the most recent previous supervision period, if present."""
         if not current_supervision_period.supervision_period_id:
             raise ValueError(
                 "Current supervision period must have a supervision period id."

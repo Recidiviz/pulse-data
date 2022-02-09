@@ -61,6 +61,7 @@ global___ExistenceValidationResultDetails = ExistenceValidationResultDetails
 
 class SamenessPerRowValidationResultDetails(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+
     class RowWithError(google.protobuf.message.Message):
         DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
         ROW_FIELD_NUMBER: builtins.int
@@ -104,8 +105,10 @@ global___SamenessPerRowValidationResultDetails = SamenessPerRowValidationResultD
 
 class SamenessPerViewValidationResultDetails(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+
     class PartitionCounts(google.protobuf.message.Message):
         DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+
         class ColumnCountsEntry(google.protobuf.message.Message):
             DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
             KEY_FIELD_NUMBER: builtins.int
@@ -203,12 +206,15 @@ class ValidationStatusRecord(google.protobuf.message.Message):
     """These are the top level messages used in the validation admin panel APIs."""
 
     DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+
     class ValidationCategory(
         _ValidationCategory, metaclass=_ValidationCategoryEnumTypeWrapper
     ):
         pass
+
     class _ValidationCategory:
         V = typing.NewType("V", builtins.int)
+
     class _ValidationCategoryEnumTypeWrapper(
         google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[
             _ValidationCategory.V
@@ -226,12 +232,15 @@ class ValidationStatusRecord(google.protobuf.message.Message):
     CONSISTENCY = ValidationStatusRecord.ValidationCategory.V(2)
     INVARIANT = ValidationStatusRecord.ValidationCategory.V(3)
     FRESHNESS = ValidationStatusRecord.ValidationCategory.V(4)
+
     class ValidationResultStatus(
         _ValidationResultStatus, metaclass=_ValidationResultStatusEnumTypeWrapper
     ):
         pass
+
     class _ValidationResultStatus:
         V = typing.NewType("V", builtins.int)
+
     class _ValidationResultStatusEnumTypeWrapper(
         google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[
             _ValidationResultStatus.V

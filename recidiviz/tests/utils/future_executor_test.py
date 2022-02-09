@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements tests for FutureExecutor. """
-from typing import Optional, Dict, List
+from typing import Dict, List, Optional
 from unittest import TestCase, mock
 
 from recidiviz.utils.future_executor import FutureExecutor, FutureExecutorProgress
@@ -31,7 +31,7 @@ def _mock_future(
 
 
 class TestFutureExecutor(TestCase):
-    """ Tests cases for the FutureExecutor """
+    """Tests cases for the FutureExecutor"""
 
     def test_progress(self) -> None:
         targets = [{"return_value": 0.1}, {"return_value": 0.2}, {"return_value": 0.3}]

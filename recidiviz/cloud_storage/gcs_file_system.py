@@ -152,7 +152,7 @@ class GCSFileSystem:
     def ls_with_blob_prefix(
         self, bucket_name: str, blob_prefix: str
     ) -> List[Union[GcsfsDirectoryPath, GcsfsFilePath]]:
-        """Returns absolute paths of objects in the bucket with the given |relative_path|. """
+        """Returns absolute paths of objects in the bucket with the given |relative_path|."""
 
     @abc.abstractmethod
     def set_content_type(self, path: GcsfsFilePath, content_type: str) -> None:
@@ -186,7 +186,7 @@ class GCSFileSystem:
 
 
 def retry_predicate(exception: Exception) -> Callable[[Exception], bool]:
-    """"A function that will determine whether we should retry a given Google exception."""
+    """ "A function that will determine whether we should retry a given Google exception."""
     return retry.if_transient_error(exception) or retry.if_exception_type(
         exceptions.GatewayTimeout
     )(exception)
@@ -200,7 +200,7 @@ def generate_random_temp_path(filename: Optional[str] = None) -> str:
 
 
 class GCSFileSystemImpl(GCSFileSystem):
-    """An implementation of the GCSFileSystem built on top of a real GCSFileSystem. """
+    """An implementation of the GCSFileSystem built on top of a real GCSFileSystem."""
 
     def __init__(self, client: storage.Client):
         self.storage_client = client

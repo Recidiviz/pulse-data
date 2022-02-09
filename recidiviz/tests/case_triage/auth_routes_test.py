@@ -26,7 +26,7 @@ from recidiviz.utils.auth.auth0 import Auth0Config
 
 
 class TestAuthRoutes(unittest.TestCase):
-    """ Tests the auth blueprint"""
+    """Tests the auth blueprint"""
 
     def setUp(self) -> None:
         _private_key, public_key = generate_keypair()
@@ -62,7 +62,7 @@ class TestAuthRoutes(unittest.TestCase):
             response = client.post("/auth/log_out")
 
             self.assertEqual(
-                "session=; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Path=/",
+                "session=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0; Path=/",
                 response.headers["Set-Cookie"],
             )
 

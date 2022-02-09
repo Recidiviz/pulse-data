@@ -1273,7 +1273,7 @@ class BigQueryClientImpl(BigQueryClient):
         for row in rows:
             json_row = json.dumps(row)
             estimated_size = len(row)
-            if estimated_size > (100 * 2 ** 10):  # 100 KiB
+            if estimated_size > (100 * 2**10):  # 100 KiB
                 logging.warning("Row is larger than 100 KiB: %s", json_row[:1000])
 
         errors = self.client.insert_rows(self.get_table(dataset_ref, table_id), rows)
@@ -1299,7 +1299,7 @@ class BigQueryClientImpl(BigQueryClient):
         for row in rows:
             json_row = json.dumps(row)
             estimated_size = len(row)
-            if estimated_size > (100 * 2 ** 10):  # 100 KiB
+            if estimated_size > (100 * 2**10):  # 100 KiB
                 logging.warning("Row is larger than 100 KiB: %s", json_row[:1000])
 
         job_config = bigquery.LoadJobConfig()

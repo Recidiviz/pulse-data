@@ -111,7 +111,7 @@ class TestPowerCalc(unittest.TestCase):
         pc = PowerCalc(mde=1, pre_periods=4, post_periods=4)
         pc.adjust_mde()
         print(pc.mde)
-        self.assertEqual(pc.mde, 0.5 ** 0.5)
+        self.assertEqual(pc.mde, 0.5**0.5)
 
     def test_get_mde(self) -> None:
         """Verify that get_mde returns correct mde"""
@@ -121,7 +121,7 @@ class TestPowerCalc(unittest.TestCase):
         pc = PowerCalc(
             alpha=0.05,
             power=0.8,
-            sigma2=2400 ** 2,
+            sigma2=2400**2,
             percent_treated=0.5,
             n_clusters=1005,
         )
@@ -147,7 +147,7 @@ class TestPowerCalc(unittest.TestCase):
         pc = PowerCalc(
             alpha=0.05,
             power=0.8,
-            sigma2=2400 ** 2,
+            sigma2=2400**2,
             percent_treated=0.5,
             n_clusters=1005,
         )

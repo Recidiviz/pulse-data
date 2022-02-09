@@ -155,7 +155,7 @@ def upload_raw_file_to_gcs(
 def load_from_gcs_to_temp_table(
     bq_client: BigQueryClientImpl, project_id: str, blob_name: str
 ) -> None:
-    """Upload raw data from GCS to temporary BQ table """
+    """Upload raw data from GCS to temporary BQ table"""
     bucket_name = f"{project_id}{BUCKET_SUFFIX}"
     load_job = bq_client.load_table_from_cloud_storage_async(
         source_uri=f"gs://{bucket_name}/" f"{blob_name}",
