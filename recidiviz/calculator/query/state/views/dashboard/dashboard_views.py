@@ -57,11 +57,11 @@ LANTERN_DASHBOARD_VIEW_BUILDERS: Sequence[
 ] = revocation_analysis_views.REVOCATION_ANALYSIS_VIEW_BUILDERS
 
 
-UP_DASHBOARD_VIEW_BUILDERS: Sequence[BigQueryViewBuilder] = (
-    population_projections_views.POPULATION_PROJECTION_VIEW_BUILDERS
-    + vitals_views.VITALS_VIEW_BUILDERS
-    + pathways_views.PATHWAYS_VIEW_BUILDERS
-)
+UP_DASHBOARD_VIEW_BUILDERS: Sequence[BigQueryViewBuilder] = [
+    *population_projections_views.POPULATION_PROJECTION_VIEW_BUILDERS,
+    *vitals_views.VITALS_VIEW_BUILDERS,
+    *pathways_views.PATHWAYS_VIEW_BUILDERS,
+]
 
 DASHBOARD_VIEW_BUILDERS: Sequence[BigQueryViewBuilder] = list(
     itertools.chain.from_iterable(

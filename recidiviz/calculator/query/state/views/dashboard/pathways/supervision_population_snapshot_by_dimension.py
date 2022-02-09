@@ -31,7 +31,9 @@ from recidiviz.calculator.query.state.state_specific_query_strings import (
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
     ENABLED_STATES,
 )
-from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
+from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_metric_big_query_view import (
+    PathwaysMetricBigQueryViewBuilder,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -74,14 +76,13 @@ SUPERVISION_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = """
     
 """
 
-SUPERVISION_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER = MetricBigQueryViewBuilder(
+SUPERVISION_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER = PathwaysMetricBigQueryViewBuilder(
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=SUPERVISION_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_NAME,
     view_query_template=SUPERVISION_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE,
     description=SUPERVISION_POPULATION_SNAPSHOT_BY_DIMENSION_DESCRIPTION,
     dimensions=(
         "state_code",
-        "last_updated",
         "district",
         "supervision_level",
     ),
