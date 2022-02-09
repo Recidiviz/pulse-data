@@ -19,6 +19,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_specific_incarceratio
     StateSpecificIncarcerationDelegate,
 )
 from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateSpecializedPurposeForIncarceration,
+)
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 
 
@@ -30,9 +33,16 @@ class UsTnIncarcerationDelegate(StateSpecificIncarcerationDelegate):
         incarceration_period: StateIncarcerationPeriod,
     ) -> bool:
         """In US_TN, only periods of incarceration that are under the custodial
-        authority of the state prison are included in the state population.
+        authority of the state prison or the courts are included in the state population.
+
+        Do not include people whose specialized_purpose_for_incarceration is TEMPORARY_CUSTODY.
         """
         return (
-            incarceration_period.custodial_authority
-            == StateCustodialAuthority.STATE_PRISON
+            incarceration_period.specialized_purpose_for_incarceration
+            != StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY
+            and incarceration_period.custodial_authority
+            in (
+                StateCustodialAuthority.STATE_PRISON,
+                StateCustodialAuthority.COURT,
+            )
         )

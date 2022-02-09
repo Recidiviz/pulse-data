@@ -25,6 +25,7 @@ from recidiviz.common.constants.state.shared_enums import StateCustodialAuthorit
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
+    StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
@@ -56,7 +57,7 @@ class TestUsTnIncarcerationDelegate(unittest.TestCase):
             self.delegate.is_period_included_in_state_population(incarceration_period)
         )
 
-    def test_is_period_included_in_state_population_not_state_prison_custodial_authority(
+    def test_is_period_included_in_state_population_by_custodial_authority(
         self,
     ) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -70,29 +71,36 @@ class TestUsTnIncarcerationDelegate(unittest.TestCase):
         )
 
         for custodial_authority in StateCustodialAuthority:
-            if custodial_authority == StateCustodialAuthority.STATE_PRISON:
-                continue
-
             incarceration_period.custodial_authority = custodial_authority
-
-            self.assertFalse(
-                self.delegate.is_period_included_in_state_population(
-                    incarceration_period
+            if custodial_authority in (
+                StateCustodialAuthority.STATE_PRISON,
+                StateCustodialAuthority.COURT,
+            ):
+                self.assertTrue(
+                    self.delegate.is_period_included_in_state_population(
+                        incarceration_period
+                    )
                 )
-            )
+            else:
+                self.assertFalse(
+                    self.delegate.is_period_included_in_state_population(
+                        incarceration_period
+                    )
+                )
 
-    def test_is_period_included_in_state_population_null_custodial_authority(
+    def test_is_period_included_in_state_population_court_and_temporary_custody(
         self,
     ) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1112,
             external_id="2",
-            custodial_authority=None,
+            custodial_authority=StateCustodialAuthority.COURT,
             state_code=_STATE_CODE,
             admission_date=date(2008, 12, 20),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2010, 12, 21),
             release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
         )
 
         self.assertFalse(
