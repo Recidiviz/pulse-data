@@ -21,7 +21,6 @@ from typing import Dict, Optional, cast
 from unittest.mock import patch
 
 import pandas as pd
-import pytest
 from pandas.testing import assert_frame_equal, assert_index_equal
 
 from recidiviz.calculator.modeling.population_projection.population_simulation.population_simulation_factory import (
