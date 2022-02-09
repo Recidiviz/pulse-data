@@ -156,7 +156,10 @@ def on_successful_authorization(jwt_claims: TokenClaims) -> None:
             raise auth_error
 
     email = session["user_info"]["email"].lower()
-    g.user_context = UserContext(email, authorization_store, jwt_claims=jwt_claims)
+    # TODO(PyCQA/pylint#5317): Remove ignore fixed by PyCQA/pylint#5457
+    g.user_context = UserContext(  # pylint: disable=assigning-non-slot
+        email, authorization_store, jwt_claims=jwt_claims
+    )
     if (
         not g.user_context.access_permissions.can_access_case_triage
         and not g.user_context.access_permissions.can_access_leadership_dashboard

@@ -106,7 +106,10 @@ def requires_api_schema(api_schema: Type[Schema]) -> Callable:
     def inner(route: Callable) -> Callable:
         @wraps(route)
         def decorated(*args: List[Any], **kwargs: Dict[str, Any]) -> Any:
-            g.api_data = api_schema().load(request.json)
+            # TODO(PyCQA/pylint#5317): Remove ignore fixed by PyCQA/pylint#5457
+            g.api_data = api_schema().load(  # pylint: disable=assigning-non-slot
+                request.json
+            )
 
             return route(*args, **kwargs)
 
