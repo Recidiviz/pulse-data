@@ -119,7 +119,7 @@ class TestValidationResultStorage(unittest.TestCase):
                 "validation_result_status": "SUCCESS",
                 "failure_description": None,
                 "result_details_type": "SamenessPerRowValidationResultDetails",
-                "result_details": '{"failed_rows": [], "hard_max_allowed_error": 0.0, "soft_max_allowed_error": 0.0}',
+                "result_details": '{"failed_rows": [], "hard_max_allowed_error": 0.0, "soft_max_allowed_error": 0.0, "dev_mode": false}',
                 "validation_category": "EXTERNAL_AGGREGATE",
             },
             result.to_serializable(),
@@ -195,7 +195,7 @@ class TestValidationResultStorage(unittest.TestCase):
                 "validation_result_status": "SUCCESS",
                 "failure_description": None,
                 "result_details_type": "SamenessPerViewValidationResultDetails",
-                "result_details": '{"num_error_rows": 0, "total_num_rows": 5, "hard_max_allowed_error": 0.5, "soft_max_allowed_error": 0.5, "non_null_counts_per_column_per_partition": [[["US_XX", "2020-12-01"], {"internal": 5, "external": 5}]]}',
+                "result_details": '{"num_error_rows": 0, "total_num_rows": 5, "hard_max_allowed_error": 0.5, "soft_max_allowed_error": 0.5, "dev_mode": false, "non_null_counts_per_column_per_partition": [[["US_XX", "2020-12-01"], {"internal": 5, "external": 5}]]}',
                 "validation_category": "EXTERNAL_INDIVIDUAL",
             },
             result.to_serializable(),
@@ -279,7 +279,7 @@ class TestValidationResultStorage(unittest.TestCase):
                 "result_details": '{"failed_rows": [[{"label_values": ["US_XX"], '
                 '"comparison_values": [5, 10]}, 0.5]], '
                 '"hard_max_allowed_error": 0.0, "soft_max_allowed_error": '
-                "0.0}",
+                '0.0, "dev_mode": false}',
                 "result_details_type": "SamenessPerRowValidationResultDetails",
                 "validation_category": "EXTERNAL_AGGREGATE",
             },
@@ -487,7 +487,7 @@ class TestValidationResultStorage(unittest.TestCase):
                     "validation_result_status": "SUCCESS",
                     "failure_description": None,
                     "result_details_type": "SamenessPerRowValidationResultDetails",
-                    "result_details": '{"failed_rows": [], "hard_max_allowed_error": 0.0, "soft_max_allowed_error": 0.0}',
+                    "result_details": '{"failed_rows": [], "hard_max_allowed_error": 0.0, "soft_max_allowed_error": 0.0, "dev_mode": false}',
                     "validation_category": "EXTERNAL_AGGREGATE",
                 },
                 {
@@ -502,7 +502,7 @@ class TestValidationResultStorage(unittest.TestCase):
                     "validation_result_status": "FAIL_HARD",
                     "failure_description": "1 row(s) had unacceptable margins of error. The acceptable margin of error is only 0.0, but the validation returned rows with errors as high as 0.5.",
                     "result_details_type": "SamenessPerRowValidationResultDetails",
-                    "result_details": '{"failed_rows": [[{"label_values": ["US_XX"], "comparison_values": [5, 10]}, 0.5]], "hard_max_allowed_error": 0.0, "soft_max_allowed_error": 0.0}',
+                    "result_details": '{"failed_rows": [[{"label_values": ["US_XX"], "comparison_values": [5, 10]}, 0.5]], "hard_max_allowed_error": 0.0, "soft_max_allowed_error": 0.0, "dev_mode": false}',
                     "validation_category": "EXTERNAL_AGGREGATE",
                 },
                 {

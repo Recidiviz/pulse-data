@@ -110,6 +110,18 @@ def get_test_validations() -> List[DataValidationJob]:
                 ),
             ),
         ),
+        DataValidationJob(
+            region_code="US_XX",
+            validation=ExistenceDataValidationCheck(
+                validation_category=ValidationCategory.INVARIANT,
+                view_builder=SimpleBigQueryViewBuilder(
+                    dataset_id="my_dataset",
+                    view_id="test_2",
+                    description="test_2 description",
+                    view_query_template="select * from literally_anything",
+                ),
+            ),
+        ),
     ]
 
 
@@ -118,10 +130,15 @@ class FakeValidationResultDetails(DataValidationJobResultDetails):
     """ Fake implementation of DataValidationJobResultDetails"""
 
     validation_status: ValidationResultStatus = attr.ib()
+    dev_mode: bool = attr.ib(default=False)
 
     @property
     def has_data(self) -> bool:
         return True
+
+    @property
+    def is_dev_mode(self) -> bool:
+        return self.dev_mode
 
     @property
     def error_amount(self) -> float:
@@ -210,7 +227,7 @@ class TestHandleRequest(TestCase):
 
         self.assertEqual(200, response.status_code)
 
-        self.assertEqual(4, mock_run_job.call_count)
+        self.assertEqual(5, mock_run_job.call_count)
         for job in self._TEST_VALIDATIONS:
             mock_run_job.assert_any_call(job)
 
@@ -218,7 +235,7 @@ class TestHandleRequest(TestCase):
         mock_emit_opencensus_failure_events.assert_not_called()
         mock_store_validation_results.assert_called_once()
         ((results,), _kwargs) = mock_store_validation_results.call_args
-        self.assertEqual(4, len(results))
+        self.assertEqual(5, len(results))
 
     @patch(
         "recidiviz.big_query.view_update_manager.rematerialize_views_for_view_builders"
@@ -250,6 +267,12 @@ class TestHandleRequest(TestCase):
                 validation_status=ValidationResultStatus.FAIL_HARD
             ),
         )
+        third_failure = DataValidationJobResult(
+            validation_job=self._TEST_VALIDATIONS[3],
+            result_details=FakeValidationResultDetails(
+                validation_status=ValidationResultStatus.FAIL_HARD, dev_mode=True
+            ),
+        )
         mock_run_job.side_effect = [
             DataValidationJobResult(
                 validation_job=self._TEST_VALIDATIONS[0],
@@ -259,6 +282,7 @@ class TestHandleRequest(TestCase):
             ),
             first_failure,
             second_failure,
+            third_failure,
             ValueError("Job failed to run!"),
         ]
         headers = {"X-Appengine-Cron": "test-cron"}
@@ -266,18 +290,18 @@ class TestHandleRequest(TestCase):
 
         self.assertEqual(200, response.status_code)
 
-        self.assertEqual(4, mock_run_job.call_count)
+        self.assertEqual(5, mock_run_job.call_count)
         for job in self._TEST_VALIDATIONS:
             mock_run_job.assert_any_call(job)
 
         mock_rematerialize_views.assert_called()
         mock_emit_opencensus_failure_events.assert_called_with(
-            UnorderedCollection([self._TEST_VALIDATIONS[3]]),
+            UnorderedCollection([self._TEST_VALIDATIONS[4]]),
             UnorderedCollection([first_failure, second_failure]),
         )
         mock_store_validation_results.assert_called_once()
         ((results,), _kwargs) = mock_store_validation_results.call_args
-        self.assertEqual(4, len(results))
+        self.assertEqual(5, len(results))
 
     @patch(
         "recidiviz.big_query.view_update_manager.rematerialize_views_for_view_builders"
@@ -310,6 +334,12 @@ class TestHandleRequest(TestCase):
                 validation_status=ValidationResultStatus.FAIL_HARD
             ),
         )
+        third_failure = DataValidationJobResult(
+            validation_job=self._TEST_VALIDATIONS[3],
+            result_details=FakeValidationResultDetails(
+                validation_status=ValidationResultStatus.FAIL_HARD, dev_mode=True
+            ),
+        )
         mock_run_job.side_effect = [
             DataValidationJobResult(
                 validation_job=self._TEST_VALIDATIONS[0],
@@ -319,8 +349,9 @@ class TestHandleRequest(TestCase):
             ),
             first_failure,
             second_failure,
+            third_failure,
             DataValidationJobResult(
-                validation_job=self._TEST_VALIDATIONS[3],
+                validation_job=self._TEST_VALIDATIONS[4],
                 result_details=FakeValidationResultDetails(
                     validation_status=ValidationResultStatus.SUCCESS
                 ),
@@ -332,7 +363,7 @@ class TestHandleRequest(TestCase):
 
         self.assertEqual(200, response.status_code)
 
-        self.assertEqual(4, mock_run_job.call_count)
+        self.assertEqual(5, mock_run_job.call_count)
         for job in self._TEST_VALIDATIONS:
             mock_run_job.assert_any_call(job)
 
@@ -343,7 +374,7 @@ class TestHandleRequest(TestCase):
         mock_store_validation_results.assert_called_once()
         self.assertEqual(1, len(mock_store_validation_results.call_args[0]))
         ((results,), _kwargs) = mock_store_validation_results.call_args
-        self.assertEqual(4, len(results))
+        self.assertEqual(5, len(results))
 
     @patch(
         "recidiviz.big_query.view_update_manager.rematerialize_views_for_view_builders"
@@ -560,6 +591,7 @@ class TestFetchValidations(TestCase):
                     view_builder=existence_builder,
                     validation_name_suffix=None,
                     validation_type=ValidationCheckType.EXISTENCE,
+                    dev_mode=False,
                     hard_num_allowed_rows=10,
                     soft_num_allowed_rows=10,
                 ),
@@ -571,6 +603,7 @@ class TestFetchValidations(TestCase):
                     view_builder=existence_builder,
                     validation_name_suffix=None,
                     validation_type=ValidationCheckType.EXISTENCE,
+                    dev_mode=True,
                     hard_num_allowed_rows=0,
                 ),  # No override
                 region_code="US_YY",
@@ -582,6 +615,7 @@ class TestFetchValidations(TestCase):
                     validation_name_suffix=None,
                     comparison_columns=["col1", "col2"],
                     sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
+                    dev_mode=False,
                     hard_max_allowed_error=0.3,
                     soft_max_allowed_error=0.3,
                     validation_type=ValidationCheckType.SAMENESS,
@@ -595,6 +629,7 @@ class TestFetchValidations(TestCase):
                     validation_name_suffix=None,
                     comparison_columns=["col1", "col2"],
                     sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
+                    dev_mode=True,
                     hard_max_allowed_error=0.02,
                     soft_max_allowed_error=0.02,
                     validation_type=ValidationCheckType.SAMENESS,

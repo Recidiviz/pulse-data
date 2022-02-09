@@ -270,6 +270,7 @@ def _validation_status_record_from_row(row: Row) -> ValidationStatusRecord_pb2:
     soft_failure_amount: Optional[float] = None
     error_amount: Optional[float] = None
     has_data: Optional[bool] = None
+    dev_mode: Optional[bool] = None
 
     if result_details:
         result_status = ValidationStatusRecord_pb2.ValidationResultStatus.Value(
@@ -279,6 +280,7 @@ def _validation_status_record_from_row(row: Row) -> ValidationStatusRecord_pb2:
         soft_failure_amount = result_details.soft_failure_amount
         error_amount = result_details.error_amount
         has_data = result_details.has_data
+        dev_mode = result_details.is_dev_mode
 
     # legacy support for rows before result_status was introduced
     if result_status is None:
@@ -320,6 +322,7 @@ def _validation_status_record_from_row(row: Row) -> ValidationStatusRecord_pb2:
         state_code=row.get("region_code"),
         did_run=row.get("did_run"),
         has_data=has_data,
+        dev_mode=dev_mode,
         hard_failure_amount=hard_failure_amount,
         soft_failure_amount=soft_failure_amount,
         result_status=result_status,

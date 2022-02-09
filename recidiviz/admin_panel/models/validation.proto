@@ -105,6 +105,7 @@ message ValidationStatusRecord {
 
     optional bool did_run = 8;
     optional bool has_data = 9;
+    optional bool dev_mode = 21;
 
     optional float hard_failure_amount = 10;
     optional float soft_failure_amount = 11;

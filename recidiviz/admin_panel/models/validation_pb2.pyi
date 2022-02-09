@@ -255,6 +255,7 @@ class ValidationStatusRecord(google.protobuf.message.Message):
     STATE_CODE_FIELD_NUMBER: builtins.int
     DID_RUN_FIELD_NUMBER: builtins.int
     HAS_DATA_FIELD_NUMBER: builtins.int
+    DEV_MODE_FIELD_NUMBER: builtins.int
     HARD_FAILURE_AMOUNT_FIELD_NUMBER: builtins.int
     SOFT_FAILURE_AMOUNT_FIELD_NUMBER: builtins.int
     RESULT_STATUS_FIELD_NUMBER: builtins.int
@@ -283,6 +284,7 @@ class ValidationStatusRecord(google.protobuf.message.Message):
 
     did_run: builtins.bool = ...
     has_data: builtins.bool = ...
+    dev_mode: builtins.bool = ...
     hard_failure_amount: builtins.float = ...
     soft_failure_amount: builtins.float = ...
     result_status: global___ValidationStatusRecord.ValidationResultStatus.V = ...
@@ -323,6 +325,7 @@ class ValidationStatusRecord(google.protobuf.message.Message):
         state_code: typing.Optional[typing.Text] = ...,
         did_run: typing.Optional[builtins.bool] = ...,
         has_data: typing.Optional[builtins.bool] = ...,
+        dev_mode: typing.Optional[builtins.bool] = ...,
         hard_failure_amount: typing.Optional[builtins.float] = ...,
         soft_failure_amount: typing.Optional[builtins.float] = ...,
         result_status: typing.Optional[
@@ -350,6 +353,8 @@ class ValidationStatusRecord(google.protobuf.message.Message):
         field_name: typing_extensions.Literal[
             "category",
             b"category",
+            "dev_mode",
+            b"dev_mode",
             "did_run",
             b"did_run",
             "error_amount",
@@ -397,6 +402,8 @@ class ValidationStatusRecord(google.protobuf.message.Message):
         field_name: typing_extensions.Literal[
             "category",
             b"category",
+            "dev_mode",
+            b"dev_mode",
             "did_run",
             b"did_run",
             "error_amount",
