@@ -30,6 +30,7 @@ from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
     RAW_DATA_LATEST_VIEW_QUERY_TEMPLATE,
     RAW_DATA_UP_TO_DATE_HISTORICAL_FILE_VIEW_QUERY_TEMPLATE,
     RAW_DATA_UP_TO_DATE_VIEW_QUERY_TEMPLATE,
+    UPDATE_DATETIME_PARAM_NAME,
     DestinationTableType,
     DirectIngestPreProcessedIngestView,
     DirectIngestRawDataTableLatestView,
@@ -1391,6 +1392,102 @@ ORDER BY col1, col2
             expected_parameterized_view_query,
             view.expanded_view_query(config=parametrized_config),
         )
+
+    def test_direct_ingest_preprocessed_view_with_update_datetime(self) -> None:
+        region_config = DirectIngestRegionRawFileConfig(
+            region_code="us_xx",
+            region_module=fake_regions_module,
+        )
+
+        view_query_template = f"""SELECT * FROM {{file_tag_first}} 
+        WHERE col1 <= @{UPDATE_DATETIME_PARAM_NAME}"""
+
+        view = DirectIngestPreProcessedIngestView(
+            ingest_view_name="ingest_view_tag",
+            view_query_template=view_query_template,
+            region_raw_table_config=region_config,
+            order_by_cols="col1, col2",
+            is_detect_row_deletion_view=False,
+            primary_key_tables_for_entity_deletion=[],
+        )
+
+        expected_view_query = """WITH
+file_tag_first_generated_view AS (
+    SELECT * FROM `recidiviz-456.us_xx_raw_data_up_to_date_views.file_tag_first_latest`
+)
+SELECT * FROM file_tag_first_generated_view 
+        WHERE col1 <= CURRENT_DATE('US/Eastern')
+ORDER BY col1, col2;"""
+
+        self.assertEqual(
+            expected_view_query,
+            view.expanded_view_query(config=self.DEFAULT_LATEST_CONFIG),
+        )
+
+        expected_parameterized_view_query = f"""WITH
+file_tag_first_generated_view AS (
+    WITH normalized_rows AS (
+        SELECT
+            *
+        FROM
+            `recidiviz-456.us_xx_raw_data.file_tag_first`
+        WHERE
+            update_datetime <= @{UPDATE_DATETIME_PARAM_NAME}
+    ),
+    rows_with_recency_rank AS (
+        SELECT
+            col_name_1a, col_name_1b,
+            ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
+                               ORDER BY update_datetime DESC) AS recency_rank
+        FROM
+            normalized_rows
+    )
+
+    SELECT *
+    EXCEPT (recency_rank)
+    FROM rows_with_recency_rank
+    WHERE recency_rank = 1
+)
+SELECT * FROM file_tag_first_generated_view 
+        WHERE col1 <= @{UPDATE_DATETIME_PARAM_NAME}
+ORDER BY col1, col2;"""
+
+        self.assertEqual(
+            expected_parameterized_view_query,
+            view.expanded_view_query(
+                config=DirectIngestPreProcessedIngestView.QueryStructureConfig(
+                    raw_table_view_type=RawTableViewType.PARAMETERIZED
+                )
+            ),
+        )
+
+    def test_direct_ingest_preprocessed_view_with_current_date(self) -> None:
+        region_config = DirectIngestRegionRawFileConfig(
+            region_code="us_xx",
+            region_module=fake_regions_module,
+        )
+
+        for current_date_fn in [
+            "CURRENT_DATE('US/Eastern')",
+            "CURRENT_DATE()",
+            "current_date()",
+        ]:
+
+            view_query_template = f"""SELECT * FROM {{file_tag_first}} 
+            WHERE col1 <= {current_date_fn}"""
+            with self.assertRaisesRegex(
+                ValueError,
+                "Found CURRENT_DATE function in this query - ingest views cannot contain "
+                "CURRENT_DATE functions. Consider using @update_timestamp instead.",
+            ):
+                DirectIngestPreProcessedIngestView(
+                    ingest_view_name="ingest_view_tag",
+                    view_query_template=view_query_template,
+                    region_raw_table_config=region_config,
+                    order_by_cols="col1, col2",
+                    is_detect_row_deletion_view=False,
+                    primary_key_tables_for_entity_deletion=[],
+                )
 
     def test_query_structure_config_destination_table_type_dataset_id_validations(
         self,

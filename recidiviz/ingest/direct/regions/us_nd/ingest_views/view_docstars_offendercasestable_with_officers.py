@@ -17,20 +17,21 @@
 """Query containing cases table with officers information."""
 
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
+    UPDATE_DATETIME_PARAM_NAME,
     DirectIngestPreProcessedIngestViewBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-VIEW_QUERY_TEMPLATE = """
+VIEW_QUERY_TEMPLATE = f"""
 WITH cases_with_terminating_officers AS (
-  SELECT {docstars_offendercasestable}.*,
+  SELECT {{docstars_offendercasestable}}.*,
        TERMINATING_OFFICER as terminating_officer_id,
-       {docstars_officers}.LNAME AS terminating_officer_lname, 
-       {docstars_officers}.FNAME AS terminating_officer_fname, 
-       {docstars_officers}.SITEID AS terminating_officer_siteid,
-  FROM {docstars_offendercasestable}
-  LEFT JOIN {docstars_officers}
+       {{docstars_officers}}.LNAME AS terminating_officer_lname, 
+       {{docstars_officers}}.FNAME AS terminating_officer_fname, 
+       {{docstars_officers}}.SITEID AS terminating_officer_siteid,
+  FROM {{docstars_offendercasestable}}
+  LEFT JOIN {{docstars_officers}}
   ON (TERMINATING_OFFICER = OFFICER)
 ),
 ranked_term_dates AS (
@@ -39,9 +40,9 @@ ranked_term_dates AS (
     TERM_DATE,
     ROW_NUMBER() OVER (
       PARTITION BY SID
-      ORDER BY IFNULL(PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', TERM_DATE), CURRENT_DATE('US/Eastern')) DESC
+      ORDER BY IFNULL(PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', TERM_DATE), @{UPDATE_DATETIME_PARAM_NAME}) DESC
     ) AS rn
-  FROM {docstars_offendercasestable}
+  FROM {{docstars_offendercasestable}}
 ),
 most_recent_term_date_by_sid AS (
   SELECT
@@ -54,10 +55,10 @@ most_recent_term_date_by_sid AS (
 ),
 offendercases_with_terminating_and_recent_pos AS (
   SELECT cases_with_terminating_officers.*,
-        {docstars_officers}.OFFICER AS recent_officer_id, 
-        {docstars_officers}.LNAME AS recent_officer_lname, 
-        {docstars_officers}.FNAME AS recent_officer_fname, 
-        {docstars_officers}.SITEID AS recent_officer_siteid,
+        {{docstars_officers}}.OFFICER AS recent_officer_id, 
+        {{docstars_officers}}.LNAME AS recent_officer_lname, 
+        {{docstars_officers}}.FNAME AS recent_officer_fname, 
+        {{docstars_officers}}.SITEID AS recent_officer_siteid,
         CASE
             -- Only set the supervision level for either
             -- the currently open period or the most recently closed one
@@ -69,10 +70,10 @@ offendercases_with_terminating_and_recent_pos AS (
             ELSE NULL
         END AS current_supervision_level
   FROM cases_with_terminating_officers
-  LEFT JOIN {docstars_offenders}
-  ON (cases_with_terminating_officers.SID = {docstars_offenders}.SID)
-  LEFT JOIN {docstars_officers}
-  ON ({docstars_offenders}.AGENT = {docstars_officers}.OFFICER)
+  LEFT JOIN {{docstars_offenders}}
+  ON (cases_with_terminating_officers.SID = {{docstars_offenders}}.SID)
+  LEFT JOIN {{docstars_officers}}
+  ON ({{docstars_offenders}}.AGENT = {{docstars_officers}}.OFFICER)
   LEFT JOIN most_recent_term_date_by_sid
   ON (cases_with_terminating_officers.SID = most_recent_term_date_by_sid.SID)
 )
