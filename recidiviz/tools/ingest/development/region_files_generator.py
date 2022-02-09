@@ -14,7 +14,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Functionality for generating direct ingest directories and files."""
+"""
+A script which generates the directories and files needed for setting up a new region.
+
+Example usage:
+python -m recidiviz.tools.ingest.development.region_files_generator --region-code US_TN
+"""
+
+import argparse
+import logging
 import os
 import re
 from datetime import datetime
@@ -28,6 +36,7 @@ from recidiviz.calculator.pipeline.utils import (
 from recidiviz.calculator.pipeline.utils.state_utils import (
     templates as state_specific_calculation_templates_module,
 )
+from recidiviz.common.constants import states
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import regions as regions_module
 from recidiviz.ingest.direct import templates as ingest_templates_module
@@ -50,6 +59,8 @@ from recidiviz.tests.ingest.direct import (
 from recidiviz.tests.ingest.direct import regions as regions_test_module
 from recidiviz.tests.ingest.direct import templates as test_templates_module
 from recidiviz.tests.ingest.direct.direct_ingest_util import PLACEHOLDER_TO_DO_STRING
+from recidiviz.validation.config import regions as validation_config_module
+from recidiviz.validation.config import templates as validation_config_templates_module
 
 DEFAULT_WORKING_DIR: str = os.path.dirname(recidiviz.__file__)
 REGIONS_DIR_PATH = os.path.dirname(
@@ -74,11 +85,14 @@ STATE_SPECIFIC_CALCULATION_TESTS_DIR_PATH = os.path.dirname(
 TEST_FIXTURES_DIR_PATH = os.path.dirname(
     os.path.relpath(regions_test_fixtures_module.__file__, start=DEFAULT_WORKING_DIR)
 )
+VALIDATION_CONFIG_DIR_PATH = os.path.dirname(
+    os.path.relpath(validation_config_module.__file__, start=DEFAULT_WORKING_DIR)
+)
 DOCS_DIR_NAME = "docs"
 DOCS_DIR_PATH = os.path.join(DEFAULT_WORKING_DIR, "..", DOCS_DIR_NAME)
 
 
-class DirectIngestFilesGenerator:
+class RegionFilesGenerator:
     """A class for generating necessary directories and files for direct ingest."""
 
     def __init__(
@@ -122,25 +136,12 @@ class DirectIngestFilesGenerator:
         new_region_test_fixtures_dir_path = os.path.join(
             self.curr_directory, TEST_FIXTURES_DIR_PATH, self.region_code
         )
+        new_region_validation_config_dir_path = os.path.join(
+            self.curr_directory, VALIDATION_CONFIG_DIR_PATH, self.region_code
+        )
         new_region_docs_dir_path = os.path.join(
             self.docs_directory, "ingest", self.region_code
         )
-
-        dirs_to_create = [
-            new_region_dir_path,
-            new_region_persistence_dir_path,
-            new_region_tests_dir_path,
-            new_region_state_specific_calculation_dir_path,
-            new_region_state_specific_calculation_tests_dir_path,
-            new_region_test_fixtures_dir_path,
-            new_region_docs_dir_path,
-        ]
-        existing_dirs = [d for d in dirs_to_create if os.path.exists(d)]
-        if existing_dirs:
-            existing_dirs_string = "\n".join(existing_dirs)
-            raise FileExistsError(
-                f"The following already exists:\n{existing_dirs_string}"
-            )
 
         template_to_dest: Dict[str, str] = {
             os.path.dirname(ingest_templates_module.__file__): new_region_dir_path,
@@ -157,8 +158,19 @@ class DirectIngestFilesGenerator:
             os.path.dirname(
                 test_fixtures_templates_module.__file__
             ): new_region_test_fixtures_dir_path,
+            os.path.dirname(
+                validation_config_templates_module.__file__
+            ): new_region_validation_config_dir_path,
             os.path.join(DOCS_DIR_PATH, "templates"): new_region_docs_dir_path,
         }
+        dirs_to_create = template_to_dest.values()
+
+        existing_dirs = [d for d in dirs_to_create if os.path.exists(d)]
+        if existing_dirs:
+            existing_dirs_string = "\n".join(existing_dirs)
+            raise FileExistsError(
+                f"The following already exists:\n{existing_dirs_string}"
+            )
 
         try:
             # Copy the template directory into the new region's directory
@@ -234,7 +246,31 @@ class DirectIngestFilesGenerator:
                 # Other clean-up
                 if re.search("unknown", line):
                     line = line.rstrip() + f"  # {PLACEHOLDER_TO_DO_STRING}\n"
-                if re.search(r"Copyright \(C\) 2021 Recidiviz", line):
-                    line = re.sub("2021", f"{self.current_year}", line)
+                if match := re.search(
+                    r"Copyright \(C\) (?P<year>\d{4}) Recidiviz", line
+                ):
+                    line = re.sub(match.group("year"), f"{self.current_year}", line)
 
                 updated_f.write(line)
+
+
+def main(region_code: str) -> None:
+    generator = RegionFilesGenerator(region_code)
+    generator.generate_all_new_dirs_and_files()
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+
+    parser.add_argument(
+        "--region-code",
+        required=True,
+        help="The state to generate ingest files for.",
+        choices=[state.value for state in states.StateCode],
+    )
+
+    args = parser.parse_args()
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
+    main(region_code=args.region_code.lower())

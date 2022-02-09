@@ -69,7 +69,7 @@ exit_code=$((exit_code + $?))
 echo "Checking for TODO format"
 # This set of commands does the following:
 # - List all files with updates that are not deletions
-# - Skips `find*todos.py/yml`, `issue_references.py`, `bandit-baseline.json`, `run_pylint.sh`, `.pylintrc` as they can have 'TODO' that doesn't match the format
+# - Skips `find*todos.py/yml`, `issue_references.py`, `bandit-baseline.json`, `run_pylint.sh`, `.pylintrc`, or any templates as they can have 'TODO' that doesn't match the format
 # - Runs grep for each updated file, getting all lines containing 'TODO' (and including the line number in the output via -n)
 # - Filters to only the lines that don't contain 'TODO' with the correct format
 invalid_lines=$(${changed_files_cmd} \
@@ -79,6 +79,7 @@ invalid_lines=$(${changed_files_cmd} \
     | grep --invert-match -e 'bandit-baseline.json' \
     | grep --invert-match -e 'run_pylint\.sh' \
     | grep --invert-match -e '\.pylintrc' \
+    | grep --invert-match -e '/templates/' \
     | xargs grep -n -e 'TODO' \
     | grep --invert-match -e 'TODO(\(\(.*#[0-9]\+\)\|\(http.*\)\))')
 

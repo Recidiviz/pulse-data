@@ -1,0 +1,8 @@
+# Configuration for which validations to run for region US_TN.
+
+region_code: US_TN
+# TODO(#5582): Enable validations for US_TN.
+dev_mode: True
+exclusions: []
+max_allowed_error_overrides: []
+num_allowed_rows_overrides: []

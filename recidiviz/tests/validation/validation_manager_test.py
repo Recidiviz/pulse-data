@@ -463,12 +463,17 @@ class TestFetchValidations(TestCase):
         region_configs_to_validate = get_validation_region_configs()
         global_config = get_validation_global_config()
         state_codes_to_validate = region_configs_to_validate.keys()
+        launched_state_codes = [
+            region
+            for region, config in region_configs_to_validate.items()
+            if not config.dev_mode
+        ]
 
         # When you promote a state to production, we will start running validations against that state - add it to this
         # list to confirm you've updated all relevant external data validation tables in production to include
         # validation data for the newly promoted region.
         self.assertCountEqual(
-            state_codes_to_validate, ["US_ID", "US_MO", "US_ND", "US_PA"]
+            launched_state_codes, ["US_ID", "US_MO", "US_ND", "US_PA"]
         )
 
         num_exclusions = sum(
@@ -517,6 +522,7 @@ class TestFetchValidations(TestCase):
         mock_get_region_configs_fn.return_value = {
             "US_XX": ValidationRegionConfig(
                 region_code="US_XX",
+                dev_mode=False,
                 exclusions={},
                 num_allowed_rows_overrides={
                     existence_builder.view_id: ValidationNumAllowedRowsOverride(
@@ -539,6 +545,7 @@ class TestFetchValidations(TestCase):
             ),
             "US_YY": ValidationRegionConfig(
                 region_code="US_YY",
+                dev_mode=True,
                 exclusions={},
                 num_allowed_rows_overrides={},
                 max_allowed_error_overrides={},
