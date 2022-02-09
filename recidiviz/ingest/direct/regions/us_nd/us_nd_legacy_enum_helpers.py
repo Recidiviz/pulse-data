@@ -130,7 +130,7 @@ def supervision_contact_location_mapper(
 
 
 IGNORES: Dict[Type[Enum], List[str]] = {
-    StateCourtCaseStatus: ["A", "STEP"],
+    StateCourtCaseStatus: ["A", "ACC", "STEP"],
 }
 
 

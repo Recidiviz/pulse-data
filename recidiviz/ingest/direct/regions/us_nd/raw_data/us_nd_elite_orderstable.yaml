@@ -35,6 +35,10 @@ columns:
   - name: ORDER_STATUS
     description: |-
       Current state of the court order.
+    known_values:
+      - value: A
+      - value: ACC
+      - value: STEP
   - name: SENTENCE_START_DATE
     is_datetime: True
     description: |-
