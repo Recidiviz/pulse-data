@@ -62,6 +62,7 @@ from recidiviz.tools.deploy.build_dataflow_source_distribution import (
     build_source_distribution,
 )
 from recidiviz.tools.pipeline_launch_util import load_all_pipelines, run_pipeline
+from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 
 
 def parse_run_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
@@ -118,6 +119,12 @@ def validated_run_arguments(
             message="--sandbox_output_dataset argument for test pipelines must be "
             "different than the standard Dataflow metrics dataset.",
         )
+
+    # Have the user confirm that the sandbox dataflow dataset exists.
+    prompt_for_confirmation(
+        "Have you already created a sandbox dataflow dataset called "
+        f"`{sandbox_output_dataset}` using `create_or_update_dataflow_metrics_sandbox`?"
+    )
 
     if "--output" in arguments:
         raise argparse.ArgumentError(
