@@ -172,6 +172,7 @@ DATETIME_COL_NORMALIZATION_TEMPLATE = """
 
 CREATE_TEMP_TABLE_REGEX = re.compile(r"CREATE\s+((TEMP|TEMPORARY)\s+)TABLE")
 
+CURRENT_DATE_REGEX = re.compile(r"CURRENT_DATE\(|current_date\(")
 
 DESTINATION_TABLE_QUERY_FORMAT = """{raw_materialized_tables_clause}
 DROP TABLE IF EXISTS `{{project_id}}.{dataset_id}.{table_id}`;
@@ -547,6 +548,12 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
                 "Found CREATE TEMP TABLE clause in this query - ingest views cannot contain CREATE clauses."
             )
 
+        if re.search(CURRENT_DATE_REGEX, view_query_template):
+            raise ValueError(
+                "Found CURRENT_DATE function in this query - ingest views cannot contain CURRENT_DATE functions. "
+                f"Consider using @{UPDATE_DATETIME_PARAM_NAME} instead."
+            )
+
     @property
     def file_tag(self) -> str:
         """The file tag that should be written to any file export of this query."""
@@ -813,6 +820,10 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
         if config.param_name_override:
             query = query.replace(
                 f"@{UPDATE_DATETIME_PARAM_NAME}", f"@{config.param_name_override}"
+            )
+        elif config.raw_table_view_type == RawTableViewType.LATEST:
+            query = query.replace(
+                f"@{UPDATE_DATETIME_PARAM_NAME}", "CURRENT_DATE('US/Eastern')"
             )
 
         return query.strip()
