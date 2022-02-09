@@ -29,7 +29,7 @@ def print_visible_header_label(label_text: str) -> None:
 
 
 def in_docker() -> bool:
-    """ Returns: True if running in a Docker container, else False """
+    """Returns: True if running in a Docker container, else False"""
     if not os.path.exists("/proc/1/cgroup"):
         return False
     with open("/proc/1/cgroup", "rt", encoding="utf-8") as ifh:

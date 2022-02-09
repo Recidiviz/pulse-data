@@ -57,7 +57,7 @@ class ValidationExclusion:
 
 @attr.s(frozen=True)
 class ValidationMaxAllowedErrorOverride:
-    """For SamenessDataValidationChecks, provides a custom override of the maximum allowed error. """
+    """For SamenessDataValidationChecks, provides a custom override of the maximum allowed error."""
 
     region_code: str = attr.ib()
 

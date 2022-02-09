@@ -57,6 +57,7 @@ class TestCoAggregateIngest(TestCase):
 
     def testParse_ParsesHeadAndTail(self) -> None:
         result = self.parsed_csv[CoFacilityAggregate]
+        result = result.sort_values(by=["report_date", "county"]).reset_index(drop=True)
 
         # Assert Head
         expected_head = pd.DataFrame(

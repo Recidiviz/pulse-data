@@ -22,21 +22,21 @@ import pandas
 from freezegun import freeze_time
 
 from recidiviz.admin_panel.data_discovery.cache_ingest_file_as_parquet import (
-    SingleIngestFileParquetCache,
     CacheIngestFileAsParquetDelegate,
+    SingleIngestFileParquetCache,
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 
 
 class TestSingleIngestFileParquetCache(TestCase):
-    """ Tests for SingleIngestFileParquetCache """
+    """Tests for SingleIngestFileParquetCache"""
 
     def setUp(self) -> None:
         self.fakeredis = fakeredis.FakeRedis()
 
     @freeze_time("2021-04-13 23:00:00")
     def test_get_parquet_files(self) -> None:
-        """ Dataframes can be added to the cache; read from the cache """
+        """Dataframes can be added to the cache; read from the cache"""
         file_path = GcsfsFilePath.from_absolute_path(
             "gs://recidiviz-staging-bucket/file.csv"
         )
@@ -62,7 +62,7 @@ class TestSingleIngestFileParquetCache(TestCase):
 
 
 class TestCacheIngestFileAsParquetDelegate(TestCase):
-    """ Tests for the CacheIngestFileAsParquetDelegate """
+    """Tests for the CacheIngestFileAsParquetDelegate"""
 
     def setUp(self) -> None:
         self.redis = fakeredis.FakeRedis()

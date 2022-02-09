@@ -77,7 +77,7 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
 def build_arguments_for_pipeline(
     project_id: str, source_distribution: Optional[str], pipeline_config: PipelineConfig
 ) -> List[str]:
-    """ Builds the list of argv args to pass to Beam when deploying a dataflow template"""
+    """Builds the list of argv args to pass to Beam when deploying a dataflow template"""
     pipeline_args = [
         "--project",
         project_id,
@@ -114,7 +114,7 @@ def find_pipeline_with_job_name(job_name: str) -> PipelineConfig:
 
 
 def deploy_pipeline_template_to_project() -> None:
-    """ Finds and runs a pipeline with the specified arguments"""
+    """Finds and runs a pipeline with the specified arguments"""
     known_args, _ = parse_arguments(sys.argv)
 
     pipeline_to_deploy_config = find_pipeline_with_job_name(known_args.job_name)

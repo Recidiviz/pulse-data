@@ -72,7 +72,7 @@ def get_local_file(file_path: GcsfsFilePath) -> str:
 
 
 def get_rate_limit_storage_uri() -> str:
-    """ Reads the rate limit redis secrets; returns an in-memory store if they do not exist """
+    """Reads the rate limit redis secrets; returns an in-memory store if they do not exist"""
     host = get_local_secret("case_triage_rate_limiter_redis_host")
     port = get_local_secret("case_triage_rate_limiter_redis_port")
 

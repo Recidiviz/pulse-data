@@ -17,7 +17,7 @@
 """Utils for extracting information from ingest bucket names."""
 
 import re
-from typing import Optional, Match
+from typing import Match, Optional
 
 INGEST_PRIMARY_BUCKET_SUFFIX = ""
 INGEST_SECONDARY_BUCKET_SUFFIX = "-secondary"
@@ -27,13 +27,13 @@ _DIRECT_INGEST_BUCKET_REGEX = re.compile(
     r"(?P<project>recidiviz-(?:.*))-direct-ingest-"
     r"(?:(state-(?P<state_code>[a-z]{2}-[a-z]{2}))|"
     r"(county-(?P<county_code>[a-z]{2}-[a-z]{2}-[a-z]*)))"
-    fr"(?P<suffix>{INGEST_SECONDARY_BUCKET_SUFFIX}|"
-    fr"-upload-testing|{INGEST_SFTP_BUCKET_SUFFIX})?$"
+    rf"(?P<suffix>{INGEST_SECONDARY_BUCKET_SUFFIX}|"
+    rf"-upload-testing|{INGEST_SFTP_BUCKET_SUFFIX})?$"
 )
 
 _DIRECT_INGEST_STORAGE_BUCKET_REGEX = re.compile(
-    fr"(?P<project>recidiviz-(?:.*))-direct-ingest-(?:state|county)-storage"
-    fr"(?P<suffix>{INGEST_SECONDARY_BUCKET_SUFFIX})?$"
+    rf"(?P<project>recidiviz-(?:.*))-direct-ingest-(?:state|county)-storage"
+    rf"(?P<suffix>{INGEST_SECONDARY_BUCKET_SUFFIX})?$"
 )
 
 

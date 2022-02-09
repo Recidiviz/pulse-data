@@ -32,7 +32,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
 
 
 class TestProgramEvent(unittest.TestCase):
-    """ Tests for ProgramEvent and ProgramReferralEvent."""
+    """Tests for ProgramEvent and ProgramReferralEvent."""
 
     def testProgramEvent(self) -> None:
         state_code = "CA"

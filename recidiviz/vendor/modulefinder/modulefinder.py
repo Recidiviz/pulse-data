@@ -127,7 +127,12 @@ def _find_module(
 
     assert file_path is not None
 
-    if spec.loader.is_package(name):  # type: ignore[union-attr]
+    if (
+        spec.loader.is_package(name)  # type: ignore[union-attr]
+        # For `black` we ended up in an infinite loop of load_package and load_module
+        # calling each other. Adding this exception here seemed to fix that case.
+        and not isinstance(spec.loader, importlib.machinery.ExtensionFileLoader)
+    ):
         return None, os.path.dirname(file_path), ("", "", _PKG_DIRECTORY)
 
     if isinstance(spec.loader, importlib.machinery.SourceFileLoader):

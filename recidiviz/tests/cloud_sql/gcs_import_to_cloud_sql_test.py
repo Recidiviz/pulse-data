@@ -323,7 +323,7 @@ class TestGCSImportToCloudSQL(TestCase):
 
 
 class TestModelSQL(TestCase):
-    """ Tests for the ModelSQL class """
+    """Tests for the ModelSQL class"""
 
     def setUp(self) -> None:
         self.id_column = Column("id", Integer, primary_key=True)
@@ -337,7 +337,7 @@ class TestModelSQL(TestCase):
         return Table(name, base.metadata, *args)
 
     def test_rename(self) -> None:
-        """ Build a list of queries that can rename a table """
+        """Build a list of queries that can rename a table"""
         test_table = self.build_table("test_table", self.id_column, self.name_column)
         model_sql = ModelSQL(table=test_table)
         rename_statements = model_sql.build_rename_ddl_queries("new_test_table")
@@ -351,7 +351,7 @@ class TestModelSQL(TestCase):
         )
 
     def test_rename_custom_index_index(self) -> None:
-        """ Renaming indexes that don't contain the old table name is not implemeneted"""
+        """Renaming indexes that don't contain the old table name is not implemeneted"""
         test_table = self.build_table(
             "test_table",
             self.id_column,
@@ -367,7 +367,7 @@ class TestModelSQL(TestCase):
             model_sql.build_rename_ddl_queries("new_name")
 
     def test_ddl_statement_capture(self) -> None:
-        """ DDL statements required to create the table are captured and put into the `ddl_statements` attribute """
+        """DDL statements required to create the table are captured and put into the `ddl_statements` attribute"""
         test_table = self.build_table("test_table", self.id_column, self.name_column)
         model_sql = ModelSQL(table=test_table)
 

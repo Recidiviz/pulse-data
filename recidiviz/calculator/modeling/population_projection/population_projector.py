@@ -251,7 +251,7 @@ class PopulationProjector:
         if weights == "triangular":
             probs = np.cumsum(probs)
         elif weights == "quadratic":
-            probs = np.array([x ** 2 for x in np.cumsum(probs)])
+            probs = np.array([x**2 for x in np.cumsum(probs)])
         elif weights is not None:
             raise ValueError(
                 f"Unsupported `weights` value {weights} supplied, accepted values are `triangular` or `quadratic`"

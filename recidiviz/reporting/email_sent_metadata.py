@@ -30,7 +30,7 @@ from recidiviz.reporting.email_reporting_utils import (
 
 @attr.s
 class EmailSentResult:
-    """Class representing the custom metadata that is being pulled from GCS metadata.json file """
+    """Class representing the custom metadata that is being pulled from GCS metadata.json file"""
 
     sent_date: datetime.datetime = attr.ib()
     total_delivered: int = attr.ib()

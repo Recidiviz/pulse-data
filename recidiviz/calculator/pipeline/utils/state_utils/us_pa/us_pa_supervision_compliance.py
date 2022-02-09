@@ -230,14 +230,10 @@ class UsPaSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
         compliance standards are unknown or no subsequent face-to-face contacts are required."""
         # No contacts required for monitored supervision
         # As of June 28, 2021, contacts are no longer needed for administrative supervision.
-        if (
-            self.supervision_period.supervision_level
-            in (
-                StateSupervisionLevel.ELECTRONIC_MONITORING_ONLY,
-                StateSupervisionLevel.LIMITED,
-            )
-            or self._can_skip_direct_contact(compliance_evaluation_date)
-        ):
+        if self.supervision_period.supervision_level in (
+            StateSupervisionLevel.ELECTRONIC_MONITORING_ONLY,
+            StateSupervisionLevel.LIMITED,
+        ) or self._can_skip_direct_contact(compliance_evaluation_date):
             return None
 
         (

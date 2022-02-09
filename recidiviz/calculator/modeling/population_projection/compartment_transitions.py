@@ -83,7 +83,7 @@ class CompartmentTransitions:
                 )
 
     def initialize_transition_tables(self, policy_list: List[SparkPolicy]) -> None:
-        """Populate the 'before' transition table and initializes the max_sentence from historical data """
+        """Populate the 'before' transition table and initializes the max_sentence from historical data"""
         self.transition_tables[MIN_POSSIBLE_POLICY_TS] = TransitionTable(
             MIN_POSSIBLE_POLICY_TS, []
         )

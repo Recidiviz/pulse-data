@@ -108,7 +108,7 @@ def _validate_schema(
 
 
 def _validate_data(project_id: str, uploads: List[Dict[str, Any]]) -> None:
-    """"Basic validation of data in dataframes"""
+    """ "Basic validation of data in dataframes"""
 
     if project_id not in ["recidiviz-staging", "recidiviz-123"]:
         raise ValueError(f"{project_id} is not a supported gcloud BigQuery project")

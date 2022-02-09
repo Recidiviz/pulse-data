@@ -75,7 +75,7 @@ def build_temporary_sqlalchemy_table(table: Table) -> Table:
 
 @attr.s
 class ModelSQL:
-    """ Given a SQLAlchemy table, captures the DDL statements necessary to create the table """
+    """Given a SQLAlchemy table, captures the DDL statements necessary to create the table"""
 
     table: Table = attr.ib()
     ddl_statements: List[DDLElement] = attr.ib(factory=list)
@@ -93,7 +93,7 @@ class ModelSQL:
         self.ddl_statements.append(sql)
 
     def build_rename_ddl_queries(self, new_base_name: str) -> List[str]:
-        """ Builds queries for renaming a table and its indexes """
+        """Builds queries for renaming a table and its indexes"""
         queries = []
 
         for ddl_statement in self.ddl_statements:
@@ -129,7 +129,7 @@ class ModelSQL:
 
 
 def _recreate_table(database_key: SQLAlchemyDatabaseKey, model_sql: ModelSQL) -> None:
-    """ Drops the table if it exists then recreates the table with the provided schema """
+    """Drops the table if it exists then recreates the table with the provided schema"""
     with SessionFactory.using_database(database_key=database_key) as session:
         drop_table = DropTable(model_sql.table, if_exists=True)
         session.execute(drop_table)

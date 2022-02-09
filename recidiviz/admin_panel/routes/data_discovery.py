@@ -66,7 +66,7 @@ CACHE_MISS = "CACHE_MISS"
 
 
 def add_data_discovery_routes(blueprint: Blueprint) -> None:
-    """ Adds data discovery routes to the passed Flask Blueprint"""
+    """Adds data discovery routes to the passed Flask Blueprint"""
 
     @blueprint.route(
         "/data_discovery/cache_ingest_file_as_parquet_task", methods=["POST"]
