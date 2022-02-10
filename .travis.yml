@@ -46,8 +46,8 @@ script:
   - TF_INPUT=false terraform -chdir=recidiviz/tools/deploy/terraform init -backend=false
   - TF_INPUT=false terraform -chdir=recidiviz/tools/deploy/terraform validate
 
-  - docker exec -it recidiviz pipenv run pytest recidiviz/tests -n auto -m 'not uses_db'
-  - docker exec -it recidiviz pipenv run pytest recidiviz/tests -n auto -m 'uses_db or emulator' --with-emulator
+  - travis_wait 20 sleep infinity & docker exec -it recidiviz pipenv run pytest recidiviz/tests -n auto -m 'not uses_db'
+  - travis_wait 20 sleep infinity & docker exec -it recidiviz pipenv run pytest recidiviz/tests -n auto -m 'uses_db or emulator' --with-emulator
 
   # Cache the newly built docker image for the next Travis run
   - echo "$DOCKER_PASSWORD" | docker login -u="$DOCKER_USERNAME" --password-stdin && docker save recidiviz-image | gzip -c > ~/docker-images/recidiviz-image.tgz
