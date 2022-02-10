@@ -1399,7 +1399,7 @@ ORDER BY col1, col2
             region_module=fake_regions_module,
         )
 
-        view_query_template = f"""SELECT * FROM {{file_tag_first}} 
+        view_query_template = f"""SELECT * FROM {{file_tag_first}}
         WHERE col1 <= @{UPDATE_DATETIME_PARAM_NAME}"""
 
         view = DirectIngestPreProcessedIngestView(
@@ -1415,7 +1415,7 @@ ORDER BY col1, col2
 file_tag_first_generated_view AS (
     SELECT * FROM `recidiviz-456.us_xx_raw_data_up_to_date_views.file_tag_first_latest`
 )
-SELECT * FROM file_tag_first_generated_view 
+SELECT * FROM file_tag_first_generated_view
         WHERE col1 <= CURRENT_DATE('US/Eastern')
 ORDER BY col1, col2;"""
 
@@ -1448,7 +1448,7 @@ file_tag_first_generated_view AS (
     FROM rows_with_recency_rank
     WHERE recency_rank = 1
 )
-SELECT * FROM file_tag_first_generated_view 
+SELECT * FROM file_tag_first_generated_view
         WHERE col1 <= @{UPDATE_DATETIME_PARAM_NAME}
 ORDER BY col1, col2;"""
 
@@ -1473,7 +1473,7 @@ ORDER BY col1, col2;"""
             "current_date()",
         ]:
 
-            view_query_template = f"""SELECT * FROM {{file_tag_first}} 
+            view_query_template = f"""SELECT * FROM {{file_tag_first}}
             WHERE col1 <= {current_date_fn}"""
             with self.assertRaisesRegex(
                 ValueError,
