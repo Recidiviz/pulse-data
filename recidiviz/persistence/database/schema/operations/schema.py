@@ -73,7 +73,9 @@ class DirectIngestSftpFileMetadata(OperationsBase):
     # Time when the file is actually discovered by the SFTP download controller
     discovery_time = Column(DateTime)
 
-    # Time when we have finished fully processing this file by downloading to the SFTP bucket
+    # Time when we have finished fully processing this file by downloading to the SFTP
+    # bucket. This time will come before the time this file is written to its final
+    # destination, the ingest bucket.
     processed_time = Column(DateTime)
 
 
@@ -110,6 +112,9 @@ class DirectIngestRawFileMetadata(OperationsBase):
     # Time when we have finished fully processing this file by uploading to BQ.
     processed_time = Column(DateTime)
 
+    # The date we received the raw data. This is the field you should use when looking
+    # for data current through date X. This is the date in the normalized file name
+    # for this raw data file.
     datetimes_contained_upper_bound_inclusive = Column(DateTime, nullable=False)
 
 
@@ -146,7 +151,8 @@ class DirectIngestIngestFileMetadata(OperationsBase):
 
     region_code = Column(String(255), nullable=False, index=True)
 
-    # Shortened name for the raw file that corresponds to its YAML schema definition
+    # Shortened name for the ingest view file that corresponds to its ingest view / YAML
+    # mappings definition.
     file_tag = Column(String(255), nullable=False, index=True)
 
     # Unprocessed normalized file name for this file before export
@@ -155,7 +161,10 @@ class DirectIngestIngestFileMetadata(OperationsBase):
     # Time when the file is actually discovered by our controller's handle_new_files endpoint.
     discovery_time = Column(DateTime)
 
-    # Time when we have finished fully processing this file importing to Postgres.
+    # Time when we have finished fully processing this file by importing to Postgres OR,
+    # if this is a file that needed to be split into multiple files, when we have
+    # completed performing that split and moving this original, large file to the
+    # storage bucket.
     processed_time = Column(DateTime)
 
     # These fields are first set at export job creation time
@@ -165,10 +174,18 @@ class DirectIngestIngestFileMetadata(OperationsBase):
     # false, this file was exported directly from BigQuery.
     is_file_split = Column(Boolean, nullable=False)
 
-    # Time the export job is first scheduled for these time bounds
+    # Time the export job is first scheduled for this file. Set before the file has
+    # actually been created.
     job_creation_time = Column(DateTime, nullable=False)
-    datetimes_contained_lower_bound_exclusive = Column(DateTime)
+
+    # The upper bound date used to query data for this particular ingest view file. The
+    # results will not contain any data we received after this date.
     datetimes_contained_upper_bound_inclusive = Column(DateTime, nullable=False)
+
+    # The lower bound date used to query data for this particular ingest view file. The
+    # results will not contain any rows that have remained unmodified with new raw data
+    # updates we’ve gotten since this date.
+    datetimes_contained_lower_bound_exclusive = Column(DateTime)
 
     # Time of the actual view export (when the file is done writing to GCS), set at same
     # time as normalized_file_name
