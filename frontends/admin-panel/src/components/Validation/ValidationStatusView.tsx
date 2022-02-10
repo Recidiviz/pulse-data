@@ -393,6 +393,9 @@ const renderRecordStatus = (record: ValidationStatusRecord | undefined) => {
   const status = getRecordStatus(record);
   const statusClassName = getClassNameForRecordStatus(status);
   const text = getTextForRecordStatus(status);
+  // If we don't have data so the validation didn't run, we don't need to add the dev
+  // mode treatment.
+  const devMode = record?.getDevMode() && status > RecordStatus.NEED_DATA;
   const body =
     text +
     (status > RecordStatus.NEED_DATA
@@ -402,13 +405,9 @@ const renderRecordStatus = (record: ValidationStatusRecord | undefined) => {
         )})`
       : "");
   return (
-    <div
-      className={classNames(statusClassName, {
-        "dev-mode": !record?.getDevMode(),
-      })}
-    >
+    <div className={classNames(statusClassName, { "dev-mode": devMode })}>
       {body}
-      {record?.getDevMode() && (
+      {devMode && (
         <div>
           <em>Dev Mode</em>
         </div>
@@ -436,7 +435,7 @@ const getListOfFailureRecords = (
   return records
     .filter(
       (record: ValidationStatusRecord) =>
-        record?.getDevMode() && record.getResultStatus() === failureType
+        !record?.getDevMode() && record.getResultStatus() === failureType
     )
     .sort((a, b) => {
       if (a.getName() === b.getName()) {
