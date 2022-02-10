@@ -26,6 +26,8 @@ import {
 
 interface IngestInstanceCardProps {
   data: IngestInstanceSummary;
+  env: string;
+  stateCode: string;
   handleOnClick: (
     action: IngestActions,
     instance: DirectIngestInstance
@@ -34,9 +36,14 @@ interface IngestInstanceCardProps {
 
 const IngestInstanceCard: React.FC<IngestInstanceCardProps> = ({
   data,
+  env,
+  stateCode,
   handleOnClick,
 }) => {
   const baseBucketUrl = `https://console.cloud.google.com/storage/browser/`;
+  const logsEnv = env === "production" ? "prod" : "staging";
+  const logsUrl = `http://go/${logsEnv}-ingest-${data.instance.toLowerCase()}-logs/${stateCode.toLowerCase()}`;
+  const non200Url = `http://go/${logsEnv}-non-200-ingest-${data.instance.toLowerCase()}-responses/${stateCode.toLowerCase()}`;
   const pauseUnpauseInstanceAction = data.operations.isPaused
     ? IngestActions.UnpauseIngestInstance
     : IngestActions.PauseIngestInstance;
@@ -149,6 +156,15 @@ const IngestInstanceCard: React.FC<IngestInstanceCardProps> = ({
           span={3}
         >
           {data.operations.dateOfEarliestUnprocessedIngestView}
+        </Descriptions.Item>
+      </Descriptions>
+      <br />
+      <Descriptions title="Logs" bordered>
+        <Descriptions.Item label="Logs Explorer" span={3}>
+          <NewTabLink href={logsUrl}>{logsUrl}</NewTabLink>
+        </Descriptions.Item>
+        <Descriptions.Item label="Non 200 Responses" span={3}>
+          <NewTabLink href={non200Url}>{non200Url}</NewTabLink>
         </Descriptions.Item>
       </Descriptions>
     </Card>
