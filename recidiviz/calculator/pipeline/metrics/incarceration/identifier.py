@@ -492,6 +492,7 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
                     judicial_district_code=judicial_district_code,
                     specialized_purpose_for_incarceration=incarceration_period.specialized_purpose_for_incarceration,
                     commitment_from_supervision_supervision_type=commitment_from_supervision_supervision_type,
+                    custodial_authority=incarceration_period.custodial_authority,
                 )
             )
 
