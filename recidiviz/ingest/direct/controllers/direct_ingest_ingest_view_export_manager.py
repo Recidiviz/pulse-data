@@ -44,6 +44,7 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsDirectIngestFileType,
     GcsfsIngestViewExportArgs,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
     DestinationTableType,
     DirectIngestPreProcessedIngestView,
@@ -105,6 +106,12 @@ class _IngestViewExportState:
         return result
 
 
+def dataset_for_export(
+    view: DirectIngestPreProcessedIngestView, ingest_instance: DirectIngestInstance
+) -> str:
+    return f"{view.dataset_id}_{ingest_instance.value.lower()}"
+
+
 # TODO(#7843): Debug and write test for edge case crash while uploading many raw data files while queues are unpaused
 class DirectIngestIngestViewExportManager:
     """Class that manages logic related to exporting ingest views to a region's direct ingest bucket."""
@@ -115,6 +122,7 @@ class DirectIngestIngestViewExportManager:
         region: Region,
         fs: GCSFileSystem,
         output_bucket_name: str,
+        ingest_instance: DirectIngestInstance,
         big_query_client: BigQueryClient,
         file_metadata_manager: DirectIngestFileMetadataManager,
         view_collector: BigQueryViewCollector[
@@ -126,6 +134,7 @@ class DirectIngestIngestViewExportManager:
         self.region = region
         self.fs = fs
         self.output_bucket_name = output_bucket_name
+        self.ingest_instance = ingest_instance
         self.big_query_client = big_query_client
         self.file_metadata_manager = file_metadata_manager
         self.ingest_views_by_tag = {
@@ -211,6 +220,7 @@ class DirectIngestIngestViewExportManager:
         """
         query, query_params = self._generate_export_query_and_params_for_date(
             ingest_view=ingest_view,
+            ingest_instance=self.ingest_instance,
             destination_table_type=DestinationTableType.PERMANENT_EXPIRING,
             destination_table_id=table_name,
             update_timestamp=date_bound,
@@ -224,7 +234,7 @@ class DirectIngestIngestViewExportManager:
 
         self.big_query_client.create_dataset_if_necessary(
             dataset_ref=self.big_query_client.dataset_ref_for_id(
-                ingest_view.dataset_id
+                dataset_for_export(ingest_view, self.ingest_instance)
             ),
             default_table_expiration_ms=TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
         )
@@ -516,6 +526,7 @@ class DirectIngestIngestViewExportManager:
         )
         query, query_params = cls._generate_export_query_and_params_for_date(
             ingest_view=ingest_view,
+            ingest_instance=DirectIngestInstance.PRIMARY,
             destination_table_type=DestinationTableType.TEMPORARY,
             destination_table_id=upper_bound_table_id,
             update_timestamp=ingest_view_export_args.upper_bound_datetime_to_export,
@@ -534,6 +545,7 @@ class DirectIngestIngestViewExportManager:
                 lower_bound_query_params,
             ) = cls._generate_export_query_and_params_for_date(
                 ingest_view=ingest_view,
+                ingest_instance=DirectIngestInstance.PRIMARY,
                 destination_table_type=DestinationTableType.TEMPORARY,
                 destination_table_id=lower_bound_table_id,
                 update_timestamp=ingest_view_export_args.upper_bound_datetime_prev,
@@ -561,6 +573,7 @@ class DirectIngestIngestViewExportManager:
     def _generate_export_query_and_params_for_date(
         *,
         ingest_view: DirectIngestPreProcessedIngestView,
+        ingest_instance: DirectIngestInstance,
         update_timestamp: datetime.datetime,
         destination_table_type: DestinationTableType,
         destination_table_id: str,
@@ -577,7 +590,7 @@ class DirectIngestIngestViewExportManager:
         if destination_table_type == DestinationTableType.TEMPORARY:
             destination_dataset_id = None
         elif destination_table_type == DestinationTableType.PERMANENT_EXPIRING:
-            destination_dataset_id = ingest_view.dataset_id
+            destination_dataset_id = dataset_for_export(ingest_view, ingest_instance)
         else:
             raise ValueError(
                 f"Unexpected destination_table_type [{destination_table_type.name}]"
