@@ -26,6 +26,7 @@ from recidiviz.calculator.pipeline.utils.event_utils import (
     SupervisionLocationMixin,
     ViolationHistoryMixin,
 )
+from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
@@ -88,6 +89,9 @@ class IncarcerationStayEvent(IncarcerationEvent):
     specialized_purpose_for_incarceration: Optional[
         StateSpecializedPurposeForIncarceration
     ] = attr.ib(default=None)
+
+    # Custodial authority
+    custodial_authority: Optional[StateCustodialAuthority] = attr.ib(default=None)
 
     @property
     def date_of_stay(self) -> date:

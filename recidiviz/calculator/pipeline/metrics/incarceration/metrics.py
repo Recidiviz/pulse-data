@@ -32,6 +32,7 @@ from recidiviz.calculator.pipeline.utils.metric_utils import (
     RecidivizMetricType,
     SecondaryPersonExternalIdMetric,
 )
+from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
@@ -151,6 +152,9 @@ When normalizing the `StateIncarcerationPeriod` entities to create this metric, 
     specialized_purpose_for_incarceration: Optional[
         StateSpecializedPurposeForIncarceration
     ] = attr.ib(default=None)
+
+    # Custodial authority
+    custodial_authority: Optional[StateCustodialAuthority] = attr.ib(default=None)
 
 
 # TODO(#10727): Update this metric description when we move IP transfer collapsing

@@ -922,7 +922,6 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         """Tests that with state code US_ND, only periods with a custodial_authority of
         STATE_PRISON are included in the population.
         """
-
         temp_custody_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             external_id="1",
@@ -1044,6 +1043,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                 temp_custody_period,
                 original_admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
                 included_in_state_population=False,
+                custodial_authority=StateCustodialAuthority.EXTERNAL_UNKNOWN,
             ),
             IncarcerationStandardAdmissionEvent(
                 state_code=temp_custody_period.state_code,
@@ -1081,6 +1081,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                 judicial_district_code="NW",
                 specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
                 commitment_from_supervision_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+                custodial_authority=StateCustodialAuthority.STATE_PRISON,
             ),
             IncarcerationCommitmentFromSupervisionAdmissionEvent(
                 state_code=revoked_supervision_period.state_code,
@@ -3832,6 +3833,7 @@ def expected_incarceration_stay_events(
         StateSupervisionPeriodSupervisionType
     ] = None,
     included_in_state_population: bool = True,
+    custodial_authority: Optional[StateCustodialAuthority] = None,
 ) -> List[IncarcerationStayEvent]:
     """Returns the expected incarceration stay events based on the provided |incarceration_period|."""
 
@@ -3881,6 +3883,7 @@ def expected_incarceration_stay_events(
                 specialized_purpose_for_incarceration=purpose_for_incarceration,
                 commitment_from_supervision_supervision_type=commitment_from_supervision_supervision_type,
                 included_in_state_population=included_in_state_population,
+                custodial_authority=custodial_authority,
             )
 
             expected_incarceration_events.append(event)
