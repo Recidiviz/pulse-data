@@ -87,7 +87,7 @@ def build_arguments_for_pipeline(
     ]
 
     for key, value in pipeline_config.items():
-        if key == "pipeline":
+        if key in ("pipeline", "staging_only"):
             pass
         elif key == "metric_types" and isinstance(
             value, str
