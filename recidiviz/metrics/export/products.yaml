@@ -104,3 +104,10 @@ products:
         environment: staging
       - state_code: US_TN
         environment: staging
+  - name: Pathways Prison Module
+    description: The Prison population and flows over time which can be drilled down by time period, gender, and legal status.
+    exports:
+      - PATHWAYS_PRISON
+    states:
+      - state_code: US_ME
+        environment: staging

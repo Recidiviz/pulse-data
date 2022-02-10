@@ -36,7 +36,12 @@ from recidiviz.calculator.query.state.views.dashboard.dashboard_views import (
     LANTERN_DASHBOARD_VIEW_BUILDERS,
 )
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_views import (
-    PATHWAYS_VIEW_BUILDERS,
+    PATHWAYS_LIBERTY_TO_PRISON_VIEW_BUILDERS,
+    PATHWAYS_PRISON_TO_SUPERVISION_VIEW_BUILDERS,
+    PATHWAYS_PRISON_VIEW_BUILDERS,
+    PATHWAYS_SUPERVISION_TO_LIBERTY_VIEW_BUILDERS,
+    PATHWAYS_SUPERVISION_TO_PRISON_VIEW_BUILDERS,
+    PATHWAYS_SUPERVISION_VIEW_BUILDERS,
 )
 from recidiviz.calculator.query.state.views.dashboard.population_projections.population_projections_views import (
     POPULATION_PROJECTION_VIEW_BUILDERS,
@@ -490,14 +495,14 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         # are empty.
         allow_empty=True,
     ),
-    # Unified Product -- Vitals
+    # Vitals
     ExportViewCollectionConfig(
         view_builders_to_export=VITALS_VIEW_BUILDERS,
         output_directory_uri_template=DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI,
         export_name="VITALS",
         bq_view_namespace=BigQueryViewNamespace.STATE,
     ),
-    # Unified Product - User Restrictions
+    # User Restrictions
     ExportViewCollectionConfig(
         view_builders_to_export=[DASHBOARD_USER_RESTRICTIONS_VIEW_BUILDER],
         output_directory_uri_template=DASHBOARD_USER_RESTRICTIONS_OUTPUT_DIRECTORY_URI,
@@ -507,14 +512,26 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
             ExportOutputFormatType.HEADERLESS_CSV,
         ],
     ),
-    # Unified Product - Prison and Supervision Population Projections
+    # All modules for the Pathways product
     ExportViewCollectionConfig(
         view_builders_to_export=[
+            *PATHWAYS_PRISON_VIEW_BUILDERS,
+            *PATHWAYS_LIBERTY_TO_PRISON_VIEW_BUILDERS,
+            *PATHWAYS_PRISON_TO_SUPERVISION_VIEW_BUILDERS,
+            *PATHWAYS_SUPERVISION_VIEW_BUILDERS,
+            *PATHWAYS_SUPERVISION_TO_LIBERTY_VIEW_BUILDERS,
+            *PATHWAYS_SUPERVISION_TO_PRISON_VIEW_BUILDERS,
             *POPULATION_PROJECTION_VIEW_BUILDERS,
-            *PATHWAYS_VIEW_BUILDERS,
         ],
         output_directory_uri_template=DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI,
         export_name="PATHWAYS",
+        bq_view_namespace=BigQueryViewNamespace.STATE,
+    ),
+    # Pathways Prison Module
+    ExportViewCollectionConfig(
+        view_builders_to_export=PATHWAYS_PRISON_VIEW_BUILDERS,
+        output_directory_uri_template=DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI,
+        export_name="PATHWAYS_PRISON",
         bq_view_namespace=BigQueryViewNamespace.STATE,
     ),
 ]

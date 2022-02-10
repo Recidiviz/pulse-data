@@ -20,9 +20,11 @@ from typing import Sequence
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.calculator.query.state.views.dashboard.admissions import admissions_views
-from recidiviz.calculator.query.state.views.dashboard.pathways import pathways_views
-from recidiviz.calculator.query.state.views.dashboard.population_projections import (
-    population_projections_views,
+from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_views import (
+    PATHWAYS_VIEW_BUILDERS,
+)
+from recidiviz.calculator.query.state.views.dashboard.population_projections.population_projections_views import (
+    POPULATION_PROJECTION_VIEW_BUILDERS,
 )
 from recidiviz.calculator.query.state.views.dashboard.program_evaluation import (
     program_evaluation_views,
@@ -39,8 +41,8 @@ from recidiviz.calculator.query.state.views.dashboard.revocations import (
 from recidiviz.calculator.query.state.views.dashboard.supervision import (
     supervision_views,
 )
-from recidiviz.calculator.query.state.views.dashboard.vitals_summaries import (
-    vitals_views,
+from recidiviz.calculator.query.state.views.dashboard.vitals_summaries.vitals_views import (
+    VITALS_VIEW_BUILDERS,
 )
 
 CORE_DASHBOARD_VIEW_BUILDERS: Sequence[BigQueryViewBuilder] = (
@@ -57,18 +59,14 @@ LANTERN_DASHBOARD_VIEW_BUILDERS: Sequence[
 ] = revocation_analysis_views.REVOCATION_ANALYSIS_VIEW_BUILDERS
 
 
-UP_DASHBOARD_VIEW_BUILDERS: Sequence[BigQueryViewBuilder] = [
-    *population_projections_views.POPULATION_PROJECTION_VIEW_BUILDERS,
-    *vitals_views.VITALS_VIEW_BUILDERS,
-    *pathways_views.PATHWAYS_VIEW_BUILDERS,
-]
-
 DASHBOARD_VIEW_BUILDERS: Sequence[BigQueryViewBuilder] = list(
     itertools.chain.from_iterable(
         (
             CORE_DASHBOARD_VIEW_BUILDERS,
             LANTERN_DASHBOARD_VIEW_BUILDERS,
-            UP_DASHBOARD_VIEW_BUILDERS,
+            POPULATION_PROJECTION_VIEW_BUILDERS,
+            VITALS_VIEW_BUILDERS,
+            PATHWAYS_VIEW_BUILDERS,
         )
     )
 )
