@@ -52,7 +52,6 @@ import {
   StateCodeInfo,
 } from "./constants";
 import IngestInstanceCard from "./IngestInstanceCard";
-import IngestLogsCard from "./IngestLogsCard";
 import IngestQueuesTable from "./IngestQueuesTable";
 
 const IngestOperationsView = (): JSX.Element => {
@@ -283,47 +282,34 @@ const IngestOperationsView = (): JSX.Element => {
         />
       ) : null}
       <br />
-      <div className="site-card-wrapper">
-        <Row gutter={[16, 16]}>
-          {ingestInstanceSummariesLoading
-            ? Object.keys(DirectIngestInstance).map((instance) => {
-                return (
-                  <Col span={12} key={instance}>
-                    <Card title={instance} loading />
-                  </Col>
-                );
-              })
-            : ingestInstanceSummaries.map((summary: IngestInstanceSummary) => {
-                return (
-                  <Col span={12} key={summary.instance}>
-                    <IngestInstanceCard
-                      data={summary}
-                      handleOnClick={handleIngestActionOnClick}
-                    />
-                  </Col>
-                );
-              })}
-        </Row>
-      </div>
-
-      <Divider orientation="left" style={{ marginTop: 24 }}>
-        Ingest Logs
-      </Divider>
-      <br />
-      <div
-        className="site-card-wrapper"
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-evenly",
-        }}
-      >
-        {stateCode ? (
-          <IngestLogsCard stateCode={stateCode} env={env} />
-        ) : (
-          <Card title="Summary" loading style={{ width: 1000 }} />
-        )}
-      </div>
+      {stateCode ? (
+        <div className="site-card-wrapper">
+          <Row gutter={[16, 16]}>
+            {ingestInstanceSummariesLoading
+              ? Object.keys(DirectIngestInstance).map((instance) => {
+                  return (
+                    <Col span={12} key={instance}>
+                      <Card title={instance} loading />
+                    </Col>
+                  );
+                })
+              : ingestInstanceSummaries.map(
+                  (summary: IngestInstanceSummary) => {
+                    return (
+                      <Col span={12} key={summary.instance}>
+                        <IngestInstanceCard
+                          data={summary}
+                          env={env}
+                          stateCode={stateCode}
+                          handleOnClick={handleIngestActionOnClick}
+                        />
+                      </Col>
+                    );
+                  }
+                )}
+          </Row>
+        </div>
+      ) : null}
     </>
   );
 };
