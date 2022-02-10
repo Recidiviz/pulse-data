@@ -143,6 +143,31 @@
           ]
         }
       }
+    },
+    {
+      "StateIncarcerationPeriod": {
+        "release_reason":     {
+          "$conditional": [
+            {
+              "$if": {
+                "$not_null": "end_date"
+              },
+              "$then": {
+                "$enum_mapping": {
+                  "$raw_text": {
+                    "$concat": {
+                      "$separator": "@@",
+                      "$values": ["current_status", "movement_type"],
+                      "$include_nulls": "True"
+                    }
+                  },
+                  "$custom_parser": "us_xx_custom_enum_parsers.parse_release_reason"
+                }
+              }
+            }
+          ]
+        }
+      }
     }
   ]
 }
