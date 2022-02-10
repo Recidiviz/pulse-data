@@ -41,6 +41,7 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
 from recidiviz.ingest.direct.controllers.postgres_direct_ingest_file_metadata_manager import (
     PostgresDirectIngestFileMetadataManager,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
     DirectIngestPreProcessedIngestView,
 )
@@ -71,8 +72,8 @@ _DATE_4 = datetime.datetime(year=2022, month=4, day=14)
 _DATE_5 = datetime.datetime(year=2022, month=4, day=15)
 
 
-_DATE_2_UPPER_BOUND_CREATE_TABLE_SCRIPT = """DROP TABLE IF EXISTS `recidiviz-456.us_xx_ingest_views_20220414.ingest_view_2020_07_20_00_00_00_upper_bound`;
-CREATE TABLE `recidiviz-456.us_xx_ingest_views_20220414.ingest_view_2020_07_20_00_00_00_upper_bound`
+_DATE_2_UPPER_BOUND_CREATE_TABLE_SCRIPT = """DROP TABLE IF EXISTS `recidiviz-456.us_xx_ingest_views_20220414_secondary.ingest_view_2020_07_20_00_00_00_upper_bound`;
+CREATE TABLE `recidiviz-456.us_xx_ingest_views_20220414_secondary.ingest_view_2020_07_20_00_00_00_upper_bound`
 OPTIONS(
   -- Data in this table will be deleted after 24 hours
   expiration_timestamp=TIMESTAMP_ADD(CURRENT_TIMESTAMP(), INTERVAL 1 DAY)
@@ -207,8 +208,8 @@ CREATE TEMP TABLE tagFullHistoricalExport_generated_view AS (
     FROM rows_with_recency_rank
     WHERE recency_rank = 1
 );
-DROP TABLE IF EXISTS `recidiviz-456.us_xx_ingest_views_20220414.ingest_view_2020_07_20_00_00_00_upper_bound`;
-CREATE TABLE `recidiviz-456.us_xx_ingest_views_20220414.ingest_view_2020_07_20_00_00_00_upper_bound`
+DROP TABLE IF EXISTS `recidiviz-456.us_xx_ingest_views_20220414_secondary.ingest_view_2020_07_20_00_00_00_upper_bound`;
+CREATE TABLE `recidiviz-456.us_xx_ingest_views_20220414_secondary.ingest_view_2020_07_20_00_00_00_upper_bound`
 OPTIONS(
   -- Data in this table will be deleted after 24 hours
   expiration_timestamp=TIMESTAMP_ADD(CURRENT_TIMESTAMP(), INTERVAL 1 DAY)
@@ -369,6 +370,7 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
             region=region,
             fs=FakeGCSFileSystem(),
             output_bucket_name=self.output_bucket_name,
+            ingest_instance=DirectIngestInstance.SECONDARY,
             big_query_client=self.mock_client,
             file_metadata_manager=metadata_manager,
             view_collector=_ViewCollector(  # type: ignore[arg-type]
@@ -736,7 +738,7 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
         )
 
         self.mock_client.dataset_ref_for_id.assert_has_calls(
-            [mock.call("us_xx_ingest_views_20220414")]
+            [mock.call("us_xx_ingest_views_20220414_secondary")]
         )
         self.mock_client.create_dataset_if_necessary.assert_has_calls(
             [mock.call(dataset_ref=mock.ANY, default_table_expiration_ms=86400000)]
