@@ -201,6 +201,7 @@ class BaseDirectIngestController:
         self.ingest_view_export_manager = DirectIngestIngestViewExportManager(
             region=self.region,
             fs=self.fs,
+            ingest_instance=self.ingest_instance,
             output_bucket_name=self.ingest_bucket_path.bucket_name,
             file_metadata_manager=self.file_metadata_manager,
             big_query_client=BigQueryClientImpl(),
