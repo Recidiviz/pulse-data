@@ -32,28 +32,32 @@ SUPERVISION_TO_LIBERTY_POPULATION_SNAPSHOT_BY_DIMENSION_INTERNAL_CONSISTENCY_DES
 SUPERVISION_TO_LIBERTY_POPULATION_SNAPSHOT_BY_DIMENSION_INTERNAL_CONSISTENCY_QUERY = """
     /*{description}*/
     WITH all_count AS (
-        SELECT state_code, time_period, event_count
+        SELECT state_code as region_code, time_period, event_count
         FROM `{project_id}.{dashboard_dataset}.supervision_to_liberty_population_snapshot_by_dimension`
         WHERE gender = 'ALL'
             AND age_group = 'ALL'
             AND race = 'ALL'
             AND supervision_type = 'ALL'
+            AND supervision_level = 'ALL'
             AND district  = 'ALL'
+            AND length_of_stay = 'ALL'
     ), summed_count AS (
-        SELECT state_code, time_period, sum(event_count) AS sum_count
+        SELECT state_code as region_code, time_period, sum(event_count) AS sum_count
         FROM `{project_id}.{dashboard_dataset}.supervision_to_liberty_population_snapshot_by_dimension`
         WHERE gender != 'ALL'
             AND age_group != 'ALL'
             AND race != 'ALL'
             AND supervision_type != 'ALL'
+            AND supervision_level != 'ALL'
             AND district  != 'ALL'
+            AND length_of_stay != 'ALL'
         GROUP BY 1, 2
     )
 
     SELECT *
     FROM all_count
     JOIN summed_count
-    USING (state_code, time_period)
+    USING (region_code, time_period)
     WHERE event_count != sum_count
 """
 

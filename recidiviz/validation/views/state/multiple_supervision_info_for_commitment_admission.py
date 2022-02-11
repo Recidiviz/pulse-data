@@ -43,7 +43,7 @@ calculation logic."""
 MULTIPLE_SUPERVISION_INFO_FOR_COMMITMENT_ADMISSION_QUERY_TEMPLATE = """
     /*{description}*/
 SELECT
-    state_code,
+    state_code as region_code,
     person_id,
     admission_date,
     COUNT(DISTINCT(supervising_officer_external_id)) as num_officers,
