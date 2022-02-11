@@ -32,7 +32,7 @@ LIBERTY_TO_PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_INTERNAL_CONSISTENCY_DESCRIPT
 LIBERTY_TO_PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_INTERNAL_CONSISTENCY_QUERY = """
     /*{description}*/
     WITH all_count AS (
-        SELECT state_code, time_period, event_count
+        SELECT state_code as region_code, time_period, event_count
         FROM `{project_id}.{dashboard_dataset}.liberty_to_prison_population_snapshot_by_dimension`
         WHERE gender = 'ALL'
             AND age_group = 'ALL'
@@ -40,7 +40,7 @@ LIBERTY_TO_PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_INTERNAL_CONSISTENCY_QUERY = 
             AND prior_length_of_incarceration = 'ALL'
             AND judicial_district  = 'ALL'
     ), summed_count AS (
-        SELECT state_code, time_period, sum(event_count) AS sum_count
+        SELECT state_code as region_code, time_period, sum(event_count) AS sum_count
         FROM `{project_id}.{dashboard_dataset}.liberty_to_prison_population_snapshot_by_dimension`
         WHERE gender != 'ALL'
             AND age_group != 'ALL'
@@ -53,7 +53,7 @@ LIBERTY_TO_PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_INTERNAL_CONSISTENCY_QUERY = 
     SELECT *
     FROM all_count
     JOIN summed_count
-    USING (state_code, time_period)
+    USING (region_code, time_period)
     WHERE event_count != sum_count
 """
 
