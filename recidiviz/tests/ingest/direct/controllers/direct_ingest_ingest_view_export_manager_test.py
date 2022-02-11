@@ -676,14 +676,14 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
             ]
         )
         expected_query = (
-            "SELECT * FROM `recidiviz-456.us_xx_ingest_views_20220414.ingest_view_2020_07_20_00_00_00_upper_bound`"
+            "SELECT * FROM `recidiviz-456.us_xx_ingest_views_20220414_secondary.ingest_view_2020_07_20_00_00_00_upper_bound`"
             "ORDER BY colA, colC;"
         )
         self.assert_exported_to_gcs_with_query(expected_query)
         self.mock_client.delete_table.assert_has_calls(
             [
                 mock.call(
-                    dataset_id="us_xx_ingest_views_20220414",
+                    dataset_id="us_xx_ingest_views_20220414_secondary",
                     table_id="ingest_view_2020_07_20_00_00_00_upper_bound",
                 )
             ]
@@ -756,20 +756,20 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
             ]
         )
         expected_query = (
-            "(SELECT * FROM `recidiviz-456.us_xx_ingest_views_20220414.ingest_view_2020_07_20_00_00_00_upper_bound`) "
+            "(SELECT * FROM `recidiviz-456.us_xx_ingest_views_20220414_secondary.ingest_view_2020_07_20_00_00_00_upper_bound`) "
             "EXCEPT DISTINCT "
-            "(SELECT * FROM `recidiviz-456.us_xx_ingest_views_20220414.ingest_view_2019_07_20_00_00_00_lower_bound`)"
+            "(SELECT * FROM `recidiviz-456.us_xx_ingest_views_20220414_secondary.ingest_view_2019_07_20_00_00_00_lower_bound`)"
             "ORDER BY colA, colC;"
         )
         self.assert_exported_to_gcs_with_query(expected_query)
         self.mock_client.delete_table.assert_has_calls(
             [
                 mock.call(
-                    dataset_id="us_xx_ingest_views_20220414",
+                    dataset_id="us_xx_ingest_views_20220414_secondary",
                     table_id="ingest_view_2020_07_20_00_00_00_upper_bound",
                 ),
                 mock.call(
-                    dataset_id="us_xx_ingest_views_20220414",
+                    dataset_id="us_xx_ingest_views_20220414_secondary",
                     table_id="ingest_view_2019_07_20_00_00_00_lower_bound",
                 ),
             ]
@@ -842,20 +842,20 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
             ]
         )
         expected_query = (
-            "(SELECT * FROM `recidiviz-456.us_xx_ingest_views_20220414.ingest_view_2020_07_20_00_00_00_upper_bound`) "
+            "(SELECT * FROM `recidiviz-456.us_xx_ingest_views_20220414_secondary.ingest_view_2020_07_20_00_00_00_upper_bound`) "
             "EXCEPT DISTINCT "
-            "(SELECT * FROM `recidiviz-456.us_xx_ingest_views_20220414.ingest_view_2019_07_20_00_00_00_lower_bound`)"
+            "(SELECT * FROM `recidiviz-456.us_xx_ingest_views_20220414_secondary.ingest_view_2019_07_20_00_00_00_lower_bound`)"
             "ORDER BY colA, colC;"
         )
         self.assert_exported_to_gcs_with_query(expected_query)
         self.mock_client.delete_table.assert_has_calls(
             [
                 mock.call(
-                    dataset_id="us_xx_ingest_views_20220414",
+                    dataset_id="us_xx_ingest_views_20220414_secondary",
                     table_id="ingest_view_2020_07_20_00_00_00_upper_bound",
                 ),
                 mock.call(
-                    dataset_id="us_xx_ingest_views_20220414",
+                    dataset_id="us_xx_ingest_views_20220414_secondary",
                     table_id="ingest_view_2019_07_20_00_00_00_lower_bound",
                 ),
             ]
@@ -977,20 +977,20 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
         )
         # Lower bound is the first part of the subquery, not upper bound.
         expected_query = (
-            "(SELECT * FROM `recidiviz-456.us_xx_ingest_views_20220414.ingest_view_2019_07_20_00_00_00_lower_bound`) "
+            "(SELECT * FROM `recidiviz-456.us_xx_ingest_views_20220414_secondary.ingest_view_2019_07_20_00_00_00_lower_bound`) "
             "EXCEPT DISTINCT "
-            "(SELECT * FROM `recidiviz-456.us_xx_ingest_views_20220414.ingest_view_2020_07_20_00_00_00_upper_bound`)"
+            "(SELECT * FROM `recidiviz-456.us_xx_ingest_views_20220414_secondary.ingest_view_2020_07_20_00_00_00_upper_bound`)"
             "ORDER BY colA, colC;"
         )
         self.assert_exported_to_gcs_with_query(expected_query)
         self.mock_client.delete_table.assert_has_calls(
             [
                 mock.call(
-                    dataset_id="us_xx_ingest_views_20220414",
+                    dataset_id="us_xx_ingest_views_20220414_secondary",
                     table_id="ingest_view_2020_07_20_00_00_00_upper_bound",
                 ),
                 mock.call(
-                    dataset_id="us_xx_ingest_views_20220414",
+                    dataset_id="us_xx_ingest_views_20220414_secondary",
                     table_id="ingest_view_2019_07_20_00_00_00_lower_bound",
                 ),
             ]

@@ -303,7 +303,7 @@ class DirectIngestIngestViewExportManager:
         export_query = StrictStringFormatter().format(
             SELECT_SUBQUERY,
             project_id=self.big_query_client.project_id,
-            dataset_id=ingest_view.dataset_id,
+            dataset_id=dataset_for_export(ingest_view, self.ingest_instance),
             table_name=self._get_upper_bound_intermediate_table_name(
                 ingest_view_export_args
             ),
@@ -314,7 +314,7 @@ class DirectIngestIngestViewExportManager:
             upper_bound_prev_query = StrictStringFormatter().format(
                 SELECT_SUBQUERY,
                 project_id=self.big_query_client.project_id,
-                dataset_id=ingest_view.dataset_id,
+                dataset_id=dataset_for_export(ingest_view, self.ingest_instance),
                 table_name=self._get_lower_bound_intermediate_table_name(
                     ingest_view_export_args
                 ),
@@ -376,7 +376,8 @@ class DirectIngestIngestViewExportManager:
 
         for table_id in single_date_table_ids:
             self.big_query_client.delete_table(
-                dataset_id=ingest_view.dataset_id, table_id=table_id
+                dataset_id=dataset_for_export(ingest_view, self.ingest_instance),
+                table_id=table_id,
             )
             logging.info("Deleted intermediate table [%s]", table_id)
 
@@ -462,7 +463,9 @@ class DirectIngestIngestViewExportManager:
             ExportQueryConfig(
                 query=export_query,
                 query_parameters=[],
-                intermediate_dataset_id=ingest_view.dataset_id,
+                intermediate_dataset_id=dataset_for_export(
+                    ingest_view, self.ingest_instance
+                ),
                 intermediate_table_name=f"{ingest_view_export_args.ingest_view_name}_latest_export",
                 output_uri=output_path.uri(),
                 output_format=bigquery.DestinationFormat.CSV,
