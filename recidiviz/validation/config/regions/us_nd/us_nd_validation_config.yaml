@@ -32,11 +32,11 @@ max_allowed_error_overrides:
 num_allowed_rows_overrides:
   - validation_name: overlapping_incarceration_periods
     hard_num_allowed_rows_override: 550
-    override_reason: TODO(#5803) - Needs investigation. Likely related to shifting IP
-      external ids / not handling object deletion properly.
+    override_reason: TODO(#5803), TODO(#10577), TODO(#10682) - Needs investigation.
+      Likely related to shifting IP external ids / not handling object deletion properly.
   - validation_name: incarceration_admission_after_open_period
     hard_num_allowed_rows_override: 250
-    override_reason: TODO(#5803) - Needs investigation.
+    override_reason: TODO(#5803), TODO(#10577), TODO(#10682) - Needs investigation.
   - validation_name: invalid_admission_reason_and_pfi
     hard_num_allowed_rows_override: 10
     override_reason: TODO(#3723) - As of 12/07/2021 there are 4 REVOCATION admission to
@@ -44,17 +44,17 @@ num_allowed_rows_overrides:
       we have a comprehensive fix for handling OOS in ND.
   - validation_name: incarceration_release_prior_to_admission
     hard_num_allowed_rows_override: 20
-    override_reason: TODO(#5803) - Needs investigation. Likely related to shifting IP
-      external ids / not handling object deletion properly.
+    override_reason: TODO(#5803), TODO(#10577), TODO(#10682) - Needs investigation.
+      Likely related to shifting IP external ids / not handling object deletion properly.
   - validation_name: incarceration_admission_nulls
     hard_num_allowed_rows_override: 1500
-    override_reason: TODO(#5803) - Needs investigation.
+    override_reason: TODO(#5803), TODO(#10682) - Needs investigation.
   - validation_name: supervision_termination_reason_no_date
     hard_num_allowed_rows_override: 1
-    override_reason: TODO(#5803) - Needs investigation.
+    override_reason: TODO(#5803), TODO(#10682) - Needs investigation.
   - validation_name: supervision_termination_prior_to_start
     hard_num_allowed_rows_override: 300
-    override_reason: TODO(#5803) - Needs investigation.
+    override_reason: TODO(#5803), TODO(#10682) - Needs investigation.
   - validation_name: admission_pfi_pop_pfi_mismatch
     hard_num_allowed_rows_override: 20
     override_reason: TODO(#10625) - Need to be handled in IP pre-processing.
