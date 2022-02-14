@@ -33,6 +33,7 @@ from recidiviz.calculator.pipeline.utils.metric_utils import (
 )
 from recidiviz.common.constants.state.external_id_types import (
     US_ID_DOC,
+    US_ME_DOC,
     US_MO_DOC,
     US_ND_ELITE,
     US_ND_SID,
@@ -51,6 +52,7 @@ from recidiviz.persistence.entity.state.entities import StatePerson
 PRIMARY_PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE = {
     "incarceration": {
         StateCode.US_ID: US_ID_DOC,
+        StateCode.US_ME: US_ME_DOC,
         StateCode.US_MO: US_MO_DOC,
         StateCode.US_ND: US_ND_ELITE,
         StateCode.US_PA: US_PA_CONTROL,
@@ -59,6 +61,7 @@ PRIMARY_PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE = {
     "recidivism": {StateCode.US_ND: US_ND_ELITE},
     "supervision": {
         StateCode.US_ID: US_ID_DOC,
+        StateCode.US_ME: US_ME_DOC,
         StateCode.US_MO: US_MO_DOC,
         StateCode.US_ND: US_ND_SID,
         StateCode.US_PA: US_PA_PBPP,
@@ -72,6 +75,7 @@ PRIMARY_PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE = {
 SECONDARY_PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE = {
     "incarceration": {
         StateCode.US_ID: US_ID_DOC,
+        StateCode.US_ME: US_ME_DOC,
         StateCode.US_MO: US_MO_DOC,
         StateCode.US_ND: US_ND_SID,
         StateCode.US_PA: US_PA_PBPP,
