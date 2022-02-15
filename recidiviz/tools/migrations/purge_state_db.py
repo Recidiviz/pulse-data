@@ -150,7 +150,7 @@ def main(
     ]
     remote_command = " && ".join(remote_commands)
     local_command = (
-        f"gcloud compute ssh prod-data-client --zone=us-east4-c "
+        f"gcloud compute ssh prod-data-client --project recidiviz-123 --zone=us-east4-c "
         f'--command "{remote_command}"'
     )
 
