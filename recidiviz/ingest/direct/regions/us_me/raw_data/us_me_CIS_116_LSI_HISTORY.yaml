@@ -46,9 +46,11 @@ columns:
       - value: 4
         description: Other
   - name: Cis_900_Approver_Id
+    description: |-
+      The employee who approved the planned override of the LSI rating of this assessment.
   - name: Cis_900_Employee_Id
     description: |-
-      The employee who last modified the information, which could include applying an override code for the LSI rating.
+      The employee who conducted the assessment. This value does not change when an override is applied or approved.
   - name: Citrix_Lsi_Id
   - name: Comm_Apprv_Notes_Tx
     description: Note entered when the LSI rating was approved.
@@ -57,7 +59,11 @@ columns:
   - name: Competency_Tx
     description: Notes about the client and assessment results.
   - name: Created_By_Tx
+    description: |-
+      Notes about the creation of this assessment record.
   - name: Created_On_Date
+    description: |-
+      The date that this assessment record was created.
   - name: Home_Visit_Ind
   - name: Lsi_Date
     description: |-
@@ -72,7 +78,11 @@ columns:
   - name: Lsi_Xml_Tx
   - name: Manual_Score_Ind
   - name: Modified_By_Tx
+    description: |-
+      Notes about the modification of this assessment record.
   - name: Modified_On_Date
+    description: |-
+      The date that this assessment record was last modified.
   - name: Reassessment_Date
     description: |-
       The date the client needs to be reassessed.

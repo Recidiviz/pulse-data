@@ -25,6 +25,12 @@ from recidiviz.common.constants.shared_enums.person_characteristics import (
 )
 from recidiviz.common.constants.state.external_id_types import US_ME_DOC
 from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
+from recidiviz.common.constants.state.state_agent import StateAgentType
+from recidiviz.common.constants.state.state_assessment import (
+    StateAssessmentClass,
+    StateAssessmentLevel,
+    StateAssessmentType,
+)
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
@@ -35,10 +41,12 @@ from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
 )
 from recidiviz.ingest.direct.regions.us_me.us_me_controller import UsMeController
 from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.entity.state.entities import StateAgent
 from recidiviz.tests.ingest.direct.regions.base_direct_ingest_controller_tests import (
     BaseDirectIngestControllerTests,
 )
 from recidiviz.tests.ingest.direct.regions.utils import (
+    add_assessment_to_person,
     add_incarceration_period_to_person,
     build_state_person_entity,
 )
@@ -345,6 +353,100 @@ class TestUsMeController(BaseDirectIngestControllerTests):
 
         # Act
         self._run_ingest_job_for_filename("CURRENT_STATUS_incarceration_periods")
+
+        # Assert
+        self.assert_expected_db_people(expected_people)
+
+        ######################################
+        # Assessments
+        ######################################
+
+        add_assessment_to_person(
+            person=person_1,
+            state_code="US_ME",
+            external_id="00000001-18435801161",
+            assessment_class=StateAssessmentClass.RISK,
+            assessment_class_raw_text="JUVENILE, MALE, COMMUNITY",
+            assessment_type=StateAssessmentType.LSIR,
+            assessment_type_raw_text="JUVENILE, MALE, COMMUNITY",
+            assessment_date=datetime.date(year=2009, month=8, day=12),
+            assessment_score=3,
+            assessment_level=StateAssessmentLevel.LOW,
+            assessment_level_raw_text="LOW",
+            assessment_metadata='{"LSI_RATING": "LOW", "LSI_RATING_APPROVED": "", "LSI_RATING_OVERRIDE": ""}',
+            conducting_agent=StateAgent(
+                state_code="US_ME",
+                external_id="7777",
+                agent_type=StateAgentType.PRESENT_WITHOUT_INFO,
+                full_name='{"given_names": "DAN", "middle_names": "L", "name_suffix": "", "surname": "WHITFORD"}',
+            ),
+        )
+
+        add_assessment_to_person(
+            person=person_2,
+            state_code="US_ME",
+            external_id="00000002-3576501161",
+            assessment_class=StateAssessmentClass.RISK,
+            assessment_class_raw_text="ADULT, MALE, FACILITY",
+            assessment_type=StateAssessmentType.LSIR,
+            assessment_type_raw_text="ADULT, MALE, FACILITY",
+            assessment_date=datetime.date(year=2013, month=2, day=7),
+            assessment_score=14,
+            assessment_level=StateAssessmentLevel.MODERATE,
+            assessment_level_raw_text="MODERATE",
+            assessment_metadata='{"LSI_RATING": "LOW", "LSI_RATING_APPROVED": "", "LSI_RATING_OVERRIDE": "MODERATE"}',
+            conducting_agent=StateAgent(
+                state_code="US_ME",
+                external_id="1234",
+                agent_type=StateAgentType.PRESENT_WITHOUT_INFO,
+                full_name='{"given_names": "BEN", "middle_names": "", "name_suffix": "", "surname": "BROWNING"}',
+            ),
+        )
+
+        add_assessment_to_person(
+            person=person_2,
+            state_code="US_ME",
+            external_id="00000002-3576501162",
+            assessment_class=StateAssessmentClass.RISK,
+            assessment_class_raw_text="ADULT, MALE, COMMUNITY",
+            assessment_type=StateAssessmentType.LSIR,
+            assessment_type_raw_text="ADULT, MALE, COMMUNITY",
+            assessment_date=datetime.date(year=2004, month=12, day=1),
+            assessment_score=10,
+            assessment_level=StateAssessmentLevel.HIGH,
+            assessment_level_raw_text="HIGH",
+            assessment_metadata='{"LSI_RATING": "ADMINISTRATIVE", "LSI_RATING_APPROVED": "HIGH", "LSI_RATING_OVERRIDE": "HIGH"}',
+            conducting_agent=StateAgent(
+                state_code="US_ME",
+                external_id="1234",
+                agent_type=StateAgentType.PRESENT_WITHOUT_INFO,
+                full_name='{"given_names": "BEN", "middle_names": "", "name_suffix": "", "surname": "BROWNING"}',
+            ),
+        )
+
+        add_assessment_to_person(
+            person=person_2,
+            state_code="US_ME",
+            external_id="00000002-3576502151",
+            assessment_class=StateAssessmentClass.SEX_OFFENSE,
+            assessment_class_raw_text="STATIC 99",
+            assessment_type=StateAssessmentType.STATIC_99,
+            assessment_type_raw_text="STATIC 99",
+            assessment_date=datetime.date(year=2008, month=7, day=10),
+            assessment_score=0,
+            assessment_level=StateAssessmentLevel.MINIMUM,
+            assessment_level_raw_text="ADMINISTRATIVE",
+            assessment_metadata='{"LSI_RATING": "ADMINISTRATIVE", "LSI_RATING_APPROVED": "", "LSI_RATING_OVERRIDE": ""}',
+            conducting_agent=StateAgent(
+                state_code="US_ME",
+                external_id="1188",
+                agent_type=StateAgentType.PRESENT_WITHOUT_INFO,
+                full_name='{"given_names": "TIM", "middle_names": "TOM", "name_suffix": "", "surname": "HOEY"}',
+            ),
+        )
+
+        # Act
+        self._run_ingest_job_for_filename("assessments")
 
         # Assert
         self.assert_expected_db_people(expected_people)

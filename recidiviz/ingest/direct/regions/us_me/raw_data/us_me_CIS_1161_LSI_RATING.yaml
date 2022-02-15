@@ -9,7 +9,11 @@ columns:
     description: |-
       The type of LSI questionnaire associated with the rating. This code maps to the values found in the CIS_1009_LSI_TYPE raw table.
   - name: Created_By_Tx
+    description: |-
+      Notes about the creation of this assessment record.
   - name: Created_On_Date
+    description: |-
+      The date that this assessment record was created.
   - name: E_Lsi_Rating_Desc
     description: |-
       The description of the LSI rating.
@@ -18,13 +22,21 @@ columns:
     description: The date the LSI rating became effective. This is always the same date.
     is_datetime: True
   - name: Lsi_Rating_Group_Tx
+    description: |-
+      Notes about the LSI rating assignment for this assessment.
   - name: Modified_By_Tx
+    description: |-
+      Notes about the modification of this assessment record.
   - name: Modified_On_Date
+    description: |-
+      The date that this assessment record was last modified.
   - name: System_Ref_Comments_Tx
   - name: System_Ref_Tx
   - name: Lsi_Rating_Cd
     description: |-
-      The primary key for this table and the LSI rating code referenced in other raw tables.
+      The primary key for this table and the LSI rating code referenced in other raw tables. Known values map to a
+      combination of the assigned LSI rating resulting from the assessment as well as the specific questionnaire type
+      that was given.
     known_values:
       - value: 1
         description: Administrative, Adult, Male, Community

@@ -25,6 +25,12 @@ from recidiviz.common.constants.shared_enums.person_characteristics import (
     Race,
 )
 from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
+from recidiviz.common.constants.state.state_agent import StateAgentType
+from recidiviz.common.constants.state.state_assessment import (
+    StateAssessmentClass,
+    StateAssessmentLevel,
+    StateAssessmentType,
+)
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
@@ -44,6 +50,8 @@ from recidiviz.ingest.direct.regions.us_me.us_me_custom_enum_parsers import (
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.entity.state.entities import (
+    StateAgent,
+    StateAssessment,
     StateIncarcerationPeriod,
     StatePerson,
     StatePersonEthnicity,
@@ -769,3 +777,134 @@ class UsMeIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
             StateIncarcerationPeriodAdmissionReason.TRANSFER,
             parse_admission_reason(admission_reason_raw_text),
         )
+
+    def test_parse_assessments(self) -> None:
+        self.maxDiff = None
+        expected_output = [
+            StatePerson(
+                state_code="US_ME",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_ME",
+                        external_id="00000001",
+                        id_type="US_ME_DOC",
+                    )
+                ],
+                assessments=[
+                    StateAssessment(
+                        state_code="US_ME",
+                        external_id="00000001-18435801161",
+                        assessment_class=StateAssessmentClass.RISK,
+                        assessment_class_raw_text="JUVENILE, MALE, COMMUNITY",
+                        assessment_type=StateAssessmentType.LSIR,
+                        assessment_type_raw_text="JUVENILE, MALE, COMMUNITY",
+                        assessment_date=date(2009, 8, 12),
+                        assessment_score=3,
+                        assessment_level=StateAssessmentLevel.LOW,
+                        assessment_level_raw_text="LOW",
+                        assessment_metadata='{"LSI_RATING": "LOW", "LSI_RATING_APPROVED": "", "LSI_RATING_OVERRIDE": ""}',
+                        conducting_agent=StateAgent(
+                            state_code="US_ME",
+                            external_id="7777",
+                            agent_type=StateAgentType.PRESENT_WITHOUT_INFO,
+                            full_name='{"given_names": "DAN", "middle_names": "L", "name_suffix": "", "surname": "WHITFORD"}',
+                        ),
+                    ),
+                ],
+            ),
+            StatePerson(
+                state_code="US_ME",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_ME",
+                        external_id="00000002",
+                        id_type="US_ME_DOC",
+                    )
+                ],
+                assessments=[
+                    StateAssessment(
+                        state_code="US_ME",
+                        external_id="00000002-3576501161",
+                        assessment_class=StateAssessmentClass.RISK,
+                        assessment_class_raw_text="ADULT, MALE, FACILITY",
+                        assessment_type=StateAssessmentType.LSIR,
+                        assessment_type_raw_text="ADULT, MALE, FACILITY",
+                        assessment_date=date(2013, 2, 7),
+                        assessment_score=14,
+                        assessment_level=StateAssessmentLevel.MODERATE,
+                        assessment_level_raw_text="MODERATE",
+                        assessment_metadata='{"LSI_RATING": "LOW", "LSI_RATING_APPROVED": "", "LSI_RATING_OVERRIDE": "MODERATE"}',
+                        conducting_agent=StateAgent(
+                            state_code="US_ME",
+                            external_id="1234",
+                            agent_type=StateAgentType.PRESENT_WITHOUT_INFO,
+                            full_name='{"given_names": "BEN", "middle_names": "", "name_suffix": "", "surname": "BROWNING"}',
+                        ),
+                    ),
+                ],
+            ),
+            StatePerson(
+                state_code="US_ME",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_ME",
+                        external_id="00000002",
+                        id_type="US_ME_DOC",
+                    )
+                ],
+                assessments=[
+                    StateAssessment(
+                        state_code="US_ME",
+                        external_id="00000002-3576501162",
+                        assessment_class=StateAssessmentClass.RISK,
+                        assessment_class_raw_text="ADULT, MALE, COMMUNITY",
+                        assessment_type=StateAssessmentType.LSIR,
+                        assessment_type_raw_text="ADULT, MALE, COMMUNITY",
+                        assessment_date=date(2004, 12, 1),
+                        assessment_score=10,
+                        assessment_level=StateAssessmentLevel.HIGH,
+                        assessment_level_raw_text="HIGH",
+                        assessment_metadata='{"LSI_RATING": "ADMINISTRATIVE", "LSI_RATING_APPROVED": "HIGH", "LSI_RATING_OVERRIDE": "HIGH"}',
+                        conducting_agent=StateAgent(
+                            state_code="US_ME",
+                            external_id="1234",
+                            agent_type=StateAgentType.PRESENT_WITHOUT_INFO,
+                            full_name='{"given_names": "BEN", "middle_names": "", "name_suffix": "", "surname": "BROWNING"}',
+                        ),
+                    ),
+                ],
+            ),
+            StatePerson(
+                state_code="US_ME",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_ME",
+                        external_id="00000002",
+                        id_type="US_ME_DOC",
+                    )
+                ],
+                assessments=[
+                    StateAssessment(
+                        state_code="US_ME",
+                        external_id="00000002-3576502151",
+                        assessment_class=StateAssessmentClass.SEX_OFFENSE,
+                        assessment_class_raw_text="STATIC 99",
+                        assessment_type=StateAssessmentType.STATIC_99,
+                        assessment_type_raw_text="STATIC 99",
+                        assessment_date=date(2008, 7, 10),
+                        assessment_score=0,
+                        assessment_level=StateAssessmentLevel.MINIMUM,
+                        assessment_level_raw_text="ADMINISTRATIVE",
+                        assessment_metadata='{"LSI_RATING": "ADMINISTRATIVE", "LSI_RATING_APPROVED": "", "LSI_RATING_OVERRIDE": ""}',
+                        conducting_agent=StateAgent(
+                            state_code="US_ME",
+                            external_id="1188",
+                            agent_type=StateAgentType.PRESENT_WITHOUT_INFO,
+                            full_name='{"given_names": "TIM", "middle_names": "TOM", "name_suffix": "", "surname": "HOEY"}',
+                        ),
+                    ),
+                ],
+            ),
+        ]
+
+        self._run_parse_ingest_view_test("assessments", expected_output)

@@ -1,0 +1,10 @@
+Adult_Ind,Created_By_Tx,Created_On_Date,Juvenile_Ind,Modified_By_Tx,Modified_On_Date,Sex_Off_Assess_Type_Desc,Sex_Off_Assess_Type_Cd
+Y,Blah,2022-01-01,N,Blah,2022-02-02,Static 99,1
+N,Blah,2022-01-01,Y,Blah,2022-02-02,J-SOAP II,2
+N,Blah,2022-01-01,N,Blah,2022-02-02,Exempt,3
+Y,Blah,2022-01-01,N,Blah,2022-02-02,Static 99 R,4
+Y,Blah,2022-01-01,N,Blah,2022-02-02,ODARA,5
+Y,Blah,2022-01-01,N,Blah,2022-02-02,SPIN-W,6
+Y,Blah,2022-01-01,N,Blah,2022-02-02,SOTIPS,7
+N,Blah,2022-01-01,Y,Blah,2022-02-02,OYAS,8
+Y,Blah,2022-01-01,N,Blah,2022-02-02,STABLE,9

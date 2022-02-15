@@ -1,23 +1,37 @@
 file_tag: CIS_2150_SEX_OFF_ASSESS_TYPE
 file_description: |-
-  The code table mapping the type of assessment for sex offense cases.
+  The code table mapping the type of assessment for non-LSI assessments. See the description for
+  CIS_215_SEX_OFFENDER_ASSESS to learn more.
 primary_key_cols:
   - Sex_Off_Assess_Type_Cd
 columns:
   - name : Adult_Ind
+    description: |-
+      Indicates that this assessment was given to an adult, not a juvenile.
   - name : Created_By_Tx
+    description: |-
+      Notes about the creation of this assessment record.
   - name : Created_On_Date
+    description: |-
+      The date that this assessment record was created.
   - name : Juvenile_Ind
+    description: |-
+      Indicates that this assessment was given to a juvenile, not an adult
   - name : Logical_Delete_Ind
   - name : Modified_By_Tx
+    description: |-
+      Notes about the modification of this assessment record.
   - name : Modified_On_Date
+    description: |-
+      The date that this assessment record was created.
   - name : Sex_Off_Assess_Type_Desc
-    description: The name of the assessment.
+    description: |-
+      The name of the assessment, closely matching the known values for Sex_Off_Assess_Type_Cd.
   - name : Sys_Row_Ind
   - name : System_Ref_Comments_Tx
   - name : System_Ref_Tx
   - name : Sex_Off_Assess_Type_Cd
-    description: The primary key for this table.
+    description: The primary key for this table. Known values map to a specific assessment type.
     known_values:
       - value: 1
         description: Static 99

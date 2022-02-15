@@ -14,25 +14,23 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Direct ingest controller implementation for US_ME."""
-from typing import List
+"""Tests the US_ME `assessments` view logic."""
+from unittest.mock import Mock, patch
 
-from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
-    BaseDirectIngestController,
-)
+from recidiviz.tests.big_query.view_test_util import BaseViewTest
 
 
-class UsMeController(BaseDirectIngestController):
-    """Direct ingest controller implementation for US_ME."""
+@patch("recidiviz.utils.metadata.project_id", Mock(return_value="t"))
+class AssessmentsTest(BaseViewTest):
+    """Tests the US_ME `assessments` view query functionality."""
 
-    @classmethod
-    def region_code(cls) -> str:
-        return StateCode.US_ME.value.lower()
+    def setUp(self) -> None:
+        super().setUp()
+        self.region_code = StateCode.US_ME.value
+        self.view_builder = self.view_builder_for_tag(self.region_code, "assessments")
+        self.data_types = str
 
-    def __init__(self, ingest_bucket_path: GcsfsBucketPath):
-        super().__init__(ingest_bucket_path)
-
-    def get_file_tag_rank_list(self) -> List[str]:
-        return ["CLIENT", "CURRENT_STATUS_incarceration_periods", "assessments"]
+    def test_basic(self) -> None:
+        """Assert that assessment data from both primary tables is organized correctly."""
+        self.run_ingest_view_test(fixtures_files_name="basic.csv")
