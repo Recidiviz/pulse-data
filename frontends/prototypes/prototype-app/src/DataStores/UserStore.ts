@@ -56,6 +56,9 @@ export default class UserStore {
 
   readonly rootStore: RootStore;
 
+  // once auth is set up, this should be mapped from their email address per auth0
+  readonly userName: string = "Recidiviz Admin";
+
   constructor({ authSettings, rootStore }: ConstructorProps) {
     makeAutoObservable(this, {
       rootStore: false,
@@ -137,6 +140,6 @@ export default class UserStore {
       this.isAuthorized = false;
       this.isLoading = true;
     });
-    return auth0.logout();
+    return auth0.logout({ returnTo: window.location.origin });
   }
 }

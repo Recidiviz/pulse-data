@@ -1,0 +1,75 @@
+[
+  {
+    "person_name": "{\"given_names\": \"TONYE\", \"surname\": \"THOMPSON\", \"middle_names\": \"BARBY\"}",
+    "person_external_id": "100",
+    "officer_id": "OFFICER1",
+    "supervision_type": "PAROLE",
+    "judicial_district": "17",
+    "supervision_level": "MEDIUM",
+    "supervision_level_start": "2019-10-26",
+    "offense_type": "PENALTY VIO OF DISPO OF DEAD BODY STATUTES",
+    "last_DRUN": ["2022-01-26"],
+    "sanctions_past_1yr": []
+  },
+  {
+    "person_name": "{\"given_names\": \"LINET\", \"surname\": \"HANSEN\"}",
+    "person_external_id": "101",
+    "officer_id": "OFFICER1",
+    "supervision_type": "PROBATION",
+    "supervision_level": "MEDIUM",
+    "supervision_level_start": "2019-12-20",
+    "judicial_district": "14",
+    "last_DRUN": ["2021-09-17", "2022-02-02"],
+    "sanctions_past_1yr": ["IPDS"],
+    "offense_type": "DISSEM SMOK MAT,PARAPHNLA,SMKLS TOBC TO MINRS"
+  },
+  {
+    "person_external_id": "102",
+    "officer_id": "OFFICER1",
+    "person_name": "{\"given_names\": \"REBEKAH\", \"surname\": \"CORTES\", \"middle_names\": \"HATTI\"}",
+    "supervision_level_start": "2020-07-05",
+    "supervision_type": "PROBATION",
+    "offense_type": "FAC COMPUTER OFFENSE - $10,000-$60,000",
+    "supervision_level": "MINIMUM",
+    "judicial_district": "17",
+    "last_DRUN": ["2022-01-26"],
+    "sanctions_past_1yr": ["MPDS", "OPRD"]
+  },
+  {
+    "person_name": "{\"given_names\": \"RAMONDA\", \"surname\": \"UNDERWOOD\"}",
+    "person_external_id": "104",
+    "officer_id": "OFFICER2",
+    "supervision_level_start": "2020-04-07",
+    "supervision_type": "PROBATION",
+    "offense_type": "PURCHASE HIDES FROM UNK PERS W/O ID",
+    "supervision_level": "HIGH",
+    "judicial_district": "17",
+    "last_DRUN": ["2021-11-26"],
+    "sanctions_past_1yr": []
+  },
+  {
+    "person_external_id": "107",
+    "officer_id": "OFFICER2",
+    "person_name": "{\"given_names\": \"CLARIBEL\", \"surname\": \"VELAZQUEZ\", \"middle_names\": \"M\"}",
+    "supervision_level_start": "2020-05-19",
+    "projected_end_date": null,
+    "supervision_type": "PAROLE",
+    "offense_type": "SCHED VI DRUGS: MINOR W/QUAL PRIORS",
+    "supervision_level": "MEDIUM",
+    "judicial_district": "12",
+    "last_DRUN": ["2021-10-26", "2022-02-04"],
+    "sanctions_past_1yr": ["ZTPD"]
+  },
+  {
+    "person_external_id": "109",
+    "officer_id": "OFFICER2",
+    "person_name": "{\"given_names\": \"SHERRI\", \"surname\": \"WRIGHT\", \"middle_names\": \"RENELLE\"}",
+    "supervision_level_start": "2021-02-11",
+    "supervision_type": "PAROLE",
+    "offense_type": "FRAUD",
+    "supervision_level": "MEDIUM",
+    "judicial_district": "14",
+    "last_DRUN": ["2022-01-26"],
+    "sanctions_past_1yr": []
+  }
+]
