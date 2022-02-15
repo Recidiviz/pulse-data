@@ -47,15 +47,22 @@ class TLSAdapter(HTTPAdapter):
 
 
 def get_urls_to_download() -> Set[str]:
-    session = requests.session()
-    session.mount("https://dhhr.wv.gov", TLSAdapter())
-    response = session.get(STATE_AGGREGATE_URL)
-    content = html.fromstring(response.text)
+    all_urls = set()
+    for year in range(2020, 2023):
+        session = requests.session()
+        session.mount("https://dhhr.wv.gov", TLSAdapter())
+        url = f"https://dhhr.wv.gov/COVID-19/Pages/Case-Reports-{year}.aspx"
+        response = session.get(url)
+        content = html.fromstring(response.text)
 
-    return {
-        f"https://dhhr.wv.gov{url}"
-        for url in content.xpath("//a/@href")
-        if url.startswith("/COVID-19/Documents/COVID19_DCR_")
-        and url.endswith(".txt")
-        and not url.endswith("COVID19_DCR_2020_09-25.txt")
-    }
+        urls = {
+            url
+            for url in content.xpath("//a/@href")
+            if url.startswith("https://dhhr.wv.gov/COVID-19/Documents/COVID19_DCR_")
+            and url.endswith(".txt")
+            and not url.endswith("COVID19_DCR_2020_09-25.txt")
+        }
+
+        all_urls.update(urls)
+
+    return all_urls
