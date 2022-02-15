@@ -31,16 +31,6 @@ from recidiviz.common.constants.enum_parser import (
 
 
 @attr.s(frozen=True)
-class LiteralEnumParser(EnumParser[EnumT]):
-    """Class that "parses" an enum value, always returning the exact same value."""
-
-    enum_value: EnumT = attr.ib()
-
-    def parse(self) -> EnumT:
-        return self.enum_value
-
-
-@attr.s(frozen=True)
 class StrictEnumParser(EnumParser[EnumT]):
     """Class that parses an enum value from raw text, given a provided set of enum
     mappings. It does no normalization of the input text before attempting to find a
