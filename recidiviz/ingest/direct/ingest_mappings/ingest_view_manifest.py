@@ -31,6 +31,7 @@ from typing import (
     List,
     Optional,
     Set,
+    Tuple,
     Type,
     TypeVar,
     Union,
@@ -46,20 +47,17 @@ from recidiviz.common.attr_mixins import (
     attr_field_type_for_field_name,
 )
 from recidiviz.common.attr_utils import get_non_flat_attribute_class_name
-from recidiviz.common.constants.enum_overrides import EnumOverrides
-from recidiviz.common.constants.enum_parser import EnumParser
-from recidiviz.common.constants.strict_enum_parser import (
-    LiteralEnumParser,
-    StrictEnumParser,
-)
-from recidiviz.ingest.direct.ingest_mappings.custom_function_registry import (
-    CustomFunctionRegistry,
-)
+from recidiviz.common.constants.enum_overrides import EnumOverrides, EnumT
+from recidiviz.common.constants.strict_enum_parser import StrictEnumParser
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_file_parser_delegate import (
     IngestViewFileParserDelegate,
 )
 from recidiviz.persistence.entity.base_entity import Entity, EnumEntity
-from recidiviz.persistence.entity.entity_deserialize import EntityFactory, EntityT
+from recidiviz.persistence.entity.entity_deserialize import (
+    DeserializableEntityFieldValue,
+    EntityFactory,
+    EntityT,
+)
 from recidiviz.utils.yaml_dict import YAMLDict
 
 ManifestNodeT = TypeVar("ManifestNodeT")
@@ -160,7 +158,7 @@ class EntityTreeManifest(ManifestNode[EntityT]):
     field_manifests: Dict[str, ManifestNode] = attr.ib()
 
     # A map of arguments that should be applied to all parsed entities.
-    common_args: Dict[str, Optional[Union[str, EnumParser]]] = attr.ib()
+    common_args: Dict[str, DeserializableEntityFieldValue] = attr.ib()
 
     # Optional predicate for filtering out hydrated entities. If returns True,
     # build_for_row() will return null instead of this entity (and any children
@@ -179,7 +177,7 @@ class EntityTreeManifest(ManifestNode[EntityT]):
 
     def build_from_row(self, row: Dict[str, str]) -> Optional[EntityT]:
         """Builds a recursively hydrated entity from the given input row."""
-        args: Dict[str, Optional[Union[str, EnumParser]]] = self.common_args.copy()
+        args: Dict[str, DeserializableEntityFieldValue] = self.common_args.copy()
 
         for field_name, field_manifest in self.field_manifests.items():
             field_value = field_manifest.build_from_row(row)
@@ -279,8 +277,10 @@ class EntityTreeManifestFactory:
                     expected_result_type=delegate.get_entity_cls(child_entity_cls_name),
                 )
             elif field_type is BuildableAttrFieldType.ENUM:
-                enum_cls = attr_field_enum_cls_for_field_name(entity_cls, field_name)
-                if not enum_cls:
+                expected_enum_cls = attr_field_enum_cls_for_field_name(
+                    entity_cls, field_name
+                )
+                if not expected_enum_cls:
                     raise ValueError(
                         f"No enum class for field [{field_name}] in class "
                         f"[{entity_cls}]."
@@ -292,9 +292,9 @@ class EntityTreeManifestFactory:
                     ),
                     delegate=delegate,
                     variable_manifests=variable_manifests,
-                    expected_result_type=EnumParser,
-                    enum_cls=enum_cls,
+                    expected_result_type=expected_enum_cls,
                 )
+
             elif field_type in (
                 # These are flat fields and should be parsed into a ManifestNode[str],
                 # since all values will be converted from string -> real value in the
@@ -403,7 +403,7 @@ class EntityTreeManifestFactory:
         if additional_field_type == BuildableAttrFieldType.STRING:
             expected_result_type = str
         elif additional_field_type == BuildableAttrFieldType.ENUM:
-            expected_result_type = EnumParser
+            expected_result_type = Enum
         elif additional_field_type == BuildableAttrFieldType.BOOLEAN:
             expected_result_type = bool
         else:
@@ -431,7 +431,7 @@ class EntityTreeManifestFactory:
             enum_field_name = one(
                 field_name
                 for field_name, manifest in field_manifests.items()
-                if issubclass(manifest.result_type, EnumParser)
+                if issubclass(manifest.result_type, Enum)
             )
 
             def enum_entity_filter_predicate(e: EntityT) -> bool:
@@ -685,7 +685,7 @@ def _raw_text_field_name(enum_field_name: str) -> str:
 
 
 @attr.s(kw_only=True)
-class EnumLiteralFieldManifest(ManifestNode[LiteralEnumParser]):
+class EnumLiteralFieldManifest(ManifestNode[EnumT]):
     """Manifest describing a flat field that will be hydrated into an enum value that
     always has the same value.
     """
@@ -694,11 +694,11 @@ class EnumLiteralFieldManifest(ManifestNode[LiteralEnumParser]):
         r"^\$literal_enum\((?P<enum_cls_name>[^.]+)\.(?P<enum_value_name>[^.]+)\)$"
     )
 
-    enum_value: Enum = attr.ib()
+    enum_value: EnumT = attr.ib()
 
     @property
-    def result_type(self) -> Type[LiteralEnumParser]:
-        return LiteralEnumParser
+    def result_type(self) -> Type[EnumT]:
+        return self.enum_value.__class__
 
     def additional_field_manifests(self, field_name: str) -> Dict[str, "ManifestNode"]:
         # While this is effectively a no-op, it allows us to enforce that nobody
@@ -709,8 +709,8 @@ class EnumLiteralFieldManifest(ManifestNode[LiteralEnumParser]):
             )
         }
 
-    def build_from_row(self, row: Dict[str, str]) -> LiteralEnumParser:
-        return LiteralEnumParser(self.enum_value)
+    def build_from_row(self, row: Dict[str, str]) -> EnumT:
+        return self.enum_value
 
     def child_manifest_nodes(self) -> List["ManifestNode"]:
         return []
@@ -720,7 +720,10 @@ class EnumLiteralFieldManifest(ManifestNode[LiteralEnumParser]):
 
     @classmethod
     def from_raw_manifest(
-        cls, *, enum_cls: Type[Enum], raw_manifest: str
+        cls,
+        *,
+        raw_manifest: str,
+        delegate: IngestViewFileParserDelegate,
     ) -> "EnumLiteralFieldManifest":
         match = re.match(
             EnumLiteralFieldManifest.ENUM_LITERAL_VALUE_REGEX,
@@ -734,16 +737,12 @@ class EnumLiteralFieldManifest(ManifestNode[LiteralEnumParser]):
         enum_cls_name = match.group("enum_cls_name")
         enum_value_name = match.group("enum_value_name")
 
-        if enum_cls_name != enum_cls.__name__:
-            raise ValueError(
-                f"Declared enum class in manifest [{enum_cls_name}] does "
-                f"not match expected enum class type [{enum_cls.__name__}]."
-            )
+        enum_cls = delegate.get_enum_cls(enum_cls_name)
         return EnumLiteralFieldManifest(enum_value=enum_cls[enum_value_name])
 
 
 @attr.s(kw_only=True)
-class EnumMappingManifest(ManifestNode[StrictEnumParser]):
+class EnumMappingManifest(ManifestNode[EnumT]):
     """Manifest describing a flat field that will be hydrated into a parsed enum value."""
 
     # Key for an enum mappings manifest that will hydrate an enum field and its
@@ -769,23 +768,23 @@ class EnumMappingManifest(ManifestNode[StrictEnumParser]):
     # these values will never be passed to the custom parser function.
     IGNORES_KEY = "$ignore"
 
-    enum_cls: Type[Enum] = attr.ib()
+    enum_cls: Type[EnumT] = attr.ib()
     enum_overrides: EnumOverrides = attr.ib()
     raw_text_field_manifest: ManifestNode[str] = attr.ib()
 
     @property
-    def result_type(self) -> Type[StrictEnumParser]:
-        return StrictEnumParser
+    def result_type(self) -> Type[EnumT]:
+        return self.enum_cls
 
     def additional_field_manifests(self, field_name: str) -> Dict[str, "ManifestNode"]:
         return {_raw_text_field_name(field_name): self.raw_text_field_manifest}
 
-    def build_from_row(self, row: Dict[str, str]) -> StrictEnumParser:
+    def build_from_row(self, row: Dict[str, str]) -> Optional[EnumT]:
         return StrictEnumParser(
             raw_text=self.raw_text_field_manifest.build_from_row(row),
             enum_cls=self.enum_cls,
             enum_overrides=self.enum_overrides,
-        )
+        ).parse()
 
     def child_manifest_nodes(self) -> List["ManifestNode"]:
         return [self.raw_text_field_manifest]
@@ -794,7 +793,6 @@ class EnumMappingManifest(ManifestNode[StrictEnumParser]):
     def from_raw_manifest(
         cls,
         *,
-        enum_cls: Type[Enum],
         field_enum_mappings_manifest: YAMLDict,
         delegate: IngestViewFileParserDelegate,
         variable_manifests: Dict[str, VariableManifestNode],
@@ -809,9 +807,8 @@ class EnumMappingManifest(ManifestNode[StrictEnumParser]):
             variable_manifests=variable_manifests,
         )
 
-        enum_overrides = cls._build_field_enum_overrides(
-            enum_cls,
-            delegate.get_custom_function_registry(),
+        enum_cls, enum_overrides = cls._build_field_enum_overrides(
+            delegate,
             ignores_list=field_enum_mappings_manifest.pop_list_optional(
                 EnumMappingManifest.IGNORES_KEY, str
             ),
@@ -837,12 +834,11 @@ class EnumMappingManifest(ManifestNode[StrictEnumParser]):
     @classmethod
     def _build_field_enum_overrides(
         cls,
-        enum_cls: Type[Enum],
-        fn_registry: CustomFunctionRegistry,
+        delegate: IngestViewFileParserDelegate,
         ignores_list: Optional[List[str]],
         direct_mappings_manifest: Optional[YAMLDict],
         custom_parser_function_reference: Optional[str],
-    ) -> EnumOverrides:
+    ) -> Tuple[Type[Enum], EnumOverrides]:
         """Builds the enum mappings object that should be used to parse the enum value."""
 
         enum_overrides_builder = EnumOverrides.Builder()
@@ -870,13 +866,21 @@ class EnumMappingManifest(ManifestNode[StrictEnumParser]):
                     f"Found empty {cls.MAPPINGS_KEY}. If there are no direct string "
                     f"mappings, the key should be omitted entirely."
                 )
+
+            enum_cls: Type[Enum]
+            seen_enum_classes: Set[Type[Enum]] = set()
             for enum_value_str in direct_mappings_manifest.keys():
                 enum_cls_name, enum_name = enum_value_str.split(".")
-                if enum_cls_name != enum_cls.__name__:
+                enum_cls = delegate.get_enum_cls(enum_cls_name)
+                seen_enum_classes.add(enum_cls)
+
+                if len(seen_enum_classes) > 1:
+                    enum_cls_names = sorted(list(e.__name__ for e in seen_enum_classes))
                     raise ValueError(
-                        f"Declared enum class in manifest [{enum_cls_name}] does "
-                        f"not match expected enum class type [{enum_cls.__name__}]."
+                        f"Enum $mappings should only contain mappings for one enum "
+                        f"type but found multiple: {enum_cls_names}"
                     )
+
                 value_manifest_type = direct_mappings_manifest.peek_type(enum_value_str)
                 mappings_raw_text_list: List[str]
                 if value_manifest_type is str:
@@ -906,14 +910,17 @@ class EnumMappingManifest(ManifestNode[StrictEnumParser]):
                     )
 
         if custom_parser_function_reference:
-            fn, nonnull_return_type = fn_registry.get_custom_python_function(
+            (
+                fn,
+                enum_cls,
+            ) = delegate.get_custom_function_registry().get_custom_python_function(
                 custom_parser_function_reference,
                 {cls.CUSTOM_PARSER_RAW_TEXT_ARG_NAME: str},
-                enum_cls,
+                Enum,
             )
             enum_overrides_builder.add_mapper_fn(
                 fn,
-                nonnull_return_type,
+                enum_cls,
             )
 
         if ignores_list is not None:
@@ -927,7 +934,7 @@ class EnumMappingManifest(ManifestNode[StrictEnumParser]):
                     raw_text_value, enum_cls, normalize_label=False
                 )
 
-        return enum_overrides_builder.build()
+        return enum_cls, enum_overrides_builder.build()
 
 
 @attr.s(kw_only=True)
@@ -1801,7 +1808,6 @@ class BooleanConditionManifestFactory:
         delegate: IngestViewFileParserDelegate,
         variable_manifests: Dict[str, VariableManifestNode],
         expected_result_type: Type[ManifestNodeT],
-        enum_cls: Optional[Type[Enum]],
     ) -> "BooleanConditionManifest[ManifestNodeT]":
         """Builds a BooleanConditionManifest from the provided raw manifest."""
 
@@ -1833,7 +1839,6 @@ class BooleanConditionManifestFactory:
                     delegate,
                     variable_manifests=variable_manifests,
                     expected_result_type=expected_result_type,
-                    enum_cls=enum_cls,
                 )
                 continue
 
@@ -1862,7 +1867,6 @@ class BooleanConditionManifestFactory:
                 delegate,
                 variable_manifests=variable_manifests,
                 expected_result_type=expected_result_type,
-                enum_cls=enum_cls,
             )
             highest_level_boolean_manifest = BooleanConditionManifest(
                 condition_manifest=condition_manifest,
@@ -1948,14 +1952,12 @@ def build_manifest_from_raw_typed(
     delegate: IngestViewFileParserDelegate,
     variable_manifests: Dict[str, VariableManifestNode],
     expected_result_type: Type[ManifestNodeT],
-    enum_cls: Optional[Type[Enum]] = None,
 ) -> ManifestNode[ManifestNodeT]:
     manifest = build_manifest_from_raw(
         raw_field_manifest=raw_field_manifest,
         delegate=delegate,
         variable_manifests=variable_manifests,
         expected_result_type=expected_result_type,
-        enum_cls=enum_cls,
     )
     if not issubclass(manifest.result_type, expected_result_type):
         raise ValueError(
@@ -1974,7 +1976,6 @@ def build_manifest_from_raw(
     delegate: IngestViewFileParserDelegate,
     variable_manifests: Dict[str, VariableManifestNode],
     expected_result_type: Type[ManifestNodeT],
-    enum_cls: Optional[Type[Enum]] = None,
 ) -> ManifestNode:
     """Builds a ManifestNode from the provided raw manifest."""
     if isinstance(raw_field_manifest, str):
@@ -1993,13 +1994,8 @@ def build_manifest_from_raw(
             raw_field_manifest,
         )
         if match:
-            if not enum_cls:
-                raise ValueError(
-                    f"Expected nonnull enum_cls for enum literal manifest: "
-                    f"{raw_field_manifest}"
-                )
             return EnumLiteralFieldManifest.from_raw_manifest(
-                enum_cls=enum_cls, raw_manifest=raw_field_manifest
+                raw_manifest=raw_field_manifest, delegate=delegate
             )
 
         match = re.match(VARIABLE_EXPRESSION_REGEX, raw_field_manifest)
@@ -2013,12 +2009,7 @@ def build_manifest_from_raw(
         manifest_node_name = one(raw_field_manifest.keys())
 
         if manifest_node_name == EnumMappingManifest.ENUM_MAPPING_KEY:
-            if not enum_cls:
-                raise ValueError(
-                    f"Expected nonnull enum_cls for enum manifest: {raw_field_manifest}"
-                )
             return EnumMappingManifest.from_raw_manifest(
-                enum_cls=enum_cls,
                 field_enum_mappings_manifest=raw_field_manifest.pop_dict(
                     manifest_node_name
                 ),
@@ -2070,7 +2061,6 @@ def build_manifest_from_raw(
                 delegate=delegate,
                 variable_manifests=variable_manifests,
                 expected_result_type=expected_result_type,
-                enum_cls=enum_cls,
             )
         if manifest_node_name == CustomFunctionManifest.CUSTOM_FUNCTION_KEY:
             return CustomFunctionManifest.from_raw_manifest(

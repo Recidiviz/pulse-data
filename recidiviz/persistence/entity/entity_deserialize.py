@@ -17,6 +17,7 @@
 """Provides a decorator for augmenting Entity classes with a deserialization constructor."""
 import datetime
 from abc import abstractmethod
+from enum import Enum
 from typing import Any, Callable, Dict, Generic, Optional, Type, TypeVar, Union
 
 import attr
@@ -42,11 +43,20 @@ from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.utils.types import T
 
 EntityT = TypeVar("EntityT", bound=Entity)
+DeserializableEntityFieldValue = Optional[
+    # TODO(#8905): Remove EnumParser from this type when ingest mappings v2 migration
+    #  is complete.
+    Union[str, Enum, bool, int, datetime.date, EnumParser]
+]
 
 
 @attr.s
 class EntityFieldConverter(Generic[T]):
-    field_type: Type[T] = attr.ib(validator=attr.validators.in_({str, EnumParser}))
+    # TODO(#8905): Remove EnumParser from this validator when ingest mappings v2
+    #  migration is complete.
+    field_type: Type[T] = attr.ib(
+        validator=attr.validators.in_({str, Enum, EnumParser})
+    )
     conversion_function: Callable[[T], Any] = attr.ib()
 
     def convert(self, field_value: T) -> Any:
@@ -57,7 +67,7 @@ def entity_deserialize(
     cls: Type[EntityT],
     converter_overrides: Dict[str, EntityFieldConverter],
     defaults: Dict[str, Any],
-    **kwargs: Optional[Union[str, EnumParser]],
+    **kwargs: DeserializableEntityFieldValue,
 ) -> EntityT:
     """Factory function that parses ingested versions of the Entity constructor args
     into database-ready, normalized values and uses the normalized values to construct
@@ -82,7 +92,7 @@ def entity_deserialize(
         )
 
     def convert_field_value(
-        field: attr.Attribute, field_value: Optional[Union[str, EnumParser]]
+        field: attr.Attribute, field_value: DeserializableEntityFieldValue
     ) -> Any:
         if field_value is None:
             return None
@@ -104,6 +114,7 @@ def entity_deserialize(
                 )
             return converter.convert(field_value)
 
+        # TODO(#8905): Remove this block when ingest mappings v2 migration is complete
         if isinstance(field_value, EnumParser):
             if is_enum(field):
                 return field_value.parse()
@@ -121,6 +132,10 @@ def entity_deserialize(
             if is_bool(field):
                 return parse_bool(field_value)
 
+        if isinstance(field_value, Enum):
+            if is_enum(field):
+                return field_value
+
         if isinstance(field_value, datetime.date):
             if is_date(field):
                 return field_value
@@ -133,7 +148,7 @@ def entity_deserialize(
             if is_bool(field):
                 return field_value
 
-        raise ValueError(f"Unsupported field {field.name}")
+        raise ValueError(f"Unsupported field {field.name} with value: {field_value}.")
 
     converted_args = {}
     fields = set()
@@ -159,5 +174,5 @@ def entity_deserialize(
 class EntityFactory(Generic[EntityT]):
     @staticmethod
     @abstractmethod
-    def deserialize(**kwargs: Optional[Union[str, EnumParser]]) -> EntityT:
+    def deserialize(**kwargs: DeserializableEntityFieldValue) -> EntityT:
         """Instantiates an entity from the provided list of arguments."""

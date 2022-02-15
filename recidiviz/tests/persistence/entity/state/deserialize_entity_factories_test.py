@@ -177,18 +177,14 @@ class TestDeserializeEntityFactories(unittest.TestCase):
         enum_parser.parse()
         result = deserialize_entity_factories.StatePersonFactory.deserialize(
             state_code="us_xx",
+            # TODO(#8905): Change to enum_parser.build() from this validator when
+            #  ingest mappings v2 migration is complete.
             gender=enum_parser,
             gender_raw_text="MALE",
             full_name='{"full_name": "full NAME"}',
             birthdate="12-31-1999",
             current_address="NNN\n  STREET \t ZIP",
-            residency_status=StrictEnumParser(
-                "PERMANENT",
-                ResidencyStatus,
-                EnumOverrides.Builder()
-                .add("PERMANENT", ResidencyStatus.PERMANENT)
-                .build(),
-            ),
+            residency_status=ResidencyStatus.PERMANENT,
         )
 
         # Assert
@@ -222,11 +218,7 @@ class TestDeserializeEntityFactories(unittest.TestCase):
 
     def test_deserialize_StateAgent(self) -> None:
         result = deserialize_entity_factories.StateAgentFactory.deserialize(
-            agent_type=StrictEnumParser(
-                "J",
-                StateAgentType,
-                EnumOverrides.Builder().add("J", StateAgentType.JUDGE).build(),
-            ),
+            agent_type=StateAgentType.JUDGE,
             agent_type_raw_text="J",
             external_id="AGENT_ID",
             state_code="us_xx",
@@ -247,21 +239,9 @@ class TestDeserializeEntityFactories(unittest.TestCase):
     def test_deserialize_StateIncarcerationSentence(self) -> None:
         result = (
             deserialize_entity_factories.StateIncarcerationSentenceFactory.deserialize(
-                status=StrictEnumParser(
-                    "S",
-                    StateSentenceStatus,
-                    EnumOverrides.Builder()
-                    .add("S", StateSentenceStatus.SUSPENDED)
-                    .build(),
-                ),
+                status=StateSentenceStatus.SUSPENDED,
                 status_raw_text="S",
-                incarceration_type=StrictEnumParser(
-                    "SP",
-                    StateIncarcerationType,
-                    EnumOverrides.Builder()
-                    .add("SP", StateIncarcerationType.STATE_PRISON)
-                    .build(),
-                ),
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
                 incarceration_type_raw_text="SP",
                 external_id="INCARCERATION_ID",
                 date_imposed="7/2/2006",
@@ -311,21 +291,9 @@ class TestDeserializeEntityFactories(unittest.TestCase):
 
     def test_deserialize_StateProgramAssignment(self) -> None:
         result = deserialize_entity_factories.StateProgramAssignmentFactory.deserialize(
-            participation_status=StrictEnumParser(
-                "IP",
-                StateProgramAssignmentParticipationStatus,
-                EnumOverrides.Builder()
-                .add("IP", StateProgramAssignmentParticipationStatus.IN_PROGRESS)
-                .build(),
-            ),
+            participation_status=StateProgramAssignmentParticipationStatus.IN_PROGRESS,
             participation_status_raw_text="IP",
-            discharge_reason=StrictEnumParser(
-                "C",
-                StateProgramAssignmentDischargeReason,
-                EnumOverrides.Builder()
-                .add("C", StateProgramAssignmentDischargeReason.COMPLETED)
-                .build(),
-            ),
+            discharge_reason=StateProgramAssignmentDischargeReason.COMPLETED,
             discharge_reason_raw_text="C",
             external_id="PROGRAM_ASSIGNMENT_ID",
             referral_date="1/2/2111",
@@ -354,30 +322,16 @@ class TestDeserializeEntityFactories(unittest.TestCase):
         self.assertEqual(expected_result, result)
 
     def test_deserialize_StateSupervisionContact(self) -> None:
-        overrides = (
-            EnumOverrides.Builder()
-            .add("C", StateSupervisionContactStatus.COMPLETED)
-            .add("GC", StateSupervisionContactReason.GENERAL_CONTACT)
-            .add("R", StateSupervisionContactLocation.RESIDENCE)
-            .add("D", StateSupervisionContactType.DIRECT)
-            .build()
-        )
         result = (
             deserialize_entity_factories.StateSupervisionContactFactory.deserialize(
                 external_id="CONTACT_ID",
-                contact_type=StrictEnumParser(
-                    "D", StateSupervisionContactType, overrides
-                ),
+                contact_type=StateSupervisionContactType.DIRECT,
                 contact_type_raw_text="D",
-                status=StrictEnumParser("C", StateSupervisionContactStatus, overrides),
+                status=StateSupervisionContactStatus.COMPLETED,
                 status_raw_text="C",
-                contact_reason=StrictEnumParser(
-                    "GC", StateSupervisionContactReason, overrides
-                ),
+                contact_reason=StateSupervisionContactReason.GENERAL_CONTACT,
                 contact_reason_raw_text="GC",
-                location=StrictEnumParser(
-                    "R", StateSupervisionContactLocation, overrides
-                ),
+                location=StateSupervisionContactLocation.RESIDENCE,
                 location_raw_text="R",
                 contact_date="1/2/1111",
                 state_code="us_xx",
@@ -406,15 +360,10 @@ class TestDeserializeEntityFactories(unittest.TestCase):
         self.assertEqual(expected_result, result)
 
     def test_deserialize_StateSupervisionCaseTypeEntry(self) -> None:
-        overrides = (
-            EnumOverrides.Builder()
-            .add("DV", StateSupervisionCaseType.DOMESTIC_VIOLENCE)
-            .build()
-        )
         result = deserialize_entity_factories.StateSupervisionCaseTypeEntryFactory.deserialize(
             external_id="entry_id",
             state_code="us_xx",
-            case_type=StrictEnumParser("DV", StateSupervisionCaseType, overrides),
+            case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
             case_type_raw_text="DV",
         )
 
@@ -429,19 +378,11 @@ class TestDeserializeEntityFactories(unittest.TestCase):
         self.assertEqual(expected_result, result)
 
     def test_deserialize_StateSupervisionSentence(self) -> None:
-        overrides = (
-            EnumOverrides.Builder()
-            .add("S", StateSentenceStatus.SUSPENDED)
-            .add("PR", StateSupervisionSentenceSupervisionType.PROBATION)
-            .build()
-        )
         result = (
             deserialize_entity_factories.StateSupervisionSentenceFactory.deserialize(
-                status=StrictEnumParser("S", StateSentenceStatus, overrides),
+                status=StateSentenceStatus.SUSPENDED,
                 status_raw_text="S",
-                supervision_type=StrictEnumParser(
-                    "PR", StateSupervisionSentenceSupervisionType, overrides
-                ),
+                supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
                 supervision_type_raw_text="PR",
                 external_id="SENTENCE_ID",
                 date_imposed="2000-12-13",
@@ -475,16 +416,9 @@ class TestDeserializeEntityFactories(unittest.TestCase):
         self.assertEqual(expected_result, result)
 
     def test_deserialize_StateSupervisionViolationTypeEntry(self) -> None:
-        overrides = (
-            EnumOverrides.Builder()
-            .add("T", StateSupervisionViolationType.TECHNICAL)
-            .build()
-        )
         result = deserialize_entity_factories.StateSupervisionViolationTypeEntryFactory.deserialize(
             state_code="us_xx",
-            violation_type=StrictEnumParser(
-                "T", StateSupervisionViolationType, overrides
-            ),
+            violation_type=StateSupervisionViolationType.TECHNICAL,
             violation_type_raw_text="T",
         )
 
@@ -498,13 +432,8 @@ class TestDeserializeEntityFactories(unittest.TestCase):
         self.assertEqual(expected_result, result)
 
     def test_deserialize_StatePersonRace(self) -> None:
-        overrides = (
-            EnumOverrides.Builder()
-            .add("SAMOAN", Race.NATIVE_HAWAIIAN_PACIFIC_ISLANDER)
-            .build()
-        )
         result = deserialize_entity_factories.StatePersonRaceFactory.deserialize(
-            race=StrictEnumParser("SAMOAN", Race, overrides),
+            race=Race.NATIVE_HAWAIIAN_PACIFIC_ISLANDER,
             race_raw_text="SAMOAN",
             state_code="us_xx",
         )
@@ -519,23 +448,16 @@ class TestDeserializeEntityFactories(unittest.TestCase):
         self.assertEqual(expected_result, result)
 
     def test_deserialize_StateAssessment(self) -> None:
-        overrides = (
-            EnumOverrides.Builder()
-            .add("RISK", StateAssessmentClass.RISK)
-            .add("LSIR", StateAssessmentType.LSIR)
-            .add("MED", StateAssessmentLevel.MEDIUM)
-            .build()
-        )
         result = deserialize_entity_factories.StateAssessmentFactory.deserialize(
-            assessment_class=StrictEnumParser("RISK", StateAssessmentClass, overrides),
+            assessment_class=StateAssessmentClass.RISK,
             assessment_class_raw_text="RISK",
-            assessment_type=StrictEnumParser("LSIR", StateAssessmentType, overrides),
+            assessment_type=StateAssessmentType.LSIR,
             assessment_type_raw_text="LSIR",
             external_id="ASSESSMENT_ID",
             assessment_date="1/2/2111",
             state_code="us_xx",
             assessment_score="17",
-            assessment_level=StrictEnumParser("MED", StateAssessmentLevel, overrides),
+            assessment_level=StateAssessmentLevel.MEDIUM,
             assessment_level_raw_text="MED",
             assessment_metadata='{"high_score_domains": ["a", "c", "q"]}',
         )
@@ -578,27 +500,17 @@ class TestDeserializeEntityFactories(unittest.TestCase):
         self.assertEqual(expected_result, result)
 
     def test_deserialize_StateEarlyDischarge(self) -> None:
-        overrides = (
-            EnumOverrides.Builder()
-            .add("DEN", StateEarlyDischargeDecision.REQUEST_DENIED)
-            .add("D", StateEarlyDischargeDecisionStatus.DECIDED)
-            .add("C", StateActingBodyType.COURT)
-            .add("OF", StateActingBodyType.SUPERVISION_OFFICER)
-            .build()
-        )
         result = deserialize_entity_factories.StateEarlyDischargeFactory.deserialize(
             external_id="id1",
             request_date="2010/07/01",
             decision_date="2010/08/01",
-            decision=StrictEnumParser("DEN", StateEarlyDischargeDecision, overrides),
+            decision=StateEarlyDischargeDecision.REQUEST_DENIED,
             decision_raw_text="DEN",
-            decision_status=StrictEnumParser(
-                "D", StateEarlyDischargeDecisionStatus, overrides
-            ),
+            decision_status=StateEarlyDischargeDecisionStatus.DECIDED,
             decision_status_raw_text="D",
-            deciding_body_type=StrictEnumParser("C", StateActingBodyType, overrides),
+            deciding_body_type=StateActingBodyType.COURT,
             deciding_body_type_raw_text="C",
-            requesting_body_type=StrictEnumParser("OF", StateActingBodyType, overrides),
+            requesting_body_type=StateActingBodyType.SUPERVISION_OFFICER,
             requesting_body_type_raw_text="OF",
             state_code="us_xx",
             county_code="cty",
@@ -638,9 +550,8 @@ class TestDeserializeEntityFactories(unittest.TestCase):
         self.assertEqual(expected_result, result)
 
     def test_deserialize_StatePersonEthnicity(self) -> None:
-        overrides = EnumOverrides.Builder().add("H", Ethnicity.HISPANIC).build()
         result = deserialize_entity_factories.StatePersonEthnicityFactory.deserialize(
-            ethnicity=StrictEnumParser("H", Ethnicity, overrides),
+            ethnicity=Ethnicity.HISPANIC,
             ethnicity_raw_text="H",
             state_code="us_xx",
         )
@@ -681,21 +592,11 @@ class TestDeserializeEntityFactories(unittest.TestCase):
         self.assertEqual(expected_result, result)
 
     def test_deserialize_StateSupervisionViolationResponse(self) -> None:
-        overrides = (
-            EnumOverrides.Builder()
-            .add("P", StateSupervisionViolationResponseType.PERMANENT_DECISION)
-            .add("PB", StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD)
-            .build()
-        )
         result = deserialize_entity_factories.StateSupervisionViolationResponseFactory.deserialize(
-            response_type=StrictEnumParser(
-                "P", StateSupervisionViolationResponseType, overrides
-            ),
+            response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
             response_type_raw_text="P",
             response_subtype="SUBTYPE",
-            deciding_body_type=StrictEnumParser(
-                "PB", StateSupervisionViolationResponseDecidingBodyType, overrides
-            ),
+            deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD,
             deciding_body_type_raw_text="PB",
             external_id="RESPONSE_ID",
             response_date="1/2/2111",
@@ -719,51 +620,26 @@ class TestDeserializeEntityFactories(unittest.TestCase):
         self.assertEqual(expected_result, result)
 
     def test_deserialize_StateIncarcerationPeriod(self) -> None:
-        overrides = (
-            EnumOverrides.Builder()
-            .add("P", StateIncarcerationType.STATE_PRISON)
-            .add("PAR", StateSupervisionPeriodSupervisionType.PAROLE)
-            .add("M", StateIncarcerationFacilitySecurityLevel.MEDIUM)
-            .add("REV", StateIncarcerationPeriodAdmissionReason.REVOCATION)
-            .add("SS", StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED)
-            .add("60DAY", StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION)
-            .add("SP", StateCustodialAuthority.STATE_PRISON)
-            .build()
-        )
-        result = (
-            deserialize_entity_factories.StateIncarcerationPeriodFactory.deserialize(
-                incarceration_type=StrictEnumParser(
-                    "P", StateIncarcerationType, overrides
-                ),
-                incarceration_type_raw_text="P",
-                facility_security_level=StrictEnumParser(
-                    "M", StateIncarcerationFacilitySecurityLevel, overrides
-                ),
-                facility_security_level_raw_text="M",
-                admission_reason=StrictEnumParser(
-                    "REV", StateIncarcerationPeriodAdmissionReason, overrides
-                ),
-                admission_reason_raw_text="REV",
-                release_reason=StrictEnumParser(
-                    "SS", StateIncarcerationPeriodReleaseReason, overrides
-                ),
-                release_reason_raw_text="SS",
-                external_id="INCARCERATION_ID",
-                specialized_purpose_for_incarceration=StrictEnumParser(
-                    "60DAY", StateSpecializedPurposeForIncarceration, overrides
-                ),
-                specialized_purpose_for_incarceration_raw_text="60DAY",
-                admission_date="1/2/2111",
-                release_date="2/2/2112",
-                state_code="us_xx",
-                county_code="bis",
-                facility="The Prison",
-                housing_unit="CB4",
-                custodial_authority=StrictEnumParser(
-                    "SP", StateCustodialAuthority, overrides
-                ),
-                custodial_authority_raw_text="SP",
-            )
+        result = deserialize_entity_factories.StateIncarcerationPeriodFactory.deserialize(
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            incarceration_type_raw_text="P",
+            facility_security_level=StateIncarcerationFacilitySecurityLevel.MEDIUM,
+            facility_security_level_raw_text="M",
+            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
+            admission_reason_raw_text="REV",
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+            release_reason_raw_text="SS",
+            external_id="INCARCERATION_ID",
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
+            specialized_purpose_for_incarceration_raw_text="60DAY",
+            admission_date="1/2/2111",
+            release_date="2/2/2112",
+            state_code="us_xx",
+            county_code="bis",
+            facility="The Prison",
+            housing_unit="CB4",
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+            custodial_authority_raw_text="SP",
         )
 
         # Assert
@@ -792,18 +668,10 @@ class TestDeserializeEntityFactories(unittest.TestCase):
         self.assertEqual(expected_result, result)
 
     def test_deserialize_StateCharge(self) -> None:
-        overrides = (
-            EnumOverrides.Builder()
-            .add("ACQ", ChargeStatus.ACQUITTED)
-            .add("F", StateChargeClassificationType.FELONY)
-            .build()
-        )
         result = deserialize_entity_factories.StateChargeFactory.deserialize(
-            status=StrictEnumParser("ACQ", ChargeStatus, overrides),
+            status=ChargeStatus.ACQUITTED,
             status_raw_text="ACQ",
-            classification_type=StrictEnumParser(
-                "F", StateChargeClassificationType, overrides
-            ),
+            classification_type=StateChargeClassificationType.FELONY,
             classification_type_raw_text="F",
             classification_subtype="AA",
             offense_type="OTHER",
@@ -852,16 +720,9 @@ class TestDeserializeEntityFactories(unittest.TestCase):
         self.assertEqual(expected_result, result)
 
     def test_deserialize_StateSupervisionViolationResponseDecisionEntry(self) -> None:
-        overrides = (
-            EnumOverrides.Builder()
-            .add("PR", StateSupervisionViolationResponseDecision.PRIVILEGES_REVOKED)
-            .build()
-        )
         result = deserialize_entity_factories.StateSupervisionViolationResponseDecisionEntryFactory.deserialize(
             state_code="us_xx",
-            decision=StrictEnumParser(
-                "PR", StateSupervisionViolationResponseDecision, overrides
-            ),
+            decision=StateSupervisionViolationResponseDecision.PRIVILEGES_REVOKED,
             decision_raw_text="PR",
         )
 
@@ -875,16 +736,9 @@ class TestDeserializeEntityFactories(unittest.TestCase):
         self.assertEqual(expected_result, result)
 
     def test_deserialize_StateIncarcerationIncidentOutcome(self) -> None:
-        overrides = (
-            EnumOverrides.Builder()
-            .add("LCP", StateIncarcerationIncidentOutcomeType.PRIVILEGE_LOSS)
-            .build()
-        )
         result = deserialize_entity_factories.StateIncarcerationIncidentOutcomeFactory.deserialize(
             external_id="INCIDENT_OUTCOME_ID",
-            outcome_type=StrictEnumParser(
-                "LCP", StateIncarcerationIncidentOutcomeType, overrides
-            ),
+            outcome_type=StateIncarcerationIncidentOutcomeType.PRIVILEGE_LOSS,
             outcome_type_raw_text="LCP",
             date_effective="1/2/2019",
             hearing_date="12/29/2018",
@@ -910,26 +764,12 @@ class TestDeserializeEntityFactories(unittest.TestCase):
         self.assertEqual(expected_result, result)
 
     def test_deserialize_StateSupervisionPeriod(self) -> None:
-        overrides = (
-            EnumOverrides.Builder()
-            .add("PAR", StateSupervisionPeriodSupervisionType.PAROLE)
-            .add("CR", StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE)
-            .add("D", StateSupervisionPeriodTerminationReason.DISCHARGE)
-            .add("SUP", StateCustodialAuthority.SUPERVISION_AUTHORITY)
-            .build()
-        )
         result = deserialize_entity_factories.StateSupervisionPeriodFactory.deserialize(
-            supervision_type=StrictEnumParser(
-                "PAR", StateSupervisionPeriodSupervisionType, overrides
-            ),
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             supervision_type_raw_text="PAR",
-            admission_reason=StrictEnumParser(
-                "CR", StateSupervisionPeriodAdmissionReason, overrides
-            ),
+            admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
             admission_reason_raw_text="CR",
-            termination_reason=StrictEnumParser(
-                "D", StateSupervisionPeriodTerminationReason, overrides
-            ),
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             termination_reason_raw_text="D",
             supervision_level=None,
             external_id="SUPERVISION_ID",
@@ -937,9 +777,7 @@ class TestDeserializeEntityFactories(unittest.TestCase):
             termination_date="2/2/2112",
             state_code="us_xx",
             county_code="bis",
-            custodial_authority=StrictEnumParser(
-                "SUP", StateCustodialAuthority, overrides
-            ),
+            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
             custodial_authority_raw_text="SUP",
             supervision_site="07-CENTRAL",
             conditions="CURFEW, DRINKING",
@@ -969,17 +807,10 @@ class TestDeserializeEntityFactories(unittest.TestCase):
         self.assertEqual(expected_result, result)
 
     def test_deserialize_StateIncarcerationIncident(self) -> None:
-        overrides = (
-            EnumOverrides.Builder()
-            .add("C", StateIncarcerationIncidentType.CONTRABAND)
-            .build()
-        )
         result = (
             deserialize_entity_factories.StateIncarcerationIncidentFactory.deserialize(
                 external_id="INCIDENT_ID",
-                incident_type=StrictEnumParser(
-                    "C", StateIncarcerationIncidentType, overrides
-                ),
+                incident_type=StateIncarcerationIncidentType.CONTRABAND,
                 incident_type_raw_text="C",
                 incident_date="1/2/1111",
                 state_code="us_xx",
@@ -1004,13 +835,9 @@ class TestDeserializeEntityFactories(unittest.TestCase):
         self.assertEqual(expected_result, result)
 
     def test_deserialize_StatePersonAlias(self) -> None:
-        overrides = (
-            EnumOverrides.Builder().add("G", StatePersonAliasType.GIVEN_NAME).build()
-        )
-
         result = deserialize_entity_factories.StatePersonAliasFactory.deserialize(
             state_code="us_xx",
-            alias_type=StrictEnumParser("G", StatePersonAliasType, overrides),
+            alias_type=StatePersonAliasType.GIVEN_NAME,
             alias_type_raw_text="G",
             full_name='{"full_name": "full NAME"}',
         )

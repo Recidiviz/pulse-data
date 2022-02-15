@@ -112,6 +112,14 @@ variables:
       $equal:
         - SexOffenderFlag
         - $literal("Y")
+  - charge_classification_type:
+      $enum_mapping:
+        $raw_text: CrimeType
+        $mappings:
+          StateChargeClassificationType.FELONY:
+            - F
+          StateChargeClassificationType.MISDEMEANOR:
+            - M
 output:
   StatePerson:
     external_ids:
@@ -175,14 +183,7 @@ output:
                       county_code: ConvictionCounty
                       statute: ChargeOffense
                       description: OffenseDescription
-                      classification_type:
-                        $enum_mapping:
-                          $raw_text: CrimeType
-                          $mappings:
-                            StateChargeClassificationType.FELONY:
-                              - F
-                            StateChargeClassificationType.MISDEMEANOR:
-                              - M
+                      classification_type: $variable(charge_classification_type)
                       classification_subtype: ConvictionClass
                       is_violent: $variable(is_violent)
                       is_sex_offense: $variable(is_sex_offense)
@@ -242,14 +243,7 @@ output:
                       county_code: ConvictionCounty
                       statute: ChargeOffense
                       description: OffenseDescription
-                      classification_type:
-                        $enum_mapping:
-                          $raw_text: CrimeType
-                          $mappings:
-                            StateChargeClassificationType.FELONY:
-                              - F
-                            StateChargeClassificationType.MISDEMEANOR:
-                              - M
+                      classification_type: $variable(charge_classification_type)
                       classification_subtype: ConvictionClass
                       is_violent: $variable(is_violent)
                       is_sex_offense: $variable(is_sex_offense)

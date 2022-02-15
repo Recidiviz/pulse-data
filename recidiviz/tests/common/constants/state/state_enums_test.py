@@ -15,17 +15,15 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """General tests for state schema enums."""
-import importlib
-import inspect
 import os
-import pkgutil
-import sys
 import unittest
 from typing import List, Type
 
 import recidiviz.common.constants.state as state_constants
 from recidiviz.common.constants.entity_enum import EntityEnum
+from recidiviz.common.module_collector_mixin import ModuleCollectorMixin
 from recidiviz.common.str_field_utils import normalize
+from recidiviz.persistence.entity.entity_utils import get_all_enum_classes_in_module
 
 STATE_CONSTANTS_MODULE_DIR = os.path.dirname(state_constants.__file__)
 
@@ -35,24 +33,17 @@ class StateEnumsTest(unittest.TestCase):
 
     @staticmethod
     def _get_all_state_enum_classes() -> List[Type[EntityEnum]]:
-        enum_classes = []
-        packages = pkgutil.walk_packages([STATE_CONSTANTS_MODULE_DIR])
-        for package in packages:
-            if package.name.startswith("state"):
-
-                module_name = f"{state_constants.__name__}.{package.name}"
-
-                importlib.import_module(module_name)
-                all_members_in_current_module = inspect.getmembers(
-                    sys.modules[module_name], inspect.isclass
-                )
-                for _, member in all_members_in_current_module:
-                    if member.__module__ == module_name and issubclass(
-                        member, EntityEnum
-                    ):
-                        enum_classes.append(member)
-
-        return enum_classes
+        enum_file_modules = ModuleCollectorMixin.get_submodules(
+            state_constants, submodule_name_prefix_filter=None
+        )
+        result = []
+        for enum_file_module in enum_file_modules:
+            enum_classes = get_all_enum_classes_in_module(enum_file_module)
+            for enum_cls in enum_classes:
+                if not issubclass(enum_cls, EntityEnum):
+                    raise ValueError(f"Unexpected class type: {enum_cls}")
+                result.append(enum_cls)
+        return result
 
     def test_state_enum_default_overrides_have_correct_types(self) -> None:
         enum_classes = self._get_all_state_enum_classes()
