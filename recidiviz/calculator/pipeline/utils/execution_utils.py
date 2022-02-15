@@ -19,14 +19,36 @@ import argparse
 import datetime
 import logging
 from collections import defaultdict
-from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Set, Tuple, Union
 
 from googleapiclient.discovery import build
 from more_itertools import one
 from oauth2client.client import GoogleCredentials
 
 from recidiviz.common.date import year_and_month_for_today
+from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state.entities import StatePerson
+
+# The name of an entity, e.g. StatePerson.
+EntityClassName = str
+
+# The names of of two entities that are related to one another,
+# eg. StateSupervisionSentence.StateCharge
+EntityRelationshipKey = str
+
+# The name of a reference table, e.g. supervision_period_to_agent_association
+TableName = str
+
+# The unifying id that can be used to group related objects together (e.g. person_id)
+UnifyingId = int
+
+# Primary keys of two entities that share a relationship. The first int is the parent
+# object primary key and the second int is the child object primary key.
+EntityAssociation = Tuple[int, int]
+
+
+# The structure of table rows loaded from BigQuery
+TableRow = Dict[str, str]
 
 
 def get_job_id(project_id: str, region: str, job_name: str) -> str:
@@ -143,9 +165,64 @@ def calculation_end_month_arg(value: str) -> str:
         ) from e
 
 
+def kwargs_for_entity_lists(
+    arg_to_entities_map: Dict[
+        Union[EntityClassName, TableName], Union[Iterable[Entity], Iterable[TableRow]]
+    ]
+) -> Dict[Union[EntityClassName, TableName], Union[List[Entity], List[TableRow]]]:
+    """In the calculation pipelines we use the CoGroupByKey function to group
+    entities by their person_id values. The output of CoGroupByKey is a dictionary
+    where the keys are the variable names expected by the pipeline, and the values are
+    iterables of the associated entities.
+
+    This function unpacks the output of CoGroupByKey (the given arg_to_entities_map)
+    into the kwarg dictionary mapping all of the arguments expected by the pipeline to
+    the list of entities the pipeline needs.
+
+    Returns the dictionary.
+    """
+    entity_map: Dict[
+        Union[EntityClassName, TableName], Union[List[Entity], List[TableRow]]
+    ] = {}
+
+    # This builds the dictionary in a way that satisfies mypy
+    for key, values in arg_to_entities_map.items():
+        entity_value_list: List[Entity] = []
+        table_row_value_list: List[TableRow] = []
+
+        for value in values:
+            if isinstance(value, Entity):
+                entity_value_list.append(value)
+            elif isinstance(value, Dict):
+                table_row_value_list.append(value)
+            else:
+                raise ValueError(
+                    "Expected value of iterable in dictionary to be "
+                    "either of type Entity or a Dict[str, str]. Found: "
+                    f"{value}."
+                )
+
+        if entity_value_list and table_row_value_list:
+            raise ValueError(
+                "All values in the same key should be of the same type. "
+                f"Found {values}."
+            )
+
+        entity_map[key] = (
+            entity_value_list if entity_value_list else table_row_value_list
+        )
+
+    return entity_map
+
+
 def person_and_kwargs_for_identifier(
-    arg_to_entities_map: Dict[str, Iterable[Any]]
-) -> Tuple[StatePerson, Dict[str, Any]]:
+    arg_to_entities_map: Dict[
+        Union[EntityClassName, TableName], Union[Iterable[Entity], Iterable[TableRow]]
+    ]
+) -> Tuple[
+    StatePerson,
+    Dict[Union[EntityClassName, TableName], Union[List[Entity], List[TableRow]]],
+]:
     """In the calculation pipelines we use the CoGroupByKey function to group StatePerson entities with their associated
     entities. The output of CoGroupByKey is a dictionary where the keys are the variable names expected in the
     identifier step of the pipeline, and the values are iterables of the associated entities.
@@ -156,26 +233,30 @@ def person_and_kwargs_for_identifier(
 
     Returns a tuple containing the StatePerson and the kwarg dictionary.
     """
-    kwargs: Dict[str, Any] = {}
-    person = None
+    entity_dict = kwargs_for_entity_lists(arg_to_entities_map)
 
-    for key, values in arg_to_entities_map.items():
-        if key == StatePerson.__name__:
-            if not values:
-                raise ValueError(
-                    f"Found no person values in arg_to_entities_map: {arg_to_entities_map}"
-                )
+    person_values = entity_dict.pop(StatePerson.__name__)
 
-            person = one(values)
-        else:
-            kwargs[key] = list(values)
+    if not person_values:
+        raise ValueError(
+            f"Found no person values in arg_to_entities_map: {arg_to_entities_map}"
+        )
+
+    person = one(person_values)
 
     if not person:
         raise ValueError(
             f"No StatePerson associated with these entities: {arg_to_entities_map}"
         )
 
-    return person, kwargs
+    if not isinstance(person, StatePerson):
+        raise ValueError(
+            "The value in the entity dictionary for key "
+            f"[{StatePerson.__name__}] should be of type StatePerson. "
+            f"Found: {person}."
+        )
+
+    return person, entity_dict
 
 
 def select_all_by_person_query(

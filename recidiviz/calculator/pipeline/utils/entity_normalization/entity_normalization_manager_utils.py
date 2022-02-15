@@ -16,7 +16,7 @@
 # =============================================================================
 """Utils for the normalization of state entities for calculations."""
 import datetime
-from typing import List, Optional, Tuple, Type, Union
+from typing import Dict, List, Optional, Sequence, Tuple, Type, Union
 
 from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager import (
     EntityNormalizationManager,
@@ -46,6 +46,7 @@ from recidiviz.calculator.pipeline.utils.period_utils import (
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_incarceration_delegate import (
     StateSpecificIncarcerationDelegate,
 )
+from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
@@ -63,6 +64,81 @@ NORMALIZATION_MANAGERS: List[Type[EntityNormalizationManager]] = [
     SupervisionPeriodNormalizationManager,
     ViolationResponseNormalizationManager,
 ]
+
+
+def all_normalized_entities(
+    ip_normalization_delegate: StateSpecificIncarcerationNormalizationDelegate,
+    sp_normalization_delegate: StateSpecificSupervisionNormalizationDelegate,
+    violation_response_normalization_delegate: StateSpecificViolationResponseNormalizationDelegate,
+    program_assignment_normalization_delegate: StateSpecificProgramAssignmentNormalizationDelegate,
+    incarceration_delegate: StateSpecificIncarcerationDelegate,
+    incarceration_periods: List[StateIncarcerationPeriod],
+    supervision_periods: List[StateSupervisionPeriod],
+    violation_responses: List[StateSupervisionViolationResponse],
+    program_assignments: List[StateProgramAssignment],
+    incarceration_sentences: List[StateIncarcerationSentence],
+    supervision_sentences: List[StateSupervisionSentence],
+    field_index: CoreEntityFieldIndex,
+) -> Dict[str, Sequence[Entity]]:
+    """Normalizes all entities that have corresponding comprehensive managers.
+
+    Returns a dictionary mapping the entity class name to the list of normalized
+    entities.
+    """
+    normalized_violation_responses = normalized_violation_responses_for_calculations(
+        violation_response_normalization_delegate=violation_response_normalization_delegate,
+        violation_responses=violation_responses,
+    )
+
+    normalize_program_assignments = normalized_program_assignments_for_calculations(
+        program_assignment_normalization_delegate=program_assignment_normalization_delegate,
+        program_assignments=program_assignments,
+    )
+
+    (
+        ip_normalization_manager,
+        sp_normalization_manager,
+    ) = entity_normalization_managers_for_periods(
+        ip_normalization_delegate=ip_normalization_delegate,
+        sp_normalization_delegate=sp_normalization_delegate,
+        incarceration_delegate=incarceration_delegate,
+        incarceration_periods=incarceration_periods,
+        supervision_periods=supervision_periods,
+        normalized_violation_responses=normalized_violation_responses,
+        field_index=field_index,
+        incarceration_sentences=incarceration_sentences,
+        supervision_sentences=supervision_sentences,
+    )
+
+    if not ip_normalization_manager:
+        raise ValueError(
+            "Expected instantiated "
+            "IncarcerationPeriodNormalizationManager. Found None."
+        )
+
+    if not sp_normalization_manager:
+        raise ValueError(
+            "Expected instantiated "
+            "SupervisionPeriodNormalizationManager. Found None."
+        )
+
+    # TODO(#10727): Move collapsing of transfers to later
+    normalized_ips = (
+        ip_normalization_manager.normalized_incarceration_period_index_for_calculations(
+            collapse_transfers=False, overwrite_facility_information_in_transfers=False
+        ).incarceration_periods
+    )
+
+    normalized_sps = (
+        sp_normalization_manager.normalized_supervision_period_index_for_calculations().supervision_periods
+    )
+
+    return {
+        StateIncarcerationPeriod.__name__: normalized_ips,
+        StateSupervisionPeriod.__name__: normalized_sps,
+        StateSupervisionViolationResponse.__name__: normalized_violation_responses,
+        StateProgramAssignment.__name__: normalize_program_assignments,
+    }
 
 
 def entity_normalization_managers_for_periods(

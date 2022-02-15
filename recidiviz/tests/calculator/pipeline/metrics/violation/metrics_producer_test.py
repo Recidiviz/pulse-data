@@ -81,7 +81,9 @@ class TestProduceViolationMetrics(unittest.TestCase):
 
         self.person.ethnicities = [self.ethnicity]
         self.metric_producer = metric_producer.ViolationMetricProducer()
-        self.pipeline_config = pipeline.ViolationPipelineRunDelegate.pipeline_config()
+        self.pipeline_config = (
+            pipeline.ViolationMetricsPipelineRunDelegate.pipeline_config()
+        )
 
     @freeze_time("2030-11-02")
     def test_produce_violation_metrics(self) -> None:
@@ -108,7 +110,7 @@ class TestProduceViolationMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
-            pipeline_type=self.pipeline_config.pipeline_type,
+            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         self.assertEqual(1, len(metrics))
@@ -149,7 +151,7 @@ class TestProduceViolationMetrics(unittest.TestCase):
             calculation_month_count=1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
-            pipeline_type=self.pipeline_config.pipeline_type,
+            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         self.assertEqual(1, len(metrics))
@@ -194,7 +196,7 @@ class TestProduceViolationMetrics(unittest.TestCase):
             calculation_month_count=36,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
-            pipeline_type=self.pipeline_config.pipeline_type,
+            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         self.assertEqual(1, len(metrics))

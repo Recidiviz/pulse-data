@@ -15,18 +15,24 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Helper that runs a test version of the pipeline in the provided module."""
-from typing import Callable, Dict, List, Optional, Set, Type
+from typing import Any, Callable, Dict, List, Optional, Set, Type
 
 from apache_beam.options.pipeline_options import PipelineOptions
 from apache_beam.testing.test_pipeline import TestPipeline
 from mock import patch
 
-from recidiviz.calculator.pipeline.base_pipeline import BasePipeline
+from recidiviz.calculator.pipeline.base_pipeline import (
+    BasePipeline,
+    PipelineRunDelegate,
+)
 from recidiviz.calculator.pipeline.metrics.base_metric_pipeline import (
     MetricPipelineRunDelegate,
 )
 from recidiviz.persistence.database import schema_utils
 from recidiviz.persistence.database.base_schema import StateBase
+from recidiviz.persistence.database.schema_utils import (
+    get_state_database_entity_with_name,
+)
 from recidiviz.tests.calculator.pipeline.fake_bigquery import (
     FakeReadFromBigQuery,
     FakeWriteToBigQuery,
@@ -34,15 +40,14 @@ from recidiviz.tests.calculator.pipeline.fake_bigquery import (
 
 
 def run_test_pipeline(
-    run_delegate: Type[MetricPipelineRunDelegate],
+    run_delegate: Type[PipelineRunDelegate],
     state_code: str,
     project_id: str,
     dataset_id: str,
     read_from_bq_constructor: Callable[[str], FakeReadFromBigQuery],
     write_to_bq_constructor: Callable[[str, str], FakeWriteToBigQuery],
-    include_calculation_limit_args: bool = True,
     unifying_id_field_filter_set: Optional[Set[int]] = None,
-    metric_types_filter: Optional[Set[str]] = None,
+    **additional_pipeline_args: Any,
 ) -> None:
     """Runs a test version of the pipeline in the provided module with BQ I/O mocked out."""
 
@@ -64,44 +69,14 @@ def run_test_pipeline(
     def get_job_id(project_id: str, region: str, job_name: str) -> str:
         return f"{project_id}-{region}-{job_name}"
 
-    pipeline_args: List[str] = [
-        "--project",
-        project_id,
-        "--data_input",
-        dataset_id,
-        "--reference_view_input",
-        dataset_id,
-        "--static_reference_input",
-        dataset_id,
-        "--output",
-        dataset_id,
-        "--state_code",
-        state_code,
-        "--job_name",
-        "test_job",
-    ]
-
-    if unifying_id_field_filter_set:
-        pipeline_args.extend(
-            [
-                "--person_filter_ids",
-                (
-                    ", ".join(
-                        [str(id_value) for id_value in unifying_id_field_filter_set]
-                    )
-                ),
-            ]
-        )
-
-    if include_calculation_limit_args:
-        pipeline_args.extend(["--calculation_month_count", "-1"])
-
-    pipeline_args.append("--metric_types")
-    if metric_types_filter:
-        for metric in metric_types_filter:
-            pipeline_args.append(metric)
-    else:
-        pipeline_args.append("ALL")
+    pipeline_args = default_arg_list_for_pipeline(
+        run_delegate=run_delegate,
+        state_code=state_code,
+        project_id=project_id,
+        dataset_id=dataset_id,
+        unifying_id_field_filter_set=unifying_id_field_filter_set,
+        **additional_pipeline_args,
+    )
 
     with patch(
         "recidiviz.calculator.pipeline.utils.beam_utils.extractor_utils.ReadFromBigQuery",
@@ -171,3 +146,102 @@ def default_data_dict_for_root_schema_classes(
             related_class_tables.union(association_tables)
         )
     }
+
+
+def default_data_dict_for_run_delegate(
+    run_delegate: Type[PipelineRunDelegate],
+) -> Dict[str, List]:
+    """Helper function for running test pipelines that determines the set of tables
+    required for hydrating the list of entities required by the the run delegate.
+
+    Returns a dictionary where the keys are the required tables, and the values are
+    empty lists.
+    """
+    return default_data_dict_for_root_schema_classes(
+        [
+            get_state_database_entity_with_name(entity_class.__name__)
+            for entity_class in run_delegate.pipeline_config().required_entities
+        ]
+    )
+
+
+def default_arg_list_for_pipeline(
+    run_delegate: Type[PipelineRunDelegate],
+    state_code: str,
+    project_id: str,
+    dataset_id: str,
+    unifying_id_field_filter_set: Optional[Set[int]] = None,
+    **additional_pipeline_args: Any,
+) -> List[str]:
+    """Constructs the list of default arguments that should be used for a test
+    pipeline."""
+    pipeline_args: List[str] = [
+        "--project",
+        project_id,
+        "--data_input",
+        dataset_id,
+        "--reference_view_input",
+        dataset_id,
+        "--output",
+        dataset_id,
+        "--state_code",
+        state_code,
+        "--job_name",
+        "test_job",
+    ]
+
+    if unifying_id_field_filter_set:
+        pipeline_args.extend(
+            [
+                "--person_filter_ids",
+                (
+                    ", ".join(
+                        [str(id_value) for id_value in unifying_id_field_filter_set]
+                    )
+                ),
+            ]
+        )
+
+    if issubclass(run_delegate, MetricPipelineRunDelegate):
+        pipeline_args.extend(
+            _additional_default_args_for_metrics_pipeline(
+                dataset_id=dataset_id,
+                include_calculation_limit_args=additional_pipeline_args.get(
+                    "include_calculation_limit_args", True
+                ),
+                metric_types_filter=additional_pipeline_args.get("metric_types_filter"),
+            )
+        )
+    else:
+        raise ValueError(f"Unexpected PipelineRunDelegate type: {type(run_delegate)}.")
+
+    return pipeline_args
+
+
+def _additional_default_args_for_metrics_pipeline(
+    dataset_id: str,
+    include_calculation_limit_args: bool = True,
+    metric_types_filter: Optional[Set[str]] = None,
+) -> List[str]:
+    """Returns the additional default arguments that should be used for testing a
+    metrics pipeline."""
+    additional_args: List[str] = []
+
+    additional_args.extend(
+        [
+            "--static_reference_input",
+            dataset_id,
+        ]
+    )
+
+    if include_calculation_limit_args:
+        additional_args.extend(["--calculation_month_count", "-1"])
+
+    additional_args.append("--metric_types")
+    if metric_types_filter:
+        for metric in metric_types_filter:
+            additional_args.append(metric)
+    else:
+        additional_args.append("ALL")
+
+    return additional_args

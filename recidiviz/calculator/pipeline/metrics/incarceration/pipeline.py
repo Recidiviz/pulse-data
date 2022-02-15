@@ -32,7 +32,9 @@ from recidiviz.calculator.pipeline.metrics.incarceration import (
     identifier,
     metric_producer,
 )
-from recidiviz.calculator.pipeline.pipeline_type import PipelineType
+from recidiviz.calculator.pipeline.pipeline_type import (
+    INCARCERATION_METRICS_PIPELINE_NAME,
+)
 from recidiviz.calculator.query.state.views.reference.incarceration_period_judicial_district_association import (
     INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME,
 )
@@ -49,13 +51,13 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.state import entities
 
 
-class IncarcerationPipelineRunDelegate(MetricPipelineRunDelegate):
+class IncarcerationMetricsPipelineRunDelegate(MetricPipelineRunDelegate):
     """Defines the incarceration metric calculation pipeline."""
 
     @classmethod
     def pipeline_config(cls) -> PipelineConfig:
         return PipelineConfig(
-            pipeline_type=PipelineType.INCARCERATION,
+            pipeline_name=INCARCERATION_METRICS_PIPELINE_NAME,
             required_entities=[
                 entities.StatePerson,
                 entities.StatePersonRace,

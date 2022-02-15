@@ -21,7 +21,6 @@ from typing import Dict, Generic, List, Optional, Type, TypeVar
 
 import attr
 
-from recidiviz.calculator.pipeline.pipeline_type import PipelineType
 from recidiviz.calculator.pipeline.utils.calculator_utils import (
     produce_standard_metrics,
 )
@@ -55,7 +54,7 @@ class BaseMetricProducer(
         identifier_events: IdentifierEventResultT,
         metric_inclusions: Dict[RecidivizMetricTypeT, bool],
         person_metadata: PersonMetadata,
-        pipeline_type: PipelineType,
+        pipeline_name: str,
         pipeline_job_id: str,
         calculation_end_month: Optional[str] = None,
         calculation_month_count: int = -1,
@@ -72,12 +71,12 @@ class BaseMetricProducer(
                 limit the monthly calculation output to. If set to -1, does not limit the calculations.
             person_metadata: Contains information about the StatePerson that is necessary for the metrics.
             pipeline_job_id: The job_id of the pipeline that is currently running.
-            pipeline_type: The PipelineType used to name the set of metrics
+            pipeline_name: The name of the pipeline producing these metrics
         Returns:
             A list of RecidivizMetrics
         """
         metrics = produce_standard_metrics(
-            pipeline=pipeline_type.value.lower(),
+            pipeline=pipeline_name,
             person=person,
             identifier_events=identifier_events,  # type: ignore
             metric_inclusions=metric_inclusions,

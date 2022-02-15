@@ -306,6 +306,17 @@ def generate_test_early_discharge(person_id) -> state_schema.StateEarlyDischarge
     return instance
 
 
+def generate_test_program_assignment(person_id) -> state_schema.StateProgramAssignment:
+    instance = state_schema.StateProgramAssignment(
+        program_assignment_id=1,
+        external_id="external_id",
+        state_code="US_XX",
+        person_id=person_id,
+        participation_status=StateProgramAssignmentParticipationStatus.PRESENT_WITHOUT_INFO.value,
+    )
+    return instance
+
+
 def generate_test_assessment_agent() -> state_schema.StateAgent:
     instance = state_schema.StateAgent(
         agent_id=1010,

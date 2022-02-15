@@ -128,7 +128,7 @@ class TestPersonAndKwargsForIdentifier(unittest.TestCase):
             StateAssessment.__name__: iter([assessment])
         }
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(KeyError):
             _ = person_and_kwargs_for_identifier(arg_to_entities_map)
 
 

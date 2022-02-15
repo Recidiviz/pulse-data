@@ -318,7 +318,9 @@ class TestMapRecidivismCombinations(unittest.TestCase):
 
     def setUp(self) -> None:
         self.metric_producer = metric_producer.RecidivismMetricProducer()
-        self.pipeline_config = pipeline.RecidivismPipelineRunDelegate.pipeline_config()
+        self.pipeline_config = (
+            pipeline.RecidivismMetricsPipelineRunDelegate.pipeline_config()
+        )
 
     @staticmethod
     def expected_metric_counts(
@@ -380,7 +382,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS_DICT,
             _DEFAULT_PERSON_METADATA,
-            self.pipeline_config.pipeline_type,
+            self.pipeline_config.pipeline_name,
             _PIPELINE_JOB_ID,
         )
 
@@ -453,7 +455,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS_DICT,
             _DEFAULT_PERSON_METADATA,
-            self.pipeline_config.pipeline_type,
+            self.pipeline_config.pipeline_name,
             _PIPELINE_JOB_ID,
         )
 
@@ -536,7 +538,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS_DICT,
             _DEFAULT_PERSON_METADATA,
-            self.pipeline_config.pipeline_type,
+            self.pipeline_config.pipeline_name,
             _PIPELINE_JOB_ID,
         )
 
@@ -606,7 +608,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS_DICT,
             _DEFAULT_PERSON_METADATA,
-            self.pipeline_config.pipeline_type,
+            self.pipeline_config.pipeline_name,
             _PIPELINE_JOB_ID,
         )
 
@@ -682,7 +684,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS_DICT,
             _DEFAULT_PERSON_METADATA,
-            self.pipeline_config.pipeline_type,
+            self.pipeline_config.pipeline_name,
             _PIPELINE_JOB_ID,
         )
 
@@ -749,7 +751,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS_DICT,
             _DEFAULT_PERSON_METADATA,
-            self.pipeline_config.pipeline_type,
+            self.pipeline_config.pipeline_name,
             _PIPELINE_JOB_ID,
         )
 
@@ -807,7 +809,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS_DICT,
             _DEFAULT_PERSON_METADATA,
-            self.pipeline_config.pipeline_type,
+            self.pipeline_config.pipeline_name,
             _PIPELINE_JOB_ID,
         )
 
@@ -864,7 +866,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS_DICT,
             _DEFAULT_PERSON_METADATA,
-            self.pipeline_config.pipeline_type,
+            self.pipeline_config.pipeline_name,
             _PIPELINE_JOB_ID,
         )
 
@@ -930,7 +932,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS_DICT,
             _DEFAULT_PERSON_METADATA,
-            self.pipeline_config.pipeline_type,
+            self.pipeline_config.pipeline_name,
             _PIPELINE_JOB_ID,
         )
 
@@ -996,7 +998,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS_DICT,
             _DEFAULT_PERSON_METADATA,
-            self.pipeline_config.pipeline_type,
+            self.pipeline_config.pipeline_name,
             _PIPELINE_JOB_ID,
         )
 
@@ -1066,7 +1068,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS_DICT,
             _DEFAULT_PERSON_METADATA,
-            self.pipeline_config.pipeline_type,
+            self.pipeline_config.pipeline_name,
             _PIPELINE_JOB_ID,
         )
 
@@ -1129,7 +1131,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS_DICT,
             _DEFAULT_PERSON_METADATA,
-            self.pipeline_config.pipeline_type,
+            self.pipeline_config.pipeline_name,
             _PIPELINE_JOB_ID,
         )
         expected_count = self.expected_metric_counts(release_events_by_cohort)
@@ -1191,7 +1193,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS_DICT,
             _DEFAULT_PERSON_METADATA,
-            self.pipeline_config.pipeline_type,
+            self.pipeline_config.pipeline_name,
             _PIPELINE_JOB_ID,
         )
 
@@ -1255,7 +1257,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS_DICT,
             _DEFAULT_PERSON_METADATA,
-            self.pipeline_config.pipeline_type,
+            self.pipeline_config.pipeline_name,
             _PIPELINE_JOB_ID,
         )
 
@@ -1314,7 +1316,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS_DICT,
             _DEFAULT_PERSON_METADATA,
-            self.pipeline_config.pipeline_type,
+            self.pipeline_config.pipeline_name,
             _PIPELINE_JOB_ID,
         )
 
@@ -1365,7 +1367,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS_DICT,
             _DEFAULT_PERSON_METADATA,
-            self.pipeline_config.pipeline_type,
+            self.pipeline_config.pipeline_name,
             _PIPELINE_JOB_ID,
         )
 
@@ -1427,7 +1429,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS_DICT,
             _DEFAULT_PERSON_METADATA,
-            self.pipeline_config.pipeline_type,
+            self.pipeline_config.pipeline_name,
             _PIPELINE_JOB_ID,
         )
 
@@ -1512,7 +1514,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS_DICT,
             _DEFAULT_PERSON_METADATA,
-            self.pipeline_config.pipeline_type,
+            self.pipeline_config.pipeline_name,
             _PIPELINE_JOB_ID,
         )
 

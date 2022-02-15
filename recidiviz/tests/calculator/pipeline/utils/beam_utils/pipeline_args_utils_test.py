@@ -27,11 +27,13 @@ from recidiviz.calculator.pipeline.metrics.base_metric_pipeline import (
     MetricPipelineJobArgs,
 )
 from recidiviz.calculator.pipeline.metrics.incarceration.pipeline import (
-    IncarcerationPipelineRunDelegate,
+    IncarcerationMetricsPipelineRunDelegate,
 )
 from recidiviz.calculator.pipeline.utils.beam_utils.pipeline_args_utils import (
     derive_apache_beam_pipeline_args,
 )
+
+STATE_CODE = "US_XX"
 
 
 class TestPipelineArgsUtils(unittest.TestCase):
@@ -55,7 +57,7 @@ class TestPipelineArgsUtils(unittest.TestCase):
     )
 
     DEFAULT_INCARCERATION_PIPELINE_ARGS = MetricPipelineJobArgs(
-        state_code="US_XX",
+        state_code=STATE_CODE,
         project_id="recidiviz-staging",
         input_dataset="state",
         output_dataset="dataflow_metrics",
@@ -120,12 +122,14 @@ class TestPipelineArgsUtils(unittest.TestCase):
             "--extra_package",
             "dist/recidiviz-calculation-pipelines.tar.gz",
             "--state_code",
-            "US_XX",
+            STATE_CODE,
         ]
 
         # Act
         pipeline = BasePipeline(
-            pipeline_run_delegate=IncarcerationPipelineRunDelegate.build_from_args(argv)
+            pipeline_run_delegate=IncarcerationMetricsPipelineRunDelegate.build_from_args(
+                argv
+            )
         )
         incarceration_pipeline_args = pipeline.pipeline_run_delegate.pipeline_job_args
         pipeline_options = (
@@ -152,11 +156,13 @@ class TestPipelineArgsUtils(unittest.TestCase):
             "--extra_package",
             "dist/recidiviz-calculation-pipelines.tar.gz",
             "--state_code",
-            "US_XX",
+            STATE_CODE,
         ]
         # Act
         pipeline = BasePipeline(
-            pipeline_run_delegate=IncarcerationPipelineRunDelegate.build_from_args(argv)
+            pipeline_run_delegate=IncarcerationMetricsPipelineRunDelegate.build_from_args(
+                argv
+            )
         )
         incarceration_pipeline_args = pipeline.pipeline_run_delegate.pipeline_job_args
         pipeline_options = (
@@ -184,7 +190,7 @@ class TestPipelineArgsUtils(unittest.TestCase):
             "--job_name",
             "incarceration-args-test",
             "--state_code",
-            "US_XX",
+            STATE_CODE,
             "--runner",
             "DirectRunner",
             "--project",
@@ -209,7 +215,9 @@ class TestPipelineArgsUtils(unittest.TestCase):
 
         # Act
         pipeline = BasePipeline(
-            pipeline_run_delegate=IncarcerationPipelineRunDelegate.build_from_args(argv)
+            pipeline_run_delegate=IncarcerationMetricsPipelineRunDelegate.build_from_args(
+                argv
+            )
         )
         incarceration_pipeline_args = pipeline.pipeline_run_delegate.pipeline_job_args
         pipeline_options = (
@@ -267,7 +275,7 @@ class TestPipelineArgsUtils(unittest.TestCase):
             "--job_name",
             "incarceration-args-test",
             "--state_code",
-            "US_XX",
+            STATE_CODE,
             "--project",
             "recidiviz-staging",
             "--person_filter_ids",
@@ -280,7 +288,9 @@ class TestPipelineArgsUtils(unittest.TestCase):
 
         # Act
         pipeline = BasePipeline(
-            pipeline_run_delegate=IncarcerationPipelineRunDelegate.build_from_args(argv)
+            pipeline_run_delegate=IncarcerationMetricsPipelineRunDelegate.build_from_args(
+                argv
+            )
         )
         incarceration_pipeline_args = pipeline.pipeline_run_delegate.pipeline_job_args
         pipeline_options = (
@@ -307,7 +317,7 @@ class TestPipelineArgsUtils(unittest.TestCase):
             "--job_name",
             "incarceration-args-test",
             "--state_code",
-            "US_XX",
+            STATE_CODE,
             "--runner",
             "DirectRunner",
             "--project",
@@ -330,7 +340,7 @@ class TestPipelineArgsUtils(unittest.TestCase):
         # Act
         with self.assertRaises(SystemExit) as e:
             _ = BasePipeline(
-                pipeline_run_delegate=IncarcerationPipelineRunDelegate.build_from_args(
+                pipeline_run_delegate=IncarcerationMetricsPipelineRunDelegate.build_from_args(
                     argv
                 )
             )
@@ -342,7 +352,7 @@ class TestPipelineArgsUtils(unittest.TestCase):
             "--job_name",
             "incarceration-args-test",
             "--state_code",
-            "US_XX",
+            STATE_CODE,
             "--runner",
             "DirectRunner",
             # project arg omitted here
@@ -365,7 +375,7 @@ class TestPipelineArgsUtils(unittest.TestCase):
         # Act
         with self.assertRaises(SystemExit) as e:
             _ = BasePipeline(
-                pipeline_run_delegate=IncarcerationPipelineRunDelegate.build_from_args(
+                pipeline_run_delegate=IncarcerationMetricsPipelineRunDelegate.build_from_args(
                     argv
                 )
             )

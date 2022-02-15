@@ -54,7 +54,6 @@ from recidiviz.calculator.pipeline.metrics.recidivism.metrics import (
 from recidiviz.calculator.pipeline.metrics.recidivism.metrics import (
     ReincarcerationRecidivismRateMetric,
 )
-from recidiviz.calculator.pipeline.pipeline_type import PipelineType
 from recidiviz.calculator.pipeline.utils.beam_utils.bigquery_io_utils import (
     RecidivizMetricWritableDict,
 )
@@ -92,7 +91,7 @@ from recidiviz.tests.calculator.pipeline.fake_bigquery import (
     FakeWriteToBigQueryFactory,
 )
 from recidiviz.tests.calculator.pipeline.utils.run_pipeline_test_utils import (
-    default_data_dict_for_root_schema_classes,
+    default_data_dict_for_run_delegate,
     run_test_pipeline,
 )
 from recidiviz.tests.calculator.pipeline.utils.state_utils.state_calculation_config_manager_test import (
@@ -106,12 +105,6 @@ ALL_METRIC_INCLUSIONS_DICT = {
     MetricType.REINCARCERATION_COUNT: True,
     MetricType.REINCARCERATION_RATE: True,
 }
-
-ROOT_SCHEMA_CLASSES_FOR_PIPELINE = [
-    schema.StatePerson,
-    schema.StateIncarcerationPeriod,
-    schema.StateSupervisionPeriod,
-]
 
 
 class TestRecidivismPipeline(unittest.TestCase):
@@ -129,12 +122,12 @@ class TestRecidivismPipeline(unittest.TestCase):
             self.state_specific_delegate_patcher.start()
         )
         self.mock_get_state_delegate_container.return_value = STATE_DELEGATES_FOR_TESTS
+        self.run_delegate_class = pipeline.RecidivismMetricsPipelineRunDelegate
 
     def tearDown(self) -> None:
         self.state_specific_delegate_patcher.stop()
 
-    @staticmethod
-    def build_data_dict(fake_person_id: int) -> Dict[str, List]:
+    def build_data_dict(self, fake_person_id: int) -> Dict[str, List]:
         """Builds a data_dict for a basic run of the pipeline."""
         fake_person = schema.StatePerson(
             state_code="US_XX",
@@ -247,9 +240,7 @@ class TestRecidivismPipeline(unittest.TestCase):
             }
         ]
 
-        data_dict = default_data_dict_for_root_schema_classes(
-            ROOT_SCHEMA_CLASSES_FOR_PIPELINE
-        )
+        data_dict = default_data_dict_for_run_delegate(self.run_delegate_class)
         data_dict_overrides: Dict[str, List[Dict[str, Any]]] = {
             schema.StatePerson.__tablename__: persons_data,
             schema.StatePersonRace.__tablename__: races_data,
@@ -448,9 +439,7 @@ class TestRecidivismPipeline(unittest.TestCase):
             }
         ]
 
-        data_dict = default_data_dict_for_root_schema_classes(
-            ROOT_SCHEMA_CLASSES_FOR_PIPELINE
-        )
+        data_dict = default_data_dict_for_run_delegate(self.run_delegate_class)
         data_dict_overrides: Dict[str, List[Dict[str, Any]]] = {
             schema.StatePerson.__tablename__: persons_data,
             schema.StateIncarcerationPeriod.__tablename__: incarceration_periods_data,
@@ -491,7 +480,7 @@ class TestRecidivismPipeline(unittest.TestCase):
         )
 
         run_test_pipeline(
-            run_delegate=pipeline.RecidivismPipelineRunDelegate,
+            run_delegate=self.run_delegate_class,
             state_code="US_XX",
             project_id=project,
             dataset_id=dataset,
@@ -1016,7 +1005,7 @@ class TestProduceRecidivismMetrics(unittest.TestCase):
         self.mock_job_id.return_value = "job_id"
 
         self.metric_producer = pipeline.metric_producer.RecidivismMetricProducer()
-        self.pipeline_type = PipelineType.RECIDIVISM
+        self.pipeline_type = "recidivism_metrics"
 
         default_beam_args: List[str] = [
             "--project",

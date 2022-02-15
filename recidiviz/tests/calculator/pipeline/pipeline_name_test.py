@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2021 Recidiviz, Inc.
+# Copyright (C) 2022 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,24 +14,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Stores enums related to running calculation pipelines"""
-import enum
+"""Tests the pipeline names."""
+import unittest
 
-# Normalization pipelines
-COMPREHENSIVE_NORMALIZATION_PIPELINE_NAME = "COMPREHENSIVE_NORMALIZATION"
-
-# Metrics pipelines
-INCARCERATION_METRICS_PIPELINE_NAME = "INCARCERATION_METRICS"
-PROGRAM_METRICS_PIPELINE_NAME = "PROGRAM_METRICS"
-RECIDIVISM_METRICS_PIPELINE_NAME = "RECIDIVISM_METRICS"
-SUPERVISION_METRICS_PIPELINE_NAME = "SUPERVISION_METRICS"
-VIOLATION_METRICS_PIPELINE_NAME = "VIOLATION_METRICS"
+from recidiviz.tools.pipeline_launch_util import collect_all_pipeline_names
 
 
-class PipelineRunType(enum.Enum):
-    """Describes the types of pipeline runs that occur."""
+class TestPipelineNames(unittest.TestCase):
+    """Tests the names of all pipelines that can be run."""
 
-    # Pipelines scheduled to run daily
-    INCREMENTAL = "INCREMENTAL"
-    # Historical pipelines that only run on deploys
-    HISTORICAL = "HISTORICAL"
+    def test_collect_all_pipeline_names(self) -> None:
+        """Tests that each pipeline run delegate has a config with a unique
+        pipeline_name."""
+        pipeline_names = collect_all_pipeline_names()
+
+        self.assertCountEqual(set(pipeline_names), pipeline_names)
