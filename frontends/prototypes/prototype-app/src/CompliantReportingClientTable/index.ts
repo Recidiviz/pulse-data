@@ -15,38 +15,4 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { Auth0ClientOptions } from "@auth0/auth0-spa-js";
-
-import CaseStore from "./CaseStore";
-import UserStore from "./UserStore";
-
-/**
- * Returns the auth settings configured for the current environment, if any.
- */
-export function getAuthSettings(): Auth0ClientOptions {
-  return {
-    client_id: "IcT6rZLNbi1PP180bciI63im7gmNWTPB",
-    domain: "recidiviz-proto.us.auth0.com",
-    audience: "https://prototypes-api.recidiviz.org",
-    redirect_uri: `${window.location.origin}`,
-  };
-}
-
-class RootStore {
-  caseStore: CaseStore;
-
-  userStore: UserStore;
-
-  constructor() {
-    this.userStore = new UserStore({
-      authSettings: getAuthSettings(),
-      rootStore: this,
-    });
-
-    this.caseStore = new CaseStore({ rootStore: this });
-  }
-}
-
-export default new RootStore();
-
-export type { RootStore };
+export { default } from "./CompliantReportingClientTable";

@@ -15,38 +15,25 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { Auth0ClientOptions } from "@auth0/auth0-spa-js";
+import { H1, spacing } from "@recidiviz/design-system";
+import React from "react";
+import styled from "styled-components/macro";
 
-import CaseStore from "./CaseStore";
-import UserStore from "./UserStore";
+import ClientProfile from "../../ClientProfile";
+import CompliantReportingClientTable from "../../CompliantReportingClientTable";
 
-/**
- * Returns the auth settings configured for the current environment, if any.
- */
-export function getAuthSettings(): Auth0ClientOptions {
-  return {
-    client_id: "IcT6rZLNbi1PP180bciI63im7gmNWTPB",
-    domain: "recidiviz-proto.us.auth0.com",
-    audience: "https://prototypes-api.recidiviz.org",
-    redirect_uri: `${window.location.origin}`,
-  };
-}
+const Wrapper = styled.div`
+  padding: ${spacing.xxl}px;
+`;
 
-class RootStore {
-  caseStore: CaseStore;
+const CompliantReporting: React.FC = () => {
+  return (
+    <Wrapper>
+      <H1>Compliant Reporting</H1>
+      <CompliantReportingClientTable />
+      <ClientProfile />
+    </Wrapper>
+  );
+};
 
-  userStore: UserStore;
-
-  constructor() {
-    this.userStore = new UserStore({
-      authSettings: getAuthSettings(),
-      rootStore: this,
-    });
-
-    this.caseStore = new CaseStore({ rootStore: this });
-  }
-}
-
-export default new RootStore();
-
-export type { RootStore };
+export default CompliantReporting;
