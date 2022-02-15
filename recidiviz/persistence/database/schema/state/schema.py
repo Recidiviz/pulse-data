@@ -126,10 +126,16 @@ state_assessment_type = Enum(
     state_enum_strings.state_assessment_type_asi,
     state_enum_strings.state_assessment_type_cssm,
     state_enum_strings.state_assessment_type_hiq,
+    state_enum_strings.state_assessment_type_j_soap,
     state_enum_strings.state_assessment_type_lsir,
+    state_enum_strings.state_assessment_type_odara,
+    state_enum_strings.state_assessment_type_oyas,
     state_enum_strings.state_assessment_type_pa_rst,
     state_enum_strings.state_assessment_type_psa,
     state_enum_strings.state_assessment_type_sorac,
+    state_enum_strings.state_assessment_type_sotips,
+    state_enum_strings.state_assessment_type_spin_w,
+    state_enum_strings.state_assessment_type_stable,
     state_enum_strings.state_assessment_type_static_99,
     state_enum_strings.state_assessment_type_strong_r,
     state_enum_strings.state_assessment_type_tcu_drug_screen,
@@ -149,6 +155,7 @@ state_assessment_type = Enum(
 
 state_assessment_level = Enum(
     enum_strings.external_unknown,
+    state_enum_strings.state_assessment_level_minimum,
     state_enum_strings.state_assessment_level_low,
     state_enum_strings.state_assessment_level_low_medium,
     state_enum_strings.state_assessment_level_medium,
@@ -156,6 +163,7 @@ state_assessment_level = Enum(
     state_enum_strings.state_assessment_level_moderate,
     state_enum_strings.state_assessment_level_high,
     state_enum_strings.state_assessment_level_very_high,
+    state_enum_strings.state_assessment_level_maximum,
     name="state_assessment_level",
 )
 

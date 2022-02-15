@@ -1,0 +1,127 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_assessments` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - Assessment_Id
+  - Client_Id
+  - Conductor_Id
+  - Assessment_Type
+  - Assessment_Date
+  - Assessment_Score_Num
+  - Lsi_Rating_Approved
+  - Lsi_Rating_Override
+  - Lsi_Rating
+  - Conductor_First_Name
+  - Conductor_Last_Name
+  - Conductor_Middle_Name
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: Client_Id
+          id_type: $literal("US_ME_DOC")
+    assessments:
+      - StateAssessment:
+          external_id:
+            $concat:
+              $values:
+                - Client_Id
+                - Assessment_Id
+          assessment_class:
+            $enum_mapping:
+              $raw_text: Assessment_Type
+              $mappings:
+                StateAssessmentClass.RISK:
+                  - "ODARA"
+                  - "OYAS"
+                  - "SPIN-W"
+                  # Assessment_Type values representing LSIR
+                  - "Adult, Female, Community"
+                  - "Adult, Male, Community"
+                  - "Adult, Female, Facility"
+                  - "Adult, Male, Facility"
+                  - "Juvenile, Female, Community"
+                  - "Juvenile, Male, Community"
+                  - "Juvenile, Female, Facility"
+                  - "Juvenile, Male, Facility"
+                StateAssessmentClass.SEX_OFFENSE:
+                  - "J-SOAP II"
+                  - "SOTIPS"
+                  - "STABLE"
+                  - "Static 99"
+                  - "Static 99 R"
+              $ignore:
+                - "EXEMPT"  # "Certain offenses are exempt from the other types of assessments. For example, the crime might be considered domestic violence, but because of the type of crime the assessment can't be used (i.e. stalking)"
+          assessment_type:
+            $enum_mapping:
+              $raw_text: Assessment_Type
+              $mappings:
+                StateAssessmentType.J_SOAP:
+                  - "J_SOAP"
+                StateAssessmentType.LSIR:
+                  - "Adult, Female, Community"
+                  - "Adult, Male, Community"
+                  - "Adult, Female, Facility"
+                  - "Adult, Male, Facility"
+                  - "Juvenile, Female, Community"
+                  - "Juvenile, Male, Community"
+                  - "Juvenile, Female, Facility"
+                  - "Juvenile, Male, Facility"
+                StateAssessmentType.ODARA:
+                  - "ODARA"
+                StateAssessmentType.OYAS:
+                  - "OYAS"
+                StateAssessmentType.SOTIPS:
+                  - "SOTIPS"
+                StateAssessmentType.SPIN_W:
+                  - "SPIN_W"
+                StateAssessmentType.STABLE:
+                  - "STABLE"
+                StateAssessmentType.STATIC_99:
+                  - "Static 99"
+                  - "Static 99 R"
+              $ignore:
+                - "EXEMPT"
+          assessment_date: Assessment_Date
+          assessment_score: Assessment_Score_Num
+          assessment_level:
+            $enum_mapping:
+              $raw_text:
+                $conditional:
+                  - $if:
+                      $not_null: Lsi_Rating_Approved
+                    $then: Lsi_Rating_Approved
+                  - $else_if:
+                      $not_null: Lsi_Rating_Override
+                    $then: Lsi_Rating_Override
+                  - $else_if:
+                      $not_null: Lsi_Rating
+                    $then: Lsi_Rating
+              $mappings:
+                StateAssessmentLevel.MINIMUM:
+                  - Administrative
+                StateAssessmentLevel.LOW:
+                  - Low
+                StateAssessmentLevel.MODERATE:
+                  - Moderate
+                StateAssessmentLevel.HIGH:
+                  - High
+                StateAssessmentLevel.VERY_HIGH:
+                  - "Very High"
+                StateAssessmentLevel.MAXIMUM:
+                  - Maximum
+          assessment_metadata:
+            $json_dict:
+              lsi_rating_approved: Lsi_Rating_Approved
+              lsi_rating_override: Lsi_Rating_Override
+              lsi_rating: Lsi_Rating
+          conducting_agent:
+            StateAgent:
+              external_id: Conductor_Id
+              full_name:
+                $person_name:
+                  $given_names: Conductor_First_Name
+                  $surname: Conductor_Last_Name
+                  $middle_names: Conductor_Middle_Name

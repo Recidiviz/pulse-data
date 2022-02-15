@@ -35,4 +35,4 @@ class UsMeController(BaseDirectIngestController):
         super().__init__(ingest_bucket_path)
 
     def get_file_tag_rank_list(self) -> List[str]:
-        return ["CLIENT", "CURRENT_STATUS_incarceration_periods"]
+        return ["CLIENT", "CURRENT_STATUS_incarceration_periods", "assessments"]

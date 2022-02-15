@@ -5,7 +5,11 @@ primary_key_cols:
   - Lsi_Type_Cd
 columns:
   - name : Created_By_Tx
+    description: |-
+      Notes about the creation of this assessment record.
   - name : Created_On_Date
+    description: |-
+      The date that this assessment record was created.
   - name : E_Lsi_Type_Desc
     description: The description of the LSI questionnaire type
     known_values:
@@ -28,7 +32,11 @@ columns:
   - name : Logical_Delete_Ind
   - name : Lsi_Interface_Ind
   - name : Modified_By_Tx
+    description: |-
+      Notes about the modification of this assessment record.
   - name : Modified_On_Date
+    description: |-
+      The date that this assessment record was last modified.
   - name : System_Ref_Comments_Tx
   - name : System_Ref_Tx
   - name : Lsi_Type_Cd
