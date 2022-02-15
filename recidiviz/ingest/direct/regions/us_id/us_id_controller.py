@@ -163,6 +163,7 @@ from recidiviz.ingest.models.ingest_info import (
     StateSupervisionViolationTypeEntry,
 )
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
+from recidiviz.utils.environment import in_gcp_staging
 from recidiviz.utils.params import str_to_bool
 
 
@@ -565,7 +566,7 @@ class UsIdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         ]
 
         # TODO(#10784): Remove treatment_agnt_case_updt once rerun has been completed.
-        if self.ingest_instance == DirectIngestInstance.SECONDARY:
+        if in_gcp_staging() or self.ingest_instance == DirectIngestInstance.SECONDARY:
             shared_file_tags[
                 shared_file_tags.index("treatment_agnt_case_updt")
             ] = "agnt_case_updt"
