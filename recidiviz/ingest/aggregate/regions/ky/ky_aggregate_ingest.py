@@ -123,6 +123,7 @@ def _parse_table(filename: str) -> pd.DataFrame:
             df["Reported Population (Total and Male/Female)"] = df[
                 "Reported Population (Total and Male/Female)"
             ].replace({"(": "0"})
+        df = df.replace("`", "", regex=True)
 
         # Cast everything to int before summing below
         df = df.fillna(0)
