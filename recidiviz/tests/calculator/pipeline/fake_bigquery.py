@@ -384,6 +384,7 @@ class FakeReadFromBigQueryFactory:
         )
 
 
+# TODO(#10724): Update this to support normalization pipelines as well
 class FakeWriteToBigQuery(apache_beam.PTransform):
     """Fake PTransform that no-ops instead of writing to BQ."""
 

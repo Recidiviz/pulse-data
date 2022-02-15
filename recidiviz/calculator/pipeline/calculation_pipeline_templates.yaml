@@ -10,107 +10,107 @@
 
 incremental_pipelines:
   # Full US_ND calculations with no time limit
-  - pipeline: recidivism
-    job_name: full-us-nd-recidivism-calculations
+  - pipeline: recidivism_metrics
+    job_name: full-us-nd-recidivism-metrics
     state_code: US_ND
     metric_types: REINCARCERATION_COUNT REINCARCERATION_RATE
     region: us-west1
 
   # Daily US_ND calculations
-  - pipeline: supervision
-    job_name: us-nd-supervision-calculations-36
+  - pipeline: supervision_metrics
+    job_name: us-nd-supervision-metrics-36
     state_code: US_ND
     calculation_month_count: 36
     metric_types: SUPERVISION_POPULATION SUPERVISION_SUCCESS SUPERVISION_TERMINATION SUPERVISION_COMPLIANCE
     region: us-east1
-  - pipeline: incarceration
-    job_name: us-nd-incarceration-calculations-36
+  - pipeline: incarceration_metrics
+    job_name: us-nd-incarceration-metrics-36
     state_code: US_ND
     metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_POPULATION INCARCERATION_RELEASE
     calculation_month_count: 36
     region: us-central1
-  - pipeline: program
-    job_name: us-nd-program-calculations-36
+  - pipeline: program_metrics
+    job_name: us-nd-program-metrics-36
     state_code: US_ND
     calculation_month_count: 36
     metric_types: PROGRAM_PARTICIPATION PROGRAM_REFERRAL
     region: us-west1
 
   # Daily US_MO calculations
-  - pipeline: supervision
-    job_name: us-mo-supervision-calculations-36
+  - pipeline: supervision_metrics
+    job_name: us-mo-supervision-metrics-36
     state_code: US_MO
     calculation_month_count: 36
     metric_types: SUPERVISION_POPULATION SUPERVISION_TERMINATION
     region: us-west3
-  - pipeline: incarceration
-    job_name: us-mo-incarceration-calculations-36
+  - pipeline: incarceration_metrics
+    job_name: us-mo-incarceration-metrics-36
     state_code: US_MO
     calculation_month_count: 36
     metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_POPULATION INCARCERATION_RELEASE
     region: us-east1
-  - pipeline: violation
-    job_name: us-mo-violation-calculations-36
+  - pipeline: violation_metrics
+    job_name: us-mo-violation-metrics-36
     state_code: US_MO
     calculation_month_count: 36
     metric_types: VIOLATION
     region: us-central1
 
   # Daily US_ID calculations
-  - pipeline: supervision
-    job_name: us-id-supervision-calculations-36
+  - pipeline: supervision_metrics
+    job_name: us-id-supervision-metrics-36
     state_code: US_ID
     calculation_month_count: 36
     metric_types: SUPERVISION_POPULATION SUPERVISION_OUT_OF_STATE_POPULATION SUPERVISION_COMPLIANCE SUPERVISION_TERMINATION SUPERVISION_START SUPERVISION_DOWNGRADE
     region: us-central1
-  - pipeline: incarceration
-    job_name: us-id-incarceration-calculations-36
+  - pipeline: incarceration_metrics
+    job_name: us-id-incarceration-metrics-36
     state_code: US_ID
     calculation_month_count: 36
     metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_POPULATION INCARCERATION_RELEASE
     region: us-west3
-  - pipeline: violation
-    job_name: us-id-violation-calculations-36
+  - pipeline: violation_metrics
+    job_name: us-id-violation-metrics-36
     state_code: US_ID
     calculation_month_count: 36
     metric_types: VIOLATION
     region: us-west3
-  - pipeline: program
-    job_name: us-id-program-calculations-36
+  - pipeline: program_metrics
+    job_name: us-id-program-metrics-36
     state_code: US_ID
     calculation_month_count: 36
     metric_types: PROGRAM_PARTICIPATION PROGRAM_REFERRAL
     region: us-west1
 
   # Daily US_PA calculations
-  - pipeline: supervision
-    job_name: us-pa-supervision-calculations-36
+  - pipeline: supervision_metrics
+    job_name: us-pa-supervision-metrics-36
     state_code: US_PA
     calculation_month_count: 36
     metric_types: SUPERVISION_POPULATION SUPERVISION_SUCCESS SUPERVISION_TERMINATION SUPERVISION_OUT_OF_STATE_POPULATION SUPERVISION_COMPLIANCE SUPERVISION_START SUPERVISION_DOWNGRADE
     region: us-west1
-  - pipeline: incarceration
-    job_name: us-pa-incarceration-calculations-36
+  - pipeline: incarceration_metrics
+    job_name: us-pa-incarceration-metrics-36
     state_code: US_PA
     calculation_month_count: 36
     metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_POPULATION INCARCERATION_RELEASE
     region: us-east1
-  - pipeline: violation
-    job_name: us-pa-violation-calculations-36
+  - pipeline: violation_metrics
+    job_name: us-pa-violation-metrics-36
     state_code: US_PA
     calculation_month_count: 36
     metric_types: VIOLATION
     region: us-east1
 
   # Daily US_TN calculations
-  - pipeline: supervision
-    job_name: us-tn-supervision-calculations-36
+  - pipeline: supervision_metrics
+    job_name: us-tn-supervision-metrics-36
     state_code: US_TN
     calculation_month_count: 36
     metric_types: SUPERVISION_POPULATION SUPERVISION_START SUPERVISION_TERMINATION
     region: us-west1
-  - pipeline: incarceration
-    job_name: us-tn-incarceration-calculations-36
+  - pipeline: incarceration_metrics
+    job_name: us-tn-incarceration-metrics-36
     state_code: US_TN
     metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_POPULATION INCARCERATION_RELEASE
     calculation_month_count: 36
@@ -126,92 +126,92 @@ incremental_pipelines:
     staging_only: True
 
 historical_pipelines:
-  - pipeline: incarceration
-    job_name: us-id-historical-incarceration-calculations-240
+  - pipeline: incarceration_metrics
+    job_name: us-id-historical-incarceration-metrics-240
     state_code: US_ID
     calculation_month_count: 240
     metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_POPULATION INCARCERATION_RELEASE
     region: us-west1
-  - pipeline: supervision
-    job_name: us-id-historical-supervision-calculations-240
+  - pipeline: supervision_metrics
+    job_name: us-id-historical-supervision-metrics-240
     state_code: US_ID
     calculation_month_count: 240
     metric_types: SUPERVISION_POPULATION SUPERVISION_START SUPERVISION_TERMINATION SUPERVISION_OUT_OF_STATE_POPULATION
     region: us-west1
-  - pipeline: violation
-    job_name: us-id-historical-violation-calculations-240
+  - pipeline: violation_metrics
+    job_name: us-id-historical-violation-metrics-240
     state_code: US_ID
     calculation_month_count: 240
     metric_types: VIOLATION
     region: us-west1
-  - pipeline: incarceration
-    job_name: us-mo-historical-incarceration-calculations-240
+  - pipeline: incarceration_metrics
+    job_name: us-mo-historical-incarceration-metrics-240
     state_code: US_MO
     calculation_month_count: 240
     metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_POPULATION INCARCERATION_RELEASE
     region: us-west3
-  - pipeline: supervision
-    job_name: us-mo-historical-supervision-calculations-240
+  - pipeline: supervision_metrics
+    job_name: us-mo-historical-supervision-metrics-240
     state_code: US_MO
     calculation_month_count: 240
     metric_types: SUPERVISION_POPULATION SUPERVISION_START SUPERVISION_TERMINATION SUPERVISION_OUT_OF_STATE_POPULATION
     region: us-west3
-  - pipeline: violation
-    job_name: us-mo-historical-violation-calculations-240
+  - pipeline: violation_metrics
+    job_name: us-mo-historical-violation-metrics-240
     state_code: US_MO
     calculation_month_count: 240
     metric_types: VIOLATION
     region: us-west3
-  - pipeline: incarceration
-    job_name: us-nd-historical-incarceration-calculations-240
+  - pipeline: incarceration_metrics
+    job_name: us-nd-historical-incarceration-metrics-240
     state_code: US_ND
     calculation_month_count: 240
     metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_POPULATION INCARCERATION_RELEASE
     region: us-east1
-  - pipeline: supervision
-    job_name: us-nd-historical-supervision-calculations-240
+  - pipeline: supervision_metrics
+    job_name: us-nd-historical-supervision-metrics-240
     state_code: US_ND
     calculation_month_count: 240
     metric_types: SUPERVISION_POPULATION SUPERVISION_START SUPERVISION_TERMINATION SUPERVISION_SUCCESS
     region: us-east1
-  - pipeline: program
-    job_name: us-nd-historical-program-calculations-60
+  - pipeline: program_metrics
+    job_name: us-nd-historical-program-metrics-60
     state_code: US_ND
     calculation_month_count: 60
     metric_types: PROGRAM_PARTICIPATION PROGRAM_REFERRAL
     region: us-east1
-  - pipeline: incarceration
-    job_name: us-pa-historical-incarceration-calculations-360
+  - pipeline: incarceration_metrics
+    job_name: us-pa-historical-incarceration-metrics-360
     state_code: US_PA
     calculation_month_count: 360
     metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_POPULATION INCARCERATION_RELEASE
     region: us-central1
-  - pipeline: supervision
-    job_name: us-pa-historical-supervision-calculations-240
+  - pipeline: supervision_metrics
+    job_name: us-pa-historical-supervision-metrics-240
     state_code: US_PA
     calculation_month_count: 240
     metric_types: SUPERVISION_POPULATION SUPERVISION_START SUPERVISION_TERMINATION SUPERVISION_OUT_OF_STATE_POPULATION
     region: us-central1
-  - pipeline: violation
-    job_name: us-pa-historical-violation-calculations-240
+  - pipeline: violation_metrics
+    job_name: us-pa-historical-violation-metrics-240
     state_code: US_PA
     calculation_month_count: 240
     metric_types: VIOLATION
     region: us-central1
-  - pipeline: supervision
-    job_name: us-tn-historical-supervision-calculations-240
+  - pipeline: supervision_metrics
+    job_name: us-tn-historical-supervision-metrics-240
     state_code: US_TN
     calculation_month_count: 240
     metric_types: SUPERVISION_POPULATION SUPERVISION_START SUPERVISION_TERMINATION
     region: us-west1
-  - pipeline: incarceration
-    job_name: us-tn-historical-incarceration-calculations-240
+  - pipeline: incarceration_metrics
+    job_name: us-tn-historical-incarceration-metrics-240
     state_code: US_TN
     metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_POPULATION INCARCERATION_RELEASE
     calculation_month_count: 240
     region: us-central1
-  - pipeline: program
-    job_name: us-id-historical-program-calculations-60
+  - pipeline: program_metrics
+    job_name: us-id-historical-program-metrics-60
     state_code: US_ID
     calculation_month_count: 240
     metric_types: PROGRAM_PARTICIPATION PROGRAM_REFERRAL

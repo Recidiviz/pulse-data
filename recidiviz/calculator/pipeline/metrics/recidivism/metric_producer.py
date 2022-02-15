@@ -43,7 +43,6 @@ from recidiviz.calculator.pipeline.metrics.recidivism.metrics import (
     ReincarcerationRecidivismMetricType,
     ReincarcerationRecidivismRateMetric,
 )
-from recidiviz.calculator.pipeline.pipeline_type import PipelineType
 from recidiviz.calculator.pipeline.utils.calculator_utils import build_metric
 from recidiviz.calculator.pipeline.utils.metric_utils import PersonMetadata
 from recidiviz.persistence.entity.state.entities import StatePerson
@@ -73,7 +72,7 @@ class RecidivismMetricProducer(
         identifier_events: Dict[int, List[ReleaseEvent]],
         metric_inclusions: Dict[ReincarcerationRecidivismMetricType, bool],
         person_metadata: PersonMetadata,
-        pipeline_type: PipelineType,
+        pipeline_name: str,
         pipeline_job_id: str,
         calculation_end_month: Optional[str] = None,
         calculation_month_count: int = -1,
@@ -111,7 +110,7 @@ class RecidivismMetricProducer(
                 event_date = reincarceration_event.reincarceration_date
 
                 metric = build_metric(
-                    pipeline=pipeline_type.value.lower(),
+                    pipeline=pipeline_name,
                     event=reincarceration_event,
                     metric_class=ReincarcerationRecidivismCountMetric,
                     person=person,

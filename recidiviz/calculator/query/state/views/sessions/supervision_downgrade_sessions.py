@@ -23,6 +23,9 @@ python -m recidiviz.calculator.query.state.views.sessions.supervision_downgrade_
 from operator import itemgetter
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.pipeline.pipeline_type import (
+    SUPERVISION_METRICS_PIPELINE_NAME,
+)
 from recidiviz.calculator.pipeline.utils.calculator_utils import (
     PRIMARY_PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE,
 )
@@ -56,7 +59,7 @@ the recommendation without a reassessment.
 """
 
 _supervision_id_types = PRIMARY_PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE[
-    "supervision"
+    SUPERVISION_METRICS_PIPELINE_NAME
 ].values()
 
 SUPERVISION_DOWNGRADE_SESSIONS_QUERY_TEMPLATE = f"""

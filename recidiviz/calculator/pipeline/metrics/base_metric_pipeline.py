@@ -51,7 +51,6 @@ from recidiviz.calculator.pipeline.metrics.base_identifier import BaseIdentifier
 from recidiviz.calculator.pipeline.metrics.base_metric_producer import (
     BaseMetricProducer,
 )
-from recidiviz.calculator.pipeline.pipeline_type import PipelineType
 from recidiviz.calculator.pipeline.utils.beam_utils.bigquery_io_utils import (
     RecidivizMetricWritableDict,
     WriteAppendToBigQuery,
@@ -65,6 +64,7 @@ from recidiviz.calculator.pipeline.utils.beam_utils.person_utils import (
 )
 from recidiviz.calculator.pipeline.utils.event_utils import IdentifierEvent
 from recidiviz.calculator.pipeline.utils.execution_utils import (
+    TableRow,
     calculation_end_month_arg,
     calculation_month_count_arg,
     get_job_id,
@@ -78,6 +78,9 @@ from recidiviz.calculator.pipeline.utils.metric_utils import (
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
     get_required_state_specific_delegates,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_delegate import (
+    StateSpecificDelegate,
 )
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_DATASET,
@@ -158,7 +161,7 @@ class MetricPipelineRunDelegate(PipelineRunDelegate[MetricPipelineJobArgs]):
         output to a specific set of months. Should be overwritten by subclasses."""
 
     @classmethod
-    def default_output_dataset(cls) -> str:
+    def default_output_dataset(cls, state_code: str) -> str:
         return DATAFLOW_METRICS_DATASET
 
     @classmethod
@@ -349,7 +352,7 @@ class MetricPipelineRunDelegate(PipelineRunDelegate[MetricPipelineJobArgs]):
         return person_events_with_metadata | "Get Metrics" >> GetMetrics(
             pipeline_job_args=self.pipeline_job_args,
             metric_producer=self.metric_producer(),
-            pipeline_type=self.pipeline_config().pipeline_type,
+            pipeline_name=self.pipeline_config().pipeline_name,
         )
 
     def write_output(self, pipeline: beam.Pipeline) -> None:
@@ -406,7 +409,7 @@ class MetricPipelineRunDelegate(PipelineRunDelegate[MetricPipelineJobArgs]):
     ],
     beam.typehints.Optional[MetricPipelineJobArgs],
     beam.typehints.Optional[BaseMetricProducer],
-    beam.typehints.Optional[PipelineType],
+    beam.typehints.Optional[str],
 )
 @with_output_types(RecidivizMetric)
 class ProduceMetrics(beam.DoFn):
@@ -422,7 +425,7 @@ class ProduceMetrics(beam.DoFn):
         ],
         pipeline_job_args: MetricPipelineJobArgs,
         metric_producer: BaseMetricProducer,
-        pipeline_type: PipelineType,
+        pipeline_name: str,
     ) -> Generator[RecidivizMetric, None, None]:
         """Produces various metrics.
         Sends the metric_producer the StatePerson entity and their corresponding events for mapping all metrics.
@@ -431,7 +434,7 @@ class ProduceMetrics(beam.DoFn):
             pipeline_job_args: Object storing information about the calculation
                 pipeline job currently running
             metric_producer: The metric producer to call to produce metrics
-            pipeline_type: Which type of pipeline is being run
+            pipeline_name: The name of pipeline being run
 
         Yields:
             Each metric."""
@@ -448,7 +451,7 @@ class ProduceMetrics(beam.DoFn):
             identifier_events=events,
             metric_inclusions=pipeline_job_args.metric_inclusions,
             person_metadata=person_metadata,
-            pipeline_type=pipeline_type,
+            pipeline_name=pipeline_name,
             pipeline_job_id=pipeline_job_id,
             calculation_end_month=pipeline_job_args.calculation_end_month,
             calculation_month_count=pipeline_job_args.calculation_month_count,
@@ -479,19 +482,19 @@ class GetMetrics(beam.PTransform):
         self,
         pipeline_job_args: MetricPipelineJobArgs,
         metric_producer: BaseMetricProducer,
-        pipeline_type: PipelineType,
+        pipeline_name: str,
     ) -> None:
         super().__init__()
         self._pipeline_job_args = pipeline_job_args
         self._metric_producer = metric_producer
-        self._pipeline_type = pipeline_type
+        self._pipeline_name = pipeline_name
 
     def expand(self, input_or_inputs: List[Any]) -> List[RecidivizMetric]:
         metrics = input_or_inputs | "Produce Metrics" >> beam.ParDo(
             ProduceMetrics(),
             self._pipeline_job_args,
             self._metric_producer,
-            self._pipeline_type,
+            self._pipeline_name,
         )
 
         return metrics
@@ -532,7 +535,9 @@ class ClassifyEvents(beam.DoFn):
             required_delegates=identifier.required_state_specific_delegates(),
         )
 
-        all_kwargs = {
+        all_kwargs: Dict[
+            str, Union[List[Entity], List[TableRow], StateSpecificDelegate]
+        ] = {
             **entity_kwargs,
             **required_delegates,
         }

@@ -26,20 +26,20 @@ from recidiviz.calculator.pipeline.metrics.base_metric_producer import (
     BaseMetricProducer,
 )
 from recidiviz.calculator.pipeline.metrics.program import identifier, metric_producer
-from recidiviz.calculator.pipeline.pipeline_type import PipelineType
+from recidiviz.calculator.pipeline.pipeline_type import PROGRAM_METRICS_PIPELINE_NAME
 from recidiviz.calculator.query.state.views.reference.supervision_period_to_agent_association import (
     SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME,
 )
 from recidiviz.persistence.entity.state import entities
 
 
-class ProgramPipelineRunDelegate(MetricPipelineRunDelegate):
+class ProgramMetricsPipelineRunDelegate(MetricPipelineRunDelegate):
     """Defines the program metric calculation pipeline."""
 
     @classmethod
     def pipeline_config(cls) -> PipelineConfig:
         return PipelineConfig(
-            pipeline_type=PipelineType.PROGRAM,
+            pipeline_name=PROGRAM_METRICS_PIPELINE_NAME,
             required_entities=[
                 entities.StatePerson,
                 entities.StatePersonRace,

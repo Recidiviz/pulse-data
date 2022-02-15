@@ -21,6 +21,9 @@ python -m recidiviz.calculator.query.state.views.reference.overdue_discharge_out
 """
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.pipeline.pipeline_type import (
+    SUPERVISION_METRICS_PIPELINE_NAME,
+)
 from recidiviz.calculator.pipeline.utils.calculator_utils import (
     PRIMARY_PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE,
 )
@@ -30,7 +33,7 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 _supervision_id_types = PRIMARY_PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE[
-    "supervision"
+    SUPERVISION_METRICS_PIPELINE_NAME
 ].values()
 
 OVERDUE_DISCHARGE_OUTCOMES_VIEW_NAME = "overdue_discharge_outcomes"

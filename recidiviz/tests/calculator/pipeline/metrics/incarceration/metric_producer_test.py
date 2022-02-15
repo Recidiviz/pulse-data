@@ -39,6 +39,9 @@ from recidiviz.calculator.pipeline.metrics.incarceration.metrics import (
     IncarcerationCommitmentFromSupervisionMetric,
     IncarcerationMetricType,
 )
+from recidiviz.calculator.pipeline.pipeline_type import (
+    INCARCERATION_METRICS_PIPELINE_NAME,
+)
 from recidiviz.calculator.pipeline.utils.metric_utils import (
     PersonMetadata,
     RecidivizMetric,
@@ -87,7 +90,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
     def setUp(self) -> None:
         self.metric_producer = metric_producer.IncarcerationMetricProducer()
         self.pipeline_config = (
-            pipeline.IncarcerationPipelineRunDelegate.pipeline_config()
+            pipeline.IncarcerationMetricsPipelineRunDelegate.pipeline_config()
         )
 
     def test_produce_incarceration_metrics(self) -> None:
@@ -127,7 +130,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             calculation_month_count=1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
-            pipeline_type=self.pipeline_config.pipeline_type,
+            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         expected_count = self.expected_metrics_count(incarceration_events)
@@ -201,7 +204,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
-            pipeline_type=self.pipeline_config.pipeline_type,
+            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         expected_count = self.expected_metrics_count(incarceration_events)
@@ -251,7 +254,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
-            pipeline_type=self.pipeline_config.pipeline_type,
+            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         expected_count = self.expected_metrics_count(incarceration_events)
@@ -297,7 +300,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
-            pipeline_type=self.pipeline_config.pipeline_type,
+            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         expected_count = self.expected_metrics_count(incarceration_events)
@@ -361,7 +364,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
-            pipeline_type=self.pipeline_config.pipeline_type,
+            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         expected_count = self.expected_metrics_count(incarceration_events)
@@ -416,7 +419,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
-            pipeline_type=self.pipeline_config.pipeline_type,
+            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         expected_count = self.expected_metrics_count(incarceration_events)
@@ -470,7 +473,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
-            pipeline_type=self.pipeline_config.pipeline_type,
+            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         expected_count = self.expected_metrics_count(incarceration_events)
@@ -527,7 +530,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
-            pipeline_type=self.pipeline_config.pipeline_type,
+            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         expected_count = self.expected_metrics_count(incarceration_events)
@@ -584,7 +587,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
-            pipeline_type=self.pipeline_config.pipeline_type,
+            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         expected_count = self.expected_metrics_count(incarceration_events)
@@ -641,7 +644,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
-            pipeline_type=self.pipeline_config.pipeline_type,
+            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         expected_count = self.expected_metrics_count(incarceration_events)
@@ -684,7 +687,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             calculation_month_count=1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
-            pipeline_type=self.pipeline_config.pipeline_type,
+            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         expected_count = self.expected_metrics_count(incarceration_events)
@@ -732,7 +735,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             calculation_month_count=1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
-            pipeline_type=self.pipeline_config.pipeline_type,
+            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         self.assertEqual(0, len(metrics))
@@ -785,7 +788,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             calculation_month_count=36,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
-            pipeline_type=self.pipeline_config.pipeline_type,
+            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         expected_count = self.expected_metrics_count([incarceration_event_include])
@@ -833,7 +836,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             calculation_month_count=37,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
-            pipeline_type=self.pipeline_config.pipeline_type,
+            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         expected_count = self.expected_metrics_count(incarceration_events)
@@ -847,11 +850,11 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
         "recidiviz.calculator.pipeline.utils.calculator_utils"
         ".PRIMARY_PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE",
         {
-            "incarceration": {
+            INCARCERATION_METRICS_PIPELINE_NAME: {
                 StateCode.US_XX: "US_XX_DOC",
                 StateCode.US_WW: "US_WW_DOC",
             },
-            "other_pipeline": {
+            "OTHER_PIPELINE": {
                 StateCode.US_XX: "US_XX_SID",
                 StateCode.US_WW: "US_WW_SID",
             },
@@ -861,11 +864,11 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
         "recidiviz.calculator.pipeline.utils.calculator_utils"
         ".SECONDARY_PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE",
         {
-            "incarceration": {
+            INCARCERATION_METRICS_PIPELINE_NAME: {
                 StateCode.US_XX: "US_XX_SID",
                 StateCode.US_WW: "US_WW_SID",
             },
-            "other_pipeline": {
+            "OTHER_PIPELINE": {
                 StateCode.US_XX: "US_XX_DOC",
                 StateCode.US_WW: "US_WW_DOC",
             },
@@ -916,7 +919,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
-            pipeline_type=self.pipeline_config.pipeline_type,
+            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         expected_count = self.expected_metrics_count(incarceration_events)

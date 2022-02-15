@@ -241,7 +241,10 @@ class TestCovertSentenceToStateSpecificType(unittest.TestCase):
         output = (
             entities_and_statuses
             | "Convert to state-specific sentences"
-            >> beam.ParDo(entity_hydration_utils.ConvertEntitiesToStateSpecificTypes())
+            >> beam.ParDo(
+                entity_hydration_utils.ConvertEntitiesToStateSpecificTypes(),
+                state_code=person.state_code,
+            )
         )
 
         # Expect no change
