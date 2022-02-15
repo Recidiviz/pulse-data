@@ -4,8 +4,16 @@ You'll need access to the Firebase project at https://console.firebase.google.co
 
 ### Sign into Firebase
 
+Make sure you have the latest version of Firebase Tools installed! This is a global dependency but versions below 10.x will not work for local development.
+
 ```
 yarn global add firebase-tools
+# OR npm install -g firebase-tools
+```
+
+Then:
+
+```
 firebase login
 ```
 
@@ -15,6 +23,8 @@ Install `nvm` if you don't have it already: https://github.com/nvm-sh/nvm#instal
 
 Run `nvm use`. If you get an error, you may need to install the configured node version using the `nvm` command in the
 error.
+
+The Firebase emulators will also require a Java runtime, which you can install via Homebrew (`brew install java`).
 
 ```
 yarn install

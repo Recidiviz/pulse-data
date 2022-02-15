@@ -17,6 +17,22 @@
 
 import { initializeApp } from "firebase/app";
 import { getAuth, signInWithCustomToken } from "firebase/auth";
+import {
+  addDoc,
+  collection,
+  connectFirestoreEmulator,
+  doc,
+  getFirestore,
+  orderBy,
+  query,
+  serverTimestamp,
+  setDoc,
+} from "firebase/firestore";
+
+import {
+  CompliantReportingStatusRecord,
+  CompliantReportingUpdateContents,
+} from "../DataStores/CaseStore";
 
 const firebaseConfig = {
   projectId: "recidiviz-prototypes",
@@ -48,3 +64,40 @@ export const authenticate = async (
   const auth = getAuth(app);
   return signInWithCustomToken(auth, firebaseToken);
 };
+
+const db = getFirestore(app);
+if (import.meta.env.DEV) {
+  connectFirestoreEmulator(db, "localhost", 8080);
+}
+
+const COLLECTIONS = {
+  compliantReportingStatus: "compliantReportingStatus",
+  compliantReportingUpdates: "compliantReportingUpdates",
+};
+
+export const compliantReportingStatusQuery = query(
+  collection(db, COLLECTIONS.compliantReportingStatus)
+);
+
+export function saveCompliantReportingStatus(
+  newValue: CompliantReportingStatusRecord
+): Promise<void> {
+  return setDoc(
+    doc(db, COLLECTIONS.compliantReportingStatus, newValue.personExternalId),
+    newValue
+  );
+}
+
+export const compliantReportingUpdatesQuery = query(
+  collection(db, COLLECTIONS.compliantReportingUpdates),
+  orderBy("createdAt", "desc")
+);
+
+export function saveCompliantReportingNote(
+  updateContents: CompliantReportingUpdateContents
+): ReturnType<typeof addDoc> {
+  return addDoc(collection(db, COLLECTIONS.compliantReportingUpdates), {
+    ...updateContents,
+    createdAt: serverTimestamp(),
+  });
+}

@@ -5,18 +5,8 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import AuthWall from "./AuthWall";
 import GlobalStyles from "./GlobalStyles";
 import Logout from "./Logout";
+import CompliantReporting from "./pages/CompliantReporting";
 import StoreProvider from "./StoreProvider";
-
-const Home: React.FC = () => {
-  return (
-    <div className="App">
-      <Header
-        left={<img src={Assets.LOGO} alt="Recidiviz" />}
-        right={<Logout />}
-      />
-    </div>
-  );
-};
 
 const App: React.FC = () => {
   return (
@@ -24,8 +14,12 @@ const App: React.FC = () => {
       <StoreProvider>
         <GlobalStyles />
         <AuthWall>
+          <Header
+            left={<img src={Assets.LOGO} alt="Recidiviz" />}
+            right={<Logout />}
+          />
           <Routes>
-            <Route path="" element={<Home />} />
+            <Route path="/" element={<CompliantReporting />} />
           </Routes>
         </AuthWall>
       </StoreProvider>
