@@ -1,6 +1,11 @@
 file_tag: CIS_215_SEX_OFFENDER_ASSESS
 file_description: |-
-  This table lists sex offense assessment results for a client.
+  This table lists non-LSIR assessment results for a client. LSI assessments are found in CIS_116_LSI_HISTORY. The
+  fact that this table is named for sex offense assessments is historical and no longer accurate. This includes both
+  sex offense assessments and others. Nevertheless, there are columns that reference LSI ratings in this table, which
+  appear to correspond to some sort of proxy rating for whatever assessment a given row in the file refers to, i.e.
+  the results of these assessments are mapped to an LSI rating for normalized comparison against LSI assessments per
+  MEDOC business logic.
 primary_key_cols:
   - Sex_Offender_Assess_Id
 columns:
@@ -26,13 +31,23 @@ columns:
   - name : Cis_2150_Assess_Type_Cd
     description: The type of assessment used for this client, this includes all kinds of assessments, not only those regarding sex offense cases. See CIS_2150_SEX_OFF_ASSESS_TYPEd for all possible values.
   - name : Cis_900_Employee_Id
-    description: The employee who last modified this row.
+    description: The employee who conducted the assessment. This value does not change when an override is applied or approved.
   - name : Created_By_Tx
+    description: |-
+      Notes about the creation of this assessment record.
   - name : Created_On_Date
+    description: |-
+      The date that this assessment record was created.
   - name : Modified_By_Tx
+    description: |-
+      Notes about the modification of this assessment record.
   - name : Modified_On_Date
+    description: |-
+      The date that this assessment record was last modified.
   - name : Notes_Tx
     description: Additional notes about this assessment.
   - name : Override_Ind
+    description: |-
+      Indicates whether or not the assigned LSI rating for this assessment has been overridden.
   - name : Sex_Offender_Assess_Id
     description: The primary key for this table.

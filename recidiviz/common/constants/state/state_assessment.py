@@ -54,7 +54,9 @@ class StateAssessmentType(EntityEnum, metaclass=EntityEnumMeta):
     ASI = state_enum_strings.state_assessment_type_asi
     CSSM = state_enum_strings.state_assessment_type_cssm
     HIQ = state_enum_strings.state_assessment_type_hiq
+    J_SOAP = state_enum_strings.state_assessment_type_j_soap
     LSIR = state_enum_strings.state_assessment_type_lsir
+    ODARA = state_enum_strings.state_assessment_type_odara
     ORAS_COMMUNITY_SUPERVISION = (
         state_enum_strings.state_assessment_type_oras_community_supervision
     )
@@ -77,9 +79,13 @@ class StateAssessmentType(EntityEnum, metaclass=EntityEnumMeta):
     ORAS_SUPPLEMENTAL_REENTRY = (
         state_enum_strings.state_assessment_type_oras_supplemental_reentry
     )
+    OYAS = state_enum_strings.state_assessment_type_oyas
     PA_RST = state_enum_strings.state_assessment_type_pa_rst
     PSA = state_enum_strings.state_assessment_type_psa
     SORAC = state_enum_strings.state_assessment_type_sorac
+    SOTIPS = state_enum_strings.state_assessment_type_sotips
+    SPIN_W = state_enum_strings.state_assessment_type_spin_w
+    STABLE = state_enum_strings.state_assessment_type_stable
     STATIC_99 = state_enum_strings.state_assessment_type_static_99
     STRONG_R = state_enum_strings.state_assessment_type_strong_r
     TCU_DRUG_SCREEN = state_enum_strings.state_assessment_type_tcu_drug_screen
@@ -94,6 +100,7 @@ class StateAssessmentType(EntityEnum, metaclass=EntityEnumMeta):
 @unique
 class StateAssessmentLevel(EntityEnum, metaclass=EntityEnumMeta):
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
+    MINIMUM = state_enum_strings.state_assessment_level_minimum
     LOW = state_enum_strings.state_assessment_level_low
     LOW_MEDIUM = state_enum_strings.state_assessment_level_low_medium
     MEDIUM = state_enum_strings.state_assessment_level_medium
@@ -101,6 +108,7 @@ class StateAssessmentLevel(EntityEnum, metaclass=EntityEnumMeta):
     MODERATE = state_enum_strings.state_assessment_level_moderate
     HIGH = state_enum_strings.state_assessment_level_high
     VERY_HIGH = state_enum_strings.state_assessment_level_very_high
+    MAXIMUM = state_enum_strings.state_assessment_level_maximum
 
     @staticmethod
     def _get_default_map() -> Dict[str, "StateAssessmentLevel"]:
@@ -123,7 +131,9 @@ _STATE_ASSESSMENT_TYPE_MAP = {
     "ASI": StateAssessmentType.ASI,
     "CSSM": StateAssessmentType.CSSM,
     "HIQ": StateAssessmentType.HIQ,
+    "J SOAP": StateAssessmentType.J_SOAP,
     "LSIR": StateAssessmentType.LSIR,
+    "ODARA": StateAssessmentType.ODARA,
     "ORAS COMMUNITY SUPERVISION": StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
     "ORAS COMMUNITY SUPERVISION SCREENING": StateAssessmentType.ORAS_COMMUNITY_SUPERVISION_SCREENING,
     "ORAS MISDEMEANOR ASSESSMENT": StateAssessmentType.ORAS_MISDEMEANOR_ASSESSMENT,
@@ -134,9 +144,13 @@ _STATE_ASSESSMENT_TYPE_MAP = {
     "ORAS REENTRY": StateAssessmentType.ORAS_REENTRY,
     "ORAS STATIC": StateAssessmentType.ORAS_STATIC,
     "ORAS SUPPLEMENTAL REENTRY": StateAssessmentType.ORAS_SUPPLEMENTAL_REENTRY,
+    "OYAS": StateAssessmentType.OYAS,
     "PA RST": StateAssessmentType.PA_RST,
     "PSA": StateAssessmentType.PSA,
     "SORAC": StateAssessmentType.SORAC,
+    "SOTIPS": StateAssessmentType.SOTIPS,
+    "SPIN W": StateAssessmentType.SPIN_W,
+    "STABLE": StateAssessmentType.STABLE,
     "STATIC 99": StateAssessmentType.STATIC_99,
     "STRONG R": StateAssessmentType.STRONG_R,
     "TCU": StateAssessmentType.TCU_DRUG_SCREEN,
@@ -146,6 +160,7 @@ _STATE_ASSESSMENT_TYPE_MAP = {
 
 _STATE_ASSESSMENT_LEVEL_TYPE_MAP = {
     "EXTERNAL UNKNOWN": StateAssessmentLevel.EXTERNAL_UNKNOWN,
+    "MINIMUM": StateAssessmentLevel.MINIMUM,
     "LOW": StateAssessmentLevel.LOW,
     "LOW MEDIUM": StateAssessmentLevel.LOW_MEDIUM,
     "MEDIUM": StateAssessmentLevel.MEDIUM,
@@ -153,4 +168,5 @@ _STATE_ASSESSMENT_LEVEL_TYPE_MAP = {
     "MODERATE": StateAssessmentLevel.MODERATE,
     "HIGH": StateAssessmentLevel.HIGH,
     "VERY HIGH": StateAssessmentLevel.VERY_HIGH,
+    "MAXIMUM": StateAssessmentLevel.MAXIMUM,
 }
