@@ -39,6 +39,9 @@
               },
               {
                 "$ref": "string_expressions/index.json"
+              },
+              {
+                "$ref": "enum_expressions/index.json"
               }
             ]
           }

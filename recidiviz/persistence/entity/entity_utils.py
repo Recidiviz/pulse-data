@@ -39,6 +39,7 @@ from recidiviz.common.attr_utils import (
     is_forward_ref,
     is_list,
 )
+from recidiviz.common.constants.entity_enum import EntityEnum
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.ingest.aggregate.aggregate_ingest_utils import pairwise
 from recidiviz.persistence.database.database_entity import DatabaseEntity
@@ -249,6 +250,22 @@ def get_all_entity_classes_in_module(entities_module: ModuleType) -> Set[Type[En
                 expected_classes.add(attribute)
 
     return expected_classes
+
+
+def get_all_enum_classes_in_module(enums_module: ModuleType) -> Set[Type[Enum]]:
+    """Returns a set of all subclasses of Enum that are defined in the given module."""
+    enum_classes: Set[Type[Enum]] = set()
+    for attribute_name in dir(enums_module):
+        attribute = getattr(enums_module, attribute_name)
+        if inspect.isclass(attribute):
+            if (
+                attribute is not Enum
+                and attribute is not EntityEnum
+                and issubclass(attribute, Enum)
+            ):
+                enum_classes.add(attribute)
+
+    return enum_classes
 
 
 def get_all_entity_factory_classes_in_module(

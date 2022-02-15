@@ -19,11 +19,12 @@
 import datetime
 import os
 import unittest
-from typing import Callable, Dict, List, Optional, Type, Union
+from enum import Enum
+from typing import Callable, Dict, List, Optional, Type
 
 import jsonschema
 
-from recidiviz.common.constants.enum_parser import EnumParser, EnumParsingError
+from recidiviz.common.constants.enum_parser import EnumParsingError
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
 from recidiviz.ingest.direct.ingest_mappings.custom_function_registry import (
@@ -42,6 +43,7 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest import (
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_deserialize import (
+    DeserializableEntityFieldValue,
     EntityFactory,
     EntityT,
     entity_deserialize,
@@ -68,7 +70,7 @@ from recidiviz.tests.ingest.direct.ingest_mappings.fixtures.ingest_view_file_par
 
 class FakePersonExternalIdFactory(EntityFactory):
     @staticmethod
-    def deserialize(**kwargs: Optional[Union[str, EnumParser]]) -> FakePersonExternalId:
+    def deserialize(**kwargs: DeserializableEntityFieldValue) -> FakePersonExternalId:
         return entity_deserialize(
             cls=FakePersonExternalId, converter_overrides={}, defaults={}, **kwargs
         )
@@ -76,7 +78,7 @@ class FakePersonExternalIdFactory(EntityFactory):
 
 class FakePersonFactory(EntityFactory):
     @staticmethod
-    def deserialize(**kwargs: Optional[Union[str, EnumParser]]) -> FakePerson:
+    def deserialize(**kwargs: DeserializableEntityFieldValue) -> FakePerson:
         return entity_deserialize(
             cls=FakePerson, converter_overrides={}, defaults={}, **kwargs
         )
@@ -84,7 +86,7 @@ class FakePersonFactory(EntityFactory):
 
 class FakePersonAliasFactory(EntityFactory):
     @staticmethod
-    def deserialize(**kwargs: Optional[Union[str, EnumParser]]) -> FakePersonAlias:
+    def deserialize(**kwargs: DeserializableEntityFieldValue) -> FakePersonAlias:
         return entity_deserialize(
             cls=FakePersonAlias, converter_overrides={}, defaults={}, **kwargs
         )
@@ -92,7 +94,7 @@ class FakePersonAliasFactory(EntityFactory):
 
 class FakePersonRaceFactory(EntityFactory):
     @staticmethod
-    def deserialize(**kwargs: Optional[Union[str, EnumParser]]) -> FakePersonRace:
+    def deserialize(**kwargs: DeserializableEntityFieldValue) -> FakePersonRace:
         return entity_deserialize(
             cls=FakePersonRace, converter_overrides={}, defaults={}, **kwargs
         )
@@ -100,7 +102,7 @@ class FakePersonRaceFactory(EntityFactory):
 
 class FakeAgentFactory(EntityFactory):
     @staticmethod
-    def deserialize(**kwargs: Optional[Union[str, EnumParser]]) -> FakeAgent:
+    def deserialize(**kwargs: DeserializableEntityFieldValue) -> FakeAgent:
         return entity_deserialize(
             cls=FakeAgent, converter_overrides={}, defaults={}, **kwargs
         )
@@ -108,7 +110,7 @@ class FakeAgentFactory(EntityFactory):
 
 class FakeSentenceFactory(EntityFactory):
     @staticmethod
-    def deserialize(**kwargs: Optional[Union[str, EnumParser]]) -> FakeSentence:
+    def deserialize(**kwargs: DeserializableEntityFieldValue) -> FakeSentence:
         return entity_deserialize(
             cls=FakeSentence, converter_overrides={}, defaults={}, **kwargs
         )
@@ -116,7 +118,7 @@ class FakeSentenceFactory(EntityFactory):
 
 class FakeChargeFactory(EntityFactory):
     @staticmethod
-    def deserialize(**kwargs: Optional[Union[str, EnumParser]]) -> FakeCharge:
+    def deserialize(**kwargs: DeserializableEntityFieldValue) -> FakeCharge:
         return entity_deserialize(
             cls=FakeCharge, converter_overrides={}, defaults={}, **kwargs
         )
@@ -135,7 +137,7 @@ class FakeSchemaIngestViewFileParserDelegate(IngestViewFileParserDelegate):
     def get_ingest_view_manifest_path(self, file_tag: str) -> str:
         return os.path.join(os.path.dirname(manifests.__file__), f"{file_tag}.yaml")
 
-    def get_common_args(self) -> Dict[str, Optional[Union[str, EnumParser]]]:
+    def get_common_args(self) -> Dict[str, DeserializableEntityFieldValue]:
         return {"fake_state_code": StateCode.US_XX.value}
 
     def get_entity_factory_class(self, entity_cls_name: str) -> Type[EntityFactory]:
@@ -171,6 +173,13 @@ class FakeSchemaIngestViewFileParserDelegate(IngestViewFileParserDelegate):
         if entity_cls_name == FakeCharge.__name__:
             return FakeCharge
         raise ValueError(f"Unexpected class name [{entity_cls_name}]")
+
+    def get_enum_cls(self, enum_cls_name: str) -> Type[Enum]:
+        if enum_cls_name == FakeRace.__name__:
+            return FakeRace
+        if enum_cls_name == FakeGender.__name__:
+            return FakeGender
+        raise ValueError(f"Unexpected class name [{enum_cls_name}]")
 
     def get_custom_function_registry(self) -> CustomFunctionRegistry:
         return CustomFunctionRegistry(custom_functions_root_module=custom_python)
@@ -965,8 +974,8 @@ class IngestViewFileParserTest(unittest.TestCase):
         # Act
         with self.assertRaisesRegex(
             ValueError,
-            r"Unexpected return type for function \[fake_custom_enum_parsers.flip_black_and_white\]. "
-            r"Expected \[<enum 'FakeGender'>\], found \[<enum 'FakeRace'>\]",
+            r"Unexpected manifest node type: \[<enum 'FakeRace'>\]. "
+            r"Expected result_type: \[<enum 'FakeGender'>\].",
         ):
             _ = self._run_parse_manifest_for_tag("enum_custom_parser_bad_return_type")
 
@@ -2072,14 +2081,52 @@ class IngestViewFileParserTest(unittest.TestCase):
         # Assert
         self.assertEqual(expected_output, parsed_output)
 
-    # We do not currently have support for enum variables.
     def test_enum_variable(self) -> None:
+        # Arrange
+        expected_output = [
+            FakePerson(
+                fake_state_code="US_XX",
+                gender=FakeGender.FEMALE,
+                gender_raw_text="F",
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX", external_id="1", id_type="ID_TYPE"
+                    )
+                ],
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                gender=FakeGender.MALE,
+                gender_raw_text="M",
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX", external_id="2", id_type="ID_TYPE"
+                    )
+                ],
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX", external_id="3", id_type="ID_TYPE"
+                    )
+                ],
+            ),
+        ]
+
         # Act
+        parsed_output = self._run_parse_for_tag("enum_variable")
+
+        # Assert
+        self.assertEqual(expected_output, parsed_output)
+
+    def test_enums_bad_mapping_mixed_enums(self) -> None:
         with self.assertRaisesRegex(
-            jsonschema.exceptions.ValidationError,
-            r"'\$enum_mapping' was unexpected",
+            ValueError,
+            r"^Enum \$mappings should only contain mappings for one enum type but found "
+            r"multiple: \['FakeGender', 'FakeRace'\]",
         ):
-            _ = self._run_parse_for_tag("enum_variable")
+            _ = self._run_parse_manifest_for_tag("enums_bad_mapping_mixed_enums")
 
     def test_bad_variable_type_throws(self) -> None:
         with self.assertRaisesRegex(

@@ -15,10 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Factories for deserializing entities in state/entities.py from ingested values."""
-
-from typing import Optional, Union
-
-from recidiviz.common.constants.enum_parser import EnumParser
 from recidiviz.common.constants.shared_enums.charge import ChargeStatus
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_court_case import (
@@ -32,6 +28,7 @@ from recidiviz.common.constants.state.state_program_assignment import (
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.str_field_utils import normalize_flat_json, parse_days
 from recidiviz.persistence.entity.entity_deserialize import (
+    DeserializableEntityFieldValue,
     EntityFactory,
     EntityFieldConverter,
     entity_deserialize,
@@ -42,33 +39,33 @@ from recidiviz.persistence.entity.state import entities
 class StatePersonExternalIdFactory(EntityFactory):
     @staticmethod
     def deserialize(
-        **kwargs: Optional[Union[str, EnumParser]]
+        **kwargs: DeserializableEntityFieldValue,
     ) -> entities.StatePersonExternalId:
         return entity_deserialize(
             cls=entities.StatePersonExternalId,
             converter_overrides={},
             defaults={},
-            **kwargs
+            **kwargs,
         )
 
 
 class StatePersonFactory(EntityFactory):
     @staticmethod
-    def deserialize(**kwargs: Optional[Union[str, EnumParser]]) -> entities.StatePerson:
+    def deserialize(**kwargs: DeserializableEntityFieldValue) -> entities.StatePerson:
         return entity_deserialize(
             cls=entities.StatePerson,
             converter_overrides={
                 "full_name": EntityFieldConverter(str, normalize_flat_json),
             },
             defaults={},
-            **kwargs
+            **kwargs,
         )
 
 
 class StatePersonRaceFactory(EntityFactory):
     @staticmethod
     def deserialize(
-        **kwargs: Optional[Union[str, EnumParser]]
+        **kwargs: DeserializableEntityFieldValue,
     ) -> entities.StatePersonRace:
         return entity_deserialize(
             cls=entities.StatePersonRace, converter_overrides={}, defaults={}, **kwargs
@@ -78,20 +75,20 @@ class StatePersonRaceFactory(EntityFactory):
 class StatePersonEthnicityFactory(EntityFactory):
     @staticmethod
     def deserialize(
-        **kwargs: Optional[Union[str, EnumParser]]
+        **kwargs: DeserializableEntityFieldValue,
     ) -> entities.StatePersonEthnicity:
         return entity_deserialize(
             cls=entities.StatePersonEthnicity,
             converter_overrides={},
             defaults={},
-            **kwargs
+            **kwargs,
         )
 
 
 class StateAssessmentFactory(EntityFactory):
     @staticmethod
     def deserialize(
-        **kwargs: Optional[Union[str, EnumParser]]
+        **kwargs: DeserializableEntityFieldValue,
     ) -> entities.StateAssessment:
         return entity_deserialize(
             cls=entities.StateAssessment, converter_overrides={}, defaults={}, **kwargs
@@ -101,7 +98,7 @@ class StateAssessmentFactory(EntityFactory):
 class StatePersonAliasFactory(EntityFactory):
     @staticmethod
     def deserialize(
-        **kwargs: Optional[Union[str, EnumParser]]
+        **kwargs: DeserializableEntityFieldValue,
     ) -> entities.StatePersonAlias:
         return entity_deserialize(
             cls=entities.StatePersonAlias,
@@ -109,38 +106,38 @@ class StatePersonAliasFactory(EntityFactory):
                 "full_name": EntityFieldConverter(str, normalize_flat_json),
             },
             defaults={},
-            **kwargs
+            **kwargs,
         )
 
 
 class StateAgentFactory(EntityFactory):
     @staticmethod
-    def deserialize(**kwargs: Optional[Union[str, EnumParser]]) -> entities.StateAgent:
+    def deserialize(**kwargs: DeserializableEntityFieldValue) -> entities.StateAgent:
         return entity_deserialize(
             cls=entities.StateAgent,
             converter_overrides={
                 "full_name": EntityFieldConverter(str, normalize_flat_json),
             },
             defaults={"agent_type": StateAgentType.PRESENT_WITHOUT_INFO},
-            **kwargs
+            **kwargs,
         )
 
 
 class StateChargeFactory(EntityFactory):
     @staticmethod
-    def deserialize(**kwargs: Optional[Union[str, EnumParser]]) -> entities.StateCharge:
+    def deserialize(**kwargs: DeserializableEntityFieldValue) -> entities.StateCharge:
         return entity_deserialize(
             cls=entities.StateCharge,
             converter_overrides={},
             defaults={"status": ChargeStatus.PRESENT_WITHOUT_INFO},
-            **kwargs
+            **kwargs,
         )
 
 
 class StateCourtCaseFactory(EntityFactory):
     @staticmethod
     def deserialize(
-        **kwargs: Optional[Union[str, EnumParser]]
+        **kwargs: DeserializableEntityFieldValue,
     ) -> entities.StateCourtCase:
         return entity_deserialize(
             cls=entities.StateCourtCase,
@@ -149,53 +146,53 @@ class StateCourtCaseFactory(EntityFactory):
                 "court_type": StateCourtType.PRESENT_WITHOUT_INFO,
                 "status": StateCourtCaseStatus.PRESENT_WITHOUT_INFO,
             },
-            **kwargs
+            **kwargs,
         )
 
 
 class StateEarlyDischargeFactory(EntityFactory):
     @staticmethod
     def deserialize(
-        **kwargs: Optional[Union[str, EnumParser]]
+        **kwargs: DeserializableEntityFieldValue,
     ) -> entities.StateEarlyDischarge:
         return entity_deserialize(
             cls=entities.StateEarlyDischarge,
             converter_overrides={},
             defaults={},
-            **kwargs
+            **kwargs,
         )
 
 
 class StateIncarcerationIncidentFactory(EntityFactory):
     @staticmethod
     def deserialize(
-        **kwargs: Optional[Union[str, EnumParser]]
+        **kwargs: DeserializableEntityFieldValue,
     ) -> entities.StateIncarcerationIncident:
         return entity_deserialize(
             cls=entities.StateIncarcerationIncident,
             converter_overrides={},
             defaults={},
-            **kwargs
+            **kwargs,
         )
 
 
 class StateIncarcerationIncidentOutcomeFactory(EntityFactory):
     @staticmethod
     def deserialize(
-        **kwargs: Optional[Union[str, EnumParser]]
+        **kwargs: DeserializableEntityFieldValue,
     ) -> entities.StateIncarcerationIncidentOutcome:
         return entity_deserialize(
             cls=entities.StateIncarcerationIncidentOutcome,
             converter_overrides={},
             defaults={},
-            **kwargs
+            **kwargs,
         )
 
 
 class StateIncarcerationSentenceFactory(EntityFactory):
     @staticmethod
     def deserialize(
-        **kwargs: Optional[Union[str, EnumParser]]
+        **kwargs: DeserializableEntityFieldValue,
     ) -> entities.StateIncarcerationSentence:
         return entity_deserialize(
             cls=entities.StateIncarcerationSentence,
@@ -211,14 +208,14 @@ class StateIncarcerationSentenceFactory(EntityFactory):
                 "status": StateSentenceStatus.PRESENT_WITHOUT_INFO,
                 "incarceration_type": StateIncarcerationType.STATE_PRISON,
             },
-            **kwargs
+            **kwargs,
         )
 
 
 class StateSupervisionSentenceFactory(EntityFactory):
     @staticmethod
     def deserialize(
-        **kwargs: Optional[Union[str, EnumParser]]
+        **kwargs: DeserializableEntityFieldValue,
     ) -> entities.StateSupervisionSentence:
         return entity_deserialize(
             cls=entities.StateSupervisionSentence,
@@ -229,14 +226,14 @@ class StateSupervisionSentenceFactory(EntityFactory):
             defaults={
                 "status": StateSentenceStatus.PRESENT_WITHOUT_INFO,
             },
-            **kwargs
+            **kwargs,
         )
 
 
 class StateProgramAssignmentFactory(EntityFactory):
     @staticmethod
     def deserialize(
-        **kwargs: Optional[Union[str, EnumParser]]
+        **kwargs: DeserializableEntityFieldValue,
     ) -> entities.StateProgramAssignment:
         return entity_deserialize(
             cls=entities.StateProgramAssignment,
@@ -244,7 +241,7 @@ class StateProgramAssignmentFactory(EntityFactory):
             defaults={
                 "participation_status": StateProgramAssignmentParticipationStatus.PRESENT_WITHOUT_INFO
             },
-            **kwargs
+            **kwargs,
         )
 
 
@@ -253,7 +250,7 @@ class StateIncarcerationPeriodFactory(EntityFactory):
 
     @staticmethod
     def deserialize(
-        **kwargs: Optional[Union[str, EnumParser]]
+        **kwargs: DeserializableEntityFieldValue,
     ) -> entities.StateIncarcerationPeriod:
         ip = entity_deserialize(
             cls=entities.StateIncarcerationPeriod,
@@ -261,7 +258,7 @@ class StateIncarcerationPeriodFactory(EntityFactory):
             defaults={
                 "incarceration_type": StateIncarcerationType.STATE_PRISON,
             },
-            **kwargs
+            **kwargs,
         )
 
         return ip
@@ -270,102 +267,102 @@ class StateIncarcerationPeriodFactory(EntityFactory):
 class StateSupervisionPeriodFactory(EntityFactory):
     @staticmethod
     def deserialize(
-        **kwargs: Optional[Union[str, EnumParser]]
+        **kwargs: DeserializableEntityFieldValue,
     ) -> entities.StateSupervisionPeriod:
         return entity_deserialize(
             cls=entities.StateSupervisionPeriod,
             converter_overrides={},
             defaults={},
-            **kwargs
+            **kwargs,
         )
 
 
 class StateSupervisionCaseTypeEntryFactory(EntityFactory):
     @staticmethod
     def deserialize(
-        **kwargs: Optional[Union[str, EnumParser]]
+        **kwargs: DeserializableEntityFieldValue,
     ) -> entities.StateSupervisionCaseTypeEntry:
         return entity_deserialize(
             cls=entities.StateSupervisionCaseTypeEntry,
             converter_overrides={},
             defaults={},
-            **kwargs
+            **kwargs,
         )
 
 
 class StateSupervisionContactFactory(EntityFactory):
     @staticmethod
     def deserialize(
-        **kwargs: Optional[Union[str, EnumParser]]
+        **kwargs: DeserializableEntityFieldValue,
     ) -> entities.StateSupervisionContact:
         return entity_deserialize(
             cls=entities.StateSupervisionContact,
             converter_overrides={},
             defaults={},
-            **kwargs
+            **kwargs,
         )
 
 
 class StateSupervisionViolationFactory(EntityFactory):
     @staticmethod
     def deserialize(
-        **kwargs: Optional[Union[str, EnumParser]]
+        **kwargs: DeserializableEntityFieldValue,
     ) -> entities.StateSupervisionViolation:
         return entity_deserialize(
             cls=entities.StateSupervisionViolation,
             converter_overrides={},
             defaults={},
-            **kwargs
+            **kwargs,
         )
 
 
 class StateSupervisionViolationResponseFactory(EntityFactory):
     @staticmethod
     def deserialize(
-        **kwargs: Optional[Union[str, EnumParser]]
+        **kwargs: DeserializableEntityFieldValue,
     ) -> entities.StateSupervisionViolationResponse:
         return entity_deserialize(
             cls=entities.StateSupervisionViolationResponse,
             converter_overrides={},
             defaults={},
-            **kwargs
+            **kwargs,
         )
 
 
 class StateSupervisionViolatedConditionEntryFactory(EntityFactory):
     @staticmethod
     def deserialize(
-        **kwargs: Optional[Union[str, EnumParser]]
+        **kwargs: DeserializableEntityFieldValue,
     ) -> entities.StateSupervisionViolatedConditionEntry:
         return entity_deserialize(
             cls=entities.StateSupervisionViolatedConditionEntry,
             converter_overrides={},
             defaults={},
-            **kwargs
+            **kwargs,
         )
 
 
 class StateSupervisionViolationResponseDecisionEntryFactory(EntityFactory):
     @staticmethod
     def deserialize(
-        **kwargs: Optional[Union[str, EnumParser]]
+        **kwargs: DeserializableEntityFieldValue,
     ) -> entities.StateSupervisionViolationResponseDecisionEntry:
         return entity_deserialize(
             cls=entities.StateSupervisionViolationResponseDecisionEntry,
             converter_overrides={},
             defaults={},
-            **kwargs
+            **kwargs,
         )
 
 
 class StateSupervisionViolationTypeEntryFactory(EntityFactory):
     @staticmethod
     def deserialize(
-        **kwargs: Optional[Union[str, EnumParser]]
+        **kwargs: DeserializableEntityFieldValue,
     ) -> entities.StateSupervisionViolationTypeEntry:
         return entity_deserialize(
             cls=entities.StateSupervisionViolationTypeEntry,
             converter_overrides={},
             defaults={},
-            **kwargs
+            **kwargs,
         )

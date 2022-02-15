@@ -105,7 +105,7 @@ class StateIngestViewParserTestBase:
 
         contents_handle = LocalFileContentsHandle(fixture_path, cleanup_file=False)
         for row in csv.DictReader(contents_handle.get_contents_iterator()):
-            _ = enum_parser_manifest.build_from_row(row).parse()
+            _ = enum_parser_manifest.build_from_row(row)
 
     def _run_parse_ingest_view_test(
         self, file_tag: str, expected_output: Sequence[Entity], debug: bool = False

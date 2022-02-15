@@ -20,10 +20,12 @@ logic from the ingest view parser.
 
 import abc
 import os
+from enum import Enum
 from types import ModuleType
-from typing import Callable, Dict, Optional, Type, Union
+from typing import Callable, Dict, List, Optional, Type
 
-from recidiviz.common.constants.enum_parser import EnumParser
+from recidiviz.common.constants import shared_enums
+from recidiviz.common.constants import state as state_constants
 from recidiviz.common.module_collector_mixin import ModuleCollectorMixin
 from recidiviz.ingest.direct.ingest_mappings.custom_function_registry import (
     CustomFunctionRegistry,
@@ -31,8 +33,13 @@ from recidiviz.ingest.direct.ingest_mappings.custom_function_registry import (
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.entity_deserialize import EntityFactory, EntityT
+from recidiviz.persistence.entity.entity_deserialize import (
+    DeserializableEntityFieldValue,
+    EntityFactory,
+    EntityT,
+)
 from recidiviz.persistence.entity.entity_utils import (
+    get_all_enum_classes_in_module,
     get_entity_class_in_module_with_name,
 )
 from recidiviz.persistence.entity.state import (
@@ -53,7 +60,7 @@ class IngestViewFileParserDelegate:
         """Returns the path to the ingest view manifest for a given file tag."""
 
     @abc.abstractmethod
-    def get_common_args(self) -> Dict[str, Optional[Union[str, EnumParser]]]:
+    def get_common_args(self) -> Dict[str, DeserializableEntityFieldValue]:
         """Returns a dictionary containing any fields, with their corresponding values,
         that should be set on every entity produced by the parser.
         """
@@ -67,6 +74,10 @@ class IngestViewFileParserDelegate:
     @abc.abstractmethod
     def get_entity_cls(self, entity_cls_name: str) -> Type[Entity]:
         """Returns the class for a given entity name"""
+
+    @abc.abstractmethod
+    def get_enum_cls(self, enum_cls_name: str) -> Type[Enum]:
+        """Returns the class for a given enum name"""
 
     @abc.abstractmethod
     def get_custom_function_registry(self) -> CustomFunctionRegistry:
@@ -132,11 +143,12 @@ class IngestViewFileParserDelegateImpl(
         self.schema_type = schema_type
         self.ingest_instance = ingest_instance
         self.entity_cls_cache: Dict[str, Type[Entity]] = {}
+        self.enum_cls_cache: Dict[str, Type[Enum]] = {}
 
     def get_ingest_view_manifest_path(self, file_tag: str) -> str:
         return yaml_mappings_filepath(self.region, file_tag)
 
-    def get_common_args(self) -> Dict[str, Optional[Union[str, EnumParser]]]:
+    def get_common_args(self) -> Dict[str, DeserializableEntityFieldValue]:
         if self.schema_type == SchemaType.STATE:
             # All entities in the state schema have the state_code field - we add this
             # as a common argument so we don't have to specify it in the yaml mappings.
@@ -155,6 +167,11 @@ class IngestViewFileParserDelegateImpl(
             return state_entities
         raise ValueError(f"Unexpected schema type [{self.schema_type}]")
 
+    def _get_enums_modules(self) -> List[ModuleType]:
+        if self.schema_type == SchemaType.STATE:
+            return [shared_enums, state_constants]
+        raise ValueError(f"Unexpected schema type [{self.schema_type}]")
+
     def get_entity_factory_class(self, entity_cls_name: str) -> Type[EntityFactory]:
         factory_entity_name = f"{entity_cls_name}Factory"
         factory_cls = getattr(
@@ -171,6 +188,31 @@ class IngestViewFileParserDelegateImpl(
         )
         self.entity_cls_cache[entity_cls_name] = entity_cls
         return entity_cls
+
+    def get_enum_cls(self, enum_cls_name: str) -> Type[Enum]:
+        if not self.enum_cls_cache:
+            self._hydrate_enum_cls_cache()
+
+        if enum_cls_name not in self.enum_cls_cache:
+            raise ValueError(f"Unexpected enum class name [{enum_cls_name}].")
+
+        return self.enum_cls_cache[enum_cls_name]
+
+    def _hydrate_enum_cls_cache(self) -> None:
+        enums_root_modules = self._get_enums_modules()
+
+        for enums_root_module in enums_root_modules:
+            enum_file_modules = ModuleCollectorMixin.get_submodules(
+                enums_root_module, submodule_name_prefix_filter=None
+            )
+            for enum_module in enum_file_modules:
+                for enum_cls in get_all_enum_classes_in_module(enum_module):
+                    if enum_cls.__name__ in self.enum_cls_cache:
+                        raise ValueError(
+                            f"Found duplicate enum already added to the cache: "
+                            f"[{enum_cls.__name__}]"
+                        )
+                    self.enum_cls_cache[enum_cls.__name__] = enum_cls
 
     def get_custom_function_registry(self) -> CustomFunctionRegistry:
         region_code = self.region.region_code.lower()
