@@ -1,0 +1,37 @@
+E_Transfer_Reason_Desc,Transfer_Reason_Cd
+Interstate Active Detainer,28
+Violation of Probation,16
+Violation of Probation - Prob. to Terminate(J),27
+Safe Keepers,31
+Individual Client Request,4
+Closed Interest,25
+Violation of Parole,15
+SCCP Placement,12
+Violation of SCCP,17
+Medical,34
+Drug Court Sanction,22
+Police Referral,23
+Interstate Compact,30
+Release to Community Reintegration,8
+Bind Over,1
+Discharge,29
+Release to Probation/JCCO,10
+Detention,20
+Safety,11
+Release to Parole,9
+Informal Resolution,26
+Other Jurisdiction,5
+Population Distribution,7
+Sentence/Disposition,19
+Change of Custody Level,3
+Federal BOP,33
+Higher Security,35
+Security,13
+Shock Sentence,21
+Writ / Court Order,18
+Pending Adult Charges,6
+Supervision Accepted,24
+Case Management Plan,2
+Federal Hold,32
+Violation of Community Reintegration,14
+Weekly Transfers – Classification Only,36

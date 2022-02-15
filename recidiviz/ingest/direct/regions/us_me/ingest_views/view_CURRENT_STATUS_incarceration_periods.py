@@ -19,6 +19,7 @@ from recidiviz.ingest.direct.regions.us_me.ingest_views.us_me_view_query_fragmen
     VIEW_CLIENT_FILTER_CONDITION,
 )
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
+    UPDATE_DATETIME_PARAM_NAME,
     DirectIngestPreProcessedIngestViewBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -47,6 +48,13 @@ VIEW_QUERY_TEMPLATE = f"""
         
         LEFT JOIN {{CIS_3141_TRANSFER_REASON}} reason
         ON Cis_3141_Transfer_Reason_Cd = reason.Transfer_Reason_Cd
+    ),
+    all_bed_assignments AS (
+        SELECT
+            Cis_100_Client_Id AS client_id,
+            PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE(Start_Date, r'{REGEX_TIMESTAMP_NANOS_FORMAT}', '')) AS bed_assignment_start_date,
+            PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE(End_Date, r'{REGEX_TIMESTAMP_NANOS_FORMAT}', '')) AS bed_assignment_end_date,
+        FROM {{CIS_916_ASSIGN_BED}}
     ),
     all_statuses AS (
         SELECT
@@ -98,6 +106,55 @@ VIEW_QUERY_TEMPLATE = f"""
         )
         -- Only include statuses associated with non-cancelled transfers
         AND t.cancelled IS NULL
+    ),
+    bed_assignment_periods AS (
+        -- Select date ranges for continuous periods of assignment
+        SELECT
+          client_id,
+          MIN(EXTRACT(DATE FROM bed_assignment_start_date)) AS bed_period_start_date, 
+          IF(
+            -- NULL end dates or end dates in the future mean the period is still active
+            LOGICAL_OR(bed_assignment_end_date IS NULL), DATE(9999, 12, 31), MAX(EXTRACT(DATE FROM bed_assignment_end_date))
+          ) AS bed_period_end_date
+        FROM (
+          SELECT 
+              client_id,
+              bed_assignment_start_date,
+              bed_assignment_end_date,
+              COUNT(CASE WHEN IFNULL(is_new_range, TRUE) THEN 1 ELSE NULL END) OVER (
+                PARTITION BY client_id 
+                ORDER BY bed_assignment_start_date, bed_assignment_end_date
+              ) AS range_id
+          FROM (
+            SELECT 
+                client_id, 
+                bed_assignment_start_date, 
+                bed_assignment_end_date, 
+                DATE_DIFF(bed_assignment_start_date, LAG(bed_assignment_end_date) OVER bed_assignment_order, DAY) > 1 AS is_new_range
+            FROM all_bed_assignments
+            WINDOW bed_assignment_order AS (
+                PARTITION BY client_id 
+                ORDER BY bed_assignment_start_date, bed_assignment_end_date
+            )
+          ) AS identify_new_ranges
+        ) AS order_and_count_new_ranges
+        GROUP BY client_id, range_id
+    ),
+    cleaned_up_bed_assignment_periods AS (
+        SELECT
+            client_id,
+            -- Fix dates that do not make sense chronologically
+            CASE
+                WHEN bed_period_start_date > bed_period_end_date
+                THEN bed_period_end_date
+                ELSE bed_period_start_date
+            END AS bed_period_start_date,
+            CASE
+                WHEN bed_period_end_date < bed_period_start_date
+                THEN bed_period_start_date
+                ELSE bed_period_end_date
+            END AS bed_period_end_date,
+        FROM bed_assignment_periods
     ),
     cleaned_up_statuses AS (
         SELECT
@@ -162,6 +219,38 @@ VIEW_QUERY_TEMPLATE = f"""
             END,
             ineffective_datetime
         )
+    ),
+    join_statuses_and_bed_assignments AS (
+        SELECT 
+            s.client_id,
+            current_status,
+            current_status_location,
+            location_type,
+            jurisdiction_location_type,
+            housing_unit,
+            transfer_id,
+            transfer_type,
+            transfer_reason,
+            next_effective_datetime,
+            effective_datetime,
+            effective_date,
+            end_datetime,
+            end_date,
+            ineffective_datetime,
+            ineffective_date,
+            -- If multiple bed assignments are joined to one status period, take the latest bed assignment period.
+            MAX(b.bed_period_start_date) as bed_period_start_date, 
+            MAX(b.bed_period_end_date) as bed_period_end_date
+        FROM cleaned_up_statuses s
+        LEFT JOIN cleaned_up_bed_assignment_periods b
+        ON s.client_id = b.client_id
+        AND (
+            -- Bed period starts before status ends and the status starts before the bed period ends
+            (b.bed_period_start_date < s.end_date AND s.effective_date <= b.bed_period_end_date)
+          -- Join bed assignments that happen on the same day as the status start and end dates
+          OR (b.bed_period_start_date = s.effective_date AND b.bed_period_end_date = s.end_date)
+      )
+      GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
     ),
     all_movements AS (
         SELECT
@@ -248,6 +337,8 @@ VIEW_QUERY_TEMPLATE = f"""
             -- Prioritize using the movement_date over the status's effective_date since there can be multiple
             -- movements within a status period.
             COALESCE(m.movement_date, s.effective_date) AS start_date,
+            s.bed_period_start_date,
+            s.bed_period_end_date,
             m.movement_type,
             m.movement_direction,
             m.next_movement_status,
@@ -260,10 +351,10 @@ VIEW_QUERY_TEMPLATE = f"""
             s.current_status,
             LAG(s.current_status) OVER movement_seq AS previous_status,
             LAG(s.current_status, 2) OVER movement_seq AS previous_previous_status,
-            IF(m.next_movement_status = 'Pending', NULL, LEAD(s.current_status) OVER movement_seq) AS next_status,
+            IF(m.next_movement_status = 'Pending' AND LEAD(movement_date) OVER movement_seq > @{UPDATE_DATETIME_PARAM_NAME}, NULL, LEAD(s.current_status) OVER movement_seq) AS next_status,
             s.current_status_location,
             s.location_type,
-            IF(m.next_movement_status = 'Pending', NULL, LEAD(s.location_type) OVER movement_seq) AS next_location_type,
+            IF(m.next_movement_status = 'Pending' AND LEAD(movement_date) OVER movement_seq > @{UPDATE_DATETIME_PARAM_NAME}, NULL, LEAD(s.location_type) OVER movement_seq) AS next_location_type,
             s.jurisdiction_location_type,
             s.housing_unit,
             s.end_date,
@@ -274,7 +365,7 @@ VIEW_QUERY_TEMPLATE = f"""
             -- This prevents Furloughs and Escapes from repeating the previous movement's transfer reasons
             IF(LAG(s.transfer_id) OVER movement_seq = s.transfer_id, m.transfer_type, s.transfer_type) AS transfer_type,
             IF(LAG(s.transfer_id) OVER movement_seq = s.transfer_id, m.transfer_reason, s.transfer_reason) AS transfer_reason,
-        FROM cleaned_up_statuses s
+        FROM join_statuses_and_bed_assignments s
         
         LEFT JOIN filtered_movements_with_next_type m
             ON m.client_id = s.client_id
@@ -309,16 +400,22 @@ VIEW_QUERY_TEMPLATE = f"""
             CASE 
                 -- Deceased location type
                 WHEN next_location_type IN ('14')
-                THEN ineffective_date
-                WHEN next_movement_type IN ('Discharge', 'Release') AND next_movement_status = 'Pending'
-                THEN NULL
+                    THEN ineffective_date
+                WHEN next_movement_type IN ('Discharge', 'Release') AND next_movement_status = 'Pending' 
+                  AND next_movement_date > @{UPDATE_DATETIME_PARAM_NAME}
+                    THEN NULL
+                -- Prioritize an earlier bed assignment date over a status end date or next movement date
+                WHEN bed_period_end_date < s.end_date 
+                    AND (bed_period_end_date < next_movement_date OR next_movement_date IS NULL)
+                    AND bed_period_end_date < @{UPDATE_DATETIME_PARAM_NAME}
+                    THEN bed_period_end_date
                 WHEN next_movement_date IS NULL
-                -- Convert 9999-12-31 dates to NULL
+                -- Convert all future dates to NULL
                 THEN COALESCE(
-                    IF(end_date = DATE(9999, 12, 31), NULL, end_date), 
-                    IF(ineffective_date = DATE(9999, 12, 31), NULL, ineffective_date)
+                    IF(end_date > @{UPDATE_DATETIME_PARAM_NAME}, NULL, end_date), 
+                    IF(ineffective_date > @{UPDATE_DATETIME_PARAM_NAME}, NULL, ineffective_date)
                 )
-                ELSE IF(s.next_movement_date = DATE(9999, 12, 31), NULL, s.next_movement_date) 
+                ELSE IF(s.next_movement_date > @{UPDATE_DATETIME_PARAM_NAME}, NULL, s.next_movement_date) 
             END AS end_date,
             CASE
                 -- If the previous status is Inactive, check the status end date preceding Inactive and if it 

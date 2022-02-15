@@ -287,6 +287,7 @@ class BaseViewTest(unittest.TestCase):
         self.postgres_engine = create_engine(
             local_postgres_helpers.on_disk_postgres_db_url()
         )
+        self.query_run_dt = DEFAULT_QUERY_RUN_DATETIME
 
         # Implement ARRAY_CONCAT_AGG function that behaves the same (ARRAY_AGG fails on empty arrays)
         self._execute_statement(_CREATE_ARRAY_CONCAT_AGG_FUNC)
@@ -474,7 +475,6 @@ class BaseViewTest(unittest.TestCase):
         self,
         view_builder: DirectIngestPreProcessedIngestViewBuilder,
         dimensions: List[str],
-        query_run_dt: datetime.datetime = DEFAULT_QUERY_RUN_DATETIME,
         data_types: Optional[Union[Type, Dict[str, Type]]] = None,
     ) -> pd.DataFrame:
         view: BigQueryView = view_builder.build()
@@ -485,7 +485,7 @@ class BaseViewTest(unittest.TestCase):
         )
         view_query = view_query.replace(
             f"@{UPDATE_DATETIME_PARAM_NAME}",
-            f"TIMESTAMP '{query_run_dt.isoformat()}'",
+            f"TIMESTAMP '{self.query_run_dt.isoformat()}'",
         )
 
         return self.query_view(
@@ -521,6 +521,7 @@ class BaseViewTest(unittest.TestCase):
     ) -> pd.DataFrame:
         """Query the PG tables with the Postgres formatted query string and return the results as a DataFrame."""
         view_query = self._rewrite_sql(view_query)
+
         # TODO(#5533): Instead of using read_sql_query, we can use
         # `create_view` and `read_sql_table`. That can take a schema which will
         # solve some of the issues. As part of adding `dimensions` to builders
@@ -831,6 +832,9 @@ class BaseViewTest(unittest.TestCase):
 
         # Allow trailing commas in SELECT.
         query = _replace_iter(query, r",(?P<whitespace>\s+)FROM", "{whitespace}FROM")
+
+        # Postgres does not have LOGICAL_OR operator, use BOOL_OR instead
+        query = _replace_iter(query, r"LOGICAL_OR", "BOOL_OR")
         return query
 
     BQ_TIMESTAMP_DATE_FORMAT_TO_POSTGRES = {

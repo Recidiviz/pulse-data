@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests the US_ME `CURRENT_STATUS_incarceration_periods` view logic."""
+from datetime import datetime
 from unittest.mock import Mock, patch
 
 from recidiviz.common.constants.states import StateCode
@@ -31,6 +32,7 @@ class CurrentStatusIncarcerationPeriodTest(BaseViewTest):
         self.view_builder = self.view_builder_for_tag(
             self.region_code, "CURRENT_STATUS_incarceration_periods"
         )
+        self.query_run_dt = datetime(2021, 9, 30, 0, 0, 0)
         self.data_types = str
 
     def test_juvenile_locations(self) -> None:
@@ -73,4 +75,16 @@ class CurrentStatusIncarcerationPeriodTest(BaseViewTest):
         """Assert that open periods have null end dates."""
         self.run_ingest_view_test(
             fixtures_files_name="pending_discharge_or_release_periods.csv"
+        )
+
+    def test_bed_assignment_ends_before_status(self) -> None:
+        """Assert that bed assignment dates take priority over status or movement dates."""
+        self.run_ingest_view_test(
+            fixtures_files_name="bed_assignment_ends_before_status.csv"
+        )
+
+    def test_pending_discharges_in_the_past(self) -> None:
+        """Assert that periods with a pending discharge in the past have the correct end date."""
+        self.run_ingest_view_test(
+            fixtures_files_name="pending_discharges_in_the_past.csv"
         )
