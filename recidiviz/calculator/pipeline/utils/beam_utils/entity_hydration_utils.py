@@ -20,7 +20,6 @@ from typing import Dict, Iterable, List, Tuple, Union, cast
 
 import apache_beam as beam
 from apache_beam.typehints import with_input_types, with_output_types
-from more_itertools import one
 
 from recidiviz.calculator.pipeline.utils.beam_utils.extractor_utils import (
     EntityClassName,
@@ -45,6 +44,7 @@ from recidiviz.persistence.entity.state import entities
         UnifyingId,
         Dict[Union[EntityClassName, TableName], Union[List[Entity], List[TableRow]]],
     ],
+    beam.typehints.Optional[str],
 )
 @with_output_types(
     beam.typehints.Tuple[
@@ -56,6 +56,7 @@ class ConvertEntitiesToStateSpecificTypes(beam.DoFn):
     """Converts entities into state-specific subclasses of those entities,
     for use in state-specific calculate flows."""
 
+    # pylint: disable=arguments-differ
     def process(
         self,
         element: Tuple[
@@ -64,6 +65,7 @@ class ConvertEntitiesToStateSpecificTypes(beam.DoFn):
                 Union[EntityClassName, TableName], Union[List[Entity], List[TableRow]]
             ],
         ],
+        state_code: str,
         *_args,
         **_kwargs,
     ) -> Iterable[
@@ -80,6 +82,7 @@ class ConvertEntitiesToStateSpecificTypes(beam.DoFn):
         Args:
             element: A tuple containing person_id and a dictionary with all of the
                 person's entities and sentence statuses (if applicable)
+            state_code: The state_code corresponding to the entities
 
         Yields:
             A replica of the provided element, with some entities replaced by updated
@@ -87,10 +90,7 @@ class ConvertEntitiesToStateSpecificTypes(beam.DoFn):
         """
         person_id, entities_and_reference_tables = element
 
-        person = one(list(entities_and_reference_tables[entities.StatePerson.__name__]))
-        person = cast(entities.StatePerson, person)
-
-        if person.state_code == StateCode.US_MO.value:
+        if state_code == StateCode.US_MO.value:
             self.update_US_MO_sentences(entities_and_reference_tables)
         yield person_id, entities_and_reference_tables
 

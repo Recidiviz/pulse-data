@@ -60,7 +60,9 @@ class TestProduceProgramMetrics(unittest.TestCase):
 
     def setUp(self) -> None:
         self.metric_producer = metric_producer.ProgramMetricProducer()
-        self.pipeline_config = pipeline.ProgramPipelineRunDelegate.pipeline_config()
+        self.pipeline_config = (
+            pipeline.ProgramMetricsPipelineRunDelegate.pipeline_config()
+        )
 
     @freeze_time("2030-11-02")
     def test_produce_program_metrics(self) -> None:
@@ -98,7 +100,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
-            pipeline_type=self.pipeline_config.pipeline_type,
+            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         expected_count = expected_metrics_count(program_events)
@@ -153,7 +155,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
             calculation_month_count=1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
-            pipeline_type=self.pipeline_config.pipeline_type,
+            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         expected_count = expected_metrics_count(program_events)
@@ -208,7 +210,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
-            pipeline_type=self.pipeline_config.pipeline_type,
+            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         expected_count = expected_metrics_count(program_events)
@@ -280,7 +282,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
-            pipeline_type=self.pipeline_config.pipeline_type,
+            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         expected_count = expected_metrics_count(program_events)
@@ -327,7 +329,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
             calculation_month_count=1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
-            pipeline_type=self.pipeline_config.pipeline_type,
+            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         expected_count = expected_metrics_count([included_event])
@@ -371,7 +373,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
             calculation_month_count=36,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
-            pipeline_type=self.pipeline_config.pipeline_type,
+            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         expected_count = expected_metrics_count([included_event])

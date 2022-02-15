@@ -20,6 +20,10 @@ from datetime import date, datetime
 
 import mock
 
+from recidiviz.calculator.pipeline.pipeline_type import (
+    INCARCERATION_METRICS_PIPELINE_NAME,
+    SUPERVISION_METRICS_PIPELINE_NAME,
+)
 from recidiviz.calculator.pipeline.utils import calculator_utils
 from recidiviz.calculator.pipeline.utils.calculator_utils import person_characteristics
 from recidiviz.calculator.pipeline.utils.metric_utils import PersonMetadata
@@ -82,7 +86,10 @@ def test_age_at_date_birthdate_unknown() -> None:
     )
 
 
-INCLUDED_PIPELINES = ["incarceration", "supervision"]
+INCLUDED_PIPELINES = [
+    INCARCERATION_METRICS_PIPELINE_NAME,
+    SUPERVISION_METRICS_PIPELINE_NAME,
+]
 
 
 class TestPersonExternalIdToInclude(unittest.TestCase):

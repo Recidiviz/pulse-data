@@ -43,7 +43,6 @@ from recidiviz.calculator.pipeline.metrics.supervision.metrics import (
     SupervisionSuccessMetric,
     SupervisionTerminationMetric,
 )
-from recidiviz.calculator.pipeline.pipeline_type import PipelineType
 from recidiviz.calculator.pipeline.utils.calculator_utils import (
     build_metric,
     get_calculation_month_lower_bound_date,
@@ -102,7 +101,7 @@ class SupervisionMetricProducer(
         identifier_events: List[SupervisionEvent],
         metric_inclusions: Dict[SupervisionMetricType, bool],
         person_metadata: PersonMetadata,
-        pipeline_type: PipelineType,
+        pipeline_name: str,
         pipeline_job_id: str,
         calculation_end_month: Optional[str] = None,
         calculation_month_count: int = -1,
@@ -179,7 +178,7 @@ class SupervisionMetricProducer(
 
                 if self.include_event_in_metric(event, metric_type):
                     metric = build_metric(
-                        pipeline=pipeline_type.value.lower(),
+                        pipeline=pipeline_name,
                         event=event,
                         metric_class=metric_class,
                         person=person,

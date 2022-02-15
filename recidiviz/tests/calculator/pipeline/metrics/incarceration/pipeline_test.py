@@ -45,7 +45,6 @@ from recidiviz.calculator.pipeline.metrics.incarceration.metrics import (
     IncarcerationPopulationMetric,
     IncarcerationReleaseMetric,
 )
-from recidiviz.calculator.pipeline.pipeline_type import PipelineType
 from recidiviz.calculator.pipeline.utils.assessment_utils import (
     DEFAULT_ASSESSMENT_SCORE_BUCKET,
 )
@@ -97,7 +96,7 @@ from recidiviz.tests.calculator.pipeline.fake_bigquery import (
     FakeWriteToBigQueryFactory,
 )
 from recidiviz.tests.calculator.pipeline.utils.run_pipeline_test_utils import (
-    default_data_dict_for_root_schema_classes,
+    default_data_dict_for_run_delegate,
     run_test_pipeline,
 )
 from recidiviz.tests.calculator.pipeline.utils.state_utils.state_calculation_config_manager_test import (
@@ -124,17 +123,6 @@ ALL_METRIC_TYPES_SET = {
 
 INCARCERATION_PIPELINE_PACKAGE_NAME = pipeline.__name__
 
-ROOT_SCHEMA_CLASSES_FOR_PIPELINE = [
-    schema.StatePerson,
-    schema.StateIncarcerationPeriod,
-    schema.StateSupervisionPeriod,
-    schema.StateSupervisionViolation,
-    schema.StateSupervisionViolationResponse,
-    schema.StateSupervisionSentence,
-    schema.StateIncarcerationSentence,
-    schema.StateAssessment,
-]
-
 
 class TestIncarcerationPipeline(unittest.TestCase):
     """Tests the entire incarceration pipeline."""
@@ -151,6 +139,7 @@ class TestIncarcerationPipeline(unittest.TestCase):
             self.state_specific_delegate_patcher.start()
         )
         self.mock_get_state_delegate_container.return_value = STATE_DELEGATES_FOR_TESTS
+        self.run_delegate_class = pipeline.IncarcerationMetricsPipelineRunDelegate
 
     def tearDown(self) -> None:
         self._stop_state_specific_delegate_patchers()
@@ -158,9 +147,8 @@ class TestIncarcerationPipeline(unittest.TestCase):
     def _stop_state_specific_delegate_patchers(self) -> None:
         self.state_specific_delegate_patcher.stop()
 
-    @staticmethod
     def build_incarceration_pipeline_data_dict(
-        fake_person_id: int, state_code: str = "US_XX"
+        self, fake_person_id: int, state_code: str = "US_XX"
     ) -> Dict[str, List]:
         """Builds a data_dict for a basic run of the pipeline."""
         fake_person = schema.StatePerson(
@@ -368,9 +356,7 @@ class TestIncarcerationPipeline(unittest.TestCase):
             }
         ]
 
-        data_dict = default_data_dict_for_root_schema_classes(
-            ROOT_SCHEMA_CLASSES_FOR_PIPELINE
-        )
+        data_dict = default_data_dict_for_run_delegate(self.run_delegate_class)
         data_dict_overrides = {
             schema.StatePerson.__tablename__: persons_data,
             schema.StatePersonRace.__tablename__: races_data,
@@ -473,7 +459,7 @@ class TestIncarcerationPipeline(unittest.TestCase):
         )
 
         run_test_pipeline(
-            run_delegate=pipeline.IncarcerationPipelineRunDelegate,
+            run_delegate=self.run_delegate_class,
             state_code=state_code,
             project_id=project,
             dataset_id=dataset,
@@ -580,9 +566,7 @@ class TestIncarcerationPipeline(unittest.TestCase):
             }
         ]
 
-        data_dict = default_data_dict_for_root_schema_classes(
-            ROOT_SCHEMA_CLASSES_FOR_PIPELINE
-        )
+        data_dict = default_data_dict_for_run_delegate(self.run_delegate_class)
         data_dict_overrides = {
             schema.StatePerson.__tablename__: persons_data,
             schema.StateIncarcerationSentence.__tablename__: incarceration_sentence_data,
@@ -990,7 +974,9 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
         self.mock_job_id.return_value = "job_id"
 
         self.metric_producer = pipeline.metric_producer.IncarcerationMetricProducer()
-        self.pipeline_type = PipelineType.INCARCERATION
+        self.pipeline_name = (
+            pipeline.IncarcerationMetricsPipelineRunDelegate.pipeline_config().pipeline_name
+        )
 
         default_beam_args: List[str] = [
             "--project",
@@ -1077,7 +1063,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
                 ProduceMetrics(),
                 self.pipeline_job_args,
                 self.metric_producer,
-                self.pipeline_type,
+                self.pipeline_name,
             )
         )
 
@@ -1122,7 +1108,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
                 ProduceMetrics(),
                 self.pipeline_job_args,
                 self.metric_producer,
-                self.pipeline_type,
+                self.pipeline_name,
             )
         )
 
@@ -1144,7 +1130,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
                 ProduceMetrics(),
                 self.pipeline_job_args,
                 self.metric_producer,
-                self.pipeline_type,
+                self.pipeline_name,
             )
         )
 

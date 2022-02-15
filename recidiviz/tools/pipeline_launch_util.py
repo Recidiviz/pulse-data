@@ -19,33 +19,80 @@
 from __future__ import absolute_import
 
 import importlib
+import inspect
 import pkgutil
-from typing import List
+from typing import List, Type
 
-# TODO(#10724): Update this to incorporate the normalization pipelines once that
-#  package exists
-from recidiviz.calculator.pipeline import metrics as pipeline_top_level
+from recidiviz.calculator.pipeline import metrics as metrics_pipeline_top_level
 from recidiviz.calculator.pipeline.base_pipeline import (
     BasePipeline,
     PipelineRunDelegate,
 )
+from recidiviz.common.module_collector_mixin import ModuleCollectorMixin
 
 
 def load_all_pipelines() -> None:
-    """Loads all subclasses of MetricPipelineRunDelegate."""
-    for _, name, _ in pkgutil.walk_packages(pipeline_top_level.__path__):  # type: ignore
-        full_name = f"{pipeline_top_level.__name__}.{name}.pipeline"
+    """Loads all subclasses of PipelineRunDelegate."""
+    for _, name, _ in pkgutil.walk_packages(metrics_pipeline_top_level.__path__):  # type: ignore
+        full_name = f"{metrics_pipeline_top_level.__name__}.{name}.pipeline"
         try:
             importlib.import_module(full_name)
         except ModuleNotFoundError:
             continue
 
 
-def _delegate_cls_for_pipeline_name(pipeline_name: str) -> PipelineRunDelegate:
-    pipeline_module = f"{pipeline_top_level.__name__}.{pipeline_name}.pipeline"
-    delegate_name = f"{pipeline_name.capitalize()}PipelineRunDelegate"
+def collect_all_pipeline_names() -> List[str]:
+    """Collects all of the pipeline names from all of the implementations of the
+    PipelineRunDelegate."""
+    run_delegates = collect_all_pipeline_run_delegates()
 
-    return getattr(importlib.import_module(pipeline_module), delegate_name)
+    return [
+        run_delegate.pipeline_config().pipeline_name.lower()
+        for run_delegate in run_delegates
+    ]
+
+
+def collect_all_pipeline_run_delegates() -> List[Type[PipelineRunDelegate]]:
+    metrics_submodules = ModuleCollectorMixin.get_submodules(
+        base_module=metrics_pipeline_top_level, submodule_name_prefix_filter=None
+    )
+
+    run_delegates: List[Type[PipelineRunDelegate]] = []
+
+    for module in metrics_submodules:
+        pipeline_modules = ModuleCollectorMixin.get_submodules(
+            module, submodule_name_prefix_filter="pipeline"
+        )
+
+        for pipeline_module in pipeline_modules:
+            for attribute_name in dir(pipeline_module):
+                attribute = getattr(pipeline_module, attribute_name)
+                if inspect.isclass(attribute):
+                    if issubclass(
+                        attribute, PipelineRunDelegate
+                    ) and not inspect.isabstract(attribute):
+                        run_delegates.append(attribute)
+
+    return run_delegates
+
+
+def _delegate_cls_for_pipeline_name(pipeline_name: str) -> Type[PipelineRunDelegate]:
+    """Finds the PipelineRunDelegate class corresponding to the pipeline with the
+    given |pipeline_name|."""
+    all_run_delegates = collect_all_pipeline_run_delegates()
+    delegates_with_pipeline_name = [
+        delegate
+        for delegate in all_run_delegates
+        if delegate.pipeline_config().pipeline_name.lower() == pipeline_name
+    ]
+
+    if len(delegates_with_pipeline_name) != 1:
+        raise ValueError(
+            "Expected exactly one PipelineRunDelegate with the "
+            f"pipeline_name: {pipeline_name}. Found: {delegates_with_pipeline_name}."
+        )
+
+    return delegates_with_pipeline_name[0]
 
 
 def run_pipeline(pipeline_name: str, argv: List[str]) -> None:

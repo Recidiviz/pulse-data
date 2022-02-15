@@ -47,7 +47,6 @@ from recidiviz.calculator.pipeline.metrics.supervision.metrics import (
 from recidiviz.calculator.pipeline.metrics.supervision.supervision_case_compliance import (
     SupervisionCaseCompliance,
 )
-from recidiviz.calculator.pipeline.pipeline_type import PipelineType
 from recidiviz.calculator.pipeline.utils.assessment_utils import (
     DEFAULT_ASSESSMENT_SCORE_BUCKET,
 )
@@ -117,7 +116,7 @@ from recidiviz.tests.calculator.pipeline.fake_bigquery import (
 )
 from recidiviz.tests.calculator.pipeline.metrics.supervision import identifier_test
 from recidiviz.tests.calculator.pipeline.utils.run_pipeline_test_utils import (
-    default_data_dict_for_root_schema_classes,
+    default_data_dict_for_run_delegate,
     run_test_pipeline,
 )
 from recidiviz.tests.calculator.pipeline.utils.state_utils.state_calculation_config_manager_test import (
@@ -126,18 +125,6 @@ from recidiviz.tests.calculator.pipeline.utils.state_utils.state_calculation_con
 from recidiviz.tests.persistence.database import database_test_utils
 
 SUPERVISION_PIPELINE_PACKAGE_NAME = pipeline.__name__
-
-ROOT_SCHEMA_CLASSES_FOR_PIPELINE = [
-    schema.StatePerson,
-    schema.StateSupervisionPeriod,
-    schema.StateIncarcerationPeriod,
-    schema.StateSupervisionViolation,
-    schema.StateSupervisionViolationResponse,
-    schema.StateSupervisionSentence,
-    schema.StateIncarcerationSentence,
-    schema.StateAssessment,
-    schema.StateSupervisionContact,
-]
 
 
 class TestSupervisionPipeline(unittest.TestCase):
@@ -171,13 +158,13 @@ class TestSupervisionPipeline(unittest.TestCase):
         self.mock_metric_producer_supervision_delegate.return_value = (
             UsXxSupervisionDelegate()
         )
+        self.run_delegate_class = pipeline.SupervisionMetricsPipelineRunDelegate
 
     def tearDown(self) -> None:
         self.state_specific_delegate_patcher.stop()
 
-    @staticmethod
     def build_supervision_pipeline_data_dict(
-        fake_person_id: int, fake_supervision_period_id: int
+        self, fake_person_id: int, fake_supervision_period_id: int
     ) -> Dict[str, List[Any]]:
         """Builds a data_dict for a basic run of the pipeline."""
         fake_person = schema.StatePerson(
@@ -420,9 +407,7 @@ class TestSupervisionPipeline(unittest.TestCase):
             },
         ]
 
-        data_dict = default_data_dict_for_root_schema_classes(
-            ROOT_SCHEMA_CLASSES_FOR_PIPELINE
-        )
+        data_dict = default_data_dict_for_run_delegate(self.run_delegate_class)
         data_dict_overrides = {
             schema.StatePerson.__tablename__: persons_data,
             schema.StatePersonRace.__tablename__: person_race_data,
@@ -509,7 +494,7 @@ class TestSupervisionPipeline(unittest.TestCase):
             )
         )
         run_test_pipeline(
-            run_delegate=pipeline.SupervisionPipelineRunDelegate,
+            run_delegate=self.run_delegate_class,
             state_code="US_XX",
             project_id=project,
             dataset_id=dataset,
@@ -726,9 +711,7 @@ class TestSupervisionPipeline(unittest.TestCase):
             }
         ]
 
-        data_dict = default_data_dict_for_root_schema_classes(
-            ROOT_SCHEMA_CLASSES_FOR_PIPELINE
-        )
+        data_dict = default_data_dict_for_run_delegate(self.run_delegate_class)
         data_dict_overrides = {
             schema.StatePerson.__tablename__: persons_data,
             schema.StateIncarcerationPeriod.__tablename__: incarceration_periods_data,
@@ -954,9 +937,7 @@ class TestSupervisionPipeline(unittest.TestCase):
             }
         ]
 
-        data_dict = default_data_dict_for_root_schema_classes(
-            ROOT_SCHEMA_CLASSES_FOR_PIPELINE
-        )
+        data_dict = default_data_dict_for_run_delegate(self.run_delegate_class)
         data_dict_overrides = {
             schema.StatePerson.__tablename__: persons_data,
             schema.StateIncarcerationPeriod.__tablename__: incarceration_periods_data,
@@ -1933,7 +1914,9 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         self.mock_job_id.return_value = "job_id"
 
         self.metric_producer = pipeline.metric_producer.SupervisionMetricProducer()
-        self.pipeline_type = PipelineType.SUPERVISION
+        self.pipeline_name = (
+            pipeline.SupervisionMetricsPipelineRunDelegate.pipeline_config().pipeline_name
+        )
 
         default_beam_args: List[str] = [
             "--project",
@@ -2022,7 +2005,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 ProduceMetrics(),
                 self.pipeline_job_args,
                 self.metric_producer,
-                self.pipeline_type,
+                self.pipeline_name,
             )
         )
 
@@ -2067,7 +2050,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 ProduceMetrics(),
                 self.pipeline_job_args,
                 self.metric_producer,
-                self.pipeline_type,
+                self.pipeline_name,
             )
         )
 
@@ -2090,7 +2073,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 ProduceMetrics(),
                 self.pipeline_job_args,
                 self.metric_producer,
-                self.pipeline_type,
+                self.pipeline_name,
             )
         )
 

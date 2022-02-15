@@ -18,7 +18,7 @@
 
 import datetime
 from collections import defaultdict
-from typing import Dict, List, Sequence, Type
+from typing import Dict, List, Optional, Sequence, Type
 
 from recidiviz.common.constants.shared_enums.charge import ChargeStatus
 from recidiviz.common.constants.shared_enums.person_characteristics import (
@@ -157,7 +157,11 @@ def assert_no_unexpected_entities_in_db(
             )
 
 
-def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePerson:
+def generate_full_graph_state_person(
+    set_back_edges: bool,
+    include_person_back_edges: Optional[bool] = True,
+    set_ids: Optional[bool] = False,
+) -> entities.StatePerson:
     """Test util for generating a StatePerson that has at least one child of
     each possible Entity type, with all possible edge types defined between
     objects.
@@ -166,6 +170,11 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
         set_back_edges: explicitly sets all the back edges on the graph
             that will get automatically filled in when this entity graph is
             written to the DB.
+        include_person_back_edges: If set_back_edges is set to True, whether or not to
+            set the back edges to StatePerson. This is usually False when testing
+            calculation pipelines that do not hydrate this edge.
+        set_ids: It True, sets a value on the entity id field (primary key) of each
+            entity.
 
     Returns:
         A test instance of a StatePerson.
@@ -584,24 +593,6 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
     person.supervision_periods = [supervision_period]
 
     if set_back_edges:
-        person_children: Sequence[Entity] = (
-            *person.external_ids,
-            *person.races,
-            *person.aliases,
-            *person.ethnicities,
-            *person.assessments,
-            *person.program_assignments,
-            *person.incarceration_incidents,
-            *person.supervision_violations,
-            *person.supervision_contacts,
-            *person.incarceration_sentences,
-            *person.supervision_sentences,
-            *person.incarceration_periods,
-            *person.supervision_periods,
-        )
-        for child in person_children:
-            child.person = person  # type: ignore[attr-defined]
-
         incarceration_sentence_children: Sequence[Entity] = (
             *incarceration_sentence.charges,
             *incarceration_sentence.early_discharges,
@@ -612,7 +603,6 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
                 child.incarceration_sentences = [incarceration_sentence]  # type: ignore[attr-defined]
             else:
                 child.incarceration_sentence = incarceration_sentence  # type: ignore[attr-defined]
-            child.person = person  # type: ignore[attr-defined]
 
         supervision_sentence_children: Sequence[Entity] = (
             *supervision_sentence.charges,
@@ -624,10 +614,8 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
                 child.supervision_sentences = [supervision_sentence]  # type: ignore[attr-defined]
             else:
                 child.supervision_sentence = supervision_sentence  # type: ignore[attr-defined]
-            child.person = person  # type: ignore[attr-defined]
 
         court_case.charges = [charge, charge2, charge3]
-        court_case.person = person
 
         incarceration_incident_children: List[
             StateIncarcerationIncidentOutcome
@@ -635,7 +623,6 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
 
         for child in incarceration_incident_children:
             child.incarceration_incident = incarceration_incident
-            child.person = person
 
         supervision_period_children: Sequence[Entity] = (
             *supervision_period.case_type_entries,
@@ -645,18 +632,55 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
                 child.supervision_periods = [supervision_period]  # type: ignore[attr-defined]
             else:
                 child.supervision_period = supervision_period  # type: ignore[attr-defined]
-            child.person = person  # type: ignore[attr-defined]
 
         supervision_violation_response.supervision_violation = supervision_violation
-        supervision_violation_response.person = person
-        supervision_violation.person = person
 
         for violation_type in supervision_violation.supervision_violation_types:
             violation_type.supervision_violation = supervision_violation
-            violation_type.person = person
 
         for violated_condition in supervision_violation.supervision_violated_conditions:
             violated_condition.supervision_violation = supervision_violation
-            violated_condition.person = person
+
+    all_entities: Sequence[Entity] = (
+        *person.external_ids,
+        *person.races,
+        *person.aliases,
+        *person.ethnicities,
+        *person.assessments,
+        *person.program_assignments,
+        *person.incarceration_incidents,
+        *person.supervision_violations,
+        *person.supervision_contacts,
+        *person.incarceration_sentences,
+        *person.supervision_sentences,
+        *person.incarceration_periods,
+        *person.supervision_periods,
+        *incarceration_sentence.charges,
+        *incarceration_sentence.early_discharges,
+        *supervision_sentence.charges,
+        *supervision_sentence.early_discharges,
+        *[court_case],
+        *incarceration_incident.incarceration_incident_outcomes,
+        *supervision_period.case_type_entries,
+        *supervision_violation.supervision_violation_responses,
+        *supervision_violation.supervision_violation_types,
+        *supervision_violation.supervision_violated_conditions,
+    )
+
+    if include_person_back_edges and set_back_edges:
+        if include_person_back_edges:
+            for entity in all_entities:
+                entity.set_field("person", person)
+
+    if set_ids:
+        for entity in all_entities:
+            if entity.get_id():
+                raise ValueError(
+                    f"Found entity [{entity}] with already set id field."
+                    f"Not expected to be set until this part of the "
+                    f"function."
+                )
+            id_name = entity.get_class_id_name()
+            entity.set_field(id_name, id(entity))
 
     return person

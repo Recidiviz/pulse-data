@@ -41,7 +41,15 @@ from recidiviz.calculator.pipeline.utils.beam_utils.bigquery_io_utils import (
     ConvertDictToKVTuple,
     ReadFromBigQuery,
 )
-from recidiviz.calculator.pipeline.utils.execution_utils import select_query
+from recidiviz.calculator.pipeline.utils.execution_utils import (
+    EntityAssociation,
+    EntityClassName,
+    EntityRelationshipKey,
+    TableName,
+    TableRow,
+    UnifyingId,
+    select_query,
+)
 from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.persistence.database import schema_utils
 from recidiviz.persistence.database.base_schema import StateBase
@@ -68,27 +76,6 @@ EntityRelationshipDetails = NamedTuple(
         ("association_table_entity_id_field", str),
     ],
 )
-
-# The name of an entity, e.g. StatePerson.
-EntityClassName = str
-
-# The names of of two entities that are related to one another,
-# eg. StateSupervisionSentence.StateCharge
-EntityRelationshipKey = str
-
-# The name of a reference table, e.g. supervision_period_to_agent_association
-TableName = str
-
-# The unifying id that can be used to group related objects together (e.g. person_id)
-UnifyingId = int
-
-# Primary keys of two entities that share a relationship. The first int is the parent
-# object primary key and the second int is the child object primary key.
-EntityAssociation = Tuple[int, int]
-
-
-# The structure of table rows loaded from BigQuery
-TableRow = Dict[str, str]
 
 
 class ExtractDataForPipeline(beam.PTransform):

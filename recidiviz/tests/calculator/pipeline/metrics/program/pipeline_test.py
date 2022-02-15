@@ -44,7 +44,6 @@ from recidiviz.calculator.pipeline.metrics.program.metrics import (
     ProgramParticipationMetric,
     ProgramReferralMetric,
 )
-from recidiviz.calculator.pipeline.pipeline_type import PipelineType
 from recidiviz.calculator.pipeline.utils.assessment_utils import (
     DEFAULT_ASSESSMENT_SCORE_BUCKET,
 )
@@ -85,7 +84,7 @@ from recidiviz.tests.calculator.pipeline.fake_bigquery import (
     FakeWriteToBigQueryFactory,
 )
 from recidiviz.tests.calculator.pipeline.utils.run_pipeline_test_utils import (
-    default_data_dict_for_root_schema_classes,
+    default_data_dict_for_run_delegate,
     run_test_pipeline,
 )
 from recidiviz.tests.calculator.pipeline.utils.state_utils.state_calculation_config_manager_test import (
@@ -94,13 +93,6 @@ from recidiviz.tests.calculator.pipeline.utils.state_utils.state_calculation_con
 from recidiviz.tests.persistence.database import database_test_utils
 
 ALL_METRIC_INCLUSIONS_DICT = {metric_type: True for metric_type in ProgramMetricType}
-
-ROOT_SCHEMA_CLASSES_FOR_PIPELINE = [
-    schema.StatePerson,
-    schema.StateSupervisionPeriod,
-    schema.StateProgramAssignment,
-    schema.StateAssessment,
-]
 
 
 class TestProgramPipeline(unittest.TestCase):
@@ -118,6 +110,7 @@ class TestProgramPipeline(unittest.TestCase):
             self.state_specific_delegate_patcher.start()
         )
         self.mock_get_state_delegate_container.return_value = STATE_DELEGATES_FOR_TESTS
+        self.run_delegate_class = pipeline.ProgramMetricsPipelineRunDelegate
 
     def tearDown(self) -> None:
         self._stop_state_specific_delegate_patchers()
@@ -125,9 +118,8 @@ class TestProgramPipeline(unittest.TestCase):
     def _stop_state_specific_delegate_patchers(self) -> None:
         self.state_specific_delegate_patcher.stop()
 
-    @staticmethod
     def build_data_dict(
-        fake_person_id: int, fake_supervision_period_id: int
+        self, fake_person_id: int, fake_supervision_period_id: int
     ) -> Dict[str, List]:
         """Builds a data_dict for a basic run of the pipeline."""
         fake_person = schema.StatePerson(
@@ -226,9 +218,7 @@ class TestProgramPipeline(unittest.TestCase):
             }
         ]
 
-        data_dict = default_data_dict_for_root_schema_classes(
-            ROOT_SCHEMA_CLASSES_FOR_PIPELINE
-        )
+        data_dict = default_data_dict_for_run_delegate(self.run_delegate_class)
 
         data_dict_overrides: Dict[str, List[Any]] = {
             schema.StatePerson.__tablename__: persons_data,
@@ -289,7 +279,7 @@ class TestProgramPipeline(unittest.TestCase):
             )
         )
         run_test_pipeline(
-            run_delegate=pipeline.ProgramPipelineRunDelegate,
+            run_delegate=self.run_delegate_class,
             state_code="US_XX",
             project_id=project,
             dataset_id=dataset,
@@ -410,9 +400,7 @@ class TestProgramPipeline(unittest.TestCase):
             }
         ]
 
-        data_dict = default_data_dict_for_root_schema_classes(
-            ROOT_SCHEMA_CLASSES_FOR_PIPELINE
-        )
+        data_dict = default_data_dict_for_run_delegate(self.run_delegate_class)
 
         data_dict_overrides: Dict[str, List[Dict[str, Any]]] = {
             schema.StatePerson.__tablename__: persons_data,
@@ -858,7 +846,9 @@ class TestProduceProgramMetrics(unittest.TestCase):
         self.mock_job_id.return_value = "job_id"
 
         self.metric_producer = pipeline.metric_producer.ProgramMetricProducer()
-        self.pipeline_type = PipelineType.PROGRAM
+        self.pipeline_name = (
+            pipeline.ProgramMetricsPipelineRunDelegate.pipeline_config().pipeline_name
+        )
 
         default_beam_args: List[str] = [
             "--project",
@@ -942,7 +932,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
                 ProduceMetrics(),
                 self.pipeline_job_args,
                 self.metric_producer,
-                self.pipeline_type,
+                self.pipeline_name,
             )
         )
 
@@ -987,7 +977,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
                 ProduceMetrics(),
                 self.pipeline_job_args,
                 self.metric_producer,
-                self.pipeline_type,
+                self.pipeline_name,
             )
         )
 
@@ -1010,7 +1000,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
                 ProduceMetrics(),
                 self.pipeline_job_args,
                 self.metric_producer,
-                self.pipeline_type,
+                self.pipeline_name,
             )
         )
 

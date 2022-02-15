@@ -29,20 +29,20 @@ from recidiviz.calculator.pipeline.metrics.base_metric_producer import (
     BaseMetricProducer,
 )
 from recidiviz.calculator.pipeline.metrics.recidivism import identifier, metric_producer
-from recidiviz.calculator.pipeline.pipeline_type import PipelineType
+from recidiviz.calculator.pipeline.pipeline_type import RECIDIVISM_METRICS_PIPELINE_NAME
 from recidiviz.calculator.query.state.views.reference.persons_to_recent_county_of_residence import (
     PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME,
 )
 from recidiviz.persistence.entity.state import entities
 
 
-class RecidivismPipelineRunDelegate(MetricPipelineRunDelegate):
+class RecidivismMetricsPipelineRunDelegate(MetricPipelineRunDelegate):
     """Defines the recidivism metric calculation pipeline."""
 
     @classmethod
     def pipeline_config(cls) -> PipelineConfig:
         return PipelineConfig(
-            pipeline_type=PipelineType.RECIDIVISM,
+            pipeline_name=RECIDIVISM_METRICS_PIPELINE_NAME,
             required_entities=[
                 entities.StatePerson,
                 entities.StatePersonRace,

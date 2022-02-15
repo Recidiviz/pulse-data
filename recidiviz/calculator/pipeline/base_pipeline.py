@@ -25,7 +25,6 @@ import attr
 from apache_beam.options.pipeline_options import PipelineOptions
 from apache_beam.pvalue import PBegin
 
-from recidiviz.calculator.pipeline.pipeline_type import PipelineType
 from recidiviz.calculator.pipeline.utils.beam_utils.entity_hydration_utils import (
     ConvertEntitiesToStateSpecificTypes,
 )
@@ -78,11 +77,11 @@ class PipelineJobArgs:
 class PipelineConfig:
     """Configuration needed for a calculation pipeline. This configuration is unique
     to each pipeline type, and is consistent for all pipeline jobs of the same
-    |pipeline_type|."""
+    |pipeline_name|."""
 
-    # The type of the pipeline, usually matches the top-level package and is used to
-    # identify which pipeline to run in sandbox runs
-    pipeline_type: PipelineType = attr.ib()
+    # The name of the pipeline, which is a unique identifier for the pipeline run
+    # delegate
+    pipeline_name: str = attr.ib()
 
     # The list of entities required for the pipeline
     required_entities: List[Type[Entity]] = attr.ib()
@@ -99,7 +98,7 @@ PipelineJobArgsT = TypeVar("PipelineJobArgsT", bound=PipelineJobArgs)
 PipelineRunDelegateT = TypeVar("PipelineRunDelegateT", bound="PipelineRunDelegate")
 
 
-class PipelineRunDelegate(Generic[PipelineJobArgsT]):
+class PipelineRunDelegate(abc.ABC, Generic[PipelineJobArgsT]):
     """Base delegate interface required for running a pipeline."""
 
     def __init__(
@@ -131,10 +130,7 @@ class PipelineRunDelegate(Generic[PipelineJobArgsT]):
         )
 
     @classmethod
-    def add_pipeline_job_args_to_parser(
-        cls,
-        parser: argparse.ArgumentParser,
-    ) -> None:
+    def add_pipeline_job_args_to_parser(cls, parser: argparse.ArgumentParser) -> None:
         """Adds argument configs to the |parser| for base pipeline args."""
         parser.add_argument(
             "--state_code",
@@ -154,8 +150,9 @@ class PipelineRunDelegate(Generic[PipelineJobArgsT]):
         parser.add_argument(
             "--output",
             type=str,
-            help="Output dataset to write results to.",
-            default=cls.default_output_dataset(),
+            help="Output dataset to write results to. Pipelines must specify a default "
+            "via the default_output_dataset() function on the delegate.",
+            required=False,
         )
 
         parser.add_argument(
@@ -205,7 +202,8 @@ class PipelineRunDelegate(Generic[PipelineJobArgsT]):
             state_code=known_args.state_code,
             project_id=apache_beam_pipeline_options.get_all_options()["project"],
             input_dataset=known_args.data_input,
-            output_dataset=known_args.output,
+            output_dataset=known_args.output
+            or cls.default_output_dataset(known_args.state_code),
             reference_dataset=known_args.reference_view_input,
             apache_beam_pipeline_options=apache_beam_pipeline_options,
             person_id_filter_set=person_id_filter_set,
@@ -213,7 +211,7 @@ class PipelineRunDelegate(Generic[PipelineJobArgsT]):
 
     @classmethod
     @abc.abstractmethod
-    def default_output_dataset(cls) -> str:
+    def default_output_dataset(cls, state_code: str) -> str:
         """The default output dataset for the pipeline job. Must be implemented by
         subclasses."""
 
@@ -288,7 +286,9 @@ class BasePipeline:
             pipeline_data = (
                 pipeline_data
                 | "Convert entities to state-specific type"
-                >> beam.ParDo(ConvertEntitiesToStateSpecificTypes())
+                >> beam.ParDo(
+                    ConvertEntitiesToStateSpecificTypes(), state_code=state_code
+                )
             )
 
             pipeline_output = self.pipeline_run_delegate.run_data_transforms(

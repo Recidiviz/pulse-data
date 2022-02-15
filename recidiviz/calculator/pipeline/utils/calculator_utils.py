@@ -25,6 +25,11 @@ from recidiviz.calculator.dataflow_config import (
     DATAFLOW_METRICS_TO_TABLES,
     DATAFLOW_TABLES_TO_METRIC_TYPES,
 )
+from recidiviz.calculator.pipeline.pipeline_type import (
+    INCARCERATION_METRICS_PIPELINE_NAME,
+    RECIDIVISM_METRICS_PIPELINE_NAME,
+    SUPERVISION_METRICS_PIPELINE_NAME,
+)
 from recidiviz.calculator.pipeline.utils.event_utils import IdentifierEvent
 from recidiviz.calculator.pipeline.utils.metric_utils import (
     PersonMetadata,
@@ -50,7 +55,7 @@ from recidiviz.common.date import (
 from recidiviz.persistence.entity.state.entities import StatePerson
 
 PRIMARY_PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE = {
-    "incarceration": {
+    INCARCERATION_METRICS_PIPELINE_NAME: {
         StateCode.US_ID: US_ID_DOC,
         StateCode.US_ME: US_ME_DOC,
         StateCode.US_MO: US_MO_DOC,
@@ -58,8 +63,8 @@ PRIMARY_PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE = {
         StateCode.US_PA: US_PA_CONTROL,
         StateCode.US_TN: US_TN_DOC,
     },
-    "recidivism": {StateCode.US_ND: US_ND_ELITE},
-    "supervision": {
+    RECIDIVISM_METRICS_PIPELINE_NAME: {StateCode.US_ND: US_ND_ELITE},
+    SUPERVISION_METRICS_PIPELINE_NAME: {
         StateCode.US_ID: US_ID_DOC,
         StateCode.US_ME: US_ME_DOC,
         StateCode.US_MO: US_MO_DOC,
@@ -73,7 +78,7 @@ PRIMARY_PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE = {
 # there's only one ID type for a state, this will be the same as what is in the
 # PRIMARY map for the corresponding pipeline.
 SECONDARY_PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE = {
-    "incarceration": {
+    INCARCERATION_METRICS_PIPELINE_NAME: {
         StateCode.US_ID: US_ID_DOC,
         StateCode.US_ME: US_ME_DOC,
         StateCode.US_MO: US_MO_DOC,
