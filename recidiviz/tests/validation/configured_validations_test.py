@@ -16,12 +16,14 @@
 # =============================================================================
 """Unit test for all configured data validations"""
 import unittest
+from unittest.mock import MagicMock, patch
 
 import attr
 
 from recidiviz.validation.configured_validations import get_all_validations
 
 
+@patch("recidiviz.utils.metadata.project_id", MagicMock(return_value="test-project"))
 class TestConfiguredValidations(unittest.TestCase):
     """Unit test for all configured data validations"""
 
@@ -34,3 +36,9 @@ class TestConfiguredValidations(unittest.TestCase):
                 self.fail(
                     f"{validation.validation_name} threw an unexpected exception: {e}"
                 )
+
+    def test_configured_validations_all_contain_region_code(self) -> None:
+        validations = get_all_validations()
+        for validation in validations:
+            validation_view = validation.view_builder.build()
+            assert "region_code" in validation_view.view_query
