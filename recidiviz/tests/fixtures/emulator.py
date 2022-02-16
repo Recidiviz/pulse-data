@@ -25,7 +25,7 @@ import pytest
 import requests
 import yaml
 
-from conftest import get_worker_id
+from conftest import get_pytest_worker_id
 
 EMULATOR_STARTUP_TIMEOUT_SEC = 30
 
@@ -100,13 +100,13 @@ def _start_emulators() -> Tuple[subprocess.Popen, subprocess.Popen]:
 def _get_datastore_emulator_port() -> int:
     """Returns the port that the datastore emulator should bind to
     The emulator's default port is 8081"""
-    return 8081 + get_worker_id()
+    return 8081 + get_pytest_worker_id()
 
 
 def _get_datastore_emulator_data_dir() -> str:
     return os.path.join(
         os.environ.get("HOME", ""),
-        f".config/gcloud/emulators/datastore/{get_worker_id()}/",
+        f".config/gcloud/emulators/datastore/{get_pytest_worker_id()}/",
     )
 
 
@@ -117,13 +117,13 @@ def _get_datastore_emulator_env_path() -> str:
 def _get_pubsub_emulator_port() -> int:
     """Returns the port that the pubsub emulator should bind to.
     The emulator's default port is 8085, which could conflict with the datastore emulator, so we added 100"""
-    return 8185 + get_worker_id()
+    return 8185 + get_pytest_worker_id()
 
 
 def _get_pubsub_emulator_data_dir() -> str:
     return os.path.join(
         os.environ.get("HOME", ""),
-        f".config/gcloud/emulators/pubsub/{get_worker_id()}/",
+        f".config/gcloud/emulators/pubsub/{get_pytest_worker_id()}/",
     )
 
 

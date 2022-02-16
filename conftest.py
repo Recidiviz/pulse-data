@@ -114,7 +114,7 @@ def pytest_collection_modifyitems(config: Config, items: List[pytest.Item]) -> N
     items[:] = get_suite(items, suite_count, suite_id)
 
 
-def get_worker_id() -> int:
+def get_pytest_worker_id() -> int:
     """Retrieves the worker number from the appropriate environment variable
     https://github.com/pytest-dev/pytest-xdist#identifying-the-worker-process-during-a-test
     """
