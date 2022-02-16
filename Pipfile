@@ -33,7 +33,7 @@ gspread = "*"
 pytablewriter = "*"
 # Note: Update the `black` version in `.pre-commit-config.yaml` whenever this is updated.
 # If we remove the restriction, then add `pre-commit autoupdate` to the Pipenv Github action to keep them in sync.
-black = "==22.1.0"
+black = {extras = ["jupyter"],version = "==22.1.0"}
 pre-commit = "*"
 # TODO(#4287): Unpin/remove explicit dependency once the latest version of
 #  google-api-core supports protobuf version >= 3.18.0 (might be resolved by upgrading
