@@ -15,16 +15,18 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { Button, H4, Icon, IconSVG, palette } from "@recidiviz/design-system";
-import { format, formatDistanceToNowStrict, formatISO } from "date-fns";
+import { Button, H4, palette } from "@recidiviz/design-system";
+import { formatDistanceToNowStrict, formatISO } from "date-fns";
 import { observer } from "mobx-react-lite";
 import React from "react";
 import styled from "styled-components/macro";
 
+import DisplayDate from "../DisplayDate";
+import StatusUpdated from "../LastUpdated";
 import { useDataStore } from "../StoreProvider";
 import UserName from "../UserName";
 import CompliantReportingDenial from "./CompliantReportingDenial";
-import { IconPad } from "./styles";
+import SummaryItem from "./SummaryItem";
 import UpdatesInput from "./UpdatesInput";
 
 const ProfileContents = styled.div`
@@ -48,23 +50,26 @@ const CriteriaList = styled.ul`
 
 const Criterion = styled.li`
   margin: 8px 0;
+  line-height: 1.3;
 `;
 
-const Checkbox: React.FC = () => {
-  return (
-    <IconPad>
-      <Icon kind={IconSVG.Success} color={palette.signal.highlight} size={15} />
-    </IconPad>
-  );
-};
+const StatusHeading = styled.h5`
+  margin: 32px 0 8px;
+`;
 
 const StatusRow = styled.div`
   display: flex;
-  margin: 32px 0;
+  margin-bottom: 16px;
 `;
 
 const StatusItem = styled.div`
   padding-right: 16px;
+`;
+
+const StatusMetadata = styled.div`
+  font-size: 14px;
+  color: ${palette.text.caption};
+  margin-bottom: 32px;
 `;
 
 const Update = styled.div`
@@ -74,7 +79,7 @@ const Update = styled.div`
 `;
 
 const UpdateMeta = styled.div`
-  font-size: 14px;
+  font-size: 12px;
   margin-bottom: 8px;
 `;
 
@@ -101,30 +106,49 @@ const ProfileCompliantReporting: React.FC = () => {
         <H4>Compliant Reporting</H4>
         <CriteriaList>
           <Criterion>
-            <Checkbox />
-            {client.supervisionLevel} for{" "}
-            {formatDistanceToNowStrict(client.supervisionLevelStart.toDate())}
+            <SummaryItem>
+              Supervision Type: {client.supervisionType}
+            </SummaryItem>
           </Criterion>
           <Criterion>
-            <Checkbox />
-            {client.offenseType}
+            <SummaryItem>
+              Supervision Level: {client.supervisionLevel} for{" "}
+              {formatDistanceToNowStrict(client.supervisionLevelStart.toDate())}
+            </SummaryItem>
           </Criterion>
           <Criterion>
-            <Checkbox />
-            {client.lastDrun
-              .map((d) => `DRUN on ${format(d.toDate(), "M/d/yyyy")}`)
-              .join(", ")}
+            <SummaryItem>Offense Type: {client.offenseType}</SummaryItem>
           </Criterion>
           <Criterion>
-            <Checkbox />
-            {client.sanctionsPast1Yr || "No previous sanctions"}
+            <SummaryItem>
+              Negative Drug Screens (past 12 mo):{" "}
+              {client.lastDrun.map((d, index, arr) => (
+                <>
+                  <DisplayDate date={d.toDate()} />
+                  {index !== arr.length - 1 && "; "}
+                </>
+              ))}
+            </SummaryItem>
+          </Criterion>
+          <Criterion>
+            <SummaryItem>
+              Last Sanction (past 12 mo):{" "}
+              {client.sanctionsPast1Yr || "No previous sanctions"}
+            </SummaryItem>
+          </Criterion>
+          <Criterion>
+            <SummaryItem>
+              Judicial District: {client.judicialDistrict}
+            </SummaryItem>
           </Criterion>
         </CriteriaList>
 
+        <StatusHeading>Status</StatusHeading>
         <StatusRow>
           <StatusItem>
             <Button
               kind={client.status === "ELIGIBLE" ? "primary" : "secondary"}
+              shape="block"
               onClick={() => {
                 caseStore.setCompliantReportingStatus("ELIGIBLE");
               }}
@@ -136,13 +160,21 @@ const ProfileCompliantReporting: React.FC = () => {
             <CompliantReportingDenial />
           </StatusItem>
         </StatusRow>
+        {client.statusUpdated && (
+          <StatusMetadata>
+            <StatusUpdated updated={client.statusUpdated} />
+          </StatusMetadata>
+        )}
+
         {caseStore.activeClientUpdates.map((update) => (
           <Update key={formatISO(update.createdAt)}>
             <UpdateMeta>
               <UpdateName>
                 <UserName email={update.creator} />
               </UpdateName>{" "}
-              <UpdateDate>{format(update.createdAt, "LLL d, yyyy")}</UpdateDate>
+              <UpdateDate>
+                <DisplayDate date={update.createdAt} />
+              </UpdateDate>
             </UpdateMeta>
             <UpdateText>{update.text}</UpdateText>
           </Update>

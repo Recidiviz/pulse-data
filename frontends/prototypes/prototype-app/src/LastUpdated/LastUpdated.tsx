@@ -15,35 +15,26 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { palette, spacing, TitleXL } from "@recidiviz/design-system";
+import { observer } from "mobx-react-lite";
 import React from "react";
-import styled from "styled-components/macro";
 
-import ClientProfile from "../../ClientProfile";
-import CompliantReportingClientTable from "../../CompliantReportingClientTable";
+import type { CompliantReportingCase } from "../DataStores/CaseStore";
+import DisplayDate from "../DisplayDate";
+import { useDataStore } from "../StoreProvider";
+import { getUserName } from "../utils";
 
-const Wrapper = styled.div`
-  padding: ${spacing.xxl}px;
-`;
+type LastUpdatedProps = {
+  updated: NonNullable<CompliantReportingCase["statusUpdated"]>;
+};
 
-const Subheading = styled.h2`
-  color: ${palette.slate80};
-  font-size: 1.4rem;
-  margin: 24px 0;
-`;
-
-const CompliantReporting: React.FC = () => {
+const LastUpdated: React.FC<LastUpdatedProps> = ({ updated }) => {
+  const { userStore } = useDataStore();
   return (
-    <Wrapper>
-      <TitleXL>Compliant Reporting</TitleXL>
-      <Subheading>
-        People who meet eligibility requirements for compliant reporting,
-        according to TOMIS data.
-      </Subheading>
-      <CompliantReportingClientTable />
-      <ClientProfile />
-    </Wrapper>
+    <>
+      Updated by {getUserName(updated.by, userStore.users)} on{" "}
+      <DisplayDate date={updated.date.toDate()} />
+    </>
   );
 };
 
-export default CompliantReporting;
+export default observer(LastUpdated);

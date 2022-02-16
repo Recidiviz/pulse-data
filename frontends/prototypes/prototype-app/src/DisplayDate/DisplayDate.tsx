@@ -15,35 +15,15 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { palette, spacing, TitleXL } from "@recidiviz/design-system";
+import { format } from "date-fns";
 import React from "react";
-import styled from "styled-components/macro";
 
-import ClientProfile from "../../ClientProfile";
-import CompliantReportingClientTable from "../../CompliantReportingClientTable";
-
-const Wrapper = styled.div`
-  padding: ${spacing.xxl}px;
-`;
-
-const Subheading = styled.h2`
-  color: ${palette.slate80};
-  font-size: 1.4rem;
-  margin: 24px 0;
-`;
-
-const CompliantReporting: React.FC = () => {
-  return (
-    <Wrapper>
-      <TitleXL>Compliant Reporting</TitleXL>
-      <Subheading>
-        People who meet eligibility requirements for compliant reporting,
-        according to TOMIS data.
-      </Subheading>
-      <CompliantReportingClientTable />
-      <ClientProfile />
-    </Wrapper>
-  );
+type DisplayDateProps = {
+  date: Date;
 };
 
-export default CompliantReporting;
+const DisplayDate: React.FC<DisplayDateProps> = ({ date }) => {
+  return <>{format(date, "LLL d, yyyy")}</>;
+};
+
+export default DisplayDate;
