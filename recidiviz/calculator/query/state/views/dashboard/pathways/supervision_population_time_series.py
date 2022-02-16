@@ -48,7 +48,10 @@ SUPERVISION_POPULATION_TIME_SERIES_VIEW_QUERY_TEMPLATE = """
             year,
             month,
             IFNULL(location_name, level_1_supervision_location_external_id) AS district,
-            IFNULL(supervision_level, "EXTERNAL_UNKNOWN") AS supervision_level,
+            CASE
+                WHEN metrics.state_code="US_ND" THEN NULL
+                ELSE IFNULL(supervision_level, "EXTERNAL_UNKNOWN")
+            END AS supervision_level,
             COUNT(DISTINCT person_id) AS person_count
         FROM `{project_id}.{metrics_dataset}.most_recent_supervision_population_metrics_materialized` metrics
         LEFT JOIN `{project_id}.{dashboards_dataset}.pathways_supervision_location_name_map` name_map
