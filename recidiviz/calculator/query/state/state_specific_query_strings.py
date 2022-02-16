@@ -444,3 +444,14 @@ def get_pathways_supervision_last_updated_date() -> str:
     return _get_pathways_last_updated_date(
         STATE_CODE_TO_PATHWAYS_SUPERVISION_LAST_UPDATED_DATE_SOURCE_TABLE
     )
+
+
+def pathways_state_specific_facility_filter() -> str:
+    """State-specific logic to filter out facilities that should not be included in Pathways metrics."""
+    return f"""
+        CASE
+            WHEN state_code = "US_ND" THEN
+                facility != "TABLET"
+            ELSE true
+        END
+    """

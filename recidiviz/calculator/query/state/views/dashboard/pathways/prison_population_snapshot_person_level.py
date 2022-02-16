@@ -20,7 +20,10 @@ from recidiviz.calculator.query.bq_utils import (
     filter_to_enabled_states,
     get_person_full_name,
 )
-from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state import (
+    dataset_config,
+    state_specific_query_strings,
+)
 from recidiviz.calculator.query.state.state_specific_query_strings import (
     get_pathways_incarceration_last_updated_date,
 )
@@ -44,23 +47,38 @@ PRISON_POPULATION_SNAPSHOT_PERSON_LEVEL_DESCRIPTION = (
 PRISON_POPULATION_SNAPSHOT_PERSON_LEVEL_QUERY_TEMPLATE = """
     /*{description}*/
     WITH get_last_updated AS ({get_pathways_incarceration_last_updated_date})
-    SELECT 
-        pop.state_code,
-        get_last_updated.last_updated,
-        pop.gender,
-        admission_reason as legal_status,
-        IFNULL(location_id, pop.facility) AS facility,
-        {add_age_groups}
-        pop.age,
-        person_external_id AS state_id,
-        {formatted_name} AS full_name,
-    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_single_day_incarceration_population_metrics_included_in_state_population_materialized` pop
-    LEFT JOIN get_last_updated USING (state_code)
-    LEFT JOIN `{project_id}.{state_dataset}.state_person` person USING (person_id)
-    LEFT JOIN `{project_id}.{dashboard_views_dataset}.pathways_incarceration_location_name_map` name_map
-            ON pop.state_code = name_map.state_code
-            AND pop.facility = name_map.location_id
-    {filter_to_enabled_states}
+    , all_rows AS (
+        SELECT 
+            pop.state_code,
+            get_last_updated.last_updated,
+            pop.gender,
+            admission_reason AS legal_status,
+            IFNULL(aggregating_location_id, pop.facility) AS facility,
+            {add_age_groups}
+            pop.age,
+            person_external_id AS state_id,
+            {formatted_name} AS full_name,
+        FROM `{project_id}.{materialized_metrics_dataset}.most_recent_single_day_incarceration_population_metrics_included_in_state_population_materialized` pop
+        LEFT JOIN get_last_updated USING (state_code)
+        LEFT JOIN `{project_id}.{state_dataset}.state_person` person USING (person_id)
+        LEFT JOIN `{project_id}.{dashboard_views_dataset}.pathways_incarceration_location_name_map` name_map
+                ON pop.state_code = name_map.state_code
+                AND pop.facility = name_map.location_id
+        {filter_to_enabled_states}
+    )
+    SELECT
+        state_code,
+        last_updated,
+        IFNULL(gender, "Unknown") AS gender,
+        IFNULL(legal_status, "Unknown") AS legal_status,
+        IFNULL(facility, "Unknown") AS facility,
+        IFNULL(age_group, "Unknown") AS age_group,
+        age,
+        state_id,
+        IFNULL(full_name, "Unknown") AS full_name,
+    FROM all_rows
+    WHERE {facility_filter}
+    AND state_id IS NOT NULL
 """
 
 PRISON_POPULATION_SNAPSHOT_PERSON_LEVEL_VIEW_BUILDER = PathwaysMetricBigQueryViewBuilder(
@@ -84,6 +102,7 @@ PRISON_POPULATION_SNAPSHOT_PERSON_LEVEL_VIEW_BUILDER = PathwaysMetricBigQueryVie
         state_code_column="pop.state_code", enabled_states=ENABLED_STATES
     ),
     formatted_name=get_person_full_name("person.full_name"),
+    facility_filter=state_specific_query_strings.pathways_state_specific_facility_filter(),
 )
 
 if __name__ == "__main__":

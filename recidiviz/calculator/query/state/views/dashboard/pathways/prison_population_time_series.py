@@ -16,7 +16,10 @@
 #  =============================================================================
 """Prison population count time series."""
 from recidiviz.calculator.query.bq_utils import add_age_groups, filter_to_enabled_states
-from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state import (
+    dataset_config,
+    state_specific_query_strings,
+)
 from recidiviz.calculator.query.state.state_specific_query_strings import (
     get_pathways_incarceration_last_updated_date,
 )
@@ -46,7 +49,7 @@ PRISON_POPULATION_TIME_SERIES_QUERY_TEMPLATE = """
             month,
             gender,
             admission_reason,
-            IFNULL(location_id, pop.facility) AS facility,
+            IFNULL(aggregating_location_id, pop.facility) AS facility,
             {add_age_groups}
             COUNT(DISTINCT person_id) AS person_count
         FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_metrics_included_in_state_population_materialized` pop
@@ -54,9 +57,15 @@ PRISON_POPULATION_TIME_SERIES_QUERY_TEMPLATE = """
             ON pop.state_code = name_map.state_code
             AND pop.facility = name_map.location_id
         WHERE date_of_stay >= DATE_TRUNC(DATE_SUB(CURRENT_DATE("US/Eastern"), INTERVAL 5 YEAR), MONTH)
-        and date_of_stay = DATE(year, month, 1)
+        AND date_of_stay = DATE(year, month, 1)
         GROUP BY 1, 2, 3, 4, 5, 6, 7
-    ), full_time_series as (
+    )
+    , filtered_rows AS (
+        SELECT *
+        FROM add_mapped_dimensions
+        WHERE {facility_filter}
+    )
+    , full_time_series as (
         SELECT
             state_code,
             year,
@@ -66,7 +75,7 @@ PRISON_POPULATION_TIME_SERIES_QUERY_TEMPLATE = """
             facility,
             age_group,
             IFNULL(person_count, 0) as person_count
-        FROM add_mapped_dimensions
+        FROM filtered_rows
         FULL OUTER JOIN
         (
             SELECT DISTINCT
@@ -124,6 +133,7 @@ PRISON_POPULATION_TIME_SERIES_VIEW_BUILDER = PathwaysMetricBigQueryViewBuilder(
         state_code_column="state_code", enabled_states=ENABLED_STATES
     ),
     dimension_combination_view=PATHWAYS_PRISON_DIMENSION_COMBINATIONS_VIEW_NAME,
+    facility_filter=state_specific_query_strings.pathways_state_specific_facility_filter(),
 )
 
 if __name__ == "__main__":

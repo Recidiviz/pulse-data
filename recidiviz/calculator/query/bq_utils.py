@@ -188,8 +188,8 @@ def add_age_groups(age_field: str = "age") -> str:
                 WHEN {age_field} >= 50 and {age_field} <= 54 THEN "50-54"
                 WHEN {age_field} >= 55 and {age_field} <= 59 THEN "55-59"
                 WHEN {age_field} >= 60 THEN "60+"
-                WHEN {age_field} is null THEN "UNKNOWN"
-            end as age_group,
+                WHEN {age_field} is null THEN NULL
+            end AS age_group,
     """
 
 
