@@ -36,9 +36,6 @@ from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
     to_normalized_unprocessed_file_path,
 )
-from recidiviz.ingest.direct.types.direct_ingest_instance import (
-    DirectIngestInstance,
-)
 from recidiviz.ingest.direct.controllers.direct_ingest_instance_status_manager import (
     DirectIngestInstanceStatusManager,
 )
@@ -49,6 +46,7 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
 from recidiviz.ingest.direct.controllers.postgres_direct_ingest_file_metadata_manager import (
     PostgresDirectIngestRawFileMetadataManager,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 
 
 class UploadStateFilesToIngestBucketDelegate:
@@ -79,13 +77,13 @@ class BaseUploadStateFilesToIngestBucketController:
         paths_with_timestamps: List[Tuple[str, datetime.datetime]],
         project_id: str,
         region: str,
-        delegate: UploadStateFilesToIngestBucketDelegate,
+        delegates: List[UploadStateFilesToIngestBucketDelegate],
         destination_bucket_override: Optional[GcsfsBucketPath] = None,
     ):
         self.paths_with_timestamps = paths_with_timestamps
         self.project_id = project_id
         self.region = region.lower()
-        self.delegate = delegate
+        self.delegates = delegates
 
         self.gcsfs = DirectIngestGCSFileSystem(GcsfsFactory.build())
 
@@ -146,17 +144,22 @@ class BaseUploadStateFilesToIngestBucketController:
     def do_upload(self) -> MultiRequestResultWithSkipped[str, str, str]:
         """Perform upload to ingest bucket."""
 
-        # SFTP download writes to primary instance bucket
-        should_pause = self.delegate.should_pause_processing()
+        # SFTP download writes to primary instance bucket, but we will need to pause
+        # both instances if they aren't already paused
+        should_pause = [
+            delegate.should_pause_processing() for delegate in self.delegates
+        ]
         try:
             # We pause and unpause ingest to prevent races where ingest views begin
             # to generate in the middle of a raw file upload.
-            if should_pause:
-                self.delegate.pause_processing()
+            for idx, delegate in enumerate(self.delegates):
+                if should_pause[idx]:
+                    delegate.pause_processing()
             upload_result = self._do_upload_inner()
         finally:
-            if should_pause:
-                self.delegate.unpause_processing()
+            for idx, delegate in enumerate(self.delegates):
+                if should_pause[idx]:
+                    delegate.unpause_processing()
         return upload_result
 
     def _do_upload_inner(self) -> MultiRequestResultWithSkipped[str, str, str]:
@@ -232,20 +235,23 @@ class UploadStateFilesToIngestBucketController(
         region_code: str,
         gcs_destination_path: Optional[GcsfsBucketPath] = None,
     ):
-        ingest_instance = DirectIngestInstance.PRIMARY
         super().__init__(
             paths_with_timestamps=paths_with_timestamps,
             project_id=project_id,
             region=region_code,
-            delegate=DeployedUploadStateFilesToIngestBucketDelegate(
-                region_code=region_code, ingest_instance=ingest_instance
-            ),
+            delegates=[
+                DeployedUploadStateFilesToIngestBucketDelegate(
+                    region_code=region_code,
+                    ingest_instance=ingest_instance,
+                )
+                for ingest_instance in DirectIngestInstance
+            ],
             destination_bucket_override=gcs_destination_path,
         )
         self.postgres_direct_ingest_file_metadata_manager = (
             PostgresDirectIngestRawFileMetadataManager(
                 region_code,
-                ingest_instance.database_key_for_state(
+                DirectIngestInstance.PRIMARY.database_key_for_state(
                     StateCode(region_code.upper())
                 ).db_name,
             )
