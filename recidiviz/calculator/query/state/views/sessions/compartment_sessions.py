@@ -387,6 +387,7 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         LEAD(sessions.compartment_level_2) OVER(PARTITION BY sessions.person_id ORDER BY sessions.start_date ASC) AS outflow_to_level_2,
         LAG(ends.end_reason) OVER (PARTITION BY sessions.person_id ORDER BY sessions.start_date ASC) AS prev_end_reason,
         LEAD(starts.start_reason) OVER (PARTITION BY sessions.person_id ORDER BY sessions.start_date ASC) AS next_start_reason,
+        LEAD(starts.start_sub_reason) OVER (PARTITION BY sessions.person_id ORDER BY sessions.start_date ASC) AS next_start_sub_reason,
         LAG(sessions.end_date) OVER (PARTITION BY sessions.person_id ORDER BY sessions.start_date ASC) AS prev_end_date,
         LEAD(sessions.start_date) OVER (PARTITION BY sessions.person_id ORDER BY sessions.start_date ASC) AS next_start_date,
     FROM sessions_aggregated AS sessions
@@ -470,7 +471,10 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
             metric_source = 'INFERRED'
                 AND prev_end_reason IN ('SENTENCE_SERVED','COMMUTED','DISCHARGE','EXPIRATION','PARDONED') AS inferred_release,
             metric_source = 'INFERRED' 
-                AND (prev_end_reason IN ('ABSCONSION','ESCAPE') OR next_start_reason IN ('RETURN_FROM_ABSCONSION','RETURN_FROM_ESCAPE')) AS inferred_escape,
+                AND (prev_end_reason IN ('ABSCONSION','ESCAPE')
+                     OR next_start_reason IN ('RETURN_FROM_ABSCONSION','RETURN_FROM_ESCAPE')
+                     OR (next_start_reason = 'REVOCATION' AND next_start_sub_reason = 'ABSCONDED')
+                    ) AS inferred_escape,
             metric_source = 'INFERRED' 
                 AND prev_end_reason = 'DEATH' AS inferred_death,
             metric_source = 'INFERRED'
@@ -478,7 +482,7 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
             metric_source = 'INFERRED'
                 AND inflow_from_level_1 = 'SUPERVISION'
                 AND (prev_end_reason in ('REVOCATION','RETURN_TO_INCARCERATION') 
-                    OR (next_start_reason = 'REVOCATION' or next_start_reason = 'SANCTION_ADMISSION')) AS inferred_pending_custody,
+                    OR (next_start_reason IN ('REVOCATION', 'SANCTION_ADMISSION'))) AS inferred_pending_custody,
             metric_source = 'INFERRED'
                 AND inflow_from_level_1 = 'INCARCERATION'
                 AND prev_end_reason = 'CONDITIONAL_RELEASE' AS inferred_pending_supervision,
