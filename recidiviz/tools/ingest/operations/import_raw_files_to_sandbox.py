@@ -33,77 +33,21 @@ python -m recidiviz.tools.ingest.operations.import_raw_files_to_sandbox \
 """
 
 import argparse
-import datetime
 import logging
-import re
 import sys
-from collections import defaultdict
 from typing import List, Optional, Tuple
 
-from recidiviz.big_query.big_query_client import BigQueryClientImpl
-from recidiviz.big_query.view_update_manager import (
-    TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
+from recidiviz.admin_panel.ingest_operations.ingest_utils import (
+    import_raw_files_to_bq_sandbox,
 )
-from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
-from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsDirectoryPath
+from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
-    DirectIngestGCSFileSystem,
-)
-from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import (
-    DirectIngestRawFileImportManager,
-)
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
-    filename_parts_from_path,
-)
-from recidiviz.persistence.entity.operations.entities import DirectIngestRawFileMetadata
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
-from recidiviz.utils.regions import get_region
 
 
-def check_is_valid_sandbox_bucket(bucket: GcsfsBucketPath) -> None:
-    if (
-        "test" not in bucket.bucket_name
-        and "scratch" not in bucket.bucket_name
-        and "sandbox" not in bucket.bucket_name
-    ):
-        raise ValueError(
-            f"Invalid bucket [{bucket.bucket_name}] - must have 'test', "
-            f"'sandbox', or 'scratch' in the name."
-        )
-
-
-class SandboxDirectIngestRawFileImportManager(DirectIngestRawFileImportManager):
-    def __init__(
-        self,
-        *,
-        state_code: StateCode,
-        sandbox_dataset_prefix: str,
-        test_ingest_bucket: GcsfsBucketPath,
-    ):
-
-        check_is_valid_sandbox_bucket(test_ingest_bucket)
-
-        super().__init__(
-            region=get_region(state_code.value.lower(), is_direct_ingest=True),
-            fs=DirectIngestGCSFileSystem(GcsfsFactory.build()),
-            ingest_bucket_path=test_ingest_bucket,
-            temp_output_directory_path=GcsfsDirectoryPath.from_dir_and_subdir(
-                test_ingest_bucket, "temp_raw_data"
-            ),
-            big_query_client=BigQueryClientImpl(),
-        )
-        self.sandbox_dataset = (
-            f"{sandbox_dataset_prefix}_{super()._raw_tables_dataset()}"
-        )
-
-    def _raw_tables_dataset(self) -> str:
-        return self.sandbox_dataset
-
-
-def do_upload(
+def do_sandbox_raw_file_import(
     state_code: StateCode,
     sandbox_dataset_prefix: str,
     source_bucket: GcsfsBucketPath,
@@ -118,67 +62,12 @@ def do_upload(
         f"with arg `--destination-bucket {source_bucket.bucket_name}`?"
     )
 
-    import_manager = SandboxDirectIngestRawFileImportManager(
+    import_raw_files_to_bq_sandbox(
         state_code=state_code,
         sandbox_dataset_prefix=sandbox_dataset_prefix,
-        test_ingest_bucket=source_bucket,
+        source_bucket=source_bucket,
+        file_tag_filter_regex=file_tag_filter_regex,
     )
-
-    bq_client = BigQueryClientImpl()
-
-    # Create the dataset up front with table expiration
-    bq_client.create_dataset_if_necessary(
-        bq_client.dataset_ref_for_id(dataset_id=import_manager.sandbox_dataset),
-        default_table_expiration_ms=TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
-    )
-
-    raw_files_to_import = import_manager.get_unprocessed_raw_files_to_import()
-
-    failures_by_exception = defaultdict(list)
-
-    for i, file_path in enumerate(raw_files_to_import):
-        parts = filename_parts_from_path(file_path)
-        if file_tag_filter_regex and not re.search(
-            file_tag_filter_regex, parts.file_tag
-        ):
-            logging.info("** Skipping file with tag [%s] **", parts.file_tag)
-            continue
-
-        logging.info("Running file with tag [%s]", parts.file_tag)
-
-        try:
-            import_manager.import_raw_file_to_big_query(
-                file_path,
-                DirectIngestRawFileMetadata(
-                    file_id=i,
-                    region_code=state_code.value,
-                    file_tag=parts.file_tag,
-                    processed_time=None,
-                    discovery_time=datetime.datetime.now(),
-                    normalized_file_name=file_path.file_name,
-                    datetimes_contained_upper_bound_inclusive=parts.utc_upload_datetime,
-                ),
-            )
-        except Exception as e:
-            logging.exception(e)
-            failures_by_exception[str(e)].append(file_path.abs_path())
-
-    if failures_by_exception:
-        logging.error("************************* FAILURES ************************")
-        total_files = 0
-        all_failed_paths = []
-        for error, file_list in failures_by_exception.items():
-            total_files += len(file_list)
-            all_failed_paths += file_list
-
-            logging.error(
-                "Failed [%s] files with error [%s]: %s",
-                len(file_list),
-                error,
-                file_list,
-            )
-            logging.error("***********************************************************")
-        raise ValueError(f"Failed to import [{total_files}] files: {all_failed_paths}")
 
 
 def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
@@ -226,7 +115,7 @@ if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)
     known_args, _ = parse_arguments(sys.argv)
     with local_project_id_override(GCP_PROJECT_STAGING):
-        do_upload(
+        do_sandbox_raw_file_import(
             state_code=StateCode(known_args.state_code),
             sandbox_dataset_prefix=known_args.sandbox_dataset_prefix,
             source_bucket=GcsfsBucketPath(known_args.source_bucket),
