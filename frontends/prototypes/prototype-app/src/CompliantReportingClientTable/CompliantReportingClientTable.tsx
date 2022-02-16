@@ -15,14 +15,18 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { palette, spacing } from "@recidiviz/design-system";
-import { format, formatDistanceToNowStrict } from "date-fns";
+import { Icon, IconSVG, palette, spacing } from "@recidiviz/design-system";
+import { formatDistanceToNowStrict } from "date-fns";
 import { observer } from "mobx-react-lite";
 import React from "react";
 import styled from "styled-components/macro";
 
 import { CompliantReportingCase } from "../DataStores/CaseStore";
+import DisplayDate from "../DisplayDate";
+import LastUpdated from "../LastUpdated";
+import { Pill } from "../Pill";
 import { useDataStore } from "../StoreProvider";
+import Tooltip from "../Tooltip";
 
 const Table = styled.table`
   border-collapse: collapse;
@@ -48,22 +52,61 @@ const Row = styled.tr`
 
 const Cell = styled.td`
   padding: ${spacing.lg}px;
+  line-height: 1.3;
 
-  &:first-of-type {
+  &:nth-of-type(2) {
     border-right: 1px solid ${palette.slate20};
+  }
+`;
+
+const StatusWrapper = styled.div`
+  background-color: ${palette.signal.links};
+  color: ${palette.white};
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 100%;
+  width: 100%;
+  padding: 8px;
+  border-radius: 2px;
+
+  svg {
+    flex: 0 0 auto;
+    margin-left: 8px;
   }
 `;
 
 const StatusCell = observer(
   ({ record }: { record: CompliantReportingCase }): JSX.Element => {
-    const { status } = record;
-    if (status === "ELIGIBLE") {
-      return <span>Eligible</span>;
+    const { status, statusUpdated } = record;
+    let statusText;
+    switch (status) {
+      case "ELIGIBLE":
+        statusText = "Eligible";
+        break;
+      case "DENIED":
+        statusText =
+          record.deniedReasons?.join(", ") || "Denied, no reason given";
+        break;
+      default:
+        statusText = "Review Required";
+        break;
     }
-    if (status === "DENIED") {
-      return <span>{record.deniedReasons?.join(", ")}</span>;
-    }
-    return <span>Review Required</span>;
+
+    const statusDisplay = (
+      <StatusWrapper>
+        {statusText}
+        <Icon kind={IconSVG.Arrow} size={14} color={palette.white} />
+      </StatusWrapper>
+    );
+
+    return statusUpdated ? (
+      <Tooltip title={<LastUpdated updated={statusUpdated} />}>
+        {statusDisplay}
+      </Tooltip>
+    ) : (
+      statusDisplay
+    );
   }
 );
 
@@ -73,12 +116,16 @@ const CompliantReportingClientTable: React.FC = () => {
     <Table>
       <thead>
         <tr>
-          <HeaderCell>Client</HeaderCell>
+          <HeaderCell>Name</HeaderCell>
+          <HeaderCell />
           <HeaderCell>Status</HeaderCell>
+          <HeaderCell>Supervision Type</HeaderCell>
           <HeaderCell>Supervision Level</HeaderCell>
           <HeaderCell>Offense Type</HeaderCell>
-          <HeaderCell>Drug Screens past year</HeaderCell>
-          <HeaderCell>Sanctions past year</HeaderCell>
+          <HeaderCell>Negative Drug Screens (past 12 mo)</HeaderCell>
+          <HeaderCell>Last Sanction (past 12 mo)</HeaderCell>
+          <HeaderCell>Officer</HeaderCell>
+          <HeaderCell>Judicial District</HeaderCell>
         </tr>
       </thead>
       <tbody>
@@ -87,21 +134,34 @@ const CompliantReportingClientTable: React.FC = () => {
             key={record.personExternalId}
             onClick={() => caseStore.setActiveClient(record.personExternalId)}
           >
-            <Cell>{record.personName}</Cell>
+            <Cell>{record.personName} </Cell>
+            <Cell>
+              {record.updateCount > 0 && (
+                <Pill kind="neutral" filled>
+                  {record.updateCount}
+                </Pill>
+              )}
+            </Cell>
             <Cell>
               <StatusCell record={record} />
             </Cell>
+            <Cell>{record.supervisionType}</Cell>
             <Cell>
               {record.supervisionLevel} for{" "}
               {formatDistanceToNowStrict(record.supervisionLevelStart.toDate())}
             </Cell>
             <Cell>{record.offenseType}</Cell>
             <Cell>
-              {record.lastDrun
-                .map((d) => `DRUN on ${format(d.toDate(), "M/d/yyyy")}`)
-                .join(", ")}
+              {record.lastDrun.map((d, index, arr) => (
+                <>
+                  <DisplayDate date={d.toDate()} />
+                  {index !== arr.length - 1 && <br />}
+                </>
+              ))}
             </Cell>
             <Cell>{record.sanctionsPast1Yr || "No previous sanctions"}</Cell>
+            <Cell>{record.officerName}</Cell>
+            <Cell>{record.judicialDistrict}</Cell>
           </Row>
         ))}
       </tbody>

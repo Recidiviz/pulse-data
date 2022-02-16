@@ -15,18 +15,49 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { Icon, IconSVG } from "@recidiviz/design-system";
+import {
+  Button,
+  CardSection,
+  H3,
+  Icon,
+  IconSVG,
+  spacing,
+} from "@recidiviz/design-system";
 import { observer } from "mobx-react-lite";
+import { rem } from "polished";
 import React from "react";
+import styled from "styled-components/macro";
 
 import { useDataStore } from "../StoreProvider";
-import { titleCase } from "../utils";
-import {
-  ClientInfo,
-  ClientName,
-  ClientProfileHeading,
-  CloseButton,
-} from "./styles";
+
+export const CloseButton = styled(Button).attrs({
+  kind: "borderless",
+  shape: "block",
+})`
+  height: ${rem(spacing.xl)};
+  width: ${rem(spacing.xl)};
+  padding: ${rem(spacing.sm)};
+`;
+
+export const ClientName = styled(H3)`
+  margin-top: 0;
+  margin-right: auto;
+  margin-bottom: 0;
+`;
+
+const ClientProfileHeading = styled(CardSection)`
+  padding: ${rem(spacing.xl)};
+  padding-bottom: ${rem(spacing.md)};
+  display: flex;
+  flex-wrap: wrap;
+  grid-area: 1 / 1;
+`;
+
+const ClientInfo = styled.div`
+  font-size: 14px;
+  width: 100%;
+  line-height: 1.3;
+`;
 
 const ProfileHeader: React.FC = () => {
   const { caseStore } = useDataStore();
@@ -43,8 +74,7 @@ const ProfileHeader: React.FC = () => {
       </CloseButton>
 
       <ClientInfo>
-        {titleCase(client.supervisionType)}, {client.supervisionLevel},{" "}
-        {client.personExternalId}
+        {client.personExternalId}, {client.officerName}
       </ClientInfo>
     </ClientProfileHeading>
   );

@@ -15,35 +15,41 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { palette, spacing, TitleXL } from "@recidiviz/design-system";
+import { Icon, IconSVG, palette, spacing } from "@recidiviz/design-system";
+import { rem } from "polished";
 import React from "react";
 import styled from "styled-components/macro";
 
-import ClientProfile from "../../ClientProfile";
-import CompliantReportingClientTable from "../../CompliantReportingClientTable";
-
-const Wrapper = styled.div`
-  padding: ${spacing.xxl}px;
+const DetailsLineItem = styled.div`
+  margin-bottom: ${rem(spacing.xs)};
 `;
 
-const Subheading = styled.h2`
-  color: ${palette.slate80};
-  font-size: 1.4rem;
-  margin: 24px 0;
+const SummaryLineItem = styled(DetailsLineItem)`
+  display: grid;
+  grid-template-columns: ${rem(24)} 1fr;
 `;
 
-const CompliantReporting: React.FC = () => {
+const SummaryIcon = styled(Icon)`
+  grid-column: 1;
+  /* slight vertical offset to approximate baseline alignment */
+  margin-top: ${rem(2)};
+`;
+
+const Summary = styled.div`
+  grid-column: 2;
+`;
+
+const SummaryItem: React.FC = ({ children }) => {
   return (
-    <Wrapper>
-      <TitleXL>Compliant Reporting</TitleXL>
-      <Subheading>
-        People who meet eligibility requirements for compliant reporting,
-        according to TOMIS data.
-      </Subheading>
-      <CompliantReportingClientTable />
-      <ClientProfile />
-    </Wrapper>
+    <SummaryLineItem>
+      <SummaryIcon
+        kind={IconSVG.Success}
+        color={palette.signal.highlight}
+        size={15}
+      />
+      <Summary>{children}</Summary>
+    </SummaryLineItem>
   );
 };
 
-export default CompliantReporting;
+export default SummaryItem;

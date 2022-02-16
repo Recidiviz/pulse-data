@@ -27,6 +27,7 @@ import {
   compliantReportingCasesQuery,
   compliantReportingStatusQuery,
   compliantReportingUpdatesQuery,
+  officersQuery,
   saveCompliantReportingNote,
   saveCompliantReportingStatus,
 } from "../firebase";
@@ -47,18 +48,23 @@ type CompliantReportingExportedCase = {
   offenseType: string;
   lastDrun: Timestamp[];
   sanctionsPast1Yr: string;
+  updateCount: number;
 };
 
 type CompliantReportingStatusCode = "ELIGIBLE" | "DENIED";
 
 export type CompliantReportingStatusRecord = {
   personExternalId: string;
-  status?: CompliantReportingStatusCode;
-  deniedReasons?: string[];
+  status: CompliantReportingStatusCode;
+  deniedReasons: string[];
+  statusUpdated: {
+    date: Timestamp;
+    by: string;
+  };
 };
 
 export type CompliantReportingCase = CompliantReportingExportedCase &
-  CompliantReportingStatusRecord;
+  Partial<CompliantReportingStatusRecord> & { officerName: string };
 
 export type CompliantReportingUpdateContents = {
   creator: string;
@@ -70,6 +76,10 @@ export type CompliantReportingUpdate = CompliantReportingUpdateContents & {
   createdAt: Date;
 };
 
+type OfficerInfo = { name: string };
+
+type OfficerMapping = Record<string, OfficerInfo>;
+
 export default class CaseStore {
   readonly rootStore: RootStore;
 
@@ -78,6 +88,8 @@ export default class CaseStore {
   compliantReportingStatuses: CompliantReportingStatusRecord[] = [];
 
   compliantReportingUpdates: CompliantReportingUpdate[] = [];
+
+  officers: OfficerMapping = {};
 
   activeClientId?: string;
 
@@ -106,6 +118,8 @@ export default class CaseStore {
         onSnapshot(compliantReportingCasesQuery, (snapshot) =>
           this.updateCompliantReportingExportedCases(snapshot)
         );
+
+        onSnapshot(officersQuery, (snapshot) => this.updateOfficers(snapshot));
       }
     );
   }
@@ -135,7 +149,12 @@ export default class CaseStore {
         const status = this.compliantReportingStatuses.find(
           (s) => s.personExternalId === caseData.personExternalId
         );
-        return assign({}, caseData, status);
+        const updateCount = this.compliantReportingUpdates.filter(
+          (u) => u.personExternalId === caseData.personExternalId
+        ).length;
+        const officerName =
+          this.officers[caseData.officerId]?.name || caseData.officerId;
+        return assign({}, caseData, status, { updateCount, officerName });
       });
   }
 
@@ -154,7 +173,14 @@ export default class CaseStore {
   ): void {
     const statuses: CompliantReportingStatusRecord[] = [];
     querySnapshot.forEach((doc) => {
-      statuses.push(doc.data() as CompliantReportingStatusRecord);
+      const statusData = doc.data() as CompliantReportingStatusRecord;
+
+      // date in record may be null while a server timestamp is pending
+      const statusUpdated = {
+        date: statusData.statusUpdated.date ?? Timestamp.now(),
+        by: statusData.statusUpdated.by,
+      };
+      statuses.push({ ...statusData, statusUpdated });
     });
     this.compliantReportingStatuses = statuses;
   }
@@ -177,11 +203,17 @@ export default class CaseStore {
     this.compliantReportingUpdates = updateRecords;
   }
 
+  updateOfficers(querySnapshot: QuerySnapshot<DocumentData>): void {
+    querySnapshot.forEach((doc) => {
+      this.officers[doc.id] = doc.data() as OfficerInfo;
+    });
+  }
+
   setCompliantReportingStatus(
     newStatus: CompliantReportingStatusCode,
     toggleDeniedReason?: string
   ): void {
-    if (!this.activeClient) return;
+    if (!this.activeClient || !this.rootStore.userStore.userEmail) return;
 
     const { personExternalId, deniedReasons } = this.activeClient;
 
@@ -196,7 +228,10 @@ export default class CaseStore {
       deniedReasons: newDeniedReasons,
     };
 
-    saveCompliantReportingStatus(updatedRecord);
+    saveCompliantReportingStatus(
+      updatedRecord,
+      this.rootStore.userStore.userEmail
+    );
   }
 
   async sendCompliantReportingUpdate(text: string): Promise<void> {
