@@ -117,7 +117,7 @@ incremental_pipelines:
     region: us-central1
 
 # Daily US_ME calculations
-  - pipeline: incarceration
+  - pipeline: incarceration_metrics
     job_name: us-me-incarceration-calculations-36
     state_code: US_ME
     metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_POPULATION INCARCERATION_RELEASE
@@ -216,7 +216,7 @@ historical_pipelines:
     calculation_month_count: 240
     metric_types: PROGRAM_PARTICIPATION PROGRAM_REFERRAL
     region: us-east1
-  - pipeline: incarceration
+  - pipeline: incarceration_metrics
     job_name: us-me-historical-incarceration-calculations-240
     state_code: US_ME
     calculation_month_count: 240
