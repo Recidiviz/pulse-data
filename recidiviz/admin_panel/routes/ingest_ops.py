@@ -20,15 +20,20 @@ from http import HTTPStatus
 from typing import Tuple
 
 from flask import Blueprint, Response, jsonify, request
+from google.cloud import storage
 
 from recidiviz.admin_panel.admin_stores import AdminStores, fetch_state_codes
+from recidiviz.admin_panel.ingest_operations.ingest_utils import (
+    check_is_valid_sandbox_bucket,
+    import_raw_files_to_bq_sandbox,
+)
 from recidiviz.cloud_sql.cloud_sql_client import CloudSQLClientImpl
 from recidiviz.cloud_storage.gcs_pseudo_lock_manager import (
     GCSPseudoLockAlreadyExists,
     GCSPseudoLockDoesNotExist,
 )
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
-from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
@@ -44,6 +49,7 @@ from recidiviz.utils import metadata
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.environment import GCP_PROJECT_STAGING, in_gcp
 from recidiviz.utils.types import assert_type
+from recidiviz.utils.metadata import local_project_id_override
 
 GCS_IMPORT_EXPORT_TIMEOUT_SEC = 60 * 30  # 30 min
 
@@ -351,3 +357,61 @@ def add_ingest_ops_routes(bp: Blueprint, admin_stores: AdminStores) -> None:
             )
 
         return "", HTTPStatus.OK
+
+    @bp.route("/api/ingest_operations/direct/sandbox_raw_data_import", methods=["POST"])
+    @requires_gae_auth
+    def _sandbox_raw_data_import() -> Tuple[str, HTTPStatus]:
+        try:
+            data = request.json
+            state_code = StateCode(data.get("stateCode"))
+            sandbox_dataset_prefix = data.get("sandboxDatasetPrefix")
+            source_bucket = GcsfsBucketPath(data.get("sourceBucket"))
+            file_tag_filter_regex = data.get("fileTagFilterRegex")
+        except ValueError:
+            return "invalid parameters provided", HTTPStatus.BAD_REQUEST
+
+        with local_project_id_override(project_id):
+            import_status = import_raw_files_to_bq_sandbox(
+                state_code=state_code,
+                sandbox_dataset_prefix=sandbox_dataset_prefix,
+                source_bucket=source_bucket,
+                file_tag_filter_regex=file_tag_filter_regex,
+            )
+
+        return (
+            jsonify(
+                {
+                    "fileStatusList": import_status.to_serializable()["fileStatuses"],
+                    "errorMessage": import_status.to_serializable()["errorMessage"],
+                }
+            ),
+            HTTPStatus.OK,
+        )
+
+    @bp.route("/api/ingest_operations/direct/list_sandbox_buckets", methods=["POST"])
+    @requires_gae_auth
+    def _list_sandbox_buckets() -> Tuple[str, HTTPStatus]:
+        try:
+            storage_client = storage.Client()
+            buckets = storage_client.list_buckets()
+
+            bucket_names = [bucket.name for bucket in buckets]
+
+            filtered_buckets = []
+            for bucket in bucket_names:
+                try:
+                    check_is_valid_sandbox_bucket(GcsfsBucketPath(bucket))
+                    filtered_buckets.append(bucket)
+                except ValueError:
+                    continue
+
+        except Exception:
+            return (
+                "something went wrong getting the list of buckets",
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+            )
+
+        return (
+            jsonify({"bucketNames": filtered_buckets}),
+            HTTPStatus.OK,
+        )
