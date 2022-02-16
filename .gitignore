@@ -113,6 +113,7 @@ env.bak/
 venv.bak/
 .firebase/
 .runtimeconfig.json
+service_account.json
 
 # Spyder project settings
 .spyderproject

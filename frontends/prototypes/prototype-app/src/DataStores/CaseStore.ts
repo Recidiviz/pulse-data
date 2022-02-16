@@ -14,43 +14,39 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { parseISO } from "date-fns";
-import { DocumentData, onSnapshot, QuerySnapshot } from "firebase/firestore";
-import { assign, camelCase, mapKeys, xor } from "lodash";
+import {
+  DocumentData,
+  onSnapshot,
+  QuerySnapshot,
+  Timestamp,
+} from "firebase/firestore";
+import { assign, xor } from "lodash";
 import { makeAutoObservable, when } from "mobx";
 
 import {
+  compliantReportingCasesQuery,
   compliantReportingStatusQuery,
   compliantReportingUpdatesQuery,
   saveCompliantReportingNote,
   saveCompliantReportingStatus,
 } from "../firebase";
-import { titleCase } from "../utils";
-import fixture from "./__fixtures__/cases.json";
 import type { RootStore } from "./RootStore";
 
 type ConstructorProps = {
   rootStore: RootStore;
 };
 
-type ClientFullName = {
-  givenNames?: string;
-  middleName?: string;
-  surname?: string;
-};
-
 type CompliantReportingExportedCase = {
   personExternalId: string;
-  nameParts: ClientFullName;
   personName: string;
   officerId: string;
   supervisionType: string;
   judicialDistrict: string;
   supervisionLevel: string;
-  supervisionLevelStart: Date;
+  supervisionLevelStart: Timestamp;
   offenseType: string;
-  lastDRUN: Date[];
-  sanctionsPast1Yr: string[];
+  lastDrun: Timestamp[];
+  sanctionsPast1Yr: string;
 };
 
 type CompliantReportingStatusCode = "ELIGIBLE" | "DENIED";
@@ -74,31 +70,6 @@ export type CompliantReportingUpdate = CompliantReportingUpdateContents & {
   createdAt: Date;
 };
 
-function camelCaseKeys(obj: Record<string, unknown>) {
-  return mapKeys(obj, (v, k) => camelCase(k));
-}
-
-// possibly not all of this casting will be necessary with real data
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const createCaseRecords = (
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  rawData: Record<string, any>[]
-): CompliantReportingCase[] => {
-  return rawData.map((rawRecord) => {
-    const camelCaseRecord = camelCaseKeys(rawRecord);
-    const nameParts = camelCaseKeys(JSON.parse(rawRecord.person_name));
-    return {
-      ...camelCaseRecord,
-      nameParts,
-      personName: `${titleCase(nameParts.givenNames as string)} ${titleCase(
-        nameParts.surname as string
-      )}`,
-      supervisionLevelStart: parseISO(rawRecord.supervision_level_start),
-      lastDRUN: rawRecord.last_DRUN.map(parseISO),
-    } as unknown as CompliantReportingCase;
-  });
-};
-
 export default class CaseStore {
   readonly rootStore: RootStore;
 
@@ -115,8 +86,6 @@ export default class CaseStore {
 
     this.rootStore = rootStore;
 
-    this.compliantReportingExportedCases = createCaseRecords(fixture);
-
     this.subscribe();
   }
 
@@ -132,6 +101,10 @@ export default class CaseStore {
 
         onSnapshot(compliantReportingUpdatesQuery, (snapshot) =>
           this.updateCompliantReportingUpdates(snapshot)
+        );
+
+        onSnapshot(compliantReportingCasesQuery, (snapshot) =>
+          this.updateCompliantReportingExportedCases(snapshot)
         );
       }
     );
@@ -154,12 +127,26 @@ export default class CaseStore {
   }
 
   get compliantReportingCases(): CompliantReportingCase[] {
-    return this.compliantReportingExportedCases.map((caseData) => {
-      const status = this.compliantReportingStatuses.find(
-        (s) => s.personExternalId === caseData.personExternalId
-      );
-      return assign({}, caseData, status);
+    return this.compliantReportingExportedCases
+      .filter((caseData) =>
+        this.rootStore.userStore.includedOfficers.includes(caseData.officerId)
+      )
+      .map((caseData) => {
+        const status = this.compliantReportingStatuses.find(
+          (s) => s.personExternalId === caseData.personExternalId
+        );
+        return assign({}, caseData, status);
+      });
+  }
+
+  private updateCompliantReportingExportedCases(
+    querySnapshot: QuerySnapshot<DocumentData>
+  ): void {
+    const cases: CompliantReportingExportedCase[] = [];
+    querySnapshot.forEach((doc) => {
+      cases.push(doc.data() as CompliantReportingExportedCase);
     });
+    this.compliantReportingExportedCases = cases;
   }
 
   private updateCompliantReportingStatuses(
@@ -213,12 +200,12 @@ export default class CaseStore {
   }
 
   async sendCompliantReportingUpdate(text: string): Promise<void> {
-    if (!this.activeClientId) return;
+    if (!this.activeClientId || !this.rootStore.userStore.userEmail) return;
 
     await saveCompliantReportingNote({
       text,
       personExternalId: this.activeClientId,
-      creator: this.rootStore.userStore.userName,
+      creator: this.rootStore.userStore.userEmail,
     });
   }
 }
