@@ -45,16 +45,25 @@ INCARCERATION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = """
                 WHEN Cis_9009_Region_Cd = '5' THEN 'Central Office'
             ELSE NULL
             END AS level_2_incarceration_location_name,
-            Ccs_Location_Id AS level_1_incarceration_location_external_id,
+            CASE 
+                WHEN Location_Name IN ('Mountain View Adult Center', 'Charleston Correctional Facility')
+                    THEN 'MOUNTAIN VIEW CORRECTIONAL FACILITY' 
+                WHEN Location_Name = 'Southern Maine Pre-Release'
+                    THEN "SOUTHERN MAINE WOMEN'S REENTRY CENTER"
+                ELSE UPPER(Location_Name)
+            END AS level_1_incarceration_location_external_id,
             CASE 
                 WHEN Location_Name IN ('Mountain View Adult Center', 'Charleston Correctional Facility')
                 THEN 'Mountain View Correctional Facility' 
                 WHEN Location_Name = 'Southern Maine Pre-Release'
                 THEN "Southern Maine Women's ReEntry Center"
                 ELSE Location_Name 
-            END AS level_1_incarceration_location_name
+            END AS level_1_incarceration_location_name,
+            facility_code AS level_1_incarceration_location_alias
         -- TODO(#10636): Replace this with CIS_908_CCS_LOCATION_latest once US_ME raw data is available in production.
-        FROM `{project_id}.static_reference_tables.us_me_cis_908_ccs_location`
+        FROM `{project_id}.static_reference_tables.us_me_cis_908_ccs_location` raw
+        LEFT JOIN `{project_id}.{external_reference_dataset}.us_me_incarceration_facility_names` map
+            ON raw.Location_Name = map.facility_name
         -- Filter to adult facilities and re-entry centers
         WHERE Cis_9080_Ccs_Location_Type_Cd IN ('2', '7', '16')
     ), nd_location_names AS (
@@ -66,6 +75,7 @@ INCARCERATION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = """
             'NOT_APPLICABLE' AS level_2_incarceration_location_name,
             facility_code AS level_1_incarceration_location_external_id,
             facility_name AS level_1_incarceration_location_name,
+            facility_code AS level_1_incarceration_location_alias
         FROM `{project_id}.{external_reference_dataset}.us_nd_incarceration_facility_names`
     )
     SELECT * FROM me_location_names

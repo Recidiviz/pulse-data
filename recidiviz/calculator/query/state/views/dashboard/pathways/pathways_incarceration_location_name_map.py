@@ -41,6 +41,8 @@ PATHWAYS_INCARCERATION_LOCATION_NAME_MAP_QUERY_TEMPLATE = """
         CASE
             WHEN state_code = 'US_ND'
                 THEN IF(level_1_incarceration_location_external_id = 'TRCC', 'TRC', level_1_incarceration_location_external_id)
+            WHEN state_code = 'US_ME'
+                THEN level_1_incarceration_location_alias
             ELSE level_1_incarceration_location_external_id
         END AS aggregating_location_id,
         level_1_incarceration_location_name AS location_name,
