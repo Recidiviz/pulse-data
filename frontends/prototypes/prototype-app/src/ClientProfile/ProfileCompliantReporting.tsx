@@ -22,6 +22,7 @@ import React from "react";
 import styled from "styled-components/macro";
 
 import { useDataStore } from "../StoreProvider";
+import UserName from "../UserName";
 import CompliantReportingDenial from "./CompliantReportingDenial";
 import { IconPad } from "./styles";
 import UpdatesInput from "./UpdatesInput";
@@ -102,7 +103,7 @@ const ProfileCompliantReporting: React.FC = () => {
           <Criterion>
             <Checkbox />
             {client.supervisionLevel} for{" "}
-            {formatDistanceToNowStrict(client.supervisionLevelStart)}
+            {formatDistanceToNowStrict(client.supervisionLevelStart.toDate())}
           </Criterion>
           <Criterion>
             <Checkbox />
@@ -110,15 +111,13 @@ const ProfileCompliantReporting: React.FC = () => {
           </Criterion>
           <Criterion>
             <Checkbox />
-            {client.lastDRUN
-              .map((d) => `DRUN on ${format(d, "M/d/yyyy")}`)
+            {client.lastDrun
+              .map((d) => `DRUN on ${format(d.toDate(), "M/d/yyyy")}`)
               .join(", ")}
           </Criterion>
           <Criterion>
             <Checkbox />
-            {client.sanctionsPast1Yr.length
-              ? client.sanctionsPast1Yr.join(", ")
-              : "No previous sanctions"}
+            {client.sanctionsPast1Yr || "No previous sanctions"}
           </Criterion>
         </CriteriaList>
 
@@ -140,7 +139,9 @@ const ProfileCompliantReporting: React.FC = () => {
         {caseStore.activeClientUpdates.map((update) => (
           <Update key={formatISO(update.createdAt)}>
             <UpdateMeta>
-              <UpdateName>{update.creator}</UpdateName>{" "}
+              <UpdateName>
+                <UserName email={update.creator} />
+              </UpdateName>{" "}
               <UpdateDate>{format(update.createdAt, "LLL d, yyyy")}</UpdateDate>
             </UpdateMeta>
             <UpdateText>{update.text}</UpdateText>

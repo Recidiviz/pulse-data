@@ -15,4 +15,20 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-export { default as rootStore } from "./RootStore";
+import { observer } from "mobx-react-lite";
+import React from "react";
+
+import { useDataStore } from "../StoreProvider";
+import { getUserName } from "../utils";
+
+type UserNameProps = {
+  email: string;
+};
+
+const UserName: React.FC<UserNameProps> = ({ email }) => {
+  const { userStore } = useDataStore();
+
+  return <>{getUserName(email, userStore.users)}</>;
+};
+
+export default observer(UserName);

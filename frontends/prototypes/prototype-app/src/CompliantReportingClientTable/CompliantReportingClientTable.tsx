@@ -93,19 +93,15 @@ const CompliantReportingClientTable: React.FC = () => {
             </Cell>
             <Cell>
               {record.supervisionLevel} for{" "}
-              {formatDistanceToNowStrict(record.supervisionLevelStart)}
+              {formatDistanceToNowStrict(record.supervisionLevelStart.toDate())}
             </Cell>
             <Cell>{record.offenseType}</Cell>
             <Cell>
-              {record.lastDRUN
-                .map((d) => `DRUN on ${format(d, "M/d/yyyy")}`)
+              {record.lastDrun
+                .map((d) => `DRUN on ${format(d.toDate(), "M/d/yyyy")}`)
                 .join(", ")}
             </Cell>
-            <Cell>
-              {record.sanctionsPast1Yr.length
-                ? record.sanctionsPast1Yr.join(", ")
-                : "No previous sanctions"}
-            </Cell>
+            <Cell>{record.sanctionsPast1Yr || "No previous sanctions"}</Cell>
           </Row>
         ))}
       </tbody>

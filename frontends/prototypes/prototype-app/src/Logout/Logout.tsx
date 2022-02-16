@@ -1,4 +1,5 @@
 import { Button } from "@recidiviz/design-system";
+import { observer } from "mobx-react-lite";
 import React from "react";
 import styled from "styled-components/macro";
 
@@ -25,4 +26,4 @@ const Logout: React.FC = () => {
   );
 };
 
-export default Logout;
+export default observer(Logout);

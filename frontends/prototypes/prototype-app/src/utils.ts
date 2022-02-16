@@ -17,6 +17,17 @@
 
 import { lowerCase, startCase } from "lodash";
 
+import type { UserMapping } from "./DataStores/UserStore";
+
 export const titleCase = (input: string): string => {
   return startCase(lowerCase(input));
 };
+
+export function getUserName(email: string, users: UserMapping): string {
+  const mappedUser = users[email];
+  if (mappedUser) return mappedUser.name;
+  if (email.endsWith("recidiviz.org")) {
+    return "Recidiviz Admin";
+  }
+  return email;
+}

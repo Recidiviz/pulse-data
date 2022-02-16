@@ -1,0 +1,7 @@
+person_name,person_external_id,officer_id,supervision_type,judicial_district,supervision_level,supervision_level_start,offense_type,last_DRUN,sanctions_past_1yr
+"{""given_names"": ""TONYE"", ""surname"": ""THOMPSON"", ""middle_names"": ""BARBY""}","100","OFFICER1","PAROLE","17","MEDIUM","2019-10-26","PENALTY VIO OF DISPO OF DEAD BODY STATUTES","[2022-01-26]",
+"{""given_names"": ""LINET"", ""surname"": ""HANSEN""}","101","OFFICER1","PROBATION","14","MEDIUM","2019-12-20","DISSEM SMOK MAT,PARAPHNLA,SMKLS TOBC TO MINRS","[2021-09-17,2022-02-02]","IPDS"
+"{""given_names"": ""REBEKAH"", ""surname"": ""CORTES"", ""middle_names"": ""HATTI""}","102","OFFICER1","PROBATION","17","MINIMUM","2020-07-05","FAC COMPUTER OFFENSE - $10,000-$60,000","[2022-01-26]","MPDS"
+"{""given_names"": ""RAMONDA"", ""surname"": ""UNDERWOOD""}","104","OFFICER2","PROBATION","17","HIGH","2020-04-07","PURCHASE HIDES FROM UNK PERS W/O ID","[2021-11-26]","OPRD"
+"{""given_names"": ""CLARIBEL"", ""surname"": ""VELAZQUEZ"", ""middle_names"": ""M""}","107","OFFICER2","PAROLE","12","MEDIUM","2020-05-19","SCHED VI DRUGS: MINOR W/QUAL PRIORS","[2021-10-26,2022-02-04]","ZTPD"
+"{""given_names"": ""SHERRI"", ""surname"": ""WRIGHT"", ""middle_names"": ""RENELLE""}","109","OFFICER2","PAROLE","14","MEDIUM","2021-02-11","FRAUD","[2022-01-26]",

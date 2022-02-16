@@ -71,8 +71,11 @@ if (import.meta.env.DEV) {
 }
 
 const COLLECTIONS = {
+  compliantReportingCases: "compliantReportingCases",
   compliantReportingStatus: "compliantReportingStatus",
   compliantReportingUpdates: "compliantReportingUpdates",
+  users: "users",
+  officers: "officers",
 };
 
 export const compliantReportingStatusQuery = query(
@@ -101,3 +104,10 @@ export function saveCompliantReportingNote(
     createdAt: serverTimestamp(),
   });
 }
+
+export const usersQuery = query(collection(db, COLLECTIONS.users));
+
+export const compliantReportingCasesQuery = query(
+  collection(db, COLLECTIONS.compliantReportingCases),
+  orderBy("supervisionLevelStart")
+);

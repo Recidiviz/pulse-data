@@ -1,0 +1,4 @@
+User name,Email,officer_ids
+Test Officer1,test-officer@recidiviz.org,OFFICER1
+Test Officer2,--,OFFICER2
+Test Supervisor,test-supervisor@recidiviz.org,"OFFICER1,OFFICER2"
