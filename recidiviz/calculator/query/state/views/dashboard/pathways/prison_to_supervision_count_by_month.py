@@ -15,7 +15,10 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
 """Prison to supervision count by month"""
-from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state import (
+    dataset_config,
+    state_specific_query_strings,
+)
 from recidiviz.calculator.query.state.dataset_config import DASHBOARD_VIEWS_DATASET
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_metric_big_query_view import (
     PathwaysMetricBigQueryViewBuilder,
@@ -36,22 +39,37 @@ PRISON_TO_SUPERVISION_COUNT_BY_MONTH_DESCRIPTION = (
 )
 
 aggregate_query = """
-    SELECT
-        transitions.state_code,
-        EXTRACT(YEAR FROM transition_date) as year,
-        EXTRACT(MONTH FROM transition_date) as month,
+    WITH all_rows AS (
+        SELECT
+            transitions.state_code,
+            EXTRACT(YEAR FROM transition_date) as year,
+            EXTRACT(MONTH FROM transition_date) as month,
+            gender,
+            age_group,
+            IFNULL(aggregating_location_id, level_1_location_external_id) AS facility,
+        FROM
+            `{project_id}.{reference_dataset}.prison_to_supervision_transitions` transitions
+        LEFT JOIN `{project_id}.{dashboard_views_dataset}.pathways_incarceration_location_name_map` location
+            ON transitions.state_code = location.state_code 
+            AND level_1_location_external_id = location_id
+    ),
+    filtered_rows AS (
+        SELECT *
+        FROM all_rows
+        WHERE {facility_filter}
+    )
+    SELECT 
+        state_code,
+        year,
+        month,
         gender,
         age_group,
         facility,
-        COUNT(1) as event_count
-    FROM
-        `{project_id}.{reference_dataset}.prison_to_supervision_transitions` transitions,
+        COUNT(1) as event_count,
+    FROM filtered_rows,
         UNNEST ([gender, 'ALL']) AS gender,
-        UNNEST ([age_group, 'ALL']) AS age_group
-    LEFT JOIN `{project_id}.{dashboard_views_dataset}.pathways_incarceration_location_name_map` location
-        ON transitions.state_code = location.state_code 
-        AND transitions.level_1_location_external_id = location.location_id,
-        UNNEST ([IFNULL(location_id, level_1_location_external_id), "ALL"]) AS facility
+        UNNEST ([age_group, 'ALL']) AS age_group,
+        UNNEST ([facility, "ALL"]) AS facility
     GROUP BY 1, 2, 3, 4, 5, 6
 """
 
@@ -77,6 +95,7 @@ PRISON_TO_SUPERVISION_COUNT_BY_MONTH_VIEW_BUILDER = PathwaysMetricBigQueryViewBu
     dimensions=("state_code", "year", "month", *dimensions),
     dashboard_views_dataset=DASHBOARD_VIEWS_DATASET,
     reference_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    facility_filter=state_specific_query_strings.pathways_state_specific_facility_filter(),
 )
 
 if __name__ == "__main__":
