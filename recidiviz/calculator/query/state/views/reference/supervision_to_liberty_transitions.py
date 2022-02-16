@@ -36,7 +36,7 @@ SUPERVISION_TO_LIBERTY_TRANSITIONS_QUERY_TEMPLATE = """
     SELECT
         state_code,
         person_id,
-        end_date AS transition_date,
+        end_date + 1 AS transition_date,
         age_end AS age,
         prioritized_race_or_ethnicity,
         {first_known_location} AS district_id,

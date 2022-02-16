@@ -35,7 +35,7 @@ PRISON_TO_SUPERVISION_TRANSITIONS_QUERY_TEMPLATE = """
     SELECT
         sessions.state_code,
         sessions.person_id,
-        sessions.end_date AS transition_date,
+        sessions.end_date + 1 AS transition_date,
         sessions.age_end AS age,
         {age_group}
         sessions.gender,
