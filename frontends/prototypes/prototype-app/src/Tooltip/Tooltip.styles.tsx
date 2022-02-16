@@ -14,53 +14,33 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import {
-  Button,
-  CardSection,
-  H3,
-  palette,
-  spacing,
-} from "@recidiviz/design-system";
+import { palette, spacing, zindex } from "@recidiviz/design-system";
 import { rem } from "polished";
 import styled from "styled-components/macro";
 
-export const CloseButton = styled(Button).attrs({
-  kind: "borderless",
-  shape: "block",
-})`
-  height: ${rem(spacing.xl)};
-  width: ${rem(spacing.xl)};
+const StateStyles = {
+  entering: `opacity: 1;`,
+  exiting: `opacity: 0;`,
+};
+
+export type TooltipState = "entering" | "exiting" | null;
+
+const TooltipElement = styled.div<{
+  state: TooltipState;
+}>`
+  display: block;
+  position: fixed;
+  font-size: ${rem("14px")};
   padding: ${rem(spacing.sm)};
+  border-radius: 4px;
+  color: ${palette.white};
+  background-color: ${palette.signal.tooltip};
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+  z-index: ${zindex.modal.content + 1};
+
+  ${(props) => props.state && StateStyles[props.state]}
 `;
 
-export const ClientName = styled(H3)`
-  margin-top: 0;
-  margin-right: auto;
-  margin-bottom: 0;
-`;
-
-export const ClientProfileSection = styled(CardSection)`
-  padding: ${rem(spacing.xl)};
-  padding-bottom: ${rem(spacing.md)};
-`;
-
-export const ClientProfileHeading = styled(ClientProfileSection)`
-  display: flex;
-  flex-wrap: wrap;
-  grid-area: 1 / 1;
-`;
-
-export const DetailsLabel = styled.span`
-  color: ${palette.slate80};
-  margin-right: ${rem(spacing.xs)};
-`;
-
-export const ClientInfo = styled.div`
-  font-size: ${rem(14)};
-  width: 100%;
-`;
-
-export const IconPad = styled.span`
-  display: inline-block;
-  margin-right: 8px;
-`;
+export default TooltipElement;

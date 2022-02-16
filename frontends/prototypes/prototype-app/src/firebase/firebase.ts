@@ -83,11 +83,22 @@ export const compliantReportingStatusQuery = query(
 );
 
 export function saveCompliantReportingStatus(
-  newValue: CompliantReportingStatusRecord
+  updateContents: Omit<CompliantReportingStatusRecord, "statusUpdated">,
+  user: string
 ): Promise<void> {
   return setDoc(
-    doc(db, COLLECTIONS.compliantReportingStatus, newValue.personExternalId),
-    newValue
+    doc(
+      db,
+      COLLECTIONS.compliantReportingStatus,
+      updateContents.personExternalId
+    ),
+    {
+      ...updateContents,
+      statusUpdated: {
+        date: serverTimestamp(),
+        by: user,
+      },
+    }
   );
 }
 
@@ -106,6 +117,8 @@ export function saveCompliantReportingNote(
 }
 
 export const usersQuery = query(collection(db, COLLECTIONS.users));
+
+export const officersQuery = query(collection(db, COLLECTIONS.officers));
 
 export const compliantReportingCasesQuery = query(
   collection(db, COLLECTIONS.compliantReportingCases),

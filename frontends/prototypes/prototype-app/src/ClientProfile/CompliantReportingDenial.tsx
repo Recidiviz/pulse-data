@@ -25,9 +25,9 @@ import {
 } from "@recidiviz/design-system";
 import { observer } from "mobx-react-lite";
 import React from "react";
+import styled from "styled-components/macro";
 
 import { useDataStore } from "../StoreProvider";
-import { IconPad } from "./styles";
 
 const REASONS_MAP = {
   DECF: "No effort to pay fine and costs",
@@ -39,6 +39,11 @@ const REASONS_MAP = {
   DEIO: "Denied for compliant reporting",
   DEIR: "Failure to report as instructed",
 };
+
+export const IconPad = styled.span`
+  display: inline-block;
+  margin-right: 8px;
+`;
 
 const Checkmark: React.FC = () => {
   return (
@@ -63,7 +68,7 @@ const CompliantReportingDenial: React.FC = () => {
     <Dropdown>
       <DropdownToggle
         kind={client.status === "DENIED" ? "primary" : "secondary"}
-        shape="pill"
+        shape="block"
       >
         Not Eligible{deniedCodes}
       </DropdownToggle>
