@@ -1,0 +1,22 @@
+{
+  "name": "prototypes-admin",
+  "description": "Admin scripts for prototype environment",
+  "scripts": {
+    "cr": "FIRESTORE_EMULATOR_HOST=\"localhost:8080\" GOOGLE_APPLICATION_CREDENTIALS=service_account.json node compliantReportingCases.js",
+    "cr:prod": "GOOGLE_APPLICATION_CREDENTIALS=service_account.json node compliantReportingCases.js",
+    "users": "FIRESTORE_EMULATOR_HOST=\"localhost:8080\" GOOGLE_APPLICATION_CREDENTIALS=service_account.json node users.js",
+    "users:prod": "GOOGLE_APPLICATION_CREDENTIALS=service_account.json node users.js"
+  },
+  "engines": {
+    "node": "16"
+  },
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "@google-cloud/firestore": "^5.0.2",
+    "csv-parse": "^5.0.4",
+    "date-fns": "^2.28.0",
+    "lodash": "^4.17.21",
+    "yargs": "^17.3.1"
+  }
+}
