@@ -14,7 +14,7 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
-"""Pathways helper view to map from location ID to aggregating location name."""
+"""Pathways helper view to map from location ID to aggregating location id and name"""
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
     ENABLED_STATES,
@@ -31,15 +31,18 @@ PATHWAYS_INCARCERATION_LOCATION_NAME_MAP_VIEW_NAME = (
     "pathways_incarceration_location_name_map"
 )
 
-PATHWAYS_INCARCERATION_LOCATION_NAME_MAP_DESCRIPTION = (
-    "Map by state from location id to the name of the location it will be aggregated by"
-)
+PATHWAYS_INCARCERATION_LOCATION_NAME_MAP_DESCRIPTION = "Map by state from location id to the name and aggregating id of the location it will be aggregated by"
 
 PATHWAYS_INCARCERATION_LOCATION_NAME_MAP_QUERY_TEMPLATE = """
     /*{description}*/
     SELECT
         state_code,
         level_1_incarceration_location_external_id AS location_id,
+        CASE
+            WHEN state_code = 'US_ND'
+                THEN IF(level_1_incarceration_location_external_id = 'TRCC', 'TRC', level_1_incarceration_location_external_id)
+            ELSE level_1_incarceration_location_external_id
+        END AS aggregating_location_id,
         level_1_incarceration_location_name AS location_name,
     FROM `{project_id}.{reference_views_dataset}.incarceration_location_ids_to_names`
     WHERE state_code IN ({enabled_states})

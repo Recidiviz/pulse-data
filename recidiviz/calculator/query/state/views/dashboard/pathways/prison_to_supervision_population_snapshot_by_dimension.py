@@ -17,7 +17,10 @@
 """Admissions to supervision from prison aggregated over different time periods."""
 
 from recidiviz.calculator.query.bq_utils import get_binned_time_period_months
-from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state import (
+    dataset_config,
+    state_specific_query_strings,
+)
 from recidiviz.calculator.query.state.state_specific_query_strings import (
     get_pathways_incarceration_last_updated_date,
 )
@@ -40,24 +43,38 @@ PRISON_TO_SUPERVISION_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = """
     /* {description} */
     WITH
     data_freshness AS ({last_updated_query})
-    , event_counts AS (
+    , all_rows AS (
         SELECT
             transitions.state_code,
             {transition_time_period} AS time_period,
             gender,
             age_group,
-            facility,
-            COUNT(1) as event_count,
-        FROM `{project_id}.{reference_dataset}.prison_to_supervision_transitions` transitions,
-            UNNEST ([gender, 'ALL']) AS gender,
-            UNNEST ([age_group, 'ALL']) AS age_group
+            IFNULL(aggregating_location_id, level_1_location_external_id) AS facility,
+        FROM `{project_id}.{reference_dataset}.prison_to_supervision_transitions` transitions
         LEFT JOIN `{project_id}.{dashboard_views_dataset}.pathways_incarceration_location_name_map` location
             ON transitions.state_code = location.state_code 
-            AND transitions.level_1_location_external_id = location.location_id,
-            UNNEST ([IFNULL(location_id, level_1_location_external_id), "ALL"]) AS facility
+            AND level_1_location_external_id = location_id
+    ),
+    filtered_rows AS (
+        SELECT *
+        FROM all_rows
+        WHERE {facility_filter}
+    )
+    , event_counts AS (
+        SELECT
+            filtered_rows.state_code,
+            time_period,
+            gender,
+            age_group,
+            facility,
+            COUNT(1) as event_count,
+        FROM filtered_rows,
+            UNNEST ([gender, 'ALL']) AS gender,
+            UNNEST ([age_group, 'ALL']) AS age_group,
+            UNNEST ([facility, 'ALL']) AS facility
+
         GROUP BY 1, 2, 3, 4, 5
     )
-
     SELECT
         last_updated,
         event_counts.*,
@@ -83,6 +100,7 @@ PRISON_TO_SUPERVISION_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER = PathwaysMe
     last_updated_query=get_pathways_incarceration_last_updated_date(),
     reference_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     transition_time_period=get_binned_time_period_months("transition_date"),
+    facility_filter=state_specific_query_strings.pathways_state_specific_facility_filter(),
 )
 
 if __name__ == "__main__":

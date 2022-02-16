@@ -61,7 +61,7 @@ PRISON_TO_SUPERVISION_POPULATION_SNAPSHOT_PERSON_LEVEL_QUERY_TEMPLATE = """
     SELECT
         state_code,
         last_updated,
-        location_id AS facility,
+        IFNULL(aggregating_location_id, location_id) AS facility,
         transitions.gender,
         age,
         age_group,

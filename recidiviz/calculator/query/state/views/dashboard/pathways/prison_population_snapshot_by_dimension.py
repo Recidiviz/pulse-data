@@ -20,7 +20,10 @@ from recidiviz.calculator.query.bq_utils import (
     filter_to_enabled_states,
     length_of_stay_month_groups,
 )
-from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state import (
+    dataset_config,
+    state_specific_query_strings,
+)
 from recidiviz.calculator.query.state.dataset_config import (
     DASHBOARD_VIEWS_DATASET,
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
@@ -67,7 +70,7 @@ PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = """
             metrics.state_code,
             gender,
             admission_reason AS legal_status,
-            IFNULL(location_id, metrics.facility) AS facility,
+            IFNULL(aggregating_location_id, metrics.facility) AS facility,
             {add_age_groups}
             length_of_stay,
             COUNT(DISTINCT person_id) as person_count
@@ -77,8 +80,12 @@ PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = """
             ON metrics.state_code = name_map.state_code
             AND metrics.facility = name_map.location_id
         group by 1, 2, 3, 4, 5, 6
+    ),
+    filtered_rows AS (
+        SELECT *
+        FROM all_dimensions
+        WHERE {facility_filter}
     )
-    
     SELECT
         state_code,
         get_last_updated.last_updated,
@@ -88,7 +95,7 @@ PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = """
         age_group,
         length_of_stay,
         SUM(person_count) as person_count
-    FROM all_dimensions,
+    FROM filtered_rows,
     UNNEST ([age_group, 'ALL']) as age_group,
     UNNEST ([legal_status, 'ALL']) as legal_status,
     UNNEST ([facility, 'ALL']) as facility,
@@ -121,6 +128,7 @@ PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER = PathwaysMetricBigQueryVie
         state_code_column="state_code", enabled_states=ENABLED_STATES
     ),
     length_of_stay_months_grouped=length_of_stay_month_groups(),
+    facility_filter=state_specific_query_strings.pathways_state_specific_facility_filter(),
 )
 
 if __name__ == "__main__":
