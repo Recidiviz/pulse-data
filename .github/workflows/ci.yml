@@ -59,6 +59,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+        with:
+          # This clones the repo and checks out the SHA that triggered this action.
+          # We set fetch-depth 0 to fetch all branches and history so that merge-base
+          # is guaranteed to be able to find the common ancestor with the base branch.
+          # See https://github.com/actions/checkout#readme
+          fetch-depth: 0
       - name: Python Setup
         uses: ./.github/actions/python-setup
       - name: Pylint
