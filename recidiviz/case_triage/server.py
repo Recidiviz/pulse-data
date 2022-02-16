@@ -52,7 +52,6 @@ from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDat
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
-from recidiviz.tools.postgres import local_postgres_helpers
 from recidiviz.utils.auth.auth0 import (
     Auth0Config,
     AuthorizationError,
@@ -102,6 +101,9 @@ limiter = Limiter(
 )
 
 if in_development():
+    # Only import in development
+    from recidiviz.tools.postgres import local_postgres_helpers
+
     db_url = local_postgres_helpers.postgres_db_url_from_env_vars()
 else:
     db_url = SQLAlchemyEngineManager.get_server_postgres_instance_url(

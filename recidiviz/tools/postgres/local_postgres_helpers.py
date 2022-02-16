@@ -25,7 +25,7 @@ from typing import Dict, Optional
 from sqlalchemy.engine import URL
 from sqlalchemy.orm.session import close_all_sessions
 
-from conftest import get_worker_id
+from conftest import get_pytest_worker_id
 from recidiviz.persistence.database.base_schema import (
     CaseTriageBase,
     JailsBase,
@@ -115,7 +115,7 @@ def can_start_on_disk_postgresql_database() -> bool:
 
 
 def get_on_disk_postgres_log_dir_prefix() -> str:
-    return f"postgres{get_worker_id()}"
+    return f"postgres{get_pytest_worker_id()}"
 
 
 @environment.local_only
@@ -269,15 +269,15 @@ def use_on_disk_postgresql_database(database_key: SQLAlchemyDatabaseKey) -> None
 
 
 def get_on_disk_postgres_port() -> int:
-    return 54300 + get_worker_id()
+    return 54300 + get_pytest_worker_id()
 
 
 def get_on_disk_postgres_database_name() -> str:
-    return f"{TEST_POSTGRES_DB_NAME}{get_worker_id()}"
+    return f"{TEST_POSTGRES_DB_NAME}{get_pytest_worker_id()}"
 
 
 def get_on_disk_postgres_temp_dir_prefix() -> str:
-    return f"postgres{get_worker_id()}_"
+    return f"postgres{get_pytest_worker_id()}_"
 
 
 @environment.local_only
