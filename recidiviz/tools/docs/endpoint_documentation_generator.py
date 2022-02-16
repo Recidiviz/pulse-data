@@ -124,7 +124,8 @@ class EndpointDocumentationGenerator:
         self, specification_template_path: str, rule: Rule
     ) -> str:
         """Reads in a specification template and formats a rule accordingly."""
-        methods = ", ".join(sorted(list(rule.methods)))
+        rule_methods = rule.methods if rule.methods is not None else set()
+        methods = ", ".join(sorted(list(rule_methods)))
         escaped_path_params = [
             self._escape_special_characters(path_params)
             for path_params in self.get_path_parameters(rule.rule)

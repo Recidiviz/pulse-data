@@ -37,6 +37,7 @@ from recidiviz.case_triage.error_handlers import register_error_handlers
 from recidiviz.case_triage.user_context import UserContext
 from recidiviz.persistence.database.schema.case_triage.schema import ETLOfficer
 from recidiviz.tests.case_triage.case_triage_helpers import hash_email
+from recidiviz.utils.types import assert_type
 
 DEMO_USER_EMAIL = "demo_user@not-recidiviz.org"
 ADMIN_USER_EMAIL = "admin@not-recidiviz.org"
@@ -128,12 +129,12 @@ class CaseTriageTestHelpers:
     def get_clients(self) -> List[Dict[Any, Any]]:
         response = self.test_client.get("/api/clients")
         self.test.assertEqual(response.status_code, HTTPStatus.OK)
-        return response.get_json()
+        return assert_type(response.get_json(), list)
 
     def get_opportunities(self) -> List[Dict[Any, Any]]:
         response = self.test_client.get("/api/opportunities")
         self.test.assertEqual(response.status_code, HTTPStatus.OK)
-        return response.get_json()
+        return assert_type(response.get_json(), list)
 
     def get_undeferred_opportunities(self) -> List[Dict[Any, Any]]:
         all_opportunities = self.get_opportunities()
@@ -160,9 +161,10 @@ class CaseTriageTestHelpers:
                 "comment": comment,
             },
         )
+        response_json = assert_type(response.get_json(), dict)
 
-        self.test.assertEqual(response.status_code, HTTPStatus.OK, response.get_json())
-        self.test.assertIsNotNone(response.get_json()["updateId"])
+        self.test.assertEqual(response.status_code, HTTPStatus.OK, response_json)
+        self.test.assertIsNotNone(response_json["updateId"])
 
     def create_note(self, person_external_id: str, text: str) -> str:
         response = self.test_client.post(
@@ -172,9 +174,10 @@ class CaseTriageTestHelpers:
                 "text": text,
             },
         )
+        response_json = assert_type(response.get_json(), dict)
 
-        self.test.assertEqual(response.status_code, HTTPStatus.OK, response.get_json())
-        note_id = response.get_json()["noteId"]
+        self.test.assertEqual(response.status_code, HTTPStatus.OK, response_json)
+        note_id = assert_type(response.get_json(), dict)["noteId"]
         self.test.assertIsNotNone(note_id)
         return note_id
 
@@ -197,7 +200,7 @@ class CaseTriageTestHelpers:
             },
         )
 
-        response_body = response.get_json()
+        response_body = assert_type(response.get_json(), dict)
         self.test.assertEqual(response.status_code, HTTPStatus.OK, response_body)
         self.test.assertIsInstance(response_body["deferralId"], str, response_body)
         self.test.assertIsInstance(response_body["deferredUntil"], str, response_body)
@@ -208,7 +211,9 @@ class CaseTriageTestHelpers:
         deferral_id: str,
     ) -> None:
         response = self.test_client.delete(f"/api/opportunity_deferrals/{deferral_id}")
-        self.test.assertEqual(response.status_code, HTTPStatus.OK, response.get_json())
+        self.test.assertEqual(
+            response.status_code, HTTPStatus.OK, assert_type(response.get_json(), dict)
+        )
 
     def find_client_in_api_response(self, person_external_id: str) -> Dict[Any, Any]:
         client_json = self.get_clients()
@@ -236,7 +241,9 @@ class CaseTriageTestHelpers:
             json={"noteId": note_id, "isResolved": is_resolved},
         )
 
-        self.test.assertEqual(response.status_code, HTTPStatus.OK, response.get_json())
+        self.test.assertEqual(
+            response.status_code, HTTPStatus.OK, assert_type(response.get_json(), dict)
+        )
 
     def set_preferred_contact_method(
         self, person_external_id: str, contact_method: PreferredContactMethod
@@ -249,7 +256,9 @@ class CaseTriageTestHelpers:
             },
         )
 
-        self.test.assertEqual(response.status_code, HTTPStatus.OK, response.get_json())
+        self.test.assertEqual(
+            response.status_code, HTTPStatus.OK, assert_type(response.get_json(), dict)
+        )
 
     def set_preferred_name(self, person_external_id: str, name: Optional[str]) -> None:
         response = self.test_client.post(
@@ -260,7 +269,9 @@ class CaseTriageTestHelpers:
             },
         )
 
-        self.test.assertEqual(response.status_code, HTTPStatus.OK, response.get_json())
+        self.test.assertEqual(
+            response.status_code, HTTPStatus.OK, assert_type(response.get_json(), dict)
+        )
 
     def set_receiving_ssi_or_disability_income(
         self, person_external_id: str, mark_receiving: bool
@@ -273,7 +284,9 @@ class CaseTriageTestHelpers:
             },
         )
 
-        self.test.assertEqual(response.status_code, HTTPStatus.OK, response.get_json())
+        self.test.assertEqual(
+            response.status_code, HTTPStatus.OK, assert_type(response.get_json(), dict)
+        )
 
     def update_note(self, note_id: str, text: str) -> None:
         response = self.test_client.post(
@@ -284,14 +297,18 @@ class CaseTriageTestHelpers:
             },
         )
 
-        self.test.assertEqual(response.status_code, HTTPStatus.OK, response.get_json())
+        self.test.assertEqual(
+            response.status_code, HTTPStatus.OK, assert_type(response.get_json(), dict)
+        )
 
     def get_events_for_client(self, person_external_id: str) -> List[Dict[Any, Any]]:
         response = self.test_client.get(f"/api/events/{person_external_id}")
 
-        self.test.assertEqual(response.status_code, HTTPStatus.OK, response.get_json())
+        self.test.assertEqual(
+            response.status_code, HTTPStatus.OK, assert_type(response.get_json(), list)
+        )
 
-        return response.get_json()
+        return assert_type(response.get_json(), list)
 
     @staticmethod
     def from_test(test: TestCase, test_app: Flask) -> "CaseTriageTestHelpers":
@@ -303,6 +320,8 @@ class CaseTriageTestHelpers:
             json={"hasSeenOnboarding": has_seen_onboarding},
         )
 
-        self.test.assertEqual(response.status_code, HTTPStatus.OK, response.get_json())
+        self.test.assertEqual(
+            response.status_code, HTTPStatus.OK, assert_type(response.get_json(), dict)
+        )
 
-        return response.get_json()
+        return assert_type(response.get_json(), dict)

@@ -34,6 +34,7 @@ from recidiviz.admin_panel.routes.data_discovery import add_data_discovery_route
 from recidiviz.cloud_memorystore.redis_communicator import RedisCommunicator
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
+from recidiviz.utils.types import assert_type
 
 fixture_path = os.path.join(
     os.path.dirname(__file__),
@@ -179,7 +180,7 @@ class TestDataDiscoveryRoutes(TestCase):
             },
         )
         self.assertEqual(HTTPStatus.OK, response.status_code)
-        self.assertIsNotNone(response.get_json()["id"])
+        self.assertIsNotNone(assert_type(response.get_json(), dict)["id"])
 
     def test_discovery_status(self) -> None:
         communicator = RedisCommunicator.create(self.fakeredis, max_messages=2)
@@ -194,7 +195,9 @@ class TestDataDiscoveryRoutes(TestCase):
             },
         )
         self.assertEqual(HTTPStatus.OK, response.status_code)
-        self.assertEqual(second_message.to_json(), response.get_json())
+        self.assertEqual(
+            second_message.to_json(), assert_type(response.get_json(), dict)
+        )
 
     def test_files(self) -> None:
         response = self.test_client.post(

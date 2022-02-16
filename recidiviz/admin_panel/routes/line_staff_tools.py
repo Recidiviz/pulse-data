@@ -22,7 +22,7 @@ from http import HTTPStatus
 from json import JSONDecodeError
 from typing import Optional, Tuple
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, Response, jsonify, request
 
 from recidiviz.admin_panel.admin_stores import fetch_state_codes
 from recidiviz.admin_panel.case_triage_helpers import (
@@ -75,6 +75,7 @@ from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.environment import GCP_PROJECT_STAGING, in_development
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.string import StrictStringFormatter
+from recidiviz.utils.types import assert_type
 
 
 def add_line_staff_tools_routes(bp: Blueprint) -> None:
@@ -85,7 +86,7 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
     # Fetch ETL View Ids for GCS -> Cloud SQL Import
     @bp.route("/api/line_staff_tools/fetch_etl_view_ids", methods=["POST"])
     @requires_gae_auth
-    def _fetch_etl_view_ids() -> Tuple[str, HTTPStatus]:
+    def _fetch_etl_view_ids() -> Tuple[Response, HTTPStatus]:
         override_project_id: Optional[str] = None
         if in_development():
             override_project_id = GCP_PROJECT_STAGING
@@ -132,7 +133,9 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
     def _run_gcs_import() -> Tuple[str, HTTPStatus]:
         """Executes an import of data from Google Cloud Storage into Cloud SQL,
         based on the query parameters in the request."""
-        if "viewIds" not in request.json:
+
+        request_json = assert_type(request.json, dict)
+        if "viewIds" not in request_json:
             return "`viewIds` must be present in arugment list", HTTPStatus.BAD_REQUEST
 
         known_view_builders = {
@@ -140,7 +143,7 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
         }
         importable_csvs = get_importable_csvs()
 
-        for view_id in request.json["viewIds"]:
+        for view_id in request_json["viewIds"]:
             if view_id in importable_csvs:
                 # CSVs put in to_import override ones from known view builders
                 csv_path = importable_csvs[view_id]
@@ -185,7 +188,7 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
     # fetch PO monthly report states
     @bp.route("/api/line_staff_tools/get_po_feedback", methods=["POST"])
     @requires_gae_auth
-    def _fetch_po_user_feedback() -> Tuple[str, HTTPStatus]:
+    def _fetch_po_user_feedback() -> Tuple[Response, HTTPStatus]:
         with SessionFactory.using_database(
             SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE), autocommit=False
         ) as session:
@@ -215,19 +218,19 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
 
     @bp.route("/api/line_staff_tools/fetch_email_state_codes", methods=["POST"])
     @requires_gae_auth
-    def _fetch_email_state_codes() -> Tuple[str, HTTPStatus]:
+    def _fetch_email_state_codes() -> Tuple[Response, HTTPStatus]:
         # hard coding Idaho and Pennsylvania for now
         state_code_info = fetch_state_codes(EMAIL_STATE_CODES)
         return jsonify(state_code_info), HTTPStatus.OK
 
     @bp.route("/api/line_staff_tools/fetch_roster_state_codes", methods=["POST"])
     @requires_gae_auth
-    def _fetch_roster_state_codes() -> Tuple[str, HTTPStatus]:
+    def _fetch_roster_state_codes() -> Tuple[Response, HTTPStatus]:
         state_code_info = fetch_state_codes(ROSTER_STATE_CODES)
         return jsonify(state_code_info), HTTPStatus.OK
 
     @bp.route("/api/line_staff_tools/fetch_report_types", methods=["POST"])
-    def _fetch_report_types() -> Tuple[str, HTTPStatus]:
+    def _fetch_report_types() -> Tuple[Response, HTTPStatus]:
         return jsonify([t.value for t in ReportType]), HTTPStatus.OK
 
     # Generate monthly report emails
@@ -237,7 +240,7 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
     @requires_gae_auth
     def _generate_emails(state_code_str: str) -> Tuple[str, HTTPStatus]:
         try:
-            data = request.json
+            data = assert_type(request.json, dict)
             state_code = StateCode(state_code_str)
             if state_code not in EMAIL_STATE_CODES:
                 raise ValueError("State code is invalid for PO monthly reports")
@@ -334,7 +337,7 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
     @requires_gae_auth
     def _send_emails(state_code_str: str) -> Tuple[str, HTTPStatus]:
         try:
-            data = request.json
+            data = assert_type(request.json, dict)
             state_code = StateCode(state_code_str)
             if state_code not in EMAIL_STATE_CODES:
                 raise ValueError("State code is invalid for the monthly reports")
@@ -440,7 +443,7 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
     @requires_gae_auth
     def _list_batch_info() -> Tuple[str, HTTPStatus]:
         try:
-            data = request.json
+            data = assert_type(request.json, dict)
             state_code = StateCode(data.get("stateCode"))
             if state_code not in EMAIL_STATE_CODES:
                 raise ValueError("State code is invalid for retrieving batch ids")
