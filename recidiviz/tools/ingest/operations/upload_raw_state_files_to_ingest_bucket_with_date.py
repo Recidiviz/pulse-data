@@ -96,11 +96,13 @@ class ManualUploadStateFilesToIngestBucketController(
             ],
             project_id=project_id,
             region=region,
-            delegate=ManualUploadStateFilesToIngestBucketDelegate(
-                region_code=region,
-                dry_run=dry_run,
-                destination_bucket_override=destination_bucket_override,
-            ),
+            delegates=[
+                ManualUploadStateFilesToIngestBucketDelegate(
+                    region_code=region,
+                    dry_run=dry_run,
+                    destination_bucket_override=destination_bucket_override,
+                )
+            ],
             destination_bucket_override=destination_bucket_override,
         )
 
