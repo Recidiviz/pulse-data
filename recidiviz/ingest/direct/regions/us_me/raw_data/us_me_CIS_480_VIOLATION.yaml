@@ -13,10 +13,36 @@ columns:
     description: The client that is associated with this violation entry.
   - name : Cis_1016_Extradition_Cd
   - name : Cis_4009_Client_Loc_Cd
+    description: The type of location the client was in when the violation took place.
+    known_values:
+      - value: 66
+        description: DOC Facility
+      - value: 67
+        description: County Jail
+      - value: 68
+        description: Community
   - name : Cis_4009_Disposition_Cd
+    description: The ultimate disposition of the violation, i.e. the primary outcome, such as a revocation.
+    known_values:
+      - value: 69
+        description: Partial Revocation - with continuation
+      - value: 70
+        description: Partial Revocation - with termination
+      - value: 71
+        description: Full Revocation
+      - value: 72
+        description: Violation Found - No Sanction
+      - value: 73
+        description: Violation Found - Conditions Amended
   - name : Cis_4009_Served_At_Cd
+    description: The type of facility in which time will be served as an outcome of the violation, if applicable.
+    known_values:
+      - value: 66
+        description: DOC Facility
+      - value: 67
+        description: County Jail
   - name : Cis_4009_Supervision_Type_Cd
-    description: The type of supervision.
+    description: The type of supervision being served at the time of the violation.
     known_values:
       - value: 96
         description: Probation
@@ -27,6 +53,14 @@ columns:
       - value: 113
         description: Parole
   - name : Cis_4009_Toll_Violation_Cd
+    description: "TODO(#10734): Fill this in"
+    known_values:
+      - value: 60
+        description: Arrested
+      - value: 61
+        description: Summonsed
+      - value: 62
+        description: Warrant Requested
   - name : Cis_4009_Violation_Type_Cd
     description: The type of violation
     known_values:
@@ -40,8 +74,10 @@ columns:
         description: Migration - Unknown
       - value: 116
         description: Migration - New Offense
+      - value: 149
+        description: Misdemeanor (Not Charged)
       - value: 150
-        description: UNKNOWN - This value is not in the CIS_4009_SENT_CALC_SYS table and only occurs a handful of times.
+        description: Felony (Not Charged)
   - name : Cis_4800_Violation_Finding_Cd
     description: The result of the violation.
     known_values:
@@ -68,6 +104,8 @@ columns:
       - value: 11
         description: Absconded - Facility Notified
   - name : Cis_900_Employee_Id
+    description: |-
+      The agent who initiated the violation proceedings.
   - name : Created_By_Tx
   - name : Created_On_Date
   - name : Extradition_Other_Tx
@@ -77,7 +115,10 @@ columns:
   - name : Finding_Notes_Tx
     description: Notes recorded about the finding results.
   - name : Fta_Date
+    description: When the "Failure to Appear" occurred, if applicable.
+    is_datetime: True
   - name : Fta_Ind
+    description: Indicates whether or not there is a "Failure to Appear" related to the violation outcome proceedings.
   - name : Logical_Delete_Ind
   - name : Modified_By_Tx
   - name : Modified_On_Date
@@ -96,6 +137,10 @@ columns:
   - name : Violation_Id
     description: The primary key for this table.
   - name : Warning_Issued_Ind
+    description: Indicates whether or not a warning was issued as a result of the violation outcome proceedings.
   - name : Serve_Days
+    description: Number of days to be served in some form of custody as an outcome of the violation.
   - name : Serve_Mths
+    description: Number of months to be served in some form of custody as an outcome of the violation.
   - name : Serve_Yrs
+    description: Number of years to be served in some form of custody as an outcome of the violation.
