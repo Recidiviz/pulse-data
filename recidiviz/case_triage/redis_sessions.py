@@ -150,11 +150,16 @@ class RedisSessionInterface(SessionInterface):
         return self.session_factory.create_new_session()
 
     def save_session(
-        self, app: Flask, session: RedisSession, response: Response
+        self, app: Flask, session: SessionMixin, response: Response
     ) -> None:
         """Persists the session to Redis and sends the appropriate cookie headers to the client"""
         if not app.secret_key:
             raise ValueError("The Flask app must be configured with a secret_key")
+
+        if not isinstance(session, RedisSession):
+            raise ValueError(
+                f"Expected session of type RedisSession, found [{session}]"
+            )
 
         signer = TimestampSigner(app.secret_key)
 

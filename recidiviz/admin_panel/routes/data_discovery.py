@@ -60,6 +60,7 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
 )
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.environment import in_gcp
+from recidiviz.utils.types import assert_type
 
 CACHE_HIT = "CACHE_HIT"
 CACHE_MISS = "CACHE_MISS"
@@ -153,7 +154,8 @@ def add_data_discovery_routes(blueprint: Blueprint) -> None:
         Returns:
             JSON representation of the hydrated `DataDiscoveryArgs` data class
         """
-        data_discovery_args = DataDiscoveryArgsFactory.create(**request.get_json())
+        request_json = assert_type(request.get_json(), dict)
+        data_discovery_args = DataDiscoveryArgsFactory.create(**request_json)
 
         if in_gcp():
             task_manager: AbstractAdminPanelDataDiscoveryCloudTaskManager = (
@@ -180,11 +182,12 @@ def add_data_discovery_routes(blueprint: Blueprint) -> None:
             communicator.Message: latest message added to the communication channel
 
         """
+        request_json = assert_type(request.json, dict)
         communicator = get_data_discovery_communicator(
-            uuid.UUID(request.json["discovery_id"])
+            uuid.UUID(request_json["discovery_id"])
         )
 
-        for message in communicator.listen(request.json["message_cursor"]):
+        for message in communicator.listen(request_json["message_cursor"]):
             return jsonify(message.to_json()), HTTPStatus.OK
 
         return jsonify({"error": "No message yielded"}), HTTPStatus.REQUEST_TIMEOUT
@@ -201,15 +204,16 @@ def add_data_discovery_routes(blueprint: Blueprint) -> None:
         Returns:
             JSON representation of `DataDiscoveryStandardizedFileConfig`s for the region
         """
+        request_json = assert_type(request.json, dict)
         return jsonify(
             {
                 GcsfsDirectIngestFileType.RAW_DATA.value: {
                     config.file_tag: attr.asdict(config)
-                    for config in get_raw_data_configs(request.json["region_code"])
+                    for config in get_raw_data_configs(request_json["region_code"])
                 },
                 GcsfsDirectIngestFileType.INGEST_VIEW.value: {
                     config.file_tag: attr.asdict(config)
-                    for config in get_ingest_view_configs(request.json["region_code"])
+                    for config in get_ingest_view_configs(request_json["region_code"])
                 },
             }
         )

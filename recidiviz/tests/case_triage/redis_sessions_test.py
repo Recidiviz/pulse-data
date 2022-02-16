@@ -17,6 +17,7 @@
 """Implements tests to enforce that redis sessions work."""
 from collections import namedtuple
 from datetime import datetime
+from http.cookiejar import Cookie
 from http.cookies import SimpleCookie
 from unittest import TestCase
 from uuid import uuid4
@@ -36,7 +37,11 @@ from recidiviz.case_triage.redis_sessions import (
 test_app = Flask(__name__)
 test_app.secret_key = str(uuid4())
 fake_redis = FakeRedis()
-test_app.session_interface = RedisSessionInterface(fake_redis)
+
+# We have to ignore mypy here because the Flask source code here (as of version 2.0.2)
+# types `session_interface` as `SecureCookieSessionInterface` instead of
+# `SessionInterface`.
+test_app.session_interface = RedisSessionInterface(fake_redis)  # type: ignore[assignment]
 
 
 @test_app.route("/modify_session")
@@ -72,15 +77,24 @@ class TestRedisSessionInterface(TestCase):
     def parse_session_cookie(self) -> SessionCookieParts:
         session_cookie = None
 
-        for cookie in self.test_client.cookie_jar:
+        cookie_jar = self.test_client.cookie_jar
+        if not cookie_jar:
+            self.fail("Expected a nonnull cookie_jar.")
+        for cookie in cookie_jar:
             if cookie.name == test_app.session_cookie_name:
                 session_cookie = cookie
                 break
 
         if not session_cookie:
             raise KeyError("Could not find session cookie")
+        if not isinstance(session_cookie, Cookie):
+            raise ValueError(f"Unexpected cookie type: {type(session_cookie)}")
 
-        return SessionCookieParts(*session_cookie.value.split("."))
+        session_cookie_value = session_cookie.value
+        if not session_cookie_value:
+            raise ValueError("Unexpected null section cookie value.")
+
+        return SessionCookieParts(*session_cookie_value.split("."))
 
     def modify_session(self) -> SessionCookieParts:
         self.test_client.get("/modify_session")
@@ -161,6 +175,8 @@ class TestRedisSessionInterface(TestCase):
         """When a legacy client sends a cookie-based session, it is dropped, and a new redis-based session is sent"""
         legacy_interface = SecureCookieSessionInterface()
         legacy_signer = legacy_interface.get_signing_serializer(test_app)
+        if not legacy_signer:
+            self.fail("Expected a nonnull signing serializer.")
         with freezegun.freeze_time(datetime(2021, 10, 1)):
             cookie_session_contents = legacy_signer.dumps(
                 dict({"last_modified_at": datetime.now()})

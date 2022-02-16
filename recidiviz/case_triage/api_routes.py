@@ -175,14 +175,14 @@ def create_api_blueprint(
     @route_with_permissions(
         api, "/clients", [Permission.READ_WRITE, Permission.READ_ONLY]
     )
-    def _get_clients() -> str:
+    def _get_clients() -> Response:
         clients = CaseTriageQuerier.clients_for_officer(current_session, g.user_context)
         return jsonify([client.to_json() for client in clients])
 
     @route_with_permissions(
         api, "/opportunities", [Permission.READ_WRITE, Permission.READ_ONLY]
     )
-    def _get_opportunities() -> str:
+    def _get_opportunities() -> Response:
         opportunity_presenters = CaseTriageQuerier.opportunities_for_officer(
             current_session, g.user_context
         )
@@ -193,7 +193,7 @@ def create_api_blueprint(
     @route_with_permissions(
         api, "/bootstrap", [Permission.READ_WRITE, Permission.READ_ONLY]
     )
-    def _get_bootstrap() -> str:
+    def _get_bootstrap() -> Response:
         officer_metadata = OfficerMetadataInterface.get_officer_metadata(
             current_session,
             g.user_context.officer_state_code,
@@ -239,7 +239,7 @@ def create_api_blueprint(
         api, "/opportunity_deferrals", [Permission.READ_WRITE], methods=["POST"]
     )
     @requires_api_schema(DeferOpportunitySchema)
-    def _defer_opportunity() -> str:
+    def _defer_opportunity() -> Response:
         etl_client = load_client(g.api_data["person_external_id"])
         deferred_until = g.api_data["defer_until"]
         try:
@@ -300,7 +300,7 @@ def create_api_blueprint(
         methods=["POST"],
     )
     @requires_api_schema(PolicyRequirementsSchema)
-    def _get_policy_requirements_for_state() -> str:
+    def _get_policy_requirements_for_state() -> Response:
         """Returns policy requirements for a given state. Expects input in the form:
         {
             state: str,

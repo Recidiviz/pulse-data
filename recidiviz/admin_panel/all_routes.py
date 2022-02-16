@@ -36,6 +36,7 @@ from recidiviz.utils.environment import (
     in_gcp_production,
     in_gcp_staging,
 )
+from recidiviz.utils.types import assert_type
 
 logging.getLogger().setLevel(logging.INFO)
 
@@ -52,7 +53,7 @@ static_folder = os.path.abspath(
 
 def jsonify_dataset_metadata_result(
     result: DatasetMetadataResult,
-) -> Tuple[str, HTTPStatus]:
+) -> Tuple[Response, HTTPStatus]:
     results_dict: Dict[str, Dict[str, Dict[str, int]]] = {}
     for name, state_map in result.items():
         results_dict[name] = {}
@@ -83,9 +84,10 @@ add_ingest_ops_routes(admin_panel, admin_stores)
 @requires_gae_auth
 def fetch_column_object_counts_by_value(
     metadata_dataset: str,
-) -> Tuple[str, HTTPStatus]:
-    table = request.json["table"]
-    column = request.json["column"]
+) -> Tuple[Response, HTTPStatus]:
+    request_json = assert_type(request.json, dict)
+    table = request_json["table"]
+    column = request_json["column"]
     metadata_store = _get_metadata_store(metadata_dataset)
 
     return jsonify_dataset_metadata_result(
@@ -99,8 +101,9 @@ def fetch_column_object_counts_by_value(
 @requires_gae_auth
 def fetch_table_nonnull_counts_by_column(
     metadata_dataset: str,
-) -> Tuple[str, HTTPStatus]:
-    table = request.json["table"]
+) -> Tuple[Response, HTTPStatus]:
+    request_json = assert_type(request.json, dict)
+    table = request_json["table"]
     metadata_store = _get_metadata_store(metadata_dataset)
 
     return jsonify_dataset_metadata_result(
@@ -112,7 +115,7 @@ def fetch_table_nonnull_counts_by_column(
     "/api/<metadata_dataset>/fetch_object_counts_by_table", methods=["POST"]
 )
 @requires_gae_auth
-def fetch_object_counts_by_table(metadata_dataset: str) -> Tuple[str, int]:
+def fetch_object_counts_by_table(metadata_dataset: str) -> Tuple[Response, int]:
     metadata_store = _get_metadata_store(metadata_dataset)
     return jsonify_dataset_metadata_result(
         metadata_store.fetch_object_counts_by_table()
@@ -122,7 +125,7 @@ def fetch_object_counts_by_table(metadata_dataset: str) -> Tuple[str, int]:
 # Data freshness
 @admin_panel.route("/api/ingest_metadata/data_freshness", methods=["POST"])
 @requires_gae_auth
-def fetch_ingest_data_freshness() -> Tuple[str, HTTPStatus]:
+def fetch_ingest_data_freshness() -> Tuple[Response, HTTPStatus]:
     return (
         jsonify(admin_stores.ingest_data_freshness_store.data_freshness_results),
         HTTPStatus.OK,
@@ -132,7 +135,7 @@ def fetch_ingest_data_freshness() -> Tuple[str, HTTPStatus]:
 # Validation status
 @admin_panel.route("/api/validation_metadata/state_codes", methods=["POST"])
 @requires_gae_auth
-def fetch_validation_state_codes() -> Tuple[str, HTTPStatus]:
+def fetch_validation_state_codes() -> Tuple[Response, HTTPStatus]:
     all_state_codes = admin_stores.validation_status_store.state_codes
     state_code_info = fetch_state_codes(all_state_codes)
     return jsonify(state_code_info), HTTPStatus.OK
