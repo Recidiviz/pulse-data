@@ -29,6 +29,7 @@ from mock import patch
 
 from recidiviz.utils.auth.auth0 import Auth0Config, build_auth0_authorization_decorator
 from recidiviz.utils.flask_exception import FlaskException
+from recidiviz.utils.types import assert_type
 
 
 def generate_keypair() -> Tuple[bytes, bytes]:
@@ -101,7 +102,7 @@ class Auth0ModuleTest(unittest.TestCase):
 
         @self.test_app.route("/protected_route")
         @authorization_decorator
-        def _index() -> str:
+        def _index() -> Response:
             return jsonify({"status": "OK"})
 
     def tearDown(self) -> None:
@@ -124,41 +125,48 @@ class Auth0ModuleTest(unittest.TestCase):
 
         # The request is missing an Authorization header and should be rejected
         response = self.subject()
+        response_json = assert_type(response.get_json(), dict)
         self.assertEqual(response.status_code, 401)
-        self.assertEqual(response.get_json()["code"], "authorization_header_missing")
+        self.assertEqual(response_json["code"], "authorization_header_missing")
         self.assertEqual(
-            response.get_json()["description"], "Authorization header is expected"
+            response_json["description"],
+            "Authorization header is expected",
         )
 
         # The request is missing an Authorization header value and should be rejected
         response = self.subject({"Authorization": ""})
+        response_json = assert_type(response.get_json(), dict)
         self.assertEqual(response.status_code, 401)
-        self.assertEqual(response.get_json()["code"], "authorization_header_missing")
+        self.assertEqual(response_json["code"], "authorization_header_missing")
         self.assertEqual(
-            response.get_json()["description"], "Authorization header is expected"
+            response_json["description"],
+            "Authorization header is expected",
         )
 
         # The request is not using a Bearer token and should be rejected
         response = self.subject({"Authorization": "Basic 123"})
+        response_json = assert_type(response.get_json(), dict)
         self.assertEqual(response.status_code, 401)
-        self.assertEqual(response.get_json()["code"], "invalid_header")
+        self.assertEqual(response_json["code"], "invalid_header")
         self.assertEqual(
-            response.get_json()["description"],
+            response_json["description"],
             "Authorization header must start with Bearer",
         )
 
         # The request is not using a valid Bearer token and should be rejected
         response = self.subject({"Authorization": "Bearer"})
+        response_json = assert_type(response.get_json(), dict)
         self.assertEqual(response.status_code, 401)
-        self.assertEqual(response.get_json()["code"], "invalid_header")
-        self.assertEqual(response.get_json()["description"], "Token not found")
+        self.assertEqual(response_json["code"], "invalid_header")
+        self.assertEqual(response_json["description"], "Token not found")
 
         # The request is not using a valid Bearer token and should be rejected
         response = self.subject({"Authorization": "Bearer 1 2 3"})
+        response_json = assert_type(response.get_json(), dict)
         self.assertEqual(response.status_code, 401)
-        self.assertEqual(response.get_json()["code"], "invalid_header")
+        self.assertEqual(response_json["code"], "invalid_header")
         self.assertEqual(
-            response.get_json()["description"],
+            response_json["description"],
             "Authorization header must be Bearer token",
         )
 
@@ -166,16 +174,18 @@ class Auth0ModuleTest(unittest.TestCase):
         # Expired token
         token = self.build_jwt({"exp": 0})
         response = self.subject({"Authorization": f"Bearer {token}"})
-        self.assertEqual(response.get_json()["code"], "token_expired")
-        self.assertEqual(response.get_json()["description"], "token is expired")
+        response_json: Any = assert_type(response.get_json(), dict)
+        self.assertEqual(response_json["code"], "token_expired")
+        self.assertEqual(response_json["description"], "token is expired")
         self.assertEqual(response.status_code, 401)
 
         # Valid issuer, no audience
         token = self.build_jwt({"iss": self.authorization_config.issuer})
         response = self.subject({"Authorization": f"Bearer {token}"})
-        self.assertEqual(response.get_json()["code"], "invalid_claims")
+        response_json = assert_type(response.get_json(), dict)
+        self.assertEqual(response_json["code"], "invalid_claims")
         self.assertEqual(
-            response.get_json()["description"],
+            response_json["description"],
             "incorrect claims, please check the audience and issuer",
         )
         self.assertEqual(response.status_code, 401)
@@ -183,9 +193,10 @@ class Auth0ModuleTest(unittest.TestCase):
         # No issuer, valid audience
         token = self.build_jwt({"aud": self.authorization_config.audience})
         response = self.subject({"Authorization": f"Bearer {token}"})
-        self.assertEqual(response.get_json()["code"], "invalid_claims")
+        response_json = assert_type(response.get_json(), dict)
+        self.assertEqual(response_json["code"], "invalid_claims")
         self.assertEqual(
-            response.get_json()["description"],
+            response_json["description"],
             "incorrect claims, please check the audience and issuer",
         )
         self.assertEqual(response.status_code, 401)
@@ -195,9 +206,10 @@ class Auth0ModuleTest(unittest.TestCase):
             {"iss": "none", "aud": self.authorization_config.audience}
         )
         response = self.subject({"Authorization": f"Bearer {token}"})
-        self.assertEqual(response.get_json()["code"], "invalid_claims")
+        response_json = assert_type(response.get_json(), dict)
+        self.assertEqual(response_json["code"], "invalid_claims")
         self.assertEqual(
-            response.get_json()["description"],
+            response_json["description"],
             "incorrect claims, please check the audience and issuer",
         )
         self.assertEqual(response.status_code, 401)
@@ -210,5 +222,6 @@ class Auth0ModuleTest(unittest.TestCase):
             }
         )
         response = self.subject({"Authorization": f"Bearer {token}"})
-        self.assertEqual(response.get_json(), {"status": "OK"})
+        response_json = assert_type(response.get_json(), dict)
+        self.assertEqual(response_json, {"status": "OK"})
         self.assertEqual(response.status_code, 200)

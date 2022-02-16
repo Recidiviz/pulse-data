@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """ Contains Marshmallow schemas for our API """
 from functools import wraps
-from typing import Any, Callable, Dict, List, Type
+from typing import Any, Callable, Dict, Iterable, List, Mapping, Type, Union
 
 from flask import g, request
 from marshmallow import Schema, ValidationError, fields
@@ -29,6 +29,7 @@ from recidiviz.case_triage.opportunities.types import (
     OpportunityType,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.utils.types import assert_type
 
 
 def camelcase(s: str) -> str:
@@ -106,9 +107,16 @@ def requires_api_schema(api_schema: Type[Schema]) -> Callable:
     def inner(route: Callable) -> Callable:
         @wraps(route)
         def decorated(*args: List[Any], **kwargs: Dict[str, Any]) -> Any:
+
+            request_json: Union[Mapping[str, Any], Iterable[Mapping[str, Any]]]
+            try:
+                request_json = assert_type(request.json, dict)
+            except ValueError:
+                request_json = assert_type(request.json, list)
+
             # TODO(PyCQA/pylint#5317): Remove ignore fixed by PyCQA/pylint#5457
             g.api_data = api_schema().load(  # pylint: disable=assigning-non-slot
-                request.json
+                request_json
             )
 
             return route(*args, **kwargs)

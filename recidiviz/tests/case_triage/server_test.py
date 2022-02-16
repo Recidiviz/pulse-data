@@ -60,6 +60,7 @@ from recidiviz.tests.case_triage.case_triage_helpers import (
 )
 from recidiviz.tools.postgres import local_postgres_helpers
 from recidiviz.utils.flask_exception import FlaskException
+from recidiviz.utils.types import assert_type
 
 
 @pytest.mark.uses_db
@@ -276,10 +277,14 @@ class TestCaseTriageAPIRoutes(TestCase):
             )
 
             self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
-            self.assertEqual(response.get_json()["code"], "not_found")
+            self.assertEqual(
+                assert_type(response.get_json(), dict)["code"], "not_found"
+            )
             self.assertIn(
                 "does not correspond to a known person",
-                response.get_json()["description"]["personExternalId"],
+                assert_type(response.get_json(), dict)["description"][
+                    "personExternalId"
+                ],
             )
 
     def test_defer_computed_opportunity_successful(self) -> None:
@@ -352,7 +357,9 @@ class TestCaseTriageAPIRoutes(TestCase):
                 f"/api/opportunity_deferrals/{self.deferral_1.deferral_id}"
             )
             self.assertEqual(
-                response.status_code, HTTPStatus.BAD_REQUEST, response.get_json()
+                response.status_code,
+                HTTPStatus.BAD_REQUEST,
+                assert_type(response.get_json(), dict),
             )
 
     def test_case_updates_malformed_input(self) -> None:
@@ -371,10 +378,14 @@ class TestCaseTriageAPIRoutes(TestCase):
             )
 
             self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
-            self.assertEqual(response.get_json()["code"], "not_found")
+            self.assertEqual(
+                assert_type(response.get_json(), dict)["code"], "not_found"
+            )
             self.assertIn(
                 "does not correspond to a known person",
-                response.get_json()["description"]["personExternalId"],
+                assert_type(response.get_json(), dict)["description"][
+                    "personExternalId"
+                ],
             )
 
     def test_case_updates_success(self) -> None:
@@ -683,7 +694,9 @@ class TestCaseTriageAPIRoutes(TestCase):
                 },
             )
             self.assertEqual(
-                response.status_code, HTTPStatus.BAD_REQUEST, response.get_json()
+                response.status_code,
+                HTTPStatus.BAD_REQUEST,
+                assert_type(response.get_json(), dict),
             )
 
             # Check that updating to empty fails
@@ -699,7 +712,9 @@ class TestCaseTriageAPIRoutes(TestCase):
                 },
             )
             self.assertEqual(
-                response.status_code, HTTPStatus.BAD_REQUEST, response.get_json()
+                response.status_code,
+                HTTPStatus.BAD_REQUEST,
+                assert_type(response.get_json(), dict),
             )
 
     def test_get_client_events(self) -> None:
@@ -917,7 +932,11 @@ class TestCaseTriageAPIRoutes(TestCase):
             self.assertIsNone(g.user_context.current_user)
             with self.test_client.session_transaction() as sess:  # type: ignore
                 self.assertTrue(IMPERSONATED_EMAIL_KEY not in session)
-            self.assertEqual(response.status_code, HTTPStatus.OK, response.get_json())
+            self.assertEqual(
+                response.status_code,
+                HTTPStatus.OK,
+                assert_type(response.get_json(), dict),
+            )
 
     def test_unimpersonating_without_impersonating(self) -> None:
         auth_store = AuthorizationStore()
@@ -1017,7 +1036,11 @@ class TestUserImpersonation(TestCase):
                 REGISTRATION_DATE_CLAIM
             ] = "2021-01-08T22:02:17.863Z"
             response = self.test_client.get("/api/bootstrap")
-            self.assertEqual(response.status_code, HTTPStatus.OK, response.get_json())
+            self.assertEqual(
+                response.status_code,
+                HTTPStatus.OK,
+                assert_type(response.get_json(), dict),
+            )
 
             # Test that if there's a given email, a non-admin also falls through as if
             # impersonation didn't happen at all and that key is no longer in the session.
@@ -1035,7 +1058,11 @@ class TestUserImpersonation(TestCase):
             )
             with self.test_client.session_transaction() as sess:  # type: ignore
                 self.assertTrue(IMPERSONATED_EMAIL_KEY not in session)
-            self.assertEqual(response.status_code, HTTPStatus.OK, response.get_json())
+            self.assertEqual(
+                response.status_code,
+                HTTPStatus.OK,
+                assert_type(response.get_json(), dict),
+            )
             self.assertEqual(
                 g.user_context.current_user.email_address, self.non_admin_email
             )

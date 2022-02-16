@@ -16,7 +16,7 @@
 # =============================================================================
 """General use mypy types."""
 
-from typing import TypeVar
+from typing import Any, Optional, Type, TypeVar
 
 # A type variable intended for use in generic class methods that return an object with the `cls` type.
 # For example:
@@ -36,3 +36,20 @@ ClsT = TypeVar("ClsT", bound=object)
 
 # A Generic type where the generic can be any object
 T = TypeVar("T")
+
+
+def non_optional(v: Optional[T]) -> T:
+    """Converts the type of a value from optional to non-optional, throwing if it is
+    None.
+    """
+    if v is None:
+        raise ValueError("Expected non-null value.")
+    return v
+
+
+def assert_type(v: Optional[Any], expected_type: Type[T]) -> T:
+    """Asserts that the type of a value is a particular type, throwing if it is not."""
+    non_optional_v: Any = non_optional(v)
+    if not isinstance(non_optional_v, expected_type):
+        raise ValueError(f"Expected type [{expected_type}], found [{v}].")
+    return non_optional_v

@@ -19,7 +19,7 @@ import logging
 from http import HTTPStatus
 from typing import Tuple
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, Response, jsonify, request
 
 from recidiviz.admin_panel.admin_stores import AdminStores, fetch_state_codes
 from recidiviz.cloud_sql.cloud_sql_client import CloudSQLClientImpl
@@ -33,18 +33,17 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
 )
-from recidiviz.ingest.direct.types.direct_ingest_instance import (
-    DirectIngestInstance,
-)
 from recidiviz.ingest.direct.controllers.direct_ingest_instance_status_manager import (
     DirectIngestInstanceStatusManager,
 )
 from recidiviz.ingest.direct.controllers.direct_ingest_region_lock_manager import (
     DirectIngestRegionLockManager,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils import metadata
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.environment import GCP_PROJECT_STAGING, in_gcp
+from recidiviz.utils.types import assert_type
 
 GCS_IMPORT_EXPORT_TIMEOUT_SEC = 60 * 30  # 30 min
 
@@ -73,7 +72,7 @@ def add_ingest_ops_routes(bp: Blueprint, admin_stores: AdminStores) -> None:
 
     @bp.route("/api/ingest_operations/fetch_ingest_state_codes", methods=["POST"])
     @requires_gae_auth
-    def _fetch_ingest_state_codes() -> Tuple[str, HTTPStatus]:
+    def _fetch_ingest_state_codes() -> Tuple[Response, HTTPStatus]:
         all_state_codes = (
             admin_stores.ingest_operations_store.state_codes_launched_in_env
         )
@@ -86,8 +85,9 @@ def add_ingest_ops_routes(bp: Blueprint, admin_stores: AdminStores) -> None:
     )
     @requires_gae_auth
     def _start_ingest_run(state_code_str: str) -> Tuple[str, HTTPStatus]:
+        request_json = assert_type(request.json, dict)
         state_code = _get_state_code_from_str(state_code_str)
-        instance = request.json["instance"]
+        instance = request_json["instance"]
         admin_stores.ingest_operations_store.start_ingest_run(state_code, instance)
         return "", HTTPStatus.OK
 
@@ -98,8 +98,9 @@ def add_ingest_ops_routes(bp: Blueprint, admin_stores: AdminStores) -> None:
     )
     @requires_gae_auth
     def _update_ingest_queues_state(state_code_str: str) -> Tuple[str, HTTPStatus]:
+        request_json = assert_type(request.json, dict)
         state_code = _get_state_code_from_str(state_code_str)
-        new_queue_state = request.json["new_queue_state"]
+        new_queue_state = request_json["new_queue_state"]
         admin_stores.ingest_operations_store.update_ingest_queues_state(
             state_code, new_queue_state
         )
@@ -108,7 +109,7 @@ def add_ingest_ops_routes(bp: Blueprint, admin_stores: AdminStores) -> None:
     # Get all ingest queues and their state for given state code
     @bp.route("/api/ingest_operations/<state_code_str>/get_ingest_queue_states")
     @requires_gae_auth
-    def _get_ingest_queue_states(state_code_str: str) -> Tuple[str, HTTPStatus]:
+    def _get_ingest_queue_states(state_code_str: str) -> Tuple[Response, HTTPStatus]:
         state_code = _get_state_code_from_str(state_code_str)
         ingest_queue_states = (
             admin_stores.ingest_operations_store.get_ingest_queue_states(state_code)
@@ -118,7 +119,9 @@ def add_ingest_ops_routes(bp: Blueprint, admin_stores: AdminStores) -> None:
     # Get summaries of all ingest instances for state
     @bp.route("/api/ingest_operations/<state_code_str>/get_ingest_instance_summaries")
     @requires_gae_auth
-    def _get_ingest_instance_summaries(state_code_str: str) -> Tuple[str, HTTPStatus]:
+    def _get_ingest_instance_summaries(
+        state_code_str: str,
+    ) -> Tuple[Response, HTTPStatus]:
         state_code = _get_state_code_from_str(state_code_str)
         ingest_instance_summaries = (
             admin_stores.ingest_operations_store.get_ingest_instance_summaries(
@@ -131,9 +134,10 @@ def add_ingest_ops_routes(bp: Blueprint, admin_stores: AdminStores) -> None:
     @requires_gae_auth
     def _export_database_to_gcs() -> Tuple[str, HTTPStatus]:
         try:
-            state_code = StateCode(request.json["stateCode"])
+            request_json = assert_type(request.json, dict)
+            state_code = StateCode(request_json["stateCode"])
             ingest_instance = DirectIngestInstance(
-                request.json["ingestInstance"].upper()
+                request_json["ingestInstance"].upper()
             )
         except ValueError:
             return "invalid parameters provided", HTTPStatus.BAD_REQUEST
@@ -179,12 +183,13 @@ def add_ingest_ops_routes(bp: Blueprint, admin_stores: AdminStores) -> None:
     @requires_gae_auth
     def _import_database_from_gcs() -> Tuple[str, HTTPStatus]:
         try:
-            state_code = StateCode(request.json["stateCode"])
+            request_json = assert_type(request.json, dict)
+            state_code = StateCode(request_json["stateCode"])
             import_to_ingest_instance = DirectIngestInstance(
-                request.json["importToDatabaseInstance"].upper()
+                request_json["importToDatabaseInstance"].upper()
             )
             exported_ingest_instance = DirectIngestInstance(
-                request.json["exportedDatabaseInstance"].upper()
+                request_json["exportedDatabaseInstance"].upper()
             )
         except ValueError:
             return "invalid parameters provided", HTTPStatus.BAD_REQUEST
@@ -232,9 +237,10 @@ def add_ingest_ops_routes(bp: Blueprint, admin_stores: AdminStores) -> None:
     @requires_gae_auth
     def _delete_database_import_gcs_files() -> Tuple[str, HTTPStatus]:
         try:
-            state_code = StateCode(request.json["stateCode"])
+            request_json = assert_type(request.json, dict)
+            state_code = StateCode(request_json["stateCode"])
             exported_ingest_instance = DirectIngestInstance(
-                request.json["exportedDatabaseInstance"].upper()
+                request_json["exportedDatabaseInstance"].upper()
             )
         except ValueError:
             return "invalid parameters provided", HTTPStatus.BAD_REQUEST
@@ -254,8 +260,9 @@ def add_ingest_ops_routes(bp: Blueprint, admin_stores: AdminStores) -> None:
     @requires_gae_auth
     def _acquire_ingest_lock() -> Tuple[str, HTTPStatus]:
         try:
-            state_code = StateCode(request.json["stateCode"])
-            ingest_instance = DirectIngestInstance(request.json["ingestInstance"])
+            request_json = assert_type(request.json, dict)
+            state_code = StateCode(request_json["stateCode"])
+            ingest_instance = DirectIngestInstance(request_json["ingestInstance"])
         except ValueError:
             return "invalid parameters provided", HTTPStatus.BAD_REQUEST
 
@@ -283,8 +290,9 @@ def add_ingest_ops_routes(bp: Blueprint, admin_stores: AdminStores) -> None:
     @requires_gae_auth
     def _release_ingest_lock() -> Tuple[str, HTTPStatus]:
         try:
-            state_code = StateCode(request.json["stateCode"])
-            ingest_instance = DirectIngestInstance(request.json["ingestInstance"])
+            request_json = assert_type(request.json, dict)
+            state_code = StateCode(request_json["stateCode"])
+            ingest_instance = DirectIngestInstance(request_json["ingestInstance"])
         except ValueError:
             return "invalid parameters provided", HTTPStatus.BAD_REQUEST
 
@@ -302,8 +310,9 @@ def add_ingest_ops_routes(bp: Blueprint, admin_stores: AdminStores) -> None:
     @requires_gae_auth
     def _pause_direct_ingest_instance() -> Tuple[str, HTTPStatus]:
         try:
-            state_code = StateCode(request.json["stateCode"])
-            ingest_instance = DirectIngestInstance(request.json["ingestInstance"])
+            request_json = assert_type(request.json, dict)
+            state_code = StateCode(request_json["stateCode"])
+            ingest_instance = DirectIngestInstance(request_json["ingestInstance"])
         except ValueError:
             return "invalid parameters provided", HTTPStatus.BAD_REQUEST
 
@@ -324,8 +333,9 @@ def add_ingest_ops_routes(bp: Blueprint, admin_stores: AdminStores) -> None:
     @requires_gae_auth
     def _unpause_direct_ingest_instance() -> Tuple[str, HTTPStatus]:
         try:
-            state_code = StateCode(request.json["stateCode"])
-            ingest_instance = DirectIngestInstance(request.json["ingestInstance"])
+            request_json = assert_type(request.json, dict)
+            state_code = StateCode(request_json["stateCode"])
+            ingest_instance = DirectIngestInstance(request_json["ingestInstance"])
         except ValueError:
             return "invalid parameters provided", HTTPStatus.BAD_REQUEST
 
