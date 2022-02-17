@@ -57,6 +57,9 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsDirectIngestFileType,
     filename_parts_from_path,
 )
+from recidiviz.ingest.direct.raw_data.dataset_config import (
+    raw_tables_dataset_for_region,
+)
 from recidiviz.ingest.direct.types.direct_ingest_constants import (
     FILE_ID_COL_NAME,
     UPDATE_DATETIME_COL_NAME,
@@ -455,6 +458,7 @@ class DirectIngestRawFileImportManager:
         big_query_client: BigQueryClient,
         region_raw_file_config: Optional[DirectIngestRegionRawFileConfig] = None,
         upload_chunk_size: int = _DEFAULT_BQ_UPLOAD_CHUNK_SIZE,
+        sandbox_dataset_prefix: Optional[str] = None,
     ):
 
         self.region = region
@@ -475,7 +479,11 @@ class DirectIngestRawFileImportManager:
         self.raw_table_migrations = DirectIngestRawTableMigrationCollector(
             region_code=self.region.region_code,
             regions_module_override=self.region.region_module,
-        ).collect_raw_table_migration_queries()
+        ).collect_raw_table_migration_queries(sandbox_dataset_prefix)
+        self.raw_tables_dataset = raw_tables_dataset_for_region(
+            region_code=self.region.region_code,
+            sandbox_dataset_prefix=sandbox_dataset_prefix,
+        )
 
     def get_unprocessed_raw_files_to_import(self) -> List[GcsfsFilePath]:
         unprocessed_paths = self.fs.get_unprocessed_file_paths(
@@ -498,13 +506,6 @@ class DirectIngestRawFileImportManager:
             )
 
         return paths_to_import
-
-    @classmethod
-    def raw_tables_dataset_for_region(cls, region_code: str) -> str:
-        return f"{region_code.lower()}_raw_data"
-
-    def _raw_tables_dataset(self) -> str:
-        return self.raw_tables_dataset_for_region(self.region.region_code)
 
     def import_raw_file_to_big_query(
         self, path: GcsfsFilePath, file_metadata: DirectIngestRawFileMetadata
@@ -582,19 +583,20 @@ class DirectIngestRawFileImportManager:
         and removing them prevents the table from ending up with duplicate
         rows after this upload"""
 
-        dataset_id = self._raw_tables_dataset()
         table_id = filename_parts_from_path(path).file_tag
         if not self.big_query_client.table_exists(
-            self.big_query_client.dataset_ref_for_id(dataset_id), table_id
+            self.big_query_client.dataset_ref_for_id(self.raw_tables_dataset), table_id
         ):
             logging.info(
-                "Skipping row cleanup as %s.%s does not yet exist", dataset_id, table_id
+                "Skipping row cleanup as %s.%s does not yet exist",
+                self.raw_tables_dataset,
+                table_id,
             )
             return
 
         # Starts the deletion
         delete_job = self.big_query_client.delete_from_table_async(
-            dataset_id=dataset_id,
+            dataset_id=self.raw_tables_dataset,
             table_id=table_id,
             filter_clause="WHERE file_id = " + str(file_id),
         )
@@ -611,7 +613,6 @@ class DirectIngestRawFileImportManager:
         logging.info("Starting chunked load of contents to BigQuery")
         temp_output_paths = [path for path, _ in temp_paths_with_columns]
         temp_path_to_load_job: Dict[GcsfsFilePath, bigquery.LoadJob] = {}
-        dataset_id = self._raw_tables_dataset()
 
         try:
             for i, (temp_output_path, columns) in enumerate(temp_paths_with_columns):
@@ -629,7 +630,7 @@ class DirectIngestRawFileImportManager:
                 load_job = self.big_query_client.load_into_table_from_cloud_storage_async(
                     source_uri=temp_output_path.uri(),
                     destination_dataset_ref=self.big_query_client.dataset_ref_for_id(
-                        dataset_id
+                        self.raw_tables_dataset
                     ),
                     destination_table_id=parts.file_tag,
                     destination_table_schema=self._create_raw_table_schema_from_columns(

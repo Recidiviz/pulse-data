@@ -58,34 +58,6 @@ def check_is_valid_sandbox_bucket(bucket: GcsfsBucketPath) -> None:
         )
 
 
-class SandboxDirectIngestRawFileImportManager(DirectIngestRawFileImportManager):
-    def __init__(
-        self,
-        *,
-        state_code: StateCode,
-        sandbox_dataset_prefix: str,
-        test_ingest_bucket: GcsfsBucketPath,
-    ):
-
-        check_is_valid_sandbox_bucket(test_ingest_bucket)
-
-        super().__init__(
-            region=get_region(state_code.value.lower(), is_direct_ingest=True),
-            fs=DirectIngestGCSFileSystem(GcsfsFactory.build()),
-            ingest_bucket_path=test_ingest_bucket,
-            temp_output_directory_path=GcsfsDirectoryPath.from_dir_and_subdir(
-                test_ingest_bucket, "temp_raw_data"
-            ),
-            big_query_client=BigQueryClientImpl(),
-        )
-        self.sandbox_dataset = (
-            f"{sandbox_dataset_prefix}_{super()._raw_tables_dataset()}"
-        )
-
-    def _raw_tables_dataset(self) -> str:
-        return self.sandbox_dataset
-
-
 class Status(Enum):
     SUCCEEDED = "succeeded"
     SKIPPED = "skipped"
@@ -120,17 +92,23 @@ def import_raw_files_to_bq_sandbox(
     file_status_list = []
 
     try:
-        import_manager = SandboxDirectIngestRawFileImportManager(
-            state_code=state_code,
+        region_code = state_code.value.lower()
+        import_manager = DirectIngestRawFileImportManager(
+            region=get_region(region_code, is_direct_ingest=True),
+            fs=DirectIngestGCSFileSystem(GcsfsFactory.build()),
+            ingest_bucket_path=source_bucket,
+            temp_output_directory_path=GcsfsDirectoryPath.from_dir_and_subdir(
+                source_bucket, "temp_raw_data"
+            ),
+            big_query_client=BigQueryClientImpl(),
             sandbox_dataset_prefix=sandbox_dataset_prefix,
-            test_ingest_bucket=source_bucket,
         )
 
         bq_client = BigQueryClientImpl()
 
         # Create the dataset up front with table expiration
         bq_client.create_dataset_if_necessary(
-            bq_client.dataset_ref_for_id(dataset_id=import_manager.sandbox_dataset),
+            bq_client.dataset_ref_for_id(dataset_id=import_manager.raw_tables_dataset),
             default_table_expiration_ms=TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
         )
 

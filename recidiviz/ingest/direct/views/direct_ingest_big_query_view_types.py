@@ -26,10 +26,13 @@ import attr
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import (
     DirectIngestRawFileConfig,
-    DirectIngestRawFileImportManager,
     DirectIngestRegionRawFileConfig,
 )
 from recidiviz.ingest.direct.query_utils import get_region_raw_file_config
+from recidiviz.ingest.direct.raw_data.dataset_config import (
+    raw_latest_views_dataset_for_region,
+    raw_tables_dataset_for_region,
+)
 from recidiviz.utils.string import StrictStringFormatter
 
 UPDATE_DATETIME_PARAM_NAME = "update_timestamp"
@@ -216,9 +219,13 @@ class DirectIngestRawDataTableBigQueryView(BigQueryView):
                 f"Empty primary key list in raw file config with tag [{raw_file_config.file_tag}] during "
                 f"construction of DirectIngestRawDataTableBigQueryView"
             )
-        view_dataset_id = f"{region_code.lower()}_raw_data_up_to_date_views"
-        raw_table_dataset_id = (
-            DirectIngestRawFileImportManager.raw_tables_dataset_for_region(region_code)
+        view_dataset_id = raw_latest_views_dataset_for_region(
+            region_code=region_code.lower(),
+            sandbox_dataset_prefix=None,
+        )
+        raw_table_dataset_id = raw_tables_dataset_for_region(
+            region_code,
+            sandbox_dataset_prefix=None,
         )
         columns_clause = self._columns_clause_for_config(raw_file_config)
         supplemental_order_by_clause = self._supplemental_order_by_clause_for_config(
@@ -241,6 +248,7 @@ class DirectIngestRawDataTableBigQueryView(BigQueryView):
             supplemental_order_by_clause=supplemental_order_by_clause,
             dataset_overrides=dataset_overrides,
         )
+        self.raw_file_config = raw_file_config
 
     @staticmethod
     def _supplemental_order_by_clause_for_config(

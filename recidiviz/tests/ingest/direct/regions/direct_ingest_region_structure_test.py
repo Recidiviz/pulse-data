@@ -41,9 +41,6 @@ from recidiviz.ingest.direct.controllers.direct_ingest_controller_factory import
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
     to_normalized_unprocessed_file_name,
 )
-from recidiviz.ingest.direct.types.direct_ingest_instance import (
-    DirectIngestInstance,
-)
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import (
     DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
@@ -66,6 +63,7 @@ from recidiviz.ingest.direct.direct_ingest_region_utils import (
     get_existing_region_dir_names,
     get_existing_region_dir_paths,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils.environment import GCPEnvironment
 from recidiviz.utils.regions import Region, get_region
 
@@ -320,7 +318,9 @@ class DirectIngestRegionDirStructureBase:
                     region_code, regions_module_override=self.region_module_override
                 )
                 # Test this doesn't crash
-                _ = collector.collect_raw_table_migration_queries()
+                _ = collector.collect_raw_table_migration_queries(
+                    sandbox_dataset_prefix=None
+                )
 
                 # Check that migrations are valid
                 migrations = collector.collect_raw_table_migrations()
