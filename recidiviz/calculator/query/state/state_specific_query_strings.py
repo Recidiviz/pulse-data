@@ -448,9 +448,11 @@ def get_pathways_supervision_last_updated_date() -> str:
 
 
 def pathways_state_specific_facility_filter() -> str:
-    """State-specific logic to filter out facilities that should not be included in Pathways metrics."""
-    return f"""
+    """State-specific logic to filter out facilities that should not be included in
+    Pathways metrics."""
+    return """
         CASE
+            # TODO(#10432): Remove this clause when we better understand what TABLET is.
             WHEN state_code = "US_ND" THEN
                 facility != "TABLET"
             ELSE true
