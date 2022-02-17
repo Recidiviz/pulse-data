@@ -43,6 +43,9 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodReleaseReason,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
+from recidiviz.common.constants.state.state_supervision_contact import (
+    StateSupervisionContactType,
+)
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodSupervisionType,
@@ -64,6 +67,7 @@ from recidiviz.tests.ingest.direct.regions.utils import (
     add_assessment_to_person,
     add_incarceration_period_to_person,
     add_incarceration_sentence_to_person,
+    add_supervision_contact_to_person,
     add_supervision_period_to_person,
     add_supervision_sentence_to_person,
     build_state_person_entity,
@@ -523,6 +527,47 @@ class TestUsTnController(BaseDirectIngestControllerTests):
 
         # Act
         self._run_ingest_job_for_filename("SentencesChargesAndCourtCases")
+
+        # Assert
+        self.assert_expected_db_people(expected_people)
+
+        ######################################
+        # SupervisionContacts
+        ######################################
+
+        add_supervision_contact_to_person(
+            person=person_2,
+            external_id="00000002-1",
+            state_code="US_TN",
+            contact_date=datetime.date(2015, 5, 14),
+            contact_type=StateSupervisionContactType.EXTERNAL_UNKNOWN,
+            contact_type_raw_text="JOIC",
+        )
+
+        add_supervision_contact_to_person(
+            person=person_3,
+            external_id="00000003-1",
+            state_code="US_TN",
+            contact_date=datetime.date(1996, 4, 8),
+            contact_type=StateSupervisionContactType.EXTERNAL_UNKNOWN,
+            contact_type_raw_text="JOIC",
+        )
+
+        add_supervision_contact_to_person(
+            person=person_3,
+            external_id="00000003-2",
+            state_code="US_TN",
+            contact_date=datetime.date(2011, 7, 29),
+            contact_type=StateSupervisionContactType.EXTERNAL_UNKNOWN,
+            contact_type_raw_text="ITSS",
+            contacted_agent=shared_supervising_officer,
+        )
+
+        # Only person 2 and 3 have supervision contacts
+        expected_people = [person_1, person_2, person_3, person_4]
+
+        # Act
+        self._run_ingest_job_for_filename("SupervisionContacts")
 
         # Assert
         self.assert_expected_db_people(expected_people)

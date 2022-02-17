@@ -31,6 +31,13 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
+from recidiviz.common.constants.state.state_supervision_contact import (
+    StateSupervisionContactLocation,
+    StateSupervisionContactMethod,
+    StateSupervisionContactReason,
+    StateSupervisionContactStatus,
+    StateSupervisionContactType,
+)
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodSupervisionType,
@@ -361,3 +368,50 @@ def add_incarceration_sentence_to_person(
 
     person.incarceration_sentences.append(incarceration_sentence)
     return incarceration_sentence
+
+
+def add_supervision_contact_to_person(
+    person: entities.StatePerson,
+    state_code: str,
+    external_id: str,
+    contact_date: Optional[datetime.date] = None,
+    contact_reason: Optional[StateSupervisionContactReason] = None,
+    contact_reason_raw_text: Optional[str] = None,
+    contact_type: Optional[StateSupervisionContactType] = None,
+    contact_type_raw_text: Optional[str] = None,
+    contact_method: Optional[StateSupervisionContactMethod] = None,
+    contact_method_raw_text: Optional[str] = None,
+    location: Optional[StateSupervisionContactLocation] = None,
+    location_raw_text: Optional[str] = None,
+    resulted_in_arrest: Optional[bool] = None,
+    status: Optional[StateSupervisionContactStatus] = None,
+    status_raw_text: Optional[str] = None,
+    verified_employment: Optional[bool] = None,
+    supervision_contact_id: Optional[int] = None,
+    contacted_agent: Optional[entities.StateAgent] = None,
+) -> entities.StateSupervisionContact:
+    """Append a supervision contact to the person (updates the person entity in place)."""
+
+    supervision_contact = entities.StateSupervisionContact.new_with_defaults(
+        external_id=external_id,
+        state_code=state_code,
+        contact_date=contact_date,
+        contact_reason=contact_reason,
+        contact_reason_raw_text=contact_reason_raw_text,
+        contact_type=contact_type,
+        contact_type_raw_text=contact_type_raw_text,
+        contact_method=contact_method,
+        contact_method_raw_text=contact_method_raw_text,
+        location=location,
+        location_raw_text=location_raw_text,
+        resulted_in_arrest=resulted_in_arrest,
+        status=status,
+        status_raw_text=status_raw_text,
+        verified_employment=verified_employment,
+        supervision_contact_id=supervision_contact_id,
+        contacted_agent=contacted_agent,
+        person=person,
+    )
+
+    person.supervision_contacts.append(supervision_contact)
+    return supervision_contact

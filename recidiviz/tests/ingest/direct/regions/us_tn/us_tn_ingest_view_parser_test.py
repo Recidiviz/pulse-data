@@ -43,6 +43,9 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodReleaseReason,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
+from recidiviz.common.constants.state.state_supervision_contact import (
+    StateSupervisionContactType,
+)
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodSupervisionType,
@@ -64,6 +67,7 @@ from recidiviz.persistence.entity.state.entities import (
     StatePersonEthnicity,
     StatePersonExternalId,
     StatePersonRace,
+    StateSupervisionContact,
     StateSupervisionPeriod,
     StateSupervisionSentence,
 )
@@ -753,3 +757,81 @@ class UsTnIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
         ]
 
         self._run_parse_ingest_view_test("VantagePointAssessments", expected_output)
+
+    def test_parse_SupervisionContacts(self) -> None:
+        expected_output = [
+            StatePerson(
+                state_code="US_TN",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_TN", external_id="00000002", id_type="US_TN_DOC"
+                    )
+                ],
+                supervision_contacts=[
+                    StateSupervisionContact(
+                        external_id="00000002-1",
+                        state_code="US_TN",
+                        contact_date=datetime.date(2015, 5, 14),
+                        contact_type=StateSupervisionContactType.EXTERNAL_UNKNOWN,
+                        contact_type_raw_text="JOIC",
+                    ),
+                ],
+            ),
+            StatePerson(
+                state_code="US_TN",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_TN",
+                        external_id="00000003",
+                        id_type="US_TN_DOC",
+                    )
+                ],
+                supervision_contacts=[
+                    StateSupervisionContact(
+                        external_id="00000003-1",
+                        state_code="US_TN",
+                        contact_date=datetime.date(1996, 4, 8),
+                        contact_type=StateSupervisionContactType.EXTERNAL_UNKNOWN,
+                        contact_type_raw_text="JOIC",
+                    ),
+                ],
+            ),
+            StatePerson(
+                state_code="US_TN",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_TN",
+                        external_id="00000003",
+                        id_type="US_TN_DOC",
+                    )
+                ],
+                supervision_contacts=[
+                    StateSupervisionContact(
+                        external_id="00000003-2",
+                        state_code="US_TN",
+                        contact_date=datetime.date(2011, 7, 29),
+                        contact_type=StateSupervisionContactType.EXTERNAL_UNKNOWN,
+                        contact_type_raw_text="ITSS",
+                        contacted_agent=StateAgent(
+                            external_id="ABCDEF01",
+                            state_code="US_TN",
+                            agent_type=StateAgentType.PRESENT_WITHOUT_INFO,
+                        ),
+                    ),
+                ],
+            ),
+        ]
+
+        self._run_parse_ingest_view_test("SupervisionContacts", expected_output)
+
+    def test_parse_SupervisionContacts_ContactNoteTypeEnums(self) -> None:
+        manifest_ast = self._parse_manifest("SupervisionContacts")
+        enum_parser_manifest = (
+            # Drill down to get to the part of the mappings for your enum
+            manifest_ast.field_manifests["supervision_contacts"]
+            .child_manifests[0]  # type: ignore[attr-defined]
+            .field_manifests["contact_type"]
+        )
+        self._parse_enum_manifest_test(
+            "SupervisionContacts_ContactNoteTypeEnums", enum_parser_manifest
+        )
