@@ -20,8 +20,10 @@ from typing import List, Set, Type
 import attr
 from google.cloud import bigquery
 
-from recidiviz.big_query.big_query_client import BigQueryClient
-from recidiviz.big_query.big_query_utils import schema_field_for_attribute
+from recidiviz.big_query.big_query_utils import (
+    schema_field_for_attribute,
+    schema_for_sqlalchemy_table,
+)
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
     NormalizedStateEntity,
     NormalizedStateIncarcerationPeriod,
@@ -103,7 +105,7 @@ def bq_schema_for_normalized_state_entity(
     )
 
     return (
-        BigQueryClient.schema_for_sqlalchemy_table(
+        schema_for_sqlalchemy_table(
             get_table_class_by_name(
                 base_schema_class.__tablename__, list(get_state_table_classes())
             )

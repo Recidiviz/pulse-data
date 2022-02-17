@@ -18,9 +18,10 @@
 import datetime
 import logging
 import string
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 import attr
+import sqlalchemy
 from google.cloud import bigquery
 from sqlalchemy import Column
 from sqlalchemy.dialects import postgresql
@@ -60,7 +61,7 @@ def schema_field_for_attribute(field_name: str, attribute: attr.Attribute) -> bi
     )
 
 
-def schema_column_type_for_sqlalchemy_column(column: Column) -> str:
+def _schema_column_type_for_sqlalchemy_column(column: Column) -> str:
     """Returns the schema column type that should be used to store the value of the
     provided |column| in a BigQuery table."""
     col_postgres_type = column.type
@@ -99,6 +100,31 @@ def schema_column_type_for_sqlalchemy_column(column: Column) -> str:
         f"Unhandled column type for column: {column} "
         f"with python type: {col_python_type}"
     )
+
+
+def schema_for_sqlalchemy_table(
+    table: sqlalchemy.Table, add_state_code_field: bool = False
+) -> List[bigquery.SchemaField]:
+    """Returns the necessary BigQuery schema for storing the contents of the
+    table in BigQuery, which is a list of SchemaField objects containing the
+    column name and value type for each column in the table."""
+    columns_for_table = [
+        bigquery.SchemaField(
+            col.name, _schema_column_type_for_sqlalchemy_column(col), mode="NULLABLE"
+        )
+        for col in table.columns
+    ]
+
+    if add_state_code_field:
+        columns_for_table.append(
+            bigquery.SchemaField(
+                "state_code",
+                bigquery.enums.SqlTypeNames.STRING.value,
+                mode="NULLABLE",
+            )
+        )
+
+    return columns_for_table
 
 
 def normalize_column_name_for_bq(column_name: str) -> str:
