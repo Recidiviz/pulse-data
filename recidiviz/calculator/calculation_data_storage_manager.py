@@ -133,20 +133,27 @@ def _get_month_range_for_metric_and_state() -> Dict[str, Dict[str, int]]:
 
     for pipeline_config_group in [incremental_pipelines, historical_pipelines]:
         for pipeline_config in pipeline_config_group:
-            if (
-                pipeline_config.pop("pipeline", str)
-                in dataflow_config.ALWAYS_UNBOUNDED_DATE_PIPELINES
-            ):
+            metric_values = pipeline_config.pop("metric_types", str).split(" ")
+
+            is_unbounded_date_pipeline = any(
+                metric_value
+                in [
+                    metric_type.value
+                    for metric_type in dataflow_config.ALWAYS_UNBOUNDED_DATE_METRICS
+                ]
+                for metric_value in metric_values
+            )
+
+            if is_unbounded_date_pipeline:
                 # This pipeline is always run in full, and is handled separately
                 continue
 
-            metrics = pipeline_config.pop("metric_types", str)
             calculation_month_count = pipeline_config.pop(
                 "calculation_month_count", int
             )
             state_code = pipeline_config.pop("state_code", str)
 
-            for metric in metrics.split(" "):
+            for metric in metric_values:
                 metric_table = metric_type_to_table[metric]
                 current_max = month_range_for_metric_and_state[metric_table][state_code]
                 month_range_for_metric_and_state[metric_table][state_code] = max(
@@ -240,9 +247,10 @@ def move_old_dataflow_metrics_to_cold_storage(dry_run: bool = False) -> None:
             _decommission_dataflow_metric_table(bq_client, table_ref, dry_run)
             continue
 
-        is_unbounded_date_pipeline = any(
-            pipeline in table_id
-            for pipeline in dataflow_config.ALWAYS_UNBOUNDED_DATE_PIPELINES
+        metric_type = dataflow_config.DATAFLOW_TABLES_TO_METRIC_TYPES[table_id]
+
+        is_unbounded_date_pipeline = (
+            metric_type in dataflow_config.ALWAYS_UNBOUNDED_DATE_METRICS
         )
 
         # This means there are no currently scheduled pipelines writing metrics to
