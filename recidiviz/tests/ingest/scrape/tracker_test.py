@@ -30,6 +30,7 @@ from mock import Mock, call, patch
 
 from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.ingest.scrape import constants, docket, scrape_phase, sessions, tracker
+from recidiviz.utils import pubsub_helper
 
 
 @patch("recidiviz.utils.metadata.project_id", Mock(return_value="test-project"))
@@ -155,6 +156,10 @@ class TestTrackerIntegration:
         self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
         self.project_id_patcher.start().return_value = "test-project"
         self.sessions_to_delete: List[datastore.key.Key] = []
+        for region in REGIONS:
+            pubsub_helper.create_topic_and_subscription(
+                ScrapeKey(region, constants.ScrapeType.BACKGROUND), docket.PUBSUB_TYPE
+            )
 
     def teardown_method(self, _test_method: Callable) -> None:
         for region in REGIONS:
