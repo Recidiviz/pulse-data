@@ -26,7 +26,8 @@ import logging
 import sys
 from typing import List, Tuple
 
-from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
+from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.big_query.big_query_utils import schema_for_sqlalchemy_table
 from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config import (
     CloudSqlToBQConfig,
 )
@@ -60,7 +61,7 @@ def update_bq_tables_schemas_for_schema_type(schema_type: SchemaType) -> None:
             schema_type_to_schema_base(schema_type)
         ) and is_association_table(table.name)
 
-        schema_for_table = BigQueryClient.schema_for_sqlalchemy_table(
+        schema_for_table = schema_for_sqlalchemy_table(
             table, add_state_code_field=add_state_code_field
         )
 

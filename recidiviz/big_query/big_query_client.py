@@ -27,7 +27,6 @@ from concurrent import futures
 from typing import Any, Callable, Dict, Iterator, List, Optional, Sequence
 
 import pytz
-import sqlalchemy
 from google.api_core.future.polling import PollingFuture
 from google.cloud import bigquery, exceptions
 from google.cloud.bigquery_datatransfer import (
@@ -40,7 +39,6 @@ from google.cloud.bigquery_datatransfer import (
 from google.protobuf import timestamp_pb2
 from more_itertools import one
 
-from recidiviz.big_query.big_query_utils import schema_column_type_for_sqlalchemy_column
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.big_query.export.export_query_config import ExportQueryConfig
 from recidiviz.utils import metadata
@@ -682,31 +680,6 @@ class BigQueryClient:
 
         Disclaimer: Use with caution! This will delete data.
         """
-
-    @classmethod
-    def schema_for_sqlalchemy_table(
-        cls, table: sqlalchemy.Table, add_state_code_field: bool = False
-    ) -> List[bigquery.SchemaField]:
-        """Returns the necessary BigQuery schema for storing the contents of the
-        table in BigQuery, which is a list of SchemaField objects containing the
-        column name and value type for each column in the table."""
-        columns_for_table = [
-            bigquery.SchemaField(
-                col.name, schema_column_type_for_sqlalchemy_column(col), mode="NULLABLE"
-            )
-            for col in table.columns
-        ]
-
-        if add_state_code_field:
-            columns_for_table.append(
-                bigquery.SchemaField(
-                    "state_code",
-                    bigquery.enums.SqlTypeNames.STRING.value,
-                    mode="NULLABLE",
-                )
-            )
-
-        return columns_for_table
 
     @abc.abstractmethod
     def wait_for_big_query_jobs(self, jobs: Sequence[PollingFuture]) -> List[Any]:
