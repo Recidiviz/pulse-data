@@ -22,7 +22,7 @@ from http import HTTPStatus
 from json import JSONDecodeError
 from typing import Optional, Tuple
 
-from flask import Blueprint, Response, jsonify, request
+from flask import Blueprint, Response, g, jsonify, request
 
 from recidiviz.admin_panel.admin_stores import fetch_state_codes
 from recidiviz.admin_panel.case_triage_helpers import (
@@ -78,10 +78,16 @@ from recidiviz.utils.string import StrictStringFormatter
 from recidiviz.utils.types import assert_type
 
 
+def get_email_handler() -> EmailReportingHandler:
+    if "email_handler" not in g:
+        # TODO(PyCQA/pylint#5317): Remove ignore fixed by PyCQA/pylint#5457
+        g.email_handler = EmailReportingHandler()  # pylint: disable=assigning-non-slot
+
+    return g.email_handler
+
+
 def add_line_staff_tools_routes(bp: Blueprint) -> None:
     """Adds the relevant Case Triage API routes to an input Blueprint."""
-
-    email_handler = EmailReportingHandler()
 
     # Fetch ETL View Ids for GCS -> Cloud SQL Import
     @bp.route("/api/line_staff_tools/fetch_etl_view_ids", methods=["POST"])
@@ -398,7 +404,7 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
             return str(error), HTTPStatus.NOT_IMPLEMENTED
 
         try:
-            report_date = email_handler.generate_report_date(batch)
+            report_date = get_email_handler().generate_report_date(batch)
         except EmailMetadataReportDateError as error:
             logging.error(error)
             return str(error), HTTPStatus.BAD_REQUEST
@@ -452,7 +458,7 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
         except ValueError as error:
             logging.error(error)
             return str(error), HTTPStatus.BAD_REQUEST
-        batch_info = email_handler.get_batch_info(state_code, report_type)
+        batch_info = get_email_handler().get_batch_info(state_code, report_type)
 
         return (
             jsonify({"batchInfo": batch_info}),
