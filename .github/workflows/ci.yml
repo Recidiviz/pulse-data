@@ -1,0 +1,276 @@
+name: CI Tests
+
+on: push
+
+jobs:
+  cancel-previous-runs:
+    name: Cancel previous runs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cancel previous runs
+        if: ${{ github.ref != 'refs/heads/main' }}
+        uses: styfle/cancel-workflow-action@0.6.0
+        with:
+          access_token: ${{ github.token }}
+
+  black:
+    name: Black
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Python Setup
+        uses: ./.github/actions/python-setup
+      - name: Black
+        run: pipenv run black . --check
+
+  check-if-pipenv-locked:
+    name: Check if Pipenv is locked
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Python Setup
+        uses: ./.github/actions/python-setup
+      - name: Check pipenv is locked
+        run: pipenv run python -m recidiviz.tools.is_pipenv_locked
+
+  mypy:
+    name: Mypy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Python Setup
+        uses: ./.github/actions/python-setup
+      - name: Mypy check
+        run: pipenv run mypy recidiviz
+
+  pylint:
+    name: Pylint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          # This clones the repo and checks out the SHA that triggered this action.
+          # We set fetch-depth 0 to fetch all branches and history so that merge-base
+          # is guaranteed to be able to find the common ancestor with the base branch.
+          # See https://github.com/actions/checkout#readme
+          fetch-depth: 0
+      - name: Python Setup
+        uses: ./.github/actions/python-setup
+      - name: Pylint
+        run: pipenv run ./recidiviz/tools/travis/run_pylint.sh
+
+  terraform-validation:
+    name: Terraform Validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: hashicorp/setup-terraform@v1
+      - name: Validate terraform
+        run: |
+          terraform -chdir=recidiviz/tools/deploy/terraform init -backend=false
+          terraform -chdir=recidiviz/tools/deploy/terraform validate
+
+  validate-source-modifications:
+    name: Validate source modifications
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          # This clones the repo and checks out the SHA that triggered this action.
+          # We set fetch-depth 0 to fetch all branches and history so that merge-base
+          # is guaranteed to be able to find the common ancestor with the base branch.
+          # See https://github.com/actions/checkout#readme
+          fetch-depth: 0
+      - name: Python Setup
+        uses: ./.github/actions/python-setup
+      - name: Set merge_base
+        run: |
+          echo "merge_base=$(git merge-base origin/main HEAD)" >> $GITHUB_ENV
+      - name: Validate source modifications
+        run: |
+          pipenv run python -m recidiviz.tools.validate_source_modifications \
+            --commit-range ${{ env.merge_base }}...HEAD
+      # TODO(#6431): pre-commit was flaky in CI, so we turned it off. It should be
+      # re-enabled soon.
+      # - name: pre-commit
+      #   # If pre-commit proves useful, we can remove redundant checks (e.g. black).
+      #   uses: pre-commit/action@v2.0.0
+      #   # This can also create a new commit with changes, but it merges in latest
+      #   # main and can't re-trigger CI, so we don't do so at this time.
+      #   with:
+      #     # Pass extra_args to only run on changed files. The default is '--all-files'.
+      #     # TODO(#6234): Remove once PA files can be generated again.
+      #     extra_args: --from-ref ${{ env.merge_base }} --to-ref HEAD
+
+  validate-source-visibility:
+    name: Validate source visibility
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Python Setup
+        uses: ./.github/actions/python-setup
+      - name: Validate source visibility
+        run: pipenv run python -m recidiviz.tools.validate_source_visibility
+
+  frontend-tests:
+    name: Frontend tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          # This clones the repo and checks out the SHA that triggered this action.
+          # We set fetch-depth 0 to fetch all branches and history so that merge-base
+          # is guaranteed to be able to find the common ancestor with the base branch.
+          # See https://github.com/actions/checkout#readme
+          fetch-depth: 0
+      - name: Yarn caching
+        uses: actions/cache@v2
+        id: yarn-caching
+        with:
+          path: "**/node_modules"
+          key: yarn-v2-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            yarn-v2-${{ hashFiles('**/yarn.lock') }}
+            yarn-v2-
+            yarn-
+      - name: Yarn install (admin panel)
+        if: steps.yarn-caching.outputs.cache-hit != 'true'
+        working-directory: ./frontends/admin-panel/
+        run: yarn install --frozen-lockfile
+      - name: Yarn lint (admin panel)
+        working-directory: ./frontends/admin-panel/
+        run: yarn lint
+      - name: Yarn install (case triage)
+        if: steps.yarn-caching.outputs.cache-hit != 'true'
+        working-directory: ./frontends/case-triage/
+        run: yarn install --frozen-lockfile
+      - name: Yarn lint (case triage)
+        working-directory: ./frontends/case-triage/
+        run: yarn lint
+      - name: Yarn test (case triage)
+        working-directory: ./frontends/case-triage/
+        run: yarn test
+
+  unit-tests:
+    name: Base unit tests
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [1, 2, 3, 4]
+        suite-count: [4]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Python Setup
+        uses: ./.github/actions/python-setup
+      - name: Run unit tests in parallel
+        run: |
+          pipenv run pytest recidiviz/tests \
+            -n auto \
+            -m 'not uses_db and not emulator and not isolated' \
+            --suite-count ${{matrix.suite-count}} \
+            --suite=${{ matrix.suite }} \
+            --durations=25
+
+  db-tests:
+    name: Database tests
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [1, 2, 3, 4]
+        suite-count: [4]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Python Setup
+        uses: ./.github/actions/python-setup
+      # Postgres caching strategy adapted from https://raymii.org/s/articles/Github_Actions_cpp_boost_cmake_speedup.html
+      - name: Cache postgres
+        uses: actions/cache@v2
+        id: cache-postgres
+        with:
+          path: "~/postgres"
+          key: ${{ runner.os }}-postgres-13
+      - name: Install postgres
+        env:
+          CACHE_HIT: ${{steps.cache-postgres.outputs.cache-hit}}
+        shell: bash
+        run: |
+          if [[ "$CACHE_HIT" == 'true' ]]; then
+            sudo cp --force --recursive ~/postgres/* /
+          else
+            sudo apt-get update
+            sudo apt-get -y upgrade
+            wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+            echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/postgresql-pgdg.list > /dev/null
+            sudo apt-get update
+            sudo apt-get install postgresql-13
+            mkdir -p ~/postgres
+            for dep in postgresql-13; do
+                dpkg -L $dep | while IFS= read -r f; do if test -f $f; then echo $f; fi; done | xargs cp --parents --target-directory ~/postgres/
+            done
+          fi
+          echo "/usr/lib/postgresql/13/bin" >> $GITHUB_PATH
+          sudo chown -R $USER /var/run/postgresql
+
+      - name: Run db tests
+        run: |
+          pipenv run pytest recidiviz/tests \
+            -n auto \
+            -m 'uses_db' \
+            --suite-count ${{matrix.suite-count}} \
+            --suite=${{ matrix.suite }} \
+            --durations=25
+
+  emulator-tests:
+    name: Emulator tests
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [1, 2, 3]
+        suite-count: [3]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Python Setup
+        uses: ./.github/actions/python-setup
+      # GCP caching strategy adapted from https://raymii.org/s/articles/Github_Actions_cpp_boost_cmake_speedup.html
+      - name: GCP caching
+        uses: actions/cache@v2
+        id: gcp-caching
+        with:
+          path: ~/gcp/
+          key: gcloud-323.0.0
+      - name: Install emulators
+        env:
+          CACHE_HIT: ${{steps.gcp-caching.outputs.cache-hit}}
+        run: |
+          if [[ "$CACHE_HIT" == 'true' ]]; then
+            sudo cp --force --recursive ~/gcp/sdk/* /
+            sudo cp --force --recursive ~/gcp/datastore/* /
+            sudo cp --force --recursive ~/gcp/pubsub/* /
+          else
+            sudo apt-get update
+            sudo apt-get -y upgrade
+            echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+            sudo apt-get install apt-transport-https ca-certificates gnupg -y
+            curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key --keyring /usr/share/keyrings/cloud.google.gpg add -
+            sudo apt-get update -y
+            sudo apt-get install google-cloud-sdk -y
+            sudo apt-get install google-cloud-sdk-datastore-emulator -y
+            sudo apt-get install google-cloud-sdk-pubsub-emulator -y
+            mkdir -p ~/gcp/sdk
+            mkdir -p ~/gcp/datastore
+            mkdir -p ~/gcp/pubsub
+            dpkg -L google-cloud-sdk | while IFS= read -r f; do if test -f $f; then echo $f; fi; done | xargs cp --parents --target-directory ~/gcp/sdk
+            dpkg -L google-cloud-sdk-datastore-emulator | while IFS= read -r f; do if test -f $f; then echo $f; fi; done | xargs cp --parents --target-directory ~/gcp/datastore
+            dpkg -L google-cloud-sdk-pubsub-emulator | while IFS= read -r f; do if test -f $f; then echo $f; fi; done | xargs cp --parents --target-directory ~/gcp/pubsub
+          fi
+      - name: Run emulator tests
+        run: |
+          pipenv run pytest recidiviz/tests \
+            -n auto \
+            --suite-count ${{matrix.suite-count}} \
+            --suite=${{ matrix.suite }} \
+            --with-emulator \
+            --durations=25
