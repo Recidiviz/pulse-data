@@ -119,3 +119,9 @@ ENV CURRENT_GIT_SHA=${CURRENT_GIT_SHA}
 
 EXPOSE 8080
 CMD pipenv run gunicorn -c gunicorn.conf.py --log-file=- -b :8080 recidiviz.server:app
+
+# This makes docker not report that our container is healthy until the flask workers are
+# started and returning 200 on the `/health` endpoint. This is initially only used by
+# our docker-test Github Action.
+HEALTHCHECK --interval=5s --timeout=3s \
+    CMD curl -f http://localhost:8080/health || exit 1
