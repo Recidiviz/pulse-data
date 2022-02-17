@@ -123,16 +123,13 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
         )
 
         self.mock_production_template_yaml = FAKE_PIPELINE_CONFIG_YAML_PATH
-        self.mock_always_unbounded_date_pipelines = [
-            "pipeline_no_limit",
-            "pipeline_staging_only",
-        ]
+        self.mock_always_unbounded_date_metrics = [MockMetricEnum.METRIC_1]
 
         self.mock_dataflow_config.PIPELINE_CONFIG_YAML_PATH = (
             self.mock_production_template_yaml
         )
-        self.mock_dataflow_config.ALWAYS_UNBOUNDED_DATE_PIPELINES = (
-            self.mock_always_unbounded_date_pipelines
+        self.mock_dataflow_config.ALWAYS_UNBOUNDED_DATE_METRICS = (
+            self.mock_always_unbounded_date_metrics
         )
 
         app = Flask(__name__)
@@ -354,7 +351,7 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
             },
             "fake_pipeline_with_limit_metric_3_table": {
                 "US_XX": 36,
-                "US_YY": 24,
+                "US_YY": 36,
             },
         }
 

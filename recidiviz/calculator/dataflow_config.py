@@ -16,7 +16,7 @@
 # =============================================================================
 """Config for Dataflow pipelines and BigQuery storage of metric output."""
 import os
-from typing import Dict, Type
+from typing import Dict, List, Type
 
 from recidiviz.calculator.pipeline.metrics.incarceration.metrics import (
     IncarcerationAdmissionMetric,
@@ -61,7 +61,10 @@ PIPELINE_CONFIG_YAML_PATH = os.path.join(
 )
 
 # Pipelines that are always run for all dates.
-ALWAYS_UNBOUNDED_DATE_PIPELINES = ["recidivism"]
+ALWAYS_UNBOUNDED_DATE_METRICS: List[RecidivizMetricType] = [
+    ReincarcerationRecidivismMetricType.REINCARCERATION_COUNT,
+    ReincarcerationRecidivismMetricType.REINCARCERATION_RATE,
+]
 
 # The maximum number days of output that should be stored in a dataflow metrics table
 # before being moved to cold storage
