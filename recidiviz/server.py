@@ -19,6 +19,7 @@
 import datetime
 import gc
 import logging
+from http import HTTPStatus
 from typing import List, Tuple
 
 import zope.event.classhandler
@@ -170,6 +171,13 @@ if environment.in_gcp():
         SQLAlchemyEngineManager.attempt_init_engines_for_databases(
             database_keys_for_schema_type(schema_type)
         )
+
+
+@app.route("/health")
+def health() -> Tuple[str, HTTPStatus]:
+    """This just returns 200, and is used by Docker to verify that the flask workers are
+    up and serving requests."""
+    return "", HTTPStatus.OK
 
 
 @zope.event.classhandler.handler(events.MemoryUsageThresholdExceeded)
