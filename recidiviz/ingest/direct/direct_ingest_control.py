@@ -404,8 +404,10 @@ def update_raw_data_latest_views_for_state() -> Tuple[str, HTTPStatus]:
 
     with monitoring.push_region_tag(region_code, ingest_instance=None):
         bq_client = BigQueryClientImpl(project_id=metadata.project_id())
+        # TODO(#11198): Add a script that allows us to run the view updater with
+        #  a sandbox prefix.
         controller = DirectIngestRawDataTableLatestViewUpdater(
-            region_code, metadata.project_id(), bq_client
+            region_code, metadata.project_id(), bq_client, sandbox_dataset_prefix=None
         )
         controller.update_views_for_state()
     return "", HTTPStatus.OK

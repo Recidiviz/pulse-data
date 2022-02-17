@@ -36,14 +36,22 @@ from recidiviz.calculator.supplemental.dataset_config import SUPPLEMENTAL_DATA_D
 from recidiviz.case_triage.views.dataset_config import CASE_TRIAGE_FEDERATED_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.datasets.static_data.config import EXTERNAL_REFERENCE_DATASET
+from recidiviz.ingest.direct.raw_data.dataset_config import (
+    raw_latest_views_dataset_for_region,
+    raw_tables_dataset_for_region,
+)
 from recidiviz.validation.views.dataset_config import EXTERNAL_ACCURACY_DATASET
 
 RAW_TABLE_DATASETS = {
-    f"{state_code.value.lower()}_raw_data" for state_code in StateCode
+    raw_tables_dataset_for_region(state_code.value.lower(), sandbox_dataset_prefix=None)
+    for state_code in StateCode
 }
 
 LATEST_VIEW_DATASETS = {
-    f"{state_code.value.lower()}_raw_data_up_to_date_views" for state_code in StateCode
+    raw_latest_views_dataset_for_region(
+        state_code.value.lower(), sandbox_dataset_prefix=None
+    )
+    for state_code in StateCode
 }
 
 SUPPLEMENTAL_DATASETS = {

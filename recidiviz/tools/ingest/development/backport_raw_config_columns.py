@@ -30,13 +30,15 @@ Example Usage:
 import argparse
 import logging
 import sys
-
-from typing import List, Dict
+from typing import Dict, List
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.common.constants import states
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import (
     RawTableColumnInfo,
+)
+from recidiviz.ingest.direct.raw_data.dataset_config import (
+    raw_tables_dataset_for_region,
 )
 from recidiviz.utils import metadata
 
@@ -47,7 +49,9 @@ def _get_columns_by_file(
     """Creates a list of RawTableColumnInfo for each raw file in a given state"""
     columns_by_file: Dict[str, List[RawTableColumnInfo]] = {}
 
-    raw_data_dataset = f"{state_code.lower()}_raw_data"
+    raw_data_dataset = raw_tables_dataset_for_region(
+        state_code, sandbox_dataset_prefix=None
+    )
 
     query_string = f"""
 SELECT

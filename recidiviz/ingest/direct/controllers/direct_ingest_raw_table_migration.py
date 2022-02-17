@@ -21,6 +21,9 @@ import os
 import re
 from typing import List, Optional, Tuple
 
+from recidiviz.ingest.direct.raw_data.dataset_config import (
+    raw_tables_dataset_for_region,
+)
 from recidiviz.ingest.direct.types.direct_ingest_constants import (
     UPDATE_DATETIME_COL_NAME,
 )
@@ -70,12 +73,15 @@ class RawTableMigration:
 
         self._validate_column_value_list("filters", filters)
 
-    @property
-    def raw_table(self) -> str:
+    def raw_table(self, sandbox_dataset_prefix: Optional[str]) -> str:
         """Returns the BQ raw table for this migration. Must be calculated dynamically rather than in the constructor
         because these migrations can be defined as top-level vars where the project_id is not yet available.
         """
-        return f"{metadata.project_id()}.{self._region_code_lower}_raw_data.{self.file_tag}"
+        dataset_id = raw_tables_dataset_for_region(
+            region_code=self._region_code_lower,
+            sandbox_dataset_prefix=sandbox_dataset_prefix,
+        )
+        return f"{metadata.project_id()}.{dataset_id}.{self.file_tag}"
 
     @property
     def ordered_filter_keys(self) -> Tuple[str, ...]:

@@ -61,7 +61,9 @@ class DirectIngestRawTableMigrationCollector(ModuleCollectorMixin):
             [self.region_code.lower(), RAW_DATA_SUBDIR, MIGRATIONS_SUBDIR],
         )
 
-    def collect_raw_table_migration_queries(self) -> Dict[str, List[str]]:
+    def collect_raw_table_migration_queries(
+        self, sandbox_dataset_prefix: Optional[str]
+    ) -> Dict[str, List[str]]:
         """Finds all migrations defined for this region and returns a dict indexing all migration queries that should be
         run for a given raw file.
         """
@@ -71,7 +73,9 @@ class DirectIngestRawTableMigrationCollector(ModuleCollectorMixin):
             migrations_by_file_tag[migration.file_tag].append(migration)
 
         return {
-            file_tag: RawTableMigrationGenerator.migration_queries(migrations)
+            file_tag: RawTableMigrationGenerator.migration_queries(
+                migrations, sandbox_dataset_prefix=sandbox_dataset_prefix
+            )
             for file_tag, migrations in migrations_by_file_tag.items()
         }
 

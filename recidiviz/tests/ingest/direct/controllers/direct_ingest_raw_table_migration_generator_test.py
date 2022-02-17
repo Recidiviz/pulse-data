@@ -60,12 +60,12 @@ class TestDirectIngestRawTableMigrationGenerator(unittest.TestCase):
         )
         with local_project_id_override("recidiviz-456"):
             project_1_queries = RawTableMigrationGenerator.migration_queries(
-                [migration]
+                [migration], sandbox_dataset_prefix=None
             )
 
         with local_project_id_override("recidiviz-789"):
             project_2_queries = RawTableMigrationGenerator.migration_queries(
-                [migration]
+                [migration], sandbox_dataset_prefix=None
             )
 
         expected_project_1_queries = [
@@ -91,7 +91,9 @@ WHERE STRUCT(COL1, update_datetime) IN (
             filters=[("col_name_1a", "31415"), ("col_name_1b", "45678")],
         )
         with local_project_id_override("recidiviz-456"):
-            queries = RawTableMigrationGenerator.migration_queries([migration])
+            queries = RawTableMigrationGenerator.migration_queries(
+                [migration], sandbox_dataset_prefix=None
+            )
 
         expected_queries = [
             """DELETE FROM `recidiviz-456.us_xx_raw_data.file_tag_first`
@@ -110,12 +112,12 @@ WHERE STRUCT(col_name_1a, col_name_1b, update_datetime) IN (
         )
         with local_project_id_override("recidiviz-456"):
             project_1_queries = RawTableMigrationGenerator.migration_queries(
-                [migration]
+                [migration], sandbox_dataset_prefix=None
             )
 
         with local_project_id_override("recidiviz-789"):
             project_2_queries = RawTableMigrationGenerator.migration_queries(
-                [migration]
+                [migration], sandbox_dataset_prefix=None
             )
 
         expected_project_1_queries = [
@@ -145,12 +147,12 @@ WHERE STRUCT(COL1) IN (
         )
         with local_project_id_override("recidiviz-456"):
             project_1_queries = RawTableMigrationGenerator.migration_queries(
-                [migration]
+                [migration], sandbox_dataset_prefix=None
             )
 
         with local_project_id_override("recidiviz-789"):
             project_2_queries = RawTableMigrationGenerator.migration_queries(
-                [migration]
+                [migration], sandbox_dataset_prefix=None
             )
 
         expected_project_1_queries = [
@@ -181,7 +183,9 @@ WHERE original.COL1 = updates.COL1 AND original.update_datetime = updates.update
             updates=[("col_name_1a", "4567"), ("col_name_1b", "12345")],
         )
         with local_project_id_override("recidiviz-456"):
-            queries = RawTableMigrationGenerator.migration_queries([migration])
+            queries = RawTableMigrationGenerator.migration_queries(
+                [migration], sandbox_dataset_prefix=None
+            )
 
         expected_queries = [
             """UPDATE `recidiviz-456.us_xx_raw_data.file_tag_first` original
@@ -206,12 +210,12 @@ WHERE original.col_name_1a = updates.col_name_1a AND original.col_name_1b = upda
         )
         with local_project_id_override("recidiviz-456"):
             project_1_queries = RawTableMigrationGenerator.migration_queries(
-                [migration]
+                [migration], sandbox_dataset_prefix=None
             )
 
         with local_project_id_override("recidiviz-789"):
             project_2_queries = RawTableMigrationGenerator.migration_queries(
-                [migration]
+                [migration], sandbox_dataset_prefix=None
             )
 
         expected_project_1_queries = [
@@ -285,7 +289,9 @@ WHERE original.COL1 = updates.COL1;"""
         ]
 
         with local_project_id_override("recidiviz-456"):
-            queries_map = RawTableMigrationGenerator.migration_queries(migrations)
+            queries_map = RawTableMigrationGenerator.migration_queries(
+                migrations, sandbox_dataset_prefix=None
+            )
 
         expected_queries_map = [
             f"""DELETE FROM `recidiviz-456.us_xx_raw_data.tagC`
@@ -314,7 +320,9 @@ WHERE STRUCT(COL1, update_datetime) IN (
         ]
 
         with local_project_id_override("recidiviz-456"):
-            queries_map = RawTableMigrationGenerator.migration_queries(migrations)
+            queries_map = RawTableMigrationGenerator.migration_queries(
+                migrations, sandbox_dataset_prefix=None
+            )
 
         expected_queries_map = [
             f"""DELETE FROM `recidiviz-456.us_xx_raw_data.tagC`
@@ -348,7 +356,9 @@ WHERE STRUCT(COL1, update_datetime) IN (
         ]
 
         with local_project_id_override("recidiviz-456"):
-            queries_map = RawTableMigrationGenerator.migration_queries(migrations)
+            queries_map = RawTableMigrationGenerator.migration_queries(
+                migrations, sandbox_dataset_prefix=None
+            )
 
         expected_queries_map = [
             f"""DELETE FROM `recidiviz-456.us_xx_raw_data.tagC`
@@ -381,7 +391,9 @@ WHERE STRUCT(COL1) IN (
         ]
 
         with local_project_id_override("recidiviz-456"):
-            queries_map = RawTableMigrationGenerator.migration_queries(migrations)
+            queries_map = RawTableMigrationGenerator.migration_queries(
+                migrations, sandbox_dataset_prefix=None
+            )
 
         expected_queries_map = [
             f"""DELETE FROM `recidiviz-456.us_xx_raw_data.tagC`
@@ -415,7 +427,9 @@ WHERE STRUCT(COL2, update_datetime) IN (
         ]
 
         with local_project_id_override("recidiviz-456"):
-            queries_map = RawTableMigrationGenerator.migration_queries(migrations)
+            queries_map = RawTableMigrationGenerator.migration_queries(
+                migrations, sandbox_dataset_prefix=None
+            )
 
         expected_queries_map = [
             f"""DELETE FROM `recidiviz-456.us_xx_raw_data.tagC`
@@ -449,7 +463,9 @@ WHERE STRUCT(COL2, update_datetime) IN (
         ]
 
         with local_project_id_override("recidiviz-456"):
-            queries_map = RawTableMigrationGenerator.migration_queries(migrations)
+            queries_map = RawTableMigrationGenerator.migration_queries(
+                migrations, sandbox_dataset_prefix=None
+            )
 
         expected_queries_map = [
             f"""UPDATE `recidiviz-456.us_xx_raw_data.tagC` original
@@ -482,7 +498,9 @@ WHERE original.COL1 = updates.COL1 AND original.update_datetime = updates.update
         ]
 
         with local_project_id_override("recidiviz-456"):
-            queries_map = RawTableMigrationGenerator.migration_queries(migrations)
+            queries_map = RawTableMigrationGenerator.migration_queries(
+                migrations, sandbox_dataset_prefix=None
+            )
 
         expected_queries_map = [
             """UPDATE `recidiviz-456.us_xx_raw_data.tagC` original
@@ -521,7 +539,9 @@ WHERE original.COL1 = updates.COL1;"""
         ]
 
         with local_project_id_override("recidiviz-456"):
-            queries_map = RawTableMigrationGenerator.migration_queries(migrations)
+            queries_map = RawTableMigrationGenerator.migration_queries(
+                migrations, sandbox_dataset_prefix=None
+            )
 
         expected_queries_map = [
             f"""UPDATE `recidiviz-456.us_xx_raw_data.tagC` original
@@ -560,7 +580,9 @@ WHERE original.COL1 = updates.COL1;""",
         ]
 
         with local_project_id_override("recidiviz-456"):
-            queries_map = RawTableMigrationGenerator.migration_queries(migrations)
+            queries_map = RawTableMigrationGenerator.migration_queries(
+                migrations, sandbox_dataset_prefix=None
+            )
 
         expected_queries_map = [
             """UPDATE `recidiviz-456.us_xx_raw_data.tagC` original
@@ -600,7 +622,9 @@ WHERE original.COL1 = updates.COL1;""",
         ]
 
         with local_project_id_override("recidiviz-456"):
-            queries_map = RawTableMigrationGenerator.migration_queries(migrations)
+            queries_map = RawTableMigrationGenerator.migration_queries(
+                migrations, sandbox_dataset_prefix=None
+            )
 
         expected_queries_map = [
             f"""UPDATE `recidiviz-456.us_xx_raw_data.tagC` original
@@ -637,7 +661,9 @@ WHERE original.COL1 = updates.COL1 AND original.update_datetime = updates.update
         ]
 
         with local_project_id_override("recidiviz-456"):
-            queries_map = RawTableMigrationGenerator.migration_queries(migrations)
+            queries_map = RawTableMigrationGenerator.migration_queries(
+                migrations, sandbox_dataset_prefix=None
+            )
 
         expected_queries_map = [
             f"""DELETE FROM `recidiviz-456.us_xx_raw_data.tagC`
@@ -669,7 +695,9 @@ WHERE original.COL1 = updates.COL1 AND original.update_datetime = updates.update
         ]
 
         with local_project_id_override("recidiviz-456"):
-            queries_map = RawTableMigrationGenerator.migration_queries(migrations)
+            queries_map = RawTableMigrationGenerator.migration_queries(
+                migrations, sandbox_dataset_prefix=None
+            )
 
         expected_queries_map = [
             """UPDATE `recidiviz-456.us_xx_raw_data.tagC` original

@@ -27,6 +27,10 @@ from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager i
 from recidiviz.ingest.direct.direct_ingest_region_utils import (
     get_existing_region_dir_names,
 )
+from recidiviz.ingest.direct.raw_data.dataset_config import (
+    raw_latest_views_dataset_for_region,
+    raw_tables_dataset_for_region,
+)
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
     DirectIngestRawDataTableLatestView,
 )
@@ -50,7 +54,9 @@ class DirectIngestRawDataTableLatestViewBuilder(
         self.raw_file_config = raw_file_config
         self.should_build_predicate = should_build_predicate
         self.view_id = f"{raw_file_config.file_tag}_latest"
-        self.dataset_id = f"{self.region_code.lower()}_raw_data_up_to_date_views"
+        self.dataset_id = raw_latest_views_dataset_for_region(
+            region_code=self.region_code.lower(), sandbox_dataset_prefix=None
+        )
         self.projects_to_deploy = None
         self.materialized_address_override = None
 
@@ -71,18 +77,29 @@ class DirectIngestRawDataTableLatestViewBuilder(
 class DirectIngestRawDataTableLatestViewCollector(
     BigQueryViewCollector[DirectIngestRawDataTableLatestViewBuilder]
 ):
+    """Collects all raw data `*_latest` views for a given region."""
+
+    def __init__(self, src_raw_tables_sandbox_dataset_prefix: Optional[str]):
+        self.src_raw_tables_sandbox_dataset_prefix = (
+            src_raw_tables_sandbox_dataset_prefix
+        )
+
     def collect_view_builders(self) -> List[DirectIngestRawDataTableLatestViewBuilder]:
         builder_list = []
         for region_code in get_existing_region_dir_names():
             region_raw_file_config = DirectIngestRegionRawFileConfig(region_code)
             raw_file_configs = region_raw_file_config.raw_file_configs
+            src_raw_tables_dataset = raw_tables_dataset_for_region(
+                region_raw_file_config.region_code,
+                sandbox_dataset_prefix=self.src_raw_tables_sandbox_dataset_prefix,
+            )
             builder_list.extend(
                 [
                     DirectIngestRawDataTableLatestViewBuilder(
                         region_code=region_code,
                         raw_file_config=config,
                         should_build_predicate=BigQueryTableChecker(
-                            f"{region_raw_file_config.region_code.lower()}_raw_data",
+                            src_raw_tables_dataset,
                             config.file_tag,
                         ).get_table_exists_predicate(),
                     )
