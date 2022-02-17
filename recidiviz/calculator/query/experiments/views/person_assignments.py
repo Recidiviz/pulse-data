@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2021 Recidiviz, Inc.
+# Copyright (C) 2022 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,11 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Creates the view builder and view for metrics from case triage."""
+"""Creates the view builder and view for person/client experiment assignments."""
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.experiments.dataset_config import EXPERIMENTS_DATASET
 from recidiviz.calculator.query.state.dataset_config import (
-    PO_REPORT_DATASET,
     SESSIONS_DATASET,
     STATE_BASE_DATASET,
     STATIC_REFERENCE_TABLES_DATASET,
@@ -29,14 +28,14 @@ from recidiviz.utils.metadata import local_project_id_override
 US_ID_RAW_DATASET = "us_id_raw_data_up_to_date_views"
 US_PA_RAW_DATASET = "us_pa_raw_data_up_to_date_views"
 
-ASSIGNMENTS_VIEW_NAME = "assignments"
+PERSON_ASSIGNMENTS_VIEW_NAME = "person_assignments"
 
-ASSIGNMENTS_VIEW_DESCRIPTION = (
-    "Tracks assignments of experiment/policy/program variants to subjects in each "
-    "experiment."
+PERSON_ASSIGNMENTS_VIEW_DESCRIPTION = (
+    "Tracks assignments of experiment/policy/program variants to persons (clients) in "
+    "each experiment."
 )
 
-ASSIGNMENTS_QUERY_TEMPLATE = """
+PERSON_ASSIGNMENTS_QUERY_TEMPLATE = """
 -- last day data observable in sessions
 WITH last_day_of_data AS (
     SELECT
@@ -51,24 +50,22 @@ WITH last_day_of_data AS (
 , first_observed AS (
     SELECT
         "FIRST_OBSERVED" AS experiment_id,
-        state_code as state_code,
-        CAST(person_id AS STRING) AS subject_id,
-        "person_id" as id_type,
+        state_code,
+        person_id,
         compartment_level_1 AS variant_id,
         MIN(start_date) AS variant_date,
         NULL AS block_id,
     FROM
         `{project_id}.{sessions_dataset}.compartment_sessions_materialized`
-    GROUP BY 1, 2, 3, 4, 5
+    GROUP BY 1, 2, 3, 4
 )
 
 -- When clients referred to dosage probation in ID
 , dosage_probation AS (
     SELECT
         "DOSAGE_PROBATION" AS experiment_id,
-        "US_ID" as state_code,
-        CAST(person_id AS STRING) AS subject_id,
-        "person_id" as id_type,
+        "US_ID" AS state_code,
+        person_id,
         COALESCE(dsg_asgnmt, "TREATED_INTERNAL_UNKNOWN") AS variant_id,
         DATE(prgrm_strt_dt) AS variant_date,
         NULL AS block_id,
@@ -88,9 +85,8 @@ WITH last_day_of_data AS (
 , geo_cis_referral AS (
     SELECT
         "GEO_CIS_REFERRAL" AS experiment_id,
-        "US_ID" as state_code,
-        CAST(person_id AS STRING) AS subject_id,
-        "person_id" as id_type,
+        "US_ID" AS state_code,
+        person_id,
         "REFERRED" AS variant_id,
         DATE(start_date) AS variant_date,
         NULL AS block_id,
@@ -113,8 +109,7 @@ geo_cis_referral_matched AS (
     SELECT
         experiment_id,
         a.state_code,
-        CAST(person_id AS STRING) AS subject_id,
-        "person_id" AS id_type,
+        person_id,
         variant_id,
         DATE(variant_date) AS variant_date,
         block_id,
@@ -130,49 +125,12 @@ geo_cis_referral_matched AS (
         person_external_id NOT IN ("30054") 
 )
 
--- When officers first given access to Case Triage
-, case_triage_access AS (
-    SELECT
-        "CASE_TRIAGE_ACCESS" AS experiment_id,
-        state_code as state_code,
-        officer_external_id AS subject_id,
-        "officer_external_id" as id_type,
-        "RECEIVED_ACCESS" AS variant_id,
-        received_access AS variant_date,
-        NULL AS block_id, --state_code once in more than one state
-        -- cluster_id = district code, if rolled out consistently at district level
-    FROM
-        `{project_id}.{static_reference_dataset}.case_triage_users`
-)
-
--- When officers receive first monthly report
-, first_monthly_report AS (
-    SELECT
-        "FIRST_MONTHLY_REPORT" AS experiment_id,
-        state_code as state_code,
-        officer_external_id AS subject_id,
-        "officer_external_id" as id_type,
-        "RECEIVED_EMAIL" AS variant_id,
-        DATE(events.event_datetime) AS variant_date,
-        NULL AS block_id, --state_code once in more than one state
-        -- cluster_id = district code, if rolled out consistently at district level
-    FROM
-        `{project_id}.{po_report_dataset}.sendgrid_po_report_email_events_materialized` events
-    INNER JOIN
-        `{project_id}.{static_reference_dataset}.po_report_recipients` users
-    ON
-        events.email = users.email_address
-    WHERE
-        event = "delivered"
-)
-
 -- Covid-related CPP cohort in ND
 , us_nd_community_placement_program AS (
     SELECT 
         "COVID_EARLY_RELEASE" AS experiment_id,
         "US_ND" AS state_code,
-        CAST(person_id AS STRING) AS subject_id,
-        "person_id" AS id_type,
+        person_id,
         "COMMUNITY_PLACEMENT_PROGRAM" AS variant_id,
         MIN(start_date) AS variant_date,
         NULL AS block_id,
@@ -180,7 +138,7 @@ geo_cis_referral_matched AS (
         `{project_id}.{sessions_dataset}.compartment_sessions_materialized` a
     WHERE
         compartment_level_2 = "COMMUNITY_CONFINEMENT"
-    GROUP BY 1, 2, 3, 4, 5
+    GROUP BY 1, 2, 3, 4
 )
 
 -- Covid-related reprieve cohort in PA
@@ -188,8 +146,7 @@ geo_cis_referral_matched AS (
     SELECT 
         "COVID_EARLY_RELEASE" AS experiment_id,
         "US_PA" AS state_code,
-        CAST(person_id AS STRING) AS subject_id,
-        "person_id" AS id_type,
+        person_id,
         "TEMPORARY_REPRIEVE" AS variant_id,
         reprieve_date AS variant_date,
         NULL AS block_id,
@@ -207,8 +164,7 @@ geo_cis_referral_matched AS (
     SELECT 
         "COVID_EARLY_RELEASE" AS experiment_id,
         "US_PA" AS state_code,
-        CAST(person_id AS STRING) AS subject_id,
-        "person_id" AS id_type,
+        person_id,
         "FURLOUGH" AS variant_id,
         -- Define first marked movement as treatment
         MIN(DATE(Status_Dt)) AS variant_date,
@@ -231,22 +187,7 @@ geo_cis_referral_matched AS (
     ON
         a.Inmate_Number = b.external_id
         AND b.id_type = "US_PA_INMATE"
-    GROUP BY 1, 2, 3, 4, 5
-)
-
--- State-level experiments from static reference table
--- Generally, these are state-wide policies or other state-level changes
-, state_assignments AS (
-    SELECT
-        experiment_id,
-        state_code,
-        state_code AS subject_id,
-        "state_code" as id_type,
-        variant_id,
-        CAST(variant_date AS DATETIME) AS variant_time,
-        NULL AS block_id,
-    FROM
-        `{project_id}.{static_reference_dataset}.experiment_state_assignments_materialized`
+    GROUP BY 1, 2, 3, 4
 )
 
 -- Union all assignment subqueries
@@ -264,12 +205,6 @@ geo_cis_referral_matched AS (
     FROM geo_cis_referral_matched
     UNION ALL
     SELECT *
-    FROM case_triage_access
-    UNION ALL
-    SELECT *
-    FROM first_monthly_report
-    UNION ALL
-    SELECT *
     FROM us_nd_community_placement_program
     UNION ALL
     SELECT *
@@ -277,9 +212,6 @@ geo_cis_referral_matched AS (
     UNION ALL
     SELECT *
     FROM us_pa_covid_furloughs
-    UNION ALL
-    SELECT *
-    FROM state_assignments
 )
 
 -- Add state-level last day data observed
@@ -288,12 +220,11 @@ FROM stacked
 INNER JOIN last_day_of_data USING(state_code)
 """
 
-ASSIGNMENTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+PERSON_ASSIGNMENTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=EXPERIMENTS_DATASET,
-    view_id=ASSIGNMENTS_VIEW_NAME,
-    view_query_template=ASSIGNMENTS_QUERY_TEMPLATE,
-    description=ASSIGNMENTS_VIEW_DESCRIPTION,
-    po_report_dataset=PO_REPORT_DATASET,
+    view_id=PERSON_ASSIGNMENTS_VIEW_NAME,
+    view_query_template=PERSON_ASSIGNMENTS_QUERY_TEMPLATE,
+    description=PERSON_ASSIGNMENTS_VIEW_DESCRIPTION,
     sessions_dataset=SESSIONS_DATASET,
     state_base_dataset=STATE_BASE_DATASET,
     static_reference_dataset=STATIC_REFERENCE_TABLES_DATASET,
@@ -305,4 +236,4 @@ ASSIGNMENTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        ASSIGNMENTS_VIEW_BUILDER.build_and_print()
+        PERSON_ASSIGNMENTS_VIEW_BUILDER.build_and_print()
