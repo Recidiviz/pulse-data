@@ -425,6 +425,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
     def setUp(self) -> None:
         self.state_code = "US_XX"
         self.identifier = identifier.ProgramIdentifier()
+        self.run_delegate_class = pipeline.ProgramMetricsPipelineRunDelegate
         self.state_specific_delegate_patcher = mock.patch(
             "recidiviz.calculator.pipeline.utils.state_utils"
             ".state_calculation_config_manager.get_all_state_specific_delegates"
@@ -529,7 +530,12 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             test_pipeline
             | beam.Create([(fake_person_id, person_periods)])
             | "Identify Program Events"
-            >> beam.ParDo(ClassifyEvents(), self.state_code, self.identifier)
+            >> beam.ParDo(
+                ClassifyEvents(),
+                self.state_code,
+                self.identifier,
+                pipeline_config=self.run_delegate_class.pipeline_config(),
+            )
         )
 
         assert_that(output, equal_to(correct_output))
@@ -626,7 +632,12 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             test_pipeline
             | beam.Create([(fake_person_id, person_periods)])
             | "Identify Program Events"
-            >> beam.ParDo(ClassifyEvents(), state_code, self.identifier)
+            >> beam.ParDo(
+                ClassifyEvents(),
+                state_code,
+                self.identifier,
+                pipeline_config=self.run_delegate_class.pipeline_config(),
+            )
         )
 
         assert_that(output, equal_to(correct_output))
@@ -684,7 +695,12 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             test_pipeline
             | beam.Create([(fake_person_id, person_periods)])
             | "Identify Program Events"
-            >> beam.ParDo(ClassifyEvents(), self.state_code, self.identifier)
+            >> beam.ParDo(
+                ClassifyEvents(),
+                self.state_code,
+                self.identifier,
+                pipeline_config=self.run_delegate_class.pipeline_config(),
+            )
         )
 
         assert_that(output, equal_to([]))
@@ -759,7 +775,12 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             test_pipeline
             | beam.Create([(fake_person_id, person_periods)])
             | "Identify Program Events"
-            >> beam.ParDo(ClassifyEvents(), self.state_code, self.identifier)
+            >> beam.ParDo(
+                ClassifyEvents(),
+                self.state_code,
+                self.identifier,
+                pipeline_config=self.run_delegate_class.pipeline_config(),
+            )
         )
 
         assert_that(output, equal_to(correct_output))
@@ -824,7 +845,12 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             test_pipeline
             | beam.Create([(fake_person_id, person_periods)])
             | "Identify Program Events"
-            >> beam.ParDo(ClassifyEvents(), self.state_code, self.identifier)
+            >> beam.ParDo(
+                ClassifyEvents(),
+                self.state_code,
+                self.identifier,
+                pipeline_config=self.run_delegate_class.pipeline_config(),
+            )
         )
 
         assert_that(output, equal_to(correct_output))

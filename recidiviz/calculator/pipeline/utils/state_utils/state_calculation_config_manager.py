@@ -16,7 +16,7 @@
 # =============================================================================
 """Manages state-specific methodology decisions made throughout the calculation pipelines."""
 from datetime import date
-from typing import Dict, List, Optional, Set, Type
+from typing import Dict, List, Optional, Type
 
 import attr
 
@@ -245,7 +245,7 @@ class StateSpecificDelegateContainer:
 
 def get_required_state_specific_delegates(
     state_code: str,
-    required_delegates: Set[Type[StateSpecificDelegate]],
+    required_delegates: List[Type[StateSpecificDelegate]],
 ) -> Dict[str, StateSpecificDelegate]:
     """Returns a dictionary where the keys are the names of all of the delegates
     listed in |required_delegates|, and the values are the state-specific

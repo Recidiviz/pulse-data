@@ -42,6 +42,9 @@ from recidiviz.calculator.pipeline.metrics.supervision.events import (
 from recidiviz.calculator.pipeline.metrics.supervision.metrics import (
     SupervisionMetricType,
 )
+from recidiviz.calculator.pipeline.metrics.supervision.pipeline import (
+    SupervisionMetricsPipelineRunDelegate,
+)
 from recidiviz.calculator.pipeline.metrics.supervision.supervision_case_compliance import (
     SupervisionCaseCompliance,
 )
@@ -206,7 +209,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
 
         required_delegates = get_required_state_specific_delegates(
             state_code=(state_code_override or _STATE_CODE),
-            required_delegates=self.identifier.required_state_specific_delegates(),
+            required_delegates=SupervisionMetricsPipelineRunDelegate.pipeline_config().state_specific_required_delegates,
         )
 
         if not state_code_override:

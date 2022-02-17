@@ -605,6 +605,7 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
         )
         self.mock_get_state_delegate_container.return_value = STATE_DELEGATES_FOR_TESTS
         self.identifier = identifier.IncarcerationIdentifier()
+        self.run_delegate_class = pipeline.IncarcerationMetricsPipelineRunDelegate
 
     def tearDown(self) -> None:
         self.state_specific_delegate_patcher.stop()
@@ -782,7 +783,10 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
             | beam.Create([(fake_person_id, person_entities)])
             | "Identify Incarceration Events"
             >> beam.ParDo(
-                ClassifyEvents(), state_code=state_code, identifier=self.identifier
+                ClassifyEvents(),
+                state_code=state_code,
+                identifier=self.identifier,
+                pipeline_config=self.run_delegate_class.pipeline_config(),
             )
         )
 
@@ -813,7 +817,10 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
             | beam.Create([(fake_person.person_id, person_entities)])
             | "Identify Incarceration Events"
             >> beam.ParDo(
-                ClassifyEvents(), state_code=state_code, identifier=self.identifier
+                ClassifyEvents(),
+                state_code=state_code,
+                identifier=self.identifier,
+                pipeline_config=self.run_delegate_class.pipeline_config(),
             )
         )
 
@@ -950,7 +957,10 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
             | beam.Create([(fake_person_id, person_entities)])
             | "Identify Incarceration Events"
             >> beam.ParDo(
-                ClassifyEvents(), state_code=state_code, identifier=self.identifier
+                ClassifyEvents(),
+                state_code=state_code,
+                identifier=self.identifier,
+                pipeline_config=self.run_delegate_class.pipeline_config(),
             )
         )
 
