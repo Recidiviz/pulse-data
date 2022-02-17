@@ -19,7 +19,7 @@ state_calculation_config_manager functions."""
 import os.path
 import unittest
 from inspect import getmembers, isfunction
-from typing import Any, Dict, Set, Type
+from typing import Any, Dict, List, Set, Type
 
 import mock
 
@@ -160,11 +160,11 @@ class TestGetRequiredStateSpecificDelegates(unittest.TestCase):
         self.mock_get_state_delegate_container.return_value = STATE_DELEGATES_FOR_TESTS
 
     def test_get_required_state_specific_delegates(self) -> None:
-        required_delegates = {
+        required_delegates = [
             StateSpecificIncarcerationNormalizationDelegate,
             StateSpecificSupervisionNormalizationDelegate,
             StateSpecificViolationResponseNormalizationDelegate,
-        }
+        ]
 
         delegates = (
             state_calculation_config_manager.get_required_state_specific_delegates(
@@ -181,7 +181,7 @@ class TestGetRequiredStateSpecificDelegates(unittest.TestCase):
         self.assertEqual(expected_delegates, delegates)
 
     def test_get_required_state_specific_delegates_no_delegates(self) -> None:
-        required_delegates: Set[Type[StateSpecificDelegate]] = set()
+        required_delegates: List[Type[StateSpecificDelegate]] = []
 
         delegates = (
             state_calculation_config_manager.get_required_state_specific_delegates(

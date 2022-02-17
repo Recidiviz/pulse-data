@@ -28,6 +28,9 @@ from recidiviz.calculator.pipeline.base_pipeline import (
 from recidiviz.calculator.pipeline.metrics.base_metric_pipeline import (
     MetricPipelineRunDelegate,
 )
+from recidiviz.calculator.pipeline.normalization.base_normalization_pipeline import (
+    NormalizationPipelineRunDelegate,
+)
 from recidiviz.persistence.database import schema_utils
 from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.database.schema_utils import (
@@ -212,6 +215,8 @@ def default_arg_list_for_pipeline(
                 metric_types_filter=additional_pipeline_args.get("metric_types_filter"),
             )
         )
+    elif issubclass(run_delegate, NormalizationPipelineRunDelegate):
+        pass
     else:
         raise ValueError(f"Unexpected PipelineRunDelegate type: {type(run_delegate)}.")
 

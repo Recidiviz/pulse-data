@@ -16,14 +16,11 @@
 # =============================================================================
 """Base class for identifying various instances of events for a metric calculation pipeline."""
 import abc
-from typing import Any, Dict, Generic, Set, Type, TypeVar
+from typing import Any, Dict, Generic, Type, TypeVar
 
 import attr
 
 from recidiviz.calculator.pipeline.utils.event_utils import IdentifierEvent
-from recidiviz.calculator.pipeline.utils.state_utils.state_specific_delegate import (
-    StateSpecificDelegate,
-)
 from recidiviz.persistence.entity.state.entities import StatePerson
 
 IdentifierEventResultT = TypeVar("IdentifierEventResultT")
@@ -41,7 +38,3 @@ class BaseIdentifier(abc.ABC, Generic[IdentifierEventResultT]):
         self, person: StatePerson, identifier_context: IdentifierContextT
     ) -> IdentifierEventResultT:
         """Define the function to identify the events."""
-
-    @abc.abstractmethod
-    def required_state_specific_delegates(self) -> Set[Type[StateSpecificDelegate]]:
-        """The list of state-specific delegates required to run the identifier."""

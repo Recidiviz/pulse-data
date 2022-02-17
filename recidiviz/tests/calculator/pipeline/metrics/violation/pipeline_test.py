@@ -295,6 +295,7 @@ class TestClassifyViolationEvents(unittest.TestCase):
             birthdate=date(1985, 2, 1),
         )
         self.identifier = ViolationIdentifier()
+        self.run_delegate_class = pipeline.ViolationMetricsPipelineRunDelegate
         self.state_specific_delegate_patcher = mock.patch(
             "recidiviz.calculator.pipeline.utils.state_utils"
             ".state_calculation_config_manager.get_all_state_specific_delegates"
@@ -373,7 +374,10 @@ class TestClassifyViolationEvents(unittest.TestCase):
             | beam.Create([(self.fake_person_id, person_violations)])
             | "Identify Violation Events"
             >> beam.ParDo(
-                ClassifyEvents(), state_code=self.state_code, identifier=self.identifier
+                ClassifyEvents(),
+                state_code=self.state_code,
+                identifier=self.identifier,
+                pipeline_config=self.run_delegate_class.pipeline_config(),
             )
         )
 
@@ -397,7 +401,10 @@ class TestClassifyViolationEvents(unittest.TestCase):
             | beam.Create([(self.fake_person_id, person_violations)])
             | "Identify Violation Events"
             >> beam.ParDo(
-                ClassifyEvents(), state_code=self.state_code, identifier=self.identifier
+                ClassifyEvents(),
+                state_code=self.state_code,
+                identifier=self.identifier,
+                pipeline_config=self.run_delegate_class.pipeline_config(),
             )
         )
         assert_that(output, equal_to(correct_output))
@@ -433,7 +440,10 @@ class TestClassifyViolationEvents(unittest.TestCase):
             | beam.Create([(self.fake_person_id, person_violations)])
             | "Identify Violation Events"
             >> beam.ParDo(
-                ClassifyEvents(), state_code=self.state_code, identifier=self.identifier
+                ClassifyEvents(),
+                state_code=self.state_code,
+                identifier=self.identifier,
+                pipeline_config=self.run_delegate_class.pipeline_config(),
             )
         )
         assert_that(output, equal_to(correct_output))

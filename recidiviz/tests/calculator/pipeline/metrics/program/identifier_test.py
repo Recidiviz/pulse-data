@@ -31,6 +31,9 @@ from recidiviz.calculator.pipeline.metrics.program.events import (
     ProgramParticipationEvent,
     ProgramReferralEvent,
 )
+from recidiviz.calculator.pipeline.metrics.program.pipeline import (
+    ProgramMetricsPipelineRunDelegate,
+)
 from recidiviz.calculator.pipeline.utils.assessment_utils import (
     DEFAULT_ASSESSMENT_SCORE_BUCKET,
 )
@@ -109,7 +112,7 @@ class TestFindProgramEvents(unittest.TestCase):
 
         required_delegates = get_required_state_specific_delegates(
             state_code=(state_code_override or _STATE_CODE),
-            required_delegates=self.identifier.required_state_specific_delegates(),
+            required_delegates=ProgramMetricsPipelineRunDelegate.pipeline_config().state_specific_required_delegates,
         )
 
         if not state_code_override:

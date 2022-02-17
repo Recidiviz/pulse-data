@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2021 Recidiviz, Inc.
+# Copyright (C) 2022 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,29 +14,28 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""The incarceration metric calculation pipeline. See recidiviz/tools/run_sandbox_calculation_pipeline.py
-for details on how to launch a local run.
+"""The comprehensive normalization calculation pipeline. See
+recidiviz/tools/run_sandbox_calculation_pipeline.py for details on how to launch a
+local run.
 """
-
-from __future__ import absolute_import
+import apache_beam as beam
 
 from recidiviz.calculator.pipeline.base_pipeline import PipelineConfig
-from recidiviz.calculator.pipeline.metrics.base_identifier import BaseIdentifier
-from recidiviz.calculator.pipeline.metrics.base_metric_pipeline import (
-    MetricPipelineRunDelegate,
+from recidiviz.calculator.pipeline.normalization.base_entity_normalizer import (
+    BaseEntityNormalizer,
 )
-from recidiviz.calculator.pipeline.metrics.base_metric_producer import (
-    BaseMetricProducer,
+from recidiviz.calculator.pipeline.normalization.base_normalization_pipeline import (
+    NormalizationPipelineRunDelegate,
 )
-from recidiviz.calculator.pipeline.metrics.incarceration import (
-    identifier,
-    metric_producer,
-)
+from recidiviz.calculator.pipeline.normalization.comprehensive import entity_normalizer
 from recidiviz.calculator.pipeline.pipeline_type import (
-    INCARCERATION_METRICS_PIPELINE_NAME,
+    COMPREHENSIVE_NORMALIZATION_PIPELINE_NAME,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_period_normalization_manager import (
     StateSpecificIncarcerationNormalizationDelegate,
+)
+from recidiviz.calculator.pipeline.utils.entity_normalization.program_assignment_normalization_manager import (
+    StateSpecificProgramAssignmentNormalizationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_period_normalization_manager import (
     StateSpecificSupervisionNormalizationDelegate,
@@ -44,26 +43,8 @@ from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_period
 from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_violation_responses_normalization_manager import (
     StateSpecificViolationResponseNormalizationDelegate,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.state_specific_commitment_from_supervision_delegate import (
-    StateSpecificCommitmentFromSupervisionDelegate,
-)
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_incarceration_delegate import (
     StateSpecificIncarcerationDelegate,
-)
-from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_delegate import (
-    StateSpecificSupervisionDelegate,
-)
-from recidiviz.calculator.pipeline.utils.state_utils.state_specific_violations_delegate import (
-    StateSpecificViolationDelegate,
-)
-from recidiviz.calculator.query.state.views.reference.incarceration_period_judicial_district_association import (
-    INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME,
-)
-from recidiviz.calculator.query.state.views.reference.persons_to_recent_county_of_residence import (
-    PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME,
-)
-from recidiviz.calculator.query.state.views.reference.supervision_period_to_agent_association import (
-    SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME,
 )
 from recidiviz.calculator.query.state.views.reference.us_mo_sentence_statuses import (
     US_MO_SENTENCE_STATUSES_VIEW_NAME,
@@ -72,19 +53,15 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.state import entities
 
 
-class IncarcerationMetricsPipelineRunDelegate(MetricPipelineRunDelegate):
-    """Defines the incarceration metric calculation pipeline."""
+class ComprehensiveNormalizationPipelineRunDelegate(NormalizationPipelineRunDelegate):
+    """Defines the entity normalization pipeline that normalizes all entities with
+    configured normalization processes."""
 
     @classmethod
     def pipeline_config(cls) -> PipelineConfig:
         return PipelineConfig(
-            pipeline_name=INCARCERATION_METRICS_PIPELINE_NAME,
+            pipeline_name=COMPREHENSIVE_NORMALIZATION_PIPELINE_NAME,
             required_entities=[
-                entities.StatePerson,
-                entities.StatePersonRace,
-                entities.StatePersonEthnicity,
-                entities.StatePersonExternalId,
-                entities.StateAssessment,
                 entities.StateSupervisionSentence,
                 entities.StateIncarcerationSentence,
                 entities.StateIncarcerationPeriod,
@@ -95,36 +72,27 @@ class IncarcerationMetricsPipelineRunDelegate(MetricPipelineRunDelegate):
                 entities.StateSupervisionViolatedConditionEntry,
                 entities.StateSupervisionViolationResponse,
                 entities.StateSupervisionViolationResponseDecisionEntry,
+                entities.StateProgramAssignment,
             ],
-            required_reference_tables=[
-                PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME,
-                INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME,
-                SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME,
-            ],
+            required_reference_tables=[],
             state_specific_required_delegates=[
                 StateSpecificIncarcerationNormalizationDelegate,
                 StateSpecificSupervisionNormalizationDelegate,
                 StateSpecificViolationResponseNormalizationDelegate,
-                StateSpecificCommitmentFromSupervisionDelegate,
+                StateSpecificProgramAssignmentNormalizationDelegate,
                 StateSpecificIncarcerationDelegate,
-                StateSpecificSupervisionDelegate,
-                StateSpecificViolationDelegate,
             ],
             state_specific_required_reference_tables={
                 # We need to bring in the US_MO sentence status table to do
-                # do state-specific processing of the sentences.
+                # do state-specific processing of the sentences for normalizing
+                # supervision periods.
                 StateCode.US_MO: [US_MO_SENTENCE_STATUSES_VIEW_NAME]
             },
         )
 
     @classmethod
-    def identifier(cls) -> BaseIdentifier:
-        return identifier.IncarcerationIdentifier()
+    def entity_normalizer(cls) -> BaseEntityNormalizer:
+        return entity_normalizer.ComprehensiveEntityNormalizer()
 
-    @classmethod
-    def metric_producer(cls) -> BaseMetricProducer:
-        return metric_producer.IncarcerationMetricProducer()
-
-    @classmethod
-    def include_calculation_limit_args(cls) -> bool:
-        return True
+    def write_output(self, pipeline: beam.Pipeline) -> None:
+        pass

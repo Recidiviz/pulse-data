@@ -17,7 +17,7 @@
 """Identifies instances of interaction with a program."""
 import logging
 from datetime import date
-from typing import Any, Dict, List, Optional, Set, Type
+from typing import Any, Dict, List, Optional
 
 from dateutil.relativedelta import relativedelta
 
@@ -46,9 +46,6 @@ from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_period
 )
 from recidiviz.calculator.pipeline.utils.execution_utils import (
     list_of_dicts_to_dict_with_keys,
-)
-from recidiviz.calculator.pipeline.utils.state_utils.state_specific_delegate import (
-    StateSpecificDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_incarceration_delegate import (
     StateSpecificIncarcerationDelegate,
@@ -89,15 +86,6 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
     def __init__(self) -> None:
         self.identifier_event_class = ProgramEvent
         self.field_index = CoreEntityFieldIndex()
-
-    def required_state_specific_delegates(self) -> Set[Type[StateSpecificDelegate]]:
-        return {
-            StateSpecificIncarcerationNormalizationDelegate,
-            StateSpecificSupervisionNormalizationDelegate,
-            StateSpecificIncarcerationDelegate,
-            StateSpecificSupervisionDelegate,
-            StateSpecificProgramAssignmentNormalizationDelegate,
-        }
 
     def find_events(
         self, _person: StatePerson, identifier_context: IdentifierContextT
