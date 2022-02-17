@@ -23,6 +23,9 @@ from recidiviz.calculator.query.state import dataset_config as state_dataset_con
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
+from recidiviz.validation.views.utils.state_specific_query_strings import (
+    state_specific_dataflow_facility_name_tranformation,
+)
 
 INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_VIEW_NAME = (
     "incarceration_population_by_facility_external_comparison"
@@ -40,7 +43,7 @@ INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_QUERY_TEMPLATE = """
     ), internal_incarceration_population AS (
         SELECT
             state_code as region_code, date_of_stay,
-            IFNULL(facility, 'EXTERNAL_UNKNOWN') as facility,
+            {state_specific_dataflow_facility_name_tranformation},
             COUNT(DISTINCT(person_id)) as internal_population_count
         FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_metrics_included_in_state_population_materialized`
         GROUP BY state_code, date_of_stay, facility
@@ -79,6 +82,7 @@ INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_VIEW_BUILDER = SimpleBi
     description=INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_DESCRIPTION,
     external_accuracy_dataset=dataset_config.EXTERNAL_ACCURACY_DATASET,
     materialized_metrics_dataset=state_dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    state_specific_dataflow_facility_name_tranformation=state_specific_dataflow_facility_name_tranformation(),
 )
 
 if __name__ == "__main__":
