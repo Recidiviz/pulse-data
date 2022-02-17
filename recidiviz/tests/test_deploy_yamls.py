@@ -45,10 +45,6 @@ class TestDeployYamls(unittest.TestCase):
         yaml_dict = YAMLDict.from_path(self.path_for_build_file("staging.yaml"))
         self.assertTrue(yaml_dict.get())
 
-    def test_travis_yaml_parses(self) -> None:
-        yaml_dict = YAMLDict.from_path(self.path_for_build_file(".travis.yml"))
-        self.assertTrue(yaml_dict.get())
-
     def test_prod_staging_same(self) -> None:
         staging_yaml = YAMLDict.from_path(self.path_for_build_file("staging.yaml"))
         prod_yaml = YAMLDict.from_path(self.path_for_build_file("prod.yaml"))

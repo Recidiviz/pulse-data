@@ -13,16 +13,6 @@ jobs:
         with:
           access_token: ${{ github.token }}
 
-  bandit:
-    name: Bandit
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Python Setup
-        uses: ./.github/actions/python-setup
-      - name: Bandit
-        run: pipenv run bandit --ini .bandit -r -b bandit/bandit-baseline.json -x tests
-
   black:
     name: Black
     runs-on: ubuntu-latest
@@ -34,15 +24,14 @@ jobs:
         run: pipenv run black . --check
 
   check-if-pipenv-locked:
-      name: Check if Pipenv is locked
-      runs-on: ubuntu-latest
-      steps:
-        - uses: actions/checkout@v2
-        - name: Python Setup
-          uses: ./.github/actions/python-setup
-        - name: Check pipenv is locked
-          run: pipenv run python -m recidiviz.tools.is_pipenv_locked
-
+    name: Check if Pipenv is locked
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Python Setup
+        uses: ./.github/actions/python-setup
+      - name: Check pipenv is locked
+        run: pipenv run python -m recidiviz.tools.is_pipenv_locked
 
   mypy:
     name: Mypy
@@ -80,7 +69,6 @@ jobs:
         run: |
           terraform -chdir=recidiviz/tools/deploy/terraform init -backend=false
           terraform -chdir=recidiviz/tools/deploy/terraform validate
-
 
   validate-source-modifications:
     name: Validate source modifications
@@ -169,7 +157,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        suite: [1,2,3,4]
+        suite: [1, 2, 3, 4]
         suite-count: [4]
     steps:
       - uses: actions/checkout@v2
@@ -190,7 +178,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        suite: [1,2,3,4]
+        suite: [1, 2, 3, 4]
         suite-count: [4]
     steps:
       - uses: actions/checkout@v2
@@ -234,14 +222,13 @@ jobs:
             --suite=${{ matrix.suite }} \
             --durations=25
 
-
   emulator-tests:
     name: Emulator tests
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        suite: [ 1, 2, 3 ]
+        suite: [1, 2, 3]
         suite-count: [3]
     steps:
       - uses: actions/checkout@v2
@@ -287,4 +274,3 @@ jobs:
             --suite=${{ matrix.suite }} \
             --with-emulator \
             --durations=25
-
