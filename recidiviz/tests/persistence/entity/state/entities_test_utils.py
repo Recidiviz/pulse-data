@@ -18,7 +18,7 @@
 
 import datetime
 from collections import defaultdict
-from typing import Dict, List, Optional, Sequence, Set, Type
+from typing import Dict, List, Optional, Sequence, Type
 
 from recidiviz.common.constants.shared_enums.charge import ChargeStatus
 from recidiviz.common.constants.shared_enums.person_characteristics import (
