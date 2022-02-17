@@ -317,6 +317,7 @@ class MetricPipelineRunDelegate(PipelineRunDelegate[MetricPipelineJobArgs]):
             ClassifyEvents(),
             state_code=self.pipeline_job_args.state_code,
             identifier=self.identifier(),
+            pipeline_config=self.pipeline_config(),
         )
 
         state_race_ethnicity_population_counts = (
@@ -502,8 +503,9 @@ class GetMetrics(beam.PTransform):
 
 @with_input_types(
     beam.typehints.Tuple[int, Dict[str, Iterable[Any]]],
-    beam.typehints.Optional[str],
-    beam.typehints.Optional[BaseIdentifier],
+    str,
+    BaseIdentifier,
+    PipelineConfig,
 )
 @with_output_types(
     beam.typehints.Tuple[
@@ -520,6 +522,7 @@ class ClassifyEvents(beam.DoFn):
         element: Tuple[int, Dict[str, Iterable[Any]]],
         state_code: str,
         identifier: BaseIdentifier,
+        pipeline_config: PipelineConfig,
     ) -> Generator[
         Tuple[Optional[int], Tuple[entities.StatePerson, List[IdentifierEvent]]],
         None,
@@ -532,7 +535,7 @@ class ClassifyEvents(beam.DoFn):
 
         required_delegates = get_required_state_specific_delegates(
             state_code=state_code,
-            required_delegates=identifier.required_state_specific_delegates(),
+            required_delegates=pipeline_config.state_specific_required_delegates,
         )
 
         all_kwargs: Dict[

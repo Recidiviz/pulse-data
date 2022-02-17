@@ -27,6 +27,21 @@ from recidiviz.calculator.pipeline.metrics.base_metric_producer import (
 )
 from recidiviz.calculator.pipeline.metrics.program import identifier, metric_producer
 from recidiviz.calculator.pipeline.pipeline_type import PROGRAM_METRICS_PIPELINE_NAME
+from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_period_normalization_manager import (
+    StateSpecificIncarcerationNormalizationDelegate,
+)
+from recidiviz.calculator.pipeline.utils.entity_normalization.program_assignment_normalization_manager import (
+    StateSpecificProgramAssignmentNormalizationDelegate,
+)
+from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_period_normalization_manager import (
+    StateSpecificSupervisionNormalizationDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_incarceration_delegate import (
+    StateSpecificIncarcerationDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_delegate import (
+    StateSpecificSupervisionDelegate,
+)
 from recidiviz.calculator.query.state.views.reference.supervision_period_to_agent_association import (
     SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME,
 )
@@ -50,6 +65,13 @@ class ProgramMetricsPipelineRunDelegate(MetricPipelineRunDelegate):
             ],
             required_reference_tables=[
                 SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME
+            ],
+            state_specific_required_delegates=[
+                StateSpecificIncarcerationNormalizationDelegate,
+                StateSpecificSupervisionNormalizationDelegate,
+                StateSpecificIncarcerationDelegate,
+                StateSpecificSupervisionDelegate,
+                StateSpecificProgramAssignmentNormalizationDelegate,
             ],
             state_specific_required_reference_tables={},
         )

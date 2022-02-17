@@ -19,7 +19,7 @@ import datetime
 import logging
 from collections import defaultdict
 from datetime import date
-from typing import Any, Dict, List, Optional, Set, Tuple, Type, Union
+from typing import Any, Dict, List, Optional, Tuple, Type, Union
 
 import attr
 from dateutil.relativedelta import relativedelta
@@ -66,9 +66,6 @@ from recidiviz.calculator.pipeline.utils.execution_utils import (
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
     get_state_specific_case_compliance_manager,
-)
-from recidiviz.calculator.pipeline.utils.state_utils.state_specific_delegate import (
-    StateSpecificDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_incarceration_delegate import (
     StateSpecificIncarcerationDelegate,
@@ -130,16 +127,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
     def __init__(self) -> None:
         self.identifier_event_class = SupervisionEvent
         self.field_index = CoreEntityFieldIndex()
-
-    def required_state_specific_delegates(self) -> Set[Type[StateSpecificDelegate]]:
-        return {
-            StateSpecificIncarcerationNormalizationDelegate,
-            StateSpecificSupervisionNormalizationDelegate,
-            StateSpecificViolationResponseNormalizationDelegate,
-            StateSpecificIncarcerationDelegate,
-            StateSpecificSupervisionDelegate,
-            StateSpecificViolationDelegate,
-        }
 
     def find_events(
         self, person: StatePerson, identifier_context: IdentifierContextT

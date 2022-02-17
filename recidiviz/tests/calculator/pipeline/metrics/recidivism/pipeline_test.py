@@ -498,6 +498,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
     def setUp(self) -> None:
         self.state_code = "US_XX"
         self.identifier = identifier.RecidivismIdentifier()
+        self.run_delegate_class = pipeline.RecidivismMetricsPipelineRunDelegate
         self.state_specific_delegate_patcher = mock.patch(
             "recidiviz.calculator.pipeline.utils.state_utils"
             ".state_calculation_config_manager.get_all_state_specific_delegates"
@@ -624,7 +625,10 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             | beam.Create([(fake_person_id, person_incarceration_periods)])
             | "Identify Recidivism Events"
             >> beam.ParDo(
-                ClassifyEvents(), state_code=self.state_code, identifier=self.identifier
+                ClassifyEvents(),
+                state_code=self.state_code,
+                identifier=self.identifier,
+                pipeline_config=self.run_delegate_class.pipeline_config(),
             )
         )
 
@@ -701,7 +705,10 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             | beam.Create([(fake_person_id, person_incarceration_periods)])
             | "Identify Recidivism Events"
             >> beam.ParDo(
-                ClassifyEvents(), state_code=self.state_code, identifier=self.identifier
+                ClassifyEvents(),
+                state_code=self.state_code,
+                identifier=self.identifier,
+                pipeline_config=self.run_delegate_class.pipeline_config(),
             )
         )
 
@@ -745,7 +752,10 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             | beam.Create([(fake_person_id, person_incarceration_periods)])
             | "Identify Recidivism Events"
             >> beam.ParDo(
-                ClassifyEvents(), state_code=self.state_code, identifier=self.identifier
+                ClassifyEvents(),
+                state_code=self.state_code,
+                identifier=self.identifier,
+                pipeline_config=self.run_delegate_class.pipeline_config(),
             )
         )
 
@@ -862,7 +872,10 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             | beam.Create([(fake_person_id, person_incarceration_periods)])
             | "Identify Recidivism Events"
             >> beam.ParDo(
-                ClassifyEvents(), state_code=self.state_code, identifier=self.identifier
+                ClassifyEvents(),
+                state_code=self.state_code,
+                identifier=self.identifier,
+                pipeline_config=self.run_delegate_class.pipeline_config(),
             )
         )
 
@@ -981,7 +994,10 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             | beam.Create([(fake_person_id, person_incarceration_periods)])
             | "Identify Recidivism Events"
             >> beam.ParDo(
-                ClassifyEvents(), state_code=self.state_code, identifier=self.identifier
+                ClassifyEvents(),
+                state_code=self.state_code,
+                identifier=self.identifier,
+                pipeline_config=self.run_delegate_class.pipeline_config(),
             )
         )
 

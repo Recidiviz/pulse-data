@@ -25,7 +25,7 @@ into instances of recidivism or non-recidivism as appropriate.
 """
 from collections import defaultdict
 from datetime import date
-from typing import Any, Dict, List, Optional, Set, Type
+from typing import Any, Dict, List, Optional
 
 from recidiviz.calculator.pipeline.metrics.base_identifier import (
     BaseIdentifier,
@@ -47,9 +47,6 @@ from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_period
 )
 from recidiviz.calculator.pipeline.utils.execution_utils import (
     extract_county_of_residence_from_rows,
-)
-from recidiviz.calculator.pipeline.utils.state_utils.state_specific_delegate import (
-    StateSpecificDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_incarceration_delegate import (
     StateSpecificIncarcerationDelegate,
@@ -81,13 +78,6 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
     def __init__(self) -> None:
         self.identifier_event_class = ReleaseEvent
         self.field_index = CoreEntityFieldIndex()
-
-    def required_state_specific_delegates(self) -> Set[Type[StateSpecificDelegate]]:
-        return {
-            StateSpecificIncarcerationNormalizationDelegate,
-            StateSpecificSupervisionNormalizationDelegate,
-            StateSpecificIncarcerationDelegate,
-        }
 
     def find_events(
         self, _person: StatePerson, identifier_context: IdentifierContextT

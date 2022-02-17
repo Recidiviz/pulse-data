@@ -29,6 +29,9 @@ from recidiviz.calculator.pipeline.metrics.recidivism.events import (
     RecidivismReleaseEvent,
     ReleaseEvent,
 )
+from recidiviz.calculator.pipeline.metrics.recidivism.pipeline import (
+    RecidivismMetricsPipelineRunDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
     get_required_state_specific_delegates,
 )
@@ -84,7 +87,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         required_delegates = get_required_state_specific_delegates(
             state_code=(state_code_override or _STATE_CODE),
-            required_delegates=self.identifier.required_state_specific_delegates(),
+            required_delegates=RecidivismMetricsPipelineRunDelegate.pipeline_config().state_specific_required_delegates,
         )
 
         if not state_code_override:

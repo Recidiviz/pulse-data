@@ -34,6 +34,9 @@ from recidiviz.calculator.pipeline.utils.beam_utils.extractor_utils import (
 from recidiviz.calculator.pipeline.utils.beam_utils.pipeline_args_utils import (
     get_apache_beam_pipeline_options_from_args,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_delegate import (
+    StateSpecificDelegate,
+)
 from recidiviz.calculator.query.state.dataset_config import (
     REFERENCE_VIEWS_DATASET,
     STATE_BASE_DATASET,
@@ -88,6 +91,8 @@ class PipelineConfig:
 
     # The list of reference tables required for the pipeline
     required_reference_tables: List[str] = attr.ib()
+
+    state_specific_required_delegates: List[Type[StateSpecificDelegate]] = attr.ib()
 
     # A dictionary mapping state codes to the names of state-specific tables required
     # to run pipelines in the state

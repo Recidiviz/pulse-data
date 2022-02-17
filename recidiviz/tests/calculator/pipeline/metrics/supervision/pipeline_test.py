@@ -978,6 +978,7 @@ class TestClassifyEvents(unittest.TestCase):
         )
         self.mock_get_state_delegate_container.return_value = STATE_DELEGATES_FOR_TESTS
         self.identifier = identifier.SupervisionIdentifier()
+        self.run_delegate_class = pipeline.SupervisionMetricsPipelineRunDelegate
 
     def tearDown(self) -> None:
         self._stop_state_specific_delegate_patchers()
@@ -1195,7 +1196,10 @@ class TestClassifyEvents(unittest.TestCase):
             | beam.Create([(fake_person_id, person_entities)])
             | "Identify Supervision Events"
             >> beam.ParDo(
-                ClassifyEvents(), state_code=self.state_code, identifier=self.identifier
+                ClassifyEvents(),
+                state_code=self.state_code,
+                identifier=self.identifier,
+                pipeline_config=self.run_delegate_class.pipeline_config(),
             )
         )
 
@@ -1387,7 +1391,10 @@ class TestClassifyEvents(unittest.TestCase):
             | beam.Create([(fake_person_id, person_entities)])
             | "Identify Supervision Events"
             >> beam.ParDo(
-                ClassifyEvents(), state_code=self.state_code, identifier=self.identifier
+                ClassifyEvents(),
+                state_code=self.state_code,
+                identifier=self.identifier,
+                pipeline_config=self.run_delegate_class.pipeline_config(),
             )
         )
 
@@ -1595,7 +1602,10 @@ class TestClassifyEvents(unittest.TestCase):
             | beam.Create([(fake_person_id, person_entities)])
             | "Identify Supervision Events"
             >> beam.ParDo(
-                ClassifyEvents(), state_code=self.state_code, identifier=self.identifier
+                ClassifyEvents(),
+                state_code=self.state_code,
+                identifier=self.identifier,
+                pipeline_config=self.run_delegate_class.pipeline_config(),
             )
         )
 
@@ -1712,7 +1722,10 @@ class TestClassifyEvents(unittest.TestCase):
             | beam.Create([(fake_person_id, person_entities)])
             | "Identify Supervision Events"
             >> beam.ParDo(
-                ClassifyEvents(), state_code=self.state_code, identifier=self.identifier
+                ClassifyEvents(),
+                state_code=self.state_code,
+                identifier=self.identifier,
+                pipeline_config=self.run_delegate_class.pipeline_config(),
             )
         )
 
@@ -1818,7 +1831,10 @@ class TestClassifyEvents(unittest.TestCase):
             | beam.Create([(fake_person_id, person_entities)])
             | "Identify Supervision Events"
             >> beam.ParDo(
-                ClassifyEvents(), state_code=self.state_code, identifier=self.identifier
+                ClassifyEvents(),
+                state_code=self.state_code,
+                identifier=self.identifier,
+                pipeline_config=self.run_delegate_class.pipeline_config(),
             )
         )
 
@@ -1879,7 +1895,10 @@ class TestClassifyEvents(unittest.TestCase):
             | beam.Create([(fake_person_id, person_entities)])
             | "Identify Supervision Events"
             >> beam.ParDo(
-                ClassifyEvents(), state_code=self.state_code, identifier=self.identifier
+                ClassifyEvents(),
+                state_code=self.state_code,
+                identifier=self.identifier,
+                pipeline_config=self.run_delegate_class.pipeline_config(),
             )
         )
 

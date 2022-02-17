@@ -18,7 +18,7 @@
 
 import datetime
 from collections import defaultdict
-from typing import Dict, List, Optional, Sequence, Type
+from typing import Dict, List, Optional, Sequence, Set, Type
 
 from recidiviz.common.constants.shared_enums.charge import ChargeStatus
 from recidiviz.common.constants.shared_enums.person_characteristics import (
@@ -657,7 +657,6 @@ def generate_full_graph_state_person(
         *person.supervision_periods,
         *incarceration_sentence.charges,
         *incarceration_sentence.early_discharges,
-        *supervision_sentence.charges,
         *supervision_sentence.early_discharges,
         *[court_case],
         *incarceration_incident.incarceration_incident_outcomes,

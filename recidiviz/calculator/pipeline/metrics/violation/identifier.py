@@ -17,7 +17,7 @@
 """Identifies violations and their responses with appropriate decisions."""
 import datetime
 from collections import defaultdict
-from typing import Dict, List, Optional, Set, Type
+from typing import Dict, List, Optional
 
 import attr
 
@@ -34,9 +34,6 @@ from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalizati
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_violation_responses_normalization_manager import (
     StateSpecificViolationResponseNormalizationDelegate,
-)
-from recidiviz.calculator.pipeline.utils.state_utils.state_specific_delegate import (
-    StateSpecificDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_violations_delegate import (
     StateSpecificViolationDelegate,
@@ -72,12 +69,6 @@ class ViolationIdentifier(BaseIdentifier[List[ViolationEvent]]):
     def __init__(self) -> None:
         self.identifier_event_class = ViolationEvent
         self.field_index = CoreEntityFieldIndex()
-
-    def required_state_specific_delegates(self) -> Set[Type[StateSpecificDelegate]]:
-        return {
-            StateSpecificViolationResponseNormalizationDelegate,
-            StateSpecificViolationDelegate,
-        }
 
     def find_events(
         self, _person: StatePerson, identifier_context: IdentifierContextT

@@ -17,7 +17,7 @@
 """Identifier class for events related to incarceration."""
 import logging
 from datetime import date
-from typing import Any, Dict, List, Optional, Set, Tuple, Type, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from dateutil.relativedelta import relativedelta
 
@@ -64,9 +64,6 @@ from recidiviz.calculator.pipeline.utils.execution_utils import (
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_commitment_from_supervision_delegate import (
     StateSpecificCommitmentFromSupervisionDelegate,
-)
-from recidiviz.calculator.pipeline.utils.state_utils.state_specific_delegate import (
-    StateSpecificDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_incarceration_delegate import (
     StateSpecificIncarcerationDelegate,
@@ -126,17 +123,6 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
     def __init__(self) -> None:
         self.identifier_event_class = IncarcerationEvent
         self.field_index = CoreEntityFieldIndex()
-
-    def required_state_specific_delegates(self) -> Set[Type[StateSpecificDelegate]]:
-        return {
-            StateSpecificIncarcerationNormalizationDelegate,
-            StateSpecificSupervisionNormalizationDelegate,
-            StateSpecificViolationResponseNormalizationDelegate,
-            StateSpecificCommitmentFromSupervisionDelegate,
-            StateSpecificIncarcerationDelegate,
-            StateSpecificSupervisionDelegate,
-            StateSpecificViolationDelegate,
-        }
 
     def find_events(
         self, _person: StatePerson, identifier_context: IdentifierContextT

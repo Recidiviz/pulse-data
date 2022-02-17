@@ -32,6 +32,24 @@ from recidiviz.calculator.pipeline.metrics.supervision import (
 from recidiviz.calculator.pipeline.pipeline_type import (
     SUPERVISION_METRICS_PIPELINE_NAME,
 )
+from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_period_normalization_manager import (
+    StateSpecificIncarcerationNormalizationDelegate,
+)
+from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_period_normalization_manager import (
+    StateSpecificSupervisionNormalizationDelegate,
+)
+from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_violation_responses_normalization_manager import (
+    StateSpecificViolationResponseNormalizationDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_incarceration_delegate import (
+    StateSpecificIncarcerationDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_delegate import (
+    StateSpecificSupervisionDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_violations_delegate import (
+    StateSpecificViolationDelegate,
+)
 from recidiviz.calculator.query.state.views.reference.supervision_period_judicial_district_association import (
     SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME,
 )
@@ -73,6 +91,14 @@ class SupervisionMetricsPipelineRunDelegate(MetricPipelineRunDelegate):
             required_reference_tables=[
                 SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME,
                 SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME,
+            ],
+            state_specific_required_delegates=[
+                StateSpecificIncarcerationNormalizationDelegate,
+                StateSpecificSupervisionNormalizationDelegate,
+                StateSpecificViolationResponseNormalizationDelegate,
+                StateSpecificIncarcerationDelegate,
+                StateSpecificSupervisionDelegate,
+                StateSpecificViolationDelegate,
             ],
             state_specific_required_reference_tables={
                 # We need to bring in the US_MO sentence status table to do

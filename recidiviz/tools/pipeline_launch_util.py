@@ -14,36 +14,46 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Util for launching Dataflow pipelines.
-"""
+"""Util for launching Dataflow pipelines."""
 from __future__ import absolute_import
 
 import importlib
 import inspect
 import pkgutil
+from types import ModuleType
 from typing import List, Type
 
 from recidiviz.calculator.pipeline import metrics as metrics_pipeline_top_level
+from recidiviz.calculator.pipeline import (
+    normalization as normalization_pipeline_top_level,
+)
 from recidiviz.calculator.pipeline.base_pipeline import (
     BasePipeline,
     PipelineRunDelegate,
 )
 from recidiviz.common.module_collector_mixin import ModuleCollectorMixin
 
+TOP_LEVEL_PIPELINE_MODULES: List[ModuleType] = [
+    metrics_pipeline_top_level,
+    normalization_pipeline_top_level,
+]
+
 
 def load_all_pipelines() -> None:
     """Loads all subclasses of PipelineRunDelegate."""
-    for _, name, _ in pkgutil.walk_packages(metrics_pipeline_top_level.__path__):  # type: ignore
-        full_name = f"{metrics_pipeline_top_level.__name__}.{name}.pipeline"
-        try:
-            importlib.import_module(full_name)
-        except ModuleNotFoundError:
-            continue
+    for top_level_pipeline_module in TOP_LEVEL_PIPELINE_MODULES:
+        for _, name, _ in pkgutil.walk_packages(top_level_pipeline_module.__path__):  # type: ignore
+            full_name = f"{top_level_pipeline_module.__name__}.{name}.pipeline"
+            try:
+                importlib.import_module(full_name)
+            except ModuleNotFoundError:
+                continue
 
 
 def collect_all_pipeline_names() -> List[str]:
     """Collects all of the pipeline names from all of the implementations of the
-    PipelineRunDelegate."""
+    PipelineRunDelegate. A PipelineRunDelegate must exist inside one of the modules
+    listed in the TOP_LEVEL_PIPELINE_MODULES for it to be included."""
     run_delegates = collect_all_pipeline_run_delegates()
 
     return [
@@ -53,13 +63,18 @@ def collect_all_pipeline_names() -> List[str]:
 
 
 def collect_all_pipeline_run_delegates() -> List[Type[PipelineRunDelegate]]:
-    metrics_submodules = ModuleCollectorMixin.get_submodules(
-        base_module=metrics_pipeline_top_level, submodule_name_prefix_filter=None
-    )
+    pipeline_submodules: List[ModuleType] = []
+
+    for top_level_pipeline_module in TOP_LEVEL_PIPELINE_MODULES:
+        pipeline_submodules.extend(
+            ModuleCollectorMixin.get_submodules(
+                base_module=top_level_pipeline_module, submodule_name_prefix_filter=None
+            )
+        )
 
     run_delegates: List[Type[PipelineRunDelegate]] = []
 
-    for module in metrics_submodules:
+    for module in pipeline_submodules:
         pipeline_modules = ModuleCollectorMixin.get_submodules(
             module, submodule_name_prefix_filter="pipeline"
         )
