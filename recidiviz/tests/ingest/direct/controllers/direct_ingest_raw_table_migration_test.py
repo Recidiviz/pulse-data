@@ -20,8 +20,8 @@ import os
 import unittest
 
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_table_migration import (
-    DeleteFromRawTableMigration,
     RAW_TABLE_MIGRATION_FILE_PREFIX,
+    DeleteFromRawTableMigration,
     UpdateRawTableMigration,
 )
 from recidiviz.utils import regions
@@ -56,7 +56,10 @@ class TestDirectIngestRawTableMigration(unittest.TestCase):
             ],
         )
         with local_project_id_override("recidiviz-789"):
-            self.assertEqual("recidiviz-789.us_xx_raw_data.mytag", migration.raw_table)
+            self.assertEqual(
+                "recidiviz-789.us_xx_raw_data.mytag",
+                migration.raw_table(sandbox_dataset_prefix=None),
+            )
             self.assertEqual("mytag", migration.file_tag)
             self.assertEqual(("COL1", "COL2"), migration.ordered_filter_keys)
             self.assertEqual("31415", migration.filters["COL1"])
@@ -73,7 +76,10 @@ class TestDirectIngestRawTableMigration(unittest.TestCase):
             ],
         )
         with local_project_id_override("recidiviz-789"):
-            self.assertEqual("recidiviz-789.us_xx_raw_data.mytag", migration.raw_table)
+            self.assertEqual(
+                "recidiviz-789.us_xx_raw_data.mytag",
+                migration.raw_table(sandbox_dataset_prefix=None),
+            )
             self.assertEqual("mytag", migration.file_tag)
             self.assertEqual(
                 ("COL1", "COL2", "update_datetime"), migration.ordered_filter_keys
@@ -101,7 +107,10 @@ class TestDirectIngestRawTableMigration(unittest.TestCase):
             ],
         )
         with local_project_id_override("recidiviz-789"):
-            self.assertEqual("recidiviz-789.us_xx_raw_data.mytag", migration.raw_table)
+            self.assertEqual(
+                "recidiviz-789.us_xx_raw_data.mytag",
+                migration.raw_table(sandbox_dataset_prefix=None),
+            )
             self.assertEqual("mytag", migration.file_tag)
             self.assertEqual(("COL1", "COL2"), migration.ordered_filter_keys)
             self.assertEqual("31415", migration.filters["COL1"])
@@ -125,7 +134,10 @@ class TestDirectIngestRawTableMigration(unittest.TestCase):
         )
 
         with local_project_id_override("recidiviz-789"):
-            self.assertEqual("recidiviz-789.us_xx_raw_data.mytag", migration.raw_table)
+            self.assertEqual(
+                "recidiviz-789.us_xx_raw_data.mytag",
+                migration.raw_table(sandbox_dataset_prefix=None),
+            )
             self.assertEqual("mytag", migration.file_tag)
             self.assertEqual(
                 ("COL1", "COL2", "update_datetime"), migration.ordered_filter_keys
@@ -140,3 +152,34 @@ class TestDirectIngestRawTableMigration(unittest.TestCase):
             self.assertEqual(expected_filters_values, migration.ordered_filter_values)
             self.assertEqual(("COL1", "COL3"), migration.ordered_update_keys)
             self.assertEqual("91011", migration.updates["COL3"])
+
+    def test_migration_sandbox_prefix(self) -> None:
+        delete_migration = DeleteFromRawTableMigration(
+            migrations_file=self._migration_file_path_for_tag("mytag"),
+            update_datetime_filters=None,
+            filters=[
+                ("COL2", "2171"),
+                ("COL1", "31415"),
+            ],
+        )
+        update_migration = UpdateRawTableMigration(
+            migrations_file=self._migration_file_path_for_tag("mytag"),
+            update_datetime_filters=None,
+            filters=[
+                ("COL2", "2171"),
+                ("COL1", "31415"),
+            ],
+            updates=[
+                ("COL3", "91011"),
+                ("COL1", "654"),
+            ],
+        )
+        with local_project_id_override("recidiviz-789"):
+            self.assertEqual(
+                "recidiviz-789.my_prefix_us_xx_raw_data.mytag",
+                delete_migration.raw_table(sandbox_dataset_prefix="my_prefix"),
+            )
+            self.assertEqual(
+                "recidiviz-789.my_prefix_us_xx_raw_data.mytag",
+                update_migration.raw_table(sandbox_dataset_prefix="my_prefix"),
+            )

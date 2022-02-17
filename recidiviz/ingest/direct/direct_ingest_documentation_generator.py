@@ -34,14 +34,18 @@ from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager i
 from recidiviz.ingest.direct.controllers.direct_ingest_view_collector import (
     DirectIngestPreProcessedIngestViewCollector,
 )
+from recidiviz.ingest.direct.raw_data.dataset_config import (
+    raw_latest_views_dataset_for_region,
+    raw_tables_dataset_for_region,
+)
 from recidiviz.utils import regions
 from recidiviz.utils.string import StrictStringFormatter
 
 STATE_RAW_DATA_FILE_HEADER_TEMPLATE = """# {state_name} Raw Data Description
 
-All raw data can be found in append-only tables in the dataset `{state_code_lower}_raw_data`. Views on the raw data
+All raw data can be found in append-only tables in the dataset `{raw_tables_dataset}`. Views on the raw data
 table that show the latest state of this table (i.e. select the most recently received row for each primary key) can be
-found in `{state_code_lower}_raw_data_up_to_date_views`.
+found in `{latest_views_dataset}`.
 
 ## Table of Contents
 """
@@ -67,11 +71,17 @@ class DirectIngestDocumentationGenerator:
         if StateCode.is_state_code(region_code):
             state_code = StateCode(region_code.upper())
             state_name = state_code.get_state().name
+            state_code_lower = state_code.value.lower()
 
             file_header = StrictStringFormatter().format(
                 STATE_RAW_DATA_FILE_HEADER_TEMPLATE,
                 state_name=state_name,
-                state_code_lower=state_code.value.lower(),
+                raw_tables_dataset=raw_tables_dataset_for_region(
+                    state_code_lower, sandbox_dataset_prefix=None
+                ),
+                latest_views_dataset=raw_latest_views_dataset_for_region(
+                    state_code_lower, sandbox_dataset_prefix=None
+                ),
             )
         else:
             file_header = ""

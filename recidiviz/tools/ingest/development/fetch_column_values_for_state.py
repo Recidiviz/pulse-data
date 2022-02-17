@@ -29,7 +29,7 @@ Example Usage:
     python -m recidiviz.tools.ingest.development.fetch_column_values_for_state --state-code US_ND \
         --project-id recidiviz-staging \
         [--file-tag-filters RAW_TABLE_1 RAW_TABLE_2]
-        [--dataset-override scratch_us_xx_raw_data] \
+        [--sandbox-dataset-prefix SANDBOX_DATASET_PREFIX] \
 """
 import argparse
 import logging
@@ -44,6 +44,9 @@ from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager i
     RawTableColumnInfo,
 )
 from recidiviz.ingest.direct.query_utils import get_region_raw_file_config
+from recidiviz.ingest.direct.raw_data.dataset_config import (
+    raw_tables_dataset_for_region,
+)
 from recidiviz.tests.ingest.direct.direct_ingest_util import PLACEHOLDER_TO_DO_STRING
 from recidiviz.tools.ingest.development.raw_data_config_writer import (
     RawDataConfigWriter,
@@ -52,21 +55,21 @@ from recidiviz.utils import metadata
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 
 
-def get_known_values(
+def _get_known_values(
     column: RawTableColumnInfo,
     file_tag: str,
     region_code: str,
     project_id: str,
     bq_client: BigQueryClientImpl,
-    dataset_override: Optional[str],
+    sandbox_dataset_prefix: Optional[str],
 ) -> RawTableColumnInfo:
     """Creates a list of possible enum values for a column in a given table"""
     # Only fetch known values for enum columns
     if not column.is_enum:
         return column
 
-    raw_data_dataset = (
-        dataset_override if dataset_override else f"{region_code.lower()}_raw_data"
+    raw_data_dataset = raw_tables_dataset_for_region(
+        region_code=region_code.lower(), sandbox_dataset_prefix=sandbox_dataset_prefix
     )
 
     query_string = f"""
@@ -97,21 +100,21 @@ ORDER BY
     )
 
 
-def update_enum_known_values(
+def _update_enum_known_values(
     original_config: DirectIngestRawFileConfig,
     region_code: str,
     project_id: str,
     bq_client: BigQueryClientImpl,
-    dataset_override: Optional[str],
+    sandbox_dataset_prefix: Optional[str],
 ) -> DirectIngestRawFileConfig:
     new_columns = [
-        get_known_values(
+        _get_known_values(
             column,
             original_config.file_tag,
             region_code,
             project_id,
             bq_client,
-            dataset_override,
+            sandbox_dataset_prefix,
         )
         for column in original_config.columns
     ]
@@ -135,7 +138,7 @@ def main(
     state_code: str,
     project_id: str,
     file_tags: List[str],
-    dataset_override: Optional[str] = None,
+    sandbox_dataset_prefix: Optional[str],
 ) -> None:
     """Update columns in raw data configs with known values fetched from BigQuery."""
     region_config = get_region_raw_file_config(state_code)
@@ -157,12 +160,12 @@ def main(
     for original_raw_file_config in [
         config for config in raw_file_configs if config.has_enums
     ]:
-        updated_raw_file_config = update_enum_known_values(
+        updated_raw_file_config = _update_enum_known_values(
             original_raw_file_config,
             state_code,
             project_id,
             bq_client,
-            dataset_override,
+            sandbox_dataset_prefix,
         )
         raw_data_config_writer = RawDataConfigWriter()
         raw_data_config_writer.output_to_file(
@@ -206,10 +209,13 @@ def parse_arguments(argv: List[str]) -> argparse.Namespace:
     )
 
     parser.add_argument(
-        "--dataset-override",
-        dest="dataset_override",
-        help="Dataset to search for raw data tables. Defaults to us_xx_raw_data for a given state US_XX.",
+        "--sandbox-dataset-prefix",
+        dest="sandbox_dataset_prefix",
+        help="Prefix of sandbox dataset to search for raw data tables. If not set, "
+        "will search in us_xx_raw_data for a given state US_XX. If set, will search in "
+        "my_prefix_us_xx_raw_data.",
         type=str,
+        default=None,
         required=False,
     )
 
@@ -223,4 +229,9 @@ if __name__ == "__main__":
     args = parse_arguments(sys.argv)
 
     with metadata.local_project_id_override(args.project_id):
-        main(args.state_code, args.project_id, args.file_tags, args.dataset_override)
+        main(
+            args.state_code,
+            args.project_id,
+            args.file_tags,
+            args.sandbox_dataset_prefix,
+        )

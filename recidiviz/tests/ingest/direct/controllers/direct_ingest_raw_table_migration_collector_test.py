@@ -37,7 +37,9 @@ class TestDirectIngestRawTableMigrationCollector(unittest.TestCase):
         collector = DirectIngestRawTableMigrationCollector(
             region_code="us_xx", regions_module_override=fake_regions
         )
-        queries_map = collector.collect_raw_table_migration_queries()
+        queries_map = collector.collect_raw_table_migration_queries(
+            sandbox_dataset_prefix=None
+        )
 
         file_tag_first_query_1 = """UPDATE `recidiviz-456.us_xx_raw_data.file_tag_first` original
 SET column_1b = updates.new__column_1b
@@ -61,6 +63,47 @@ FROM (SELECT * FROM UNNEST([
 WHERE original.COL1 = updates.COL1 AND original.update_datetime = updates.update_datetime;"""
 
         tagC_query_2 = """DELETE FROM `recidiviz-456.us_xx_raw_data.tagC`
+WHERE STRUCT(COL1) IN (
+    STRUCT(\"789\")
+);"""
+
+        expected_queries_map = {
+            "file_tag_first": [file_tag_first_query_1, file_tag_first_query_2],
+            "tagC": [tagC_query_1, tagC_query_2],
+        }
+
+        self.assertEqual(expected_queries_map, queries_map)
+
+    def test_collect_queries_for_sandbox(self) -> None:
+        collector = DirectIngestRawTableMigrationCollector(
+            region_code="us_xx", regions_module_override=fake_regions
+        )
+        queries_map = collector.collect_raw_table_migration_queries(
+            sandbox_dataset_prefix="my_prefix"
+        )
+
+        file_tag_first_query_1 = """UPDATE `recidiviz-456.my_prefix_us_xx_raw_data.file_tag_first` original
+SET column_1b = updates.new__column_1b
+FROM (SELECT * FROM UNNEST([
+    STRUCT('123' AS column_1a, CAST('2020-06-10T00:00:00' AS DATETIME) AS update_datetime, '456' AS new__column_1b),
+    STRUCT('123' AS column_1a, CAST('2020-09-21T00:00:00' AS DATETIME) AS update_datetime, '456' AS new__column_1b)
+])) updates
+WHERE original.column_1a = updates.column_1a AND original.update_datetime = updates.update_datetime;"""
+
+        file_tag_first_query_2 = """DELETE FROM `recidiviz-456.my_prefix_us_xx_raw_data.file_tag_first`
+WHERE STRUCT(column_1a, update_datetime) IN (
+    STRUCT(\"00000000\", \"2020-09-21T00:00:00\")
+);"""
+
+        tagC_query_1 = """UPDATE `recidiviz-456.my_prefix_us_xx_raw_data.tagC` original
+SET COL1 = updates.new__COL1
+FROM (SELECT * FROM UNNEST([
+    STRUCT('123' AS COL1, CAST('2020-06-10T00:00:00' AS DATETIME) AS update_datetime, '456' AS new__COL1),
+    STRUCT('123' AS COL1, CAST('2020-09-21T00:00:00' AS DATETIME) AS update_datetime, '456' AS new__COL1)
+])) updates
+WHERE original.COL1 = updates.COL1 AND original.update_datetime = updates.update_datetime;"""
+
+        tagC_query_2 = """DELETE FROM `recidiviz-456.my_prefix_us_xx_raw_data.tagC`
 WHERE STRUCT(COL1) IN (
     STRUCT(\"789\")
 );"""

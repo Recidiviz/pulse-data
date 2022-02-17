@@ -23,12 +23,14 @@ from recidiviz.ingest.direct.views.direct_ingest_latest_view_collector import (
     DirectIngestRawDataTableLatestViewCollector,
 )
 
-
 DIRECT_INGEST_VIEW_BUILDERS: Sequence[BigQueryViewBuilder] = list(
     itertools.chain.from_iterable(
         (
-            # This returns a list of DirectIngestRawTableLatestViewBuilder, one per raw table in all regions
-            DirectIngestRawDataTableLatestViewCollector().collect_view_builders(),
+            # This returns a list of DirectIngestRawTableLatestViewBuilder, one per raw
+            # table in all regions
+            DirectIngestRawDataTableLatestViewCollector(
+                src_raw_tables_sandbox_dataset_prefix=None
+            ).collect_view_builders(),
         )
     )
 )
