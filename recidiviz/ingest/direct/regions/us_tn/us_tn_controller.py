@@ -46,6 +46,7 @@ class UsTnController(BaseDirectIngestController):
                     "AssignedStaffSupervisionPeriod",
                     "VantagePointAssessments",
                     "SentencesChargesAndCourtCases",
+                    "SupervisionContacts",
                 ]
             )
         return tags
