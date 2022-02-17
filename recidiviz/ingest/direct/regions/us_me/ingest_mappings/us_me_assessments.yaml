@@ -53,13 +53,13 @@ output:
                   - "Static 99"
                   - "Static 99 R"
               $ignore:
-                - "EXEMPT"  # "Certain offenses are exempt from the other types of assessments. For example, the crime might be considered domestic violence, but because of the type of crime the assessment can't be used (i.e. stalking)"
+                - "Exempt"  # "Certain offenses are exempt from the other types of assessments. For example, the crime might be considered domestic violence, but because of the type of crime the assessment can't be used (i.e. stalking)"
           assessment_type:
             $enum_mapping:
               $raw_text: Assessment_Type
               $mappings:
                 StateAssessmentType.J_SOAP:
-                  - "J_SOAP"
+                  - "J-SOAP II"
                 StateAssessmentType.LSIR:
                   - "Adult, Female, Community"
                   - "Adult, Male, Community"
@@ -76,14 +76,14 @@ output:
                 StateAssessmentType.SOTIPS:
                   - "SOTIPS"
                 StateAssessmentType.SPIN_W:
-                  - "SPIN_W"
+                  - "SPIN-W"
                 StateAssessmentType.STABLE:
                   - "STABLE"
                 StateAssessmentType.STATIC_99:
                   - "Static 99"
                   - "Static 99 R"
               $ignore:
-                - "EXEMPT"
+                - "Exempt"
           assessment_date: Assessment_Date
           assessment_score: Assessment_Score_Num
           assessment_level:
