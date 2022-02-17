@@ -48,7 +48,7 @@ WITH participants AS (
     SELECT DISTINCT
         experiment_id,
         a.state_code,
-        officer_external_id,
+        a.officer_external_id,
         variant_date,
         "DISTRICT" AS attribute,
         IFNULL(district, "INTERNAL_UNKNOWN") AS value,
