@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2021 Recidiviz, Inc.
+# Copyright (C) 2022 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,45 +14,43 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Creates the view builder and view for attributes at the time of variant assignment
-for those in an experiment."""
+"""Creates the view builder and view for person attributes at the time of variant
+assignment for those in an experiment."""
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.experiments.dataset_config import EXPERIMENTS_DATASET
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
-    PO_REPORT_DATASET,
     SESSIONS_DATASET,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-ATTRIBUTES_VIEW_NAME = "attributes"
+PERSON_ATTRIBUTES_VIEW_NAME = "person_attributes"
 
-ATTRIBUTES_VIEW_DESCRIPTION = (
-    "Calculates subject-level attributes for those assigned a variant in the "
+PERSON_ATTRIBUTES_VIEW_DESCRIPTION = (
+    "Calculates person-level attributes for those assigned a variant in the "
     "assignments table. All attributes are specific to person-experiment-variant, so "
     "there may be multiple observations per person and multiple observations per "
     "person-experiment. All attributes are calculated at time of variant assignment."
 )
 
-ATTRIBUTES_PRIMARY_KEYS = "experiment_id, state_code, subject_id, id_type, variant_date"
+PERSON_ATTRIBUTES_PRIMARY_KEYS = "experiment_id, state_code, person_id, variant_date"
 
-ATTRIBUTES_QUERY_TEMPLATE = """
+PERSON_ATTRIBUTES_QUERY_TEMPLATE = """
 WITH participants AS (
     SELECT DISTINCT
         {primary_keys},
     FROM
-        `{project_id}.{experiments_dataset}.assignments_materialized`
+        `{project_id}.{experiments_dataset}.person_assignments_materialized`
 )
 
-# district of each client pre experiment, looking back up to one month prior to 
-# experiment, then up to one month following experiment.
+# district of each client pre assignment, looking back up to one month prior to 
+# assignment, then up to one month following.
 , person_id_districts AS (
     SELECT DISTINCT
         experiment_id,
         a.state_code,
-        subject_id,
-        id_type,
+        a.person_id,
         variant_date,
         "DISTRICT" AS attribute,
         ARRAY_AGG(
@@ -68,35 +66,10 @@ WITH participants AS (
         `{project_id}.{dataflow_dataset}.most_recent_supervision_population_metrics_materialized` b
     ON
         a.state_code = b.state_code
-        AND CAST(a.subject_id AS INT64) = b.person_id
+        AND a.person_id = b.person_id
         AND b.date_of_supervision BETWEEN DATE_SUB(a.variant_date, INTERVAL 30 DAY) AND 
             DATE_ADD(a.variant_date, INTERVAL 30 DAY)
-    WHERE
-        id_type = "person_id"
-    GROUP BY 1, 2, 3, 4, 5, 6
-)
-
-# PO district at time of variant assignment
-, po_districts AS (
-    SELECT DISTINCT
-        experiment_id,
-        a.state_code,
-        subject_id,
-        id_type,
-        variant_date,
-        "DISTRICT" AS attribute,
-        IFNULL(district, "INTERNAL_UNKNOWN") AS value,
-    FROM
-        participants a
-    LEFT JOIN
-        `{project_id}.{po_report_dataset}.officer_supervision_district_association_materialized` b
-    ON
-        a.state_code = b.state_code
-        AND a.subject_id = b.officer_external_id
-        AND EXTRACT(MONTH from a.variant_date) = b.month
-        AND EXTRACT(YEAR from a.variant_date) = b.year
-    WHERE
-        id_type = "officer_external_id"
+    GROUP BY 1, 2, 3, 4, 5
 )
 
 # type of compartment, for now just incarceration, parole, probation, dual, or other
@@ -104,8 +77,7 @@ WITH participants AS (
     SELECT
         experiment_id,
         a.state_code,
-        subject_id,
-        id_type,
+        a.person_id,
         variant_date,
         "COMPARTMENT" AS attribute,
         CASE
@@ -118,11 +90,9 @@ WITH participants AS (
         `{project_id}.{sessions_dataset}.compartment_sessions_materialized` b
     ON
         a.state_code = b.state_code
-        AND CAST(a.subject_id AS INT64) = b.person_id
+        AND a.person_id = b.person_id
         AND a.variant_date BETWEEN b.start_date AND 
             IFNULL(b.end_date, "9999-01-01")
-    WHERE
-        id_type = "person_id"
 )
 
 # wide demographics table for person_id
@@ -130,8 +100,7 @@ WITH participants AS (
     SELECT DISTINCT
         experiment_id,
         a.state_code,
-        subject_id,
-        id_type,
+        a.person_id,
         variant_date,
         CAST(IF(assessment_type = "LSIR", assessment_score, NULL) AS STRING) AS LSIR_SCORE,
         CAST(DATE_DIFF(variant_date, assessment_date, DAY) AS STRING) AS LSIR_DAYS_SINCE,
@@ -141,11 +110,9 @@ WITH participants AS (
         `{project_id}.{sessions_dataset}.assessment_score_sessions_materialized` c
     ON
         a.state_code = c.state_code
-        AND CAST(a.subject_id AS INT64) = c.person_id
+        AND a.person_id = c.person_id
         AND a.variant_date BETWEEN c.assessment_date AND 
             IFNULL(c.score_end_date, "9999-01-01")
-    WHERE
-        id_type = "person_id"
 )
     
 # wide to long for person_id demographics
@@ -166,20 +133,17 @@ UNPIVOT (
 UNION ALL
 SELECT * FROM person_id_districts
 UNION ALL
-SELECT * FROM po_districts
-UNION ALL
 SELECT * FROM person_id_compartments
 """
 
-ATTRIBUTES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+PERSON_ATTRIBUTES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=EXPERIMENTS_DATASET,
-    view_id=ATTRIBUTES_VIEW_NAME,
-    view_query_template=ATTRIBUTES_QUERY_TEMPLATE,
-    description=ATTRIBUTES_VIEW_DESCRIPTION,
+    view_id=PERSON_ATTRIBUTES_VIEW_NAME,
+    view_query_template=PERSON_ATTRIBUTES_QUERY_TEMPLATE,
+    description=PERSON_ATTRIBUTES_VIEW_DESCRIPTION,
     dataflow_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
     experiments_dataset=EXPERIMENTS_DATASET,
-    po_report_dataset=PO_REPORT_DATASET,
-    primary_keys=ATTRIBUTES_PRIMARY_KEYS,
+    primary_keys=PERSON_ATTRIBUTES_PRIMARY_KEYS,
     sessions_dataset=SESSIONS_DATASET,
     should_materialize=True,
     clustering_fields=["experiment_id", "attribute"],
@@ -187,4 +151,4 @@ ATTRIBUTES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        ATTRIBUTES_VIEW_BUILDER.build_and_print()
+        PERSON_ATTRIBUTES_VIEW_BUILDER.build_and_print()

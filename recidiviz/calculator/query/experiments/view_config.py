@@ -18,12 +18,6 @@
 from typing import Sequence
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
-from recidiviz.calculator.query.experiments.views.assignments import (
-    ASSIGNMENTS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.experiments.views.attributes import (
-    ATTRIBUTES_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.experiments.views.case_triage_feedback_actions import (
     CASE_TRIAGE_FEEDBACK_ACTIONS_VIEW_BUILDER,
 )
@@ -33,13 +27,33 @@ from recidiviz.calculator.query.experiments.views.case_triage_metrics import (
 from recidiviz.calculator.query.experiments.views.experiments import (
     EXPERIMENTS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.experiments.views.outcomes import OUTCOMES_VIEW_BUILDER
+from recidiviz.calculator.query.experiments.views.officer_assignments import (
+    OFFICER_ASSIGNMENTS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.experiments.views.officer_attributes import (
+    OFFICER_ATTRIBUTES_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.experiments.views.person_assignments import (
+    PERSON_ASSIGNMENTS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.experiments.views.person_attributes import (
+    PERSON_ATTRIBUTES_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.experiments.views.person_outcomes import (
+    PERSON_OUTCOMES_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.experiments.views.state_assignments import (
+    STATE_ASSIGNMENTS_VIEW_BUILDER,
+)
 
 VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = [
-    ASSIGNMENTS_VIEW_BUILDER,
-    ATTRIBUTES_VIEW_BUILDER,
     CASE_TRIAGE_EVENTS_VIEW_BUILDER,
     CASE_TRIAGE_FEEDBACK_ACTIONS_VIEW_BUILDER,
     EXPERIMENTS_VIEW_BUILDER,
-    OUTCOMES_VIEW_BUILDER,
+    OFFICER_ASSIGNMENTS_VIEW_BUILDER,
+    OFFICER_ATTRIBUTES_VIEW_BUILDER,
+    PERSON_ASSIGNMENTS_VIEW_BUILDER,
+    PERSON_ATTRIBUTES_VIEW_BUILDER,
+    PERSON_OUTCOMES_VIEW_BUILDER,
+    STATE_ASSIGNMENTS_VIEW_BUILDER,
 ]

@@ -14,25 +14,23 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Creates the view builder and view for outcome metrics for those in an active
-experiment."""
+"""Creates the view builder and view for outcome metrics for persons (clients) in an
+active experiment."""
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.experiments.dataset_config import EXPERIMENTS_DATASET
-from recidiviz.calculator.query.state.dataset_config import (  # STATIC_REFERENCE_TABLES_DATASET,
-    ANALYST_VIEWS_DATASET,
-)
+from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-OUTCOMES_VIEW_NAME = "outcomes"
+PERSON_OUTCOMES_VIEW_NAME = "person_outcomes"
 
-OUTCOMES_VIEW_DESCRIPTION = (
-    "Calculates outcome metrics for those assigned a variant in the assignments table. "
-    "All metrics are specific to person-experiment-variant, so may have multiple "
-    "observations per person and multiple observations per person-experiment."
+PERSON_OUTCOMES_VIEW_DESCRIPTION = (
+    "Calculates outcome metrics for persons (clients) assigned a variant in the person "
+    "assignments table. All metrics are specific to person-experiment-variant, so may "
+    "have multiple observations per person and per person-experiment."
 )
 
-OUTCOME_METRIC_NAMES = [
+PERSON_OUTCOME_METRIC_NAMES = [
     "INCARCERATION_START_FIRST",
     "INCARCERATION_START_COUNT_1_YEAR",
     "INCARCERATION_START_DAYS_TO_EVENT_1_YEAR",
@@ -47,12 +45,15 @@ WITH participants AS (
     SELECT DISTINCT
         a.experiment_id,
         a.state_code,
-        a.subject_id,
-        a.id_type,
+        a.person_id,
         variant_date,
+        end_date,
     FROM
-        `{project_id}.{experiments_dataset}.assignments_materialized` a
-    -- add experiment end date
+        `{project_id}.{experiments_dataset}.person_assignments_materialized` a
+    INNER JOIN
+        `{project_id}.{experiments_dataset}.experiments_materialized` b
+    ON
+        a.experiment_id = b.experiment_id
 ),
 
 participants_metrics_menu AS (
@@ -66,11 +67,10 @@ participants_metrics_menu AS (
 SELECT
     a.experiment_id,
     a.state_code, 
-    a.subject_id,
-    a.id_type,
+    a.person_id,
     a.variant_date,
     a.metric AS metric,
-    COALESCE(b.event_date, CURRENT_DATE('US/Eastern')) AS date,
+    COALESCE(b.event_date, CURRENT_DATE("US/Eastern")) AS date,
     IF(b.event_date IS NOT NULL, 1, 0) AS value,
 FROM
     participants_metrics_menu a
@@ -78,17 +78,15 @@ LEFT JOIN
     `{project_id}.{analyst_views_dataset}.person_events_materialized` b
 ON
     a.state_code = b.state_code
-    AND CAST(a.subject_id AS INT64) = b.person_id
-    AND b.event_date BETWEEN a.variant_date AND CURRENT_DATE('US/Eastern')  -- swap for experiment end date
+    AND a.person_id = b.person_id
+    AND b.event_date BETWEEN a.variant_date AND a.end_date
     AND a.metric = CONCAT(b.event, "_FIRST")
 WHERE
     a.metric LIKE ("%_FIRST")
-    AND a.id_type = "person_id"
 QUALIFY
     -- keep first occurrence of event, if any
     ROW_NUMBER() OVER (
-        PARTITION BY a.experiment_id, a.state_code, a.subject_id, a.id_type, 
-            a.variant_date, a.metric
+        PARTITION BY a.experiment_id, a.state_code, a.person_id, a.variant_date, a.metric
         ORDER BY COALESCE(b.event_date, "9999-01-01")
     ) = 1
 
@@ -99,13 +97,12 @@ UNION ALL
 SELECT DISTINCT
     a.experiment_id,
     a.state_code, 
-    a.subject_id,
-    a.id_type,
+    a.person_id,
     a.variant_date,
     a.metric,
     DATE_ADD(a.variant_date, INTERVAL 1 YEAR) AS date,
     -- Null metric if full year hasn't yet passed
-    IF(DATE_ADD(a.variant_date, INTERVAL 1 YEAR) < CURRENT_DATE('US/Eastern'),
+    IF(DATE_ADD(a.variant_date, INTERVAL 1 YEAR) < CURRENT_DATE("US/Eastern"),
         COUNTIF(b.event_date IS NOT NULL), NULL) AS value,
 FROM
     participants_metrics_menu a
@@ -113,14 +110,13 @@ LEFT JOIN
     `{project_id}.{analyst_views_dataset}.person_events_materialized` b
 ON
     a.state_code = b.state_code
-    AND CAST(a.subject_id AS INT64) = b.person_id
-    AND b.event_date BETWEEN a.variant_date AND 
+    AND a.person_id = b.person_id
+    AND b.event_date BETWEEN a.variant_date AND  
         DATE_ADD(a.variant_date, INTERVAL 1 YEAR)
     AND a.metric = CONCAT(b.event, "_COUNT_1_YEAR")
 WHERE
     a.metric LIKE("%_COUNT_1_YEAR")
-    AND a.id_type = "person_id"
-GROUP BY 1, 2, 3, 4, 5, 6
+GROUP BY 1, 2, 3, 4, 5
 
 UNION ALL 
 
@@ -129,13 +125,12 @@ UNION ALL
 SELECT
     a.experiment_id,
     a.state_code, 
-    a.subject_id,
-    a.id_type,
+    a.person_id,
     a.variant_date,
     a.metric AS metric,
     DATE_ADD(a.variant_date, INTERVAL 1 YEAR) AS date,
     -- Null metric if full year hasn't yet passed
-    IF(DATE_ADD(a.variant_date, INTERVAL 1 YEAR) < CURRENT_DATE('US/Eastern'),
+    IF(DATE_ADD(a.variant_date, INTERVAL 1 YEAR) < CURRENT_DATE("US/Eastern"),
         IF(DATE_ADD(a.variant_date, INTERVAL 1 YEAR) >= b.event_date, 
             DATE_DIFF(b.event_date, a.variant_date, DAY),
             365
@@ -148,37 +143,33 @@ LEFT JOIN
     `{project_id}.{analyst_views_dataset}.person_events_materialized` b
 ON
     a.state_code = b.state_code
-    AND CAST(a.subject_id AS INT64) = b.person_id
+    AND a.person_id = b.person_id
     AND b.event_date BETWEEN a.variant_date AND 
         DATE_ADD(a.variant_date, INTERVAL 1 YEAR)
     AND a.metric = CONCAT(b.event, "_DAYS_TO_EVENT_1_YEAR")
 WHERE
     a.metric LIKE("%_DAYS_TO_EVENT_1_YEAR")
-    AND a.id_type = "person_id"
 QUALIFY
     -- keep first occurrence of event, if any
     ROW_NUMBER() OVER (
-        PARTITION BY a.experiment_id, a.state_code, a.subject_id, a.id_type, 
-            a.variant_date, a.metric
+        PARTITION BY a.experiment_id, a.state_code, a.person_id, a.variant_date, a.metric
         ORDER BY COALESCE(b.event_date, "9999-01-01")
     ) = 1
 
 """
 
-OUTCOMES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+PERSON_OUTCOMES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=EXPERIMENTS_DATASET,
-    view_id=OUTCOMES_VIEW_NAME,
+    view_id=PERSON_OUTCOMES_VIEW_NAME,
     view_query_template=OUTCOMES_QUERY_TEMPLATE,
-    description=OUTCOMES_VIEW_DESCRIPTION,
+    description=PERSON_OUTCOMES_VIEW_DESCRIPTION,
     analyst_views_dataset=ANALYST_VIEWS_DATASET,
-    # TODO(#9986): use experiment start and end dates to bound outcome ranges
-    # static_reference_dataset=STATIC_REFERENCE_TABLES_DATASET,
     experiments_dataset=EXPERIMENTS_DATASET,
     should_materialize=True,
     clustering_fields=["experiment_id", "metric"],
-    metrics=str(OUTCOME_METRIC_NAMES),
+    metrics=str(PERSON_OUTCOME_METRIC_NAMES),
 )
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        OUTCOMES_VIEW_BUILDER.build_and_print()
+        PERSON_OUTCOMES_VIEW_BUILDER.build_and_print()
