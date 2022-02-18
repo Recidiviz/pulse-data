@@ -105,8 +105,8 @@ MICROSIM_PROJECTION_QUERY_TEMPLATE = """
       EXTRACT(YEAR FROM simulation_date) AS year,
       EXTRACT(MONTH FROM simulation_date) AS month,
       -- Split the compartment and legal status into separate columns
-      SPLIT(compartment, ' ')[OFFSET(0)] AS compartment,
-      SPLIT(compartment, ' ')[OFFSET(2)] AS legal_status,
+      SPLIT(compartment, ' ')[SAFE_OFFSET(0)] AS compartment,
+      SPLIT(compartment, ' ')[SAFE_OFFSET(2)] AS legal_status,
       simulation_group,
       total_population,
       total_population_min,
