@@ -1,0 +1,87 @@
+[
+  {
+    "person_name": "{\"given_names\": \"TONYE\", \"surname\": \"THOMPSON\", \"middle_names\": \"BARBY\"}",
+    "person_external_id": "100",
+    "officer_id": "OFFICER1",
+    "district": "DISTRICT 50",
+    "supervision_type": "TN PAROLEE",
+    "judicial_district": "17",
+    "supervision_level": "STANDARD: MEDIUM",
+    "supervision_level_start": "2019-10-26",
+    "offense_type": [
+      "SALVIA DIVINORUM A PROD/MFG/DIST/POSS",
+      "ARSON",
+      "ATT FRAUD INSURANCE CLAIM - $60,000 OR MORE"
+    ],
+    "last_DRUN": ["2022-01-26"],
+    "last_sanction": null
+  },
+  {
+    "person_name": "{\"given_names\": \"LINET\", \"surname\": \"HANSEN\"}",
+    "person_external_id": "101",
+    "officer_id": "OFFICER1",
+    "district": "DISTRICT 50",
+    "supervision_type": "TN PROBATIONER",
+    "judicial_district": "14",
+    "supervision_level": "STANDARD: MEDIUM",
+    "supervision_level_start": "2019-12-20",
+    "offense_type": [
+      "DUI, 4TH OFFENSE & SUBSEQUENT",
+      "POSS FIREARM W/PRIOR VIOL/DEAD WPN CONV"
+    ],
+    "last_DRUN": ["2021-09-17", "2022-02-02"],
+    "last_sanction": "IPDS"
+  },
+  {
+    "person_name": "{\"given_names\": \"REBEKAH\", \"surname\": \"CORTES\", \"middle_names\": \"HATTI\"}",
+    "person_external_id": "102",
+    "officer_id": "OFFICER1",
+    "district": "DISTRICT 50",
+    "supervision_type": "MISDEMEANOR PROBATIONER",
+    "judicial_district": "17",
+    "supervision_level": "STANDARD: MINIMUM",
+    "supervision_level_start": "2021-07-05",
+    "offense_type": ["HABITUAL TRAFFIC OFFENDER"],
+    "last_DRUN": ["2022-01-26"],
+    "last_sanction": "ORPD"
+  },
+  {
+    "person_name": "{\"given_names\": \"RAMONDA\", \"surname\": \"UNDERWOOD\"}",
+    "person_external_id": "104",
+    "officer_id": "OFFICER2",
+    "district": "DISTRICT 50",
+    "supervision_type": "DIVERSION",
+    "judicial_district": null,
+    "supervision_level": "STANDARD: MEDIUM",
+    "supervision_level_start": "2020-04-07",
+    "offense_type": [],
+    "last_DRUN": ["2021-11-26"],
+    "last_sanction": "OPRD"
+  },
+  {
+    "person_name": "{\"given_names\": \"CLARIBEL\", \"surname\": \"VELAZQUEZ\", \"middle_names\": \"M\"}",
+    "person_external_id": "107",
+    "officer_id": "OFFICER2",
+    "district": "DISTRICT 50",
+    "supervision_type": "DETERMINATE RLSE PROBATIONER",
+    "judicial_district": "12",
+    "supervision_level": "STANDARD: MEDIUM",
+    "supervision_level_start": "2020-05-19",
+    "offense_type": [],
+    "last_DRUN": ["2021-10-26", "2022-02-04"],
+    "last_sanction": "IPDS"
+  },
+  {
+    "person_name": "{\"given_names\": \"SHERRI\", \"surname\": \"WRIGHT\", \"middle_names\": \"RENELLE\"}",
+    "person_external_id": "109",
+    "officer_id": "OFFICER2",
+    "district": "DISTRICT 50",
+    "supervision_type": "TN PAROLEE",
+    "judicial_district": "14",
+    "supervision_level": "STANDARD: MINIMUM",
+    "supervision_level_start": "2021-02-11",
+    "offense_type": ["FRAUD", "BURGLARY-OTHER THAN HABITATION"],
+    "last_DRUN": ["2022-01-26"],
+    "last_sanction": null
+  }
+]

@@ -14,6 +14,6 @@ Has a fixture file in `fixtures/users.csv` that can be used for local testing.
 
 ### `yarn cr`, `yarn cr:prod`
 
-These scripts will take a CSV of compliant reporting case data exported from BigQuery and ETL it into a Firestore collection. The bare command will load the data to your local emulator so be sure it is running.
+These scripts will take a JSON file of compliant reporting case data exported from BigQuery and ETL it into a Firestore collection. The bare command will load the data to your local emulator so be sure it is running. (JSON can accommodate the schema better than CSV because it contains arrays.)
 
-Has a fixture file in `fixtures/cr.csv` that can be used for local testing.
+Has a fixture file in `fixtures/cr.json` that can be used for local testing.

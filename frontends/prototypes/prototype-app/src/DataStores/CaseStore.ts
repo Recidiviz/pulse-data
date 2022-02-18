@@ -45,9 +45,9 @@ type CompliantReportingExportedCase = {
   judicialDistrict: string;
   supervisionLevel: string;
   supervisionLevelStart: Timestamp;
-  offenseType: string;
+  offenseType: string[];
   lastDrun: Timestamp[];
-  sanctionsPast1Yr: string;
+  lastSanction: string | null;
   updateCount: number;
 };
 
