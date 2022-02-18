@@ -200,13 +200,7 @@ export default class UserStore {
     if (mappedOfficers) return mappedOfficers;
 
     if (this.userEmail.endsWith("recidiviz.org")) {
-      return Array.from(
-        new Set(
-          this.rootStore.caseStore.compliantReportingExportedCases.map(
-            (c) => c.officerId
-          )
-        )
-      );
+      return Object.keys(this.rootStore.caseStore.officers);
     }
 
     return [];

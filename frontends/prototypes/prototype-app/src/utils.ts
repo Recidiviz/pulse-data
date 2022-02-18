@@ -15,6 +15,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
+import { formatDistanceToNow } from "date-fns";
+import type { Timestamp } from "firebase/firestore";
 import { lowerCase, startCase } from "lodash";
 
 import type { UserMapping } from "./DataStores/UserStore";
@@ -30,4 +32,8 @@ export function getUserName(email: string, users: UserMapping): string {
     return "Recidiviz Admin";
   }
   return email;
+}
+
+export function formatTimestampRelative(ts: Timestamp): string {
+  return formatDistanceToNow(ts.toDate()).replace("about ", "");
 }
