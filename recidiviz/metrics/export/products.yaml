@@ -110,4 +110,4 @@ products:
       - PATHWAYS_PRISON
     states:
       - state_code: US_ME
-        environment: staging
+        environment: production
