@@ -1,0 +1,24 @@
+file_tag: CIS_915_BED
+file_description: |-
+  This is a bed code table that has a relationship to the CIS_914_CELL table and lists a bed and the cell it is located in.
+primary_key_cols:
+  - Bed_Id
+columns:
+  - name : Bed_Id
+    description: The primary key of the table and the Cell ID that is referenced in other tables.
+  - name : Cis_914_Cell_Id
+    description: The Cell ID that this bed is located in.
+  - name : Created_By_Tx
+  - name : Created_On_Date
+  - name : Desc_Tx
+    description: An additional description or note about the status of the bed.
+  - name : Hold_End_Date
+  - name : Hold_Ind
+  - name : Logical_Delete_Ind
+  - name : Main_Ind
+  - name : Modified_By_Tx
+  - name : Modified_On_Date
+  - name : Name_Tx
+    description: A plain text name of the bed.
+  - name : Occupied_Ind
+  - name : Top_Bunk_Ind
