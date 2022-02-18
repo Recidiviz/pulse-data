@@ -167,9 +167,7 @@ supervision_start_dates AS (
 ),
 export_time AS (
   SELECT CURRENT_TIMESTAMP AS exported_at
-),
--- TODO(#5943): Make ideal_query the main query body.
-ideal_query AS (
+)
 SELECT
     {columns}
 FROM
@@ -188,55 +186,7 @@ FULL OUTER JOIN
 ON TRUE
 WHERE
   supervision_level IS NOT NULL
-),
--- HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT
---
--- HACK ALERT HACK ALERT HACK ALERT HACK ALERT
---
--- HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT
---
--- TODO(#5943): We unfortunately have to pull straight from raw data from Idaho due to internal
--- inconsistencies in Idaho's data. Our ingest pipeline assumed that the historical record
--- was accurate, but unfortunately that no longer seems to be the case. The long-term solution
--- involves fetching an updates one-off historical dump of the casemgr table, re-running ingest,
--- and adding validation to ensure this doesn't happen, but the timescale of this is much
--- slower than we want to move for Case Triage.
---
--- Hence, the decision to add this very verbose warning to encourage future readers to decide
--- whether they should start trying to pay down this technical debt.
---
--- HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT
---
--- HACK ALERT HACK ALERT HACK ALERT HACK ALERT
---
--- HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT
-latest_ofndr_agnt AS (
-  SELECT
-    ofndr_num AS person_external_id,
-    UPPER(agnt_id) AS agnt_id,
-  FROM `{{project_id}}.us_id_raw_data_up_to_date_views.ofndr_agnt_latest`
-  -- These filters limit the results to only currently assigned POs
-  -- in the unlikely case where two POs are assigned to a single client,
-  -- the query returns the one with the most recent start date
-  WHERE end_dt IS NULL
-  QUALIFY ROW_NUMBER() OVER (
-    PARTITION BY ofndr_num
-    ORDER BY agnt_strt_dt DESC
-  ) = 1
-),
-with_derived_supervising_officer as (
-    SELECT
-      ideal_query.* EXCEPT (supervising_officer_external_id),
-      IF(state_code != 'US_ID', ideal_query.supervising_officer_external_id, latest_ofndr_agnt.agnt_id) AS supervising_officer_external_id
-  FROM
-      ideal_query
-    LEFT OUTER JOIN
-      latest_ofndr_agnt
-    USING (person_external_id)
-)
-SELECT *
-FROM with_derived_supervising_officer
-WHERE with_derived_supervising_officer.supervising_officer_external_id IS NOT NULL;
+  AND supervising_officer_external_id IS NOT NULL;
 """
 
 CLIENT_LIST_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
@@ -248,6 +198,7 @@ CLIENT_LIST_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     materialized_metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
     columns=[
         "state_code",
+        "supervising_officer_external_id",
         "person_external_id",
         "full_name",
         "email_address",
@@ -276,10 +227,6 @@ CLIENT_LIST_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         "days_on_current_supervision_level",
         "most_recent_violation_date",
         "exported_at",
-        # TODO(#5943): supervising_officer_external_id must be at the end of
-        # this list because of the way that we have to derive this result from
-        # the ofndr_agnt table for Idaho.
-        "supervising_officer_external_id",
     ],
     should_materialize=True,
 )

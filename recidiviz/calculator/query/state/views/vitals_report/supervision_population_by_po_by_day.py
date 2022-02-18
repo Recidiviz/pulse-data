@@ -18,9 +18,7 @@
 from typing import Dict, Tuple
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.bq_utils import (
-    hack_us_id_supervising_officer_external_id,
-)
+from recidiviz.calculator.query.bq_utils import hack_us_id_absconsions
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.views.dashboard.vitals_summaries.vitals_view_helpers import (
     state_specific_entity_filter,
@@ -85,7 +83,7 @@ def generate_state_specific_population(
 SUPERVISION_POPULATION_BY_PO_BY_DAY_QUERY_TEMPLATE = f"""
     /*{{description}}*/
     WITH supervision_population_metrics AS (
-        {hack_us_id_supervising_officer_external_id('most_recent_supervision_population_metrics_materialized')}
+        {hack_us_id_absconsions('most_recent_supervision_population_metrics_materialized')}
     ),
     supervision_population AS (
         SELECT
