@@ -17,15 +17,15 @@
 
 import fs from "fs";
 import yargs from "yargs";
-import { parse } from "csv-parse";
 import { deleteCollection, getDb } from "./firestoreUtils.js";
 import _ from "lodash";
 import { parseISO } from "date-fns";
+import { titleCase } from "title-case";
 
 const argv = yargs(process.argv.slice(2))
   .option("file", {
     alias: "f",
-    description: "path to the CSV containing the case data",
+    description: "path to the JSON file containing the case data",
     demandOption: true,
     type: "string",
     normalize: true,
@@ -41,10 +41,6 @@ function camelCaseKeys(obj) {
   return _.mapKeys(obj, (v, k) => _.camelCase(k));
 }
 
-function titleCase(input) {
-  return _.startCase(_.lowerCase(input));
-};
-
 const db = getDb();
 
 console.log("wiping existing data ...");
@@ -52,31 +48,50 @@ await deleteCollection(db, COLLECTIONS.compliantReportingCases);
 
 console.log("loading new data...");
 const bulkWriter = db.bulkWriter();
+
+// read in the JSON file (it shouldn't be too big, maybe a few  MB)
+const rawCases = JSON.parse(fs.readFileSync(argv.file), "utf8");
+
+// cleaner display values for raw TN values
+const SUPERVISION_TYPE_MAPPING = {
+  DIVERSION: "Diversion",
+  "TN PROBATIONER": "Probation",
+  "TN PAROLEE": "Parole",
+  "ISC FROM OTHER JURISDICTION": "ISC",
+  "DETERMINATE RLSE PROBATIONER": "Determinate Release Probation",
+  "SPCL ALT INCARCERATION UNIT": "SAIU",
+  "MISDEMEANOR PROBATIONER": "Misdemeaner Probation",
+};
+
 // Iterate through each record
-const parser = fs.createReadStream(argv.file).pipe(parse({ columns: true }));
-for await (const record of parser) {
+rawCases.forEach((record) => {
+  if (record.district !== 'DISTRICT 50') return;
+  
   const docData = camelCaseKeys(record);
 
   // transform complex fields
-  const lastDrun = _.trim(docData.lastDrun, "[]").split(",").map(parseISO);
+  const lastDrun = docData.lastDrun.map(parseISO);
 
   const nameParts = JSON.parse(docData.personName);
-  const personName = `${titleCase(nameParts.given_names)} ${titleCase(
-    nameParts.surname
-  )}`;
+  const personName = titleCase(`${nameParts.given_names} ${nameParts.surname}`.toLowerCase());
 
   const supervisionLevelStart = parseISO(docData.supervisionLevelStart);
 
-  const supervisionType = titleCase(docData.supervisionType);
+  const supervisionType =
+    SUPERVISION_TYPE_MAPPING[docData.supervisionType] ??
+    docData.supervisionType;
+  const supervisionLevel = titleCase(docData.supervisionLevel.toLowerCase());
 
   bulkWriter.create(db.collection(COLLECTIONS.compliantReportingCases).doc(), {
     ...docData,
     lastDrun,
     supervisionLevelStart,
     personName,
+    nameParts,
     supervisionType,
+    supervisionLevel,
   });
-}
+});
 
 bulkWriter
   .close()

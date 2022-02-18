@@ -16,7 +16,6 @@
 // =============================================================================
 
 import { Icon, IconSVG, palette, spacing } from "@recidiviz/design-system";
-import { formatDistanceToNowStrict } from "date-fns";
 import { observer } from "mobx-react-lite";
 import React from "react";
 import styled from "styled-components/macro";
@@ -27,6 +26,7 @@ import LastUpdated from "../LastUpdated";
 import { Pill } from "../Pill";
 import { useDataStore } from "../StoreProvider";
 import Tooltip from "../Tooltip";
+import { formatTimestampRelative } from "../utils";
 
 const Table = styled.table`
   border-collapse: collapse;
@@ -148,18 +148,25 @@ const CompliantReportingClientTable: React.FC = () => {
             <Cell>{record.supervisionType}</Cell>
             <Cell>
               {record.supervisionLevel} for{" "}
-              {formatDistanceToNowStrict(record.supervisionLevelStart.toDate())}
+              {formatTimestampRelative(record.supervisionLevelStart)}
             </Cell>
-            <Cell>{record.offenseType}</Cell>
             <Cell>
-              {record.lastDrun.map((d, index, arr) => (
+              {record.offenseType.map((o, i, arr) => (
                 <>
-                  <DisplayDate date={d.toDate()} />
-                  {index !== arr.length - 1 && <br />}
+                  {o}
+                  {i !== arr.length - 1 && <br />}
                 </>
               ))}
             </Cell>
-            <Cell>{record.sanctionsPast1Yr || "No previous sanctions"}</Cell>
+            <Cell>
+              {record.lastDrun.map((d, i, arr) => (
+                <>
+                  <DisplayDate date={d.toDate()} />
+                  {i !== arr.length - 1 && <br />}
+                </>
+              ))}
+            </Cell>
+            <Cell>{record.lastSanction || "No previous sanctions"}</Cell>
             <Cell>{record.officerName}</Cell>
             <Cell>{record.judicialDistrict}</Cell>
           </Row>

@@ -16,7 +16,7 @@
 // =============================================================================
 
 import { Button, H4, palette } from "@recidiviz/design-system";
-import { formatDistanceToNowStrict, formatISO } from "date-fns";
+import { formatISO } from "date-fns";
 import { observer } from "mobx-react-lite";
 import React from "react";
 import styled from "styled-components/macro";
@@ -25,6 +25,7 @@ import DisplayDate from "../DisplayDate";
 import StatusUpdated from "../LastUpdated";
 import { useDataStore } from "../StoreProvider";
 import UserName from "../UserName";
+import { formatTimestampRelative } from "../utils";
 import CompliantReportingDenial from "./CompliantReportingDenial";
 import SummaryItem from "./SummaryItem";
 import UpdatesInput from "./UpdatesInput";
@@ -113,11 +114,19 @@ const ProfileCompliantReporting: React.FC = () => {
           <Criterion>
             <SummaryItem>
               Supervision Level: {client.supervisionLevel} for{" "}
-              {formatDistanceToNowStrict(client.supervisionLevelStart.toDate())}
+              {formatTimestampRelative(client.supervisionLevelStart)}
             </SummaryItem>
           </Criterion>
           <Criterion>
-            <SummaryItem>Offense Type: {client.offenseType}</SummaryItem>
+            <SummaryItem>
+              Offense Type:{" "}
+              {client.offenseType.map((o, index, arr) => (
+                <>
+                  {o}
+                  {index !== arr.length - 1 && "; "}
+                </>
+              ))}
+            </SummaryItem>
           </Criterion>
           <Criterion>
             <SummaryItem>
@@ -133,7 +142,7 @@ const ProfileCompliantReporting: React.FC = () => {
           <Criterion>
             <SummaryItem>
               Last Sanction (past 12 mo):{" "}
-              {client.sanctionsPast1Yr || "No previous sanctions"}
+              {client.lastSanction || "No previous sanctions"}
             </SummaryItem>
           </Criterion>
           <Criterion>
