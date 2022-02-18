@@ -188,11 +188,12 @@ COMPARTMENT_SENTENCES_QUERY_TEMPLATE = """
         COUNT(1) as offense_count,
         ANY_VALUE(most_severe_is_violent) most_severe_is_violent,
         ANY_VALUE(most_severe_classification_type) most_severe_classification_type,
-        ARRAY_AGG(COALESCE(classification_type, 'MISSING')) classification_type,
-        ARRAY_AGG(COALESCE(description, 'MISSING')) description,
-        ARRAY_AGG(COALESCE(ncic_code, 'MISSING')) ncic_code,
-        ARRAY_AGG(COALESCE(offense_type, 'MISSING')) offense_type,
-        ARRAY_AGG(COALESCE(offense_type_short, 'MISSING')) offense_type_short,
+        --TODO(#11174): Update arrays to be structs
+        ARRAY_AGG(DISTINCT COALESCE(classification_type, 'MISSING')) classification_type,
+        ARRAY_AGG(DISTINCT COALESCE(description, 'MISSING')) description,
+        ARRAY_AGG(DISTINCT COALESCE(ncic_code, 'MISSING')) ncic_code,
+        ARRAY_AGG(DISTINCT COALESCE(offense_type, 'MISSING')) offense_type,
+        ARRAY_AGG(DISTINCT COALESCE(offense_type_short, 'MISSING')) offense_type_short,
         LOGICAL_OR(life_sentence) AS life_sentence,
     FROM unioned_sentences_cte
     WHERE start_date IS NOT NULL
@@ -265,6 +266,8 @@ COMPARTMENT_SENTENCES_QUERY_TEMPLATE = """
         state_code,
         session_id,
         sentence_id,
+        CAST(NULL AS INT64) AS sentence_group_id,
+        CAST(NULL AS INT64) AS sentence_level,
         data_source AS sentence_data_source,
         date_imposed AS sentence_date_imposed,
         start_date AS sentence_start_date,
@@ -276,14 +279,20 @@ COMPARTMENT_SENTENCES_QUERY_TEMPLATE = """
         offense_count,
         most_severe_is_violent,
         most_severe_classification_type,
+        CAST(NULL AS STRING) AS most_severe_felony_class,
+        CAST(NULL AS STRING) AS most_severe_offense_type,
+        CAST(NULL AS STRING) AS most_severe_offense_type_short,
+        CASE WHEN completion_date < last_day_of_data THEN sentence_length_days END AS sentence_length_days,
+        min_projected_sentence_length,
+        max_projected_sentence_length,
+        CAST(NULL AS INT64) AS total_max_sentence_length_days_calculated,
+        CAST(NULL AS INT64) AS sentence_count,
         classification_type,
+        ARRAY_AGG('MISSING') OVER(PARTITION BY person_id, session_id) AS felony_class,
         description,
         ncic_code,
         offense_type,
         offense_type_short,
-        CASE WHEN completion_date < last_day_of_data THEN sentence_length_days END AS sentence_length_days,
-        min_projected_sentence_length,
-        max_projected_sentence_length
     FROM final_pre_deduped_date_proximity_cte
     WHERE longest_projected_sentence = 1
     

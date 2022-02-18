@@ -87,7 +87,7 @@ OFFENSE_TYPE_MAPPING_QUERY_TEMPLATE = """
         ORDER BY 3
     ),
     us_tn_offenses AS (
-        SELECT   'US_TN' AS state_code,
+        SELECT DISTINCT 'US_TN' AS state_code,
                  OffenseDescription AS offense_type,
                   CASE 
                     WHEN OffenseDescription LIKE '%FORGERY%' THEN 'FRAUD'
