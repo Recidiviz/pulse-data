@@ -1,0 +1,24 @@
+file_tag: CIS_913_POD
+file_description: |-
+  This is the housing pod code table that has a relationship to the CIS_912_UNIT table and lists a pod's custody level.
+primary_key_cols:
+  - Pod_Id
+columns:
+  - name : Capacity_Num
+    description: The population capacity of the pod.
+  - name : Cis_1017_1146_Cust_Lvl_Cd
+    description: A code that maps to a custody level for this pod.
+  - name : Cis_9084_9089_Hsg_Type_Cd
+  - name : Cis_912_Unit_Id
+    description: The unit ID that this pod is located in.
+  - name : Created_By_Tx
+  - name : Created_On_Date
+  - name : Desc_Tx
+    description: An additional description or note about the status of the pod.
+  - name : Logical_Delete_Ind
+  - name : Modified_By_Tx
+  - name : Modified_On_Date
+  - name : Name_Tx
+    description: A plain text description of the pod.
+  - name : Pod_Id
+    description: The primary key of the table and the Pod ID that is referenced in other tables.
