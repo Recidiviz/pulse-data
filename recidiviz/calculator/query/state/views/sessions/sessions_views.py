@@ -144,6 +144,9 @@ from recidiviz.calculator.query.state.views.sessions.us_nd.us_nd_raw_lsir_assess
 from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_compartment_sentences import (
     US_TN_COMPARTMENT_SENTENCES_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_incarceration_population_metrics_preprocessed import (
+    US_TN_INCARCERATION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_judicial_district_sessions import (
     US_TN_JUDICIAL_DISTRICT_SESSIONS_VIEW_BUILDER,
 )
@@ -212,4 +215,5 @@ SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_TN_SENTENCE_RELATIONSHIP_VIEW_BUILDER,
     VIOLATIONS_SESSIONS_VIEW_BUILDER,
     VIOLATION_TYPE_DEDUP_PRIORITY_VIEW_BUILDER,
+    US_TN_INCARCERATION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER,
 ]
