@@ -33,6 +33,16 @@ US_TN_SENTENCE_SUMMARY_QUERY_TEMPLATE = """
     SELECT 
         lk.*,
         sentence.max_sentence_length_days_calculated,
+        total_program_credits + total_behavior_credits + total_ppsc_credits + total_ged_credits
+            + total_literary_credits + total_drug_alcohol_credits + total_education_attendance_credits 
+            + total_treatment_credits AS total_credits_sentence_expiration,
+        total_program_credits,
+        total_behavior_credits,
+        total_ppsc_credits,
+        total_ged_credits + total_literary_credits + total_drug_alcohol_credits 
+            + total_education_attendance_credits + total_treatment_credits 
+            AS total_other_credits,
+        
     FROM `{project_id}.{sessions_dataset}.us_tn_sentence_relationship_materialized` lk
     JOIN `{project_id}.{sessions_dataset}.us_tn_sentences_preprocessed_materialized` sentence
         ON lk.person_id = sentence.person_id
@@ -56,7 +66,13 @@ US_TN_SENTENCE_SUMMARY_QUERY_TEMPLATE = """
         sentence_group_id,
         FIRST_VALUE(sentence_id) OVER(longest_sentence_within_group) AS primary_sentence_id,
         FIRST_VALUE(sentence_level) OVER(longest_sentence_within_group) AS sentence_level,
+        #TODO(#11250): Add additional logic for handling credit accumulation from parents with different concurrent credits
         SUM(max_sentence_length_days_calculated) OVER(PARTITION BY person_id, sentence_group_id) AS total_max_sentence_length_days_calculated,
+        SUM(total_credits_sentence_expiration) OVER(PARTITION BY person_id, sentence_group_id) AS total_credits_sentence_expiration,
+        SUM(total_program_credits) OVER(PARTITION BY person_id, sentence_group_id) AS total_program_credits,
+        SUM(total_behavior_creditS) OVER(PARTITION BY person_id, sentence_group_id) AS total_behavior_credits,
+        SUM(total_ppsc_credits) OVER(PARTITION BY person_id, sentence_group_id) AS total_ppsc_credits,
+        SUM(total_other_credits) OVER(PARTITION BY person_id, sentence_group_id) AS total_other_credits,
     FROM cte
     WINDOW longest_sentence_within_group AS (PARTITION BY person_id, sentence_group_id ORDER BY max_sentence_length_days_calculated DESC, sentence_level ASC)
     ORDER BY 1,2,3
