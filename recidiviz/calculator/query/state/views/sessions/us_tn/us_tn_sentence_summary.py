@@ -42,7 +42,6 @@ US_TN_SENTENCE_SUMMARY_QUERY_TEMPLATE = """
         total_ged_credits + total_literary_credits + total_drug_alcohol_credits 
             + total_education_attendance_credits + total_treatment_credits 
             AS total_other_credits,
-        
     FROM `{project_id}.{sessions_dataset}.us_tn_sentence_relationship_materialized` lk
     JOIN `{project_id}.{sessions_dataset}.us_tn_sentences_preprocessed_materialized` sentence
         ON lk.person_id = sentence.person_id
