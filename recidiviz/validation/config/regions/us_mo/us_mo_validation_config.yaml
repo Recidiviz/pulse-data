@@ -25,7 +25,7 @@ num_allowed_rows_overrides:
       spans for us; some older rows have issues with overlap. TODO(#10683) - A rerun
       may make this better.
   - validation_name: overlapping_supervision_periods
-    hard_num_allowed_rows_override: 1800
+    hard_num_allowed_rows_override: 3600
     override_reason: Older raw data from MO contains overlapping period information that we do not correct. TODO(#9848) - In addition,
       we do a lot of preprocessing for supervision periods that is not yet persisted, which corrects almost all supervision periods
       that do follow standard formats. TODO(#10683) - Will a rerun make this better?
