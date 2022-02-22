@@ -18,6 +18,7 @@
 import csv
 import datetime
 import unittest
+from typing import List, Optional
 
 from recidiviz.common.constants.shared_enums.charge import ChargeStatus
 from recidiviz.common.constants.shared_enums.person_characteristics import (
@@ -758,25 +759,15 @@ class UsTnIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
 
         self._run_parse_ingest_view_test("VantagePointAssessments", expected_output)
 
-    def test_parse_SupervisionContacts(self) -> None:
+    # TODO(#11242): Remerge back to one SupervisionContacts when scale issues are resolved.
+    def test_parse_SupervisionContactsPre1990(self) -> None:
+        self._test_supervision_contacts("Pre1990")
+
+    def test_parse_SupervisionContacts1990to1995(self) -> None:
+        self._test_supervision_contacts("1990to1995")
+
+    def test_parse_SupervisionContacts1995to1997(self) -> None:
         expected_output = [
-            StatePerson(
-                state_code="US_TN",
-                external_ids=[
-                    StatePersonExternalId(
-                        state_code="US_TN", external_id="00000002", id_type="US_TN_DOC"
-                    )
-                ],
-                supervision_contacts=[
-                    StateSupervisionContact(
-                        external_id="00000002-1",
-                        state_code="US_TN",
-                        contact_date=datetime.date(2015, 5, 14),
-                        contact_type=StateSupervisionContactType.EXTERNAL_UNKNOWN,
-                        contact_type_raw_text="JOIC",
-                    ),
-                ],
-            ),
             StatePerson(
                 state_code="US_TN",
                 external_ids=[
@@ -796,6 +787,26 @@ class UsTnIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                     ),
                 ],
             ),
+        ]
+        self._test_supervision_contacts("1995to1997", expected_output)
+
+    def test_parse_SupervisionContacts1997to2000(self) -> None:
+        self._test_supervision_contacts("1997to2000")
+
+    def test_parse_SupervisionContacts2000to2003(self) -> None:
+        self._test_supervision_contacts("2000to2003")
+
+    def test_parse_SupervisionContacts2003to2005(self) -> None:
+        self._test_supervision_contacts("2003to2005")
+
+    def test_parse_SupervisionContacts2005to2007(self) -> None:
+        self._test_supervision_contacts("2005to2007")
+
+    def test_parse_SupervisionContacts2007to2010(self) -> None:
+        self._test_supervision_contacts("2007to2010")
+
+    def test_parse_SupervisionContacts2010to2013(self) -> None:
+        expected_output = [
             StatePerson(
                 state_code="US_TN",
                 external_ids=[
@@ -821,11 +832,50 @@ class UsTnIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                 ],
             ),
         ]
+        self._test_supervision_contacts("2010to2013", expected_output)
 
-        self._run_parse_ingest_view_test("SupervisionContacts", expected_output)
+    def test_parse_SupervisionContacts2013to2015(self) -> None:
+        self._test_supervision_contacts("2013to2015")
+
+    def test_parse_SupervisionContacts2015to2017(self) -> None:
+        expected_output = [
+            StatePerson(
+                state_code="US_TN",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_TN", external_id="00000002", id_type="US_TN_DOC"
+                    )
+                ],
+                supervision_contacts=[
+                    StateSupervisionContact(
+                        external_id="00000002-1",
+                        state_code="US_TN",
+                        contact_date=datetime.date(2015, 5, 14),
+                        contact_type=StateSupervisionContactType.EXTERNAL_UNKNOWN,
+                        contact_type_raw_text="JOIC",
+                    ),
+                ],
+            )
+        ]
+        self._test_supervision_contacts("2015to2017", expected_output)
+
+    def test_parse_SupervisionContacts2017to2020(self) -> None:
+        self._test_supervision_contacts("2017to2020")
+
+    def test_parse_SupervisionContactsPost2020(self) -> None:
+        self._test_supervision_contacts("Post2020")
+
+    def _test_supervision_contacts(
+        self, file_suffix: str, expected_output: Optional[List[StatePerson]] = None
+    ) -> None:
+        """This tests the supervision contacts files."""
+        expected_output = [] if not expected_output else expected_output
+        self._run_parse_ingest_view_test(
+            f"SupervisionContacts{file_suffix}", expected_output
+        )
 
     def test_parse_SupervisionContacts_ContactNoteTypeEnums(self) -> None:
-        manifest_ast = self._parse_manifest("SupervisionContacts")
+        manifest_ast = self._parse_manifest("SupervisionContacts1995to1997")
         enum_parser_manifest = (
             # Drill down to get to the part of the mappings for your enum
             manifest_ast.field_manifests["supervision_contacts"]

@@ -1,6 +1,7 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
 # This file associates the columns outputted from the query in `view_SupervisionContacts to
 #  corresponding Ingest Object fields.
+# TODO(#11242): Remerge back to one SupervisionContacts yaml when scale issues are resolved.
 manifest_language: 1.0.0
 input_columns:
   - OffenderID

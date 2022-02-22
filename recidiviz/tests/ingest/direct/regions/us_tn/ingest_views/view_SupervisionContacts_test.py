@@ -22,6 +22,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.tests.big_query.view_test_util import BaseViewTest
 
 
+# TODO(#11242): Remerge back to one SupervisionContacts when scale issues are resolved.
 @patch("recidiviz.utils.metadata.project_id", Mock(return_value="t"))
 class SupervisionContactsTest(BaseViewTest):
     """Tests the TN `SupervisionContacts` query functionality."""
@@ -30,7 +31,7 @@ class SupervisionContactsTest(BaseViewTest):
         super().setUp()
         self.region_code = StateCode.US_TN.value
         self.view_builder = self.view_builder_for_tag(
-            self.region_code, "SupervisionContacts"
+            self.region_code, "SupervisionContacts1995to1997"
         )
         self.data_types = str
 

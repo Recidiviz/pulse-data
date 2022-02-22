@@ -536,15 +536,6 @@ class TestUsTnController(BaseDirectIngestControllerTests):
         ######################################
 
         add_supervision_contact_to_person(
-            person=person_2,
-            external_id="00000002-1",
-            state_code="US_TN",
-            contact_date=datetime.date(2015, 5, 14),
-            contact_type=StateSupervisionContactType.EXTERNAL_UNKNOWN,
-            contact_type_raw_text="JOIC",
-        )
-
-        add_supervision_contact_to_person(
             person=person_3,
             external_id="00000003-1",
             state_code="US_TN",
@@ -563,11 +554,32 @@ class TestUsTnController(BaseDirectIngestControllerTests):
             contacted_agent=shared_supervising_officer,
         )
 
+        add_supervision_contact_to_person(
+            person=person_2,
+            external_id="00000002-1",
+            state_code="US_TN",
+            contact_date=datetime.date(2015, 5, 14),
+            contact_type=StateSupervisionContactType.EXTERNAL_UNKNOWN,
+            contact_type_raw_text="JOIC",
+        )
+
         # Only person 2 and 3 have supervision contacts
         expected_people = [person_1, person_2, person_3, person_4]
 
         # Act
-        self._run_ingest_job_for_filename("SupervisionContacts")
+        self._run_ingest_job_for_filename("SupervisionContactsPre1990")
+        self._run_ingest_job_for_filename("SupervisionContacts1990to1995")
+        self._run_ingest_job_for_filename("SupervisionContacts1995to1997")
+        self._run_ingest_job_for_filename("SupervisionContacts1997to2000")
+        self._run_ingest_job_for_filename("SupervisionContacts2000to2003")
+        self._run_ingest_job_for_filename("SupervisionContacts2003to2005")
+        self._run_ingest_job_for_filename("SupervisionContacts2005to2007")
+        self._run_ingest_job_for_filename("SupervisionContacts2007to2010")
+        self._run_ingest_job_for_filename("SupervisionContacts2010to2013")
+        self._run_ingest_job_for_filename("SupervisionContacts2013to2015")
+        self._run_ingest_job_for_filename("SupervisionContacts2015to2017")
+        self._run_ingest_job_for_filename("SupervisionContacts2017to2020")
+        self._run_ingest_job_for_filename("SupervisionContactsPost2020")
 
         # Assert
         self.assert_expected_db_people(expected_people)
