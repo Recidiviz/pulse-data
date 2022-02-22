@@ -281,12 +281,15 @@ def load_dataframe(
             get_data_discovery_cache(), gcs_file, expiry=DataDiscoveryTTL.PARQUET_FILES
         )
         for parquet_file in parquet_cache.get_parquet_files():
-            dataframe = dataframe.append(
-                pd.read_parquet(
-                    parquet_file,
-                    filters=get_filters(parquet_file, condition_groups),
-                    buffer_size=1024 * 40,
-                )
+            dataframe = pd.concat(
+                [
+                    dataframe,
+                    pd.read_parquet(
+                        parquet_file,
+                        filters=get_filters(parquet_file, condition_groups),
+                        buffer_size=1024 * 40,
+                    ),
+                ]
             )
 
             if len(dataframe) > 25000:
