@@ -17,7 +17,7 @@
 """Defines admin panel routes for ingest operations."""
 import logging
 from http import HTTPStatus
-from typing import Tuple
+from typing import Tuple, Union
 
 from flask import Blueprint, Response, jsonify, request
 from google.cloud import storage
@@ -48,8 +48,8 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.utils import metadata
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.environment import GCP_PROJECT_STAGING, in_gcp
-from recidiviz.utils.types import assert_type
 from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.utils.types import assert_type
 
 GCS_IMPORT_EXPORT_TIMEOUT_SEC = 60 * 30  # 30 min
 
@@ -360,13 +360,13 @@ def add_ingest_ops_routes(bp: Blueprint, admin_stores: AdminStores) -> None:
 
     @bp.route("/api/ingest_operations/direct/sandbox_raw_data_import", methods=["POST"])
     @requires_gae_auth
-    def _sandbox_raw_data_import() -> Tuple[str, HTTPStatus]:
+    def _sandbox_raw_data_import() -> Tuple[Union[str, Response], HTTPStatus]:
         try:
-            data = request.json
-            state_code = StateCode(data.get("stateCode"))
-            sandbox_dataset_prefix = data.get("sandboxDatasetPrefix")
-            source_bucket = GcsfsBucketPath(data.get("sourceBucket"))
-            file_tag_filter_regex = data.get("fileTagFilterRegex")
+            data = assert_type(request.json, dict)
+            state_code = StateCode(data["stateCode"])
+            sandbox_dataset_prefix = data["sandboxDatasetPrefix"]
+            source_bucket = GcsfsBucketPath(data["sourceBucket"])
+            file_tag_filter_regex = data["fileTagFilterRegex"]
         except ValueError:
             return "invalid parameters provided", HTTPStatus.BAD_REQUEST
 
@@ -390,7 +390,7 @@ def add_ingest_ops_routes(bp: Blueprint, admin_stores: AdminStores) -> None:
 
     @bp.route("/api/ingest_operations/direct/list_sandbox_buckets", methods=["POST"])
     @requires_gae_auth
-    def _list_sandbox_buckets() -> Tuple[str, HTTPStatus]:
+    def _list_sandbox_buckets() -> Tuple[Union[str, Response], HTTPStatus]:
         try:
             storage_client = storage.Client()
             buckets = storage_client.list_buckets()

@@ -36,5 +36,5 @@ def setup_scoped_sessions(app: Flask, db_url: URL) -> Engine:
         db_url=db_url,
     )
     session_factory = sessionmaker(bind=engine)
-    app.scoped_session = flask_scoped_session(session_factory, app)
+    flask_scoped_session(session_factory, app)
     return engine

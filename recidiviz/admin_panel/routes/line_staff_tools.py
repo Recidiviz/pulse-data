@@ -20,7 +20,7 @@ import logging
 import os
 from http import HTTPStatus
 from json import JSONDecodeError
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Union
 
 from flask import Blueprint, Response, g, jsonify, request
 
@@ -244,7 +244,9 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
         "/api/line_staff_tools/<state_code_str>/generate_emails", methods=["POST"]
     )
     @requires_gae_auth
-    def _generate_emails(state_code_str: str) -> Tuple[str, HTTPStatus]:
+    def _generate_emails(
+        state_code_str: str,
+    ) -> Tuple[Union[str, Response], HTTPStatus]:
         try:
             data = assert_type(request.json, dict)
             state_code = StateCode(state_code_str)
@@ -447,7 +449,7 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
 
     @bp.route("/api/line_staff_tools/list_batch_info", methods=["POST"])
     @requires_gae_auth
-    def _list_batch_info() -> Tuple[str, HTTPStatus]:
+    def _list_batch_info() -> Tuple[Union[str, Response], HTTPStatus]:
         try:
             data = assert_type(request.json, dict)
             state_code = StateCode(data.get("stateCode"))

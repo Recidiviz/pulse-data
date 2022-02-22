@@ -24,7 +24,7 @@ jobs:
         run: pipenv run black . --check
 
   check-if-pipenv-locked:
-    name: Check if Pipenv is locked
+    name: Check if Pipenv is locked and synced
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -32,6 +32,8 @@ jobs:
         uses: ./.github/actions/python-setup
       - name: Check pipenv is locked
         run: pipenv run python -m recidiviz.tools.is_pipenv_locked
+      - name: Check pipenv is synced
+        run: pipenv run recidiviz/tools/diff_pipenv.sh
 
   mypy:
     name: Mypy

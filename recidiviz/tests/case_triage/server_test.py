@@ -92,7 +92,9 @@ class TestCaseTriageAPIRoutes(TestCase):
         engine = setup_scoped_sessions(self.test_app, db_url)
         # Auto-generate all tables that exist in our schema in this database
         self.database_key.declarative_meta.metadata.create_all(engine)
-        self.session = self.test_app.scoped_session
+        # `flask_sqlalchemy_session` sets the `scoped_session` attribute on the app,
+        # even though this is not specified in the types for `app`.
+        self.session = self.test_app.scoped_session  # type: ignore[attr-defined]
 
         # Add seed data
         self.officer = generate_fake_officer(
