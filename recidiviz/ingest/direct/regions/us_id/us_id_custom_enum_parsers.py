@@ -23,7 +23,6 @@ my_enum_field:
     $custom_parser: us_id_custom_enum_parsers.<function name>
 """
 from recidiviz.common.constants.state.state_program_assignment import (
-    StateProgramAssignmentDischargeReason,
     StateProgramAssignmentParticipationStatus,
 )
 from recidiviz.common.constants.state.state_supervision_contact import (
@@ -39,23 +38,6 @@ from recidiviz.ingest.direct.regions.us_id.us_id_text_analysis_configuration imp
 
 
 # Custom Enum parsers needed for us_id_agnt_case_updt
-# TODO(#10784): Remove in favor of participation_status_from_agnt_note_title when the
-# ingest rerun completes.
-def participation_status_from_agnt_note_title_legacy(
-    raw_text: str,
-) -> StateProgramAssignmentParticipationStatus:
-    """Sets the participation based on the treatment entities matched."""
-    matched_entities = _match_note_title(raw_text)
-    if (
-        UsIdTextEntity.ANY_TREATMENT in matched_entities
-        and UsIdTextEntity.TREATMENT_COMPLETE in matched_entities
-    ):
-        return StateProgramAssignmentParticipationStatus.DISCHARGED
-    if UsIdTextEntity.ANY_TREATMENT in matched_entities:
-        return StateProgramAssignmentParticipationStatus.IN_PROGRESS
-    return StateProgramAssignmentParticipationStatus.EXTERNAL_UNKNOWN
-
-
 def participation_status_from_agnt_note_title(
     raw_text: str,
 ) -> StateProgramAssignmentParticipationStatus:
@@ -70,20 +52,6 @@ def participation_status_from_agnt_note_title(
         return StateProgramAssignmentParticipationStatus.IN_PROGRESS
     raise ValueError(
         f"Unexpected matched entities: {matched_entities} for StateProgramAssignmentParticipationStatus"
-    )
-
-
-# TODO(#10784): Remove when the ingest rerun completes to switch to agnt_case_updt.
-def discharge_reason_from_agnt_note_title(
-    raw_text: str,
-) -> StateProgramAssignmentDischargeReason:
-    """Sets the discharge reason only if treatment completion is matched as an entity."""
-    matched_entities = _match_note_title(raw_text)
-    return (
-        StateProgramAssignmentDischargeReason.COMPLETED
-        if UsIdTextEntity.ANY_TREATMENT in matched_entities
-        and UsIdTextEntity.TREATMENT_COMPLETE in matched_entities
-        else StateProgramAssignmentDischargeReason.EXTERNAL_UNKNOWN
     )
 
 
