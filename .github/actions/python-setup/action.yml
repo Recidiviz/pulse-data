@@ -13,11 +13,19 @@ runs:
       id: pipenv-caching
       with:
         path: ~/.local/share/virtualenvs/
-        key: pipenv-cache-v2-${{ hashFiles('**/Pipfile.lock') }}
+        key: pipenv-cache-v3-${{ hashFiles('**/Pipfile.lock') }}
+        # If we haven't cached a pipenv for the new version of the lock file this will
+        # restore the cache for the most recent version. Since most of the time our
+        # lock file updates only change a small number of packages, this speeds up
+        # the sync step significantly.
         restore-keys: |
-          pipenv-cache-v2-${{ hashFiles('**/Pipfile.lock') }}
-          pipenv-cache-v2-
+          pipenv-cache-v3-
     - name: Sync pipenv
       if: steps.pipenv-caching.outputs.cache-hit != 'true'
-      run: pipenv sync --dev
+      # If we didn't find an exact pipenv match, we have to `sync.` Because we may have
+      # restored a prior pipenv, we need to also run `clean` to remove any packages that
+      # are no longer in our lock file.
+      run: |
+        pipenv sync --dev
+        pipenv clean
       shell: bash

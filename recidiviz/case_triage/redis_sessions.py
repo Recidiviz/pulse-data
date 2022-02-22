@@ -42,7 +42,7 @@ class RedisSession(CallbackDict, SessionMixin):
         self.modified = False
         self.session_id = session_id
 
-        def on_update(_: Dict) -> None:
+        def on_update(_: "RedisSession") -> None:
             self.modified = True
 
         super().__init__(data if data is not None else {}, on_update=on_update)
@@ -187,6 +187,6 @@ class RedisSessionInterface(SessionInterface):
         # Send the session id to the client
         response.set_cookie(
             app.session_cookie_name,
-            signer.sign(session.session_id),
+            signer.sign(session.session_id).decode(),
             **self._build_cookie_options(app, session),
         )
