@@ -86,7 +86,10 @@ app.secret_key = get_local_secret("case_triage_secret_key")
 sessions_redis = get_sessions_redis()
 
 if sessions_redis:
-    app.session_interface = RedisSessionInterface(sessions_redis)
+    # We have to ignore mypy here because the Flask source code here (as of version 2.0.2)
+    # types `session_interface` as `SecureCookieSessionInterface` instead of
+    # `SessionInterface`.
+    app.session_interface = RedisSessionInterface(sessions_redis)  # type: ignore[assignment]
 
 CSRFProtect(app).exempt(e2e_blueprint)
 register_error_handlers(app)

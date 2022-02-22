@@ -26,6 +26,7 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from flask import Flask, Response, jsonify
 from jwt.algorithms import RSAAlgorithm
 from mock import patch
+from werkzeug.test import TestResponse
 
 from recidiviz.utils.auth.auth0 import Auth0Config, build_auth0_authorization_decorator
 from recidiviz.utils.flask_exception import FlaskException
@@ -116,7 +117,7 @@ class Auth0ModuleTest(unittest.TestCase):
             headers={"kid": self.public_jwk["kid"]},
         )
 
-    def subject(self, headers: Optional[Dict[str, str]] = None) -> Response:
+    def subject(self, headers: Optional[Dict[str, str]] = None) -> TestResponse:
         return self.test_client.get("/protected_route", headers=headers)
 
     def test_jwt_authorization_header(self) -> None:
