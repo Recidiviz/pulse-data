@@ -48,7 +48,7 @@ PRISON_POPULATION_SNAPSHOT_PERSON_LEVEL_QUERY_TEMPLATE = """
     /*{description}*/
     WITH get_last_updated AS ({get_pathways_incarceration_last_updated_date})
     , all_rows AS (
-        SELECT 
+        SELECT DISTINCT
             pop.state_code,
             get_last_updated.last_updated,
             pop.gender,
