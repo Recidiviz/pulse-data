@@ -17,6 +17,7 @@
 """Encapsulate the population data per cohort and time step"""
 
 import pandas as pd
+
 from recidiviz.calculator.modeling.population_projection.utils.transitions_utils import (
     SIG_FIGS,
 )
@@ -65,8 +66,11 @@ class CohortTable:
             )
         if projection_ts in self.cohort_df.index:
             raise ValueError(f"Cannot overwrite cohort for time {projection_ts}")
-        self.cohort_df = self.cohort_df.append(
-            pd.DataFrame({projection_ts: [cohort_size]}, index=[projection_ts])
+        self.cohort_df = pd.concat(
+            [
+                self.cohort_df,
+                pd.DataFrame({projection_ts: [cohort_size]}, index=[projection_ts]),
+            ]
         ).fillna(0)
 
     def scale_cohort_size(self, scalar: float) -> None:

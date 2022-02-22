@@ -354,7 +354,7 @@ class TransitionTable:
                     index=extended_index,
                     columns=table.columns,
                 )
-                self.tables[ts] = table.append(extended_df).fillna(0)
+                self.tables[ts] = pd.concat([table, extended_df]).fillna(0)
 
         self.max_sentence = new_max_sentence
 

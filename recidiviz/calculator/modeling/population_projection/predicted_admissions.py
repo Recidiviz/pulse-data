@@ -104,7 +104,9 @@ class PredictedAdmissions:
         historical_data = pd.Series(
             self.historical_data.stack(), name="actuals"
         ).to_frame()
-        full_arima_output = self.predictions_df.append(historical_data).sort_index()
+        full_arima_output = pd.concat(
+            [self.predictions_df, historical_data]
+        ).sort_index()
         return full_arima_output
 
     @staticmethod
@@ -279,7 +281,7 @@ class PredictedAdmissions:
                 0, max_allowable_pred
             )
 
-            predictions_df = predictions_df.append(predictions_df_sub)
+            predictions_df = pd.concat([predictions_df, predictions_df_sub])
 
         # If predictions are made more than once on an overlapping set of periods we will get duplicates. Drop those.
         predictions_df = pd.concat([predictions_df, self.predictions_df])

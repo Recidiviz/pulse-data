@@ -103,7 +103,7 @@ class FullCompartment(SparkCompartment):
             latest_ts_pop_short, axis=0
         ).dropna(how="all")
 
-        latest_ts_pop = latest_ts_pop_long.append(latest_ts_pop_short.remaining)
+        latest_ts_pop = pd.concat([latest_ts_pop_long, latest_ts_pop_short.remaining])
 
         # convert index back to starting year from years in compartment
         latest_ts_pop.index = self.current_ts - latest_ts_pop.index
@@ -147,7 +147,7 @@ class FullCompartment(SparkCompartment):
             new_rows = pd.DataFrame(
                 0, index=missing_keys, columns=self.outflows.columns
             )
-            self.outflows = self.outflows.append(new_rows).sort_index()
+            self.outflows = pd.concat([self.outflows, new_rows]).sort_index()
 
         # Store the outflows with the previous time step since transitions from the last
         # time step get us the total population for this time step
@@ -190,8 +190,11 @@ class FullCompartment(SparkCompartment):
                 f"Cannot prepare_for_next_step() if population already recorded for this time step \n"
                 f"time step {self.current_ts} already in end_ts_populations {self.end_ts_populations}"
             )
-        self.end_ts_populations = self.end_ts_populations.append(
-            pd.Series({self.current_ts: self.get_current_population()})
+        self.end_ts_populations = pd.concat(
+            [
+                self.end_ts_populations,
+                pd.Series({self.current_ts: self.get_current_population()}),
+            ]
         )
 
         super().prepare_for_next_step()
