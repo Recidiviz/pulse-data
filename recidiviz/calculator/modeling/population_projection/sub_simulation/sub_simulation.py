@@ -133,17 +133,16 @@ class SubSimulation:
     def get_current_populations(self) -> pd.DataFrame:
         """Pull the compartment populations from the current time step."""
         # combine the results into one DataFrame
-        compartment_populations = pd.DataFrame(
-            columns=["compartment", "total_population"]
-        )
+        compartment_populations = []
         for compartment_name, compartment in self.simulation_compartments.items():
             if isinstance(compartment, FullCompartment):
-                compartment_populations = compartment_populations.append(
+                compartment_populations.append(
                     {
                         "compartment": compartment_name,
                         "total_population": compartment.get_current_population(),
                     },
-                    ignore_index=True,
                 )
 
-        return compartment_populations
+        return pd.DataFrame(
+            columns=["compartment", "total_population"], data=compartment_populations
+        )
