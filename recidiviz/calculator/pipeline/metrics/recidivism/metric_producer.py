@@ -93,6 +93,7 @@ class RecidivismMetricProducer(
                 for event in events:
                     reincarceration_rate_metrics = (
                         self.reincarceration_rate_metrics_for_release_event(
+                            pipeline_name=pipeline_name,
                             release_event=event,
                             person=person,
                             person_metadata=person_metadata,
@@ -283,6 +284,7 @@ class RecidivismMetricProducer(
 
     def reincarceration_rate_metrics_for_release_event(
         self,
+        pipeline_name: str,
         release_event: ReleaseEvent,
         person: StatePerson,
         person_metadata: PersonMetadata,
@@ -316,7 +318,7 @@ class RecidivismMetricProducer(
             ):
                 additional_attributes["did_recidivate"] = False
                 metric = build_metric(
-                    pipeline="recidivism",
+                    pipeline=pipeline_name,
                     event=release_event,
                     metric_class=ReincarcerationRecidivismRateMetric,
                     person=person,
@@ -344,7 +346,7 @@ class RecidivismMetricProducer(
                     additional_attributes_copy = additional_attributes.copy()
 
                     metric = build_metric(
-                        pipeline="recidivism",
+                        pipeline=pipeline_name,
                         event=release_event,
                         metric_class=ReincarcerationRecidivismRateMetric,
                         person=person,

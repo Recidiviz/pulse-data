@@ -44,12 +44,14 @@ from recidiviz.calculator.pipeline.metrics.recidivism.metrics import (
     ReincarcerationRecidivismRateMetric,
 )
 from recidiviz.calculator.pipeline.utils.metric_utils import PersonMetadata
+from recidiviz.common.constants.state.external_id_types import US_ND_ELITE
 from recidiviz.persistence.entity.state.entities import (
     Ethnicity,
     Gender,
     Race,
     StatePerson,
     StatePersonEthnicity,
+    StatePersonExternalId,
     StatePersonRace,
 )
 
@@ -70,7 +72,7 @@ class TestReincarcerations(unittest.TestCase):
         second_release_date = reincarceration_date + relativedelta(years=1)
 
         first_event = RecidivismReleaseEvent(
-            "CA",
+            "US_XX",
             original_admission_date,
             release_date,
             "Sing Sing",
@@ -79,7 +81,7 @@ class TestReincarcerations(unittest.TestCase):
             "Sing Sing",
         )
         second_event = NonRecidivismReleaseEvent(
-            "CA",
+            "US_XX",
             reincarceration_date,
             second_release_date,
             "Sing Sing",
@@ -102,7 +104,7 @@ class TestReincarcerations(unittest.TestCase):
         reincarceration_date = second_release_date + relativedelta(years=1)
 
         first_event = RecidivismReleaseEvent(
-            "CA",
+            "US_XX",
             original_admission_date,
             release_date,
             "Sing Sing",
@@ -111,7 +113,7 @@ class TestReincarcerations(unittest.TestCase):
             "Sing Sing",
         )
         second_event = RecidivismReleaseEvent(
-            "CA",
+            "US_XX",
             release_date,
             second_release_date,
             "Sing Sing",
@@ -234,7 +236,9 @@ class TestStayLengthFromEvent(unittest.TestCase):
     def test_stay_length_from_event_earlier_month_and_date(self) -> None:
         original_admission_date = date(2013, 6, 17)
         release_date = date(2014, 4, 15)
-        event = ReleaseEvent("CA", original_admission_date, release_date, "Sing Sing")
+        event = ReleaseEvent(
+            "US_XX", original_admission_date, release_date, "Sing Sing"
+        )
 
         self.assertEqual(9, event.stay_length)
 
@@ -300,7 +304,7 @@ class TestStayLengthBucket(unittest.TestCase):
         for months, bucket in self.months_to_bucket_map.items():
             release_date = original_admission_date + relativedelta(months=months)
             event = ReleaseEvent(
-                "CA", original_admission_date, release_date, "Sing Sing"
+                "US_XX", original_admission_date, release_date, "Sing Sing"
             )
             self.assertEqual(bucket, event.stay_length_bucket)
 
@@ -313,8 +317,8 @@ _ALL_METRIC_INCLUSIONS_DICT = {
 _DEFAULT_PERSON_METADATA = PersonMetadata(prioritized_race_or_ethnicity="BLACK")
 
 
-class TestMapRecidivismCombinations(unittest.TestCase):
-    """Tests the produce_recidivism_metrics function."""
+class TestProduceMetrics(unittest.TestCase):
+    """Tests the produce_metrics function."""
 
     def setUp(self) -> None:
         self.metric_producer = metric_producer.RecidivismMetricProducer()
@@ -345,18 +349,18 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         """Tests the produce_recidivism_metrics function where there is
         recidivism."""
         person = StatePerson.new_with_defaults(
-            state_code="CA",
+            state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=Gender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(state_code="CA", race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code="US_XX", race=Race.WHITE)
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="CA", ethnicity=Ethnicity.NOT_HISPANIC
+            state_code="US_XX", ethnicity=Ethnicity.NOT_HISPANIC
         )
 
         person.ethnicities = [ethnicity]
@@ -364,7 +368,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         release_events_by_cohort: Dict[int, List[ReleaseEvent]] = {
             2008: [
                 RecidivismReleaseEvent(
-                    "CA",
+                    "US_XX",
                     date(2005, 7, 19),
                     date(2008, 9, 19),
                     "Hudson",
@@ -407,17 +411,17 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         """Tests the produce_recidivism_metrics function where there are multiple instances of recidivism within a
         follow-up period."""
         person = StatePerson.new_with_defaults(
-            state_code="CA",
+            state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=Gender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(state_code="CA", race=Race.BLACK)
+        race = StatePersonRace.new_with_defaults(state_code="US_XX", race=Race.BLACK)
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="CA", ethnicity=Ethnicity.NOT_HISPANIC
+            state_code="US_XX", ethnicity=Ethnicity.NOT_HISPANIC
         )
 
         person.ethnicities = [ethnicity]
@@ -425,7 +429,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         release_events_by_cohort: Dict[int, List[ReleaseEvent]] = {
             1908: [
                 RecidivismReleaseEvent(
-                    "CA",
+                    "US_XX",
                     date(1905, 7, 19),
                     date(1908, 9, 19),
                     "Hudson",
@@ -436,7 +440,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
             ],
             1912: [
                 RecidivismReleaseEvent(
-                    "CA",
+                    "US_XX",
                     date(1910, 8, 12),
                     date(1912, 8, 19),
                     "Upstate",
@@ -714,18 +718,18 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         """Tests the produce_recidivism_metrics function where the person returned to prison exactly one year after
         they were released."""
         person = StatePerson.new_with_defaults(
-            state_code="CA",
+            state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=Gender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(state_code="CA", race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code="US_XX", race=Race.WHITE)
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="CA", ethnicity=Ethnicity.NOT_HISPANIC
+            state_code="US_XX", ethnicity=Ethnicity.NOT_HISPANIC
         )
 
         person.ethnicities = [ethnicity]
@@ -733,7 +737,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         release_events_by_cohort: Dict[int, List[ReleaseEvent]] = {
             2008: [
                 RecidivismReleaseEvent(
-                    "CA",
+                    "US_XX",
                     date(2005, 7, 19),
                     date(2008, 9, 19),
                     "Hudson",
@@ -777,17 +781,17 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         """Tests the produce_recidivism_metrics function where there is no
         recidivism."""
         person = StatePerson.new_with_defaults(
-            state_code="CA",
+            state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=Gender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(state_code="CA", race=Race.BLACK)
+        race = StatePersonRace.new_with_defaults(state_code="US_XX", race=Race.BLACK)
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="CA", ethnicity=Ethnicity.NOT_HISPANIC
+            state_code="US_XX", ethnicity=Ethnicity.NOT_HISPANIC
         )
 
         person.ethnicities = [ethnicity]
@@ -795,7 +799,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         release_events_by_cohort: Dict[int, List[ReleaseEvent]] = {
             2008: [
                 NonRecidivismReleaseEvent(
-                    "CA",
+                    "US_XX",
                     date(2005, 7, 19),
                     date(2008, 9, 19),
                     "Hudson",
@@ -830,17 +834,17 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         """Tests the produce_recidivism_metrics function where there is
         recidivism but it occurred after the last follow-up period we track."""
         person = StatePerson.new_with_defaults(
-            state_code="CA",
+            state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=Gender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(state_code="CA", race=Race.BLACK)
+        race = StatePersonRace.new_with_defaults(state_code="US_XX", race=Race.BLACK)
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="CA", ethnicity=Ethnicity.NOT_HISPANIC
+            state_code="US_XX", ethnicity=Ethnicity.NOT_HISPANIC
         )
 
         person.ethnicities = [ethnicity]
@@ -848,7 +852,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         release_events_by_cohort: Dict[int, List[ReleaseEvent]] = {
             1998: [
                 RecidivismReleaseEvent(
-                    "CA",
+                    "US_XX",
                     date(1995, 7, 19),
                     date(1998, 9, 19),
                     "Hudson",
@@ -893,20 +897,22 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         """Tests the produce_recidivism_metrics function where there is
         recidivism, and the person has more than one race."""
         person = StatePerson.new_with_defaults(
-            state_code="CA",
+            state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=Gender.FEMALE,
         )
 
-        race_white = StatePersonRace.new_with_defaults(state_code="CA", race=Race.WHITE)
+        race_white = StatePersonRace.new_with_defaults(
+            state_code="US_XX", race=Race.WHITE
+        )
 
         race_black = StatePersonRace.new_with_defaults(state_code="MT", race=Race.BLACK)
 
         person.races = [race_white, race_black]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="CA", ethnicity=Ethnicity.NOT_HISPANIC
+            state_code="US_XX", ethnicity=Ethnicity.NOT_HISPANIC
         )
 
         person.ethnicities = [ethnicity]
@@ -914,7 +920,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         release_events_by_cohort: Dict[int, List[ReleaseEvent]] = {
             2008: [
                 RecidivismReleaseEvent(
-                    "CA",
+                    "US_XX",
                     date(2005, 7, 19),
                     date(2008, 9, 19),
                     "Hudson",
@@ -958,17 +964,17 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         """Tests the produce_recidivism_metrics function where there is
         recidivism, and the person has more than one ethnicity."""
         person = StatePerson.new_with_defaults(
-            state_code="CA",
+            state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=Gender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(state_code="CA", race=Race.BLACK)
+        race = StatePersonRace.new_with_defaults(state_code="US_XX", race=Race.BLACK)
         person.races = [race]
 
         ethnicity_hispanic = StatePersonEthnicity.new_with_defaults(
-            state_code="CA", ethnicity=Ethnicity.HISPANIC
+            state_code="US_XX", ethnicity=Ethnicity.HISPANIC
         )
 
         ethnicity_not_hispanic = StatePersonEthnicity.new_with_defaults(
@@ -980,7 +986,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         release_events_by_cohort: Dict[int, List[ReleaseEvent]] = {
             2008: [
                 RecidivismReleaseEvent(
-                    "CA",
+                    "US_XX",
                     date(2005, 7, 19),
                     date(2008, 9, 19),
                     "Hudson",
@@ -1025,20 +1031,22 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         recidivism, and the person has multiple races and multiple
         ethnicities."""
         person = StatePerson.new_with_defaults(
-            state_code="CA",
+            state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=Gender.FEMALE,
         )
 
-        race_white = StatePersonRace.new_with_defaults(state_code="CA", race=Race.WHITE)
+        race_white = StatePersonRace.new_with_defaults(
+            state_code="US_XX", race=Race.WHITE
+        )
 
         race_black = StatePersonRace.new_with_defaults(state_code="MT", race=Race.BLACK)
 
         person.races = [race_white, race_black]
 
         ethnicity_hispanic = StatePersonEthnicity.new_with_defaults(
-            state_code="CA", ethnicity=Ethnicity.HISPANIC
+            state_code="US_XX", ethnicity=Ethnicity.HISPANIC
         )
 
         ethnicity_not_hispanic = StatePersonEthnicity.new_with_defaults(
@@ -1050,7 +1058,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         release_events_by_cohort: Dict[int, List[ReleaseEvent]] = {
             2008: [
                 RecidivismReleaseEvent(
-                    "CA",
+                    "US_XX",
                     date(2005, 7, 19),
                     date(2008, 9, 19),
                     "Hudson",
@@ -1094,18 +1102,18 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         """Tests the produce_recidivism_metrics function where there is
         recidivism, and they returned from a revocation of parole."""
         person = StatePerson.new_with_defaults(
-            state_code="CA",
+            state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=Gender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(state_code="CA", race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code="US_XX", race=Race.WHITE)
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="CA", ethnicity=Ethnicity.NOT_HISPANIC
+            state_code="US_XX", ethnicity=Ethnicity.NOT_HISPANIC
         )
 
         person.ethnicities = [ethnicity]
@@ -1113,7 +1121,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         release_events_by_cohort: Dict[int, List[ReleaseEvent]] = {
             2008: [
                 RecidivismReleaseEvent(
-                    "CA",
+                    "US_XX",
                     date(2005, 7, 19),
                     date(2008, 9, 19),
                     "Hudson",
@@ -1156,18 +1164,18 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         """Tests the produce_recidivism_metrics function where there is
         recidivism, and they returned from a revocation of parole."""
         person = StatePerson.new_with_defaults(
-            state_code="CA",
+            state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=Gender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(state_code="CA", race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code="US_XX", race=Race.WHITE)
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="CA", ethnicity=Ethnicity.NOT_HISPANIC
+            state_code="US_XX", ethnicity=Ethnicity.NOT_HISPANIC
         )
 
         person.ethnicities = [ethnicity]
@@ -1175,7 +1183,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         release_events_by_cohort: Dict[int, List[ReleaseEvent]] = {
             2008: [
                 RecidivismReleaseEvent(
-                    "CA",
+                    "US_XX",
                     date(2005, 7, 19),
                     date(2008, 9, 19),
                     "Hudson",
@@ -1220,18 +1228,18 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         recidivism, and they returned from a technical violation that resulted
         in the revocation of parole."""
         person = StatePerson.new_with_defaults(
-            state_code="CA",
+            state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=Gender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(state_code="CA", race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code="US_XX", race=Race.WHITE)
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="CA", ethnicity=Ethnicity.NOT_HISPANIC
+            state_code="US_XX", ethnicity=Ethnicity.NOT_HISPANIC
         )
 
         person.ethnicities = [ethnicity]
@@ -1239,7 +1247,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         release_events_by_cohort: Dict[int, List[ReleaseEvent]] = {
             2008: [
                 RecidivismReleaseEvent(
-                    "CA",
+                    "US_XX",
                     date(2005, 7, 19),
                     date(2008, 9, 19),
                     "Hudson",
@@ -1281,18 +1289,18 @@ class TestMapRecidivismCombinations(unittest.TestCase):
 
     def test_produce_recidivism_metrics_count_metric_buckets(self) -> None:
         person = StatePerson.new_with_defaults(
-            state_code="CA",
+            state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=Gender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(state_code="CA", race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code="US_XX", race=Race.WHITE)
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="CA", ethnicity=Ethnicity.NOT_HISPANIC
+            state_code="US_XX", ethnicity=Ethnicity.NOT_HISPANIC
         )
 
         person.ethnicities = [ethnicity]
@@ -1300,7 +1308,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         release_events_by_cohort: Dict[int, List[ReleaseEvent]] = {
             2008: [
                 RecidivismReleaseEvent(
-                    "CA",
+                    "US_XX",
                     date(2005, 7, 19),
                     date(2008, 9, 19),
                     "Hudson",
@@ -1335,18 +1343,18 @@ class TestMapRecidivismCombinations(unittest.TestCase):
 
     def test_produce_recidivism_metrics_count_metric_no_recidivism(self) -> None:
         person = StatePerson.new_with_defaults(
-            state_code="CA",
+            state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=Gender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(state_code="CA", race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code="US_XX", race=Race.WHITE)
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="CA", ethnicity=Ethnicity.NOT_HISPANIC
+            state_code="US_XX", ethnicity=Ethnicity.NOT_HISPANIC
         )
 
         person.ethnicities = [ethnicity]
@@ -1354,7 +1362,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         release_events_by_cohort: Dict[int, List[ReleaseEvent]] = {
             2008: [
                 NonRecidivismReleaseEvent(
-                    "CA",
+                    "US_XX",
                     date(2005, 7, 19),
                     date(2008, 9, 19),
                     "Hudson",
@@ -1380,18 +1388,18 @@ class TestMapRecidivismCombinations(unittest.TestCase):
     @freeze_time("1914-09-30")
     def test_produce_recidivism_metrics_count_relevant_periods(self) -> None:
         person = StatePerson.new_with_defaults(
-            state_code="CA",
+            state_code="US_XX",
             person_id=12345,
             birthdate=date(1884, 8, 31),
             gender=Gender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(state_code="CA", race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code="US_XX", race=Race.WHITE)
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="CA", ethnicity=Ethnicity.NOT_HISPANIC
+            state_code="US_XX", ethnicity=Ethnicity.NOT_HISPANIC
         )
 
         person.ethnicities = [ethnicity]
@@ -1465,18 +1473,18 @@ class TestMapRecidivismCombinations(unittest.TestCase):
 
     def test_produce_recidivism_metrics_count_twice_in_month(self) -> None:
         person = StatePerson.new_with_defaults(
-            state_code="CA",
+            state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=Gender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(state_code="CA", race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code="US_XX", race=Race.WHITE)
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="CA", ethnicity=Ethnicity.NOT_HISPANIC
+            state_code="US_XX", ethnicity=Ethnicity.NOT_HISPANIC
         )
 
         person.ethnicities = [ethnicity]
@@ -1484,7 +1492,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         release_events_by_cohort: Dict[int, List[ReleaseEvent]] = {
             1908: [
                 RecidivismReleaseEvent(
-                    "CA",
+                    "US_XX",
                     date(1905, 7, 19),
                     date(1908, 9, 19),
                     "Hudson",
@@ -1495,7 +1503,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
             ],
             1914: [
                 RecidivismReleaseEvent(
-                    "CA",
+                    "US_XX",
                     date(1914, 3, 12),
                     date(1914, 3, 19),
                     "Upstate",
@@ -1548,6 +1556,66 @@ class TestMapRecidivismCombinations(unittest.TestCase):
                     self.assertEqual(days_at_liberty_1, metric.days_at_liberty)
                 else:
                     self.assertEqual(days_at_liberty_2, metric.days_at_liberty)
+
+    @freeze_time("2100-01-01")
+    def test_produce_recidivism_metrics_external_id(self) -> None:
+        """Tests the produce_recidivism_metrics function where there is
+        recidivism."""
+        person = StatePerson.new_with_defaults(
+            state_code="US_ND",
+            person_id=12345,
+            birthdate=date(1984, 8, 31),
+            gender=Gender.FEMALE,
+            races=[
+                StatePersonRace.new_with_defaults(state_code="US_ND", race=Race.WHITE)
+            ],
+            ethnicities=[
+                StatePersonEthnicity.new_with_defaults(
+                    state_code="US_ND", ethnicity=Ethnicity.NOT_HISPANIC
+                )
+            ],
+            external_ids=[
+                StatePersonExternalId.new_with_defaults(
+                    state_code="US_ND",
+                    external_id="ABC",
+                    id_type=US_ND_ELITE,
+                )
+            ],
+        )
+
+        release_events_by_cohort: Dict[int, List[ReleaseEvent]] = {
+            2008: [
+                RecidivismReleaseEvent(
+                    "US_ND",
+                    date(2005, 7, 19),
+                    date(2008, 9, 19),
+                    "Hudson",
+                    _COUNTY_OF_RESIDENCE,
+                    date(2014, 5, 12),
+                    "Upstate",
+                )
+            ]
+        }
+
+        metrics = self.metric_producer.produce_metrics(
+            person,
+            release_events_by_cohort,
+            _ALL_METRIC_INCLUSIONS_DICT,
+            _DEFAULT_PERSON_METADATA,
+            self.pipeline_config.pipeline_name,
+            _PIPELINE_JOB_ID,
+        )
+
+        expected_count = self.expected_metric_counts(release_events_by_cohort)
+
+        self.assertEqual(expected_count, len(metrics))
+        self.assertEqual(
+            len(set(id(metric) for metric in metrics)),
+            len(metrics),
+        )
+
+        for metric in metrics:
+            self.assertEqual("ABC", metric.person_external_id)
 
 
 class TestReincarcerationsByPeriod(unittest.TestCase):
