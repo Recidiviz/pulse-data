@@ -159,8 +159,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        suite: [1, 2, 3, 4]
-        suite-count: [4]
+        suite: [1, 2, 3]
+        suite-count: [3]
     steps:
       - uses: actions/checkout@v2
       - name: Python Setup
@@ -180,8 +180,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        suite: [1, 2, 3, 4]
-        suite-count: [4]
+        suite: [1, 2, 3]
+        suite-count: [3]
     steps:
       - uses: actions/checkout@v2
       - name: Python Setup
