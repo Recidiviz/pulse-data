@@ -83,7 +83,11 @@ from recidiviz.common.str_field_utils import (
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
 )
-from recidiviz.ingest.direct.controllers.legacy_ingest_view_processor import (
+from recidiviz.ingest.direct.legacy_ingest_mappings.direct_ingest_controller_utils import (
+    create_if_not_exists,
+    update_overrides_from_maps,
+)
+from recidiviz.ingest.direct.legacy_ingest_mappings.legacy_ingest_view_processor import (
     IngestAncestorChainOverridesCallable,
     IngestFilePostprocessorCallable,
     IngestPrimaryKeyOverrideCallable,
@@ -91,9 +95,11 @@ from recidiviz.ingest.direct.controllers.legacy_ingest_view_processor import (
     IngestRowPrehookCallable,
     LegacyIngestViewProcessorDelegate,
 )
-from recidiviz.ingest.direct.direct_ingest_controller_utils import (
-    create_if_not_exists,
-    update_overrides_from_maps,
+from recidiviz.ingest.direct.legacy_ingest_mappings.state_shared_row_posthooks import (
+    IngestGatingContext,
+    copy_name_to_alias,
+    gen_label_single_external_id_hook,
+    gen_rationalize_race_and_ethnicity,
 )
 from recidiviz.ingest.direct.regions.us_id.us_id_constants import (
     ALL_NEW_CRIME_TYPES,
@@ -137,12 +143,6 @@ from recidiviz.ingest.direct.regions.us_id.us_id_legacy_enum_helpers import (
     supervision_admission_reason_mapper,
     supervision_period_supervision_type_mapper,
     supervision_termination_reason_mapper,
-)
-from recidiviz.ingest.direct.state_shared_row_posthooks import (
-    IngestGatingContext,
-    copy_name_to_alias,
-    gen_label_single_external_id_hook,
-    gen_rationalize_race_and_ethnicity,
 )
 from recidiviz.ingest.models.ingest_info import (
     IngestObject,

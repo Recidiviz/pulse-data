@@ -31,18 +31,15 @@ from recidiviz.big_query.view_update_manager import (
 )
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
-from recidiviz.ingest.direct.controllers.direct_ingest_file_metadata_manager import (
-    DirectIngestFileMetadataManager,
-)
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
     to_normalized_unprocessed_file_name,
-)
-from recidiviz.ingest.direct.controllers.direct_ingest_view_collector import (
-    DirectIngestPreProcessedIngestViewCollector,
 )
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsDirectIngestFileType,
     GcsfsIngestViewExportArgs,
+)
+from recidiviz.ingest.direct.metadata.direct_ingest_file_metadata_manager import (
+    DirectIngestFileMetadataManager,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
@@ -50,6 +47,9 @@ from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
     DirectIngestPreProcessedIngestView,
     DirectIngestPreProcessedIngestViewBuilder,
     RawTableViewType,
+)
+from recidiviz.ingest.direct.views.direct_ingest_view_collector import (
+    DirectIngestPreProcessedIngestViewCollector,
 )
 from recidiviz.persistence.entity.operations.entities import (
     DirectIngestIngestFileMetadata,

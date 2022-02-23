@@ -36,11 +36,11 @@ from typing import Dict, List, Tuple
 from google.cloud import bigquery, exceptions
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
-from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import (
-    DirectIngestRegionRawFileConfig,
-)
 from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_tables_dataset_for_region,
+)
+from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
+    DirectIngestRegionRawFileConfig,
 )
 from recidiviz.utils import environment
 from recidiviz.utils.string import StrictStringFormatter

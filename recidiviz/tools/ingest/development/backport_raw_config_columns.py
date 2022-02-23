@@ -34,11 +34,11 @@ from typing import Dict, List
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.common.constants import states
-from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import (
-    RawTableColumnInfo,
-)
 from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_tables_dataset_for_region,
+)
+from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
+    RawTableColumnInfo,
 )
 from recidiviz.utils import metadata
 

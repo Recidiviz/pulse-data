@@ -72,15 +72,23 @@ from recidiviz.common.str_field_utils import (
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
 )
-from recidiviz.ingest.direct.controllers.legacy_ingest_view_processor import (
+from recidiviz.ingest.direct.legacy_ingest_mappings.direct_ingest_controller_utils import (
+    create_if_not_exists,
+    update_overrides_from_maps,
+)
+from recidiviz.ingest.direct.legacy_ingest_mappings.legacy_ingest_view_processor import (
     IngestAncestorChainOverridesCallable,
     IngestPrimaryKeyOverrideCallable,
     IngestRowPosthookCallable,
     LegacyIngestViewProcessorDelegate,
 )
-from recidiviz.ingest.direct.direct_ingest_controller_utils import (
-    create_if_not_exists,
-    update_overrides_from_maps,
+from recidiviz.ingest.direct.legacy_ingest_mappings.state_shared_row_posthooks import (
+    IngestGatingContext,
+    gen_convert_person_ids_to_external_id_objects,
+    gen_map_ymd_counts_to_max_length_field_posthook,
+    gen_normalize_county_codes_posthook,
+    gen_set_field_as_concatenated_values_hook,
+    gen_set_is_life_sentence_hook,
 )
 from recidiviz.ingest.direct.regions.us_mo.us_mo_constants import (
     CHARGE_COUNTY_CODE,
@@ -126,14 +134,6 @@ from recidiviz.ingest.direct.regions.us_mo.us_mo_legacy_enum_helpers import (
     supervising_officer_mapper,
     supervision_period_admission_reason_mapper,
     supervision_period_termination_reason_mapper,
-)
-from recidiviz.ingest.direct.state_shared_row_posthooks import (
-    IngestGatingContext,
-    gen_convert_person_ids_to_external_id_objects,
-    gen_map_ymd_counts_to_max_length_field_posthook,
-    gen_normalize_county_codes_posthook,
-    gen_set_field_as_concatenated_values_hook,
-    gen_set_is_life_sentence_hook,
 )
 from recidiviz.ingest.extractor.csv_data_extractor import IngestFieldCoordinates
 from recidiviz.ingest.models.ingest_info import (

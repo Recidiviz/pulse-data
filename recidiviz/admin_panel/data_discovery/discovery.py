@@ -62,7 +62,10 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsDirectIngestFileType,
     filename_parts_from_path,
 )
-from recidiviz.ingest.direct.errors import DirectIngestError, DirectIngestErrorType
+from recidiviz.ingest.direct.types.errors import (
+    DirectIngestError,
+    DirectIngestErrorType,
+)
 from recidiviz.utils.environment import in_gcp
 from recidiviz.utils.future_executor import FutureExecutor
 

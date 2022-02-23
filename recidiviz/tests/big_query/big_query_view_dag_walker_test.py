@@ -36,7 +36,7 @@ from recidiviz.big_query.big_query_view_dag_walker import (
     BigQueryViewDagWalker,
     DagKey,
 )
-from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import (
+from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
     DirectIngestRegionRawFileConfig,
 )
 from recidiviz.utils.environment import GCP_PROJECTS

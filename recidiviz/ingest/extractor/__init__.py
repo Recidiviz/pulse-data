@@ -16,4 +16,8 @@
 # =============================================================================
 
 """The core models specific to the ingest platform, but agnostic across
-scraper vendors and regions."""
+scraper vendors and regions.
+
+TODO(#8905): Move this package inside recidiviz/ingest/direct once mappings v2 migration
+ is complete.
+"""

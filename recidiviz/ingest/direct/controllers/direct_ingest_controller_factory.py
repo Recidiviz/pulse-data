@@ -24,11 +24,12 @@ from recidiviz.cloud_functions.direct_ingest_bucket_name_utils import (
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
-)
-from recidiviz.ingest.direct.direct_ingest_controller_utils import (
     check_is_region_launched_in_env,
 )
-from recidiviz.ingest.direct.errors import DirectIngestError, DirectIngestErrorType
+from recidiviz.ingest.direct.types.errors import (
+    DirectIngestError,
+    DirectIngestErrorType,
+)
 from recidiviz.utils import metadata, regions
 from recidiviz.utils.regions import Region, get_supported_direct_ingest_region_codes
 

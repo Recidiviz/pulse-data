@@ -16,11 +16,11 @@
 # =============================================================================
 """A test view builder file for big_query_view_collector_test.py"""
 
+from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
+    DirectIngestRegionRawFileConfig,
+)
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
     DirectIngestPreProcessedIngestView,
-)
-from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import (
-    DirectIngestRegionRawFileConfig,
 )
 from recidiviz.tests.big_query.fake_big_query_view_builder import (
     FakeBigQueryViewBuilder,

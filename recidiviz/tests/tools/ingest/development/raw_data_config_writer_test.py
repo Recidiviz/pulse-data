@@ -19,11 +19,11 @@ import os
 import tempfile
 import unittest
 
-from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import (
+from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
     DirectIngestRegionRawFileConfig,
 )
 from recidiviz.tests.ingest.direct import fake_regions as fake_regions_module
-from recidiviz.tests.ingest.direct.direct_ingest_util import PLACEHOLDER_TO_DO_STRING
+from recidiviz.tools.docs.utils import PLACEHOLDER_TO_DO_STRING
 from recidiviz.tools.ingest.development.raw_data_config_writer import (
     RawDataConfigWriter,
 )

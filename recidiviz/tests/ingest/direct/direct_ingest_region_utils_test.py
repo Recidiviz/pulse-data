@@ -19,7 +19,7 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.direct_ingest_region_utils import (
+from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_launched_in_env,
     get_direct_ingest_states_with_sftp_queue,
 )
@@ -31,7 +31,7 @@ class TestDirectIngestRegionUtils(unittest.TestCase):
 
     @patch("recidiviz.utils.environment.get_gcp_environment")
     @patch(
-        "recidiviz.ingest.direct.direct_ingest_region_utils.get_existing_direct_ingest_states"
+        "recidiviz.ingest.direct.regions.direct_ingest_region_utils.get_existing_direct_ingest_states"
     )
     @patch("recidiviz.utils.regions.get_region")
     def test_get_direct_ingest_states_launched_in_env_staging(
@@ -51,7 +51,7 @@ class TestDirectIngestRegionUtils(unittest.TestCase):
 
     @patch("recidiviz.utils.environment.get_gcp_environment")
     @patch(
-        "recidiviz.ingest.direct.direct_ingest_region_utils.get_existing_direct_ingest_states"
+        "recidiviz.ingest.direct.regions.direct_ingest_region_utils.get_existing_direct_ingest_states"
     )
     @patch("recidiviz.utils.regions.get_region")
     def test_get_direct_ingest_states_launched_in_env_production(

@@ -23,6 +23,8 @@ DOCS_ROOT_PATH = os.path.normpath(
     os.path.join(os.path.dirname(recidiviz.__file__), "..", "docs")
 )
 
+PLACEHOLDER_TO_DO_STRING = "TO" + "DO"
+
 
 def persist_file_contents(documentation: str, markdown_path: str) -> bool:
     """Persists contents to the provided path. Returns whether contents at that path

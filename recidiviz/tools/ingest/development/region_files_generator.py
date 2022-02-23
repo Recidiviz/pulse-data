@@ -58,7 +58,7 @@ from recidiviz.tests.ingest.direct import (
 )
 from recidiviz.tests.ingest.direct import regions as regions_test_module
 from recidiviz.tests.ingest.direct import templates as test_templates_module
-from recidiviz.tests.ingest.direct.direct_ingest_util import PLACEHOLDER_TO_DO_STRING
+from recidiviz.tools.docs.utils import PLACEHOLDER_TO_DO_STRING
 from recidiviz.validation.config import regions as validation_config_module
 from recidiviz.validation.config import templates as validation_config_templates_module
 

@@ -33,12 +33,12 @@ from typing import List
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.controllers.direct_ingest_raw_data_table_latest_view_updater import (
-    DirectIngestRawDataTableLatestViewUpdater,
-)
 from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_latest_views_dataset_for_region,
     raw_tables_dataset_for_region,
+)
+from recidiviz.ingest.direct.raw_data.direct_ingest_raw_data_table_latest_view_updater import (
+    DirectIngestRawDataTableLatestViewUpdater,
 )
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import GCP_PROJECTS

@@ -47,17 +47,17 @@ from pandas import DataFrame
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.common.constants import states
-from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import (
-    DirectIngestRawFileConfig,
-)
-from recidiviz.ingest.direct.controllers.direct_ingest_view_collector import (
-    DirectIngestPreProcessedIngestViewCollector,
-)
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsDirectIngestFileType,
 )
+from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
+    DirectIngestRawFileConfig,
+)
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
     DirectIngestRawDataTableLatestView,
+)
+from recidiviz.ingest.direct.views.direct_ingest_view_collector import (
+    DirectIngestPreProcessedIngestViewCollector,
 )
 from recidiviz.tests.ingest.direct.fixture_util import direct_ingest_fixture_path
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING

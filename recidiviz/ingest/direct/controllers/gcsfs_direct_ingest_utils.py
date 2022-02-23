@@ -39,12 +39,15 @@ from recidiviz.cloud_storage.gcsfs_path import (
 )
 from recidiviz.common.date import snake_case_datetime
 from recidiviz.common.ingest_metadata import SystemLevel
-from recidiviz.ingest.direct.errors import DirectIngestError, DirectIngestErrorType
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.direct_ingest_instance_factory import (
     DirectIngestInstanceFactory,
 )
 from recidiviz.ingest.direct.types.direct_ingest_types import CloudTaskArgs
+from recidiviz.ingest.direct.types.errors import (
+    DirectIngestError,
+    DirectIngestErrorType,
+)
 from recidiviz.utils import metadata
 
 INGEST_FILE_PREFIX_REGEX_PATTERN = (

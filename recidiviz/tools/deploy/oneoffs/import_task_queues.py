@@ -5,7 +5,7 @@ import logging
 from google.cloud import tasks_v2
 from google.oauth2 import credentials
 
-from recidiviz.ingest.direct.direct_ingest_region_utils import (
+from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_direct_ingest_states,
 )
 from recidiviz.tools.deploy.terraform_helpers import terraform_import
