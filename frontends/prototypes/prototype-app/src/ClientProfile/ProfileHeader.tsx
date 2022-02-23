@@ -67,28 +67,42 @@ const ClientInfoContiainer = styled.div`
   padding-top: ${rem(spacing.sm)};
 `;
 
+const ExpectedDischargeDate: React.FC = observer(() => {
+  const { caseStore } = useDataStore();
+  const client = caseStore.activeClient;
+  if (!client) return null;
+
+  const { upcomingDischargeCase } = client;
+  let currentDate: Date | null;
+
+  if (upcomingDischargeCase?.expectedDischargeDate) {
+    currentDate = upcomingDischargeCase.expectedDischargeDate.toDate();
+  } else {
+    currentDate = null;
+  }
+
+  return (
+    <div>
+      Expiration date:{" "}
+      <CalendarDatePicker
+        currentDate={currentDate}
+        onPickDate={(date) => {
+          if (date) caseStore.sendUpcomingDischargeOverride(date);
+        }}
+        placeholderText="Unknown in TOMIS"
+        startOpen={caseStore.editingActiveClientDischarge}
+        onClose={() => caseStore.setEditingActiveClientDischarge(false)}
+        record={client.upcomingDischargeCase}
+      />
+    </div>
+  );
+});
+
 const ProfileHeader: React.FC = () => {
   const { caseStore } = useDataStore();
 
   const client = caseStore.activeClient;
-  if (!client || !client.upcomingDischargeCase) return null;
-
-  const { expectedDischargeDate } = client.upcomingDischargeCase;
-
-  const expectedDischargeDateComponent = (
-    <CalendarDatePicker
-      currentDate={
-        expectedDischargeDate ? expectedDischargeDate.toDate() : null
-      }
-      onPickDate={(date) => {
-        if (date) caseStore.sendUpcomingDischargeOverride(date);
-      }}
-      placeholderText="Unknown in TOMIS"
-      startOpen={caseStore.editingActiveClientDischarge}
-      onClose={() => caseStore.setEditingActiveClientDischarge(false)}
-      record={client.upcomingDischargeCase}
-    />
-  );
+  if (!client) return null;
 
   let clientInfo = `${client.supervisionType}, `;
 
@@ -108,7 +122,7 @@ const ProfileHeader: React.FC = () => {
 
       <ClientInfoContiainer>
         <div>{clientInfo}</div>
-        <div>Expiration date: {expectedDischargeDateComponent}</div>
+        <ExpectedDischargeDate />
       </ClientInfoContiainer>
     </ClientProfileHeading>
   );

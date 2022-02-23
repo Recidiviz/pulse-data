@@ -102,15 +102,13 @@ const DatePickerContainer = styled.div`
   }
 `;
 
-const DatePickerStyled = styled(DatePicker)``;
-
 type DatePickerProps = {
   onPickDate: (date: Date | null) => void;
   currentDate: Date | null;
   placeholderText: string;
   startOpen?: boolean;
   onClose?: () => void;
-  record: UpcomingDischargeCase;
+  record?: UpcomingDischargeCase;
 };
 
 const CalendarDatePicker: React.FC<DatePickerProps> = ({
