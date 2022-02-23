@@ -25,6 +25,7 @@ import { makeAutoObservable, when } from "mobx";
 
 import {
   compliantReportingCasesQuery,
+  compliantReportingReferralsQuery,
   compliantReportingStatusQuery,
   compliantReportingUpdatesQuery,
   officersQuery,
@@ -35,6 +36,71 @@ import type { RootStore } from "./RootStore";
 
 type ConstructorProps = {
   rootStore: RootStore;
+};
+
+export type CompliantReportingExportedReferral = {
+  poFirstName: string;
+  poLastName: string;
+  clientFirstName: string;
+  clientLastName: string;
+  dateToday: string;
+  tdocId: string;
+  physicalAddress: string;
+  currentEmployer: string;
+  driversLicense: string;
+  driversLicenseSuspended: string;
+  driversLicenseRevoked: string;
+  convictionCounty: string;
+  courtName: string;
+  allDockets: string;
+  offenseType: string[];
+  supervisionType: string;
+  sentenceStartDate: string;
+  sentenceLengthDays: string;
+  expirationDate: string;
+  supervisionFeeAssessed: string;
+  supervisionFeeArrearaged: "1" | "0";
+  supervisionFeeExemption: string;
+  supervisionFeeExemptionType: string;
+  supervisionFeeExemptionExpirDate: string;
+  supervisionFeeWaived: string;
+  courtCostsPaid: "1" | "0";
+  courtCostsBalance: string;
+  courtCostsMonthlyAmt1: string;
+  courtCostsMonthlyAmt2: string;
+  restitutionAmt: string;
+  restitutionMonthlyPayment: string;
+  restitutionMonthlyPaymentTo: string;
+  specialConditionsAlcDrugScreen: "1" | "0";
+  specialConditionsAlcDrugScreenDate: string;
+  specialConditionsAlcDrugAssessment: string;
+  specialConditionsAlcDrugAssessmentComplete: "1" | "0";
+  specialConditionsAlcDrugAssessmentCompleteDate: string;
+  specialConditionsAlcDrugTreatment: "1" | "0";
+  specialConditionsAlcDrugTreatmentInOut: "INPATIENT" | "OUTPATIENT";
+  specialConditionsAlcDrugTreatmentCurrent: "1" | "0";
+  specialConditionsAlcDrugTreatmentCompleteDate: string;
+  specialConditionsCounseling: "1" | "0";
+  specialConditionsCounselingType: ("ANGER_MANAGEMENT" | "MENTAL_HEALTH")[];
+  specialConditionsCounselingCurrent: "1" | "0";
+  specialConditionsCounselingCompleteDate: string;
+  specialConditionsCommunityService: "1" | "0";
+  specialConditionsCommunityServiceHours: string;
+  specialConditionsCommunityServiceCurrent: "1" | "0";
+  specialConditionsCommunityServiceCompletionDate: string;
+  specialConditionsProgramming: "1" | "0";
+  specialConditionsProgrammingCognitiveBehavior: "1" | "0";
+  specialConditionsProgrammingCognitiveBehaviorCurrent: "1" | "0";
+  specialConditionsProgrammingCognitiveBehaviorCompletionDate: string;
+  specialConditionsProgrammingSafe: "1" | "0";
+  specialConditionsProgrammingSafeCurrent: "1" | "0";
+  specialConditionsProgrammingSafeCompletionDate: string;
+  specialConditionsProgrammingVictimImpact: "1" | "0";
+  specialConditionsProgrammingVictimImpactCurrent: "1" | "0";
+  specialConditionsProgrammingVictimImpactCompletionDate: string;
+  specialConditionsProgrammingFsw: "1" | "0";
+  specialConditionsProgrammingFswCurrent: "1" | "0";
+  specialConditionsProgrammingFswCompletionDate: string;
 };
 
 type CompliantReportingExportedCase = {
@@ -89,6 +155,8 @@ export default class CaseStore {
 
   compliantReportingUpdates: CompliantReportingUpdate[] = [];
 
+  compliantReportingReferrals: CompliantReportingExportedReferral[] = [];
+
   officers: OfficerMapping = {};
 
   activeClientId?: string;
@@ -117,6 +185,10 @@ export default class CaseStore {
 
         onSnapshot(compliantReportingCasesQuery, (snapshot) =>
           this.updateCompliantReportingExportedCases(snapshot)
+        );
+
+        onSnapshot(compliantReportingReferralsQuery, (snapshot) =>
+          this.updateCompliantReportingReferrals(snapshot)
         );
 
         onSnapshot(officersQuery, (snapshot) => this.updateOfficers(snapshot));
@@ -201,6 +273,20 @@ export default class CaseStore {
       } as CompliantReportingUpdate);
     });
     this.compliantReportingUpdates = updateRecords;
+  }
+
+  private updateCompliantReportingReferrals(
+    querySnapshot: QuerySnapshot<DocumentData>
+  ): void {
+    const updateRecords: CompliantReportingExportedReferral[] = [];
+    querySnapshot.forEach((doc) => {
+      const updateData = doc.data();
+
+      updateRecords.push({
+        ...updateData,
+      } as CompliantReportingExportedReferral);
+    });
+    this.compliantReportingReferrals = updateRecords;
   }
 
   updateOfficers(querySnapshot: QuerySnapshot<DocumentData>): void {

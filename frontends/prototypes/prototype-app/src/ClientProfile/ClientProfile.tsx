@@ -15,19 +15,62 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import React from "react";
+import { observer } from "mobx-react-lite";
+import React, { HTMLAttributes } from "react";
+import styled from "styled-components/macro";
 
-import { ProfileDrawer } from "./Drawer";
+import FormViewer from "../Forms/FormViewer";
+import FormCR3947Rev0518 from "../Forms/US_TN";
+import { useDataStore } from "../StoreProvider";
+import { FORM_WIDTH, PROFILE_WIDTH, ProfileDrawer } from "./Drawer";
 import ProfileCompliantReporting from "./ProfileCompliantReporting";
 import ProfileHeader from "./ProfileHeader";
 
-const ClientProfile: React.FC = () => {
+const ProfileColumns = styled.div`
+  display: flex;
+  height: 100%;
+`;
+
+const ProfileWrapper = styled.div`
+  height: 100%;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: auto minmax(0px, 1fr);
+  width: ${PROFILE_WIDTH}px;
+`;
+
+const FormWrapper = styled.div`
+  width: ${FORM_WIDTH}px;
+`;
+
+const ClientProfile: React.FC = observer(() => {
+  const { caseStore } = useDataStore();
+  const prefilledForm = caseStore.compliantReportingReferrals.find(
+    (cr) => cr.tdocId === String(caseStore.activeClientId)
+  );
+  const showPrefilledForm =
+    caseStore.activeClient?.status === "ELIGIBLE" && prefilledForm;
+
   return (
-    <ProfileDrawer>
-      <ProfileHeader />
-      <ProfileCompliantReporting />
+    <ProfileDrawer includeForm={showPrefilledForm}>
+      <ProfileColumns>
+        <ProfileWrapper>
+          <ProfileHeader />
+          <ProfileCompliantReporting />
+        </ProfileWrapper>
+        {showPrefilledForm && (
+          <FormWrapper>
+            <FormViewer
+              fileName={`${caseStore.activeClient?.personName} - Form CR3947 Rev05-18.pdf`}
+            >
+              <FormCR3947Rev0518 form={prefilledForm} />
+            </FormViewer>
+          </FormWrapper>
+        )}
+      </ProfileColumns>
     </ProfileDrawer>
   );
-};
+});
 
 export default ClientProfile;
