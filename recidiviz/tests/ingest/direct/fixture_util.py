@@ -25,7 +25,10 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsDirectIngestFileType,
     filename_parts_from_path,
 )
-from recidiviz.ingest.direct.errors import DirectIngestError, DirectIngestErrorType
+from recidiviz.ingest.direct.types.errors import (
+    DirectIngestError,
+    DirectIngestErrorType,
+)
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.ingest.direct import direct_ingest_fixtures
 

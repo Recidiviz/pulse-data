@@ -36,11 +36,11 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
 )
-from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import (
-    DirectIngestRawFileImportManager,
-)
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     filename_parts_from_path,
+)
+from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
+    DirectIngestRawFileImportManager,
 )
 from recidiviz.persistence.entity.operations.entities import DirectIngestRawFileMetadata
 from recidiviz.utils.regions import get_region

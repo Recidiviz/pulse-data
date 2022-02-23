@@ -20,10 +20,10 @@ import os
 import shutil
 import unittest
 
-from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import (
+from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
     DirectIngestRegionRawFileConfig,
 )
-from recidiviz.tests.ingest.direct.direct_ingest_util import PLACEHOLDER_TO_DO_STRING
+from recidiviz.tools.docs.utils import PLACEHOLDER_TO_DO_STRING
 from recidiviz.tools.ingest.development.create_ingest_config_skeleton import (
     create_ingest_config_skeleton,
     make_config_directory,

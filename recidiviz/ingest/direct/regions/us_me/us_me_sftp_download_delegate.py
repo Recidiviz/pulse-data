@@ -20,7 +20,9 @@ from typing import List
 
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.ingest.direct.base_sftp_download_delegate import BaseSftpDownloadDelegate
+from recidiviz.ingest.direct.sftp.base_sftp_download_delegate import (
+    BaseSftpDownloadDelegate,
+)
 
 
 class UsMeSftpDownloadDelegate(BaseSftpDownloadDelegate):

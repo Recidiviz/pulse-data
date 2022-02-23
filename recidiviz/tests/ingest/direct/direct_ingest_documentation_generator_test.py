@@ -21,14 +21,14 @@ from mock import MagicMock, patch
 
 from recidiviz.common.constants import states
 from recidiviz.common.constants.states import TEST_STATE_CODE_DOCS
-from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import (
-    DirectIngestRegionRawFileConfig,
-)
 from recidiviz.ingest.direct.direct_ingest_documentation_generator import (
     DirectIngestDocumentationGenerator,
 )
+from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
+    DirectIngestRegionRawFileConfig,
+)
 from recidiviz.tests.ingest.direct import fake_regions
-from recidiviz.tests.ingest.direct.direct_ingest_util import (
+from recidiviz.tests.ingest.direct.fakes.fake_direct_ingest_controller import (
     FakeDirectIngestPreProcessedIngestViewCollector,
     FakeDirectIngestRegionRawFileConfig,
 )

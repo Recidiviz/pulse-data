@@ -22,9 +22,6 @@ from mock import Mock, patch
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
 from recidiviz.common.ingest_metadata import SystemLevel
-from recidiviz.ingest.direct.types.direct_ingest_instance import (
-    DirectIngestInstance,
-)
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsDirectIngestFileType,
     GcsfsIngestViewExportArgs,
@@ -33,7 +30,8 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     gcsfs_direct_ingest_storage_directory_path_for_region,
     gcsfs_sftp_download_bucket_path_for_region,
 )
-from recidiviz.ingest.direct.errors import DirectIngestError
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.types.errors import DirectIngestError
 
 
 class GcsfsDirectIngestUtilsTest(TestCase):

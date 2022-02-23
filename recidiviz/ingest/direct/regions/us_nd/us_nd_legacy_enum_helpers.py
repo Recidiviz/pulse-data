@@ -51,7 +51,7 @@ from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactStatus,
     StateSupervisionContactType,
 )
-from recidiviz.ingest.direct.direct_ingest_controller_utils import (
+from recidiviz.ingest.direct.legacy_ingest_mappings.direct_ingest_controller_utils import (
     update_overrides_from_maps,
 )
 

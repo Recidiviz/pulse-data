@@ -28,12 +28,10 @@ from pytest_alembic import runner
 from pytest_alembic.config import Config
 from sqlalchemy import create_engine
 
-from recidiviz.ingest.direct.types.direct_ingest_instance import (
-    DirectIngestInstance,
-)
-from recidiviz.ingest.direct.direct_ingest_region_utils import (
+from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_region_dir_names,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tools.postgres import local_postgres_helpers

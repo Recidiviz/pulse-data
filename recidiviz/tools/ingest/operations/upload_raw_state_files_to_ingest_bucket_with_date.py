@@ -36,7 +36,7 @@ from typing import List, Optional, Tuple
 from progress.bar import Bar
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
-from recidiviz.ingest.direct.controllers.base_upload_state_files_to_ingest_bucket_controller import (
+from recidiviz.ingest.direct.sftp.base_upload_state_files_to_ingest_bucket_controller import (
     BaseUploadStateFilesToIngestBucketController,
     UploadStateFilesToIngestBucketDelegate,
 )

@@ -21,7 +21,7 @@ from enum import Enum
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.ingest_metadata import SystemLevel
-from recidiviz.ingest.direct.errors import DirectIngestInstanceError
+from recidiviz.ingest.direct.types.errors import DirectIngestInstanceError
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 

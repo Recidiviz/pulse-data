@@ -29,7 +29,7 @@ my_flat_field:
 from typing import Dict, List, Optional
 
 from recidiviz.common.str_field_utils import parse_days_from_duration_pieces
-from recidiviz.ingest.direct.direct_ingest_controller_utils import (
+from recidiviz.ingest.direct.legacy_ingest_mappings.direct_ingest_controller_utils import (
     invert_str_to_str_mappings,
 )
 

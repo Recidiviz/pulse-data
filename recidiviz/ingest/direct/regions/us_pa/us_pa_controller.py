@@ -63,7 +63,11 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
 )
-from recidiviz.ingest.direct.controllers.legacy_ingest_view_processor import (
+from recidiviz.ingest.direct.legacy_ingest_mappings.direct_ingest_controller_utils import (
+    create_if_not_exists,
+    update_overrides_from_maps,
+)
+from recidiviz.ingest.direct.legacy_ingest_mappings.legacy_ingest_view_processor import (
     IngestAncestorChainOverridesCallable,
     IngestFilePostprocessorCallable,
     IngestPrimaryKeyOverrideCallable,
@@ -71,9 +75,10 @@ from recidiviz.ingest.direct.controllers.legacy_ingest_view_processor import (
     IngestRowPrehookCallable,
     LegacyIngestViewProcessorDelegate,
 )
-from recidiviz.ingest.direct.direct_ingest_controller_utils import (
-    create_if_not_exists,
-    update_overrides_from_maps,
+from recidiviz.ingest.direct.legacy_ingest_mappings.state_shared_row_posthooks import (
+    IngestGatingContext,
+    gen_convert_person_ids_to_external_id_objects,
+    gen_label_single_external_id_hook,
 )
 from recidiviz.ingest.direct.regions.us_pa.us_pa_assessment_level_reference import (
     set_date_specific_lsir_fields,
@@ -91,11 +96,6 @@ from recidiviz.ingest.direct.regions.us_pa.us_pa_legacy_enum_helpers import (
     incarceration_period_release_reason_mapper,
     supervision_contact_location_mapper,
     supervision_period_supervision_type_mapper,
-)
-from recidiviz.ingest.direct.state_shared_row_posthooks import (
-    IngestGatingContext,
-    gen_convert_person_ids_to_external_id_objects,
-    gen_label_single_external_id_hook,
 )
 from recidiviz.ingest.extractor.csv_data_extractor import IngestFieldCoordinates
 from recidiviz.ingest.models.ingest_info import (

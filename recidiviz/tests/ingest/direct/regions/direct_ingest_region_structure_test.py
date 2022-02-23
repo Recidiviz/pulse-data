@@ -41,29 +41,29 @@ from recidiviz.ingest.direct.controllers.direct_ingest_controller_factory import
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
     to_normalized_unprocessed_file_name,
 )
-from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import (
-    DirectIngestRawFileConfig,
-    DirectIngestRegionRawFileConfig,
-)
-from recidiviz.ingest.direct.controllers.direct_ingest_raw_table_migration import (
-    UpdateRawTableMigration,
-)
-from recidiviz.ingest.direct.controllers.direct_ingest_raw_table_migration_collector import (
-    DirectIngestRawTableMigrationCollector,
-)
-from recidiviz.ingest.direct.controllers.direct_ingest_view_collector import (
-    DirectIngestPreProcessedIngestViewCollector,
-)
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsDirectIngestFileType,
     filename_parts_from_path,
     gcsfs_direct_ingest_bucket_for_region,
 )
-from recidiviz.ingest.direct.direct_ingest_region_utils import (
+from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
+    DirectIngestRawFileConfig,
+    DirectIngestRegionRawFileConfig,
+)
+from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_migration import (
+    UpdateRawTableMigration,
+)
+from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_migration_collector import (
+    DirectIngestRawTableMigrationCollector,
+)
+from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_region_dir_names,
     get_existing_region_dir_paths,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.views.direct_ingest_view_collector import (
+    DirectIngestPreProcessedIngestViewCollector,
+)
 from recidiviz.utils.environment import GCPEnvironment
 from recidiviz.utils.regions import Region, get_region
 

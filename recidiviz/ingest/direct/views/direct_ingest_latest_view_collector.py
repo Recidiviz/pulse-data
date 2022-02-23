@@ -20,16 +20,16 @@ from typing import Callable, Dict, List, Optional
 from recidiviz.big_query.big_query_table_checker import BigQueryTableChecker
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
-from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import (
-    DirectIngestRawFileConfig,
-    DirectIngestRegionRawFileConfig,
-)
-from recidiviz.ingest.direct.direct_ingest_region_utils import (
-    get_existing_region_dir_names,
-)
 from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_latest_views_dataset_for_region,
     raw_tables_dataset_for_region,
+)
+from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
+    DirectIngestRawFileConfig,
+    DirectIngestRegionRawFileConfig,
+)
+from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
+    get_existing_region_dir_names,
 )
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
     DirectIngestRawDataTableLatestView,

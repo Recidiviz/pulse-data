@@ -32,11 +32,13 @@ from recidiviz.common.str_field_utils import (
     parse_days_from_duration_pieces,
     safe_parse_days_from_duration_str,
 )
+from recidiviz.ingest.direct.legacy_ingest_mappings.state_shared_row_posthooks import (
+    get_normalized_ymd_str,
+)
 from recidiviz.ingest.direct.regions.us_nd.us_nd_county_code_reference import (
     COUNTY_CODES,
     normalized_county_code,
 )
-from recidiviz.ingest.direct.state_shared_row_posthooks import get_normalized_ymd_str
 
 
 def decimal_str_as_int_str(dec_str: str) -> str:

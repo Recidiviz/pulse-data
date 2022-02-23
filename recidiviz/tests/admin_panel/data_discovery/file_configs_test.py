@@ -23,9 +23,9 @@ from recidiviz.admin_panel.data_discovery.file_configs import (
     get_ingest_view_configs,
     get_raw_data_configs,
 )
-from recidiviz.ingest.direct.direct_ingest_region_utils import (
-    get_existing_region_dir_names,
+from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_direct_ingest_states,
+    get_existing_region_dir_names,
 )
 
 

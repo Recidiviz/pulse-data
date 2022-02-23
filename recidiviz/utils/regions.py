@@ -291,7 +291,9 @@ def _get_supported_region_codes_for_base_region_module(
     base_region_path = os.path.dirname(base_region_module.__file__)
 
     all_region_codes = {
-        region_module.name for region_module in pkgutil.iter_modules([base_region_path])
+        region_module.name
+        for region_module in pkgutil.iter_modules([base_region_path])
+        if region_module.ispkg
     }
     if timezone:
         dt = datetime.now()

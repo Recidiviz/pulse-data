@@ -19,6 +19,7 @@ import abc
 import datetime
 import json
 import os
+import time
 import unittest
 from collections import defaultdict
 from typing import List, Optional, Set, Tuple, Type, TypeVar
@@ -46,23 +47,23 @@ from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
     SPLIT_FILE_STORAGE_SUBDIR,
 )
-from recidiviz.ingest.direct.controllers.direct_ingest_instance_status_manager import (
-    DirectIngestInstanceStatusManager,
-)
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsDirectIngestFileType,
     GcsfsIngestArgs,
     GcsfsIngestViewExportArgs,
     filename_parts_from_path,
 )
-from recidiviz.ingest.direct.controllers.postgres_direct_ingest_file_metadata_manager import (
-    PostgresDirectIngestFileMetadataManager,
-)
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
     build_scheduler_task_id,
 )
-from recidiviz.ingest.direct.errors import DirectIngestError
+from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
+    DirectIngestInstanceStatusManager,
+)
+from recidiviz.ingest.direct.metadata.postgres_direct_ingest_file_metadata_manager import (
+    PostgresDirectIngestFileMetadataManager,
+)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.types.errors import DirectIngestError
 from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_lock_manager import (
     postgres_to_bq_lock_name_for_schema,
 )
@@ -73,20 +74,19 @@ from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDat
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.ingest.direct import fake_regions as fake_regions_module
 from recidiviz.tests.ingest.direct import fixture_util
-from recidiviz.tests.ingest.direct.direct_ingest_util import (
-    FakeDirectIngestRawFileImportManager,
-    FakeDirectIngestRegionRawFileConfig,
-    add_paths_with_tags,
-    add_paths_with_tags_and_process,
-    build_gcsfs_controller_for_tests,
-    check_all_paths_processed,
+from recidiviz.tests.ingest.direct.direct_ingest_test_util import (
     path_for_fixture_file,
     run_task_queues_to_empty,
 )
-from recidiviz.tests.ingest.direct.fake_direct_ingest_big_query_client import (
+from recidiviz.tests.ingest.direct.fakes.fake_direct_ingest_big_query_client import (
     FakeDirectIngestBigQueryClient,
 )
-from recidiviz.tests.ingest.direct.fake_synchronous_direct_ingest_cloud_task_manager import (
+from recidiviz.tests.ingest.direct.fakes.fake_direct_ingest_controller import (
+    FakeDirectIngestRawFileImportManager,
+    FakeDirectIngestRegionRawFileConfig,
+    build_fake_direct_ingest_controller,
+)
+from recidiviz.tests.ingest.direct.fakes.fake_synchronous_direct_ingest_cloud_task_manager import (
     FakeSynchronousDirectIngestCloudTaskManager,
 )
 from recidiviz.tests.utils.fake_region import fake_region
@@ -180,6 +180,105 @@ class CountyTestDirectIngestController(BaseDirectIngestControllerForTests):
 
     def get_file_tag_rank_list(self) -> List[str]:
         return ["tagA", "tagB"]
+
+
+def check_all_paths_processed(
+    test_case: unittest.TestCase,
+    controller: BaseDirectIngestController,
+    file_tags: List[str],
+    unexpected_tags: List[str],
+) -> None:
+    """Checks that all non-directory paths with expected tags have been
+    processed and moved to storage.
+    """
+
+    if not isinstance(controller.fs.gcs_file_system, FakeGCSFileSystem):
+        raise ValueError(
+            f"Controller fs must have type "
+            f"FakeGCSFileSystem. Found instead "
+            f"type [{type(controller.fs.gcs_file_system)}]"
+        )
+
+    file_tags_processed = set()
+    for path in controller.fs.gcs_file_system.all_paths:
+        if isinstance(path, GcsfsDirectoryPath):
+            continue
+
+        file_tag = filename_parts_from_path(path).file_tag
+
+        if file_tag not in unexpected_tags:
+            # Test all expected files have been moved to storage
+            test_case.assertTrue(
+                path.abs_path().startswith(
+                    controller.storage_directory_path.abs_path()
+                ),
+                f"{path} has not been moved to correct storage directory",
+            )
+
+            file_tags_processed.add(filename_parts_from_path(path).file_tag)
+        else:
+            test_case.assertTrue(path.file_name.startswith("unprocessed"))
+
+    # Test that each expected file tag has been processed
+    test_case.assertEqual(
+        file_tags_processed, set(file_tags).difference(set(unexpected_tags))
+    )
+
+
+def process_task_queues(
+    test_case: unittest.TestCase,
+    controller: BaseDirectIngestController,
+    file_tags: List[str],
+    unexpected_tags: List[str] = None,
+) -> None:
+    if unexpected_tags is None:
+        unexpected_tags = []
+
+    run_task_queues_to_empty(controller)
+    check_all_paths_processed(test_case, controller, file_tags, unexpected_tags)
+
+
+def add_paths_with_tags_and_process(
+    test_case: unittest.TestCase,
+    controller: BaseDirectIngestController,
+    file_tags: List[str],
+    pre_normalized_file_type: Optional[GcsfsDirectIngestFileType] = None,
+    unexpected_tags: List[str] = None,
+) -> None:
+    """Runs a test that queues files for all the provided file tags, waits
+    for the controller to finish processing everything, then makes sure that
+    all files not in |unexpected_tags| have been moved to storage.
+    """
+    add_paths_with_tags(controller, file_tags, pre_normalized_file_type)
+    process_task_queues(test_case, controller, file_tags, unexpected_tags)
+
+
+def add_paths_with_tags(
+    controller: BaseDirectIngestController,
+    file_tags: List[str],
+    pre_normalized_file_type: Optional[GcsfsDirectIngestFileType] = None,
+) -> None:
+    if not isinstance(controller.fs.gcs_file_system, FakeGCSFileSystem):
+        raise ValueError(
+            f"Controller fs must have type "
+            f"FakeGCSFileSystem. Found instead "
+            f"type [{type(controller.fs.gcs_file_system)}]"
+        )
+
+    for file_tag in file_tags:
+        file_path = path_for_fixture_file(
+            controller,
+            f"{file_tag}.csv",
+            should_normalize=bool(pre_normalized_file_type),
+            file_type=pre_normalized_file_type,
+        )
+        # Only get a fixture path if it is a file, if it is a directory leave it as None
+        fixture_util.add_direct_ingest_path(
+            controller.fs.gcs_file_system,
+            file_path,
+            region_code=controller.region_code(),
+        )
+        time.sleep(0.05)
 
 
 @pytest.mark.uses_db
@@ -316,7 +415,7 @@ class TestDirectIngestController(unittest.TestCase):
         """Writes all expected files to the mock fs, then kicks the controller
         and ensures that all jobs are run to completion in the proper order."""
 
-        controller = build_gcsfs_controller_for_tests(
+        controller = build_fake_direct_ingest_controller(
             controller_cls, ingest_instance=DirectIngestInstance.PRIMARY, run_async=True
         )
 
@@ -416,7 +515,7 @@ class TestDirectIngestController(unittest.TestCase):
         self.check_tags(controller, controller.get_file_tag_rank_list())
 
     def test_state_doesnt_run_when_paused(self) -> None:
-        controller = build_gcsfs_controller_for_tests(
+        controller = build_fake_direct_ingest_controller(
             StateTestDirectIngestController,
             ingest_instance=DirectIngestInstance.PRIMARY,
             run_async=True,
@@ -431,7 +530,7 @@ class TestDirectIngestController(unittest.TestCase):
         self.check_imported_path_count(controller, 0)
 
     def test_state_generate_files_after_deprecation(self) -> None:
-        controller = build_gcsfs_controller_for_tests(
+        controller = build_fake_direct_ingest_controller(
             StateTestDirectIngestController,
             ingest_instance=DirectIngestInstance.PRIMARY,
             run_async=True,
@@ -470,7 +569,7 @@ class TestDirectIngestController(unittest.TestCase):
         Mock(return_value=FakeGCSFileSystem()),
     )
     def test_state_runs_files_in_order_locking(self) -> None:
-        controller = build_gcsfs_controller_for_tests(
+        controller = build_fake_direct_ingest_controller(
             StateTestDirectIngestController,
             ingest_instance=DirectIngestInstance.PRIMARY,
             run_async=True,
@@ -519,7 +618,7 @@ class TestDirectIngestController(unittest.TestCase):
         Mock(return_value=FakeGCSFileSystem()),
     )
     def test_state_runs_files_in_order_locking_region(self) -> None:
-        controller = build_gcsfs_controller_for_tests(
+        controller = build_fake_direct_ingest_controller(
             StateTestDirectIngestController,
             ingest_instance=DirectIngestInstance.PRIMARY,
             run_async=True,
@@ -565,7 +664,7 @@ class TestDirectIngestController(unittest.TestCase):
         Mock(return_value=FakeGCSFileSystem()),
     )
     def test_crash_releases_lock(self) -> None:
-        controller = build_gcsfs_controller_for_tests(
+        controller = build_fake_direct_ingest_controller(
             CrashingStateTestDirectIngestController,
             ingest_instance=DirectIngestInstance.PRIMARY,
             run_async=True,
@@ -586,7 +685,7 @@ class TestDirectIngestController(unittest.TestCase):
         )
 
     def test_state_single_split_tag(self) -> None:
-        controller = build_gcsfs_controller_for_tests(
+        controller = build_fake_direct_ingest_controller(
             SingleTagStateTestDirectIngestController,
             ingest_instance=DirectIngestInstance.PRIMARY,
             run_async=True,
@@ -648,7 +747,7 @@ class TestDirectIngestController(unittest.TestCase):
         self.check_tags(controller, controller.get_file_tag_rank_list())
 
     def test_state_unexpected_tag(self) -> None:
-        controller = build_gcsfs_controller_for_tests(
+        controller = build_fake_direct_ingest_controller(
             StateTestDirectIngestController,
             ingest_instance=DirectIngestInstance.PRIMARY,
             run_async=True,
@@ -701,7 +800,7 @@ class TestDirectIngestController(unittest.TestCase):
     def test_state_tag_we_import_but_do_not_ingest(
         self,
     ) -> None:
-        controller = build_gcsfs_controller_for_tests(
+        controller = build_fake_direct_ingest_controller(
             StateTestDirectIngestController,
             ingest_instance=DirectIngestInstance.PRIMARY,
             run_async=True,
@@ -739,7 +838,7 @@ class TestDirectIngestController(unittest.TestCase):
         self.check_tags(controller, ["tagA", "tagB", "tagC"])
 
     def test_do_not_queue_same_job_twice(self) -> None:
-        controller = build_gcsfs_controller_for_tests(
+        controller = build_fake_direct_ingest_controller(
             StateTestDirectIngestController,
             ingest_instance=DirectIngestInstance.PRIMARY,
             run_async=False,
@@ -826,7 +925,7 @@ class TestDirectIngestController(unittest.TestCase):
         )
 
     def test_next_schedule_runs_before_process_job_clears(self) -> None:
-        controller = build_gcsfs_controller_for_tests(
+        controller = build_fake_direct_ingest_controller(
             StateTestDirectIngestController,
             ingest_instance=DirectIngestInstance.PRIMARY,
             run_async=False,
@@ -913,7 +1012,7 @@ class TestDirectIngestController(unittest.TestCase):
 
     def test_process_job_task_run_twice(self) -> None:
         # Cloud Tasks has an at-least once guarantee - make sure rerunning a task in series does not crash
-        controller = build_gcsfs_controller_for_tests(
+        controller = build_fake_direct_ingest_controller(
             StateTestDirectIngestController,
             ingest_instance=DirectIngestInstance.PRIMARY,
             run_async=False,
@@ -999,7 +1098,7 @@ class TestDirectIngestController(unittest.TestCase):
         )
 
     def test_process_already_normalized_paths(self) -> None:
-        controller = build_gcsfs_controller_for_tests(
+        controller = build_fake_direct_ingest_controller(
             StateTestDirectIngestController,
             ingest_instance=DirectIngestInstance.PRIMARY,
             run_async=True,
@@ -1033,7 +1132,7 @@ class TestDirectIngestController(unittest.TestCase):
     def test_process_ingest_view_file_that_needs_splitting(
         self,
     ) -> None:
-        controller = build_gcsfs_controller_for_tests(
+        controller = build_fake_direct_ingest_controller(
             StateTestDirectIngestController,
             ingest_instance=DirectIngestInstance.PRIMARY,
             run_async=True,
@@ -1100,7 +1199,7 @@ class TestDirectIngestController(unittest.TestCase):
         Mock(side_effect=ValueError("Splitting crashed")),
     )
     def test_failing_to_process_a_file_that_needs_splitting_no_loop(self) -> None:
-        controller = build_gcsfs_controller_for_tests(
+        controller = build_fake_direct_ingest_controller(
             StateTestDirectIngestController,
             ingest_instance=DirectIngestInstance.PRIMARY,
             run_async=False,
@@ -1159,7 +1258,7 @@ class TestDirectIngestController(unittest.TestCase):
     def test_move_files_from_previous_days_to_storage(
         self,
     ) -> None:
-        controller = build_gcsfs_controller_for_tests(
+        controller = build_fake_direct_ingest_controller(
             StateTestDirectIngestController,
             ingest_instance=DirectIngestInstance.PRIMARY,
             run_async=False,
@@ -1250,7 +1349,7 @@ class TestDirectIngestController(unittest.TestCase):
     def test_move_files_from_previous_days_to_storage_incomplete_current_day(
         self,
     ) -> None:
-        controller = build_gcsfs_controller_for_tests(
+        controller = build_fake_direct_ingest_controller(
             StateTestDirectIngestController,
             ingest_instance=DirectIngestInstance.PRIMARY,
             run_async=False,
@@ -1381,7 +1480,7 @@ class TestDirectIngestController(unittest.TestCase):
         self.check_tags(controller, ["tagA", "tagB"])
 
     def test_cloud_function_fails_on_new_file(self) -> None:
-        controller = build_gcsfs_controller_for_tests(
+        controller = build_fake_direct_ingest_controller(
             StateTestDirectIngestController,
             ingest_instance=DirectIngestInstance.PRIMARY,
             run_async=False,
@@ -1456,7 +1555,7 @@ class TestDirectIngestController(unittest.TestCase):
         self.validate_file_metadata(controller)
 
     def test_cloud_function_fails_on_new_file_rename_later_with_cron(self) -> None:
-        controller = build_gcsfs_controller_for_tests(
+        controller = build_fake_direct_ingest_controller(
             StateTestDirectIngestController,
             ingest_instance=DirectIngestInstance.PRIMARY,
             run_async=False,
@@ -1551,7 +1650,7 @@ class TestDirectIngestController(unittest.TestCase):
         self.validate_file_metadata(controller)
 
     def test_can_start_ingest_is_false_launched_region_throws(self) -> None:
-        controller = build_gcsfs_controller_for_tests(
+        controller = build_fake_direct_ingest_controller(
             StateTestDirectIngestController,
             ingest_instance=DirectIngestInstance.PRIMARY,
             run_async=True,
@@ -1578,7 +1677,7 @@ class TestDirectIngestController(unittest.TestCase):
     def test_can_start_ingest_is_false_does_not_start_ingest(
         self,
     ) -> None:
-        controller = build_gcsfs_controller_for_tests(
+        controller = build_fake_direct_ingest_controller(
             StagingOnlyStateTestDirectIngestController,
             ingest_instance=DirectIngestInstance.PRIMARY,
             run_async=True,
@@ -1619,7 +1718,7 @@ class TestDirectIngestController(unittest.TestCase):
         )
 
     def test_unlaunched_region_raises_if_can_start_ingest_true(self) -> None:
-        controller = build_gcsfs_controller_for_tests(
+        controller = build_fake_direct_ingest_controller(
             StagingOnlyStateTestDirectIngestController,
             ingest_instance=DirectIngestInstance.PRIMARY,
             run_async=True,
@@ -1660,7 +1759,7 @@ class TestDirectIngestController(unittest.TestCase):
         )
 
     def test_launched_region_raises_if_can_start_ingest_false(self) -> None:
-        controller = build_gcsfs_controller_for_tests(
+        controller = build_fake_direct_ingest_controller(
             StateTestDirectIngestController,
             ingest_instance=DirectIngestInstance.PRIMARY,
             run_async=True,
@@ -1692,7 +1791,7 @@ class TestDirectIngestController(unittest.TestCase):
         )
 
     def test_processing_continues_if_there_are_subfolders_in_ingest_dir(self) -> None:
-        controller = build_gcsfs_controller_for_tests(
+        controller = build_fake_direct_ingest_controller(
             StateTestDirectIngestController,
             ingest_instance=DirectIngestInstance.PRIMARY,
             run_async=False,
@@ -1785,7 +1884,7 @@ class TestDirectIngestController(unittest.TestCase):
     def test_do_not_schedule_raw_data_import_task_if_already_processed_yet_in_gcs(
         self,
     ) -> None:
-        controller = build_gcsfs_controller_for_tests(
+        controller = build_fake_direct_ingest_controller(
             StateTestDirectIngestController,
             ingest_instance=DirectIngestInstance.PRIMARY,
             run_async=False,
