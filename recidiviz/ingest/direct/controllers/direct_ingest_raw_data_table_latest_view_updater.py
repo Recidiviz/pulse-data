@@ -70,7 +70,8 @@ class DirectIngestRawDataTableLatestViewUpdater:
         state_code: str,
         project_id: str,
         bq_client: BigQueryClient,
-        sandbox_dataset_prefix: Optional[str],
+        raw_tables_sandbox_dataset_prefix: Optional[str],
+        views_sandbox_dataset_prefix: Optional[str],
         dry_run: bool = False,
     ):
         self.state_code = state_code
@@ -78,7 +79,10 @@ class DirectIngestRawDataTableLatestViewUpdater:
         self.bq_client = bq_client
         self.dry_run = dry_run
         self.raw_file_region_config = DirectIngestRegionRawFileConfig(state_code)
-        self.sandbox_dataset_prefix = sandbox_dataset_prefix
+        # Sandbox prefix for dataset to read raw data files from
+        self.raw_tables_sandbox_dataset_prefix = raw_tables_sandbox_dataset_prefix
+        # Sandbox prefix to write raw data files to
+        self.views_sandbox_dataset_prefix = views_sandbox_dataset_prefix
 
     def _latest_view_for_config(
         self,
@@ -136,10 +140,10 @@ class DirectIngestRawDataTableLatestViewUpdater:
 
         return builder.build(
             dataset_overrides=dataset_overrides_for_view_builders(
-                view_dataset_override_prefix=self.sandbox_dataset_prefix,
+                view_dataset_override_prefix=self.views_sandbox_dataset_prefix,
                 view_builders=[builder],
             )
-            if self.sandbox_dataset_prefix
+            if self.views_sandbox_dataset_prefix
             else None,
         )
 
@@ -160,7 +164,8 @@ class DirectIngestRawDataTableLatestViewUpdater:
     def update_views_for_state(self) -> None:
         """Create or update the up to date views dataset for a state with latest views"""
         src_raw_tables_dataset = raw_tables_dataset_for_region(
-            self.state_code, sandbox_dataset_prefix=None
+            self.state_code,
+            sandbox_dataset_prefix=self.raw_tables_sandbox_dataset_prefix,
         )
         succeeded_tables = []
         failed_tables = []
